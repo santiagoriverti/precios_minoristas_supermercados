@@ -12,12 +12,14 @@ Los datos provienen del **SEPA** (Sistema de Estabilización de Precios Alimenta
 |----------|-------------|----------------|
 | `exploracion_productos` | Exploración de productos de abril 2026 y construcción de una canasta representativa para una familia tipo de 4 integrantes, con criterios de cobertura por cadena y región geográfica | [![Abrir en Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/santiagoriverti/precios_minoristas_supermercados/blob/main/notebooks/exploracion_productos.ipynb) |
 
+> **¿Ves una versión vieja?** El badge abre siempre la última versión desde GitHub, pero si Colab ya guardó una copia anterior en tu Drive, puede mostrar esa en cambio. Para forzar la versión actualizada: eliminá `Mi unidad/Colab Notebooks/exploracion_productos.ipynb` de tu Google Drive y volvé a hacer clic en el badge.
+
 ## Cómo usar los notebooks
 
 1. Hacer clic en el badge **"Abrir en Colab"** del notebook deseado
 2. Montar Google Drive cuando el notebook lo solicite
-3. Subir los archivos necesarios a Google Drive (ver sección **Datos requeridos** dentro de cada notebook)
-4. Ajustar las rutas en la celda de **Configuración** y ejecutar las celdas en orden
+3. Subir el ZIP del SEPA correspondiente a tu Google Drive (ver sección **Datos SEPA requeridos**)
+4. Ejecutar las celdas en orden — los maestros se descargan automáticamente desde GitHub
 
 > Los notebooks instalan automáticamente las dependencias que no vienen por defecto en Colab.
 
