@@ -1,6 +1,6 @@
 # Precios Minoristas en Supermercados de Argentina
 
-Análisis de precios minoristas reportados diariamente por supermercados de Argentina, basado en datos públicos del [SEPA (Secretaría de Comercio)](https://datos.produccion.gob.ar/dataset/sepa-precios).
+Análisis de precios minoristas reportados diariamente por supermercados de Argentina, basado en datos públicos del [SEPA](https://datos.produccion.gob.ar/dataset/sepa-precios) — Sistema Electrónico de Publicidad de Precios Argentinos.
 
 ## Fuente de datos
 
@@ -10,7 +10,7 @@ Los datos provienen del **SEPA** (Sistema Electrónico de Publicidad de Precios 
 
 | Notebook | Descripción | Abrir en Colab |
 |----------|-------------|----------------|
-| `exploracion_productos` | Exploración de productos de abril 2026 y construcción de una canasta representativa para una familia tipo de 4 integrantes, con criterios de cobertura por cadena y región geográfica | [![Abrir en Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/santiagoriverti/precios_minoristas_supermercados/blob/main/notebooks/exploracion_productos.ipynb) |
+| `exploracion_productos` | Exploración de productos de abril 2026. Genera un Excel con dos hojas: **Canasta** (selección automática de ~60 productos con máxima cobertura, organizada por grupo) y **Candidatos** (~40 000 productos con métricas de cobertura para que un economista arme su propia canasta) | [![Abrir en Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/santiagoriverti/precios_minoristas_supermercados/blob/main/notebooks/exploracion_productos.ipynb) |
 
 > **¿Ves una versión vieja?** El badge abre siempre la última versión desde GitHub, pero si Colab ya guardó una copia anterior en tu Drive, puede mostrar esa en cambio. Para forzar la versión actualizada: eliminá `Mi unidad/Colab Notebooks/exploracion_productos.ipynb` de tu Google Drive y volvé a hacer clic en el badge.
 
