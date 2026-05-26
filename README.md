@@ -4,7 +4,7 @@ Análisis de precios minoristas reportados diariamente por supermercados de Arge
 
 ## Fuente de datos
 
-Los datos provienen del **SEPA** (Sistema de Estabilización de Precios Alimentarios), que publica diariamente los precios reportados por las principales cadenas de supermercados del país. Los archivos están organizados por semestre y contienen precios por sucursal y producto para cada día del mes.
+Los datos provienen del **SEPA** (Sistema Electrónico de Publicidad de Precios Argentinos), que publica diariamente los precios reportados por las principales cadenas de supermercados del país. Los archivos están organizados por semestre y contienen precios por sucursal y producto para cada día del mes.
 
 ## Notebooks disponibles
 
