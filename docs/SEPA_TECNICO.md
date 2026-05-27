@@ -1,6 +1,6 @@
 # SEPA — Referencia Técnica
 
-Última actualización: 2026-05-27
+Última actualización: 2026-05-27 (post-ejecución abril 2026)
 
 ## Dos formatos completamente distintos
 
@@ -277,6 +277,47 @@ df_cov = df_cov.merge(df_prod_uniq, on='id_producto', how='left')
 
 ---
 
+## Estructura real de categorías en el maestro SEPA
+
+El maestro de productos (`Maestro de Productos Interno.xlsx`) organiza los productos en tres niveles: `rubro → categoria → subcategoria`. Los valores de `categoria` son **strings literales del maestro**, no keywords descriptivas del producto. Esto es crítico para configurar correctamente `GRUPOS_CANASTA`.
+
+### Rubros y categorías observados (candidatos con cobertura máxima, abril 2026)
+
+**Rubro: Frescos** (521 candidatos)
+
+| categoria | n_productos |
+|-----------|-------------|
+| Lácteos | 279 |
+| Fiambrería | 185 |
+| Pastas y Tapas | 31 |
+| Carnicería | 13 |
+| Frutas y Verduras | 5 |
+
+> **Trampa crítica**: los productos lácteos tienen `categoria='Lácteos'`, NO `categoria='leche'` o `categoria='queso'`. Las kw de `seleccionar_grupo()` deben coincidir con el valor literal del campo, no con el nombre genérico del producto.
+
+**Categorías con mezcla de tipos (fuente de contaminación)**:
+
+| categoria | Incluye |
+|-----------|---------|
+| `Fiambrería` | Fiambres + quesos untables + quesos crema |
+| `Conservas` | Frutas en almíbar + carnes enlatadas (paté, picadillo) |
+
+Ambas categorías son heterogéneas: agrupan productos de naturaleza distinta bajo el mismo valor. El filtrado por `excluir_kw` no puede resolverlo si opera solo sobre `categoria` — requiere filtrar también sobre `descripcion`.
+
+### Regla para configurar kw en `GRUPOS_CANASTA`
+
+```python
+# MAL — busca keywords en descripcion/ingredientes, no en la columna categoria
+kw=['leche','yogur','queso','crema','manteca']  # → 0 resultados para Lácteos
+
+# BIEN — usa el valor literal que tiene la columna categoria en el maestro
+kw=['lácteos','lacteos']  # → matchea categoria='Lácteos'
+```
+
+**Cómo encontrar los valores correctos**: consultar la hoja Candidatos del Excel de salida, columna `categoria`, filtrado por `rubro` de interés.
+
+---
+
 ## Trampas conocidas en selección de grupos
 
 ### Substring matching en categorías
@@ -288,8 +329,10 @@ La función `seleccionar_grupo(df, rubros, kw, excluir_kw, max_n)` filtra por `k
 | `'te'` | matchea 'Espumantes' |
 | `'crema'` | matchea 'Mayonesa Receta Casera con Crema' |
 | `'postre'` | matchea 'Repostería y Postres' |
+| `'conserva'` | matchea 'Conservas' (incluye carnes enlatadas además de frutas) |
+| `'fiambre'` | matchea 'Fiambrería' (incluye quesos untables además de fiambres) |
 
-**Regla**: siempre revisar el output de cada grupo y añadir `excluir_kw` cuando hay contaminación.
+**Regla**: siempre revisar el output de cada grupo y añadir `excluir_kw` cuando hay contaminación. Para categorías heterogéneas (`Conservas`, `Fiambrería`) puede ser necesario filtrar sobre la columna `descripcion` además de `categoria`.
 
 ### Orden de aplicación en `seleccionar_grupo()`
 
@@ -299,6 +342,10 @@ La función `seleccionar_grupo(df, rubros, kw, excluir_kw, max_n)` filtra por `k
 4. Top N por `score_cobertura`
 
 **Sin fallback**: si el filtro de keywords deja 0 resultados, el grupo queda vacío (preferible a incluir productos incorrectos).
+
+### Limitación actual: `excluir_kw` solo opera sobre `categoria`
+
+El parámetro `excluir_kw` actual busca como substring en la columna `categoria`. No puede distinguir productos dentro de la misma categoría (e.g., Paté vs. Duraznos, ambos `categoria='Conservas'`). Para este caso se necesita ampliar `seleccionar_grupo()` con un parámetro `excluir_desc_kw` que filtre sobre la columna `descripcion`.
 
 ---
 

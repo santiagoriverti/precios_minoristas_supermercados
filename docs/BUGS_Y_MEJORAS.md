@@ -1,10 +1,90 @@
 # Bugs Pendientes y Mejoras
 
-Última actualización: 2026-05-27
+Última actualización: 2026-05-27 (post-ejecución abril 2026)
 
 ---
 
-## 🔴 Bugs críticos (afectan la calidad del output)
+## 🔴 Bugs críticos (pendientes de fix)
+
+### BUG-6: Lácteos = 0 productos en la canasta
+
+**Archivo**: `notebooks/exploracion_productos.ipynb`, cell-23 (`GRUPOS_CANASTA`)
+**Síntoma**: el grupo Lácteos produce 0 productos — aparece vacío en el Excel de salida.
+**Causa**: las kw actuales son `['leche','yogur','queso','crema','manteca']`, que se buscan como substring en la columna `categoria` del maestro. Sin embargo, en el maestro SEPA, los productos lácteos del rubro Frescos tienen `categoria = 'Lácteos'` (string literal) — ninguna de las kw matchea ese valor.
+
+**Evidencia (análisis post-ejecución, abril 2026)**:
+```
+Candidatos en Frescos: 521
+Frescos con categoria='Lácteos':  279  ← están ahí, no se encuentran
+Frescos con 'leche' en categoria:   0
+Frescos con 'yogur' en categoria:   0
+Frescos con 'queso' en categoria:   0
+```
+
+**Fix**:
+```python
+# En GRUPOS_CANASTA, grupo 'Lácteos':
+# ANTES (no matchea nada en el maestro SEPA)
+kw=['leche','yogur','queso','crema','manteca']
+
+# DESPUÉS (coincide con el valor real de la columna categoria)
+kw=['lácteos','lacteos']
+rubros=['Frescos']
+```
+
+**Impacto**: el grupo entero queda vacío sin este fix.
+
+---
+
+### BUG-7: Azúcar, dulces y conservas contamina con carnes enlatadas
+
+**Archivo**: `notebooks/exploracion_productos.ipynb`, cell-23 (`GRUPOS_CANASTA`)
+**Síntoma**: el grupo incluye Paté Bocatti de Panceta Ahumada y Picadillo de Carne Swift Picante.
+**Causa**: ambos productos tienen `categoria='Conservas'` en el maestro — igual que los duraznos en almíbar, peras, etc. La kw `'conserva'` matchea todos sin distinción. Los `excluir_kw` operan sobre la misma columna `categoria`, por lo que no pueden distinguir conservas de frutas vs. conservas de carne: ambas tienen el mismo valor.
+
+**Evidencia**:
+```
+Paté Bocatti de Panceta Ahumada 90 Gr  | categoria=Conservas | score=0.974
+Picadillo de Carne Swift Picante 90 Gr | categoria=Conservas | score=0.972
+```
+
+**Opciones de fix**:
+- **A (recomendada)**: ampliar `seleccionar_grupo()` para aceptar `excluir_desc_kw` (filtra sobre columna `descripcion` además de `categoria`). Excluir por `['paté','picadillo','atún','sardina','caballa']`.
+- **B (quick)**: eliminar `'conserva'` de las kw del grupo — se pierden conservas de frutas pero se elimina la contaminación.
+- **C**: post-filtrado manual después de la selección automática.
+
+---
+
+### BUG-8: Carnes y fiambres incluye quesos del rubro Fiambrería
+
+**Archivo**: `notebooks/exploracion_productos.ipynb`, cell-23 (`GRUPOS_CANASTA`)
+**Síntoma**: Queso Untable Neufchafel, Queso Crema Casancrem, Queso Crema La Serenísima y otros 5+ quesos aparecen en el grupo Carnes y fiambres.
+**Causa**: la kw `'fiambre'` matchea `categoria='Fiambrería'`, que en el maestro SEPA incluye tanto fiambres reales como quesos untables y cremas de queso. Los `excluir_kw` actuales buscan `'queso untable'` en la columna `categoria`, pero el valor es `'Fiambrería'` — no tienen efecto.
+
+**Evidencia**:
+```
+Queso Untable Neufchafel sabor Salame | categoria=Fiambrería | 5 cadenas | 24 prov
+Queso Crema Clásico Casancrem         | categoria=Fiambrería | 5 cadenas | 24 prov  
+Queso Crema Light Casancrem           | categoria=Fiambrería | 5 cadenas | 24 prov
++ 4 quesos más con categoria=Fiambrería
+```
+
+**Nota**: estos quesos NO van a aparecer en el grupo Lácteos con el fix del BUG-6, porque su `categoria='Fiambrería'` (no `'Lácteos'`). Requieren fix independiente.
+
+**Fix**: ampliar `seleccionar_grupo()` con `excluir_desc_kw` (ver BUG-7 opción A) y excluir por descripción: `['queso untable','queso crema','casancrem']`.
+
+---
+
+### BUG-9: Bebidas no alcohólicas incompletas (falta yerba, té, café, agua)
+
+**Archivo**: `notebooks/exploracion_productos.ipynb`, cell-23 (`GRUPOS_CANASTA`)
+**Síntoma**: el grupo Bebidas no alcohólicas solo contiene jugos y una bebida energizante. Falta yerba mate, té, café, agua mineral — productos básicos de la canasta argentina.
+**Causa probable**: las categorías reales de estos productos en el maestro SEPA no contienen las kw actuales (`['agua','jugo','gaseosa','soda','isotónica','energizante','tónica','limonada']`). Es probable que las categorías del maestro sean literales como `'Yerba Mate'`, `'Infusiones'`, `'Aguas'`, `'Cafés y Sustitutos'`.
+**Pendiente**: verificar los valores reales de `categoria` en el maestro para los rubros Almacén/Bebidas que correspondan a estos productos.
+
+---
+
+## 🔴 Bugs críticos (resueltos)
 
 ### BUG-1: División /100 incorrecta en precios
 
@@ -144,9 +224,13 @@ canasta_sucursal['precio_imputado'] = canasta_sucursal.apply(
 
 | Bug/Mejora | Estado | Prioridad |
 |---|---|---|
+| BUG-6: Lácteos vacío (kw incorrectas) | ❌ Pendiente fix | 🔴 Alta |
+| BUG-7: Azúcar contamina con carnes lata | ❌ Pendiente fix | 🔴 Alta |
+| BUG-8: Carnes incluye quesos fiambrería | ❌ Pendiente fix | 🟡 Media |
+| BUG-9: Bebidas incompletas (yerba/té/café) | ❌ Pendiente — investigar categorías | 🟡 Media |
 | BUG-1: Factor precio /100 | ✅ Resuelto — commit e23bff5 | 🔴 Alta |
 | BUG-2: Nombres cadenas | ✅ Resuelto — commit e23bff5 | 🟡 Media |
-| BUG-3: Grupos contaminados | ✅ Resuelto — commit e23bff5 | 🟡 Media |
+| BUG-3: Grupos contaminados (originales) | ✅ Resuelto — commit e23bff5 | 🟡 Media |
 | BUG-4: "San juan" minúscula | ✅ Resuelto — commit e23bff5 | 🟢 Baja |
 | BUG-5: OOM df_enr ~10GB | ✅ Resuelto — commit fd5e014 | 🔴 Alta |
 | MEJORA-1: Parquet cache | ✅ Implementado — commit e23bff5 | 🟡 Media |

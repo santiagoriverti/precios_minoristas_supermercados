@@ -170,7 +170,57 @@ cadenas_presentes
 
 ---
 
+## Métricas de ejecución real (abril 2026, commit fd5e014)
+
+Primer run completo post-fix anti-OOM. Sin crashes. Resultados observados:
+
+| Métrica | Valor |
+|---------|-------|
+| `df_cov` (nivel producto × cadena × provincia) | 2,686,965 filas × 8 cols |
+| `df_price_stats` (nivel producto) | 98,720 filas × 5 cols |
+| Grupos corporativos activos (`id_bandera` únicos) | 5 |
+| Provincias activas | 24 |
+| Productos que pasan todos los umbrales | 3,776 |
+| Productos con maestro completo (`cand_con_maestro`) | 3,650 |
+| Productos en canasta final | 54 |
+| Cadenas comerciales identificadas nominalmente | 15 (de 33 activos) |
+| Cadenas sin nombre en diccionario ("Comercio X") | 18 |
+
+### Hallazgos críticos post-ejecución
+
+**Grupo Lácteos = 0 productos (BUG-6)**
+Las kw `['leche','yogur','queso','crema','manteca']` buscan en la columna `categoria`, pero el maestro SEPA almacena `categoria='Lácteos'` (string literal). 279 candidatos de Frescos tienen esa categoría y ninguno matchea las kw actuales.
+
+**Categorías reales en el maestro SEPA (rubro Frescos — candidatos)**:
+```
+categoria
+Lácteos          279   ← dairy products, NO 'leche' ni 'queso'
+Fiambrería       185   ← fiambres + quesos untables mezclados
+Pastas y Tapas    31
+Carnicería        13
+Frutas y Verduras  5
+```
+
+**Implicación**: las kw de `GRUPOS_CANASTA` deben coincidir con los valores literales de la columna `categoria` en el maestro, no con palabras clave descriptivas del producto.
+
+**Contaminación de grupos (BUG-7, BUG-8)**
+- `categoria='Conservas'` agrupa tanto frutas en almíbar como carnes enlatadas → Paté y Picadillo de carne contaminan el grupo Azúcar/dulces.
+- `categoria='Fiambrería'` agrupa tanto fiambres como quesos untables → Casancrem y quesos crema contaminan el grupo Carnes.
+- Ver `BUGS_Y_MEJORAS.md` BUG-7 y BUG-8 para opciones de fix.
+
+**Cadenas comerciales activas (de los 5 grupos corporativos)**:
+Con el diccionario `(id_comercio, id_bandera)`, los 5 grupos corporativos se mapean a banners reales. Los 18 "Comercio X" son comercios minoristas fuera del conjunto principal (algunos con precios atípicos ~$550k–$820k, probablemente especialidades o importados).
+
+---
+
 ## Historial de cambios
+
+### 2026-05-27 — Análisis post-ejecución: bugs en selección de grupos (BUG-6..9)
+- **BUG-6**: Lácteos = 0 — kw `['leche','yogur',...]` no matchean `categoria='Lácteos'` del maestro; fix = `kw=['lácteos','lacteos']`
+- **BUG-7**: Azúcar contamina con carnes enlatadas (`categoria='Conservas'` incluye ambas)
+- **BUG-8**: Carnes contamina con quesos de Fiambrería (`excluir_kw` opera sobre `categoria`, no `descripcion`)
+- **BUG-9**: Bebidas incompletas — yerba, té, café, agua mineral ausentes; investigar categorías reales en maestro
+- Documentados en `BUGS_Y_MEJORAS.md`, requieren fix en cell-23 y posiblemente ampliar `seleccionar_grupo()`
 
 ### 2026-05-27 — Fix OOM definitivo: rediseño anti-OOM (commit fd5e014)
 - Eliminado `df_enr` del pipeline — reemplazado por `df_cov` (producto × cadena × provincia) y `df_price_stats`
