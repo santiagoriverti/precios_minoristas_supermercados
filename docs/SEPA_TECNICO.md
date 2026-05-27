@@ -47,7 +47,22 @@ Los datos semestral cambiaron de unidad a lo largo del tiempo:
 - **Hasta ~2024**: precios en centavos → dividir /100
 - **2025B en adelante**: precios ya en pesos → FACTOR = 1 (NO dividir)
 
-### Autodetección (patrón de `analisis_SEPA_evolucion.ipynb`)
+### Autodetección implementada en `exploracion_productos.ipynb`
+
+```python
+# Después de consolidar df_suc, antes del enriquecimiento:
+_mediana_ref = df_suc['precio_promedio'].median()
+FACTOR_PRECIO = 100 if _mediana_ref > 10_000 else 1
+
+if FACTOR_PRECIO == 100:
+    df_suc['precio_promedio'] = (df_suc['precio_promedio'] / 100).astype('float32')
+```
+
+**Umbral**: mediana global del dataset > $10,000 → datos en centavos (divido ÷100). Esto funciona porque la mediana de precio de los productos en centavos ronda 100k–500k, muy lejos del rango pesos (~$500–$5,000).
+
+**Confirmación para abril 2026**: mediana raw ≈ 1,411 → FACTOR = 1 (ya en pesos). Confirmado también por `analisis_SEPA_evolucion_AMBA.ipynb` con productos de referencia específicos.
+
+### Patrón alternativo más robusto (otros notebooks)
 
 ```python
 # Usar un producto de referencia con precio conocido (sal fina ~$500-$2000 en 2026)
@@ -62,13 +77,7 @@ elif 3000 <= mediana_ref <= 500_000:
     FACTOR_PRECIO = 100    # en centavos, necesita /100
 else:
     raise ValueError(f"Mediana de referencia inesperada: {mediana_ref}")
-
-print(f"Mediana de referencia: {mediana_ref:.2f} → Factor: {FACTOR_PRECIO}")
 ```
-
-**Confirmación para abril 2026**: `analisis_SEPA_evolucion_AMBA.ipynb` procesa los mismos archivos y reporta "Mediana de referencia: 1411.00 → Factor: 1".
-
-> ⚠️ **Bug activo en `exploracion_productos.ipynb`**: cell-7 divide /100 sin autodetección. Para 2026A todos los precios del Excel de salida son 100x demasiado bajos.
 
 ---
 
@@ -103,13 +112,27 @@ NOMBRES_CADENAS_SIMPLES = {
     '13': 'Cooperativa Obrera',
     '15': 'DIA',
 }
-
-def get_nombre_cadena(id_comercio, id_bandera):
-    clave = (str(id_comercio), str(id_bandera))
-    if clave in NOMBRES_CADENAS_COMPUESTAS:
-        return NOMBRES_CADENAS_COMPUESTAS[clave]
-    return NOMBRES_CADENAS_SIMPLES.get(str(id_comercio), f'Comercio {id_comercio}')
 ```
+
+### Lookup vectorizado (patrón actual del notebook)
+
+```python
+# Construir lookup por clave compuesta id_comercio_id_bandera
+_lookup_comp = {f"{k[0]}_{k[1]}": v for k, v in _CADENAS_COMPUESTAS.items()}
+
+_ck = df['id_comercio'] + '_' + df['id_bandera']
+df['nombre_cadena'] = _ck.map(_lookup_comp)
+
+# Fallback: cadenas simples (solo por id_comercio)
+_null = df['nombre_cadena'].isna()
+df.loc[_null, 'nombre_cadena'] = df.loc[_null, 'id_comercio'].map(_CADENAS_SIMPLES)
+
+# Residuos desconocidos
+_null = df['nombre_cadena'].isna()
+df.loc[_null, 'nombre_cadena'] = 'Comercio ' + df.loc[_null, 'id_comercio']
+```
+
+> **Por qué NO usar `apply()`**: con 50M filas, `df.apply(lambda r: get_nombre_cadena(r['id_comercio'], r['id_bandera']), axis=1)` ejecuta millones de llamadas Python → agota la RAM. El lookup vectorizado con `.map()` opera en C puro.
 
 ### Implicación para el score de cobertura
 
@@ -123,20 +146,22 @@ Con los datos semestral, `MIN_CADENAS = total_cadenas` filtra por grupos corpora
 |---------|-------------|----------|
 | `Maestro de Productos Interno.xlsx` | ~176K productos, rubro/categoría/subcategoría | `producto_sepa_id` = `id_producto` |
 | `maestro_sucursales_completo.xlsx` | 3,611 sucursales con cadena, provincia, región | `id_comercio` + `id_bandera` + `id_sucursal` |
-| `maestro-provincias.xlsx` | ISO 3166-2 → nombre legible | `sucursales_provincia` |
+| `maestro-provincias.xlsx` | código SEPA → nombre legible | `sucursales_provincia` |
 
 ### Normalización de provincias (obligatoria)
 
 ```python
 df['PROVINCIA_NOMBRE'] = (
-    df['PROVINCIA_NOMBRE']
+    df['PROVINCIA'].combine_first(df['provincia'])   # combina dos fuentes
+    .str.strip()
     .str.replace(r'^Provincia de ', '', regex=True)
     .str.replace('Ciudad Autónoma de Buenos Aires', 'CABA', regex=False)
-    .str.title()   # ← fix "San juan" → "San Juan" y similares
+    .str.title()   # fix "San juan" → "San Juan" y similares
+    .str.replace('Caba', 'CABA', regex=False)  # .title() rompe CABA
 )
 ```
 
-> ⚠️ **Bug activo**: el `.str.title()` (o fix equivalente) no está aplicado actualmente. "San juan" aparece con j minúscula en el maestro de sucursales.
+El maestro de sucursales tiene `PROVINCIA` (columna del Excel) y el maestro de provincias tiene `provincia` (columna de mapping del código SEPA). Se combinan con `.combine_first()` para usar la fuente más confiable disponible.
 
 ### Regiones del maestro de sucursales
 
@@ -154,12 +179,11 @@ import numpy as np, pandas as pd
 _TMP_DIR = Path('/content/tmp_sepa')
 _TMP_DIR.mkdir(exist_ok=True)
 
-def cargar_sepa(zip_path, filename, factor_precio=1):
+def cargar_sepa(zip_path, filename):
     """
     Carga un archivo SEPA semestral de forma eficiente.
-    
-    factor_precio: 1 para datos 2025B+ (ya en pesos), 100 para datos anteriores (en centavos).
-    Usar autodetección si no se conoce el factor.
+    Devuelve precios SIN aplicar factor (valores crudos del CSV).
+    El factor de conversión se autodetecta y aplica en la celda siguiente.
     """
     # 1. Extraer .csv.gz a disco en streaming (no carga en RAM el archivo comprimido)
     tmp = _TMP_DIR / filename
@@ -178,10 +202,7 @@ def cargar_sepa(zip_path, filename, factor_precio=1):
             price_cols = [c for c in chunk.columns if c.startswith('precio_')]
             if n_dias is None:
                 n_dias = len(price_cols)
-            prices = (chunk[price_cols]
-                      .replace('NA', np.nan)
-                      .astype('float32')
-                      / factor_precio)   # ← aplicar factor correcto
+            prices = chunk[price_cols].replace('NA', np.nan).astype('float32')
             chunk  = chunk.drop(columns=price_cols)
             chunk['precio_promedio']  = prices.mean(axis=1).astype('float32')
             chunk['dias_con_precio']  = prices.notna().sum(axis=1).astype('int16')
@@ -197,6 +218,62 @@ def cargar_sepa(zip_path, filename, factor_precio=1):
 ```
 
 > **Por qué streaming a disco**: cargar el .csv.gz completo en BytesIO agota la RAM de Colab (~12 GB). El streaming escribe primero a disco y luego lee en chunks de 200K filas con tipos eficientes.
+
+---
+
+## Anti-OOM: arquitectura df_cov + df_price_stats
+
+El principal riesgo de RAM en `exploracion_productos.ipynb` no es la lectura en sí, sino mantener un DataFrame a nivel sucursal (producto × sucursal, ~50M filas) con columnas de enriquecimiento. La solución canónica es agregar inmediatamente.
+
+### El patrón (cell-14)
+
+```python
+# ── 1. Merge con geografía SOLAMENTE (no con productos todavía) ───────────────
+suc_geo = df_suc_maest[['id_comercio','id_bandera','id_sucursal','PROVINCIA','REGION']].copy()
+df_suc_enr = df_suc.merge(suc_geo, on=['id_comercio','id_bandera','id_sucursal'], how='left')
+del df_suc, suc_geo; gc.collect()
+
+# ── 2. Normalizar provincia + nombre cadena (vectorizado) ─────────────────────
+# ... (código de normalización) ...
+# Soltar columnas que ya no se necesitan para reducir el pico de RAM
+df_suc_enr.drop(columns=['sucursales_provincia','dias_con_precio','total_dias'],
+                inplace=True, errors='ignore')
+
+# ── 3. Estadísticas de precio ANTES de agregar (percentiles a nivel sucursal) ─
+df_price_stats = df_suc_enr.groupby('id_producto', sort=False)['precio_promedio'] \
+    .agg(precio_promedio='mean', precio_mediano='median').astype('float32').reset_index()
+_pq = df_suc_enr.groupby('id_producto', sort=False)['precio_promedio'] \
+    .quantile([0.25, 0.75]).unstack() \
+    .rename(columns={0.25:'precio_p25', 0.75:'precio_p75'}).astype('float32').reset_index()
+df_price_stats = df_price_stats.merge(_pq, on='id_producto', how='left')
+del _pq
+
+# ── 4. AGREGACIÓN CRÍTICA: 50M filas → 2M filas ────────────────────────────────
+df_cov = (
+    df_suc_enr
+    .groupby(['id_producto','id_bandera','nombre_cadena','PROVINCIA_NOMBRE','REGION'],
+             sort=False, dropna=False)
+    .agg(n_sucursales=('id_sucursal','count'), pct_dias=('pct_dias','mean'),
+         precio_promedio=('precio_promedio','mean'))
+    .reset_index()
+)
+del df_suc_enr; gc.collect()   # ← LIBERACIÓN CRÍTICA — RAM: ~10 GB → ~600 MB
+
+# ── 5. Merge con metadata de productos (barato: df_cov ya tiene ~2M filas) ────
+df_cov = df_cov.merge(df_prod_uniq, on='id_producto', how='left')
+```
+
+### Perfil de memoria
+
+| Frame | Filas | Columnas | RAM aprox. | Cuándo se libera |
+|-------|-------|----------|------------|-----------------|
+| `df_suc` (cargado desde parquet) | ~50M | 9 | ~5 GB | `del df_suc` en paso 1 |
+| `df_suc_enr` (pico) | ~50M | ~10 | ~7 GB | `del df_suc_enr` después del groupby |
+| `df_cov` (resultado) | ~2M | 13 | ~300 MB | `del df_cov` en cell-21 |
+| `df_price_stats` | ~170K | 5 | ~5 MB | persiste hasta export |
+| `df_cob` (cobertura producto) | ~170K | ~20 | ~20 MB | persiste hasta export |
+
+> **Regla**: nunca mantener un frame a nivel sucursal (millones de filas) más tiempo del necesario. Agregar a nivel producto inmediatamente.
 
 ---
 
@@ -221,34 +298,13 @@ La función `seleccionar_grupo(df, rubros, kw, excluir_kw, max_n)` filtra por `k
 3. Incluir categorías con `kw`
 4. Top N por `score_cobertura`
 
----
-
-## Canasta referencia (otros notebooks)
-
-Los notebooks de evolución temporal usan una **canasta fija de 30 EANs** para comparación temporal consistente. Esto es distinto al enfoque dinámico por cobertura de `exploracion_productos.ipynb`.
-
-- **Abril 2026, canasta nacional ponderada**: **$322,566 ARS**
-- **Ponderación**: Censo INDEC 2022 (45,892,285 habitantes, 24 jurisdicciones)
-- **Rango sucursal**: $271,282 – $358,177
-- **Sucursales válidas**: 2,371 (≥ 20 de 30 productos reportados)
+**Sin fallback**: si el filtro de keywords deja 0 resultados, el grupo queda vacío (preferible a incluir productos incorrectos).
 
 ---
 
 ## Trampas con dtype category
 
-### Por qué usamos dtype category
-
-Las columnas de baja cardinalidad se convierten a `category` para reducir uso de RAM:
-
-| Columna | Cardinalidad típica | Motivo |
-|---------|--------------------|----|
-| `nombre_cadena` | 5–16 valores | cadenas comerciales |
-| `REGION` | 6 valores | AMBA, Pampeana, Patagonia, Noroeste, Cuyo, Noreste |
-| `PROVINCIA_NOMBRE` | 24 valores | jurisdicciones del país |
-| `rubro` | ~20 valores | categoría de nivel alto del maestro |
-| `categoria` | ~100 valores | categoría de nivel medio del maestro |
-
-Con `category`, pandas almacena internamente un índice entero por fila y una tabla de strings únicos, en lugar de repetir el string completo en cada fila. Para un DataFrame de varios millones de filas esto puede reducir el uso de RAM a la décima parte.
+> **Nota**: el pipeline actual (`df_cov`) usa strings planos, no dtype `category`, por lo que esta trampa ya no aplica al flujo principal. Se documenta por si se re-introduce `category` en futuras optimizaciones de RAM.
 
 ### La trampa: groupby sin `observed=True`
 
@@ -260,9 +316,7 @@ Sin `observed=True`, pandas genera **el producto cartesiano de todos los niveles
 Unable to allocate 1.33 EiB for array shape (384124754222853120,)
 ```
 
-El shape astronómico `(384124754222853120,)` es el resultado de multiplicar la cantidad de niveles de todas las columnas category incluidas en el groupby (por ejemplo `nombre_cadena × REGION × rubro × categoria`), elevado a la dimensión del resultado esperado.
-
-**Cómo reproducir el error:**
+El shape astronómico es el producto cartesiano de los niveles de todas las columnas category incluidas en el groupby.
 
 ```python
 # MAL — explota en RAM con columnas category
@@ -272,13 +326,18 @@ df.groupby(['nombre_cadena', 'REGION', 'rubro', 'categoria'])['precio_promedio']
 df.groupby(['nombre_cadena', 'REGION', 'rubro', 'categoria'], observed=True)['precio_promedio'].mean()
 ```
 
-### Regla obligatoria
+**Regla**: todo `groupby()` que incluya al menos una columna de dtype `category` DEBE llevar `observed=True`.
 
-> **Todo `groupby()` que incluya al menos una columna de dtype `category` DEBE llevar `observed=True`.**
+---
 
-Esta regla aplica sin excepción en `df_enr` (el DataFrame enriquecido principal del pipeline), cuyas columnas category son: `nombre_cadena`, `REGION`, `PROVINCIA_NOMBRE`, `rubro`, `categoria`.
+## Canasta referencia (otros notebooks)
 
-La ausencia de `observed=True` no genera advertencia ni error inmediato — el proceso arranca, reserva memoria silenciosamente y muere con `MemoryError` o `Unable to allocate` mucho después de iniciar.
+Los notebooks de evolución temporal usan una **canasta fija de 30 EANs** para comparación temporal consistente. Esto es distinto al enfoque dinámico por cobertura de `exploracion_productos.ipynb`.
+
+- **Abril 2026, canasta nacional ponderada**: **$322,566 ARS**
+- **Ponderación**: Censo INDEC 2022 (45,892,285 habitantes, 24 jurisdicciones)
+- **Rango sucursal**: $271,282 – $358,177
+- **Sucursales válidas**: 2,371 (≥ 20 de 30 productos reportados)
 
 ---
 
