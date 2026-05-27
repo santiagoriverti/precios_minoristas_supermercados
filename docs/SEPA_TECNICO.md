@@ -234,6 +234,54 @@ Los notebooks de evolución temporal usan una **canasta fija de 30 EANs** para c
 
 ---
 
+## Trampas con dtype category
+
+### Por qué usamos dtype category
+
+Las columnas de baja cardinalidad se convierten a `category` para reducir uso de RAM:
+
+| Columna | Cardinalidad típica | Motivo |
+|---------|--------------------|----|
+| `nombre_cadena` | 5–16 valores | cadenas comerciales |
+| `REGION` | 6 valores | AMBA, Pampeana, Patagonia, Noroeste, Cuyo, Noreste |
+| `PROVINCIA_NOMBRE` | 24 valores | jurisdicciones del país |
+| `rubro` | ~20 valores | categoría de nivel alto del maestro |
+| `categoria` | ~100 valores | categoría de nivel medio del maestro |
+
+Con `category`, pandas almacena internamente un índice entero por fila y una tabla de strings únicos, en lugar de repetir el string completo en cada fila. Para un DataFrame de varios millones de filas esto puede reducir el uso de RAM a la décima parte.
+
+### La trampa: groupby sin `observed=True`
+
+Sin `observed=True`, pandas genera **el producto cartesiano de todos los niveles definidos** en cada columna category, no solo los pares que realmente existen en los datos.
+
+**Error real producido en este proyecto:**
+
+```
+Unable to allocate 1.33 EiB for array shape (384124754222853120,)
+```
+
+El shape astronómico `(384124754222853120,)` es el resultado de multiplicar la cantidad de niveles de todas las columnas category incluidas en el groupby (por ejemplo `nombre_cadena × REGION × rubro × categoria`), elevado a la dimensión del resultado esperado.
+
+**Cómo reproducir el error:**
+
+```python
+# MAL — explota en RAM con columnas category
+df.groupby(['nombre_cadena', 'REGION', 'rubro', 'categoria'])['precio_promedio'].mean()
+
+# BIEN — solo agrupa por combinaciones que realmente existen
+df.groupby(['nombre_cadena', 'REGION', 'rubro', 'categoria'], observed=True)['precio_promedio'].mean()
+```
+
+### Regla obligatoria
+
+> **Todo `groupby()` que incluya al menos una columna de dtype `category` DEBE llevar `observed=True`.**
+
+Esta regla aplica sin excepción en `df_enr` (el DataFrame enriquecido principal del pipeline), cuyas columnas category son: `nombre_cadena`, `REGION`, `PROVINCIA_NOMBRE`, `rubro`, `categoria`.
+
+La ausencia de `observed=True` no genera advertencia ni error inmediato — el proceso arranca, reserva memoria silenciosamente y muere con `MemoryError` o `Unable to allocate` mucho después de iniciar.
+
+---
+
 ## IPC INDEC
 
 ```python

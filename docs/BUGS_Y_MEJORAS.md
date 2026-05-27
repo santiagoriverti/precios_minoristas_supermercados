@@ -125,6 +125,21 @@ canasta_sucursal['precio_imputado'] = canasta_sucursal.apply(
 
 ---
 
+## 🔴 Bugs críticos (resueltos)
+
+### BUG-5: OOM persistente — df_enr demasiado grande para Colab
+
+**Archivo**: `notebooks/exploracion_productos.ipynb`, celda de enriquecimiento y subsiguientes
+**Síntoma**: "Tu sesión falló porque se usó toda la RAM disponible" incluso después de los fixes de apply() y observed=True.
+**Causa**: `df_enr` (producto × sucursal, ~50M filas × 20 columnas, ~10 GB) se mantenía vivo desde la celda de enriquecimiento hasta los heatmaps (7 celdas después). Los groupby sobre ese frame en cells 15, 16 y 18 multiplicaban el uso de RAM.
+**Fix**: Rediseño arquitectónico anti-OOM:
+- Agregar `df_suc_enr` inmediatamente a `df_cov` (producto × cadena × provincia, ~2M filas) y `df_price_stats` (producto, ~170K filas)
+- `del df_suc_enr; gc.collect()` en cuanto termina la agregación → RAM pasa de ~10 GB a ~600 MB
+- Todos los cálculos posteriores operan sobre los frames pequeños
+**Impacto**: Soluciona el crash de RAM definitivamente sin cambiar los resultados.
+
+---
+
 ## Estado de fixes
 
 | Bug/Mejora | Estado | Prioridad |
@@ -133,6 +148,7 @@ canasta_sucursal['precio_imputado'] = canasta_sucursal.apply(
 | BUG-2: Nombres cadenas | ✅ Resuelto — commit e23bff5 | 🟡 Media |
 | BUG-3: Grupos contaminados | ✅ Resuelto — commit e23bff5 | 🟡 Media |
 | BUG-4: "San juan" minúscula | ✅ Resuelto — commit e23bff5 | 🟢 Baja |
+| BUG-5: OOM df_enr ~10GB | ✅ Resuelto — commit [ver abajo] | 🔴 Alta |
 | MEJORA-1: Parquet cache | ✅ Implementado — commit e23bff5 | 🟡 Media |
 | MEJORA-2: Deduplicación | ⏳ Pendiente | 🟢 Baja |
 | MEJORA-3: Nombres cadenas output | ✅ Implementado — commit e23bff5 | 🟢 Baja |
