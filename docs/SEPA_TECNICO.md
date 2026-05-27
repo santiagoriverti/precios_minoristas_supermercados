@@ -1,6 +1,6 @@
 # SEPA — Referencia Técnica
 
-Última actualización: 2026-05-27 (post-ejecución abril 2026)
+Última actualización: 2026-05-27 (segunda ejecución + fixes BUG-6..11)
 
 ## Dos formatos completamente distintos
 
@@ -20,7 +20,7 @@ carga/
 - **Columnas de precio**: `precio_YYYYMMDD` (una por día del período — formato wide)
 - **Precios**: entero — VER SECCIÓN FACTOR_PRECIO
 - **Valores faltantes**: string `'NA'` (no Python NaN, hay que reemplazar explícitamente)
-- `id_producto`: EAN/GTIN de 13 dígitos, siempre como string
+- `id_producto`: EAN/GTIN; la mayoría son 13 dígitos, algunos son más cortos (UPC-8, UPC-12). **Siempre leer como string** (`dtype={'id_producto':'str'}`). Si en algún paso del pipeline se convierte a int64, los ceros iniciales se pierden al exportar. Fix: `df['id_producto'].astype(str).str.zfill(13)` antes de exportar a Excel.
 
 ### Formato diario
 
@@ -324,28 +324,55 @@ kw=['lácteos','lacteos']  # → matchea categoria='Lácteos'
 
 La función `seleccionar_grupo(df, rubros, kw, excluir_kw, max_n)` filtra por `kw` como substring sobre el nombre de categoría. Esto genera falsos positivos:
 
-| Keyword | Falso positivo |
-|---------|----------------|
-| `'te'` | matchea 'Espumantes' |
-| `'crema'` | matchea 'Mayonesa Receta Casera con Crema' |
-| `'postre'` | matchea 'Repostería y Postres' |
+| Keyword | Falso positivo / Falso negativo |
+|---------|--------------------------------|
+| `'te'` | matchea 'Espumantes' (falso positivo) |
+| `'crema'` | matchea 'Mayonesa Receta Casera con Crema' (falso positivo) |
+| `'postre'` | matchea 'Repostería y Postres' (falso positivo) |
 | `'conserva'` | matchea 'Conservas' (incluye carnes enlatadas además de frutas) |
 | `'fiambre'` | matchea 'Fiambrería' (incluye quesos untables además de fiambres) |
+| `'carne'` | **NO** matchea 'Carnicería' — `'carne' in 'Carnicería'` → `False` (falso negativo) |
 
 **Regla**: siempre revisar el output de cada grupo y añadir `excluir_kw` cuando hay contaminación. Para categorías heterogéneas (`Conservas`, `Fiambrería`) puede ser necesario filtrar sobre la columna `descripcion` además de `categoria`.
 
-### Orden de aplicación en `seleccionar_grupo()`
+### Firma actual de `seleccionar_grupo()`
+
+```python
+def seleccionar_grupo(df, rubros, keywords, excluir_kw, max_n, excluir_subcat=None):
+    subset = df[df['rubro'].isin(rubros)].copy()
+    if excluir_kw and len(subset) > 0:
+        excl_mask = subset['categoria'].str.contains(
+            '|'.join(excluir_kw), case=False, na=False)
+        subset = subset[~excl_mask]
+    if excluir_subcat and len(subset) > 0:
+        subset = subset[~subset['subcategoria'].isin(excluir_subcat)]
+    if keywords and len(subset) > 0:
+        incl_mask = subset['categoria'].str.contains(
+            '|'.join(keywords), case=False, na=False)
+        subset = subset[incl_mask]
+    return subset.sort_values('score_cobertura', ascending=False).head(max_n)
+```
+
+### Orden de aplicación
 
 1. Filtrar por `rubro`
-2. Excluir categorías en `excluir_kw` (previene falsos positivos por substring)
-3. Incluir categorías con `kw`
-4. Top N por `score_cobertura`
+2. Excluir por `excluir_kw` (substring sobre `categoria` — nivel categoría)
+3. Excluir por `excluir_subcat` (coincidencia exacta sobre `subcategoria` — nivel subcategoría, más preciso para categorías heterogéneas)
+4. Incluir por `kw` (substring sobre `categoria`)
+5. Top N por `score_cobertura`
 
 **Sin fallback**: si el filtro de keywords deja 0 resultados, el grupo queda vacío (preferible a incluir productos incorrectos).
 
-### Limitación actual: `excluir_kw` solo opera sobre `categoria`
+### `excluir_subcat` vs `excluir_kw`
 
-El parámetro `excluir_kw` actual busca como substring en la columna `categoria`. No puede distinguir productos dentro de la misma categoría (e.g., Paté vs. Duraznos, ambos `categoria='Conservas'`). Para este caso se necesita ampliar `seleccionar_grupo()` con un parámetro `excluir_desc_kw` que filtre sobre la columna `descripcion`.
+`excluir_subcat` opera sobre la columna `subcategoria` con coincidencia exacta (`.isin()`), lo que permite descartar subcategorías específicas dentro de una categoría heterogénea sin afectar al resto.
+
+```python
+# Problema: categoria='Conservas' tiene Duraznos en almíbar Y Patés/Picadillos
+# excluir_kw=['paté'] no funciona — busca 'paté' en 'Conservas' → False
+# excluir_subcat=['Patés y Picadillos'] funciona — exacto sobre subcategoria
+'excluir_subcat': ['Patés y Picadillos', 'Conservas de Pescado']
+```
 
 ---
 

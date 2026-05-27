@@ -1,30 +1,64 @@
 # Bugs Pendientes y Mejoras
 
-Última actualización: 2026-05-27 (post-ejecución abril 2026)
+Última actualización: 2026-05-27 (segunda ejecución con fixes + revisión Excel)
 
 ---
 
 ## 🔴 Bugs críticos (pendientes de fix)
 
-### BUG-6: Lácteos = 0 productos en la canasta
+### BUG-10: `id_producto` exportado como entero — EANs con ceros iniciales se truncan
+
+**Archivo**: `notebooks/exploracion_productos.ipynb`, cell-27 (export Excel)
+**Síntoma**: EANs de menos de 13 dígitos (ej. código interno `78933354`) se exportan sin ceros iniciales. Al abrir el Excel, el EAN-13 debería ser `0000078933354`, pero se ve `78933354`. Afecta a ~93 productos en la hoja Candidatos.
+**Causa**: `id_producto` se almacena como int64 en algún punto del pipeline. Al escribir en Excel mediante openpyxl, los enteros se formatean sin relleno.
+**Fix aplicado** (cell-27, antes de construir el ExcelWriter):
+```python
+# Preservar EANs con ceros iniciales
+canasta_export['id_producto']    = canasta_export['id_producto'].astype(str).str.zfill(13)
+candidatos_export['id_producto'] = candidatos_export['id_producto'].astype(str).str.zfill(13)
+```
+**Impacto**: sin el fix, cualquier notebook consumidor que intente hacer merge por EAN-13 perdería 93 productos. El `.str.zfill(13)` no altera EANs de 13 dígitos (solo añade ceros iniciales a los más cortos).
+
+---
+
+### BUG-11: `'carne'` no es substring de `'Carnicería'` — productos de ese rubro no se incluían
+
+**Archivo**: `notebooks/exploracion_productos.ipynb`, cell-23 (`GRUPOS_CANASTA`)
+**Síntoma**: los 13 candidatos de `categoria='Carnicería'` (Leberwurst Paladini score=0.97, Salamín Bocatti score=0.93, etc.) nunca aparecían en el grupo Carnes y fiambres, aunque eran los de mayor score.
+**Causa**: la kw `'carne'` busca como substring en el valor de `categoria`. El valor literal es `'Carnicería'` — cuyas primeras 5 letras son `'carni'`, no `'carne'`. Python `'carne' in 'Carnicería'` → `False`.
+**Fix aplicado** (cell-23, kw del grupo Carnes y fiambres):
+```python
+# ANTES — no matcheaba 'Carnicería'
+kw=['fiambre','embutido','carne','salchicha','pollo','atún','atun']
+
+# DESPUÉS — añadido 'carnicería' y 'carniceria' explícitamente
+kw=['fiambre','embutido','carne','carnicería','carniceria','salchicha','pollo','atún','atun']
+```
+**Impacto**: sin este fix, los embutidos curados de alta cobertura (Leberwurst, Salamín) quedan fuera de la canasta.
+
+---
+
+## 🔴 Bugs críticos (resueltos)
+
+### BUG-6: Lácteos = 0 productos en la canasta ✅ Resuelto — commit 3c66c3c
 
 **Archivo**: `notebooks/exploracion_productos.ipynb`, cell-23 (`GRUPOS_CANASTA`)
 **Síntoma**: el grupo Lácteos produce 0 productos — aparece vacío en el Excel de salida.
-**Causa**: las kw actuales son `['leche','yogur','queso','crema','manteca']`, que se buscan como substring en la columna `categoria` del maestro. Sin embargo, en el maestro SEPA, los productos lácteos del rubro Frescos tienen `categoria = 'Lácteos'` (string literal) — ninguna de las kw matchea ese valor.
+**Causa**: las kw anteriores eran `['leche','yogur','queso','crema','manteca']`, que se buscan como substring en la columna `categoria` del maestro. Sin embargo, en el maestro SEPA, los productos lácteos del rubro Frescos tienen `categoria = 'Lácteos'` (string literal) — ninguna de las kw matcheaba ese valor.
 
-**Evidencia (análisis post-ejecución, abril 2026)**:
+**Evidencia (análisis post-ejecución, primera ejecución abril 2026)**:
 ```
 Candidatos en Frescos: 521
-Frescos con categoria='Lácteos':  279  ← están ahí, no se encuentran
+Frescos con categoria='Lácteos':  279  ← estaban ahí, no se encontraban
 Frescos con 'leche' en categoria:   0
 Frescos con 'yogur' en categoria:   0
 Frescos con 'queso' en categoria:   0
 ```
 
-**Fix**:
+**Fix aplicado**:
 ```python
 # En GRUPOS_CANASTA, grupo 'Lácteos':
-# ANTES (no matchea nada en el maestro SEPA)
+# ANTES (no matcheaba nada en el maestro SEPA)
 kw=['leche','yogur','queso','crema','manteca']
 
 # DESPUÉS (coincide con el valor real de la columna categoria)
@@ -32,55 +66,57 @@ kw=['lácteos','lacteos']
 rubros=['Frescos']
 ```
 
-**Impacto**: el grupo entero queda vacío sin este fix.
+**Resultado verificado (segunda ejecución)**: 8 productos Lácteos correctos en la canasta.
 
 ---
 
-### BUG-7: Azúcar, dulces y conservas contamina con carnes enlatadas
+### BUG-7: Azúcar, dulces y conservas contamina con carnes enlatadas ✅ Resuelto — commit 3c66c3c
 
 **Archivo**: `notebooks/exploracion_productos.ipynb`, cell-23 (`GRUPOS_CANASTA`)
-**Síntoma**: el grupo incluye Paté Bocatti de Panceta Ahumada y Picadillo de Carne Swift Picante.
-**Causa**: ambos productos tienen `categoria='Conservas'` en el maestro — igual que los duraznos en almíbar, peras, etc. La kw `'conserva'` matchea todos sin distinción. Los `excluir_kw` operan sobre la misma columna `categoria`, por lo que no pueden distinguir conservas de frutas vs. conservas de carne: ambas tienen el mismo valor.
+**Síntoma**: el grupo incluía Paté Bocatti de Panceta Ahumada y Picadillo de Carne Swift Picante.
+**Causa**: ambos productos tienen `categoria='Conservas'` en el maestro — igual que los duraznos en almíbar, peras, etc. La kw `'conserva'` matcheaba todos sin distinción. Los `excluir_kw` operan sobre la misma columna `categoria` y no pueden distinguir dentro del mismo valor.
 
-**Evidencia**:
-```
-Paté Bocatti de Panceta Ahumada 90 Gr  | categoria=Conservas | score=0.974
-Picadillo de Carne Swift Picante 90 Gr | categoria=Conservas | score=0.972
+**Fix aplicado**: nuevo parámetro `excluir_subcat` en `seleccionar_grupo()` que filtra por la columna `subcategoria` (nivel más granular):
+```python
+excluir_subcat=['Patés y Picadillos', 'Conservas de Pescado']
 ```
 
-**Opciones de fix**:
-- **A (recomendada)**: ampliar `seleccionar_grupo()` para aceptar `excluir_desc_kw` (filtra sobre columna `descripcion` además de `categoria`). Excluir por `['paté','picadillo','atún','sardina','caballa']`.
-- **B (quick)**: eliminar `'conserva'` de las kw del grupo — se pierden conservas de frutas pero se elimina la contaminación.
-- **C**: post-filtrado manual después de la selección automática.
+**Resultado verificado (segunda ejecución)**: grupo Azúcar/dulces sin carnes enlatadas.
 
 ---
 
-### BUG-8: Carnes y fiambres incluye quesos del rubro Fiambrería
+### BUG-8: Carnes y fiambres incluye quesos del rubro Fiambrería ✅ Resuelto — commit 3c66c3c
 
 **Archivo**: `notebooks/exploracion_productos.ipynb`, cell-23 (`GRUPOS_CANASTA`)
-**Síntoma**: Queso Untable Neufchafel, Queso Crema Casancrem, Queso Crema La Serenísima y otros 5+ quesos aparecen en el grupo Carnes y fiambres.
-**Causa**: la kw `'fiambre'` matchea `categoria='Fiambrería'`, que en el maestro SEPA incluye tanto fiambres reales como quesos untables y cremas de queso. Los `excluir_kw` actuales buscan `'queso untable'` en la columna `categoria`, pero el valor es `'Fiambrería'` — no tienen efecto.
+**Síntoma**: Queso Untable Neufchafel, Queso Crema Casancrem, Queso Crema La Serenísima y otros quesos aparecían en el grupo Carnes y fiambres.
+**Causa**: la kw `'fiambre'` matcheaba `categoria='Fiambrería'`, que en el maestro SEPA incluye tanto fiambres reales como quesos untables y cremas de queso. Los `excluir_kw` anteriores buscaban `'queso untable'` en la columna `categoria`, pero el valor literal es `'Fiambrería'` — no tenían efecto.
 
-**Evidencia**:
-```
-Queso Untable Neufchafel sabor Salame | categoria=Fiambrería | 5 cadenas | 24 prov
-Queso Crema Clásico Casancrem         | categoria=Fiambrería | 5 cadenas | 24 prov  
-Queso Crema Light Casancrem           | categoria=Fiambrería | 5 cadenas | 24 prov
-+ 4 quesos más con categoria=Fiambrería
+**Fix aplicado**: nuevo parámetro `excluir_subcat` en `seleccionar_grupo()`:
+```python
+excluir_subcat=['Quesos Untables', 'Quesos Semiduros', 'Quesos Rallados',
+                'Quesos Blandos', 'Quesos Duros', 'Quesos Especiales', 'Dulces']
 ```
 
-**Nota**: estos quesos NO van a aparecer en el grupo Lácteos con el fix del BUG-6, porque su `categoria='Fiambrería'` (no `'Lácteos'`). Requieren fix independiente.
+**Resultado verificado (segunda ejecución)**: los 6 productos Carnes son fiambres legítimos (Leberwurst, Salamín, Paleta, Salame, Pepperoni, Bondiola).
 
-**Fix**: ampliar `seleccionar_grupo()` con `excluir_desc_kw` (ver BUG-7 opción A) y excluir por descripción: `['queso untable','queso crema','casancrem']`.
+**Nota**: estos quesos tampoco aparecen en el grupo Lácteos (su `categoria='Fiambrería'`, no `'Lácteos'`). Son candidatos para un grupo Quesos propio en el futuro.
 
 ---
 
-### BUG-9: Bebidas no alcohólicas incompletas (falta yerba, té, café, agua)
+### BUG-9: Bebidas no alcohólicas incompletas (falta yerba, té, café) ✅ Resuelto — commit 3c66c3c
 
 **Archivo**: `notebooks/exploracion_productos.ipynb`, cell-23 (`GRUPOS_CANASTA`)
-**Síntoma**: el grupo Bebidas no alcohólicas solo contiene jugos y una bebida energizante. Falta yerba mate, té, café, agua mineral — productos básicos de la canasta argentina.
-**Causa probable**: las categorías reales de estos productos en el maestro SEPA no contienen las kw actuales (`['agua','jugo','gaseosa','soda','isotónica','energizante','tónica','limonada']`). Es probable que las categorías del maestro sean literales como `'Yerba Mate'`, `'Infusiones'`, `'Aguas'`, `'Cafés y Sustitutos'`.
-**Pendiente**: verificar los valores reales de `categoria` en el maestro para los rubros Almacén/Bebidas que correspondan a estos productos.
+**Síntoma**: el grupo Bebidas no alcohólicas solo contenía jugos y una bebida energizante. Faltaban yerba mate, té, café — productos básicos de la canasta argentina.
+**Causa**: `rubros=['Bebidas']` únicamente. Las infusiones (yerba, té, café) viven en `rubro='Almacén'`, `categoria='Infusiones'` en el maestro SEPA.
+
+**Fix aplicado**:
+```python
+'rubros': ['Bebidas', 'Almacén'],   # Almacén contiene Infusiones (yerba/té/café)
+'kw': ['agua', 'gaseosa', 'jugo', 'saborizada', 'infusion', 'bebida herbal'],
+# 'infusion' como substring matchea 'Infusiones'
+```
+
+**Resultado verificado (segunda ejecución)**: Yerba Liebig, Café Dolca, Té Inti Grey aparecen en el grupo.
 
 ---
 
@@ -224,10 +260,12 @@ canasta_sucursal['precio_imputado'] = canasta_sucursal.apply(
 
 | Bug/Mejora | Estado | Prioridad |
 |---|---|---|
-| BUG-6: Lácteos vacío (kw incorrectas) | ❌ Pendiente fix | 🔴 Alta |
-| BUG-7: Azúcar contamina con carnes lata | ❌ Pendiente fix | 🔴 Alta |
-| BUG-8: Carnes incluye quesos fiambrería | ❌ Pendiente fix | 🟡 Media |
-| BUG-9: Bebidas incompletas (yerba/té/café) | ❌ Pendiente — investigar categorías | 🟡 Media |
+| BUG-10: id_producto int64 pierde ceros iniciales | ✅ Resuelto — str.zfill(13) en cell-27 | 🔴 Alta |
+| BUG-11: 'carne' ≠ substring 'Carnicería' | ✅ Resuelto — kw ampliadas en cell-23 | 🟡 Media |
+| BUG-6: Lácteos vacío (kw incorrectas) | ✅ Resuelto — commit 3c66c3c | 🔴 Alta |
+| BUG-7: Azúcar contamina con carnes lata | ✅ Resuelto — commit 3c66c3c | 🔴 Alta |
+| BUG-8: Carnes incluye quesos fiambrería | ✅ Resuelto — commit 3c66c3c | 🟡 Media |
+| BUG-9: Bebidas incompletas (yerba/té/café) | ✅ Resuelto — commit 3c66c3c | 🟡 Media |
 | BUG-1: Factor precio /100 | ✅ Resuelto — commit e23bff5 | 🔴 Alta |
 | BUG-2: Nombres cadenas | ✅ Resuelto — commit e23bff5 | 🟡 Media |
 | BUG-3: Grupos contaminados (originales) | ✅ Resuelto — commit e23bff5 | 🟡 Media |

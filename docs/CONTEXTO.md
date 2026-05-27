@@ -1,6 +1,6 @@
 # Contexto del Proyecto — Precios Minoristas SEPA
 
-Última actualización: 2026-05-27
+Última actualización: 2026-05-27 (segunda ejecución con todos los fixes)
 
 ## Objetivo
 
@@ -186,34 +186,53 @@ Primer run completo post-fix anti-OOM. Sin crashes. Resultados observados:
 | Cadenas comerciales identificadas nominalmente | 15 (de 33 activos) |
 | Cadenas sin nombre en diccionario ("Comercio X") | 18 |
 
-### Hallazgos críticos post-ejecución
+### Hallazgos post-primera ejecución (bugs identificados — ya resueltos)
 
-**Grupo Lácteos = 0 productos (BUG-6)**
-Las kw `['leche','yogur','queso','crema','manteca']` buscan en la columna `categoria`, pero el maestro SEPA almacena `categoria='Lácteos'` (string literal). 279 candidatos de Frescos tienen esa categoría y ninguno matchea las kw actuales.
+**Grupo Lácteos = 0 productos (BUG-6 → ✅ Resuelto)**
+Las kw anteriores no matcheaban `categoria='Lácteos'` (string literal en el maestro). Fix: `kw=['lácteos','lacteos']`.
 
-**Categorías reales en el maestro SEPA (rubro Frescos — candidatos)**:
-```
-categoria
-Lácteos          279   ← dairy products, NO 'leche' ni 'queso'
-Fiambrería       185   ← fiambres + quesos untables mezclados
-Pastas y Tapas    31
-Carnicería        13
-Frutas y Verduras  5
-```
+**Contaminación de grupos (BUG-7, BUG-8 → ✅ Resueltos)**
+- `categoria='Conservas'` incluye frutas Y carnes enlatadas → fix: `excluir_subcat=['Patés y Picadillos','Conservas de Pescado']`
+- `categoria='Fiambrería'` incluye fiambres Y quesos untables → fix: `excluir_subcat=['Quesos Untables',...]`
 
-**Implicación**: las kw de `GRUPOS_CANASTA` deben coincidir con los valores literales de la columna `categoria` en el maestro, no con palabras clave descriptivas del producto.
+**Bebidas incompletas (BUG-9 → ✅ Resuelto)**
+Yerba/té/café viven en `rubro='Almacén'`, `categoria='Infusiones'`. Fix: añadir `'Almacén'` a los rubros de Bebidas no alcohólicas.
 
-**Contaminación de grupos (BUG-7, BUG-8)**
-- `categoria='Conservas'` agrupa tanto frutas en almíbar como carnes enlatadas → Paté y Picadillo de carne contaminan el grupo Azúcar/dulces.
-- `categoria='Fiambrería'` agrupa tanto fiambres como quesos untables → Casancrem y quesos crema contaminan el grupo Carnes.
-- Ver `BUGS_Y_MEJORAS.md` BUG-7 y BUG-8 para opciones de fix.
+**`'carne'` ≠ substring de `'Carnicería'` (BUG-11 → ✅ Resuelto)**
+Los 13 candidatos de `categoria='Carnicería'` (embutidos curados) no aparecían porque `'carne' in 'Carnicería'` → `False`. Fix: añadir `'carnicería','carniceria'` a las kw.
+
+**id_producto exportado como entero (BUG-10 → ✅ Resuelto)**
+~93 EANs cortos perdían sus ceros iniciales. Fix: `str.zfill(13)` en cell-27 antes del export.
 
 **Cadenas comerciales activas (de los 5 grupos corporativos)**:
 Con el diccionario `(id_comercio, id_bandera)`, los 5 grupos corporativos se mapean a banners reales. Los 18 "Comercio X" son comercios minoristas fuera del conjunto principal (algunos con precios atípicos ~$550k–$820k, probablemente especialidades o importados).
 
+### Hallazgos de revisión del Excel de salida
+
+**Productos no alimentarios en Candidatos**:
+~37 productos (impresoras, TVs, electrodomésticos, artículos de Bazar) superan los umbrales de cobertura porque se venden en supermercados a nivel nacional. No son bugs — los umbrales son por cobertura, no por categoría. El economista debe filtrarlos manualmente o se puede agregar un filtro por `rubro not in ['Bazar','Electrónica','Limpieza del Hogar']`.
+
+**EAN duplicados en Candidatos**:
+~14 pares de `(descripcion, marca)` idénticos con distinto `id_producto`. Son SKUs diferentes (distinto packaging, gramaje, o presentación con código propio). Precio puede diferir ~5–10%. No son bugs — el EAN distingue variantes.
+
+**Contenido real de `categoria='Carnicería'`**:
+Los 13 productos son **embutidos curados** (Leberwurst, Salamín, Bondiola, Paleta), NO carnes frescas. Las carnes frescas no tienen cobertura nacional suficiente para superar los umbrales dinámicos (MIN_CADENAS=5, MIN_PROVINCIAS=24).
+
 ---
 
 ## Historial de cambios
+
+### 2026-05-27 — Fix BUG-10/11 + nueva firma seleccionar_grupo() (este commit)
+- **BUG-10**: `id_producto` exportado como int64 → EANs con ceros iniciales truncados. Fix: `str.zfill(13)` en cell-27 para `canasta_export` y `candidatos_export`
+- **BUG-11**: `'carne'` no es substring de `'Carnicería'` → 13 embutidos curados de alta cobertura nunca incluidos. Fix: añadidas `'carnicería','carniceria'` a las kw del grupo Carnes
+- **Nueva firma**: `seleccionar_grupo(df, rubros, kw, excluir_kw, max_n, excluir_subcat=None)` — nuevo parámetro `excluir_subcat` filtra por columna `subcategoria` para categorías heterogéneas
+- Fixes BUG-6..9 de commit 3c66c3c verificados con segunda ejecución: 8 Lácteos, 6 Carnes limpios, Bebidas con yerba/té/café
+
+### 2026-05-27 — Fix selección de grupos BUG-6..9 (commit 3c66c3c)
+- **BUG-6**: Lácteos = 0 → `kw=['lácteos','lacteos']` matchea el valor literal de `categoria` en el maestro; verificado: 8 Lácteos correctos
+- **BUG-7**: Azúcar contamina con Paté/Picadillo → `excluir_subcat=['Patés y Picadillos','Conservas de Pescado']`
+- **BUG-8**: Carnes contamina con quesos de Fiambrería → `excluir_subcat=['Quesos Untables',...]`
+- **BUG-9**: Bebidas sin yerba/té/café → añadido `rubro='Almacén'` + kw `'infusion'`; ahora: Yerba Liebig, Café Dolca, Té Inti Grey
 
 ### 2026-05-27 — Análisis post-ejecución: bugs en selección de grupos (BUG-6..9)
 - **BUG-6**: Lácteos = 0 — kw `['leche','yogur',...]` no matchean `categoria='Lácteos'` del maestro; fix = `kw=['lácteos','lacteos']`
