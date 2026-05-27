@@ -129,12 +129,12 @@ canasta_sucursal['precio_imputado'] = canasta_sucursal.apply(
 
 | Bug/Mejora | Estado | Prioridad |
 |---|---|---|
-| BUG-1: Factor precio /100 | ⏳ Pendiente | 🔴 Alta |
-| BUG-2: Nombres cadenas | ⏳ Pendiente | 🟡 Media |
-| BUG-3: Grupos contaminados | ⏳ Pendiente | 🟡 Media |
-| BUG-4: "San juan" minúscula | ⏳ Pendiente | 🟢 Baja |
-| MEJORA-1: Parquet cache | ⏳ Pendiente | 🟡 Media |
+| BUG-1: Factor precio /100 | ✅ Resuelto — commit e23bff5 | 🔴 Alta |
+| BUG-2: Nombres cadenas | ✅ Resuelto — commit e23bff5 | 🟡 Media |
+| BUG-3: Grupos contaminados | ✅ Resuelto — commit e23bff5 | 🟡 Media |
+| BUG-4: "San juan" minúscula | ✅ Resuelto — commit e23bff5 | 🟢 Baja |
+| MEJORA-1: Parquet cache | ✅ Implementado — commit e23bff5 | 🟡 Media |
 | MEJORA-2: Deduplicación | ⏳ Pendiente | 🟢 Baja |
-| MEJORA-3: Nombres cadenas output | ⏳ Pendiente | 🟢 Baja |
+| MEJORA-3: Nombres cadenas output | ✅ Implementado — commit e23bff5 | 🟢 Baja |
 | MEJORA-4: Canasta imputada | ⏳ Pendiente | 🟢 Baja |
 | MEJORA-5: Mapa Folium | ⏳ Pendiente | 🟢 Baja |
