@@ -1,12 +1,68 @@
 # Bugs Pendientes y Mejoras
 
-Última actualización: 2026-05-27 (segunda ejecución con fixes + revisión Excel)
+Última actualización: 2026-05-27 (tercera ejecución — revisión Excel exhaustiva)
 
 ---
 
 ## 🔴 Bugs críticos (pendientes de fix)
 
-### BUG-10: `id_producto` exportado como entero — EANs con ceros iniciales se truncan
+> ✅ Todos los bugs críticos están resueltos. Ver sección "Resueltos" más abajo.
+
+---
+
+## 🔴 Bugs críticos (resueltos — revisión Excel tercera ejecución)
+
+### BUG-12: "Cabo Metálico" y otros implementos físicos en Limpieza del hogar ✅ Resuelto — este commit
+
+**Archivo**: `notebooks/exploracion_productos.ipynb`, cell-23 (`GRUPOS_CANASTA`)
+**Síntoma**: el grupo Limpieza del hogar incluía "Cabo Metálico Glow 1 Un" y potencialmente escobas y plumeros — implementos físicos que no son productos de limpieza para seguimiento de precios.
+**Causa**: `categoria='Accesorios de Limpieza'` agrupa tanto productos de limpieza (escobillas de inodoro) como implementos físicos (cabos, escobas, plumeros). El filtro sin `excluir_subcat` los toma todos.
+**Evidencia**:
+```
+Cabo Metálico Glow 1 Un | subcategoria=Palas y Cabos | score=0.975
+Escoba sin Cabo Virulana | subcategoria=Escobas y Escobillones | score=0.934
+```
+**Fix aplicado**:
+```python
+'excluir_subcat': ['Palas y Cabos', 'Escobas y Escobillones', 'Plumeros y Limpiavidrios']
+```
+**Resultado esperado**: Cabo Metálico reemplazado por un producto de limpieza real (lavandina, detergente, desinfectante).
+
+---
+
+### BUG-13: Tintura de cabello y protector térmico en Higiene y cuidado personal ✅ Resuelto — este commit
+
+**Archivo**: `notebooks/exploracion_productos.ipynb`, cell-23 (`GRUPOS_CANASTA`)
+**Síntoma**: "Coloración en Crema N°3 Issue" (tintura) y "Protector Térmico sin Fijacion Spray Roby" (styling) ocupaban los puestos 3 y 4 del grupo, desplazando a desodorantes.
+**Causa**: `subcategoria='Coloración'` y `subcategoria='Fijación'` tienen alta cobertura nacional (score ~0.988) pero son productos de beauty/styling, no higiene básica.
+**Evidencia — grupo antes del fix**:
+```
+1. Jabón Plusbelle        (0.994)  ✅ higiene
+2. Crema Dermaglós        (0.993)  ✅ cuidado facial
+3. Protector Térmico Roby (0.989)  ❌ fijación de cabello
+4. Tintura Issue          (0.988)  ❌ coloración
+5. Alcohol Bialcohol      (0.987)  ✅ higiene
+6. Crema Corporal St Ives (0.982)  ✅ cuidado corporal
+```
+**Fix aplicado**:
+```python
+'excluir_subcat': ['Coloración', 'Fijación']
+```
+**Resultado esperado — grupo tras el fix**:
+```
+1. Jabón Plusbelle           (0.994)  ✅
+2. Crema Dermaglós           (0.993)  ✅
+3. Alcohol Bialcohol         (0.987)  ✅
+4. Crema Corporal St Ives    (0.982)  ✅
+5. Desodorante Dove Mujer    (0.958)  ✅
+6. Desodorante Dove Hombre   (0.954)  ✅
+```
+
+---
+
+## 🔴 Bugs críticos (resueltos — revisión Excel segunda ejecución)
+
+### BUG-10: `id_producto` exportado como entero — EANs con ceros iniciales se truncan ✅ Resuelto — commit f67de87
 
 **Archivo**: `notebooks/exploracion_productos.ipynb`, cell-27 (export Excel)
 **Síntoma**: EANs de menos de 13 dígitos (ej. código interno `78933354`) se exportan sin ceros iniciales. Al abrir el Excel, el EAN-13 debería ser `0000078933354`, pero se ve `78933354`. Afecta a ~93 productos en la hoja Candidatos.
@@ -21,7 +77,7 @@ candidatos_export['id_producto'] = candidatos_export['id_producto'].astype(str).
 
 ---
 
-### BUG-11: `'carne'` no es substring de `'Carnicería'` — productos de ese rubro no se incluían
+### BUG-11: `'carne'` no es substring de `'Carnicería'` — productos de ese rubro no se incluían ✅ Resuelto — commit f67de87
 
 **Archivo**: `notebooks/exploracion_productos.ipynb`, cell-23 (`GRUPOS_CANASTA`)
 **Síntoma**: los 13 candidatos de `categoria='Carnicería'` (Leberwurst Paladini score=0.97, Salamín Bocatti score=0.93, etc.) nunca aparecían en el grupo Carnes y fiambres, aunque eran los de mayor score.
@@ -260,19 +316,21 @@ canasta_sucursal['precio_imputado'] = canasta_sucursal.apply(
 
 | Bug/Mejora | Estado | Prioridad |
 |---|---|---|
-| BUG-10: id_producto int64 pierde ceros iniciales | ✅ Resuelto — str.zfill(13) en cell-27 | 🔴 Alta |
-| BUG-11: 'carne' ≠ substring 'Carnicería' | ✅ Resuelto — kw ampliadas en cell-23 | 🟡 Media |
-| BUG-6: Lácteos vacío (kw incorrectas) | ✅ Resuelto — commit 3c66c3c | 🔴 Alta |
-| BUG-7: Azúcar contamina con carnes lata | ✅ Resuelto — commit 3c66c3c | 🔴 Alta |
-| BUG-8: Carnes incluye quesos fiambrería | ✅ Resuelto — commit 3c66c3c | 🟡 Media |
+| BUG-13: Tintura/Protector en Higiene | ✅ Resuelto — este commit | 🟡 Media |
+| BUG-12: Cabo Metálico en Limpieza | ✅ Resuelto — este commit | 🟡 Media |
+| BUG-11: 'carne' ≠ substring 'Carnicería' | ✅ Resuelto — commit f67de87 | 🟡 Media |
+| BUG-10: id_producto int64 pierde ceros iniciales | ✅ Resuelto — commit f67de87 | 🔴 Alta |
 | BUG-9: Bebidas incompletas (yerba/té/café) | ✅ Resuelto — commit 3c66c3c | 🟡 Media |
-| BUG-1: Factor precio /100 | ✅ Resuelto — commit e23bff5 | 🔴 Alta |
-| BUG-2: Nombres cadenas | ✅ Resuelto — commit e23bff5 | 🟡 Media |
-| BUG-3: Grupos contaminados (originales) | ✅ Resuelto — commit e23bff5 | 🟡 Media |
-| BUG-4: "San juan" minúscula | ✅ Resuelto — commit e23bff5 | 🟢 Baja |
+| BUG-8: Carnes incluye quesos fiambrería | ✅ Resuelto — commit 3c66c3c | 🟡 Media |
+| BUG-7: Azúcar contamina con carnes lata | ✅ Resuelto — commit 3c66c3c | 🔴 Alta |
+| BUG-6: Lácteos vacío (kw incorrectas) | ✅ Resuelto — commit 3c66c3c | 🔴 Alta |
 | BUG-5: OOM df_enr ~10GB | ✅ Resuelto — commit fd5e014 | 🔴 Alta |
+| BUG-4: "San juan" minúscula | ✅ Resuelto — commit e23bff5 | 🟢 Baja |
+| BUG-3: Grupos contaminados (originales) | ✅ Resuelto — commit e23bff5 | 🟡 Media |
+| BUG-2: Nombres cadenas | ✅ Resuelto — commit e23bff5 | 🟡 Media |
+| BUG-1: Factor precio /100 | ✅ Resuelto — commit e23bff5 | 🔴 Alta |
 | MEJORA-1: Parquet cache | ✅ Implementado — commit e23bff5 | 🟡 Media |
-| MEJORA-2: Deduplicación | ⏳ Pendiente | 🟢 Baja |
 | MEJORA-3: Nombres cadenas output | ✅ Implementado — commit e23bff5 | 🟢 Baja |
+| MEJORA-2: Deduplicación de variantes | ⏳ Pendiente | 🟢 Baja |
 | MEJORA-4: Canasta imputada | ⏳ Pendiente | 🟢 Baja |
 | MEJORA-5: Mapa Folium | ⏳ Pendiente | 🟢 Baja |

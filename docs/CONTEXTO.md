@@ -1,6 +1,6 @@
 # Contexto del Proyecto — Precios Minoristas SEPA
 
-Última actualización: 2026-05-27 (segunda ejecución con todos los fixes)
+Última actualización: 2026-05-27 (tercera ejecución — BUG-12 y BUG-13 resueltos)
 
 ## Objetivo
 
@@ -222,7 +222,12 @@ Los 13 productos son **embutidos curados** (Leberwurst, Salamín, Bondiola, Pale
 
 ## Historial de cambios
 
-### 2026-05-27 — Fix BUG-10/11 + nueva firma seleccionar_grupo() (este commit)
+### 2026-05-27 — Fix BUG-12/13: implementos físicos y beauty/styling fuera de la canasta (este commit)
+- **BUG-12**: "Cabo Metálico Glow" y similares aparecían en Limpieza del hogar (`subcategoria='Palas y Cabos'`). Fix: `excluir_subcat=['Palas y Cabos','Escobas y Escobillones','Plumeros y Limpiavidrios']`
+- **BUG-13**: Tintura de cabello (Issue) y Protector Térmico (Roby) ocupaban top-3/4 de Higiene por alta cobertura nacional. Fix: `excluir_subcat=['Coloración','Fijación']` → desodorantes Dove entran al grupo
+- Revisión exhaustiva del Excel de segunda ejecución: BUG-10 confirmado resuelto (EANs como texto en Excel con `data_type=s` verificado via openpyxl); 37 productos no alimentarios en Candidatos (esperado — pasan umbrales por cobertura); datos sucios en maestro documentados (Aceite Natura `presentacion=45778`, Crema Dermaglós `subcategoria=Rotisería`)
+
+### 2026-05-27 — Fix BUG-10/11 + nueva firma seleccionar_grupo() (commit f67de87)
 - **BUG-10**: `id_producto` exportado como int64 → EANs con ceros iniciales truncados. Fix: `str.zfill(13)` en cell-27 para `canasta_export` y `candidatos_export`
 - **BUG-11**: `'carne'` no es substring de `'Carnicería'` → 13 embutidos curados de alta cobertura nunca incluidos. Fix: añadidas `'carnicería','carniceria'` a las kw del grupo Carnes
 - **Nueva firma**: `seleccionar_grupo(df, rubros, kw, excluir_kw, max_n, excluir_subcat=None)` — nuevo parámetro `excluir_subcat` filtra por columna `subcategoria` para categorías heterogéneas

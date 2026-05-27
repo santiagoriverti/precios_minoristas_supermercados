@@ -333,6 +333,17 @@ La función `seleccionar_grupo(df, rubros, kw, excluir_kw, max_n)` filtra por `k
 | `'fiambre'` | matchea 'Fiambrería' (incluye quesos untables además de fiambres) |
 | `'carne'` | **NO** matchea 'Carnicería' — `'carne' in 'Carnicería'` → `False` (falso negativo) |
 
+### Categorías heterogéneas que requieren `excluir_subcat`
+
+Algunas categorías del maestro SEPA agrupan productos de naturaleza distinta. El `excluir_kw` sobre `categoria` no puede distinguirlos — solo `excluir_subcat` (coincidencia exacta sobre `subcategoria`) los separa:
+
+| categoria | Mezcla | excluir_subcat recomendado |
+|-----------|--------|---------------------------|
+| `Conservas` | Frutas en almíbar + carnes enlatadas (Patés, Picadillos) | `['Patés y Picadillos', 'Conservas de Pescado']` |
+| `Fiambrería` | Fiambres + quesos untables/crema | `['Quesos Untables', 'Quesos Semiduros', 'Quesos Blandos', 'Quesos Duros', 'Quesos Rallados', 'Quesos Especiales']` |
+| `Accesorios de Limpieza` | Implementos físicos (cabos, escobas) + accesorios legítimos (escobilla de baño) | `['Palas y Cabos', 'Escobas y Escobillones', 'Plumeros y Limpiavidrios']` |
+| `Cuidado del Cabello` | Shampoo/acondicionador (higiene) + coloración/fijación (beauty/styling) | `['Coloración', 'Fijación']` |
+
 **Regla**: siempre revisar el output de cada grupo y añadir `excluir_kw` cuando hay contaminación. Para categorías heterogéneas (`Conservas`, `Fiambrería`) puede ser necesario filtrar sobre la columna `descripcion` además de `categoria`.
 
 ### Firma actual de `seleccionar_grupo()`
