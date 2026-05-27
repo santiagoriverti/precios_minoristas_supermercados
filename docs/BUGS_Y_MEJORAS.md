@@ -148,7 +148,7 @@ canasta_sucursal['precio_imputado'] = canasta_sucursal.apply(
 | BUG-2: Nombres cadenas | ✅ Resuelto — commit e23bff5 | 🟡 Media |
 | BUG-3: Grupos contaminados | ✅ Resuelto — commit e23bff5 | 🟡 Media |
 | BUG-4: "San juan" minúscula | ✅ Resuelto — commit e23bff5 | 🟢 Baja |
-| BUG-5: OOM df_enr ~10GB | ✅ Resuelto — commit [ver abajo] | 🔴 Alta |
+| BUG-5: OOM df_enr ~10GB | ✅ Resuelto — commit fd5e014 | 🔴 Alta |
 | MEJORA-1: Parquet cache | ✅ Implementado — commit e23bff5 | 🟡 Media |
 | MEJORA-2: Deduplicación | ⏳ Pendiente | 🟢 Baja |
 | MEJORA-3: Nombres cadenas output | ✅ Implementado — commit e23bff5 | 🟢 Baja |
