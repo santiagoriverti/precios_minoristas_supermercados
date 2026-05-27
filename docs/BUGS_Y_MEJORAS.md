@@ -1,0 +1,140 @@
+# Bugs Pendientes y Mejoras
+
+Última actualización: 2026-05-27
+
+---
+
+## 🔴 Bugs críticos (afectan la calidad del output)
+
+### BUG-1: División /100 incorrecta en precios
+
+**Archivo**: `notebooks/exploracion_productos.ipynb`, cell-7 (`cargar_sepa()`)
+**Síntoma**: todos los precios del Excel de salida son 100x demasiado bajos. Aceite girasol aparece ~$57 en lugar de ~$5,750.
+**Causa**: la función divide precios por 100 asumiendo centavos, pero los datos semestral 2026A (y probablemente 2025B+) ya vienen en pesos.
+**Evidencia**: `analisis_SEPA_evolucion_AMBA.ipynb` procesa los mismos archivos y confirma FACTOR=1 ("Mediana de referencia: 1411.00 → Factor: 1").
+**Fix**: reemplazar la división fija `/100` por autodetección de factor via producto de referencia (ver `SEPA_TECNICO.md`).
+**Impacto en filtros**: NINGUNO — los filtros son por cobertura, no por precio umbral. La canasta seleccionada es correcta; solo los precios reportados están mal.
+
+---
+
+### BUG-2: `id_bandera` reportado como "cadena" cuando son grupos corporativos
+
+**Archivo**: `notebooks/exploracion_productos.ipynb`, celdas de enriquecimiento y cobertura
+**Síntoma**: el notebook reporta "5 cadenas activas" cuando en realidad son 16 cadenas comerciales.
+**Causa**: `id_bandera` (valores 1-6) es el grupo corporativo, no el banner comercial. Cencosud opera Vea+Disco+Jumbo (3 id_bandera distintos dentro del mismo id_comercio=9).
+**Fix**: añadir columna `nombre_cadena` usando el diccionario `(id_comercio, id_bandera)` disponible en `SEPA_TECNICO.md`.
+**Impacto en score**: el `MIN_CADENAS` dinámico filtra por grupos corporativos (correcto para asegurar representatividad por grupo), pero el número reportado en el Excel es confuso.
+
+---
+
+## 🟡 Bugs menores (afectan la exactitud de la selección)
+
+### BUG-3: Grupos de canasta con productos incorrectos
+
+**Archivo**: `notebooks/exploracion_productos.ipynb`, celda de `GRUPOS_CANASTA`
+**Síntoma**:
+- **Lácteos** incluye: Mayonesa Hellmanns, Alfajor Chocoarroz, Azúcar Azucel
+- **Carnes y fiambres** incluye: Dulce de Batata (×2), Queso Untable
+**Causa**: keyword `'crema'` en Lácteos matchea "Mayonesa Receta Casera con Crema" (substring en nombre de categoría).
+**Fix**: revisar `excluir_kw` de cada grupo problemático. Para Lácteos, excluir categorías que contengan 'mayonesa', 'alfajor', 'azúcar'. Para Carnes, revisar el rubro de los productos contaminantes en el maestro.
+
+---
+
+### BUG-4: "San juan" con j minúscula
+
+**Archivo**: `notebooks/exploracion_productos.ipynb`, celda de normalización de provincias
+**Síntoma**: `maestro_sucursales_completo.xlsx` tiene la provincia "San juan" con j minúscula.
+**Causa**: dato sucio en el maestro; la normalización actual solo hace strip de "Provincia de " y reemplaza CABA.
+**Fix**: añadir `.str.title()` después de las normalizaciones existentes, o un replace específico `'San juan' → 'San Juan'`.
+
+---
+
+## 🟢 Mejoras (opcionales, aumentan calidad)
+
+### MEJORA-1: Parquet cache para sobrevivir crashes Colab
+
+**Patrón de**: `analisis_precios_SEPA.ipynb`
+**Descripción**: guardar el DataFrame después de cada paso costoso (carga SEPA, enriquecimiento, cobertura) como `.parquet` comprimido con snappy. Si el kernel crashea, retomar desde el último parquet en lugar de reprocesar todo.
+
+```python
+# Guardar
+df.to_parquet(OUTPUT_DIR / 'df_enr.parquet', compression='snappy', index=False)
+
+# Retomar (al inicio de la celda)
+if (OUTPUT_DIR / 'df_enr.parquet').exists():
+    df_enr = pd.read_parquet(OUTPUT_DIR / 'df_enr.parquet')
+else:
+    # ... procesar normalmente
+```
+
+---
+
+### MEJORA-2: Deduplicación de variantes (concepto)
+
+**Patrón de**: `analisis_precios_SEPA_2.ipynb`
+**Descripción**: muchos productos son variantes de tamaño del mismo ítem (fideos 400g, fideos 500g, fideos 1kg). La función `extraer_concepto()` extrae las N palabras más significativas (sin marca ni packaging) para agrupar variantes y quedarse con la de mayor cobertura.
+
+```python
+TOKENS_A_REMOVER = {'g', 'kg', 'ml', 'l', 'lt', 'cc', 'un', 'unid',
+                    'x', 'de', 'con', 'sin', 'por', 'para',
+                    '100', '200', '250', '300', '400', '500', '1000', ...}
+
+def extraer_concepto(desc_norm, marca, n_palabras=3):
+    tokens = [t for t in desc_norm.split()
+              if t not in TOKENS_A_REMOVER
+              and t not in marca.lower().split()
+              and not t.isdigit()]
+    return ' '.join(tokens[:n_palabras])
+```
+
+Resultado esperado: ~10% reducción de la canasta de candidatos (4,713 → ~4,200 conceptos únicos).
+
+---
+
+### MEJORA-3: Nombres de cadenas en el output
+
+**Patrón de**: `analisis_SEPA_evolucion_AMBA.ipynb`
+**Descripción**: añadir una columna `nombre_cadena` al DataFrame enriquecido para que el output Excel muestre nombres legibles en lugar de `id_bandera`.
+**Implementación**: ver diccionario `NOMBRES_CADENAS_COMPUESTAS` + `NOMBRES_CADENAS_SIMPLES` en `SEPA_TECNICO.md`.
+
+---
+
+### MEJORA-4: Canasta imputada para comparación provincial
+
+**Patrón de**: `analisis_SEPA_evolucion_AMBA.ipynb`
+**Descripción**: cuando una sucursal no tiene precio para algún producto de la canasta, imputar con la mediana nacional de ese producto. Esto permite calcular una canasta "completa" en todas las sucursales y comparar precios entre provincias de forma justa.
+
+```python
+# Para cada EAN de la canasta, calcular mediana nacional
+medianas_nacionales = canasta_df.groupby('id_producto')['precio_mediano'].median()
+
+# En sucursales sin precio para ese EAN, usar la mediana
+canasta_sucursal['precio_imputado'] = canasta_sucursal.apply(
+    lambda r: r['precio'] if pd.notna(r['precio'])
+              else medianas_nacionales.get(r['id_producto'], np.nan),
+    axis=1
+)
+```
+
+---
+
+### MEJORA-5: Visualización geográfica con Folium
+
+**Patrón de**: `analisis_SEPA_evolucion_AMBA.ipynb` y `python-dataviz-geo` skill
+**Descripción**: mapa interactivo HTML con un punto por sucursal, coloreado por precio de canasta. Requiere coordenadas lat/lon (disponibles en el maestro de sucursales si tiene columnas de geolocalizacion, o cruzar con base externa).
+
+---
+
+## Estado de fixes
+
+| Bug/Mejora | Estado | Prioridad |
+|---|---|---|
+| BUG-1: Factor precio /100 | ⏳ Pendiente | 🔴 Alta |
+| BUG-2: Nombres cadenas | ⏳ Pendiente | 🟡 Media |
+| BUG-3: Grupos contaminados | ⏳ Pendiente | 🟡 Media |
+| BUG-4: "San juan" minúscula | ⏳ Pendiente | 🟢 Baja |
+| MEJORA-1: Parquet cache | ⏳ Pendiente | 🟡 Media |
+| MEJORA-2: Deduplicación | ⏳ Pendiente | 🟢 Baja |
+| MEJORA-3: Nombres cadenas output | ⏳ Pendiente | 🟢 Baja |
+| MEJORA-4: Canasta imputada | ⏳ Pendiente | 🟢 Baja |
+| MEJORA-5: Mapa Folium | ⏳ Pendiente | 🟢 Baja |

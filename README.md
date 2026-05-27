@@ -30,9 +30,13 @@ precios_minoristas_supermercados/
 ├── README.md
 ├── notebooks/                              # Notebooks ejecutables en Google Colab
 │   └── exploracion_productos.ipynb         # Exploración y construcción de canasta
-└── data/                                   # Maestros de referencia
-    ├── Maestro de Productos Interno.xlsx   # Clasificación de productos (rubro, categoría)
-    └── maestro_sucursales_completo.xlsx    # Metadata de sucursales (cadena, región)
+├── data/                                   # Maestros de referencia
+│   ├── Maestro de Productos Interno.xlsx   # Clasificación de productos (rubro, categoría)
+│   └── maestro_sucursales_completo.xlsx    # Metadata de sucursales (cadena, región)
+└── docs/                                   # Documentación técnica interna
+    ├── CONTEXTO.md                         # Arquitectura del proyecto, pipeline, historial
+    ├── SEPA_TECNICO.md                     # Referencia técnica SEPA: formatos, factor precio, cadenas
+    └── BUGS_Y_MEJORAS.md                   # Bugs pendientes y mejoras planeadas
 ```
 
 ## Datos SEPA requeridos
