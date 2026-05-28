@@ -20,10 +20,10 @@ Este proyecto procesa esos datos para responder una pregunta concreta: **¿cuál
 
 | Notebook | Descripción | Abrir en Colab |
 |----------|-------------|----------------|
-| `exploracion_productos` | Construye la canasta representativa. Detecta automáticamente el último mes disponible en los ZIPs del SEPA y genera `canasta_representativa_YYYY-MM.xlsx` con tres hojas. | [![Abrir en Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/santiagoriverti/precios_minoristas_supermercados/blob/main/notebooks/exploracion_productos.ipynb) |
+| `01_exploracion_productos` | Construye la canasta representativa. Detecta automáticamente el último mes disponible en los ZIPs del SEPA y genera `canasta_representativa_YYYY-MM.xlsx` con tres hojas. | [![Abrir en Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/santiagoriverti/precios_minoristas_supermercados/blob/main/notebooks/01_exploracion_productos.ipynb) |
 | `02_evolucion_canasta_representativa` | Analiza la evolución del costo de la canasta elegida por el economista. Lee la hoja `Selección` del Excel generado por el notebook anterior, calcula el costo por sucursal, lo compara con el IPC INDEC, y genera mapas coropléticos, rankings por cadena y barrio (CABA), y un mapa interactivo Folium. | [![Abrir en Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/santiagoriverti/precios_minoristas_supermercados/blob/main/notebooks/02_evolucion_canasta_representativa.ipynb) |
 
-> **¿Ves una versión vieja en Colab?** El badge siempre apunta a la última versión en GitHub, pero Colab puede mostrar una copia cacheada de tu Drive. Para forzar la actualización: eliminá `Mi unidad/Colab Notebooks/exploracion_productos.ipynb` de tu Google Drive y volvé a hacer clic.
+> **¿Ves una versión vieja en Colab?** El badge siempre apunta a la última versión en GitHub, pero Colab puede mostrar una copia cacheada de tu Drive. Para forzar la actualización: eliminá `Mi unidad/Colab Notebooks/01_exploracion_productos.ipynb` (o `exploracion_productos.ipynb` si lo abriste antes del renombre) de tu Google Drive y volvé a hacer clic.
 
 ---
 
@@ -203,7 +203,7 @@ Los datos de **2025B en adelante ya vienen en pesos** (factor = 1). El notebook 
 precios_minoristas_supermercados/
 ├── README.md
 ├── notebooks/
-│   ├── exploracion_productos.ipynb               # Notebook 1 — canasta representativa
+│   ├── 01_exploracion_productos.ipynb               # Notebook 1 — canasta representativa
 │   └── 02_evolucion_canasta_representativa.ipynb # Notebook 2 — análisis y visualización
 ├── data/                                # Maestros de referencia (se descargan automáticamente)
 │   ├── Maestro de Productos Interno.xlsx    # ~176K productos con rubro/categoría/subcategoría

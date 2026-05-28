@@ -12,7 +12,7 @@ Construir una **canasta representativa de ~60 productos** a partir de los datos 
 ## Repositorio
 
 - **GitHub**: santiagoriverti/precios_minoristas_supermercados
-- **Notebook 01**: `notebooks/exploracion_productos.ipynb` — selección dinámica de canasta (ejecutable en Colab)
+- **Notebook 01**: `notebooks/01_exploracion_productos.ipynb` — selección dinámica de canasta (ejecutable en Colab)
 - **Notebook 02**: `notebooks/02_evolucion_canasta_representativa.ipynb` — análisis de canasta elegida, mapas, rankings (ejecutable en Colab)
 - **Maestros**: `data/` — productos, sucursales, provincias
 - **Datos SEPA**: NO están en el repo. Están en Google Drive personal: `/carga/` (2024A.zip, 2024B.zip, 2025A.zip, 2025B.zip, 2026A.zip)
@@ -24,7 +24,7 @@ Construir una **canasta representativa de ~60 productos** a partir de los datos 
 
 Este proyecto no existe en aislamiento. Hay múltiples notebooks en otros repositorios que procesan los mismos datos y de los que se pueden tomar patrones.
 
-### 1. `exploracion_productos.ipynb` (este repo — notebook 01)
+### 1. `01_exploracion_productos.ipynb` (este repo — notebook 01)
 **Propósito**: selección dinámica de canasta por score de cobertura.
 **Enfoque**: todos los productos del SEPA semestral → filtrar por cobertura → seleccionar top-N por grupo.
 **Output**: `canasta_representativa_MMAAAA.xlsx` (hojas: Canasta, Candidatos, Selección)
@@ -90,7 +90,7 @@ Este proyecto no existe en aislamiento. Hay múltiples notebooks en otros reposi
 
 ---
 
-## Pipeline de `exploracion_productos.ipynb` (orden de celdas)
+## Pipeline de `01_exploracion_productos.ipynb` (orden de celdas)
 
 | Cell | Tipo | Descripción |
 |------|------|-------------|

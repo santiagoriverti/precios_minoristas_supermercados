@@ -47,7 +47,7 @@ Los datos semestral cambiaron de unidad a lo largo del tiempo:
 - **Hasta ~2024**: precios en centavos → dividir /100
 - **2025B en adelante**: precios ya en pesos → FACTOR = 1 (NO dividir)
 
-### Autodetección implementada en `exploracion_productos.ipynb`
+### Autodetección implementada en `01_exploracion_productos.ipynb`
 
 ```python
 # Después de consolidar df_suc, antes del enriquecimiento:
@@ -223,7 +223,7 @@ def cargar_sepa(zip_path, filename):
 
 ## Anti-OOM: arquitectura df_cov + df_price_stats
 
-El principal riesgo de RAM en `exploracion_productos.ipynb` no es la lectura en sí, sino mantener un DataFrame a nivel sucursal (producto × sucursal, ~50M filas) con columnas de enriquecimiento. La solución canónica es agregar inmediatamente.
+El principal riesgo de RAM en `01_exploracion_productos.ipynb` no es la lectura en sí, sino mantener un DataFrame a nivel sucursal (producto × sucursal, ~50M filas) con columnas de enriquecimiento. La solución canónica es agregar inmediatamente.
 
 ### El patrón (cell-14)
 
@@ -417,7 +417,7 @@ df.groupby(['nombre_cadena', 'REGION', 'rubro', 'categoria'], observed=True)['pr
 
 ## Canasta referencia (otros notebooks)
 
-Los notebooks de evolución temporal usan una **canasta fija de 30 EANs** para comparación temporal consistente. Esto es distinto al enfoque dinámico por cobertura de `exploracion_productos.ipynb`.
+Los notebooks de evolución temporal usan una **canasta fija de 30 EANs** para comparación temporal consistente. Esto es distinto al enfoque dinámico por cobertura de `01_exploracion_productos.ipynb`.
 
 - **Abril 2026, canasta nacional ponderada**: **$322,566 ARS**
 - **Ponderación**: Censo INDEC 2022 (45,892,285 habitantes, 24 jurisdicciones)

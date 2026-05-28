@@ -33,7 +33,7 @@ IPC_PATH = _ipc_encontrado if _ipc_encontrado else SEPA_DIR / 'IPC.xlsx'
 
 ### BUG-12: "Cabo Metálico" y otros implementos físicos en Limpieza del hogar ✅ Resuelto — commit 5f9f3c4
 
-**Archivo**: `notebooks/exploracion_productos.ipynb`, cell-23 (`GRUPOS_CANASTA`)
+**Archivo**: `notebooks/01_exploracion_productos.ipynb`, cell-23 (`GRUPOS_CANASTA`)
 **Síntoma**: el grupo Limpieza del hogar incluía "Cabo Metálico Glow 1 Un" y potencialmente escobas y plumeros — implementos físicos que no son productos de limpieza para seguimiento de precios.
 **Causa**: `categoria='Accesorios de Limpieza'` agrupa tanto productos de limpieza (escobillas de inodoro) como implementos físicos (cabos, escobas, plumeros). El filtro sin `excluir_subcat` los toma todos.
 **Evidencia**:
@@ -51,7 +51,7 @@ Escoba sin Cabo Virulana | subcategoria=Escobas y Escobillones | score=0.934
 
 ### BUG-13: Tintura de cabello y protector térmico en Higiene y cuidado personal ✅ Resuelto — commit c61416e
 
-**Archivo**: `notebooks/exploracion_productos.ipynb`, cell-23 (`GRUPOS_CANASTA`)
+**Archivo**: `notebooks/01_exploracion_productos.ipynb`, cell-23 (`GRUPOS_CANASTA`)
 **Síntoma**: "Coloración en Crema N°3 Issue" (tintura) y "Protector Térmico sin Fijacion Spray Roby" (styling) ocupaban los puestos 3 y 4 del grupo, desplazando a desodorantes.
 **Causa**: `subcategoria='Coloración'` y `subcategoria='Fijación'` tienen alta cobertura nacional (score ~0.988) pero son productos de beauty/styling, no higiene básica.
 **Evidencia — grupo antes del fix**:
@@ -83,7 +83,7 @@ Escoba sin Cabo Virulana | subcategoria=Escobas y Escobillones | score=0.934
 
 ### BUG-10: `id_producto` exportado como entero — EANs con ceros iniciales se truncan ✅ Resuelto — commit f67de87
 
-**Archivo**: `notebooks/exploracion_productos.ipynb`, cell-27 (export Excel)
+**Archivo**: `notebooks/01_exploracion_productos.ipynb`, cell-27 (export Excel)
 **Síntoma**: EANs de menos de 13 dígitos (ej. código interno `78933354`) se exportan sin ceros iniciales. Al abrir el Excel, el EAN-13 debería ser `0000078933354`, pero se ve `78933354`. Afecta a ~93 productos en la hoja Candidatos.
 **Causa**: `id_producto` se almacena como int64 en algún punto del pipeline. Al escribir en Excel mediante openpyxl, los enteros se formatean sin relleno.
 **Fix aplicado** (cell-27, antes de construir el ExcelWriter):
@@ -98,7 +98,7 @@ candidatos_export['id_producto'] = candidatos_export['id_producto'].astype(str).
 
 ### BUG-11: `'carne'` no es substring de `'Carnicería'` — productos de ese rubro no se incluían ✅ Resuelto — commit f67de87
 
-**Archivo**: `notebooks/exploracion_productos.ipynb`, cell-23 (`GRUPOS_CANASTA`)
+**Archivo**: `notebooks/01_exploracion_productos.ipynb`, cell-23 (`GRUPOS_CANASTA`)
 **Síntoma**: los 13 candidatos de `categoria='Carnicería'` (Leberwurst Paladini score=0.97, Salamín Bocatti score=0.93, etc.) nunca aparecían en el grupo Carnes y fiambres, aunque eran los de mayor score.
 **Causa**: la kw `'carne'` busca como substring en el valor de `categoria`. El valor literal es `'Carnicería'` — cuyas primeras 5 letras son `'carni'`, no `'carne'`. Python `'carne' in 'Carnicería'` → `False`.
 **Fix aplicado** (cell-23, kw del grupo Carnes y fiambres):
@@ -117,7 +117,7 @@ kw=['fiambre','embutido','carne','carnicería','carniceria','salchicha','pollo',
 
 ### BUG-6: Lácteos = 0 productos en la canasta ✅ Resuelto — commit 3c66c3c
 
-**Archivo**: `notebooks/exploracion_productos.ipynb`, cell-23 (`GRUPOS_CANASTA`)
+**Archivo**: `notebooks/01_exploracion_productos.ipynb`, cell-23 (`GRUPOS_CANASTA`)
 **Síntoma**: el grupo Lácteos produce 0 productos — aparece vacío en el Excel de salida.
 **Causa**: las kw anteriores eran `['leche','yogur','queso','crema','manteca']`, que se buscan como substring en la columna `categoria` del maestro. Sin embargo, en el maestro SEPA, los productos lácteos del rubro Frescos tienen `categoria = 'Lácteos'` (string literal) — ninguna de las kw matcheaba ese valor.
 
@@ -147,7 +147,7 @@ rubros=['Frescos']
 
 ### BUG-7: Azúcar, dulces y conservas contamina con carnes enlatadas ✅ Resuelto — commit 3c66c3c
 
-**Archivo**: `notebooks/exploracion_productos.ipynb`, cell-23 (`GRUPOS_CANASTA`)
+**Archivo**: `notebooks/01_exploracion_productos.ipynb`, cell-23 (`GRUPOS_CANASTA`)
 **Síntoma**: el grupo incluía Paté Bocatti de Panceta Ahumada y Picadillo de Carne Swift Picante.
 **Causa**: ambos productos tienen `categoria='Conservas'` en el maestro — igual que los duraznos en almíbar, peras, etc. La kw `'conserva'` matcheaba todos sin distinción. Los `excluir_kw` operan sobre la misma columna `categoria` y no pueden distinguir dentro del mismo valor.
 
@@ -162,7 +162,7 @@ excluir_subcat=['Patés y Picadillos', 'Conservas de Pescado']
 
 ### BUG-8: Carnes y fiambres incluye quesos del rubro Fiambrería ✅ Resuelto — commit 3c66c3c
 
-**Archivo**: `notebooks/exploracion_productos.ipynb`, cell-23 (`GRUPOS_CANASTA`)
+**Archivo**: `notebooks/01_exploracion_productos.ipynb`, cell-23 (`GRUPOS_CANASTA`)
 **Síntoma**: Queso Untable Neufchafel, Queso Crema Casancrem, Queso Crema La Serenísima y otros quesos aparecían en el grupo Carnes y fiambres.
 **Causa**: la kw `'fiambre'` matcheaba `categoria='Fiambrería'`, que en el maestro SEPA incluye tanto fiambres reales como quesos untables y cremas de queso. Los `excluir_kw` anteriores buscaban `'queso untable'` en la columna `categoria`, pero el valor literal es `'Fiambrería'` — no tenían efecto.
 
@@ -180,7 +180,7 @@ excluir_subcat=['Quesos Untables', 'Quesos Semiduros', 'Quesos Rallados',
 
 ### BUG-9: Bebidas no alcohólicas incompletas (falta yerba, té, café) ✅ Resuelto — commit 3c66c3c
 
-**Archivo**: `notebooks/exploracion_productos.ipynb`, cell-23 (`GRUPOS_CANASTA`)
+**Archivo**: `notebooks/01_exploracion_productos.ipynb`, cell-23 (`GRUPOS_CANASTA`)
 **Síntoma**: el grupo Bebidas no alcohólicas solo contenía jugos y una bebida energizante. Faltaban yerba mate, té, café — productos básicos de la canasta argentina.
 **Causa**: `rubros=['Bebidas']` únicamente. Las infusiones (yerba, té, café) viven en `rubro='Almacén'`, `categoria='Infusiones'` en el maestro SEPA.
 
@@ -199,7 +199,7 @@ excluir_subcat=['Quesos Untables', 'Quesos Semiduros', 'Quesos Rallados',
 
 ### BUG-1: División /100 incorrecta en precios
 
-**Archivo**: `notebooks/exploracion_productos.ipynb`, cell-7 (`cargar_sepa()`)
+**Archivo**: `notebooks/01_exploracion_productos.ipynb`, cell-7 (`cargar_sepa()`)
 **Síntoma**: todos los precios del Excel de salida son 100x demasiado bajos. Aceite girasol aparece ~$57 en lugar de ~$5,750.
 **Causa**: la función divide precios por 100 asumiendo centavos, pero los datos semestral 2026A (y probablemente 2025B+) ya vienen en pesos.
 **Evidencia**: `analisis_SEPA_evolucion_AMBA.ipynb` procesa los mismos archivos y confirma FACTOR=1 ("Mediana de referencia: 1411.00 → Factor: 1").
@@ -210,7 +210,7 @@ excluir_subcat=['Quesos Untables', 'Quesos Semiduros', 'Quesos Rallados',
 
 ### BUG-2: `id_bandera` reportado como "cadena" cuando son grupos corporativos
 
-**Archivo**: `notebooks/exploracion_productos.ipynb`, celdas de enriquecimiento y cobertura
+**Archivo**: `notebooks/01_exploracion_productos.ipynb`, celdas de enriquecimiento y cobertura
 **Síntoma**: el notebook reporta "5 cadenas activas" cuando en realidad son 16 cadenas comerciales.
 **Causa**: `id_bandera` (valores 1-6) es el grupo corporativo, no el banner comercial. Cencosud opera Vea+Disco+Jumbo (3 id_bandera distintos dentro del mismo id_comercio=9).
 **Fix**: añadir columna `nombre_cadena` usando el diccionario `(id_comercio, id_bandera)` disponible en `SEPA_TECNICO.md`.
@@ -222,7 +222,7 @@ excluir_subcat=['Quesos Untables', 'Quesos Semiduros', 'Quesos Rallados',
 
 ### BUG-3: Grupos de canasta con productos incorrectos
 
-**Archivo**: `notebooks/exploracion_productos.ipynb`, celda de `GRUPOS_CANASTA`
+**Archivo**: `notebooks/01_exploracion_productos.ipynb`, celda de `GRUPOS_CANASTA`
 **Síntoma**:
 - **Lácteos** incluye: Mayonesa Hellmanns, Alfajor Chocoarroz, Azúcar Azucel
 - **Carnes y fiambres** incluye: Dulce de Batata (×2), Queso Untable
@@ -233,7 +233,7 @@ excluir_subcat=['Quesos Untables', 'Quesos Semiduros', 'Quesos Rallados',
 
 ### BUG-4: "San juan" con j minúscula
 
-**Archivo**: `notebooks/exploracion_productos.ipynb`, celda de normalización de provincias
+**Archivo**: `notebooks/01_exploracion_productos.ipynb`, celda de normalización de provincias
 **Síntoma**: `maestro_sucursales_completo.xlsx` tiene la provincia "San juan" con j minúscula.
 **Causa**: dato sucio en el maestro; la normalización actual solo hace strip de "Provincia de " y reemplaza CABA.
 **Fix**: añadir `.str.title()` después de las normalizaciones existentes, o un replace específico `'San juan' → 'San Juan'`.
@@ -322,7 +322,7 @@ def calcular_canasta_completa(grupo):
 
 ### MEJORA-6: Hoja "Selección" en Excel — fuente para notebook de canasta elegida ✅ Implementado — 2026-05-28
 
-**Archivo**: `notebooks/exploracion_productos.ipynb`, cell-27 (export Excel)
+**Archivo**: `notebooks/01_exploracion_productos.ipynb`, cell-27 (export Excel)
 **Descripción**: el Excel de salida ahora tiene una **tercera hoja "Selección"** que contiene todos los candidatos (~3,650 productos) ordenados por `rubro → categoría → score_cobertura` descendente, con:
 - **Columna `cantidad`** (en amarillo destacado): vacía, para que el economista indique cuántas unidades incluir por producto
 - **Auto-filter** habilitado para filtrar por rubro/categoría
@@ -339,7 +339,7 @@ def calcular_canasta_completa(grupo):
 
 ### BUG-5: OOM persistente — df_enr demasiado grande para Colab
 
-**Archivo**: `notebooks/exploracion_productos.ipynb`, celda de enriquecimiento y subsiguientes
+**Archivo**: `notebooks/01_exploracion_productos.ipynb`, celda de enriquecimiento y subsiguientes
 **Síntoma**: "Tu sesión falló porque se usó toda la RAM disponible" incluso después de los fixes de apply() y observed=True.
 **Causa**: `df_enr` (producto × sucursal, ~50M filas × 20 columnas, ~10 GB) se mantenía vivo desde la celda de enriquecimiento hasta los heatmaps (7 celdas después). Los groupby sobre ese frame en cells 15, 16 y 18 multiplicaban el uso de RAM.
 **Fix**: Rediseño arquitectónico anti-OOM:
