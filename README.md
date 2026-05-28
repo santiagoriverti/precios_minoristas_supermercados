@@ -8,10 +8,11 @@ Construcción de una **canasta representativa de precios** a partir de los datos
 
 El SEPA publica diariamente los precios reportados por las principales cadenas de supermercados de Argentina: Carrefour, Coto, DIA, Jumbo, La Anónima, Disco, Vea, ChangoMas, Cooperativa Obrera y otras. Los archivos cubren decenas de miles de productos en miles de sucursales a lo largo de todo el país.
 
-Este proyecto procesa esos datos para responder una pregunta concreta: **¿cuáles son los productos con mayor cobertura comercial y geográfica en Argentina?** A partir de eso, construye dos outputs:
+Este proyecto procesa esos datos para responder una pregunta concreta: **¿cuáles son los productos con mayor cobertura comercial y geográfica en Argentina?** A partir de eso, construye tres outputs en un solo Excel:
 
-- **Canasta automática** (~60 productos): selección por grupos (Lácteos, Carnes, Panificados, etc.) de los productos más representativos según un score de cobertura
-- **Lista de candidatos** (~41 000 productos): todos los productos que superan los umbrales de cobertura, para que un economista arme su propia canasta
+- **Canasta automática** (~65 productos): selección por grupos (Lácteos, Carnes, Cereales, etc.) de los productos más representativos según un score de cobertura
+- **Candidatos** (~3.650 productos): todos los que superan los umbrales estrictos, para referencia del economista
+- **Selección** (~15.000–30.000 productos): universo amplio con umbrales más permisivos, con columna `cantidad` vacía para que el economista arme su propia canasta
 
 ---
 
@@ -19,7 +20,7 @@ Este proyecto procesa esos datos para responder una pregunta concreta: **¿cuál
 
 | Notebook | Descripción | Abrir en Colab |
 |----------|-------------|----------------|
-| `exploracion_productos` | Construye la canasta representativa. Genera `canasta_representativa_MMAAAA.xlsx` con hoja **Canasta** (~60 productos por grupo, coloreados) y hoja **Candidatos** (~41 000 productos con métricas completas). | [![Abrir en Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/santiagoriverti/precios_minoristas_supermercados/blob/main/notebooks/exploracion_productos.ipynb) |
+| `exploracion_productos` | Construye la canasta representativa. Detecta automáticamente el último mes disponible en los ZIPs del SEPA y genera `canasta_representativa_YYYY-MM.xlsx` con tres hojas. | [![Abrir en Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/santiagoriverti/precios_minoristas_supermercados/blob/main/notebooks/exploracion_productos.ipynb) |
 
 > **¿Ves una versión vieja en Colab?** El badge siempre apunta a la última versión en GitHub, pero Colab puede mostrar una copia cacheada de tu Drive. Para forzar la actualización: eliminá `Mi unidad/Colab Notebooks/exploracion_productos.ipynb` de tu Google Drive y volvé a hacer clic.
 
@@ -30,21 +31,21 @@ Este proyecto procesa esos datos para responder una pregunta concreta: **¿cuál
 ### Requisitos previos
 
 1. Una cuenta de Google con Google Drive
-2. El archivo ZIP del SEPA correspondiente al período que querés analizar (ver [Datos SEPA](#datos-sepa))
-3. Subir el ZIP a tu Google Drive en la carpeta `/carga/`
+2. Los ZIPs del SEPA en tu Drive (ver [Datos SEPA](#datos-sepa))
 
 ### Pasos
 
 1. Hacer clic en el badge **Abrir en Colab**
-2. Ejecutar la celda de configuración (cell-2) y verificar los parámetros:
+2. Ejecutar la celda de configuración (cell-2) y verificar solo dos parámetros:
    ```python
-   SEPA_SOURCE   = 'mi_drive'          # fuente de datos
-   SEPA_DIR      = '/content/drive/MyDrive/carga'  # carpeta en tu Drive
-   SEPA_ZIP_NAME = '2026A.zip'         # nombre del ZIP
-   PERIODO       = '2026-04'           # período para identificar el output
+   SEPA_SOURCE = 'mi_drive'
+   SEPA_DIR    = '/content/drive/MyDrive/carga'  # carpeta con los ZIPs
+
+   PERIODO = None   # None = autodetectar el último mes disponible
+                    # o forzar un mes específico: PERIODO = '2026-04'
    ```
-3. Ejecutar las celdas en orden — los maestros de referencia se descargan automáticamente desde GitHub
-4. El output se guarda en `SEPA_DIR/output_canasta/canasta_representativa_MMAAAA.xlsx`
+3. Ejecutar las celdas en orden — el mes se detecta automáticamente y los maestros se descargan desde GitHub
+4. El output se guarda en `SEPA_DIR/output_canasta/canasta_representativa_YYYY-MM.xlsx`
 
 > Los notebooks instalan automáticamente las dependencias que no vienen por defecto en Colab (`openpyxl`, etc.).
 
@@ -52,9 +53,9 @@ Este proyecto procesa esos datos para responder una pregunta concreta: **¿cuál
 
 ## Output: el Excel de salida
 
-El archivo `canasta_representativa_MMAAAA.xlsx` tiene dos hojas:
+El archivo `canasta_representativa_YYYY-MM.xlsx` tiene **tres hojas**:
 
-### Hoja `Canasta` (~60 productos)
+### Hoja `Canasta` (~65 productos)
 
 Selección automática de los productos más representativos, organizados en **11 grupos** y coloreados por grupo (encabezado azul marino `#1F4E79`). Columnas:
 
@@ -70,7 +71,7 @@ Selección automática de los productos más representativos, organizados en **1
 | `rubro` | Rubro del maestro SEPA (Frescos, Almacén, Bebidas...) |
 | `categoria` | Categoría del maestro (Lácteos, Fiambrería, Conservas...) |
 | `n_cadenas` | Cantidad de grupos corporativos donde se vende (máx. 5) |
-| `n_cadenas_com` | Cantidad de banners comerciales donde se vende (máx. ~16) |
+| `n_cadenas_com` | Cantidad de banners comerciales donde se vende |
 | `n_provincias` | Cantidad de provincias donde se vende (máx. 24) |
 | `n_sucursales` | Cantidad de sucursales donde se vende |
 | `pct_dias_promedio` | Fracción de días del período con precio reportado |
@@ -80,9 +81,13 @@ Selección automática de los productos más representativos, organizados en **1
 | `score_cobertura` | Score de representatividad (ver fórmula abajo) |
 | `cadenas_presentes` | Lista de cadenas donde está disponible |
 
-### Hoja `Candidatos` (~41 000 productos)
+### Hoja `Candidatos` (~3.650 productos)
 
-Todos los productos que superan los umbrales de cobertura. Incluye columna `subcategoria` en lugar de `grupo_canasta`. Pensada para que el economista filtre por rubro/categoría y seleccione su propia canasta.
+Todos los productos que superan los **umbrales estrictos** (presencia en todas las cadenas activas y todas las provincias activas). Incluye columna `subcategoria`. Para referencia del economista.
+
+### Hoja `Selección` (~15.000–30.000 productos)
+
+Universo ampliado con **umbrales permisivos** (≥3 cadenas, ≥18 provincias, ≥30 sucursales), ordenado por `rubro → categoría → score_cobertura`. Incluye columna **`cantidad`** (resaltada en amarillo) vacía para que el economista indique cuántas unidades de cada producto incluir en su canasta. Esta hoja es la fuente de datos del próximo notebook de análisis de canasta elegida.
 
 ---
 
@@ -101,9 +106,11 @@ Donde:
 
 Un score de `1.0` significa que el producto está en **todas las cadenas, todas las provincias, y todos los días del período**.
 
-### Umbrales de filtrado (dinámicos)
+### Umbrales de filtrado
 
-Un producto debe pasar **todos** los siguientes umbrales para llegar a la hoja Candidatos:
+El pipeline usa **dos niveles de umbrales**:
+
+**Umbrales estrictos** — para hojas Canasta y Candidatos:
 
 | Umbral | Valor | Descripción |
 |--------|-------|-------------|
@@ -112,7 +119,16 @@ Un producto debe pasar **todos** los siguientes umbrales para llegar a la hoja C
 | `MIN_SUCURSALES` | 50 | Mínimo de sucursales con precio |
 | `MIN_PCT_DIAS` | 0.50 | Al menos 50% de los días con precio reportado |
 
-Los umbrales son **dinámicos**: se calculan a partir del dataset real, no son valores fijos. Esto garantiza que solo se exigen las cadenas y provincias que efectivamente reportaron precios en ese período.
+**Umbrales amplios** — para hoja Selección:
+
+| Umbral | Valor | Descripción |
+|--------|-------|-------------|
+| `MIN_CADENAS_SEL` | 3 | Al menos 3 de los grupos corporativos activos |
+| `MIN_PROVINCIAS_SEL` | 18 | Al menos 18 de las 24 provincias activas |
+| `MIN_SUCURSALES_SEL` | 30 | Mínimo de sucursales con precio |
+| `MIN_PCT_DIAS` | 0.50 | Igual que el nivel estricto |
+
+Los umbrales estrictos son **dinámicos**: se calculan a partir del dataset real, no son valores fijos. Esto garantiza que solo se exigen las cadenas y provincias que efectivamente reportaron precios en ese período.
 
 ---
 
@@ -124,15 +140,15 @@ Los 11 grupos con sus criterios de selección:
 |-------|--------|-------|
 | Lácteos | Frescos (`categoria='Lácteos'`) | 8 |
 | Carnes y fiambres | Frescos, Almacén, Congelados | 6 |
-| Panificados y cereales | Almacén | 6 |
+| Cereales y derivados | Almacén | 8 |
 | Aceites y grasas | Almacén | 4 |
 | Azúcar, dulces y conservas | Almacén | 6 |
 | Bebidas no alcohólicas | Bebidas, Almacén (incluye Infusiones: yerba/té/café) | 8 |
 | Bebidas alcohólicas | Bebidas | 6 |
-| Artículos de limpieza | Limpieza | 6 |
+| Limpieza del hogar | Limpieza | 7 |
 | Higiene y cuidado personal | Perfumería | 6 |
-| Almacén general | Almacén | 6 |
-| Congelados | Congelados | 4 |
+| Huevos | Frescos, Almacén | 2 |
+| Condimentos y aderezos | Almacén | 5 |
 
 > **Nota sobre Infusiones**: yerba mate, té y café se encuentran en `rubro='Almacén'`, `categoria='Infusiones'` en el maestro SEPA — no en el rubro Bebidas.
 
@@ -140,10 +156,10 @@ Los 11 grupos con sus criterios de selección:
 
 ## Cadenas comerciales cubiertas
 
-El SEPA semestral identifica cadenas por `(id_comercio, id_bandera)`. Los 5 grupos corporativos se mapean a ~16 banners comerciales:
+El SEPA semestral identifica cadenas por `(id_comercio, id_bandera)`. Los 5 grupos corporativos principales se mapean a ~16 banners comerciales. Además se reconocen cadenas regionales:
 
-| Corporativo | Banners |
-|-------------|---------|
+| Corporativo / Cadena | Banners |
+|----------------------|---------|
 | Cencosud | Vea · Disco · Jumbo |
 | Carrefour | Carrefour · Carrefour Market · Carrefour Express |
 | Walmart/ChangoMas | ChangoMas · Hiper ChangoMas · Mi ChangoMas |
@@ -152,6 +168,7 @@ El SEPA semestral identifica cadenas por `(id_comercio, id_bandera)`. Los 5 grup
 | Coto | Coto |
 | Cooperativa Obrera | Cooperativa Obrera |
 | DIA | DIA |
+| Regionales | Hipermercado Misiones · Cadena 8 (Córdoba) · LAR · Toledo · Pasamonte |
 
 ---
 
@@ -165,13 +182,17 @@ Estructura esperada en Google Drive:
 
 ```
 MyDrive/carga/
-├── 2026A.zip     # Enero–junio 2026
-├── 2025B.zip     # Julio–diciembre 2025
+├── 2024A.zip     # Enero–junio 2024
+├── 2024B.zip     # Julio–diciembre 2024
 ├── 2025A.zip     # Enero–junio 2025
-└── 2024B.zip     # Julio–diciembre 2024
+├── 2025B.zip     # Julio–diciembre 2025
+└── 2026A.zip     # Enero–junio 2026 (se va completando mes a mes)
+    (futuro) 2026B.zip  # Julio–diciembre 2026
 ```
 
-Cada ZIP contiene archivos `MMAAAA_pais_parteNcompleto.csv.gz` — formato wide con una columna de precio por día del período. Los datos semestral de **2025B en adelante ya vienen en pesos** (factor = 1). El notebook autodetecta el factor de conversión.
+Cada ZIP contiene archivos `MMAAAA_pais_parteNCOMPLETO.csv.gz` — formato wide con una columna de precio por día del período. El notebook **detecta automáticamente el último mes disponible** escaneando todos los ZIPs: cuando se agregue mayo o junio a `2026A.zip`, o se cree `2026B.zip`, el notebook lo toma sin ningún cambio de código.
+
+Los datos de **2025B en adelante ya vienen en pesos** (factor = 1). El notebook autodetecta el factor de conversión.
 
 ---
 
@@ -219,7 +240,7 @@ El análisis de cobertura, los heatmaps y la selección de canasta operan todos 
 |-----------|-----------|
 | [`docs/CONTEXTO.md`](docs/CONTEXTO.md) | Objetivo del proyecto, descripción del pipeline celda por celda, métricas de ejecución reales, historial completo de cambios |
 | [`docs/SEPA_TECNICO.md`](docs/SEPA_TECNICO.md) | Formato semestral vs. diario, autodetección de FACTOR_PRECIO, diccionario de cadenas, maestros de referencia, arquitectura anti-OOM, trampas conocidas en la selección de grupos |
-| [`docs/BUGS_Y_MEJORAS.md`](docs/BUGS_Y_MEJORAS.md) | Registro de todos los bugs encontrados (resueltos y pendientes), causa raíz, evidencia y fix aplicado |
+| [`docs/BUGS_Y_MEJORAS.md`](docs/BUGS_Y_MEJORAS.md) | Bugs resueltos y mejoras pendientes, causa raíz, evidencia y fix aplicado |
 
 ---
 
@@ -231,8 +252,9 @@ El análisis de cobertura, los heatmaps y la selección de canasta operan todos 
 | Provincias activas | 24 |
 | Filas en `df_cov` (producto × cadena × provincia) | ~2,7M |
 | Productos únicos en el dataset | ~170K |
-| Productos que pasan todos los umbrales | ~3 800 |
-| Productos con maestro completo (candidatos) | ~3 650 |
-| Productos en la canasta final | ~60 |
+| Productos que pasan umbrales estrictos | ~3.800 |
+| Productos con maestro completo (Candidatos) | ~3.650 |
+| Productos en la canasta final (Canasta) | ~65 |
+| Productos en hoja Selección (umbrales amplios) | ~15K–30K |
 | RAM en pico (df_suc_enr) | ~7 GB |
 | RAM después de liberar df_suc_enr | ~600 MB |
