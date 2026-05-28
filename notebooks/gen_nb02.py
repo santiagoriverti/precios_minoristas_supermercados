@@ -1256,6 +1256,156 @@ print(f'  Promedio nacional:    ${prom_nac_ponderado:,.0f}')
 print(f'  Serie historica:      {serie_nacional_valida["anio_mes"].min()} -> {serie_nacional_valida["anio_mes"].max()}')
 print('='*65)"""))
 
+# CELL 20 — DIAGNOSTIC: temporal traceability of Candidatos
+cells.append(cell_code("""\
+# ============================================================
+# CELDA 20 — DIAGNÓSTICO: Trazabilidad temporal de Candidatos
+# ============================================================
+# Escanea los ZIPs históricos leyendo SOLO la columna id_producto
+# (sin precios — mucho más rápido) para determinar en cuántos
+# meses aparece cada producto de la hoja Candidatos.
+# Útil para elegir productos estables para la canasta.
+#
+# Tiempo estimado: ~15-20 min (vs ~60 min de la serie histórica
+# completa, porque no lee las columnas de precio).
+# ============================================================
+
+# ── 1. Leer hoja Candidatos ──────────────────────────────────
+try:
+    df_cand = pd.read_excel(CANASTA_EXCEL, sheet_name='Candidatos',
+                            dtype={'id_producto': str})
+    df_cand['ean_norm'] = df_cand['id_producto'].str.lstrip('0')
+    CAND_EANS = set(df_cand['ean_norm'])
+    print(f'Candidatos cargados: {len(CAND_EANS):,} EANs unicos')
+except Exception as _e:
+    raise RuntimeError(f'No se pudo leer hoja Candidatos: {_e}')
+
+# ── 2. Escanear ZIPs (solo id_producto) ─────────────────────
+_presencia   = {}   # ean_norm → set de meses donde aparece
+_meses_vis   = []
+
+for _zip_path, _anio, _sem in detectar_semestres():
+    _meses = archivos_por_mes(_zip_path)
+    for (_anio_m, _mes_m), _archs in sorted(_meses.items()):
+        _lbl = f'{_anio_m}-{_mes_m:02d}'
+        if _lbl < MES_INICIO_HISTORICO:
+            continue
+        _meses_vis.append(_lbl)
+        _found = set()
+        for _archivo in sorted(_archs):
+            _tmp_p = TMP_DIR / Path(_archivo).name
+            with zipfile.ZipFile(_zip_path) as _zf:
+                with _zf.open(_archivo) as _s, open(_tmp_p, 'wb') as _d:
+                    shutil.copyfileobj(_s, _d, length=4*1024*1024)
+            with gzip.open(_tmp_p, 'rt', encoding='utf-8', errors='replace') as _g:
+                for _chunk in pd.read_csv(_g, dtype={'id_producto': str},
+                                           usecols=['id_producto'],
+                                           chunksize=500_000, low_memory=False):
+                    _chunk['ean_norm'] = _chunk['id_producto'].apply(normalizar_ean)
+                    _found |= set(_chunk[_chunk['ean_norm'].isin(CAND_EANS)]['ean_norm'])
+            _tmp_p.unlink(missing_ok=True)
+        for _ean in _found:
+            _presencia.setdefault(_ean, set()).add(_lbl)
+        print(f'  {_lbl}: {len(_found):,} candidatos encontrados')
+
+_n_meses = len(set(_meses_vis))
+_mes_min  = min(_meses_vis) if _meses_vis else MES_INICIO_HISTORICO
+_mes_max  = max(_meses_vis) if _meses_vis else ULTIMO_MES
+print(f'\\nTotal meses escaneados: {_n_meses} ({_mes_min} -> {_mes_max})')
+
+# ── 3. Construir tabla de trazabilidad ───────────────────────
+_rows = []
+for _ean, _mp in _presencia.items():
+    _rows.append({
+        'ean_norm'         : _ean,
+        'meses_presentes'  : len(_mp),
+        'pct_trazabilidad' : len(_mp) / _n_meses * 100,
+        'primer_mes'       : min(_mp),
+        'ultimo_mes'       : max(_mp),
+        'en_canasta'       : _ean in CANASTA,
+    })
+# EANs con 0 presencia
+for _ean in CAND_EANS - set(_presencia.keys()):
+    _rows.append({'ean_norm':_ean,'meses_presentes':0,'pct_trazabilidad':0.0,
+                  'primer_mes':None,'ultimo_mes':None,'en_canasta':_ean in CANASTA})
+
+df_traz = pd.DataFrame(_rows)
+
+# Merge con metadata de candidatos
+_mc = ['ean_norm'] + [c for c in
+       ['descripcion','marca','categoria','subcategoria','precio_mediano','score_cobertura']
+       if c in df_cand.columns]
+df_traz = (df_traz
+           .merge(df_cand[_mc], on='ean_norm', how='left')
+           .sort_values('pct_trazabilidad', ascending=False)
+           .reset_index(drop=True))
+
+# ── 4. Resumen estadístico ───────────────────────────────────
+print(f'\\n{"="*60}')
+print(f'  TRAZABILIDAD TEMPORAL — {_mes_min} a {_mes_max} ({_n_meses} meses)')
+print(f'{"="*60}')
+print(f'  Candidatos con trazabilidad 100%  : {(df_traz["pct_trazabilidad"]==100).sum():>5,}')
+print(f'  Candidatos con trazabilidad  >90% : {(df_traz["pct_trazabilidad"]> 90).sum():>5,}')
+print(f'  Candidatos con trazabilidad  >75% : {(df_traz["pct_trazabilidad"]> 75).sum():>5,}')
+print(f'  Candidatos con trazabilidad  <50% : {(df_traz["pct_trazabilidad"]< 50).sum():>5,}')
+print(f'  Candidatos sin presencia historica: {(df_traz["pct_trazabilidad"]==  0).sum():>5,}')
+_can_traz = df_traz[df_traz['en_canasta']]['pct_trazabilidad']
+print(f'\\n  Tu canasta actual ({len(_can_traz)} productos):')
+print(f'    Trazabilidad promedio : {_can_traz.mean():.1f}%')
+print(f'    Trazabilidad minima   : {_can_traz.min():.1f}%')
+print(f'{"="*60}')
+
+# ── 5. Tabla top 30 ──────────────────────────────────────────
+_cols_show = [c for c in
+    ['descripcion','marca','categoria','meses_presentes','pct_trazabilidad','primer_mes','en_canasta']
+    if c in df_traz.columns]
+display(df_traz[_cols_show].head(30).style
+    .background_gradient(subset=['pct_trazabilidad'], cmap='RdYlGn', vmin=0, vmax=100)
+    .format({'pct_trazabilidad': '{:.1f}%'})
+    .set_caption(f'Top 30 candidatos por trazabilidad temporal ({_mes_min} → {_mes_max})')
+)
+
+# ── 6. Gráficos ──────────────────────────────────────────────
+_fig, _axes = plt.subplots(1, 2, figsize=(14, 5))
+
+# Histograma de distribución
+_axes[0].hist(df_traz['pct_trazabilidad'], bins=20,
+              color='#0055A4', edgecolor='white', alpha=0.85)
+_axes[0].axvline(_can_traz.mean(), color='#D62728', linewidth=2,
+                 linestyle='--', label=f'Promedio canasta actual ({_can_traz.mean():.0f}%)')
+_axes[0].set_xlabel('Trazabilidad temporal (%)')
+_axes[0].set_ylabel('Número de productos')
+_axes[0].set_title('Distribución de trazabilidad\\n(todos los candidatos)')
+_axes[0].legend(fontsize=9)
+
+# Trazabilidad promedio por categoría
+if 'categoria' in df_traz.columns:
+    _top_cat = (df_traz.groupby('categoria')['pct_trazabilidad']
+                .agg(_mean='mean', _n='count')
+                .query('_n >= 5')
+                .sort_values('_mean', ascending=True)
+                .tail(15))
+    _axes[1].barh(_top_cat.index, _top_cat['_mean'], color='#0055A4', alpha=0.85)
+    _axes[1].axvline(90, color='gray', linestyle='--', linewidth=1, alpha=0.6)
+    _axes[1].set_xlabel('Trazabilidad promedio (%)')
+    _axes[1].set_title('Trazabilidad por categoría\\n(categorías con ≥5 candidatos)')
+    _axes[1].set_xlim(0, 105)
+    for _i, (_idx, _row) in enumerate(_top_cat.iterrows()):
+        _axes[1].text(_row['_mean']+0.5, _i, f'{_row["_mean"]:.0f}%', va='center', fontsize=8)
+
+plt.tight_layout()
+_fig.savefig(OUTPUT_DIR / f'trazabilidad_candidatos_{ULTIMO_MES}.png',
+             dpi=150, bbox_inches='tight')
+plt.show()
+
+# ── 7. Exportar tabla completa ───────────────────────────────
+_out_traz = OUTPUT_DIR / f'trazabilidad_candidatos_{ULTIMO_MES}.xlsx'
+df_traz.to_excel(_out_traz, index=False)
+print(f'Tabla completa guardada: {_out_traz.name}')
+print('Tip: filtra por pct_trazabilidad > 90 y en_canasta = False para ver '
+      'candidatos estables que aun no estan en tu canasta.')
+"""))
+
 # Write notebook
 nb = {
     'cells': cells,
