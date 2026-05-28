@@ -1,6 +1,6 @@
 # Bugs Pendientes y Mejoras
 
-Última actualización: 2026-05-28 (nueva hoja "Selección" en Excel de salida)
+Última actualización: 2026-05-28 (BUG-13: fix tildes en excluir_subcat de Higiene y cuidado personal)
 
 ---
 
