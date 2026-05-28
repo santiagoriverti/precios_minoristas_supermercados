@@ -1,6 +1,6 @@
 # Contexto del Proyecto — Precios Minoristas SEPA
 
-Última actualización: 2026-05-28 (hoja Selección con umbrales amplios independientes)
+Última actualización: 2026-05-28 (notebook 02 completo — análisis canasta, mapas, rankings)
 
 ## Objetivo
 
@@ -12,9 +12,11 @@ Construir una **canasta representativa de ~60 productos** a partir de los datos 
 ## Repositorio
 
 - **GitHub**: santiagoriverti/precios_minoristas_supermercados
-- **Notebook principal**: `notebooks/exploracion_productos.ipynb` (ejecutable en Google Colab)
+- **Notebook 01**: `notebooks/exploracion_productos.ipynb` — selección dinámica de canasta (ejecutable en Colab)
+- **Notebook 02**: `notebooks/02_evolucion_canasta_representativa.ipynb` — análisis de canasta elegida, mapas, rankings (ejecutable en Colab)
 - **Maestros**: `data/` — productos, sucursales, provincias
 - **Datos SEPA**: NO están en el repo. Están en Google Drive personal: `/carga/` (2024A.zip, 2024B.zip, 2025A.zip, 2025B.zip, 2026A.zip)
+- **Archivos auxiliares en Drive** (`carga/`): `IPC.xlsx` (IPC INDEC), `ar.json` (GeoJSON provincias), `output_canasta/canasta_representativa_YYYY-MM.xlsx`
 
 ---
 
@@ -22,41 +24,67 @@ Construir una **canasta representativa de ~60 productos** a partir de los datos 
 
 Este proyecto no existe en aislamiento. Hay múltiples notebooks en otros repositorios que procesan los mismos datos y de los que se pueden tomar patrones.
 
-### 1. `exploracion_productos.ipynb` (este repo)
+### 1. `exploracion_productos.ipynb` (este repo — notebook 01)
 **Propósito**: selección dinámica de canasta por score de cobertura.
 **Enfoque**: todos los productos del SEPA semestral → filtrar por cobertura → seleccionar top-N por grupo.
-**Output**: `canasta_representativa_MMAAAA.xlsx`
+**Output**: `canasta_representativa_MMAAAA.xlsx` (hojas: Canasta, Candidatos, Selección)
 
-### 2. `analisis_SEPA_evolucion.ipynb`
+### 2. `02_evolucion_canasta_representativa.ipynb` (este repo — notebook 02) ← NUEVO
+**Propósito**: análisis completo de la canasta elegida por el economista.
+**Enfoque**: lee la hoja `Selección` del Excel del notebook 01 (campo `cantidad`), calcula el costo por sucursal con imputación nacional, compara con IPC INDEC, y genera todas las visualizaciones.
+**Pipeline (20 celdas)**:
+- CELDA 1–2: Markdown + Config (`SEPA_DIR`, `OUTPUT_DIR`, `USE_CACHE`, `MES_INICIO_HISTORICO`, `MES_INICIO_GRAFICO`, `MIN_PRODUCTOS_PROPIOS`, `MIN_SUCURSALES_RANKING`)
+- CELDA 3: Mount Drive
+- CELDA 4: Canasta desde Excel (hoja `Selección`/`Seleccion`, campo `cantidad`)
+- CELDA 5: Maestros — `NOMBRES_COMPUESTOS`, `NOMBRES_SIMPLES`, `PROV_NORM` (24 provincias), `PESOS_POBLACION` (Censo 2022)
+- CELDA 6: Funciones auxiliares (`get_nombre_cadena`, `normalizar_provincia`, `precio_a_pesos`)
+- CELDA 7: Carga mes actual desde ZIPs, filtra a EANs de la canasta, precio promedio por producto por sucursal
+- CELDA 8: `calcular_canasta_completa()` por sucursal — imputación con mediana nacional para productos faltantes → `canasta_geo_filtros`
+- CELDA 9: Análisis provincial — mediana por provincia, ponderación por población → `serie_provincia_valida`, `prom_nac_ponderado`
+- CELDA 10: Serie histórica (todos los semestres disponibles) con caché parquet clave MD5 → `serie_nacional_valida`
+- CELDA 11: IPC desde `carga/IPC.xlsx` → `ipc_general`, `ipc_alimentos`
+- CELDA 12: `comparativa` — reindexar a base mar-2024, índice SEPA vs IPC
+- CELDA 13: Gráfico 1 — índices base mar-2024 (líneas); Gráfico 2 — variaciones mensuales (barras pareadas)
+- CELDA 14: Cuadro 1 provincial + código LaTeX
+- CELDA 15: Mapa coroplético provincial con `ar.json`
+- CELDA 16: Cobertura por provincia y por cadena
+- CELDA 17: Rankings nacionales + AMBA (barras horizontales, gradiente RdYlGn)
+- CELDA 18: Mapa Folium interactivo (FeatureGroups por cadena, panel JS de filtros)
+- CELDA 19: Ranking CABA por barrio (48 bounding boxes lat/lon)
+- CELDA 20: Exportación Excel (`canasta_analisis_YYYY-MM.xlsx`)
+**Output**: `output_canasta/canasta_analisis_YYYY-MM.xlsx` + `mapa_interactivo.html`
+**Archivos requeridos en Drive**: `carga/IPC.xlsx`, `carga/ar.json`, `output_canasta/canasta_representativa_YYYY-MM.xlsx`
+
+### 3. `analisis_SEPA_evolucion.ipynb`
 **Propósito**: evolución mensual de precios con canasta fija de 30 EANs.
 **Enfoque**: procesa múltiples semestres (2022A–2026A), autodetecta FACTOR_PRECIO, calcula serie diaria nacional.
 **Output**: `canasta_SEMESTRE_serie.xlsx` (hojas: serie_diaria_nacional, canasta_mes_provincia, canasta_mes_region, canasta_nacional_ponderada)
 
-### 3. `analisis_SEPA_evolucion_AMBA.ipynb`
+### 4. `analisis_SEPA_evolucion_AMBA.ipynb`
 **Propósito**: foco en AMBA, 16 cadenas comerciales, mapas Folium interactivos.
 **Clave crítica**: confirma **FACTOR_PRECIO = 1** para datos de abril 2026. Tiene el diccionario completo de `(id_comercio, id_bandera)` → nombre de cadena.
 **Output**: mapa interactivo HTML + Excel con canasta por sucursal.
 
-### 4. `consolidacion_analisis_SEPA.ipynb`
+### 5. `consolidacion_analisis_SEPA.ipynb`
 **Propósito**: consolida todos los semestres en una serie temporal de 52 meses (2022–2026).
 **Output**: tablas LaTeX para papers + comparación SEPA vs IPC INDEC.
 **Dato**: canasta nacional abril 2026 = **$322,566 ARS** (ponderada por Censo 2022).
 
-### 5. `analisis_canasta_SEPA.ipynb`
+### 6. `analisis_canasta_SEPA.ipynb`
 **Propósito**: usa el formato DIARIO (no semestral) para ver los 28 banners comerciales reales.
 **Formato**: `YYYY-MM-DD.zip` → 20 ZIPs por cadena → pipe-separated (`comercio.csv`, `sucursales.csv`, `productos.csv`).
 **Clave**: 87,418 EANs únicos, precios directamente en pesos, 14.8M filas.
 
-### 6. `analisis_precios_SEPA.ipynb`
+### 7. `analisis_precios_SEPA.ipynb`
 **Propósito**: pipeline sofisticado con parquet cache + clasificación de rubros por keywords.
 **Patrones útiles**: float32 desde el inicio, drop de columnas de promo, parquet snappy para cachear.
 **Output**: 7,616 productos canastables identificados.
 
-### 7. `analisis_precios_SEPA_2.ipynb`
+### 8. `analisis_precios_SEPA_2.ipynb`
 **Propósito**: deduplicación de variantes del mismo producto.
 **Técnica**: `extraer_concepto()` → top-3 palabras significativas minus marca/packaging → colapsa ~10% de duplicados.
 
-### 8. `resultados_canasta_sepa.ipynb`
+### 9. `resultados_canasta_sepa.ipynb`
 **Propósito**: visualización — coroplético, ranking, heatmap cadenas×provincias.
 **Clave**: usa GeoJSON `ar.json` de simplemaps.com. El GeoJSON usa "Ciudad de Buenos Aires" → mapear a "CABA" en el join.
 
@@ -222,6 +250,20 @@ Los 13 productos son **embutidos curados** (Leberwurst, Salamín, Bondiola, Pale
 ---
 
 ## Historial de cambios
+
+### 2026-05-28 — Notebook 02 completo: análisis canasta elegida, mapas, rankings, IPC
+
+- **Nuevo notebook** `02_evolucion_canasta_representativa.ipynb` (20 celdas) generado desde `notebooks/gen_nb02.py`
+- Canasta leída desde hoja `Selección`/`Seleccion` del Excel del nb01 (fallback accent-safe)
+- `calcular_canasta_completa()`: costo por sucursal con imputación nacional para productos faltantes; filtrado a MIN_PRODUCTOS_PROPIOS=15
+- Serie histórica con caché parquet clave MD5 del set de EANs (invalidación automática al cambiar canasta)
+- IPC desde `carga/IPC.xlsx` (nombre exacto en mayúsculas — case-sensitive en Colab)
+- Gráficos: índices base mar-2024 + barras mensuales, `COLOR_CANASTA='#0055A4'`
+- Cuadro 1 provincial + LaTeX, mapa coroplético con `ar.json`
+- Rankings nacionales + AMBA (RdYlGn), mapa Folium con FeatureGroups + panel JS
+- Ranking CABA con 48 bounding boxes de barrios, cobertura por provincia y cadena
+- **BUG-14**: `ipc.xlsx` no encontrado → nombre real es `IPC.xlsx` (case-sensitive). Fix: fallback que prueba `IPC.xlsx`, `ipc.xlsx`, `IPC.XLSX` en orden
+- README actualizado con badge Colab + estructura del repo
 
 ### 2026-05-27 — Fix BUG-12/13: implementos físicos y beauty/styling fuera de la canasta (este commit)
 - **BUG-12**: "Cabo Metálico Glow" y similares aparecían en Limpieza del hogar (`subcategoria='Palas y Cabos'`). Fix: `excluir_subcat=['Palas y Cabos','Escobas y Escobillones','Plumeros y Limpiavidrios']`

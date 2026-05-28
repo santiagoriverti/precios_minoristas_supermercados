@@ -1,12 +1,31 @@
 # Bugs Pendientes y Mejoras
 
-Última actualización: 2026-05-28 — exploracion_productos.ipynb COMPLETO (todos los bugs resueltos BUG-1..13)
+Última actualización: 2026-05-28 — notebook 02 completo + BUG-14 (IPC case-sensitivity)
 
 ---
 
 ## 🔴 Bugs críticos (pendientes de fix)
 
 > ✅ Todos los bugs críticos están resueltos. Ver sección "Resueltos" más abajo.
+
+---
+
+## 🔴 Bugs críticos (resueltos — notebook 02)
+
+### BUG-14: `ipc.xlsx` no encontrado — nombre real es `IPC.xlsx` (case-sensitive en Colab) ✅ Resuelto — commit 0acf852+1
+
+**Archivo**: `notebooks/02_evolucion_canasta_representativa.ipynb`, celda de config (CELDA 2)
+**Síntoma**: al ejecutar la celda de verificación de paths, el output mostraba `ipc.xlsx: NO ENCONTRADO` aunque el archivo estaba presente en la carpeta `carga/`.
+**Causa**: el archivo se llama `IPC.xlsx` (I mayúscula). En Colab, el filesystem de Google Drive es **case-sensitive**: `IPC.xlsx` ≠ `ipc.xlsx`. El notebook buscaba `ipc.xlsx` en minúsculas.
+**Contexto**: Windows no distingue mayúsculas/minúsculas en nombres de archivo, por lo que durante el desarrollo local el bug era invisible. Solo se manifiesta al ejecutar en Colab (Linux).
+**Fix aplicado** (gen_nb02.py, celda de config):
+```python
+# Buscar IPC.xlsx / ipc.xlsx — case-insensitive fallback para Colab
+_ipc_candidatos = [SEPA_DIR / n for n in ('IPC.xlsx', 'ipc.xlsx', 'IPC.XLSX')]
+_ipc_encontrado = next((p for p in _ipc_candidatos if p.exists()), None)
+IPC_PATH = _ipc_encontrado if _ipc_encontrado else SEPA_DIR / 'IPC.xlsx'
+```
+**Regla general**: en archivos de Drive accedidos desde Colab, siempre probar variantes de capitalización o documentar el nombre exacto del archivo. El nombre canónico es **`IPC.xlsx`** (mayúsculas).
 
 ---
 
@@ -271,29 +290,33 @@ Resultado esperado: ~10% reducción de la canasta de candidatos (4,713 → ~4,20
 
 ---
 
-### MEJORA-4: Canasta imputada para comparación provincial
+### MEJORA-4: Canasta imputada para comparación provincial ✅ Implementado en notebook 02 — 2026-05-28
 
-**Patrón de**: `analisis_SEPA_evolucion_AMBA.ipynb`
-**Descripción**: cuando una sucursal no tiene precio para algún producto de la canasta, imputar con la mediana nacional de ese producto. Esto permite calcular una canasta "completa" en todas las sucursales y comparar precios entre provincias de forma justa.
+**Implementado en**: `notebooks/02_evolucion_canasta_representativa.ipynb`, CELDA 7 (`calcular_canasta_completa()`)
+**Descripción**: para cada sucursal, si un producto de la canasta no tiene precio propio, se usa la mediana nacional de ese producto como imputación. Solo se reporta la sucursal si tiene al menos `MIN_PRODUCTOS_PROPIOS=15` productos propios.
 
 ```python
-# Para cada EAN de la canasta, calcular mediana nacional
-medianas_nacionales = canasta_df.groupby('id_producto')['precio_mediano'].median()
-
-# En sucursales sin precio para ese EAN, usar la mediana
-canasta_sucursal['precio_imputado'] = canasta_sucursal.apply(
-    lambda r: r['precio'] if pd.notna(r['precio'])
-              else medianas_nacionales.get(r['id_producto'], np.nan),
-    axis=1
-)
+def calcular_canasta_completa(grupo):
+    locales = dict(zip(grupo['ean_norm'], grupo['precio']))
+    total = 0; propios = 0; detalle = []
+    for ean_norm, (nombre, qty, cat) in CANASTA.items():
+        if ean_norm in locales:
+            precio = locales[ean_norm]; es_propio = True; propios += 1
+        else:
+            precio = precio_prom_nac.get(ean_norm, 0); es_propio = False
+        subtotal = precio * qty
+        total += subtotal
+        detalle.append((nombre, cat, qty, precio, subtotal, es_propio))
+    return pd.Series({'canasta_total': total, 'productos_propios': propios,
+                      'detalle_productos': detalle})
 ```
 
 ---
 
-### MEJORA-5: Visualización geográfica con Folium
+### MEJORA-5: Visualización geográfica con Folium ✅ Implementado en notebook 02 — 2026-05-28
 
-**Patrón de**: `analisis_SEPA_evolucion_AMBA.ipynb` y `python-dataviz-geo` skill
-**Descripción**: mapa interactivo HTML con un punto por sucursal, coloreado por precio de canasta. Requiere coordenadas lat/lon (disponibles en el maestro de sucursales si tiene columnas de geolocalizacion, o cruzar con base externa).
+**Implementado en**: `notebooks/02_evolucion_canasta_representativa.ipynb`, CELDA 18
+**Descripción**: mapa Folium interactivo con un `CircleMarker` por sucursal (radio proporcional al costo de canasta), coloreado por cadena comercial. FeatureGroups independientes por cadena + panel JS de filtros por provincia y tipo (hiper/super/express). Las coordenadas vienen del maestro de sucursales.
 
 ---
 
@@ -331,6 +354,7 @@ canasta_sucursal['precio_imputado'] = canasta_sucursal.apply(
 
 | Bug/Mejora | Estado | Prioridad |
 |---|---|---|
+| BUG-14: IPC.xlsx case-sensitive en Colab | ✅ Resuelto — 2026-05-28 | 🔴 Alta |
 | BUG-13: Tintura/Protector en Higiene | ✅ Resuelto — commit c61416e | 🟡 Media |
 | BUG-12: Cabo Metálico en Limpieza | ✅ Resuelto — commit 5f9f3c4 | 🟡 Media |
 | BUG-11: 'carne' ≠ substring 'Carnicería' | ✅ Resuelto — commit f67de87 | 🟡 Media |
@@ -344,9 +368,9 @@ canasta_sucursal['precio_imputado'] = canasta_sucursal.apply(
 | BUG-3: Grupos contaminados (originales) | ✅ Resuelto — commit e23bff5 | 🟡 Media |
 | BUG-2: Nombres cadenas | ✅ Resuelto — commit e23bff5 | 🟡 Media |
 | BUG-1: Factor precio /100 | ✅ Resuelto — commit e23bff5 | 🔴 Alta |
-| MEJORA-1: Parquet cache | ✅ Implementado — commit e23bff5 | 🟡 Media |
-| MEJORA-3: Nombres cadenas output | ✅ Implementado — commit e23bff5 | 🟢 Baja |
 | MEJORA-6: Hoja "Selección" con columna cantidad | ✅ Implementado — 2026-05-28 | 🔴 Alta |
+| MEJORA-5: Mapa Folium interactivo | ✅ Implementado nb02 — 2026-05-28 | 🟡 Media |
+| MEJORA-4: Canasta imputada por sucursal | ✅ Implementado nb02 — 2026-05-28 | 🟡 Media |
+| MEJORA-3: Nombres cadenas output | ✅ Implementado — commit e23bff5 | 🟢 Baja |
+| MEJORA-1: Parquet cache | ✅ Implementado — commit e23bff5 | 🟡 Media |
 | MEJORA-2: Deduplicación de variantes | ⏳ Pendiente | 🟢 Baja |
-| MEJORA-4: Canasta imputada | ⏳ Pendiente | 🟢 Baja |
-| MEJORA-5: Mapa Folium | ⏳ Pendiente | 🟢 Baja |

@@ -94,13 +94,16 @@ if USE_CACHE:
 TMP_DIR = Path('/content/tmp_sepa_nb02')
 TMP_DIR.mkdir(exist_ok=True)
 
-IPC_PATH     = SEPA_DIR / 'ipc.xlsx'
+# Buscar IPC.xlsx / ipc.xlsx (case-insensitive: en Colab el filesystem es case-sensitive)
+_ipc_candidatos = [SEPA_DIR / n for n in ('IPC.xlsx', 'ipc.xlsx', 'IPC.XLSX')]
+_ipc_encontrado = next((p for p in _ipc_candidatos if p.exists()), None)
+IPC_PATH     = _ipc_encontrado if _ipc_encontrado else SEPA_DIR / 'IPC.xlsx'
 GEOJSON_PATH = SEPA_DIR / 'ar.json'
 
 print(f'SEPA_DIR:   {SEPA_DIR}')
 print(f'OUTPUT_DIR: {OUTPUT_DIR}')
-for p in [IPC_PATH, GEOJSON_PATH]:
-    print(f'  {p.name}: {"OK" if p.exists() else "NO ENCONTRADO"}')"""))
+print(f'  IPC.xlsx: {"OK — " + IPC_PATH.name if IPC_PATH.exists() else "NO ENCONTRADO"}')
+print(f'  ar.json:  {"OK" if GEOJSON_PATH.exists() else "NO ENCONTRADO"}')"""))
 
 # CELL 3 — CANASTA FROM EXCEL
 cells.append(cell_code("""\
@@ -562,10 +565,13 @@ print(f'  Periodo: {serie_nacional_valida["anio_mes"].min()} -> {serie_nacional_
 # CELL 10 — IPC
 cells.append(cell_code("""\
 # ============================================================
-# CELDA 10 — IPC INDEC desde carga/ipc.xlsx
+# CELDA 10 — IPC INDEC desde carga/IPC.xlsx
 # ============================================================
 if not IPC_PATH.exists():
-    raise FileNotFoundError(f'ipc.xlsx no encontrado en {IPC_PATH}')
+    raise FileNotFoundError(
+        f'IPC.xlsx no encontrado en {SEPA_DIR}\\n'
+        'Asegurate de tener el archivo IPC.xlsx (o ipc.xlsx) en la carpeta carga/'
+    )
 
 ipc_raw = pd.read_excel(IPC_PATH)
 print(f'IPC cargado: {len(ipc_raw)} filas')

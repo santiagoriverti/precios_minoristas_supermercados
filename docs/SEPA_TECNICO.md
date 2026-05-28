@@ -1,6 +1,6 @@
 # SEPA — Referencia Técnica
 
-Última actualización: 2026-05-27 (segunda ejecución + fixes BUG-6..11)
+Última actualización: 2026-05-28 (notebook 02 completo + IPC.xlsx case-sensitivity)
 
 ## Dos formatos completamente distintos
 
@@ -428,6 +428,31 @@ Los notebooks de evolución temporal usan una **canasta fija de 30 EANs** para c
 
 ## IPC INDEC
 
+### Fuente: archivo local `IPC.xlsx` (nombre exacto, case-sensitive en Colab)
+
+El notebook 02 lee el IPC desde un archivo Excel en la carpeta `carga/`. El nombre del archivo es **`IPC.xlsx`** (I mayúscula). En Colab (Linux), el filesystem de Drive es case-sensitive — `ipc.xlsx` no encontraría el archivo.
+
+**Patrón de carga robusto (case-insensitive fallback)**:
+
+```python
+_ipc_candidatos = [SEPA_DIR / n for n in ('IPC.xlsx', 'ipc.xlsx', 'IPC.XLSX')]
+IPC_PATH = next((p for p in _ipc_candidatos if p.exists()), SEPA_DIR / 'IPC.xlsx')
+```
+
+**Estructura esperada del archivo**:
+
+| Columna | Contenido |
+|---------|-----------|
+| `date` (o similar) | Fecha del período (YYYY-MM-DD o MM/DD/YYYY) |
+| Columna con "nivel general" | IPC Nivel General mensual (variación o índice) |
+| Columna con "alimentos y bebidas no alc" | IPC Alimentos y bebidas no alcohólicas |
+
+El notebook detecta las columnas buscando los substrings `'nivel general'` y `'alimentos y bebidas no alc'` (case-insensitive) en los nombres de columna.
+
+**Cobertura**: datos disponibles desde enero 2017 hasta **marzo 2026** (mínimo). Actualización mensual con un mes de rezago aproximado.
+
+### Fuente alternativa: API pública
+
 ```python
 import requests
 
@@ -450,4 +475,4 @@ def get_ipc(serie_id, start_date='2022-01-01'):
 # 103.1_I2N_DICI_M_19           — CBA (Canasta Básica Alimentaria)
 ```
 
-Datos disponibles hasta **marzo 2026**. Actualización mensual.
+Datos disponibles hasta **marzo 2026**. Actualización mensual. El notebook 02 usa el archivo local (más confiable en Colab que una llamada a API).
