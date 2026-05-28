@@ -1,6 +1,6 @@
 # Bugs Pendientes y Mejoras
 
-Última actualización: 2026-05-27 (tercera ejecución — revisión Excel exhaustiva)
+Última actualización: 2026-05-28 (nueva hoja "Selección" en Excel de salida)
 
 ---
 
@@ -297,6 +297,21 @@ canasta_sucursal['precio_imputado'] = canasta_sucursal.apply(
 
 ---
 
+### MEJORA-6: Hoja "Selección" en Excel — fuente para notebook de canasta elegida ✅ Implementado — 2026-05-28
+
+**Archivo**: `notebooks/exploracion_productos.ipynb`, cell-27 (export Excel)
+**Descripción**: el Excel de salida ahora tiene una **tercera hoja "Selección"** que contiene todos los candidatos (~3,650 productos) ordenados por `rubro → categoría → score_cobertura` descendente, con:
+- **Columna `cantidad`** (en amarillo destacado): vacía, para que el economista indique cuántas unidades incluir por producto
+- **Auto-filter** habilitado para filtrar por rubro/categoría
+- Header con freeze y estilo azul marino idéntico al del resto del Excel
+- Formatos numéricos aplicados (score, precios, porcentajes)
+
+**Estructura de `_COLS_SEL`**: `['periodo', 'cantidad'] + COLS_CANDIDATOS - 'periodo'`
+
+**Propósito**: esta hoja es la **fuente de datos del próximo notebook** (`canasta_elegida_analisis.ipynb` — aún no creado), que leerá las cantidades completadas por el economista y calculará los totales de la canasta elegida, su comparación con el IPC, etc.
+
+---
+
 ## 🔴 Bugs críticos (resueltos)
 
 ### BUG-5: OOM persistente — df_enr demasiado grande para Colab
@@ -331,6 +346,7 @@ canasta_sucursal['precio_imputado'] = canasta_sucursal.apply(
 | BUG-1: Factor precio /100 | ✅ Resuelto — commit e23bff5 | 🔴 Alta |
 | MEJORA-1: Parquet cache | ✅ Implementado — commit e23bff5 | 🟡 Media |
 | MEJORA-3: Nombres cadenas output | ✅ Implementado — commit e23bff5 | 🟢 Baja |
+| MEJORA-6: Hoja "Selección" con columna cantidad | ✅ Implementado — 2026-05-28 | 🔴 Alta |
 | MEJORA-2: Deduplicación de variantes | ⏳ Pendiente | 🟢 Baja |
 | MEJORA-4: Canasta imputada | ⏳ Pendiente | 🟢 Baja |
 | MEJORA-5: Mapa Folium | ⏳ Pendiente | 🟢 Baja |

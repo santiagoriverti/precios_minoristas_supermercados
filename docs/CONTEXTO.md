@@ -1,12 +1,13 @@
 # Contexto del Proyecto — Precios Minoristas SEPA
 
-Última actualización: 2026-05-27 (tercera ejecución — BUG-12 y BUG-13 resueltos)
+Última actualización: 2026-05-28 (nueva hoja "Selección" en el Excel de salida)
 
 ## Objetivo
 
-Construir una **canasta representativa de ~60 productos** a partir de los datos del SEPA (Sistema Electrónico de Publicidad de Precios Argentinos). El output es un Excel con dos hojas:
+Construir una **canasta representativa de ~60 productos** a partir de los datos del SEPA (Sistema Electrónico de Publicidad de Precios Argentinos). El output es un Excel con **tres hojas**:
 - **Canasta**: ~60 productos seleccionados por cobertura geográfica y temporal, coloreados por grupo
 - **Candidatos**: ~41K productos que superan todos los umbrales, para que el economista arme su propia canasta
+- **Selección**: mismos candidatos ordenados por rubro → categoría → score, con columna `cantidad` vacía (en amarillo) para que el economista indique cuántas unidades incluir. Fuente del próximo notebook de análisis de canasta elegida.
 
 ## Repositorio
 
@@ -92,7 +93,7 @@ Este proyecto no existe en aislamiento. Hay múltiples notebooks en otros reposi
 | 24 | code | Print canasta por grupo |
 | 25 | code | Gráficos: barras de cobertura por grupo + dispersión de precios |
 | 26 | md | Header sección exportación |
-| 27 | code | Export Excel: hoja Canasta (colores por grupo) + hoja Candidatos |
+| 27 | code | Export Excel: hoja Canasta (colores por grupo) + hoja Candidatos + hoja Selección (candidatos ordenados + columna `cantidad` vacía en amarillo, fuente del próximo notebook) |
 
 ---
 
