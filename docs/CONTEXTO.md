@@ -1,13 +1,13 @@
 # Contexto del Proyecto — Precios Minoristas SEPA
 
-Última actualización: 2026-05-28 (nueva hoja "Selección" en el Excel de salida)
+Última actualización: 2026-05-28 (hoja Selección con umbrales amplios independientes)
 
 ## Objetivo
 
 Construir una **canasta representativa de ~60 productos** a partir de los datos del SEPA (Sistema Electrónico de Publicidad de Precios Argentinos). El output es un Excel con **tres hojas**:
-- **Canasta**: ~60 productos seleccionados por cobertura geográfica y temporal, coloreados por grupo
-- **Candidatos**: ~41K productos que superan todos los umbrales, para que el economista arme su propia canasta
-- **Selección**: mismos candidatos ordenados por rubro → categoría → score, con columna `cantidad` vacía (en amarillo) para que el economista indique cuántas unidades incluir. Fuente del próximo notebook de análisis de canasta elegida.
+- **Canasta**: ~60 productos seleccionados automáticamente por cobertura, coloreados por grupo
+- **Candidatos**: ~3.650 productos que superan los umbrales estrictos (5 cadenas, 24 provincias, 50 sucursales)
+- **Selección**: ~15K–30K productos con umbrales amplios (≥3 cadenas, ≥18 provincias, ≥30 sucursales), columna `cantidad` vacía (amarillo). Fuente del próximo notebook de canasta elegida.
 
 ## Repositorio
 
