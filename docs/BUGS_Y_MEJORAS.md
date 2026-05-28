@@ -1,6 +1,6 @@
 # Bugs Pendientes y Mejoras
 
-Última actualización: 2026-05-28 (BUG-13: fix tildes en excluir_subcat de Higiene y cuidado personal)
+Última actualización: 2026-05-28 — exploracion_productos.ipynb COMPLETO (todos los bugs resueltos BUG-1..13)
 
 ---
 
@@ -12,7 +12,7 @@
 
 ## 🔴 Bugs críticos (resueltos — revisión Excel tercera ejecución)
 
-### BUG-12: "Cabo Metálico" y otros implementos físicos en Limpieza del hogar ✅ Resuelto — este commit
+### BUG-12: "Cabo Metálico" y otros implementos físicos en Limpieza del hogar ✅ Resuelto — commit 5f9f3c4
 
 **Archivo**: `notebooks/exploracion_productos.ipynb`, cell-23 (`GRUPOS_CANASTA`)
 **Síntoma**: el grupo Limpieza del hogar incluía "Cabo Metálico Glow 1 Un" y potencialmente escobas y plumeros — implementos físicos que no son productos de limpieza para seguimiento de precios.
@@ -30,7 +30,7 @@ Escoba sin Cabo Virulana | subcategoria=Escobas y Escobillones | score=0.934
 
 ---
 
-### BUG-13: Tintura de cabello y protector térmico en Higiene y cuidado personal ✅ Resuelto — este commit
+### BUG-13: Tintura de cabello y protector térmico en Higiene y cuidado personal ✅ Resuelto — commit c61416e
 
 **Archivo**: `notebooks/exploracion_productos.ipynb`, cell-23 (`GRUPOS_CANASTA`)
 **Síntoma**: "Coloración en Crema N°3 Issue" (tintura) y "Protector Térmico sin Fijacion Spray Roby" (styling) ocupaban los puestos 3 y 4 del grupo, desplazando a desodorantes.
@@ -331,8 +331,8 @@ canasta_sucursal['precio_imputado'] = canasta_sucursal.apply(
 
 | Bug/Mejora | Estado | Prioridad |
 |---|---|---|
-| BUG-13: Tintura/Protector en Higiene | ✅ Resuelto — este commit | 🟡 Media |
-| BUG-12: Cabo Metálico en Limpieza | ✅ Resuelto — este commit | 🟡 Media |
+| BUG-13: Tintura/Protector en Higiene | ✅ Resuelto — commit c61416e | 🟡 Media |
+| BUG-12: Cabo Metálico en Limpieza | ✅ Resuelto — commit 5f9f3c4 | 🟡 Media |
 | BUG-11: 'carne' ≠ substring 'Carnicería' | ✅ Resuelto — commit f67de87 | 🟡 Media |
 | BUG-10: id_producto int64 pierde ceros iniciales | ✅ Resuelto — commit f67de87 | 🔴 Alta |
 | BUG-9: Bebidas incompletas (yerba/té/café) | ✅ Resuelto — commit 3c66c3c | 🟡 Media |
