@@ -551,8 +551,10 @@ df_hist['costo_item'] = df_hist['precio_mediano'] * df_hist['qty']
 
 serie_nac = (df_hist.groupby('anio_mes')
              .agg(canasta_nacional_ponderada=('costo_item','sum'), n_eans=('ean_norm','nunique'))
-             .reset_index().sort_values('anio_mes').reset_index(drop=True))
-serie_nac = serie_nac[serie_nac['anio_mes'] >= MES_INICIO_HISTORICO].copy()
+             .reset_index()
+             .rename(columns={'anio_mes': 'mes'})
+             .sort_values('mes').reset_index(drop=True))
+serie_nac = serie_nac[serie_nac['mes'] >= MES_INICIO_HISTORICO].copy()
 serie_nac['variacion_mensual_%'] = serie_nac['canasta_nacional_ponderada'].pct_change() * 100
 
 base_v = serie_nac['canasta_nacional_ponderada'].iloc[0]
@@ -560,7 +562,7 @@ serie_nac['indice_canasta_base100'] = (serie_nac['canasta_nacional_ponderada'] /
 serie_nacional_valida = serie_nac.copy()
 
 print(f'Serie historica: {len(serie_nacional_valida)} meses')
-print(f'  Periodo: {serie_nacional_valida["anio_mes"].min()} -> {serie_nacional_valida["anio_mes"].max()}')"""))
+print(f'  Periodo: {serie_nacional_valida["mes"].min()} -> {serie_nacional_valida["mes"].max()}')"""))
 
 # CELL 10 — IPC
 cells.append(cell_code("""\
@@ -1269,7 +1271,7 @@ print(f'  Sucursales validas:   {len(canasta_geo_filtros):,}')
 print(f'  Cadenas:              {canasta_geo_filtros["cadena"].nunique()}')
 print(f'  Provincias:           {canasta_geo_filtros["PROVINCIA_NORM"].nunique()}')
 print(f'  Promedio nacional:    ${prom_nac_ponderado:,.0f}')
-print(f'  Serie historica:      {serie_nacional_valida["anio_mes"].min()} -> {serie_nacional_valida["anio_mes"].max()}')
+print(f'  Serie historica:      {serie_nacional_valida["mes"].min()} -> {serie_nacional_valida["mes"].max()}')
 print('='*65)"""))
 
 # CELL 20 — DIAGNOSTIC: temporal traceability of Candidatos
