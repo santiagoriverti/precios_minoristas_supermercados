@@ -449,23 +449,56 @@ if mask_caba_bad.sum():
     print(f'  Eliminando {mask_caba_bad.sum()} sucursales mal clasificadas como CABA')
     canasta_geo = canasta_geo[~mask_caba_bad].copy()
 
-# Validación geográfica por coordenadas — corrige etiquetas de provincia incorrectas
-# en el maestro (ej: sucursales en área de Jujuy pero etiquetadas como San Juan)
-_PROV_BOUNDS = {
-    # provincia: (lat_min, lat_max, lon_min, lon_max)
-    'San Juan': (-34.5, -27.5, -71.0, -65.0),
-    'Jujuy':    (-24.5, -21.5, -67.5, -63.5),
-    'Salta':    (-26.5, -21.5, -68.5, -62.5),
+# Reclasificación por coordenadas — corrige etiquetas de provincia incorrectas
+# en el maestro usando lat/lon (preserva la sucursal, no la descarta).
+# Bboxes (lat_min, lat_max, lon_min, lon_max) ordenados de más específico a más grande.
+_PROV_BBOX = {
+    'CABA':                (-34.72,-34.52,-58.54,-58.33),
+    'Tucumán':             (-28.0, -26.0, -66.5, -64.5),
+    'Jujuy':               (-24.5, -21.5, -67.5, -63.5),
+    'Misiones':            (-28.5, -25.5, -56.5, -53.0),
+    'Chaco':               (-27.5, -24.0, -63.0, -57.5),
+    'Formosa':             (-26.5, -22.0, -62.5, -58.0),
+    'Corrientes':          (-30.5, -27.0, -60.0, -55.5),
+    'Entre Ríos':          (-34.0, -30.0, -60.5, -57.5),
+    'San Luis':            (-36.0, -32.5, -68.5, -65.0),
+    'San Juan':            (-34.5, -27.5, -71.0, -65.0),
+    'La Rioja':            (-32.5, -27.0, -70.0, -65.0),
+    'Catamarca':           (-29.5, -25.0, -70.5, -64.5),
+    'Salta':               (-26.5, -21.5, -68.5, -62.5),
+    'Santiago del Estero': (-30.0, -25.5, -65.5, -61.5),
+    'Mendoza':             (-37.5, -32.0, -70.5, -66.5),
+    'Neuquén':             (-40.5, -36.0, -71.5, -68.5),
+    'La Pampa':            (-40.0, -35.0, -68.5, -63.5),
+    'Santa Fe':            (-34.5, -28.5, -62.5, -59.0),
+    'Córdoba':             (-39.0, -29.5, -67.0, -62.0),
+    'Río Negro':           (-42.5, -38.5, -71.5, -62.5),
+    'Chubut':              (-46.5, -41.0, -72.5, -63.0),
+    'Buenos Aires':        (-42.5, -33.5, -63.5, -56.5),
+    'Santa Cruz':          (-52.5, -46.0, -72.5, -65.5),
+    'Tierra del Fuego':    (-55.5, -51.0, -70.5, -63.5),
 }
-for _prov, (lat_min, lat_max, lon_min, lon_max) in _PROV_BOUNDS.items():
-    _mask_bad = (
-        canasta_geo['PROVINCIA_NORM'].eq(_prov) &
-        ~(canasta_geo['sucursales_latitud'].between(lat_min, lat_max) &
-          canasta_geo['sucursales_longitud'].between(lon_min, lon_max))
-    )
-    if _mask_bad.sum():
-        print(f'  Eliminando {_mask_bad.sum()} sucursales {_prov} con coordenadas inconsistentes')
-        canasta_geo = canasta_geo[~_mask_bad].copy()
+
+def _geocodif(lat, lon):
+    # Primera provincia (más específica) cuyo bbox contiene (lat, lon)
+    if pd.isna(lat) or pd.isna(lon): return None
+    for p, (la0, la1, lo0, lo1) in _PROV_BBOX.items():
+        if la0 <= lat <= la1 and lo0 <= lon <= lo1: return p
+    return None
+
+_n_reclasif = 0
+for _idx, _row in canasta_geo.iterrows():
+    _p = _row['PROVINCIA_NORM']
+    if _p not in _PROV_BBOX: continue
+    _la0, _la1, _lo0, _lo1 = _PROV_BBOX[_p]
+    _lat, _lon = _row['sucursales_latitud'], _row['sucursales_longitud']
+    if _la0 <= _lat <= _la1 and _lo0 <= _lon <= _lo1: continue   # OK
+    _nueva = _geocodif(_lat, _lon)
+    if _nueva and _nueva != _p:
+        canasta_geo.at[_idx, 'PROVINCIA_NORM'] = _nueva
+        _n_reclasif += 1
+if _n_reclasif:
+    print(f'  Reclasificadas {_n_reclasif} sucursales con provincia inconsistente (sin pérdida de datos)')
 
 canasta_geo_filtros = canasta_geo.copy()
 print(f'canasta_geo_filtros: {len(canasta_geo_filtros):,} sucursales')
