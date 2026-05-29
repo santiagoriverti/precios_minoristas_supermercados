@@ -257,7 +257,113 @@ Los 13 productos son **embutidos curados** (Leberwurst, Salamín, Bondiola, Pale
 
 ---
 
+## Canasta ICM-UADE — Composición vigente (51 productos, revisada 2026-05-29)
+
+La canasta fue construida a partir de la hoja `Selección` del nb01 y revisada en base a trazabilidad temporal y cobertura. Se reemplazaron 4 productos con baja trazabilidad por alternativas con 100% de presencia desde enero 2024.
+
+| Categoría | EAN | Producto | Qty/mes |
+|-----------|-----|----------|---------|
+| Lácteos | 7790742363008 | Leche La Serenísima Entera 1L | 20 |
+| Lácteos | 7793940054006 | Manteca La Serenísima 200g | 2 |
+| Lácteos | 7790742625304 | Dulce de Leche La Serenísima 400g | 2 |
+| Lácteos | 7791337061361 | Queso Crema Casancrem 290g | 2 |
+| Lácteos | 7791337007611 | Yogur Firme Frutilla Yogurisimo 190g | 8 |
+| Cereales | 7790070337009 | Fideos Tallarines Lucchetti 500g | 4 |
+| Cereales | 7790070336293 | Fideos Tirabuzón Matarazzo 500g | 4 |
+| Cereales | 7791120031557 | Arroz Molinos Ala 1kg | 2 |
+| Cereales | 7792180139320 | Harina Cañuelas 1kg | 2 |
+| Cereales | 7790040143234 | Galletitas Chocolinas 262g | 2 |
+| Cereales | 7622201735258 | Galletitas Oreo 354g | 1 |
+| Cereales | 7790070621801 | Ravioles La Salteña 900g | 2 |
+| Aceites | 7790070012050 | Aceite Girasol Cocinero 900ml | 3 |
+| Azúcar y dulces | 7792540250450 | Azúcar Ledesma 1kg | 2 |
+| Azúcar y dulces | 7793360131516 | Mermelada Durazno La Campagnola 390g | 2 |
+| Azúcar y dulces | 7793360131530 | Mermelada Frutilla La Campagnola 390g | 1 |
+| Infusiones | 7790387013610 | Yerba Taragüí 1kg | 2 |
+| Infusiones | 8445291082199 | Café Dolca 100g | 2 |
+| Infusiones | 7790387800142 | Té Taragüí 50 saquitos | 1 |
+| Bebidas | 7790895000232 | Coca Cola Lata 354cc | 6 |
+| Bebidas | 7790895000270 | Sprite 2.25L | 4 |
+| Bebidas | 7790895001017 | Fanta 2.25L | 2 |
+| Bebidas | 7790895640476 | Aquarius Pera 1.5L | 4 |
+| Condimentos | 7794000003408 | Mayonesa Hellmanns 320g | 2 |
+| Condimentos | 7794000006485 | Mostaza Savora 500g | 1 |
+| Condimentos | 7794000006188 | Ketchup Hellmanns 250g | 1 |
+| Condimentos | 7791004000051 | Sal Celusal 1kg | 1 |
+| Condimentos | 7792900093246 | Vinagre Dos Anclas 1L | 1 |
+| Condimentos | 7794000008533 | Caldo Knorr 12 un | 1 |
+| Proteínas | 7798092353731 | Huevos Carnave Cartón 6 un | 4 |
+| Proteínas | 7790360967411 | **Hamburguesas Swift XL 250g** ← nuevo | 4 |
+| Proteínas | 7790580131357 | Atún La Campagnola 170g | 3 |
+| Proteínas | 7790079018367 | Leberwurst Paladini 200g | 2 |
+| Tomate/legumbres | 7790580138868 | Puré de Tomate La Campagnola 530g | 3 |
+| Tomate/legumbres | 7790580567101 | Tomate en lata Arcor 400g | 2 |
+| Tomate/legumbres | 7793360132483 | Porotos Alubia La Campagnola 300g | 2 |
+| Limpieza | 7793253003784 | **Lavandina Anti-splash Ayudín 2L** ← nuevo | 2 |
+| Limpieza | 7791290794061 | Detergente Cif 500ml | 2 |
+| Limpieza | 7791290792074 | Jabón Polvo Ala 3kg | 1 |
+| Limpieza | 7793253005221 | Desinfectante Ayudín 500ml | 1 |
+| Limpieza | 7790990001790 | Jabón Zorro 150g | 4 |
+| Limpieza | 7790117000231 | Bolsas Residuos Asurín 30 un | 2 |
+| Higiene | 7790990000830 | **Jabón Plusbelle 125g** ← nuevo | 4 |
+| Higiene | 7509546686516 | Crema Dental Colgate 180g | 2 |
+| Higiene | 7891010255275 | **Listerine Antisarro 500ml** ← nuevo | 1 |
+| Higiene | 7791293050607 | Desodorante Axe 230ml | 1 |
+| Higiene | 7791293048505 | Antitranspirante Dove 150ml | 1 |
+| Higiene | 7791070000696 | Papel Higiénico Campanita 4x120m | 3 |
+| Higiene | 7791290793606 | Suavizante Comfort 1L | 2 |
+| Extra | 8445291121904 | Cacao Nesquik 800g | 1 |
+| Extra | 7790580138721 | Polenta Prestopronta 730g | 2 |
+
+**4 reemplazos vs. versión anterior** (criterio: trazabilidad + cobertura + masividad):
+- Paty 250g (82.1%, nuevo jun-2024) → **Swift XL 250g** (100%, score 0.925)
+- Lavandina Ayudín Original 2L (75%, nuevo ago-2024) → **Lavandina Anti-splash Ayudín 2L** (100%, score 0.919)
+- Jabón Dove 90g (82.1%, nuevo jun-2024) → **Jabón Plusbelle 125g** (100%, score 0.994)
+- Plax 250ml (82.1%, genuinamente inestable) → **Listerine Antisarro 500ml** (100%, score 0.949)
+
+**Trazabilidad de la canasta** (28 meses ene-2024 → abr-2026): promedio 99.4%, 48/51 al 100%.
+
+---
+
+## Métricas Notebook 02 — Primera ejecución completa (abril 2026, commit 6fe5a5e)
+
+| Métrica | Valor |
+|---------|-------|
+| Costo ICM-UADE promedio nacional | **$477.847 ARS** |
+| Rango por sucursal | $445.095 – $527.214 |
+| Provincia más barata | Chaco ($464.760, -2.74%) |
+| Provincia más cara | Santa Cruz ($507.034, +6.11%) |
+| Sucursales válidas (≥15 productos propios) | 2.372 |
+| Cadenas con datos | 16 |
+| Provincias con datos | 24 |
+| Cadena más cara | La Anónima ($496.189) |
+| Cadena más barata (ranking nacional) | Hipermercado Libertad ($451.152) |
+| Barrio CABA más barato | Villa Soldati ($476.488, -1.21% vs CABA) |
+| Barrio CABA más caro (ranking) | Recoleta ($485.602, +0.68% vs CABA) |
+| Meses en serie histórica | 28 (2024-01 → 2026-04) |
+| Costo ICM-UADE vs IPC General abr-2026 | +2.84% ICM vs +2.58% IPC |
+
+---
+
 ## Historial de cambios
+
+### 2026-05-29 — ICM-UADE, BUG-15, mejoras nb02 (commits 6fe5a5e, 17ae989, 96f83f5)
+
+- **BUG-15**: San Juan no aparecía en mapa coroplético. El maestro usa `"San juan"` (j minúscula) → agregado a `PROV_NORM`
+- **Notebook 01**: nueva hoja `Productos unicos` (~70K–100K productos sin umbrales, mismas columnas que Selección)
+- **Notebook 02**: renombrado a "ICM-UADE"; gráficos con etiquetas en español (`ene-24`, `feb-24`...)
+- **Gráfico 2**: 3 barras por mes (ICM-UADE + IPC General + IPC Alimentos y bebidas)
+- **Cache**: hash MD5 incluye EANs + cantidades → cambiar `cantidad` invalida cache automáticamente
+- **MES_INICIO_GRAFICO**: auto-adapta al primer mes de la serie si el configurado no existe
+- **Hoja Serie_precios**: nueva hoja en Excel de nb02 con precio mediano por producto por mes (serie completa)
+- **Canasta ICM-UADE**: 4 reemplazos (ver tabla arriba). Trazabilidad promedio 99.4%
+- **README**: reescrito completo con guía de ejecución paso a paso, outputs de ambos notebooks, métricas
+
+### 2026-05-29 — IPC.xlsx formato real confirmado (commit a409d7e)
+
+- Columna `date` = `datetime64` (Excel serial → pandas auto-convierte). La visualización `ene-17` es solo formato de celda.
+- Fast path en CELDA 10: `pd.api.types.is_datetime64_any_dtype()` + `.dt.strftime('%Y-%m')` directo
+- Fallback para archivos con fechas como texto `ene-2017` incluido (parseo manual con dict español)
 
 ### 2026-05-28 — Notebook 02 completo: análisis canasta elegida, mapas, rankings, IPC
 
