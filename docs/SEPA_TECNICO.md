@@ -1,6 +1,6 @@
 # SEPA — Referencia Técnica
 
-Última actualización: 2026-05-29 (BUG-16/17, dpi=600, CELDA 15 nueva, reclasificación por bbox)
+Última actualización: 2026-05-29 (BUG-18/19, PLU codes, safeguards para canastas pequeñas)
 
 ## Dos formatos completamente distintos
 
@@ -193,6 +193,23 @@ _PROV_BBOX = {
 ```
 
 **Regla general**: nunca descartar sucursales solo porque el maestro tiene su provincia mal etiquetada. Usar coordenadas para determinar la provincia correcta. Siempre registrar la variante exacta del nombre tal como aparece en el maestro. Las variantes conocidas del maestro incluyen al menos: `"San juan"` (San Juan), `"Neuquén"/"Neuquen"` (Neuquén), `"Entre Ríos"/"Entre Rios"` (Entre Ríos).
+
+### EANs PLU (prefijo 27.../28...) — no están en el SEPA histórico
+
+Los productos vendidos por peso en góndola (frutas, verduras, fiambres a granel) usan códigos PLU generados por las balanzas del supermercado. Estos códigos empiezan con **27...** o **28...** y son efímeros — el mismo producto puede tener distintos EANs en distintas sucursales o fechas. Consecuencias:
+
+- No aparecen en el SEPA histórico de forma consistente → `serie_nacional_valida` vacía
+- El notebook lo detecta con `_serie_vacia = len(serie_nacional_valida) == 0` y salta las celdas 11/12 con un aviso
+- Los EANs GS1 estándar (prefijo 77... o 78...) SÍ tienen historia consistente
+
+### Safeguard MIN_PRODUCTOS_PROPIOS vs N_CANASTA
+
+Cuando `MIN_PRODUCTOS_PROPIOS >= N_CANASTA` ninguna sucursal puede pasar el filtro. El notebook auto-corrige en CELDA 3:
+```python
+if MIN_PRODUCTOS_PROPIOS >= N_CANASTA:
+    MIN_PRODUCTOS_PROPIOS = max(1, N_CANASTA // 2)
+```
+Para el ICM-UADE (51 productos) con `MIN_PRODUCTOS_PROPIOS=15` esto nunca se activa.
 
 ### Regla crítica en gen_nb02.py: no usar triple-quote dentro de cell_code
 

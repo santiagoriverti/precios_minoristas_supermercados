@@ -1,6 +1,6 @@
 # Bugs Pendientes y Mejoras
 
-Última actualización: 2026-05-29 — BUG-16 (San Juan reclasificación), BUG-17 (triple-quote docstring)
+Última actualización: 2026-05-29 — BUG-18 (serie vacía crash), BUG-19 (MIN_PRODUCTOS_PROPIOS > N_CANASTA)
 
 ---
 
@@ -11,6 +11,35 @@
 ---
 
 ## 🔴 Bugs críticos (resueltos — notebook 02, segunda ejecución 2026-05-29)
+
+### BUG-19: `MIN_PRODUCTOS_PROPIOS >= N_CANASTA` → canasta_geo_filtros vacío ✅ Resuelto — commit e979ae2
+
+**Archivo**: `notebooks/gen_nb02.py`, CELDA 3
+**Síntoma**: Con una canasta de pocos productos (ej. 12 verduras frescas), el output de CELDA 8 mostraba `Provincias con datos: 0` y `Promedio (ponderado): nan`. Las celdas siguientes (14, 15, 16, 17) crasheaban por DataFrames vacíos.
+**Causa**: `MIN_PRODUCTOS_PROPIOS = 15` (config en CELDA 1) era mayor que `N_CANASTA = 12`. Ninguna sucursal puede tener 15 productos de una canasta de 12 → todas se filtran → `canasta_geo_filtros` vacío.
+**Fix aplicado** (CELDA 3, después de definir N_CANASTA):
+```python
+if MIN_PRODUCTOS_PROPIOS >= N_CANASTA:
+    MIN_PRODUCTOS_PROPIOS = max(1, N_CANASTA // 2)
+    print(f'AVISO: MIN_PRODUCTOS_PROPIOS ajustado a {MIN_PRODUCTOS_PROPIOS} '
+          f'(canasta tiene solo {N_CANASTA} productos)')
+```
+**Comportamiento**: Para ICM-UADE (51 prod.): `15 >= 51` → False → no cambia. Para canasta pequeña (12 prod.): `15 >= 12` → True → ajusta a 6.
+**Regla general**: Siempre verificar que `MIN_PRODUCTOS_PROPIOS < N_CANASTA`. El safeguard lo hace automáticamente.
+
+---
+
+### BUG-18: `IndexError` en CELDA 11/12 cuando la serie histórica está vacía ✅ Resuelto — commit 6289ab8
+
+**Archivo**: `notebooks/gen_nb02.py`, CELDA 11 y 12
+**Síntoma**: Al usar productos nuevos o con EANs PLU (códigos de balanza, empiezan con 27.../28...) que no están en el SEPA histórico, CELDA 11 crasheaba con `IndexError: single positional indexer is out-of-bounds` en `comparativa['ipc_general'].dropna().iloc[0]`. CELDA 12 crasheaba con similares errores al intentar graficar `df_g` vacío.
+**Causa**: Los EANs con prefijo 27.../28... son PLU codes generados por balanzas en góndola — no tienen un código GS1 fijo y no aparecen en el SEPA histórico. `serie_nacional_valida` queda con 0 filas → `comparativa` vacío → `.iloc[0]` falla.
+**Fix aplicado**:
+- CELDA 11: guarda `_serie_vacia = len(serie_nacional_valida) == 0`. Si True → imprime aviso, crea DataFrames vacíos con las columnas correctas (`comparativa`, `df_g`). Si False → ejecuta el código original sin cambios.
+- CELDA 12: envuelve toda la lógica de gráficos en `if len(df_g) == 0: print(aviso) / else: # código original`. Inicializa `out1 = out2 = None` para que CELDA 19 (export Excel) no crashee.
+**Sin efecto sobre ICM-UADE**: `len(serie_nacional_valida) = 28` → `_serie_vacia = False` → código original, sin cambios.
+
+---
 
 ### BUG-17: SyntaxError en gen_nb02.py — docstring triple-quote cierra el cell_code ✅ Resuelto — commit 7c3fe29
 

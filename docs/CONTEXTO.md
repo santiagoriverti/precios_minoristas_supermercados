@@ -360,6 +360,12 @@ Los 4 reemplazos (Swift XL, Lavandina Anti-splash, Plusbelle, Listerine) están 
 
 ## Historial de cambios
 
+### 2026-05-29 — Robustez para canastas pequeñas/especializadas (commits e979ae2, 6289ab8)
+
+- **BUG-19**: `MIN_PRODUCTOS_PROPIOS = 15` con canasta de 12 productos → 0 sucursales válidas. Fix: safeguard en CELDA 3 que auto-ajusta a `N_CANASTA // 2` cuando `MIN_PRODUCTOS_PROPIOS >= N_CANASTA`. No afecta ICM-UADE (51 productos).
+- **BUG-18**: `IndexError` en CELDA 11/12 cuando la serie histórica está vacía. Ocurre con EANs PLU (prefijo 27.../28...) que no existen en el SEPA histórico. Fix: guarda `_serie_vacia` en CELDA 11 y envuelve la lógica de gráficos de CELDA 12 en `if len(df_g) > 0:`.
+- El notebook ahora soporta **cualquier canasta** — desde 1 producto hasta 100+, con o sin historia disponible. Siempre ejecuta completo y produce todos los outputs disponibles para los datos que tiene.
+
 ### 2026-05-29 — Mejoras visuales y corrección de coordenadas nb02 (commits 4bcb92d, 7c3fe29)
 
 - Todos los gráficos exportados a **dpi=600** (antes 150/200)
