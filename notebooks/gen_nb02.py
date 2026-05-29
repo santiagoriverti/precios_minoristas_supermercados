@@ -700,33 +700,41 @@ cells.append(cell_code("""\
 # ============================================================
 # CELDA 11 — Tabla comparativa SEPA vs IPC
 # ============================================================
-comparativa = serie_nacional_valida.merge(
-    ipc[['mes','ipc_general','ipc_general_var_%','ipc_alimentos','ipc_alimentos_var_%']],
-    on='mes', how='left')
-
-ipc_b  = comparativa['ipc_general'].dropna().iloc[0]
-ialb   = comparativa['ipc_alimentos'].dropna().iloc[0]
-comparativa['indice_ipc_general_base100']   = (comparativa['ipc_general']   / ipc_b * 100).round(2)
-comparativa['indice_ipc_alimentos_base100'] = (comparativa['ipc_alimentos'] / ialb  * 100).round(2)
-
-# Reindexar desde MES_INICIO_GRAFICO — auto-adapta si el mes no está en la serie
-_mg = MES_INICIO_GRAFICO
-if _mg not in comparativa['mes'].values:
-    _mg = comparativa['mes'].min()
-    print(f'AVISO: MES_INICIO_GRAFICO {MES_INICIO_GRAFICO} no está en la serie → usando {_mg}')
-df_g = comparativa[comparativa['mes'] >= _mg].copy().reset_index(drop=True)
-bg   = df_g['canasta_nacional_ponderada'].iloc[0]
-big  = df_g['ipc_general'].dropna().iloc[0] if df_g['ipc_general'].notna().any() else 1
-bia  = df_g['ipc_alimentos'].dropna().iloc[0] if df_g['ipc_alimentos'].notna().any() else 1
-_lbl_base = _mg[5:7] + '-' + _mg[2:4]   # ej. '03-24'
-df_g['idx_canasta_base']       = (df_g['canasta_nacional_ponderada'] / bg  * 100).round(2)
-df_g['idx_ipc_general_base']   = (df_g['ipc_general']                / big * 100).round(2)
-df_g['idx_ipc_alimentos_base'] = (df_g['ipc_alimentos']              / bia * 100).round(2)
-df_g['fecha'] = pd.to_datetime(df_g['mes'] + '-01')
-
-print(f'Comparativa: {len(comparativa)} meses | Grafico desde: {_mg} ({len(df_g)} meses)')
-cols = ['mes','canasta_nacional_ponderada','variacion_mensual_%','ipc_general_var_%']
-print(comparativa[cols].tail(6).to_string(index=False))"""))
+_serie_vacia = len(serie_nacional_valida) == 0
+if _serie_vacia:
+    print('AVISO: Serie histórica vacía para esta canasta.')
+    print('  Los productos pueden ser demasiado nuevos o usar PLU codes (EANs 27.../28...)')
+    print('  que no aparecen en el SEPA histórico. Celdas 11/12 sin datos de serie.')
+    comparativa = pd.DataFrame(columns=['mes','canasta_nacional_ponderada',
+        'variacion_mensual_%','ipc_general','ipc_general_var_%',
+        'ipc_alimentos','ipc_alimentos_var_%',
+        'indice_canasta_base100','indice_ipc_general_base100','indice_ipc_alimentos_base100'])
+    df_g = pd.DataFrame()
+    _lbl_base = PERIODO[5:7] + '-' + PERIODO[2:4]
+else:
+    comparativa = serie_nacional_valida.merge(
+        ipc[['mes','ipc_general','ipc_general_var_%','ipc_alimentos','ipc_alimentos_var_%']],
+        on='mes', how='left')
+    ipc_b = comparativa['ipc_general'].dropna().iloc[0] if comparativa['ipc_general'].notna().any() else 1
+    ialb  = comparativa['ipc_alimentos'].dropna().iloc[0] if comparativa['ipc_alimentos'].notna().any() else 1
+    comparativa['indice_ipc_general_base100']   = (comparativa['ipc_general']   / ipc_b * 100).round(2)
+    comparativa['indice_ipc_alimentos_base100'] = (comparativa['ipc_alimentos'] / ialb  * 100).round(2)
+    _mg = MES_INICIO_GRAFICO
+    if _mg not in comparativa['mes'].values:
+        _mg = comparativa['mes'].min()
+        print(f'AVISO: MES_INICIO_GRAFICO {MES_INICIO_GRAFICO} no está en la serie → usando {_mg}')
+    df_g = comparativa[comparativa['mes'] >= _mg].copy().reset_index(drop=True)
+    bg   = df_g['canasta_nacional_ponderada'].iloc[0]
+    big  = df_g['ipc_general'].dropna().iloc[0] if df_g['ipc_general'].notna().any() else 1
+    bia  = df_g['ipc_alimentos'].dropna().iloc[0] if df_g['ipc_alimentos'].notna().any() else 1
+    _lbl_base = _mg[5:7] + '-' + _mg[2:4]
+    df_g['idx_canasta_base']       = (df_g['canasta_nacional_ponderada'] / bg  * 100).round(2)
+    df_g['idx_ipc_general_base']   = (df_g['ipc_general']                / big * 100).round(2)
+    df_g['idx_ipc_alimentos_base'] = (df_g['ipc_alimentos']              / bia * 100).round(2)
+    df_g['fecha'] = pd.to_datetime(df_g['mes'] + '-01')
+    print(f'Comparativa: {len(comparativa)} meses | Grafico desde: {_mg} ({len(df_g)} meses)')
+    cols = ['mes','canasta_nacional_ponderada','variacion_mensual_%','ipc_general_var_%']
+    print(comparativa[cols].tail(6).to_string(index=False))"""))
 
 # CELL 12 — IPC CHARTS
 cells.append(cell_code("""\
@@ -736,8 +744,8 @@ cells.append(cell_code("""\
 COLOR_CANASTA = '#0055A4'
 COLOR_IPC_GEN = '#D62728'
 COLOR_IPC_ALI = '#FF7F0E'
+out1 = out2 = None
 
-# Formateador de meses en español para los ejes X
 _MESES_ES = {1:'ene',2:'feb',3:'mar',4:'abr',5:'may',6:'jun',
              7:'jul',8:'ago',9:'sep',10:'oct',11:'nov',12:'dic'}
 def _fmt_mes_es(x, pos):
@@ -747,84 +755,87 @@ def _fmt_mes_es(x, pos):
     except Exception:
         return ''
 
-# ── GRAFICO 1: Indices base = 100 ─────────────────────────────────────────────
-fig1, ax1 = plt.subplots(figsize=(13, 6))
-ax1.plot(df_g['fecha'], df_g['idx_canasta_base'],
-         color=COLOR_CANASTA, linewidth=2.5,
-         label=f'ICM-UADE ({N_CANASTA} productos)', marker='o', markersize=5)
-ax1.plot(df_g['fecha'], df_g['idx_ipc_general_base'],
-         color=COLOR_IPC_GEN, linewidth=2,
-         label='IPC INDEC - Nivel general', linestyle='--', marker='s', markersize=4)
-ax1.plot(df_g['fecha'], df_g['idx_ipc_alimentos_base'],
-         color=COLOR_IPC_ALI, linewidth=2,
-         label='IPC INDEC - Alimentos y bebidas', linestyle=':', marker='^', markersize=4)
-ax1.set_ylabel(f'Índice ({_lbl_base} = 100)', fontsize=11)
-ax1.legend(loc='upper left', fontsize=10, framealpha=0.95)
-ax1.grid(True, alpha=0.3)
-ax1.xaxis.set_major_locator(mdates.MonthLocator(interval=1))
-ax1.xaxis.set_major_formatter(mticker.FuncFormatter(_fmt_mes_es))
-plt.setp(ax1.xaxis.get_majorticklabels(), rotation=45, ha='right')
-# Anotar valores finales
-ult = df_g.iloc[-1]
-ax1.annotate(f"{ult['idx_canasta_base']:.1f}",
-             xy=(ult['fecha'], ult['idx_canasta_base']),
-             xytext=(8,0), textcoords='offset points',
-             color=COLOR_CANASTA, fontweight='bold', fontsize=11)
-iu = df_g.dropna(subset=['idx_ipc_general_base']).iloc[-1]
-ax1.annotate(f"{iu['idx_ipc_general_base']:.1f}",
-             xy=(iu['fecha'], iu['idx_ipc_general_base']),
-             xytext=(8,-3), textcoords='offset points',
-             color=COLOR_IPC_GEN, fontweight='bold', fontsize=11)
-if df_g['idx_ipc_alimentos_base'].notna().any():
-    ia = df_g.dropna(subset=['idx_ipc_alimentos_base']).iloc[-1]
-    ax1.annotate(f"{ia['idx_ipc_alimentos_base']:.1f}",
-                 xy=(ia['fecha'], ia['idx_ipc_alimentos_base']),
-                 xytext=(8,3), textcoords='offset points',
-                 color=COLOR_IPC_ALI, fontweight='bold', fontsize=11)
-plt.tight_layout()
-out1 = OUTPUT_DIR / f'indices_canasta_vs_ipc_{MES}.png'
-plt.savefig(out1, dpi=600, bbox_inches='tight', facecolor='white')
-plt.show()
-print(f'Grafico 1 guardado: {out1}')
+if len(df_g) == 0:
+    print('AVISO: Sin serie histórica — gráficos de índices no disponibles para esta canasta.')
+    print('  Continuando con mapa, cobertura, rankings, Folium y CABA...')
+else:
+    # ── GRAFICO 1: Indices base = 100 ────────────────────────────────────────
+    fig1, ax1 = plt.subplots(figsize=(13, 6))
+    ax1.plot(df_g['fecha'], df_g['idx_canasta_base'],
+             color=COLOR_CANASTA, linewidth=2.5,
+             label=f'ICM-UADE ({N_CANASTA} productos)', marker='o', markersize=5)
+    ax1.plot(df_g['fecha'], df_g['idx_ipc_general_base'],
+             color=COLOR_IPC_GEN, linewidth=2,
+             label='IPC INDEC - Nivel general', linestyle='--', marker='s', markersize=4)
+    ax1.plot(df_g['fecha'], df_g['idx_ipc_alimentos_base'],
+             color=COLOR_IPC_ALI, linewidth=2,
+             label='IPC INDEC - Alimentos y bebidas', linestyle=':', marker='^', markersize=4)
+    ax1.set_ylabel(f'Índice ({_lbl_base} = 100)', fontsize=11)
+    ax1.legend(loc='upper left', fontsize=10, framealpha=0.95)
+    ax1.grid(True, alpha=0.3)
+    ax1.xaxis.set_major_locator(mdates.MonthLocator(interval=1))
+    ax1.xaxis.set_major_formatter(mticker.FuncFormatter(_fmt_mes_es))
+    plt.setp(ax1.xaxis.get_majorticklabels(), rotation=45, ha='right')
+    ult = df_g.iloc[-1]
+    ax1.annotate(f"{ult['idx_canasta_base']:.1f}",
+                 xy=(ult['fecha'], ult['idx_canasta_base']),
+                 xytext=(8,0), textcoords='offset points',
+                 color=COLOR_CANASTA, fontweight='bold', fontsize=11)
+    iu = df_g.dropna(subset=['idx_ipc_general_base']).iloc[-1]
+    ax1.annotate(f"{iu['idx_ipc_general_base']:.1f}",
+                 xy=(iu['fecha'], iu['idx_ipc_general_base']),
+                 xytext=(8,-3), textcoords='offset points',
+                 color=COLOR_IPC_GEN, fontweight='bold', fontsize=11)
+    if df_g['idx_ipc_alimentos_base'].notna().any():
+        ia = df_g.dropna(subset=['idx_ipc_alimentos_base']).iloc[-1]
+        ax1.annotate(f"{ia['idx_ipc_alimentos_base']:.1f}",
+                     xy=(ia['fecha'], ia['idx_ipc_alimentos_base']),
+                     xytext=(8,3), textcoords='offset points',
+                     color=COLOR_IPC_ALI, fontweight='bold', fontsize=11)
+    plt.tight_layout()
+    out1 = OUTPUT_DIR / f'indices_canasta_vs_ipc_{MES}.png'
+    plt.savefig(out1, dpi=600, bbox_inches='tight', facecolor='white')
+    plt.show()
+    print(f'Grafico 1 guardado: {out1}')
 
-# ── GRAFICO 2: Variaciones mensuales (3 barras: ICM-UADE, IPC General, IPC Alimentos) ──
-fig2, ax2 = plt.subplots(figsize=(14, 6))
-x      = df_g['fecha']
-width  = pd.Timedelta(days=6)
-offsets = [-width, pd.Timedelta(0), width]   # ICM-UADE izq, IPC Gen centro, IPC Ali der
-bc  = ax2.bar(x + offsets[0], df_g['variacion_mensual_%'],  width=width,
-              color=COLOR_CANASTA, alpha=0.90, label='ICM-UADE')
-big = ax2.bar(x + offsets[1], df_g['ipc_general_var_%'],    width=width,
-              color=COLOR_IPC_GEN, alpha=0.75, label='IPC INDEC - Nivel general')
-bia = ax2.bar(x + offsets[2], df_g['ipc_alimentos_var_%'],  width=width,
-              color=COLOR_IPC_ALI, alpha=0.75, label='IPC INDEC - Alimentos y bebidas')
-for bars, vals, col in [
-    (bc,  df_g['variacion_mensual_%'], COLOR_CANASTA),
-    (big, df_g['ipc_general_var_%'],   COLOR_IPC_GEN),
-    (bia, df_g['ipc_alimentos_var_%'], COLOR_IPC_ALI),
-]:
-    for bar, val in zip(bars, vals):
-        if pd.notna(val) and val != 0:
-            ypos = bar.get_height() + 0.1 if val >= 0 else bar.get_height() - 0.6
-            ax2.text(bar.get_x()+bar.get_width()/2, ypos,
-                     f'{val:.1f}', ha='center', va='bottom',
-                     fontsize=6.5, color=col, fontweight='bold', rotation=90)
-ax2.axhline(0, color='black', linewidth=0.5)
-ax2.set_ylabel('Variación mensual (%)', fontsize=11)
-ax2.legend(loc='upper right', fontsize=9, framealpha=0.95)
-ax2.grid(True, alpha=0.3, axis='y')
-ax2.xaxis.set_major_locator(mdates.MonthLocator(interval=1))
-ax2.xaxis.set_major_formatter(mticker.FuncFormatter(_fmt_mes_es))
-plt.setp(ax2.xaxis.get_majorticklabels(), rotation=45, ha='right')
-_vals_max = [s.dropna().max() for s in [df_g['variacion_mensual_%'],
-             df_g['ipc_general_var_%'], df_g['ipc_alimentos_var_%']] if s.notna().any()]
-if _vals_max:
-    ax2.set_ylim(top=max(_vals_max) * 1.35)
-plt.tight_layout()
-out2 = OUTPUT_DIR / f'variaciones_canasta_vs_ipc_{MES}.png'
-plt.savefig(out2, dpi=600, bbox_inches='tight', facecolor='white')
-plt.show()
-print(f'Grafico 2 guardado: {out2}')"""))
+    # ── GRAFICO 2: Variaciones mensuales ─────────────────────────────────────
+    fig2, ax2 = plt.subplots(figsize=(14, 6))
+    x      = df_g['fecha']
+    width  = pd.Timedelta(days=6)
+    offsets = [-width, pd.Timedelta(0), width]
+    bc  = ax2.bar(x + offsets[0], df_g['variacion_mensual_%'], width=width,
+                  color=COLOR_CANASTA, alpha=0.90, label='ICM-UADE')
+    big = ax2.bar(x + offsets[1], df_g['ipc_general_var_%'],  width=width,
+                  color=COLOR_IPC_GEN, alpha=0.75, label='IPC INDEC - Nivel general')
+    bia = ax2.bar(x + offsets[2], df_g['ipc_alimentos_var_%'], width=width,
+                  color=COLOR_IPC_ALI, alpha=0.75, label='IPC INDEC - Alimentos y bebidas')
+    for bars, vals, col in [
+        (bc,  df_g['variacion_mensual_%'], COLOR_CANASTA),
+        (big, df_g['ipc_general_var_%'],   COLOR_IPC_GEN),
+        (bia, df_g['ipc_alimentos_var_%'], COLOR_IPC_ALI),
+    ]:
+        for bar, val in zip(bars, vals):
+            if pd.notna(val) and val != 0:
+                ypos = bar.get_height() + 0.1 if val >= 0 else bar.get_height() - 0.6
+                ax2.text(bar.get_x()+bar.get_width()/2, ypos,
+                         f'{val:.1f}', ha='center', va='bottom',
+                         fontsize=6.5, color=col, fontweight='bold', rotation=90)
+    ax2.axhline(0, color='black', linewidth=0.5)
+    ax2.set_ylabel('Variación mensual (%)', fontsize=11)
+    ax2.legend(loc='upper right', fontsize=9, framealpha=0.95)
+    ax2.grid(True, alpha=0.3, axis='y')
+    ax2.xaxis.set_major_locator(mdates.MonthLocator(interval=1))
+    ax2.xaxis.set_major_formatter(mticker.FuncFormatter(_fmt_mes_es))
+    plt.setp(ax2.xaxis.get_majorticklabels(), rotation=45, ha='right')
+    _vals_max = [s.dropna().max() for s in [df_g['variacion_mensual_%'],
+                 df_g['ipc_general_var_%'], df_g['ipc_alimentos_var_%']] if s.notna().any()]
+    if _vals_max:
+        ax2.set_ylim(top=max(_vals_max) * 1.35)
+    plt.tight_layout()
+    out2 = OUTPUT_DIR / f'variaciones_canasta_vs_ipc_{MES}.png'
+    plt.savefig(out2, dpi=600, bbox_inches='tight', facecolor='white')
+    plt.show()
+    print(f'Grafico 2 guardado: {out2}')"""))
 
 # CELL 13 — TABLE + LATEX
 cells.append(cell_code("""\
