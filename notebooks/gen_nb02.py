@@ -167,7 +167,14 @@ print(f'Canasta: {N_CANASTA} productos, {sel_activa["cantidad"].sum()} unidades/
 print()
 print(sel_activa.groupby(cat_col).agg(
     n_prod=('cantidad','count'), unidades=('cantidad','sum')
-).to_string())"""))
+).to_string())
+
+# Safeguard: MIN_PRODUCTOS_PROPIOS debe ser menor que N_CANASTA
+# (si la canasta es chica el threshold configurado puede dejar 0 sucursales)
+if MIN_PRODUCTOS_PROPIOS >= N_CANASTA:
+    MIN_PRODUCTOS_PROPIOS = max(1, N_CANASTA // 2)
+    print(f'\\nAVISO: MIN_PRODUCTOS_PROPIOS ajustado a {MIN_PRODUCTOS_PROPIOS} '
+          f'(canasta tiene solo {N_CANASTA} productos)')"""))
 
 # CELL 4 — MAESTROS
 cells.append(cell_code("""\
