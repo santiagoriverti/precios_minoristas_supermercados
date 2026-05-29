@@ -54,7 +54,7 @@ Este proyecto procesa esos datos para responder una pregunta concreta: **¿cuál
 
 ## Output: el Excel de salida
 
-El archivo `canasta_representativa_YYYY-MM.xlsx` tiene **tres hojas**:
+El archivo `canasta_representativa_YYYY-MM.xlsx` tiene **cuatro hojas**:
 
 ### Hoja `Canasta` (~65 productos)
 
@@ -89,6 +89,10 @@ Todos los productos que superan los **umbrales estrictos** (presencia en todas l
 ### Hoja `Selección` (~15.000–30.000 productos)
 
 Universo ampliado con **umbrales permisivos** (≥3 cadenas, ≥18 provincias, ≥30 sucursales), ordenado por `rubro → categoría → score_cobertura`. Incluye columna **`cantidad`** (resaltada en amarillo) vacía para que el economista indique cuántas unidades de cada producto incluir en su canasta. Esta hoja es la fuente de datos del próximo notebook de análisis de canasta elegida.
+
+### Hoja `Productos unicos` (~70.000–100.000 productos)
+
+Todos los productos presentes en el dataset que tienen información en el maestro de productos (campo `rubro` no vacío), **sin ningún umbral de cobertura**. Mismas columnas que `Selección` (incluye `cantidad` vacía y `subcategoria`). Permite al economista explorar el universo completo de productos disponibles en el SEPA, ordenado por `rubro → categoría → score_cobertura`.
 
 ---
 
@@ -258,5 +262,6 @@ El análisis de cobertura, los heatmaps y la selección de canasta operan todos 
 | Productos con maestro completo (Candidatos) | ~3.650 |
 | Productos en la canasta final (Canasta) | ~65 |
 | Productos en hoja Selección (umbrales amplios) | ~15K–30K |
+| Productos en hoja Productos unicos (sin umbrales) | ~70K–100K |
 | RAM en pico (df_suc_enr) | ~7 GB |
 | RAM después de liberar df_suc_enr | ~600 MB |
