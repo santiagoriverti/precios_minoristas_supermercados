@@ -360,6 +360,16 @@ Los 4 reemplazos (Swift XL, Lavandina Anti-splash, Plusbelle, Listerine) están 
 
 ## Historial de cambios
 
+### 2026-05-29 — Mejoras visuales y corrección de coordenadas nb02 (commits 4bcb92d, 7c3fe29)
+
+- Todos los gráficos exportados a **dpi=600** (antes 150/200)
+- **CELDA 15 reemplazada**: 4 gráficos nuevos — barplot 3 paneles por provincia (productos únicos · cadenas · sucursales), barplot 3 paneles por cadena, heatmap binario presencia cadena×provincia, heatmap log₁₀ intensidad. Datos derivados de `precio_mes` + `canasta_geo_filtros` para incluir `n_productos_unicos` real.
+- Mapa coroplético y rankings: **sin título principal** 
+- Rankings: eje X con separador de miles en formato argentino (`$478.836`)
+- **CELDA 7 — reclasificación por coordenadas** (BUG-16): reemplaza el descarte de sucursales por reclasificación usando bounding boxes de las 24 provincias. Preserva todos los datos, corrige la provincia según lat/lon.
+- BUG-17: docstring triple-quote en `_geocodif()` cerraba el `cell_code` externo → cambiado a comentario de línea
+- Output de CELDA 15: 4 archivos en lugar de 2 (`cobertura_provincia_`, `cobertura_cadena_`, `matriz_presencia_`, `matriz_intensidad_` — todos `_MMAAAA.png`)
+
 ### 2026-05-29 — Ejecución final confirmada con canasta revisada
 
 - ✅ BUG-15 confirmado resuelto: San Juan aparece correctamente en mapa y cuadro provincial

@@ -133,8 +133,10 @@ Todos los productos presentes en el dataset que tienen información en el maestr
 | `indices_canasta_vs_ipc_MMAAAA.png` | **Gráfico 1** — Índice ICM-UADE vs IPC General vs IPC Alimentos (base = primer mes del período, etiquetas en español) |
 | `variaciones_canasta_vs_ipc_MMAAAA.png` | **Gráfico 2** — Variación mensual (%) con tres barras por mes: ICM-UADE · IPC General · IPC Alimentos |
 | `mapa_canasta_YYYY-MM.png` | Mapa coroplético con el costo mediano de la canasta por provincia |
-| `cobertura_provincia_MMAAAA.png` | Sucursales y cadenas con datos por provincia |
-| `cobertura_cadena_MMAAAA.png` | Sucursales y provincias por cadena |
+| `cobertura_provincia_MMAAAA.png` | 3 paneles: productos únicos · cadenas · sucursales por provincia |
+| `cobertura_cadena_MMAAAA.png` | 3 paneles: productos únicos · provincias · sucursales por cadena |
+| `matriz_presencia_MMAAAA.png` | Heatmap binario: presencia (●) de cada cadena en cada provincia |
+| `matriz_intensidad_MMAAAA.png` | Heatmap de intensidad log₁₀ de productos únicos por cadena×provincia |
 | `ranking_cadenas_nacional_MMAAAA.png` | Ranking de cadenas por costo promedio de la canasta (nacional) |
 | `ranking_cadenas_amba_MMAAAA.png` | Ídem para AMBA (Buenos Aires + CABA) |
 

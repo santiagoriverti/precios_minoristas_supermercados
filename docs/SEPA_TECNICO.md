@@ -1,6 +1,6 @@
 # SEPA — Referencia Técnica
 
-Última actualización: 2026-05-29 (BUG-15 San Juan, ICM-UADE, Serie_precios, cache qty-aware)
+Última actualización: 2026-05-29 (BUG-16/17, dpi=600, CELDA 15 nueva, reclasificación por bbox)
 
 ## Dos formatos completamente distintos
 
@@ -178,7 +178,25 @@ El maestro de sucursales almacena la provincia de San Juan como `"San juan"` (co
 'SAN JUAN':'San Juan',   # ← defensivo
 ```
 
-**Regla general**: siempre registrar la variante exacta tal como aparece en el maestro. No asumir que la capitalización es estándar. Las variantes conocidas del maestro incluyen al menos: `"San juan"` (San Juan), `"Neuquén"/"Neuquen"` (Neuquén), `"Entre Ríos"/"Entre Rios"` (Entre Ríos).
+**Reclasificación por coordenadas (CELDA 7)** — para sucursales con provincia incorrecta en el maestro:
+
+```python
+# 24 bounding boxes (lat_min, lat_max, lon_min, lon_max), más específico primero
+_PROV_BBOX = {
+    'CABA':    (-34.72,-34.52,-58.54,-58.33),
+    'Tucumán': (-28.0, -26.0, -66.5, -64.5),
+    'Jujuy':   (-24.5, -21.5, -67.5, -63.5),
+    ... # 24 provincias
+}
+# Para cada sucursal con provincia inconsistente: buscar la correcta por coords
+# y reclasificar SIN descartar la sucursal
+```
+
+**Regla general**: nunca descartar sucursales solo porque el maestro tiene su provincia mal etiquetada. Usar coordenadas para determinar la provincia correcta. Siempre registrar la variante exacta del nombre tal como aparece en el maestro. Las variantes conocidas del maestro incluyen al menos: `"San juan"` (San Juan), `"Neuquén"/"Neuquen"` (Neuquén), `"Entre Ríos"/"Entre Rios"` (Entre Ríos).
+
+### Regla crítica en gen_nb02.py: no usar triple-quote dentro de cell_code
+
+El código de cada celda está contenido en un string `"""\..."""`. Usar triple comillas dobles `"""..."""` dentro del código (como docstrings) cierra prematuramente el string externo. Siempre usar comentarios de línea `#` en lugar de docstrings dentro de `cell_code("""\...""")`.
 
 ### Regiones del maestro de sucursales
 

@@ -1,6 +1,6 @@
 # Bugs Pendientes y Mejoras
 
-Última actualización: 2026-05-29 — BUG-15 (San Juan), mejoras nb02 (ICM-UADE, español, Serie_precios, cache qty)
+Última actualización: 2026-05-29 — BUG-16 (San Juan reclasificación), BUG-17 (triple-quote docstring)
 
 ---
 
@@ -11,6 +11,48 @@
 ---
 
 ## 🔴 Bugs críticos (resueltos — notebook 02, segunda ejecución 2026-05-29)
+
+### BUG-17: SyntaxError en gen_nb02.py — docstring triple-quote cierra el cell_code ✅ Resuelto — commit 7c3fe29
+
+**Archivo**: `notebooks/gen_nb02.py`, CELDA 7
+**Síntoma**: `python notebooks/gen_nb02.py` fallaba con `SyntaxError: invalid syntax. Perhaps you forgot a comma?` apuntando al inicio de CELDA 7.
+**Causa**: La función `_geocodif()` usaba un docstring con triple comillas dobles `"""..."""`. Como el código de la celda está contenido dentro de un string `"""\..."""`, las comillas del docstring cerraban prematuramente el string externo, dejando el resto del código como sintaxis inválida.
+**Fix aplicado**: cambiar el docstring a comentario de línea:
+```python
+# ANTES (cierra el string externo):
+def _geocodif(lat, lon):
+    """Primera provincia cuyo bbox contiene (lat, lon)."""
+
+# DESPUÉS (sin conflicto):
+def _geocodif(lat, lon):
+    # Primera provincia cuyo bbox contiene (lat, lon)
+```
+**Regla general**: dentro de `cell_code("""\...""")`, NUNCA usar triple comillas dobles en el código interno (docstrings, strings multilínea). Usar comillas simples o comentarios de línea.
+
+---
+
+### BUG-16: Sucursales San Juan con coords en Jujuy — descartadas en lugar de reclasificadas ✅ Resuelto — commit 7c3fe29
+
+**Archivo**: `notebooks/gen_nb02.py`, CELDA 7
+**Síntoma**: La corrección inicial (BUG-15) eliminaba las sucursales con provincia inconsistente, perdiendo datos válidos. El usuario reportó que prefería conservarlas reclasificándolas.
+**Causa**: Enfoque de filtrado en lugar de corrección: `canasta_geo = canasta_geo[~_mask_bad]` descarta filas.
+**Fix aplicado**: reclasificación completa usando bounding boxes para las 24 provincias. Para cada sucursal con provincia inconsistente, busca en qué provincia caen sus coordenadas y la reasigna:
+```python
+_PROV_BBOX = {
+    'CABA': (-34.72,-34.52,-58.54,-58.33),
+    'Tucumán': (-28.0,-26.0,-66.5,-64.5),
+    'Jujuy': (-24.5,-21.5,-67.5,-63.5),
+    ... # 24 provincias
+}
+for _idx, _row in canasta_geo.iterrows():
+    # Si coords fuera del bbox de la provincia etiquetada → buscar la correcta
+    _nueva = _geocodif(_lat, _lon)
+    if _nueva and _nueva != _p:
+        canasta_geo.at[_idx, 'PROVINCIA_NORM'] = _nueva
+```
+**Sin pérdida de datos**: la sucursal se conserva con la provincia correcta según coordenadas.
+
+---
 
 ### BUG-15: San Juan no aparece en mapa coroplético; filtro Folium muestra sucursales en ubicación incorrecta ✅ Resuelto — commit 2026-05-29
 
