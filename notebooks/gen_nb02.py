@@ -568,6 +568,8 @@ print(f'  Periodo: {serie_nacional_valida["mes"].min()} -> {serie_nacional_valid
 cells.append(cell_code("""\
 # ============================================================
 # CELDA 10 — IPC INDEC desde carga/IPC.xlsx
+# Formato real: columna 'date' = datetime64 (Excel seriales),
+# demás columnas = float64 con punto decimal.
 # ============================================================
 if not IPC_PATH.exists():
     raise FileNotFoundError(
@@ -578,26 +580,33 @@ if not IPC_PATH.exists():
 ipc_raw = pd.read_excel(IPC_PATH)
 print(f'IPC cargado: {len(ipc_raw)} filas, columnas: {list(ipc_raw.columns[:4])} ...')
 
-# Parsear columna de fecha — formato 'ene-2017', 'feb-2017', etc.
-# pd.to_datetime no entiende abreviaturas en español → conversión manual
-_MES_ESP = {'ene':1,'feb':2,'mar':3,'abr':4,'may':5,'jun':6,
-            'jul':7,'ago':8,'sep':9,'oct':10,'nov':11,'dic':12}
-
+# Detectar columna de fecha
 fecha_col = next((c for c in ipc_raw.columns
                   if str(c).lower().strip() in ('date','fecha','mes','period')),
                  ipc_raw.columns[0])
 
-def _parse_ipc_fecha(val):
-    s = str(val).strip().lower()
-    try:
-        partes = s.split('-')
-        if len(partes) == 2 and partes[0] in _MES_ESP:
-            return pd.Timestamp(year=int(partes[1]), month=_MES_ESP[partes[0]], day=1)
-    except Exception:
-        pass
-    return pd.to_datetime(val, errors='coerce')
-
-ipc_raw['mes'] = ipc_raw[fecha_col].apply(_parse_ipc_fecha).dt.strftime('%Y-%m')
+# Parsear fecha:
+#   Caso normal (IPC.xlsx real): columna ya es datetime64 porque Excel guarda
+#   fechas como seriales numéricos y pandas los convierte automáticamente.
+#   La visualización 'ene-2017' en Excel es solo formato de celda, no el dato.
+#   Caso fallback: texto 'ene-2017' (si alguna versión exportó como texto).
+if pd.api.types.is_datetime64_any_dtype(ipc_raw[fecha_col]):
+    ipc_raw['mes'] = ipc_raw[fecha_col].dt.strftime('%Y-%m')
+else:
+    _MES_ESP = {'ene':1,'feb':2,'mar':3,'abr':4,'may':5,'jun':6,
+                'jul':7,'ago':8,'sep':9,'oct':10,'nov':11,'dic':12}
+    def _parse_ipc_fecha(val):
+        if pd.isna(val): return pd.NaT
+        if isinstance(val, pd.Timestamp): return val
+        s = str(val).strip().lower()
+        try:
+            partes = s.split('-')
+            if len(partes) == 2 and partes[0] in _MES_ESP:
+                return pd.Timestamp(year=int(partes[1]), month=_MES_ESP[partes[0]], day=1)
+        except Exception:
+            pass
+        return pd.to_datetime(val, errors='coerce')
+    ipc_raw['mes'] = ipc_raw[fecha_col].apply(_parse_ipc_fecha).dt.strftime('%Y-%m')
 
 # Renombrar columnas de interés
 rename_map = {}
@@ -607,14 +616,19 @@ for c in ipc_raw.columns:
     elif 'alimentos y bebidas no alc' in cs.lower(): rename_map[c] = 'ipc_alimentos'
 ipc_raw = ipc_raw.rename(columns=rename_map)
 
-# Convertir a float (los valores pueden venir con coma decimal: '101,59' → 101.59)
+# Convertir a float (normalmente ya son float64; por robustez también maneja coma decimal)
 for c in ['ipc_general','ipc_alimentos']:
     if c in ipc_raw.columns:
         ipc_raw[c] = pd.to_numeric(
             ipc_raw[c].astype(str).str.replace(',', '.', regex=False), errors='coerce')
 
-ipc = (ipc_raw[['mes','ipc_general','ipc_alimentos']]
+# Construir serie IPC (con fallback si falta columna ipc_alimentos)
+_ipc_cols = ['mes','ipc_general'] + (['ipc_alimentos'] if 'ipc_alimentos' in ipc_raw.columns else [])
+ipc = (ipc_raw[_ipc_cols]
        .dropna(subset=['ipc_general']).sort_values('mes').reset_index(drop=True))
+if 'ipc_alimentos' not in ipc.columns:
+    ipc['ipc_alimentos'] = np.nan
+    print('AVISO: no se encontro columna Alimentos y bebidas — se usara NaN')
 ipc['ipc_general_var_%']   = ipc['ipc_general'].pct_change(fill_method=None) * 100
 ipc['ipc_alimentos_var_%'] = ipc['ipc_alimentos'].pct_change(fill_method=None) * 100
 

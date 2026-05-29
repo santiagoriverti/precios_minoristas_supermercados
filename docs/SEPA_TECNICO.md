@@ -1,6 +1,6 @@
 # SEPA — Referencia Técnica
 
-Última actualización: 2026-05-28 (notebook 02 completo + IPC.xlsx case-sensitivity)
+Última actualización: 2026-05-29 (formato real IPC.xlsx confirmado)
 
 ## Dos formatos completamente distintos
 
@@ -439,15 +439,22 @@ _ipc_candidatos = [SEPA_DIR / n for n in ('IPC.xlsx', 'ipc.xlsx', 'IPC.XLSX')]
 IPC_PATH = next((p for p in _ipc_candidatos if p.exists()), SEPA_DIR / 'IPC.xlsx')
 ```
 
-**Estructura esperada del archivo**:
+**Estructura real confirmada del archivo** (verificado con `IPC_primerasfilas.xlsx`, 2026-05-29):
 
-| Columna | Contenido |
-|---------|-----------|
-| `date` (o similar) | Fecha del período (YYYY-MM-DD o MM/DD/YYYY) |
-| Columna con "nivel general" | IPC Nivel General mensual (variación o índice) |
-| Columna con "alimentos y bebidas no alc" | IPC Alimentos y bebidas no alcohólicas |
+| # | Columna | Tipo pandas | Contenido |
+|---|---------|-------------|-----------|
+| 0 | `date` | `datetime64[us]` | Primer día del mes (p.ej. `2017-01-01`) |
+| 1 | `Nivel general` | `float64` | Índice IPC Nivel General |
+| 2 | `Alimentos y bebidas no alcohólicas` | `float64` | IPC Alimentos y bebidas |
+| 3–13 | 11 categorías más | `float64` | Salud, Transporte, Educación, etc. |
 
-El notebook detecta las columnas buscando los substrings `'nivel general'` y `'alimentos y bebidas no alc'` (case-insensitive) en los nombres de columna.
+**Punto clave sobre el tipo de la columna `date`**:
+
+Excel almacena las fechas internamente como números seriales. Aunque en la celda Excel se ven como `ene-17` (formato de celda personalizado), `pd.read_excel()` los convierte automáticamente a `datetime64`. Por eso **no se necesita parseo manual de `ene-2017`**. El notebook lo detecta con `pd.api.types.is_datetime64_any_dtype()` y usa directamente `.dt.strftime('%Y-%m')`.
+
+Si por alguna razón el archivo tuviese las fechas guardadas como texto (caso infrecuente), el notebook cae al fallback que parsea `ene-2017` con un diccionario de meses español.
+
+**Valores**: `float64` con punto decimal (ej. `101.5859`). No requieren conversión. El código mantiene `str.replace(',', '.')` por robustez ante versiones con coma decimal, pero no afecta a los valores ya numéricos.
 
 **Cobertura**: datos disponibles desde enero 2017 hasta **marzo 2026** (mínimo). Actualización mensual con un mes de rezago aproximado.
 
