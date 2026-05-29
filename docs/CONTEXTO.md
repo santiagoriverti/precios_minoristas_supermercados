@@ -1,6 +1,6 @@
 # Contexto del Proyecto — Precios Minoristas SEPA
 
-Última actualización: 2026-05-28 (notebook 02 completo — análisis canasta, mapas, rankings)
+Última actualización: 2026-05-29 (BUG-15 San Juan, ICM-UADE, etiquetas español, Serie_precios, cache qty-aware)
 
 ## Objetivo
 
@@ -44,16 +44,24 @@ Este proyecto no existe en aislamiento. Hay múltiples notebooks en otros reposi
 - CELDA 10: Serie histórica (todos los semestres disponibles) con caché parquet clave MD5 → `serie_nacional_valida`
 - CELDA 11: IPC desde `carga/IPC.xlsx` → `ipc_general`, `ipc_alimentos`
 - CELDA 12: `comparativa` — reindexar a base mar-2024, índice SEPA vs IPC
-- CELDA 13: Gráfico 1 — índices base mar-2024 (líneas); Gráfico 2 — variaciones mensuales (barras pareadas)
+- CELDA 13: Gráfico 1 — índices base dinámica (líneas, etiquetas en español, serie llamada "ICM-UADE"); Gráfico 2 — variaciones mensuales (3 barras: ICM-UADE + IPC General + IPC Alimentos, etiquetas español)
 - CELDA 14: Cuadro 1 provincial + código LaTeX
 - CELDA 15: Mapa coroplético provincial con `ar.json`
 - CELDA 16: Cobertura por provincia y por cadena
 - CELDA 17: Rankings nacionales + AMBA (barras horizontales, gradiente RdYlGn)
 - CELDA 18: Mapa Folium interactivo (FeatureGroups por cadena, panel JS de filtros)
 - CELDA 19: Ranking CABA por barrio (48 bounding boxes lat/lon)
-- CELDA 20: Exportación Excel (`canasta_analisis_YYYY-MM.xlsx`)
-**Output**: `output_canasta/canasta_analisis_YYYY-MM.xlsx` + `mapa_interactivo.html`
+- CELDA 20: Diagnóstico trazabilidad temporal de todos los ~3.650 Candidatos (CELDA 20, opcional ~20 min)
+- CELDA 21: Exportación Excel (`canasta_analisis_YYYY-MM.xlsx`) — 5 hojas: Evolucion_IPC, Por_provincia, Por_sucursal, Ranking_cadenas, **Serie_precios** (precio mediano por producto por mes)
+**Output**: `output_canasta/canasta_analisis_YYYY-MM.xlsx` + `mapa_interactivo.html` + `trazabilidad_candidatos_YYYY-MM.xlsx`
 **Archivos requeridos en Drive**: `carga/IPC.xlsx`, `carga/ar.json`, `output_canasta/canasta_representativa_YYYY-MM.xlsx`
+**Cambios claves (2026-05-29)**:
+- BUG-15 resuelto: `'San juan'` → `'San Juan'` en `PROV_NORM`
+- Caché por hash de EANs+cantidades (cambiar qty invalida caché automáticamente)
+- Gráficos con nombre "ICM-UADE" y etiquetas de meses en español (ene-24, feb-24…)
+- Gráfico 2 con 3 barras: ICM-UADE + IPC General + IPC Alimentos
+- `MES_INICIO_GRAFICO` auto-adapta al primer mes disponible si el configurado no existe
+- Nueva hoja Excel `Serie_precios`: precio mediano por producto por mes (serie completa)
 
 ### 3. `analisis_SEPA_evolucion.ipynb`
 **Propósito**: evolución mensual de precios con canasta fija de 30 EANs.

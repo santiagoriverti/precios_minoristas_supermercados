@@ -1,12 +1,28 @@
 # Bugs Pendientes y Mejoras
 
-Última actualización: 2026-05-28 — notebook 02 completo + BUG-14 (IPC case-sensitivity)
+Última actualización: 2026-05-29 — BUG-15 (San Juan), mejoras nb02 (ICM-UADE, español, Serie_precios, cache qty)
 
 ---
 
 ## 🔴 Bugs críticos (pendientes de fix)
 
 > ✅ Todos los bugs críticos están resueltos. Ver sección "Resueltos" más abajo.
+
+---
+
+## 🔴 Bugs críticos (resueltos — notebook 02, segunda ejecución 2026-05-29)
+
+### BUG-15: San Juan no aparece en mapa coroplético; filtro Folium muestra sucursales en ubicación incorrecta ✅ Resuelto — commit 2026-05-29
+
+**Archivo**: `notebooks/gen_nb02.py`, CELDA 4 (`PROV_NORM`)
+**Síntoma**: La provincia de San Juan aparecía en gris (sin datos) en el mapa coroplético. En el mapa Folium, al filtrar por "San Juan" se mostraban sucursales que geográficamente parecían estar en Jujuy.
+**Causa**: El maestro de sucursales almacena la provincia de San Juan como `"San juan"` (con 'j' minúscula). El dict `PROV_NORM` tenía la entrada `'San Juan':'San Juan'` pero NO tenía `'San juan':'San Juan'`. Como la clave no existía, `.fillna(canasta_geo['PROVINCIA'])` conservaba el string original `"San juan"`. El GeoJSON usa `"San Juan"` (mayúscula), por lo que el match `can_prov.get('San Juan')` encontraba `None` → se pintaba gris.
+**Fix aplicado**:
+```python
+# PROV_NORM — agregadas variantes de capitalización:
+'San Juan':'San Juan','San juan':'San Juan','SAN JUAN':'San Juan',
+```
+**Regla general**: el maestro de sucursales puede tener inconsistencias de capitalización en los nombres de provincia. Para cada provincia con caracteres ambiguos, registrar todas las variantes conocidas en `PROV_NORM`.
 
 ---
 
