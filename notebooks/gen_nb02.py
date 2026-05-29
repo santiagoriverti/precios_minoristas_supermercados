@@ -449,6 +449,24 @@ if mask_caba_bad.sum():
     print(f'  Eliminando {mask_caba_bad.sum()} sucursales mal clasificadas como CABA')
     canasta_geo = canasta_geo[~mask_caba_bad].copy()
 
+# Validación geográfica por coordenadas — corrige etiquetas de provincia incorrectas
+# en el maestro (ej: sucursales en área de Jujuy pero etiquetadas como San Juan)
+_PROV_BOUNDS = {
+    # provincia: (lat_min, lat_max, lon_min, lon_max)
+    'San Juan': (-34.5, -27.5, -71.0, -65.0),
+    'Jujuy':    (-24.5, -21.5, -67.5, -63.5),
+    'Salta':    (-26.5, -21.5, -68.5, -62.5),
+}
+for _prov, (lat_min, lat_max, lon_min, lon_max) in _PROV_BOUNDS.items():
+    _mask_bad = (
+        canasta_geo['PROVINCIA_NORM'].eq(_prov) &
+        ~(canasta_geo['sucursales_latitud'].between(lat_min, lat_max) &
+          canasta_geo['sucursales_longitud'].between(lon_min, lon_max))
+    )
+    if _mask_bad.sum():
+        print(f'  Eliminando {_mask_bad.sum()} sucursales {_prov} con coordenadas inconsistentes')
+        canasta_geo = canasta_geo[~_mask_bad].copy()
+
 canasta_geo_filtros = canasta_geo.copy()
 print(f'canasta_geo_filtros: {len(canasta_geo_filtros):,} sucursales')
 print(f'  Rango: ${canasta_geo_filtros["canasta_total"].min():,.0f} – ${canasta_geo_filtros["canasta_total"].max():,.0f}')
@@ -725,7 +743,7 @@ if df_g['idx_ipc_alimentos_base'].notna().any():
                  color=COLOR_IPC_ALI, fontweight='bold', fontsize=11)
 plt.tight_layout()
 out1 = OUTPUT_DIR / f'indices_canasta_vs_ipc_{MES}.png'
-plt.savefig(out1, dpi=200, bbox_inches='tight', facecolor='white')
+plt.savefig(out1, dpi=600, bbox_inches='tight', facecolor='white')
 plt.show()
 print(f'Grafico 1 guardado: {out1}')
 
@@ -764,7 +782,7 @@ if _vals_max:
     ax2.set_ylim(top=max(_vals_max) * 1.35)
 plt.tight_layout()
 out2 = OUTPUT_DIR / f'variaciones_canasta_vs_ipc_{MES}.png'
-plt.savefig(out2, dpi=200, bbox_inches='tight', facecolor='white')
+plt.savefig(out2, dpi=600, bbox_inches='tight', facecolor='white')
 plt.show()
 print(f'Grafico 2 guardado: {out2}')"""))
 
@@ -905,61 +923,120 @@ else:
                 markeredgecolor='black', markeredgewidth=1.2, zorder=5)
 
     ax.set_aspect('equal'); ax.axis('off')
-    ax.set_title(f'ICM-UADE por provincia — {NOMBRE_MES_TITLE}\\n({N_CANASTA} productos)',
-                 fontsize=14, fontweight='bold', pad=12)
     plt.tight_layout()
     out_m = OUTPUT_DIR / f'mapa_canasta_{ULTIMO_MES}.png'
-    plt.savefig(out_m, dpi=200, bbox_inches='tight', facecolor='white')
+    plt.savefig(out_m, dpi=600, bbox_inches='tight', facecolor='white')
     plt.show()
     print(f'Mapa guardado: {out_m}')"""))
 
 # CELL 15 — COVERAGE
 cells.append(cell_code("""\
 # ============================================================
-# CELDA 15 — Graficos de cobertura
+# CELDA 15 — Graficos de cobertura (provincia, cadena, matrices)
 # ============================================================
-cob_p = (canasta_geo_filtros.groupby('PROVINCIA_NORM')
-         .agg(n_sucursales=('canasta_total','count'), n_cadenas=('cadena','nunique'))
-         .reset_index().rename(columns={'PROVINCIA_NORM':'provincia'})
-         .sort_values('n_sucursales'))
+# Construir frames de cobertura con detalle de EANs por sucursal
+_pm_info = (canasta_geo_filtros[['id_comercio','id_bandera','id_sucursal',
+                                  'PROVINCIA_NORM','cadena']].drop_duplicates())
+_pm_geo  = precio_mes.merge(_pm_info, on=['id_comercio','id_bandera','id_sucursal'], how='inner')
+_pm_geo['suc_key'] = (_pm_geo['id_comercio'] + '_' +
+                      _pm_geo['id_bandera']   + '_' +
+                      _pm_geo['id_sucursal'])
 
-fig, axes = plt.subplots(1, 2, figsize=(14, max(8, len(cob_p)*0.35+2)), sharey=True)
+cob_provincia = (_pm_geo.groupby('PROVINCIA_NORM')
+    .agg(n_productos_unicos=('ean_norm','nunique'),
+         n_cadenas=('cadena','nunique'),
+         n_sucursales=('suc_key','nunique'))
+    .reset_index().rename(columns={'PROVINCIA_NORM':'provincia'}))
+
+cob_cadena = (_pm_geo.groupby('cadena')
+    .agg(n_productos_unicos=('ean_norm','nunique'),
+         n_provincias=('PROVINCIA_NORM','nunique'),
+         n_sucursales=('suc_key','nunique'))
+    .reset_index())
+
+matriz_cad_prov = (_pm_geo.groupby(['cadena','PROVINCIA_NORM'])['ean_norm']
+    .nunique().unstack(fill_value=0))
+
+# ── Grafico 1: Cobertura por provincia (3 paneles) ───────────────────────────
+df_p = cob_provincia.sort_values('n_productos_unicos', ascending=True).reset_index(drop=True)
+fig, axes = plt.subplots(1, 3, figsize=(15, max(9, len(df_p)*0.38+2)), sharey=True)
 for ax, (col, titulo, color) in zip(axes, [
-        ('n_sucursales','Sucursales con datos','#0055A4'),
-        ('n_cadenas','Cadenas presentes','#27ae60')]):
-    ax.barh(cob_p['provincia'], cob_p[col], color=color, edgecolor='white')
-    for i, v in enumerate(cob_p[col]):
-        ax.text(v+max(cob_p[col])*0.01, i, f'{int(v):,}', va='center', fontsize=8)
+        ('n_productos_unicos', 'Productos únicos',   '#0055A4'),
+        ('n_cadenas',          'Cadenas presentes',  '#27ae60'),
+        ('n_sucursales',       'Sucursales',          '#c0392b'),
+]):
+    ax.barh(df_p['provincia'], df_p[col], color=color, edgecolor='white')
+    for i, v in enumerate(df_p[col]):
+        ax.text(v + max(df_p[col])*0.01, i, f'{int(v):,}',
+                va='center', fontsize=8, color='#2c3e50')
     ax.set_title(titulo, fontsize=11, fontweight='bold', color=color)
-    ax.xaxis.set_major_formatter(mticker.FuncFormatter(lambda x,_: f'{int(x):,}'))
-    ax.set_xlim(0, max(cob_p[col])*1.18)
+    ax.xaxis.set_major_formatter(mticker.FuncFormatter(lambda x, _: f'{int(x):,}'))
+    ax.set_xlim(0, max(df_p[col]) * 1.15)
     for sp in ['top','right']: ax.spines[sp].set_visible(False)
-fig.suptitle(f'Cobertura por provincia — {NOMBRE_MES_TITLE}', fontsize=13, fontweight='bold')
 plt.tight_layout()
 out_cp = OUTPUT_DIR / f'cobertura_provincia_{MES}.png'
-plt.savefig(out_cp, dpi=150, bbox_inches='tight'); plt.show()
+plt.savefig(out_cp, dpi=600, bbox_inches='tight'); plt.show()
 
-cob_c = (canasta_geo_filtros.groupby('cadena')
-         .agg(n_sucursales=('canasta_total','count'), n_provincias=('PROVINCIA_NORM','nunique'))
-         .reset_index().sort_values('n_sucursales'))
-
-fig, axes = plt.subplots(1, 2, figsize=(14, max(6, len(cob_c)*0.45+2)), sharey=True)
+# ── Grafico 2: Cobertura por cadena (3 paneles) ──────────────────────────────
+df_c = cob_cadena.sort_values('n_productos_unicos', ascending=True).reset_index(drop=True)
+fig, axes = plt.subplots(1, 3, figsize=(15, max(8, len(df_c)*0.5+2)), sharey=True)
 for ax, (col, titulo, color) in zip(axes, [
-        ('n_sucursales','Sucursales con datos','#0055A4'),
-        ('n_provincias','Provincias presentes','#c0392b')]):
-    ax.barh(cob_c['cadena'], cob_c[col], color=color, edgecolor='white')
-    for i, v in enumerate(cob_c[col]):
-        ax.text(v+max(cob_c[col])*0.01, i, f'{int(v):,}', va='center', fontsize=8)
+        ('n_productos_unicos', 'Productos únicos',    '#0055A4'),
+        ('n_provincias',       'Provincias presentes','#27ae60'),
+        ('n_sucursales',       'Sucursales',           '#c0392b'),
+]):
+    ax.barh(df_c['cadena'], df_c[col], color=color, edgecolor='white')
+    for i, v in enumerate(df_c[col]):
+        ax.text(v + max(df_c[col])*0.01, i, f'{int(v):,}',
+                va='center', fontsize=8, color='#2c3e50')
     ax.set_title(titulo, fontsize=11, fontweight='bold', color=color)
-    ax.xaxis.set_major_formatter(mticker.FuncFormatter(lambda x,_: f'{int(x):,}'))
-    ax.set_xlim(0, max(cob_c[col])*1.18)
+    ax.xaxis.set_major_formatter(mticker.FuncFormatter(lambda x, _: f'{int(x):,}'))
+    ax.set_xlim(0, max(df_c[col]) * 1.15)
     for sp in ['top','right']: ax.spines[sp].set_visible(False)
 axes[0].tick_params(axis='y', labelsize=8)
-fig.suptitle(f'Cobertura por cadena — {NOMBRE_MES_TITLE}', fontsize=13, fontweight='bold')
 plt.tight_layout()
 out_cc = OUTPUT_DIR / f'cobertura_cadena_{MES}.png'
-plt.savefig(out_cc, dpi=150, bbox_inches='tight'); plt.show()
-print(f'Graficos cobertura guardados')"""))
+plt.savefig(out_cc, dpi=600, bbox_inches='tight'); plt.show()
+
+# ── Grafico 3: Matriz presencia cadena × provincia (binaria) ─────────────────
+df_m = matriz_cad_prov.copy()
+df_m['_total'] = df_m.sum(axis=1)
+df_m = df_m.sort_values('_total', ascending=False).drop(columns='_total')
+orden_prov = (df_m > 0).sum(axis=0).sort_values(ascending=False).index
+df_m = df_m[orden_prov]
+
+fig, ax = plt.subplots(figsize=(13, max(6, len(df_m)*0.55+2)))
+binaria = (df_m > 0).astype(int)
+sns.heatmap(binaria, cmap='Blues', cbar=False,
+            linewidths=0.5, linecolor='white',
+            xticklabels=True, yticklabels=True, ax=ax)
+for i in range(binaria.shape[0]):
+    for j in range(binaria.shape[1]):
+        if binaria.iat[i, j]:
+            ax.text(j+0.5, i+0.5, '●', ha='center', va='center',
+                    color='white', fontsize=9)
+ax.set_xlabel(''); ax.set_ylabel('')
+plt.xticks(rotation=45, ha='right', fontsize=9)
+plt.yticks(rotation=0, fontsize=9)
+plt.tight_layout()
+out_mp = OUTPUT_DIR / f'matriz_presencia_{MES}.png'
+plt.savefig(out_mp, dpi=600, bbox_inches='tight'); plt.show()
+
+# ── Grafico 4: Matriz intensidad cadena × provincia (log scale) ──────────────
+fig, ax = plt.subplots(figsize=(13, max(6, len(df_m)*0.55+2)))
+data_log = np.log10(df_m.replace(0, np.nan))
+sns.heatmap(data_log, cmap='YlOrRd',
+            linewidths=0.5, linecolor='white',
+            cbar_kws={'label': 'log₁₀(productos únicos)'},
+            xticklabels=True, yticklabels=True, ax=ax)
+ax.set_xlabel(''); ax.set_ylabel('')
+plt.xticks(rotation=45, ha='right', fontsize=9)
+plt.yticks(rotation=0, fontsize=9)
+plt.tight_layout()
+out_mi = OUTPUT_DIR / f'matriz_intensidad_{MES}.png'
+plt.savefig(out_mi, dpi=600, bbox_inches='tight'); plt.show()
+
+print(f'Graficos cobertura guardados: provincia, cadena, matriz presencia, matriz intensidad')"""))
 
 # CELL 16 — RANKINGS
 cells.append(cell_code("""\
@@ -1001,13 +1078,14 @@ for (rk, prom_r, titulo, out_name) in [
                label=f'Promedio: ${fmtn(prom_r)}')
     ax.set_xlabel('Canasta promedio (ARS)', fontsize=11)
     ax.set_xlim(rk['canasta_promedio'].min()*0.95, rk['canasta_promedio'].max()*1.07)
-    ax.set_title(titulo, fontsize=13, fontweight='bold')
+    ax.xaxis.set_major_formatter(mticker.FuncFormatter(
+        lambda x, _: f'${int(x):,}'.replace(',','.')))
     ax.legend(loc='lower right', fontsize=10)
     ax.grid(True, alpha=0.3, axis='x'); ax.set_axisbelow(True)
     for sp in ['top','right']: ax.spines[sp].set_visible(False)
     plt.tight_layout()
     out_r = OUTPUT_DIR / f'{out_name}.png'
-    plt.savefig(out_r, dpi=150, bbox_inches='tight'); plt.show()
+    plt.savefig(out_r, dpi=600, bbox_inches='tight'); plt.show()
     print(f'Ranking guardado: {out_r}')
 
 print('\\n=== RANKING NACIONAL ===')
@@ -1465,7 +1543,7 @@ if 'categoria' in df_traz.columns:
 
 plt.tight_layout()
 _fig.savefig(OUTPUT_DIR / f'trazabilidad_candidatos_{ULTIMO_MES}.png',
-             dpi=150, bbox_inches='tight')
+             dpi=600, bbox_inches='tight')
 plt.show()
 
 # ── 7. Exportar tabla completa ───────────────────────────────
