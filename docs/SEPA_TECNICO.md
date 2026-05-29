@@ -1,6 +1,6 @@
 # SEPA — Referencia Técnica
 
-Última actualización: 2026-05-29 (formato real IPC.xlsx confirmado)
+Última actualización: 2026-05-29 (BUG-15 San Juan, ICM-UADE, Serie_precios, cache qty-aware)
 
 ## Dos formatos completamente distintos
 
@@ -162,6 +162,23 @@ df['PROVINCIA_NOMBRE'] = (
 ```
 
 El maestro de sucursales tiene `PROVINCIA` (columna del Excel) y el maestro de provincias tiene `provincia` (columna de mapping del código SEPA). Se combinan con `.combine_first()` para usar la fuente más confiable disponible.
+
+### ⚠️ Inconsistencia de capitalización en el maestro — San Juan (BUG-15, 2026-05-29)
+
+El maestro de sucursales almacena la provincia de San Juan como `"San juan"` (con 'j' minúscula), no como `"San Juan"` ni como `"Provincia de San Juan"`. Si el dict `PROV_NORM` no incluye esta variante exacta, la provincia queda sin normalizar y:
+
+1. El mapa coroplético la muestra en gris (el GeoJSON usa `"San Juan"` — no matchea)
+2. El Folium filter muestra las sucursales bajo el label incorrecto
+
+**Fix en `PROV_NORM` (gen_nb02.py CELDA 4)**:
+
+```python
+'San Juan':'San Juan',
+'San juan':'San Juan',   # ← variante real del maestro (j minúscula)
+'SAN JUAN':'San Juan',   # ← defensivo
+```
+
+**Regla general**: siempre registrar la variante exacta tal como aparece en el maestro. No asumir que la capitalización es estándar. Las variantes conocidas del maestro incluyen al menos: `"San juan"` (San Juan), `"Neuquén"/"Neuquen"` (Neuquén), `"Entre Ríos"/"Entre Rios"` (Entre Ríos).
 
 ### Regiones del maestro de sucursales
 
@@ -412,6 +429,77 @@ df.groupby(['nombre_cadena', 'REGION', 'rubro', 'categoria'], observed=True)['pr
 ```
 
 **Regla**: todo `groupby()` que incluya al menos una columna de dtype `category` DEBE llevar `observed=True`.
+
+---
+
+## Patrones técnicos del notebook 02 (gen_nb02.py)
+
+### Caché parquet con hash de EANs + cantidades
+
+El caché de la serie histórica se valida con un hash MD5 que incluye **tanto los EANs como las cantidades** de la canasta. Esto garantiza que si el economista cambia la composición (agrega un producto, lo elimina, o cambia su `cantidad`), el caché se invalida automáticamente y se recalcula la serie.
+
+```python
+# ❌ Solo EANs — no invalida si cambia cantidad de 4 a 3
+_cache_key = hashlib.md5('|'.join(sorted(CANASTA.keys())).encode()).hexdigest()[:8]
+
+# ✅ EANs + cantidades — invalida ante cualquier cambio en la canasta
+_cache_key = hashlib.md5(
+    '|'.join(f'{k}:{CANASTA[k][1]}' for k in sorted(CANASTA.keys())).encode()
+).hexdigest()[:8]
+```
+
+El parquet se guarda en `output_canasta/_cache/hist_{hash}.parquet`. Para forzar recálculo: setear `USE_CACHE = False` en CELDA 1.
+
+### Etiquetas de meses en español
+
+Matplotlib usa el locale del sistema para formatear fechas. En Colab (Linux), `%b` produce "Jan", "Feb"... en inglés. Para obtener "ene", "feb"..., usar un formateador manual:
+
+```python
+_MESES_ES = {1:'ene',2:'feb',3:'mar',4:'abr',5:'may',6:'jun',
+             7:'jul',8:'ago',9:'sep',10:'oct',11:'nov',12:'dic'}
+
+def _fmt_mes_es(x, pos):
+    try:
+        ts = mdates.num2date(x)
+        return f'{_MESES_ES[ts.month]}-{str(ts.year)[2:]}'
+    except Exception:
+        return ''
+
+ax.xaxis.set_major_formatter(mticker.FuncFormatter(_fmt_mes_es))
+```
+
+No usar `mdates.DateFormatter('%b-%y')` — en Colab produce inglés.
+
+### MES_INICIO_GRAFICO auto-adapta
+
+Si el mes configurado en CELDA 1 no existe en la serie histórica (por ejemplo porque la canasta empieza en un mes posterior), el notebook cae automáticamente al primer mes disponible:
+
+```python
+_mg = MES_INICIO_GRAFICO
+if _mg not in comparativa['mes'].values:
+    _mg = comparativa['mes'].min()
+    print(f'AVISO: MES_INICIO_GRAFICO {MES_INICIO_GRAFICO} no está en la serie → usando {_mg}')
+```
+
+### Nombre de la canasta: ICM-UADE
+
+El nombre institucional de la canasta en gráficos y visualizaciones es **"ICM-UADE"** (Índice de Canasta Mensual UADE), no "Canasta SEPA". La variable `COLOR_CANASTA = '#0055A4'` (azul UADE) se mantiene en todos los gráficos.
+
+### Hoja Serie_precios en el Excel de análisis
+
+El Excel `canasta_analisis_YYYY-MM.xlsx` tiene 5 hojas. La nueva hoja **`Serie_precios`** contiene el precio mediano nacional por producto por mes (serie histórica completa desde `MES_INICIO_HISTORICO`):
+
+| Columna | Contenido |
+|---------|-----------|
+| `mes` | Período YYYY-MM |
+| `id_producto` | EAN-13 con ceros iniciales |
+| `descripcion` | Nombre del producto (primeros 50 chars) |
+| `categoria` | Categoría de la canasta |
+| `qty` | Cantidad mensual del producto en la canasta |
+| `precio_mediano` | Precio mediano nacional (pesos) |
+| `costo_item` | `precio_mediano × qty` |
+
+Permite analizar la evolución individual de cada producto a lo largo del tiempo sin necesidad de reprocesar los ZIPs.
 
 ---
 
