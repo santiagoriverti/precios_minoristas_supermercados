@@ -325,27 +325,48 @@ La canasta fue construida a partir de la hoja `Selección` del nb01 y revisada e
 
 ---
 
-## Métricas Notebook 02 — Primera ejecución completa (abril 2026, commit 6fe5a5e)
+## Métricas Notebook 02 — Ejecución con canasta revisada (abril 2026, canasta con 4 reemplazos)
 
 | Métrica | Valor |
 |---------|-------|
-| Costo ICM-UADE promedio nacional | **$477.847 ARS** |
-| Rango por sucursal | $445.095 – $527.214 |
-| Provincia más barata | Chaco ($464.760, -2.74%) |
-| Provincia más cara | Santa Cruz ($507.034, +6.11%) |
+| Costo ICM-UADE promedio nacional | **$478.836 ARS** |
+| Rango por sucursal | $440.012 – $528.014 |
+| Provincia más barata | Chaco ($463.679, -3.17%) |
+| Provincia más cara | Santa Cruz ($507.864, +6.06%) |
 | Sucursales válidas (≥15 productos propios) | 2.372 |
 | Cadenas con datos | 16 |
-| Provincias con datos | 24 |
-| Cadena más cara | La Anónima ($496.189) |
-| Cadena más barata (ranking nacional) | Hipermercado Libertad ($451.152) |
-| Barrio CABA más barato | Villa Soldati ($476.488, -1.21% vs CABA) |
-| Barrio CABA más caro (ranking) | Recoleta ($485.602, +0.68% vs CABA) |
+| Provincias con datos | **24** (San Juan ahora aparece — BUG-15 confirmado resuelto) |
+| Cadena más cara | La Anónima ($496.634) |
+| Cadena más barata (ranking nacional) | Hipermercado Libertad ($451.972) |
+| Barrio CABA más barato | Villa Soldati ($477.650, -1.09% vs CABA) |
+| Barrio CABA más caro (ranking) | Recoleta ($485.969, +0.63% vs CABA) |
 | Meses en serie histórica | 28 (2024-01 → 2026-04) |
-| Costo ICM-UADE vs IPC General abr-2026 | +2.84% ICM vs +2.58% IPC |
+| Costo ICM-UADE vs IPC General abr-2026 | +3.10% ICM vs +2.58% IPC |
+| Cache parquet | `hist_0a6651c5.parquet` |
+
+### Ramp-up de la serie histórica (por qué 48→51 EANs)
+
+La serie empieza con 48 EANs en enero 2024 porque 3 productos de la canasta entraron al SEPA durante 2024:
+
+| Producto | Entró | Meses (de 28) | Trazabilidad |
+|----------|-------|--------------|--------------|
+| Galletitas Chocolinas 262g | feb-2024 | 27 | 96.4% |
+| Puré de Tomate La Campagnola 530g | mar-2024 | 26 | 92.9% |
+| Cacao Nesquik 800g | jun-2024 | 23 | 82.1% |
+
+Los 4 reemplazos (Swift XL, Lavandina Anti-splash, Plusbelle, Listerine) están todos al 100% desde enero 2024 — confirmado.
 
 ---
 
 ## Historial de cambios
+
+### 2026-05-29 — Ejecución final confirmada con canasta revisada
+
+- ✅ BUG-15 confirmado resuelto: San Juan aparece correctamente en mapa y cuadro provincial
+- ✅ 4 reemplazos todos al 100% trazabilidad desde ene-2024 (Swift XL, Anti-splash, Plusbelle, Listerine)
+- ✅ Serie histórica: 28 meses, ramp-up 48→51 EANs explicado (3 productos nuevos en 2024)
+- ✅ 48/51 productos al 100%, promedio 99.4%. Mínimo: Nesquik 82.1% (nuevo desde jun-2024, no inestable)
+- Cache nuevo: `hist_0a6651c5.parquet`
 
 ### 2026-05-29 — ICM-UADE, BUG-15, mejoras nb02 (commits 6fe5a5e, 17ae989, 96f83f5)
 

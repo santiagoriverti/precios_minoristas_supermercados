@@ -346,8 +346,10 @@ El Notebook 02 usa un caché parquet (keyed por hash MD5 de EANs + cantidades) q
 | Cadenas con datos | 16 |
 | Provincias con datos | 24 |
 | Meses de serie histórica | 28 (ene-2024 → abr-2026) |
-| Costo ICM-UADE promedio nacional (abr-2026) | $477.847 ARS |
-| Rango por sucursal (abr-2026) | $445.095 – $527.214 |
+| Costo ICM-UADE promedio nacional (abr-2026) | **$478.836 ARS** |
+| Rango por sucursal (abr-2026) | $440.012 – $528.014 |
+| Provincia más barata | Chaco ($463.679, -3.17%) |
+| Provincia más cara | Santa Cruz ($507.864, +6.06%) |
 | Trazabilidad promedio de la canasta | 99,4% (48/51 productos al 100%) |
 | Tiempo primera ejecución (sin caché) | ~60 min |
 | Tiempo ejecuciones siguientes (con caché) | ~5 min |
