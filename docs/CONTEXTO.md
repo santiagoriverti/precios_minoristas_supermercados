@@ -360,6 +360,28 @@ Los 4 reemplazos (Swift XL, Lavandina Anti-splash, Plusbelle, Listerine) están 
 
 ## Historial de cambios
 
+### 2026-06-01 — Rewrite completo nb02: soporte multi-canasta (commit c85aa84)
+
+**Cambio arquitectural mayor**: el notebook 02 ahora procesa hasta 6 canastas simultáneamente.
+
+- **CELDA 3**: lee `cantidad_01`..`cantidad_06`, construye `CANASTAS` dict (solo columnas activas), `CANASTA_EANS_NORM` = unión de todos los EANs activos
+- **CELDA 7**: un `groupby().apply()` por canasta → `canasta_geo_dict`. Limpieza geográfica (CABA filter, reclasificación por coordenadas) se hace UNA SOLA VEZ
+- **CELDA 8**: análisis provincial por canasta → `serie_prov_dict`, `prom_nac_dict`
+- **CELDA 9**: UN SOLO cache raw (`hist_union_HASH.parquet`) para la unión de EANs; luego agregación por canasta en memoria (sin releer ZIPs). Hash basado solo en EANs, no en cantidades
+- **CELDA 11**: comparativa por canasta → `comparativa_dict`, `df_g_dict`
+- **CELDA 12**: gráfico de índices y variaciones con todas las canastas activas + IPC (líneas)
+- **CELDA 13**: Cuadro 1 + LaTeX por canasta
+- **CELDA 14**: un mapa coroplético por canasta (`mapa_canasta_{short}_{mes}.png`)
+- **CELDA 16**: rankings nacional + AMBA por canasta
+- **CELDA 17**: un mapa Folium HTML por canasta (`mapa_interactivo_{mes}_{short}.html`)
+- **CELDA 18**: ranking barrios CABA por canasta
+- **CELDA 19**: Excel con `Evolucion_IPC` (wide, todas canastas), `Prov_{short}`, `Ranking_{short}`, `Sucs_{short}` por canasta, `Serie_precios` con col `canasta_id`
+
+**Nombres y colores**:
+- `cantidad_01` = Vulnerable (#0055A4) · `cantidad_02` = Popular (#e74c3c)
+- `cantidad_03` = Media (#27ae60) · `cantidad_04` = Media Alta (#f39c12)
+- `cantidad_05` = Canasta 05 (#9b59b6) · `cantidad_06` = Canasta 06 (#1abc9c)
+
 ### 2026-06-01 — Soporte multi-canasta en nb01: 6 columnas cantidad (commit 566f033)
 
 - La hoja `Selección` (y `Productos unicos`) del Excel exportado por nb01 ahora tiene **6 columnas de cantidad** (`cantidad_01` ... `cantidad_06`) en lugar de una sola `cantidad`
