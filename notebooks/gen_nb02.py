@@ -853,24 +853,23 @@ else:
     plt.show()
     print(f'Gráfico 1 guardado: {out1}')
 
-    # ── GRAFICO 2: Variaciones mensuales (barras verticales por canasta) ───────
-    _n_c = len(_activas_con_datos)
-    _bw  = pd.Timedelta(days=max(2, int(13 / (_n_c + 1))))
-    _offs = [(_i - (_n_c - 1) / 2) * _bw for _i in range(_n_c)]
-    fig2, ax2 = plt.subplots(figsize=(15, 7))
-    for _i, _col_id in enumerate(_activas_con_datos):
-        _dg   = df_g_dict[_col_id]
-        ax2.bar(_dg['fecha'] + _offs[_i], _dg['variacion_mensual_%'],
-                width=_bw, color=CANASTA_COLORS[_col_id], alpha=0.85,
-                label=f'ICM-UADE {CANASTA_NAMES[_col_id]}')
-    if _dg0['ipc_general_var_%'].notna().any():
-        ax2.plot(_dg0['fecha'], _dg0['ipc_general_var_%'],
-                 color=COLOR_IPC_GEN, linewidth=2, linestyle='--', marker='s', markersize=3,
-                 label='IPC INDEC - Nivel general')
-    if _dg0['ipc_alimentos_var_%'].notna().any():
-        ax2.plot(_dg0['fecha'], _dg0['ipc_alimentos_var_%'],
-                 color=COLOR_IPC_ALI, linewidth=2, linestyle=':', marker='^', markersize=3,
-                 label='IPC INDEC - Alimentos y bebidas')
+    # ── GRAFICO 2: Variaciones mensuales (solo barras verticales) ───────────────
+    # Canastas activas + IPC General + IPC Alimentos como barras agrupadas
+    _series_bar = (
+        [(CANASTA_COLORS[c], f'ICM-UADE {CANASTA_NAMES[c]}',
+          df_g_dict[c]['variacion_mensual_%']) for c in _activas_con_datos] +
+        [(COLOR_IPC_GEN, 'IPC INDEC - Nivel general', _dg0['ipc_general_var_%']),
+         (COLOR_IPC_ALI, 'IPC INDEC - Alimentos y bebidas', _dg0['ipc_alimentos_var_%'])]
+    )
+    _n_b = len(_series_bar)
+    _bw2 = pd.Timedelta(days=max(1, int(12 / _n_b)))
+    _offs2 = [(_i - (_n_b - 1) / 2) * _bw2 for _i in range(_n_b)]
+    fig2, ax2 = plt.subplots(figsize=(16, 7))
+    for _i, (_col, _lbl, _vals) in enumerate(_series_bar):
+        if _vals.notna().any():
+            _alpha = 0.90 if _i < len(_activas_con_datos) else 0.70
+            ax2.bar(_dg0['fecha'] + _offs2[_i], _vals,
+                    width=_bw2, color=_col, alpha=_alpha, label=_lbl)
     ax2.axhline(0, color='black', linewidth=0.5)
     ax2.set_ylabel('Variación mensual (%)', fontsize=11)
     ax2.legend(loc='upper right', fontsize=9, framealpha=0.95)
@@ -878,38 +877,53 @@ else:
     ax2.xaxis.set_major_locator(mdates.MonthLocator(interval=1))
     ax2.xaxis.set_major_formatter(mticker.FuncFormatter(_fmt_mes_es))
     plt.setp(ax2.xaxis.get_majorticklabels(), rotation=45, ha='right')
-    _vmax_l = [df_g_dict[c]['variacion_mensual_%'].dropna().max()
-               for c in _activas_con_datos if df_g_dict[c]['variacion_mensual_%'].notna().any()]
-    if _dg0['ipc_general_var_%'].notna().any():
-        _vmax_l.append(_dg0['ipc_general_var_%'].dropna().max())
-    if _vmax_l:
-        ax2.set_ylim(top=max(_vmax_l) * 1.35)
+    _vmax_l2 = [s.dropna().max() for _,_,s in _series_bar if s.notna().any()]
+    if _vmax_l2: ax2.set_ylim(top=max(_vmax_l2) * 1.35)
     plt.tight_layout()
     out2 = OUTPUT_DIR / f'variaciones_canasta_vs_ipc_{MES}.png'
     plt.savefig(out2, dpi=600, bbox_inches='tight', facecolor='white')
     plt.show()
     print(f'Gráfico 2 guardado: {out2}')
 
-    # ── GRAFICO 3: Ranking de valores absolutos por canasta ───────────────────
+    # ── GRAFICO 3: Ranking de valores absolutos por canasta (estética mejorada) ─
     _abs_data = sorted(
         [(CANASTA_NAMES[c], prom_nac_dict[c], CANASTA_COLORS[c]) for c in CANASTAS_ACTIVAS],
         key=lambda x: x[1])
-    fig3, ax3 = plt.subplots(figsize=(10, max(4, len(_abs_data) * 1.5 + 2)))
     _pnames  = [d[0] for d in _abs_data]
     _pvals   = [d[1] for d in _abs_data]
     _pcolors = [d[2] for d in _abs_data]
-    bars3 = ax3.barh(_pnames, _pvals, color=_pcolors, edgecolor='black', linewidth=0.4)
-    for bar, val in zip(bars3, _pvals):
-        ax3.text(bar.get_width() + max(_pvals) * 0.005,
+    _base_v  = _pvals[0] if _pvals else 1   # Vulnerable como referencia (menor)
+    _n_bars  = len(_pvals)
+    fig3, ax3 = plt.subplots(figsize=(12, max(5, _n_bars * 1.6 + 2)))
+    bars3 = ax3.barh(_pnames, _pvals, color=_pcolors,
+                     edgecolor='none', height=0.55, zorder=2)
+    # Sombra sutil
+    ax3.barh(_pnames, _pvals, color='black', alpha=0.06,
+             height=0.60, zorder=1)
+    # Línea de referencia: valor de la canasta más barata
+    ax3.axvline(_base_v, color='#aaaaaa', linewidth=1.2, linestyle='--', zorder=3)
+    # Etiqueta de valor + ratio vs. base
+    for bar, val, name in zip(bars3, _pvals, _pnames):
+        _ratio = val / _base_v if _base_v > 0 else 1
+        _ratio_str = f'  ×{_ratio:.1f}' if _ratio > 1.05 else '  base'
+        ax3.text(val + max(_pvals) * 0.008,
                  bar.get_y() + bar.get_height() / 2,
-                 f'${int(val):,}'.replace(',', '.'),
-                 va='center', fontsize=12, fontweight='bold')
-    ax3.set_xlabel('Costo mensual promedio nacional (ARS)', fontsize=11)
+                 f'${int(val):,}'.replace(',', '.') + _ratio_str,
+                 va='center', fontsize=11, fontweight='bold',
+                 color='#2c3e50')
+    # Etiqueta de barrios en el eje Y con negrita
+    ax3.set_yticklabels(_pnames, fontsize=12, fontweight='bold')
+    ax3.set_xlabel('Costo mensual promedio nacional (ARS)', fontsize=11, color='#444')
     ax3.xaxis.set_major_formatter(mticker.FuncFormatter(
         lambda x, _: f'${int(x):,}'.replace(',', '.')))
-    ax3.set_xlim(0, max(_pvals) * 1.18)
-    ax3.grid(True, alpha=0.3, axis='x'); ax3.set_axisbelow(True)
-    for sp in ['top', 'right']: ax3.spines[sp].set_visible(False)
+    ax3.set_xlim(0, max(_pvals) * 1.22)
+    ax3.tick_params(axis='x', labelsize=10, colors='#555')
+    ax3.grid(True, alpha=0.25, axis='x', zorder=0); ax3.set_axisbelow(True)
+    for sp in ['top', 'right', 'left']: ax3.spines[sp].set_visible(False)
+    ax3.spines['bottom'].set_color('#cccccc')
+    # Nota al pie con el mes
+    fig3.text(0.98, 0.01, f'{NOMBRE_MES_TITLE}',
+              ha='right', va='bottom', fontsize=9, color='#999')
     plt.tight_layout()
     out3 = OUTPUT_DIR / f'ranking_canastas_{MES}.png'
     plt.savefig(out3, dpi=600, bbox_inches='tight', facecolor='white')
@@ -1250,7 +1264,6 @@ def det_html(det):
 # Usar la primera canasta activa como referencia de sucursales/provincias
 _cgf_ref  = canasta_geo_dict[CANASTAS_ACTIVAS[0]]
 provs_u   = sorted(_cgf_ref['PROVINCIA_NORM'].unique())
-tipos_u   = sorted([t for t in _cgf_ref['sucursales_tipo'].dropna().unique() if t and t != 'Web'])
 
 m = folium.Map(location=[-38.0,-63.5], zoom_start=5,
                tiles='cartodbpositron', control_scale=True)
@@ -1319,7 +1332,6 @@ _avgs_str   = '{' + ','.join(f'"{k}":{int(canasta_geo_dict[k]["canasta_total"].m
 
 # Panel de info
 prov_opts = ''.join([f'<option value="prov-{p.replace(" ","_")}">{p}</option>' for p in provs_u])
-tipo_opts = ''.join([f'<option value="tipo-{t.replace(" ","_")}">{t}</option>' for t in tipos_u])
 _can_opts  = ''.join([f'<option value="{k}">{CANASTA_NAMES[k]}</option>' for k in CANASTAS_ACTIVAS])
 
 info_h = (f'<div style="position:fixed;top:10px;left:50px;width:340px;background:white;border:2px solid #0055A4;'
@@ -1340,16 +1352,12 @@ filtros_h = (
     f'<label style="font-size:11px;color:#555;display:block;margin-top:6px;">Provincia:'
     f'<select id="fp" style="width:100%;padding:4px;font-size:11px;margin-top:3px;">'
     f'<option value="all">Todas</option>{prov_opts}</select></label>'
-    f'<label style="font-size:11px;color:#555;display:block;margin-top:6px;">Tipo:'
-    f'<select id="ft" style="width:100%;padding:4px;font-size:11px;margin-top:3px;">'
-    f'<option value="all">Todos</option>{tipo_opts}</select></label>'
     f'<button id="fr" style="width:100%;margin-top:10px;padding:6px;background:#f0f0f0;'
     f'border:1px solid #ccc;border-radius:4px;font-size:11px;cursor:pointer;">Restablecer</button></div>'
     f'<script>'
     f'var _fg_ids={_fg_ids_str};'
     f'var _names={_names_str};'
     f'var _avgs={_avgs_str};'
-    f'var _mapObj=null;'
     f'function _getMap(){{return window["{_map_var}"];}}'
     f'function switchCanasta(sel){{var mp=_getMap();if(!mp)return;'
     f'Object.keys(_fg_ids).forEach(function(k){{'
@@ -1360,24 +1368,21 @@ filtros_h = (
     f'if(avgEl)avgEl.innerHTML="$"+_avgs[sel].toLocaleString("es-AR")+" ("+_names[sel]+")";'
     f'apl();'
     f'}}'
-    f'function apl(){{var sel=document.getElementById("fcan")?document.getElementById("fcan").value:null;'
-    f'var p=document.getElementById("fp").value,t=document.getElementById("ft").value;'
+    f'function apl(){{var p=document.getElementById("fp").value;'
     f'document.querySelectorAll(".sucursal-marker").forEach(function(el){{'
     f'var c=el.className.baseVal||el.className||"",'
-    f'mc=(!sel)||c.indexOf("canasta-"+sel.replace(/.*_/,"").replace(/-/g,"_"))>=0||true,'
-    f'mp=(p==="all")||c.indexOf(p)>=0,mt=(t==="all")||c.indexOf(t)>=0;'
-    f'el.style.display=(mp&&mt)?"":"none";}});}}'
+    f'mp=(p==="all")||c.indexOf(p)>=0;'
+    f'el.style.display=mp?"":"none";}});}}'
     f'setTimeout(function(){{'
     f'var fc=document.getElementById("fcan"),sp=document.getElementById("fp");'
-    f'var st=document.getElementById("ft"),btn=document.getElementById("fr");'
+    f'var btn=document.getElementById("fr");'
     f'var defKey=Object.keys(_fg_ids)[0];'
     f'switchCanasta(defKey);'
     f'if(fc)fc.addEventListener("change",function(){{switchCanasta(this.value);}});'
     f'if(sp)sp.addEventListener("change",apl);'
-    f'if(st)st.addEventListener("change",apl);'
     f'if(btn)btn.addEventListener("click",function(){{'
     f'if(fc){{fc.value=Object.keys(_fg_ids)[0];switchCanasta(fc.value);}}'
-    f'if(sp)sp.value="all";if(st)st.value="all";'
+    f'if(sp)sp.value="all";'
     f'document.querySelectorAll(".sucursal-marker").forEach(e=>e.style.display="");'
     f'}});'
     f'}},1200);</script>'
