@@ -1,6 +1,6 @@
 # Precios Minoristas en Supermercados — ICM-UADE
 
-Construcción del **Índice de Canasta Mensual UADE (ICM-UADE)** a partir de los datos públicos del [SEPA](https://datos.produccion.gob.ar/dataset/sepa-precios) (Sistema Electrónico de Publicidad de Precios Argentinos). El pipeline selecciona automáticamente los productos con mayor cobertura geográfica y temporal, calcula el costo mensual de la canasta por sucursal y provincia, y lo compara con el IPC INDEC.
+Construcción del **Índice de Canasta Mensual UADE (ICM-UADE)** a partir de los datos públicos del [SEPA](https://datos.produccion.gob.ar/dataset/sepa-precios) (Sistema Electrónico de Publicidad de Precios Argentinos). El pipeline selecciona automáticamente los productos con mayor cobertura geográfica y temporal, calcula el costo mensual de hasta **6 canastas simultáneas** por sucursal y provincia, y las compara con el IPC INDEC.
 
 ---
 
@@ -10,8 +10,8 @@ El SEPA publica diariamente los precios reportados por las principales cadenas d
 
 El proyecto responde dos preguntas:
 
-1. **¿Qué productos tienen la mayor cobertura comercial y geográfica?** → Notebook 01 selecciona automáticamente los más representativos y los entrega como base para armar una canasta.
-2. **¿Cómo evolucionó el costo de esa canasta y cómo se compara con el IPC?** → Notebook 02 calcula el costo mensual por sucursal, lo agrega por provincia y cadena, y genera comparativas, mapas y rankings.
+1. **¿Qué productos tienen la mayor cobertura comercial y geográfica?** → Notebook 01 selecciona automáticamente los más representativos y los entrega como base para armar canastas.
+2. **¿Cómo evolucionó el costo de esas canastas y cómo se comparan con el IPC?** → Notebook 02 calcula el costo mensual por sucursal para cada canasta definida, las agrega por provincia y cadena, y genera comparativas, mapas y rankings.
 
 ---
 
@@ -19,8 +19,8 @@ El proyecto responde dos preguntas:
 
 | Notebook | Descripción | Abrir en Colab |
 |----------|-------------|----------------|
-| `01_exploracion_productos` | Construye la canasta representativa. Detecta automáticamente el último mes disponible en los ZIPs del SEPA y genera `canasta_representativa_YYYY-MM.xlsx` con **cuatro hojas**. | [![Abrir en Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/santiagoriverti/precios_minoristas_supermercados/blob/main/notebooks/01_exploracion_productos.ipynb) |
-| `02_evolucion_canasta_representativa` | Analiza la evolución del ICM-UADE. Lee la hoja `Selección` del Excel del notebook anterior (con las cantidades completadas por el economista), calcula el costo por sucursal y provincia, compara con el IPC INDEC, y genera gráficos, mapas y rankings. | [![Abrir en Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/santiagoriverti/precios_minoristas_supermercados/blob/main/notebooks/02_evolucion_canasta_representativa.ipynb) |
+| `01_exploracion_productos` | Construye la canasta representativa. Detecta automáticamente el último mes disponible en los ZIPs del SEPA y genera `canasta_representativa_YYYY-MM.xlsx` con **cuatro hojas**, incluyendo la hoja `Selección` con **6 columnas de cantidad** para definir hasta 6 canastas distintas. | [![Abrir en Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/santiagoriverti/precios_minoristas_supermercados/blob/main/notebooks/01_exploracion_productos.ipynb) |
+| `02_evolucion_canasta_representativa` | Analiza la evolución del ICM-UADE para **hasta 6 canastas simultáneas**. Lee las columnas `cantidad_01`..`cantidad_06` de la hoja `Selección`, calcula el costo por sucursal y provincia para cada canasta activa, compara con el IPC INDEC, y genera gráficos, mapas y rankings independientes por canasta. | [![Abrir en Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/santiagoriverti/precios_minoristas_supermercados/blob/main/notebooks/02_evolucion_canasta_representativa.ipynb) |
 
 > **¿Ves una versión vieja en Colab?** El badge siempre apunta a la última versión en GitHub, pero Colab puede mostrar una copia cacheada de tu Drive. Para forzar la actualización: eliminá el notebook de `Mi unidad/Colab Notebooks/` en Google Drive y volvé a hacer clic en el badge.
 
@@ -34,7 +34,7 @@ El proyecto responde dos preguntas:
 2. Los ZIPs del SEPA en tu Drive (ver [Datos SEPA](#datos-sepa))
 3. Para el Notebook 02: además de los ZIPs, necesitás `IPC.xlsx` y `ar.json` en la carpeta `carga/` (ver abajo)
 
-### Paso 1 — Notebook 01: construir la canasta
+### Paso 1 — Notebook 01: construir el universo de productos
 
 1. Hacer clic en el badge **Abrir en Colab**
 2. En la celda de configuración, verificar solo dos parámetros:
@@ -47,7 +47,18 @@ El proyecto responde dos preguntas:
    ```
 3. Ejecutar las celdas en orden — el mes se detecta automáticamente y los maestros se descargan desde GitHub
 4. El output se guarda en `SEPA_DIR/output_canasta/canasta_representativa_YYYY-MM.xlsx`
-5. **Abrir el Excel** → ir a la hoja `Selección` → completar la columna `cantidad` (amarilla) con las unidades mensuales de cada producto de la canasta
+5. **Abrir el Excel** → ir a la hoja `Selección` → completar las columnas de cantidad en amarillo:
+
+| Columna | Canasta | Uso |
+|---------|---------|-----|
+| `cantidad_01` | **Vulnerable** | Canasta de referencia para hogares vulnerables |
+| `cantidad_02` | **Popular** | Canasta de referencia para hogares populares |
+| `cantidad_03` | **Media** | Canasta de referencia para clase media |
+| `cantidad_04` | **Media Alta** | Canasta de referencia para clase media alta |
+| `cantidad_05` | Canasta 05 | Libre — para uso futuro o canasta específica |
+| `cantidad_06` | Canasta 06 | Libre — para uso futuro o canasta específica |
+
+Solo se procesan las columnas con al menos un producto con cantidad > 0. Las columnas vacías se ignoran automáticamente.
 
 ### Paso 2 — Notebook 02: analizar la evolución
 
@@ -62,9 +73,9 @@ El proyecto responde dos preguntas:
                                        # (se auto-adapta si el mes no existe en la serie)
    ```
 3. Ejecutar las celdas en orden
-4. **Primera ejecución con una canasta nueva:** la CELDA 9 recalcula la serie histórica completa (~60 min). Las siguientes ejecuciones usan caché y son inmediatas.
+4. **Primera ejecución:** la CELDA 9 construye la serie histórica completa (~60 min). Las siguientes ejecuciones usan caché y son rápidas (~5 min).
 
-> **El caché se invalida automáticamente** si cambiás cualquier EAN o cualquier `cantidad` de la canasta — no hace falta borrar nada manualmente.
+> **El caché se invalida automáticamente** si cambiás qué EANs están en las canastas activas. Cambiar solo las cantidades no invalida el caché.
 
 > Los notebooks instalan automáticamente las dependencias que no vienen por defecto en Colab (`openpyxl`, `folium`, `pyarrow`, etc.).
 
@@ -116,52 +127,59 @@ Todos los productos que superan los **umbrales estrictos** (presencia en todas l
 
 ### Hoja `Selección` (~15.000–30.000 productos)
 
-Universo ampliado con **umbrales permisivos** (≥3 cadenas, ≥18 provincias, ≥30 sucursales), ordenado por `rubro → categoría → score_cobertura`. Incluye columna **`cantidad`** (resaltada en amarillo) vacía para que el economista indique cuántas unidades de cada producto incluir en su canasta. Esta hoja es la fuente de datos del Notebook 02.
+Universo ampliado con **umbrales permisivos** (≥3 cadenas, ≥18 provincias, ≥30 sucursales), ordenado por `rubro → categoría → score_cobertura`. Incluye **6 columnas de cantidad** resaltadas en amarillo (`cantidad_01` a `cantidad_06`) para definir hasta 6 canastas independientes. Esta hoja es la fuente de datos del Notebook 02.
 
 ### Hoja `Productos unicos` (~70.000–100.000 productos)
 
-Todos los productos presentes en el dataset que tienen información en el maestro de productos (`rubro` no vacío), **sin ningún umbral de cobertura**. Mismas columnas que `Selección` (incluye `cantidad` vacía y `subcategoria`). Permite explorar el universo completo de productos disponibles en el SEPA, ordenado por `rubro → categoría → score_cobertura`.
+Todos los productos presentes en el dataset que tienen información en el maestro de productos (`rubro` no vacío), **sin ningún umbral de cobertura**. Mismas columnas que `Selección`. Permite explorar el universo completo de productos disponibles en el SEPA.
 
 ---
 
 ## Output del Notebook 02
 
-### Gráficos (`.png`)
+El Notebook 02 genera outputs **por cada canasta activa** (columnas con al menos un producto con cantidad > 0).
+
+### Gráficos combinados (`.png`) — todas las canastas en un solo gráfico
 
 | Archivo | Contenido |
 |---------|-----------|
-| `indices_canasta_vs_ipc_MMAAAA.png` | **Gráfico 1** — Índice ICM-UADE vs IPC General vs IPC Alimentos (base = primer mes del período, etiquetas en español) |
-| `variaciones_canasta_vs_ipc_MMAAAA.png` | **Gráfico 2** — Variación mensual (%) con tres barras por mes: ICM-UADE · IPC General · IPC Alimentos |
-| `mapa_canasta_YYYY-MM.png` | Mapa coroplético con el costo mediano de la canasta por provincia |
+| `indices_canasta_vs_ipc_MMAAAA.png` | Índices base = 100 para todas las canastas activas + IPC General + IPC Alimentos |
+| `variaciones_canasta_vs_ipc_MMAAAA.png` | Variación mensual (%) de todas las canastas + IPC |
 | `cobertura_provincia_MMAAAA.png` | 3 paneles: productos únicos · cadenas · sucursales por provincia |
 | `cobertura_cadena_MMAAAA.png` | 3 paneles: productos únicos · provincias · sucursales por cadena |
 | `matriz_presencia_MMAAAA.png` | Heatmap binario: presencia (●) de cada cadena en cada provincia |
 | `matriz_intensidad_MMAAAA.png` | Heatmap de intensidad log₁₀ de productos únicos por cadena×provincia |
-| `ranking_cadenas_nacional_MMAAAA.png` | Ranking de cadenas por costo promedio de la canasta (nacional) |
-| `ranking_cadenas_amba_MMAAAA.png` | Ídem para AMBA (Buenos Aires + CABA) |
 
-### Mapa interactivo
+### Gráficos por canasta (`.png`) — uno por cada canasta activa
 
-`mapa_interactivo_MMAAAA.html` — Mapa Folium con todas las sucursales, coloreadas por costo de canasta. Incluye:
+Donde `{canasta}` es `vulnerable`, `popular`, `media`, `media_alta`, `canasta05`, `canasta06`:
+
+| Archivo | Contenido |
+|---------|-----------|
+| `mapa_canasta_{canasta}_YYYY-MM.png` | Mapa coroplético con el costo mediano por provincia |
+| `ranking_cadenas_nacional_MMAAAA_{canasta}.png` | Ranking de cadenas por costo promedio (nacional) |
+| `ranking_cadenas_amba_MMAAAA_{canasta}.png` | Ídem para AMBA (Buenos Aires + CABA) |
+
+### Mapas interactivos (`.html`) — uno por cada canasta activa
+
+`mapa_interactivo_MMAAAA_{canasta}.html` — Mapa Folium con todas las sucursales, coloreadas por costo de esa canasta. Incluye:
 - Panel de capas por cadena (activar/desactivar)
-- Filtros de provincia y tipo de sucursal (supermercado / hipermercado)
-- Popup con detalle de cada producto al hacer clic en una sucursal
+- Filtros de provincia y tipo de sucursal
+- Popup con detalle de cada producto y precio al hacer clic
 
 ### Excel de análisis — `canasta_analisis_YYYY-MM.xlsx`
 
-Cinco hojas:
-
 | Hoja | Contenido |
 |------|-----------|
-| `Evolucion_IPC` | Serie mensual: costo ICM-UADE + variación + IPC General + IPC Alimentos |
-| `Por_provincia` | Costo mediano de la canasta por provincia para el último mes |
-| `Por_sucursal` | Costo de la canasta por sucursal, con cadena, provincia y coordenadas |
-| `Ranking_cadenas` | Costo promedio por cadena y desvío vs. promedio nacional |
-| `Serie_precios` | **Precio mediano nacional por producto por mes** (serie histórica completa). Permite analizar la evolución individual de cada EAN a lo largo del tiempo |
+| `Evolucion_IPC` | Serie mensual en formato ancho: todas las canastas + IPC General + IPC Alimentos |
+| `Prov_{canasta}` | Costo mediano por provincia + desvío vs. promedio nacional (una hoja por canasta) |
+| `Ranking_{canasta}` | Ranking de cadenas por costo promedio (una hoja por canasta) |
+| `Sucs_{canasta}` | Costo por sucursal con cadena, provincia y coordenadas (una hoja por canasta) |
+| `Serie_precios` | Precio mediano por canasta × producto × mes (toda la serie histórica, formato largo) |
 
-### LaTeX
+### LaTeX (`.tex`) — uno por cada canasta activa
 
-`tabla_canasta_provincias_YYYY-MM.tex` — Tabla LaTeX lista para incluir en un paper.
+`tabla_canasta_{canasta}_YYYY-MM.tex` — Tabla de provincias lista para incluir en un paper.
 
 ---
 
@@ -277,7 +295,7 @@ precios_minoristas_supermercados/
 ├── README.md
 ├── notebooks/
 │   ├── 01_exploracion_productos.ipynb            # Notebook 1 — canasta representativa
-│   ├── 02_evolucion_canasta_representativa.ipynb # Notebook 2 — análisis ICM-UADE
+│   ├── 02_evolucion_canasta_representativa.ipynb # Notebook 2 — análisis ICM-UADE multi-canasta
 │   └── gen_nb02.py                               # Script fuente que genera el Notebook 2
 ├── data/                                # Maestros de referencia (se descargan automáticamente)
 │   ├── Maestro de Productos Interno.xlsx    # ~176K productos con rubro/categoría/subcategoría
@@ -293,6 +311,8 @@ precios_minoristas_supermercados/
 
 ## Arquitectura: por qué no crashea la RAM
 
+### Notebook 01 — anti-OOM
+
 El principal desafío técnico es que el dataset tiene ~50 millones de filas (producto × sucursal × día). La solución es agregar inmediatamente después del enriquecimiento y liberar el frame grande:
 
 ```
@@ -306,7 +326,13 @@ df_cov + df_price_stats
     ↓ todas las celdas siguientes trabajan sobre estos frames pequeños
 ```
 
-El Notebook 02 usa un caché parquet (keyed por hash MD5 de EANs + cantidades) que evita reprocesar los ZIPs históricos en ejecuciones subsiguientes.
+### Notebook 02 — caché unión y multi-canasta
+
+El Notebook 02 usa dos estrategias para manejar la complejidad de múltiples canastas:
+
+1. **Un solo caché raw** (`hist_union_HASH.parquet`): la CELDA 9 lee los ZIPs históricos UNA SOLA VEZ para la unión de todos los EANs activos. Luego agrega por canasta en memoria (rápido). El caché se invalida solo si cambia el conjunto de EANs, no las cantidades.
+
+2. **Limpieza geográfica compartida**: la normalización de provincias y la reclasificación por coordenadas se realizan una sola vez sobre el maestro de sucursales, y el resultado se reutiliza para todas las canastas activas.
 
 ---
 
@@ -338,20 +364,18 @@ El Notebook 02 usa un caché parquet (keyed por hash MD5 de EANs + cantidades) q
 | RAM en pico (df_suc_enr) | ~7 GB |
 | RAM después de liberar df_suc_enr | ~600 MB |
 
-### Notebook 02
+### Notebook 02 — canasta ICM-UADE (cantidad_01, abril 2026)
 
 | Métrica | Valor |
 |---------|-------|
-| Productos en la canasta (ICM-UADE) | 51 |
-| Unidades mensuales totales | 136 |
 | Sucursales válidas (≥15 productos propios) | 2.372 |
 | Cadenas con datos | 16 |
 | Provincias con datos | 24 |
 | Meses de serie histórica | 28 (ene-2024 → abr-2026) |
-| Costo ICM-UADE promedio nacional (abr-2026) | **$478.836 ARS** |
-| Rango por sucursal (abr-2026) | $440.012 – $528.014 |
+| Costo ICM-UADE promedio nacional | **$478.836 ARS** |
+| Rango por sucursal | $440.012 – $528.014 |
 | Provincia más barata | Chaco ($463.679, -3.17%) |
 | Provincia más cara | Santa Cruz ($507.864, +6.06%) |
 | Trazabilidad promedio de la canasta | 99,4% (48/51 productos al 100%) |
-| Tiempo primera ejecución (sin caché) | ~60 min |
-| Tiempo ejecuciones siguientes (con caché) | ~5 min |
+| Tiempo primera ejecución (sin caché, 4 canastas) | ~60–90 min |
+| Tiempo ejecuciones siguientes (con caché) | ~5–15 min |
