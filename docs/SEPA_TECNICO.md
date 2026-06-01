@@ -1,6 +1,6 @@
 # SEPA — Referencia Técnica
 
-Última actualización: 2026-05-29 (BUG-18/19, PLU codes, safeguards para canastas pequeñas)
+Última actualización: 2026-06-01 (multi-canasta nb02, canastas ENGHo, EAN format, caché unión)
 
 ## Dos formatos completamente distintos
 
@@ -193,6 +193,31 @@ _PROV_BBOX = {
 ```
 
 **Regla general**: nunca descartar sucursales solo porque el maestro tiene su provincia mal etiquetada. Usar coordenadas para determinar la provincia correcta. Siempre registrar la variante exacta del nombre tal como aparece en el maestro. Las variantes conocidas del maestro incluyen al menos: `"San juan"` (San Juan), `"Neuquén"/"Neuquen"` (Neuquén), `"Entre Ríos"/"Entre Rios"` (Entre Ríos).
+
+### Multi-canasta en notebook 02 — caché de unión de EANs
+
+El notebook 02 soporta hasta 6 canastas simultáneas. La CELDA 9 usa **un único caché parquet** para la unión de todos los EANs activos:
+
+```python
+_cache_key = hashlib.md5('|'.join(sorted(CANASTA_EANS_NORM)).encode()).hexdigest()[:8]
+_cache_path = CACHE_DIR / f'hist_union_{_cache_key}.parquet'
+```
+
+- **Invalida** cuando cambia el conjunto de EANs (agregar/quitar productos de cualquier canasta)
+- **No invalida** cuando solo cambian las cantidades (mismo conjunto de EANs)
+- Después de una invalidación, el parquet viejo queda en `_cache/` → se puede borrar manualmente
+
+### EAN format en SEPA — GS1, PLU codes y EAN-12
+
+**EAN-13 GS1 estándar** (prefijo 77-78 para Argentina, 789 para Brasil, 750 para México):
+- Son los más comunes en supermercados. Los prefijos 789... y 750... corresponden a producciones de Brasil y México de marcas multinacionales (Dove, Colgate, P&G). SEPA los reporta con sus EANs originales.
+- Siempre guardar como string con `dtype={'id_producto': str}` y normalizar con `.str.lstrip('0')` para el merge.
+
+**EAN-12 / UPC** (12 dígitos, sin cero inicial): poco comunes en SEPA. Agregar cero inicial o buscar el EAN-13 equivalente.
+
+**PLU codes (prefijo 27.../28.../29...)**: generados por balanzas en góndola para productos vendidos por peso. Son efímeros — no aparecen en el SEPA histórico de forma consistente. El notebook los detecta y produce una serie histórica vacía, saltando los gráficos de índices con un aviso.
+
+**EANs malformados** (menos de 12 dígitos): no matchean en SEPA. Agregar ceros iniciales hasta 13 dígitos. La normalización `lstrip('0')` hace que sean equivalentes al EAN con ceros.
 
 ### EANs PLU (prefijo 27.../28...) — no están en el SEPA histórico
 

@@ -340,6 +340,7 @@ El Notebook 02 usa dos estrategias para manejar la complejidad de múltiples can
 
 | Documento | Contenido |
 |-----------|-----------|
+| [`docs/METODOLOGIA.md`](docs/METODOLOGIA.md) | **Metodología completa**: fuente de datos, score de cobertura, canastas ENGHo por quintil (coeficiente de Engel), filtros de calidad (score ≥ 0.88, trazabilidad ≥ 90%), limitaciones conocidas, historial de versiones de canastas |
 | [`docs/CONTEXTO.md`](docs/CONTEXTO.md) | Objetivo del proyecto, descripción del pipeline celda por celda, métricas de ejecución reales, historial completo de cambios |
 | [`docs/SEPA_TECNICO.md`](docs/SEPA_TECNICO.md) | Formato semestral vs. diario, autodetección de FACTOR_PRECIO, diccionario de cadenas, maestros de referencia, arquitectura anti-OOM, trampas conocidas en la selección de grupos, patrones técnicos del Notebook 02 |
 | [`docs/BUGS_Y_MEJORAS.md`](docs/BUGS_Y_MEJORAS.md) | Bugs resueltos y mejoras pendientes, causa raíz, evidencia y fix aplicado |

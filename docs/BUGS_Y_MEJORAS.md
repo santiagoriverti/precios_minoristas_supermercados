@@ -1,12 +1,30 @@
 # Bugs Pendientes y Mejoras
 
-Última actualización: 2026-05-29 — BUG-18 (serie vacía crash), BUG-19 (MIN_PRODUCTOS_PROPIOS > N_CANASTA)
+Última actualización: 2026-06-01 — multi-canasta nb02, 6 columnas cantidad nb01, canastas ENGHo v3
 
 ---
 
 ## 🔴 Bugs críticos (pendientes de fix)
 
 > ✅ Todos los bugs críticos están resueltos. Ver sección "Resueltos" más abajo.
+
+---
+
+## 🔴 Bugs críticos (resueltos — 2026-06-01)
+
+### EAN malformados en canastas ENGHo v2 → corregidos en v3
+
+**Archivo**: `canastas_argentina_2026_v3.txt`
+**Síntoma**: 4 EANs con menos de 13 dígitos no matcheaban en SEPA → precio imputado en lugar de real.
+**Causa**: EANs truncados (faltaban ceros iniciales).
+**Fix**: agregar ceros iniciales hasta 13 dígitos. La normalización `lstrip('0')` produce el mismo ean_norm → mismo producto, sin impacto en caché.
+
+| EAN v2 | EAN v3 | Producto |
+|--------|--------|---------|
+| `78924468` | `0000078924468` | Dove Roll-On 50 Ml (Vulnerable) |
+| `77903792` | `0000077903792` | Alfajor Terrabusi 70 Gr (Popular) |
+| `70942003551` | `0070942003551` | Cepillo Gum Trolls 2 Un (Medio-Alto) |
+| `99176369226` | `0099176369226` | Cepillo Colgate Triple 3+2 Un (Medio-Alto) |
 
 ---
 

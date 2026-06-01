@@ -1,13 +1,16 @@
 # Contexto del Proyecto — Precios Minoristas SEPA
 
-Última actualización: 2026-05-29 (BUG-15 San Juan, ICM-UADE, etiquetas español, Serie_precios, cache qty-aware)
+Última actualización: 2026-06-01 (multi-canasta nb02, 6 columnas cantidad nb01, canastas ENGHo)
 
 ## Objetivo
 
-Construir una **canasta representativa de ~60 productos** a partir de los datos del SEPA (Sistema Electrónico de Publicidad de Precios Argentinos). El output es un Excel con **tres hojas**:
-- **Canasta**: ~60 productos seleccionados automáticamente por cobertura, coloreados por grupo
+Construir hasta **6 canastas representativas** a partir de los datos del SEPA (Sistema Electrónico de Publicidad de Precios Argentinos), calcular su costo mensual por sucursal y provincia, y compararlas con el IPC INDEC.
+
+El notebook 01 entrega un Excel con **cuatro hojas**:
+- **Canasta**: ~65 productos seleccionados automáticamente por cobertura, coloreados por grupo
 - **Candidatos**: ~3.650 productos que superan los umbrales estrictos (5 cadenas, 24 provincias, 50 sucursales)
-- **Selección**: ~15K–30K productos con umbrales amplios (≥3 cadenas, ≥18 provincias, ≥30 sucursales), columna `cantidad` vacía (amarillo). Fuente del próximo notebook de canasta elegida.
+- **Selección**: ~25K productos con umbrales amplios, con **6 columnas de cantidad** (`cantidad_01`..`cantidad_06`) para definir hasta 6 canastas independientes
+- **Productos unicos**: ~75K productos sin umbrales de cobertura, para exploración libre
 
 ## Repositorio
 
@@ -359,6 +362,18 @@ Los 4 reemplazos (Swift XL, Lavandina Anti-splash, Plusbelle, Listerine) están 
 ---
 
 ## Historial de cambios
+
+### 2026-06-01 — Canastas ENGHo v3: 4 canastas por quintil con doble filtro calidad
+
+- **Canastas definidas** basadas en ENGHo 2017/18 (INDEC) + coeficiente de Engel:
+  - `cantidad_01` = **Vulnerable** (Q1, Engel ~36%, precio ≤ P33, 46 productos)
+  - `cantidad_02` = **Popular** (Q2, Engel ~28%, precio P25-P55, 61 productos)
+  - `cantidad_03` = **Media** (Q3-Q4, Engel ~22%, precio P40-P70, 73 productos)
+  - `cantidad_04` = **Medio-Alto** (Q5, Engel ~15%, precio P55-P85, 77 productos)
+- **Doble filtro de calidad**: `score_cobertura >= 0.88` AND `pct_trazabilidad >= 90%`
+- **Correcciones v2→v3**: 4 EANs malformados corregidos a 13 dígitos; huevos agregados a todas las canastas; Pampa Brewing→Schneider; Tintura→Crema Facial Neutrógena; Coca Light→regular; Tic Tac→Menthoplus; Oblea→Gallo plain
+- Archivo de referencia: `canastas_argentina_2026_v3.txt` (en Downloads del analista)
+- Ver metodología completa en `docs/METODOLOGIA.md`
 
 ### 2026-06-01 — Rewrite completo nb02: soporte multi-canasta (commit c85aa84)
 
