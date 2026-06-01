@@ -1,4 +1,4 @@
-"""Script to generate 02_evolucion_canasta_representativa.ipynb"""
+"""Script to generate 02_evolucion_canasta_representativa.ipynb — Multi-canasta version"""
 import json, os
 
 def cell_md(src):
@@ -11,16 +11,24 @@ def cell_code(src):
 
 cells = []
 
-# CELL 0
-cells.append(cell_md("""# SEPA — Evolución de la Canasta Representativa
+# ── CELL 0 ─────────────────────────────────────────────────────────────────────
+cells.append(cell_md("""# SEPA — Evolución de Canastas Representativas (Multi-canasta)
 
-**Objetivo:** Calcular el costo mensual de la canasta elegida por el economista, mapearlo por provincia, compararlo con el IPC INDEC, y generar rankings por cadena y barrio.
+**Objetivo:** Calcular el costo mensual de hasta 6 canastas definidas por el economista,
+mapearlas por provincia, compararlas con el IPC INDEC, y generar rankings por cadena y barrio.
 
-**Canasta:** leída automáticamente desde la pestaña `Selección` del Excel `canasta_representativa_YYYY-MM.xlsx` (campo `cantidad` completado por el economista).
+**Canastas:** leídas desde las columnas `cantidad_01`...`cantidad_06` de la hoja `Selección`
+del Excel `canasta_representativa_YYYY-MM.xlsx`. Solo se procesan las columnas con al menos
+un producto con cantidad > 0.
 
-**Estructura:** Config → Setup → Canasta desde Excel → Maestros → ZIPs → Mes actual per-sucursal → Canasta por sucursal → Análisis provincial → Serie histórica → IPC → Comparativa → Gráficos IPC → Cuadro 1 → Mapa coroplético → Cobertura → Rankings → Mapa Folium → Ranking CABA → Excel"""))
+**Canastas predefinidas:** Vulnerable · Popular · Media · Media Alta · Canasta 05 · Canasta 06
 
-# CELL 1 — CONFIG
+**Estructura:** Config → Setup → Canastas desde Excel → Maestros → ZIPs → Mes actual →
+Canasta por sucursal → Análisis provincial → Serie histórica → IPC → Comparativa →
+Gráficos IPC → Cuadro por canasta → Mapas coropléticos → Cobertura → Rankings →
+Mapas Folium → Rankings CABA → Excel"""))
+
+# ── CELL 1 — CONFIG ────────────────────────────────────────────────────────────
 cells.append(cell_code("""\
 # ===========================================================
 # CONFIGURACIÓN — Modificar solo esta sección
@@ -36,7 +44,7 @@ USE_CACHE = True
 # Período mínimo de la serie histórica
 MES_INICIO_HISTORICO = '2024-01'
 
-# Mes base para gráficos de índice (debe estar en la serie histórica)
+# Mes base para gráficos de índice (auto-adapta si no está en la serie)
 MES_INICIO_GRAFICO = '2024-03'
 
 # Mínimo productos propios para incluir sucursal en análisis
@@ -45,7 +53,7 @@ MIN_PRODUCTOS_PROPIOS = 15
 # Mínimo sucursales por cadena para aparecer en rankings
 MIN_SUCURSALES_RANKING = 10"""))
 
-# CELL 2 — SETUP
+# ── CELL 2 — SETUP ─────────────────────────────────────────────────────────────
 cells.append(cell_code("""\
 # ============================================================
 # CELDA 2 — Montar Drive + dependencias + imports
@@ -94,7 +102,6 @@ if USE_CACHE:
 TMP_DIR = Path('/content/tmp_sepa_nb02')
 TMP_DIR.mkdir(exist_ok=True)
 
-# Buscar IPC.xlsx / ipc.xlsx (case-insensitive: en Colab el filesystem es case-sensitive)
 _ipc_candidatos = [SEPA_DIR / n for n in ('IPC.xlsx', 'ipc.xlsx', 'IPC.XLSX')]
 _ipc_encontrado = next((p for p in _ipc_candidatos if p.exists()), None)
 IPC_PATH     = _ipc_encontrado if _ipc_encontrado else SEPA_DIR / 'IPC.xlsx'
@@ -105,11 +112,10 @@ print(f'OUTPUT_DIR: {OUTPUT_DIR}')
 print(f'  IPC.xlsx: {"OK — " + IPC_PATH.name if IPC_PATH.exists() else "NO ENCONTRADO"}')
 print(f'  ar.json:  {"OK" if GEOJSON_PATH.exists() else "NO ENCONTRADO"}')"""))
 
-# CELL 3 — CANASTA FROM EXCEL
+# ── CELL 3 — MULTI-CANASTA FROM EXCEL ──────────────────────────────────────────
 cells.append(cell_code("""\
 # ============================================================
-# CELDA 3 — Canasta desde Excel (hoja Seleccion)
-# El economista completa la columna `cantidad` en esa hoja.
+# CELDA 3 — Canastas desde Excel (columnas cantidad_01..06)
 # ============================================================
 import glob as _glob
 
@@ -117,8 +123,7 @@ patrones = sorted(_glob.glob(str(OUTPUT_DIR / 'canasta_representativa_*.xlsx')),
 if not patrones:
     raise FileNotFoundError(
         f'No se encontro canasta_representativa_*.xlsx en {OUTPUT_DIR}\\n'
-        'Ejecuta primero exploracion_productos.ipynb y completa la columna '
-        'cantidad en la hoja Seleccion.'
+        'Ejecuta primero 01_exploracion_productos.ipynb y completa las columnas cantidad_01..06.'
     )
 
 CANASTA_EXCEL = Path(patrones[0])
@@ -132,51 +137,94 @@ for _sn in ['Selección', 'Seleccion']:
         pass
 else:
     raise ValueError(f'No se encontró la hoja Seleccion/Selección en {CANASTA_EXCEL.name}')
+
 sel['id_producto'] = sel['id_producto'].str.strip().str.zfill(13)
-sel['cantidad'] = pd.to_numeric(sel['cantidad'], errors='coerce').fillna(0).astype(int)
-sel_activa = sel[sel['cantidad'] > 0].copy().reset_index(drop=True)
+sel['ean_norm']    = sel['id_producto'].str.lstrip('0')
 
-if len(sel_activa) == 0:
-    raise ValueError(
-        'La hoja Seleccion no tiene ningun producto con cantidad > 0.\\n'
-        'Completa la columna cantidad para los productos de tu canasta.'
-    )
-
-sel_activa['ean_norm']  = sel_activa['id_producto'].str.lstrip('0')
-sel_activa['ean_zfill'] = sel_activa['id_producto'].str.zfill(13)
-
-# Resolver nombre de columnas (puede variar entre versiones del notebook 1)
 desc_col = next((c for c in ['descripcion','descripcion_producto','nombre']
-                 if c in sel_activa.columns), sel_activa.columns[3])
-cat_col  = next((c for c in ['categoria','rubro'] if c in sel_activa.columns), 'categoria')
+                 if c in sel.columns), sel.columns[3])
+cat_col  = next((c for c in ['categoria','rubro'] if c in sel.columns), 'categoria')
 
-CANASTA = {
-    row['ean_norm']: (str(row[desc_col])[:50], int(row['cantidad']), str(row[cat_col]))
-    for _, row in sel_activa.iterrows()
+# ── Nombres, colores y estilos por canasta ───────────────────────────────────
+CANT_COLS = ['cantidad_01','cantidad_02','cantidad_03','cantidad_04','cantidad_05','cantidad_06']
+CANASTA_NAMES = {
+    'cantidad_01': 'Vulnerable',
+    'cantidad_02': 'Popular',
+    'cantidad_03': 'Media',
+    'cantidad_04': 'Media Alta',
+    'cantidad_05': 'Canasta 05',
+    'cantidad_06': 'Canasta 06',
+}
+CANASTA_SHORT = {
+    'cantidad_01': 'vulnerable',
+    'cantidad_02': 'popular',
+    'cantidad_03': 'media',
+    'cantidad_04': 'media_alta',
+    'cantidad_05': 'canasta05',
+    'cantidad_06': 'canasta06',
+}
+CANASTA_COLORS = {
+    'cantidad_01': '#0055A4',
+    'cantidad_02': '#e74c3c',
+    'cantidad_03': '#27ae60',
+    'cantidad_04': '#f39c12',
+    'cantidad_05': '#9b59b6',
+    'cantidad_06': '#1abc9c',
+}
+CANASTA_LINESTYLES = {
+    'cantidad_01': '-',
+    'cantidad_02': '--',
+    'cantidad_03': '-.',
+    'cantidad_04': ':',
+    'cantidad_05': (0,(5,1)),
+    'cantidad_06': (0,(3,1,1,1)),
+}
+CANASTA_MARKERS = {
+    'cantidad_01': 'o', 'cantidad_02': 's', 'cantidad_03': '^',
+    'cantidad_04': 'D', 'cantidad_05': 'v', 'cantidad_06': 'P',
 }
 
-CANASTA_EANS_NORM  = set(CANASTA.keys())
+# ── Construir CANASTAS (solo las activas) ────────────────────────────────────
+CANASTAS = {}
+for _col in CANT_COLS:
+    if _col not in sel.columns:
+        continue
+    _qty_s = pd.to_numeric(sel[_col], errors='coerce').fillna(0).astype(int)
+    _activos = sel[_qty_s > 0].copy()
+    _activos['_qty'] = _qty_s[_qty_s > 0].values
+    if len(_activos) == 0:
+        continue
+    CANASTAS[_col] = {
+        row['ean_norm']: (str(row[desc_col])[:50], int(row['_qty']), str(row[cat_col]))
+        for _, row in _activos.iterrows()
+    }
+
+if not CANASTAS:
+    raise ValueError(
+        'Ninguna columna cantidad_01..06 tiene productos con cantidad > 0.\\n'
+        'Completa al menos una columna cantidad en la hoja Seleccion.'
+    )
+
+CANASTAS_ACTIVAS   = list(CANASTAS.keys())
+CANASTA_EANS_NORM  = set().union(*[set(c.keys()) for c in CANASTAS.values()])
 CANASTA_EANS_ZFILL = {e.zfill(13) for e in CANASTA_EANS_NORM}
-N_CANASTA = len(CANASTA)
+N_EANS_TOTAL       = len(CANASTA_EANS_NORM)
+N_CANASTAS         = len(CANASTAS)
 
-ean_qty  = lambda e: CANASTA.get(e, ('?', 1, '?'))[1]
-ean_cat  = lambda e: CANASTA.get(e, ('?', 1, '?'))[2]
-ean_desc = lambda e: CANASTA.get(e, (e,  1, '?'))[0]
+# Safeguard MIN_PRODUCTOS_PROPIOS vs tamaño de canasta
+_max_n = max(len(c) for c in CANASTAS.values())
+if MIN_PRODUCTOS_PROPIOS >= _max_n:
+    MIN_PRODUCTOS_PROPIOS = max(1, _max_n // 2)
+    print(f'AVISO: MIN_PRODUCTOS_PROPIOS ajustado a {MIN_PRODUCTOS_PROPIOS} (mayor canasta: {_max_n} prods)')
 
-print(f'Canasta: {N_CANASTA} productos, {sel_activa["cantidad"].sum()} unidades/mes')
-print()
-print(sel_activa.groupby(cat_col).agg(
-    n_prod=('cantidad','count'), unidades=('cantidad','sum')
-).to_string())
+print(f'\\nCanastas activas: {N_CANASTAS}')
+for _col in CANASTAS_ACTIVAS:
+    _c = CANASTAS[_col]
+    _u = sum(v[1] for v in _c.values())
+    print(f'  [{CANASTA_NAMES[_col]}] {len(_c)} productos, {_u} unidades/mes')
+print(f'EANs únicos (unión): {N_EANS_TOTAL}')"""))
 
-# Safeguard: MIN_PRODUCTOS_PROPIOS debe ser menor que N_CANASTA
-# (si la canasta es chica el threshold configurado puede dejar 0 sucursales)
-if MIN_PRODUCTOS_PROPIOS >= N_CANASTA:
-    MIN_PRODUCTOS_PROPIOS = max(1, N_CANASTA // 2)
-    print(f'\\nAVISO: MIN_PRODUCTOS_PROPIOS ajustado a {MIN_PRODUCTOS_PROPIOS} '
-          f'(canasta tiene solo {N_CANASTA} productos)')"""))
-
-# CELL 4 — MAESTROS
+# ── CELL 4 — MAESTROS ──────────────────────────────────────────────────────────
 cells.append(cell_code("""\
 # ============================================================
 # CELDA 4 — Maestros de sucursales, cadenas, provincias
@@ -272,7 +320,7 @@ PESOS_POBLACION = {
 }
 print('Maestros OK')"""))
 
-# CELL 5 — ZIP FUNCTIONS
+# ── CELL 5 — ZIP FUNCTIONS ─────────────────────────────────────────────────────
 cells.append(cell_code("""\
 # ============================================================
 # CELDA 5 — Funciones de lectura de ZIPs SEPA
@@ -321,7 +369,7 @@ for z, a, s in sems:
     meses_str = [f'{m:02d}/{an}' for (an,m) in sorted(meses.keys())]
     print(f'  {a}{s}: {meses_str}')"""))
 
-# CELL 6 — CURRENT MONTH
+# ── CELL 6 — CURRENT MONTH ─────────────────────────────────────────────────────
 cells.append(cell_code("""\
 # ============================================================
 # CELDA 6 — Mes actual: carga per-sucursal desde ZIP
@@ -350,7 +398,6 @@ for archivo in sorted(archivos_mes):
     with zipfile.ZipFile(zip_actual) as zf:
         with zf.open(archivo) as src, open(tmp_p, 'wb') as dst:
             shutil.copyfileobj(src, dst, length=4*1024*1024)
-
     print(f'  {nombre}...')
     with gzip.open(tmp_p, 'rt', encoding='utf-8', errors='replace') as g:
         for chunk in pd.read_csv(g, dtype=str, chunksize=300_000, low_memory=False):
@@ -383,7 +430,6 @@ del acumulador; gc.collect()
 datos = datos.drop_duplicates(
     subset=['id_comercio','id_bandera','id_sucursal','ean_norm'], keep='first')
 
-# Factor precio
 ref_e = {'7790072002080'.lstrip('0'), '7790070320285'.lstrip('0'), '7790132098459'.lstrip('0')}
 ref_d = datos[datos['ean_norm'].isin(ref_e)]
 med_r = ref_d['precio'].median() if len(ref_d) > 0 else datos['precio'].median()
@@ -395,70 +441,19 @@ else:
     print(f'Factor: {FACTOR} (ya en pesos)')
 
 print(f'Datos: {len(datos):,} obs | {datos.groupby(["id_comercio","id_bandera","id_sucursal"]).ngroups:,} sucursales')
-print(f'EANs con datos: {datos["ean_norm"].nunique()} / {N_CANASTA}')"""))
+print(f'EANs únicos con datos: {datos["ean_norm"].nunique()} / {N_EANS_TOTAL} (unión de canastas activas)')"""))
 
-# CELL 7 — PER-SUCURSAL BASKET
+# ── CELL 7 — PER-SUCURSAL BASKETS (multi-canasta) ─────────────────────────────
 cells.append(cell_code("""\
 # ============================================================
-# CELDA 7 — Canasta por sucursal -> canasta_geo_filtros
+# CELDA 7 — Canasta por sucursal para cada canasta activa
 # ============================================================
 precio_mes = (datos.groupby(['id_comercio','id_bandera','id_sucursal','ean_norm'])
               ['precio'].mean().reset_index())
 precio_mes = precio_mes[~precio_mes['id_comercio'].isin(CADENAS_FILTRAR)].copy()
-
 precio_prom_nac = precio_mes.groupby('ean_norm')['precio'].mean().to_dict()
 
-def calcular_canasta_completa(grupo):
-    locales = dict(zip(grupo['ean_norm'], grupo['precio']))
-    total = 0; propios = 0; detalle = []
-    for ean_norm, (nombre, qty, cat) in CANASTA.items():
-        if ean_norm in locales:
-            precio = locales[ean_norm]; es_propio = True; propios += 1
-        else:
-            precio = precio_prom_nac.get(ean_norm, 0); es_propio = False
-        subtotal = precio * qty; total += subtotal
-        detalle.append((nombre, cat, qty, precio, subtotal, es_propio))
-    return pd.Series({'canasta_total':total,'productos_propios':propios,'detalle_productos':detalle})
-
-print('Calculando canasta por sucursal...')
-canasta_suc = (precio_mes.groupby(['id_comercio','id_bandera','id_sucursal'])
-               .apply(calcular_canasta_completa, include_groups=False)
-               .reset_index())
-canasta_suc = canasta_suc[canasta_suc['productos_propios'] >= MIN_PRODUCTOS_PROPIOS].copy()
-print(f'  Sucursales validas (>={MIN_PRODUCTOS_PROPIOS} productos): {len(canasta_suc):,}')
-
-# Merge geografia
-cols_suc = ['id_comercio','id_bandera','id_sucursal',
-            'sucursales_nombre','sucursales_latitud','sucursales_longitud',
-            'sucursales_barrio','sucursales_localidad','PROVINCIA']
-if 'sucursales_tipo' in suc_pais.columns:
-    cols_suc.append('sucursales_tipo')
-
-canasta_geo = canasta_suc.merge(suc_pais[cols_suc].copy(),
-                                on=['id_comercio','id_bandera','id_sucursal'], how='inner')
-
-if 'sucursales_tipo' not in canasta_geo.columns:
-    canasta_geo['sucursales_tipo'] = 'N/D'
-
-canasta_geo['cadena'] = canasta_geo.apply(asignar_cadena, axis=1)
-canasta_geo['PROVINCIA_NORM'] = canasta_geo['PROVINCIA'].map(PROV_NORM).fillna(canasta_geo['PROVINCIA'])
-
-# Limpiar
-canasta_geo = canasta_geo[canasta_geo['sucursales_tipo'] != 'Web'].copy()
-mask_caba_bad = (
-    canasta_geo['PROVINCIA_NORM'].eq('CABA') & (
-        (canasta_geo['sucursales_latitud'] < -34.71) |
-        (canasta_geo['sucursales_latitud'] > -34.53) |
-        (canasta_geo['sucursales_longitud'] < -58.53) |
-        (canasta_geo['sucursales_longitud'] > -58.34)
-    ))
-if mask_caba_bad.sum():
-    print(f'  Eliminando {mask_caba_bad.sum()} sucursales mal clasificadas como CABA')
-    canasta_geo = canasta_geo[~mask_caba_bad].copy()
-
-# Reclasificación por coordenadas — corrige etiquetas de provincia incorrectas
-# en el maestro usando lat/lon (preserva la sucursal, no la descarta).
-# Bboxes (lat_min, lat_max, lon_min, lon_max) ordenados de más específico a más grande.
+# ── Bboxes y función de geocodificación ─────────────────────────────────────
 _PROV_BBOX = {
     'CABA':                (-34.72,-34.52,-58.54,-58.33),
     'Tucumán':             (-28.0, -26.0, -66.5, -64.5),
@@ -487,169 +482,212 @@ _PROV_BBOX = {
 }
 
 def _geocodif(lat, lon):
-    # Primera provincia (más específica) cuyo bbox contiene (lat, lon)
+    # Primera provincia cuyo bbox contiene (lat, lon)
     if pd.isna(lat) or pd.isna(lon): return None
     for p, (la0, la1, lo0, lo1) in _PROV_BBOX.items():
         if la0 <= lat <= la1 and lo0 <= lon <= lo1: return p
     return None
 
+# ── Pre-limpiar geografía (ONCE para todas las canastas) ─────────────────────
+_cols_suc = ['id_comercio','id_bandera','id_sucursal',
+             'sucursales_nombre','sucursales_latitud','sucursales_longitud',
+             'sucursales_barrio','sucursales_localidad','PROVINCIA']
+if 'sucursales_tipo' in suc_pais.columns:
+    _cols_suc.append('sucursales_tipo')
+
+suc_geo_clean = suc_pais[_cols_suc].copy()
+if 'sucursales_tipo' not in suc_geo_clean.columns:
+    suc_geo_clean['sucursales_tipo'] = 'N/D'
+suc_geo_clean['cadena'] = suc_geo_clean.apply(asignar_cadena, axis=1)
+suc_geo_clean['PROVINCIA_NORM'] = suc_geo_clean['PROVINCIA'].map(PROV_NORM).fillna(suc_geo_clean['PROVINCIA'])
+suc_geo_clean = suc_geo_clean[suc_geo_clean['sucursales_tipo'] != 'Web'].copy()
+_mask_caba = (
+    suc_geo_clean['PROVINCIA_NORM'].eq('CABA') & (
+        (suc_geo_clean['sucursales_latitud'] < -34.71) |
+        (suc_geo_clean['sucursales_latitud'] > -34.53) |
+        (suc_geo_clean['sucursales_longitud'] < -58.53) |
+        (suc_geo_clean['sucursales_longitud'] > -58.34)))
+suc_geo_clean = suc_geo_clean[~_mask_caba].copy()
 _n_reclasif = 0
-for _idx, _row in canasta_geo.iterrows():
+for _idx, _row in suc_geo_clean.iterrows():
     _p = _row['PROVINCIA_NORM']
     if _p not in _PROV_BBOX: continue
-    _la0, _la1, _lo0, _lo1 = _PROV_BBOX[_p]
-    _lat, _lon = _row['sucursales_latitud'], _row['sucursales_longitud']
-    if _la0 <= _lat <= _la1 and _lo0 <= _lon <= _lo1: continue   # OK
-    _nueva = _geocodif(_lat, _lon)
+    _la0,_la1,_lo0,_lo1 = _PROV_BBOX[_p]
+    _lat,_lon = _row['sucursales_latitud'],_row['sucursales_longitud']
+    if _la0<=_lat<=_la1 and _lo0<=_lon<=_lo1: continue
+    _nueva = _geocodif(_lat,_lon)
     if _nueva and _nueva != _p:
-        canasta_geo.at[_idx, 'PROVINCIA_NORM'] = _nueva
+        suc_geo_clean.at[_idx,'PROVINCIA_NORM'] = _nueva
         _n_reclasif += 1
 if _n_reclasif:
-    print(f'  Reclasificadas {_n_reclasif} sucursales con provincia inconsistente (sin pérdida de datos)')
+    print(f'  Reclasificadas {_n_reclasif} sucursales por coordenadas')
 
-canasta_geo_filtros = canasta_geo.copy()
-print(f'canasta_geo_filtros: {len(canasta_geo_filtros):,} sucursales')
-print(f'  Rango: ${canasta_geo_filtros["canasta_total"].min():,.0f} – ${canasta_geo_filtros["canasta_total"].max():,.0f}')
+# ── Calcular canasta por sucursal para CADA canasta activa ───────────────────
+canasta_geo_dict = {}
+
+for _col_id, _canasta in CANASTAS.items():
+    _name    = CANASTA_NAMES[_col_id]
+    _min_p   = min(MIN_PRODUCTOS_PROPIOS, len(_canasta))
+    _prom    = precio_prom_nac
+
+    def _calc(grupo, _c=_canasta, _p=_prom):
+        locales = dict(zip(grupo['ean_norm'], grupo['precio']))
+        total = 0; propios = 0; detalle = []
+        for ean, (nom, qty, cat) in _c.items():
+            if ean in locales:
+                pr = locales[ean]; es_propio = True; propios += 1
+            else:
+                pr = _p.get(ean, 0); es_propio = False
+            sub = pr * qty; total += sub
+            detalle.append((nom, cat, qty, pr, sub, es_propio))
+        return pd.Series({'canasta_total':total,'productos_propios':propios,'detalle_productos':detalle})
+
+    _suc = (precio_mes.groupby(['id_comercio','id_bandera','id_sucursal'])
+            .apply(_calc, include_groups=False).reset_index())
+    _suc = _suc[_suc['productos_propios'] >= _min_p].copy()
+    _cgeo = _suc.merge(suc_geo_clean, on=['id_comercio','id_bandera','id_sucursal'], how='inner')
+    canasta_geo_dict[_col_id] = _cgeo.copy()
+    print(f'  [{_name}] {len(_cgeo):,} sucursales | '
+          f'${_cgeo["canasta_total"].min():,.0f} – ${_cgeo["canasta_total"].max():,.0f}')
+
 print()
-print(canasta_geo_filtros['cadena'].value_counts().to_string())"""))
+print('Cadenas (primera canasta activa):')
+print(canasta_geo_dict[CANASTAS_ACTIVAS[0]]['cadena'].value_counts().to_string())"""))
 
-# CELL 8 — PROVINCE ANALYSIS
+# ── CELL 8 — PROVINCE ANALYSIS (multi-canasta) ────────────────────────────────
 cells.append(cell_code("""\
 # ============================================================
-# CELDA 8 — Analisis provincial -> serie_provincia_valida
+# CELDA 8 — Análisis provincial para cada canasta activa
 # ============================================================
-canasta_por_prov = (
-    canasta_geo_filtros.groupby('PROVINCIA_NORM')['canasta_total']
-    .median().reset_index()
-    .rename(columns={'PROVINCIA_NORM':'provincia','canasta_total':'canasta_total'})
-)
-canasta_por_prov['mes'] = PERIODO
-serie_provincia_valida = canasta_por_prov[['mes','provincia','canasta_total']].copy()
-
-# Promedio nacional ponderado por poblacion
-canasta_por_prov['peso'] = canasta_por_prov['provincia'].map(PESOS_POBLACION).fillna(0)
-pob_cobertura = canasta_por_prov[canasta_por_prov['peso'] > 0]['peso'].sum()
-prom_nac_ponderado = (
-    (canasta_por_prov['canasta_total'] * canasta_por_prov['peso']).sum() / pob_cobertura
-    if pob_cobertura > 0 else canasta_por_prov['canasta_total'].mean()
-)
-
 def fmt_ar(x, dec=0):
     s = f'{x:,.{dec}f}'
     return s.replace(',','X').replace('.',',').replace('X','.')
 
-print(f'=== CUADRO: Canasta por provincia — {NOMBRE_MES_TITLE} ===\\n')
-df_disp = serie_provincia_valida.sort_values('canasta_total').copy()
-df_disp['vs_%'] = ((df_disp['canasta_total'] / prom_nac_ponderado) - 1) * 100
-for _, r in df_disp.iterrows():
-    print(f'  {r["provincia"]:<25} ${r["canasta_total"]:>10,.0f}  {r["vs_%"]:+.2f}%')
-print(f'  {"Promedio (ponderado)":<25} ${prom_nac_ponderado:>10,.0f}   0.00%')
-print(f'\\nProvincias con datos: {len(serie_provincia_valida)}')"""))
+serie_prov_dict = {}   # col_id -> serie_provincia_valida
+prom_nac_dict   = {}   # col_id -> promedio nacional ponderado
 
-# CELL 9 — HISTORICAL
+for _col_id in CANASTAS_ACTIVAS:
+    _cgf  = canasta_geo_dict[_col_id]
+    _cpp  = (_cgf.groupby('PROVINCIA_NORM')['canasta_total']
+             .median().reset_index()
+             .rename(columns={'PROVINCIA_NORM':'provincia'}))
+    _cpp['mes']  = PERIODO
+    _cpp['peso'] = _cpp['provincia'].map(PESOS_POBLACION).fillna(0)
+    _pob = _cpp[_cpp['peso'] > 0]['peso'].sum()
+    _prom = ((_cpp['canasta_total'] * _cpp['peso']).sum() / _pob
+             if _pob > 0 else _cpp['canasta_total'].mean())
+    serie_prov_dict[_col_id] = _cpp[['mes','provincia','canasta_total']].copy()
+    prom_nac_dict[_col_id]   = _prom
+
+print(f'=== CUADRO: Canastas por provincia — {NOMBRE_MES_TITLE} ===')
+for _col_id in CANASTAS_ACTIVAS:
+    _name = CANASTA_NAMES[_col_id]
+    _spv  = serie_prov_dict[_col_id].sort_values('canasta_total')
+    _prom = prom_nac_dict[_col_id]
+    print(f'\\n  ── {_name} ──')
+    for _, r in _spv.iterrows():
+        _vs = ((r['canasta_total'] / _prom) - 1) * 100
+        print(f'  {r["provincia"]:<25} ${r["canasta_total"]:>10,.0f}  {_vs:+.2f}%')
+    print(f'  {"Promedio (ponderado)":<25} ${_prom:>10,.0f}   0.00%')
+print(f'\\nProvincias con datos (primera canasta): {len(serie_prov_dict[CANASTAS_ACTIVAS[0]])}')"""))
+
+# ── CELL 9 — HISTORICAL SERIES (one raw cache, per-canasta aggregation) ───────
 cells.append(cell_code("""\
 # ============================================================
-# CELDA 9 — Serie historica nacional (con cache por hash EANs)
+# CELDA 9 — Serie histórica (1 cache unión EANs + serie por canasta)
 # ============================================================
-# Hash incluye EANs + cantidades → cambiar cantidades invalida el cache
-_cache_key  = hashlib.md5('|'.join(f'{k}:{CANASTA[k][1]}' for k in sorted(CANASTA.keys())).encode()).hexdigest()[:8]
-_cache_path = CACHE_DIR / f'hist_{_cache_key}.parquet'
+# Cache keyed by union of all active EANs (not quantities)
+# so adding/removing EANs invalidates, but changing quantities reuses cache.
+_cache_key  = hashlib.md5('|'.join(sorted(CANASTA_EANS_NORM)).encode()).hexdigest()[:8]
+_cache_path = CACHE_DIR / f'hist_union_{_cache_key}.parquet'
 
 if USE_CACHE and _cache_path.exists():
-    print(f'Cargando cache: {_cache_path.name}')
-    df_hist = pd.read_parquet(_cache_path)
+    print(f'Cargando cache unión: {_cache_path.name}')
+    df_hist_raw = pd.read_parquet(_cache_path)
 else:
-    sems = detectar_semestres()
-    registros = []
-    for zip_path, anio, sem in sems:
-        meses = archivos_por_mes(zip_path)
-        for (anio_m, mes_m), archs in sorted(meses.items()):
-            lbl = f'{anio_m}-{mes_m:02d}'
-            if lbl < MES_INICIO_HISTORICO:
-                continue
-            all_rows = []
-            for archivo in sorted(archs):
-                tmp_p = TMP_DIR / Path(archivo).name
-                with zipfile.ZipFile(zip_path) as zf:
-                    with zf.open(archivo) as s, open(tmp_p,'wb') as d:
-                        shutil.copyfileobj(s, d, length=4*1024*1024)
-                with gzip.open(tmp_p,'rt',encoding='utf-8',errors='replace') as g:
-                    for chunk in pd.read_csv(g, dtype=str, chunksize=300_000, low_memory=False):
-                        chunk['ean_norm'] = chunk['id_producto'].apply(normalizar_ean)
-                        chunk = chunk[chunk['ean_norm'].isin(CANASTA_EANS_NORM)].copy()
-                        if len(chunk) == 0: continue
-                        cols_p = [c for c in chunk.columns if re.match(r'^precio_\\d{8}$', c)]
-                        if not cols_p: continue
-                        sub = chunk[['ean_norm'] + cols_p].copy()
-                        for cp in cols_p:
-                            sub[cp] = pd.to_numeric(sub[cp].replace('NA',np.nan), errors='coerce')
-                        mlt = sub.melt(id_vars='ean_norm', value_vars=cols_p,
-                                       var_name='_c', value_name='precio')
-                        mlt = mlt[mlt['precio'].notna() & (mlt['precio'] > 0)]
-                        all_rows.append(mlt[['ean_norm','precio']])
-                tmp_p.unlink(missing_ok=True)
-            if not all_rows:
-                continue
-            df_m = pd.concat(all_rows, ignore_index=True)
-            med_raw = df_m['precio'].median()
-            fac = 100 if med_raw > 10_000 else 1
-            if fac == 100: df_m['precio'] /= 100
-            agg = df_m.groupby('ean_norm')['precio'].median().reset_index(name='precio_mediano')
-            agg['anio_mes'] = lbl
-            registros.append(agg)
-            print(f'  {lbl}: {agg["ean_norm"].nunique()} EANs | factor={fac}')
-            del df_m, agg, all_rows; gc.collect()
+    _sems = detectar_semestres()
+    _registros = []
+    for _zip_path, _anio, _sem in _sems:
+        _meses = archivos_por_mes(_zip_path)
+        for (_anio_m, _mes_m), _archs in sorted(_meses.items()):
+            _lbl = f'{_anio_m}-{_mes_m:02d}'
+            if _lbl < MES_INICIO_HISTORICO: continue
+            _all_rows = []
+            for _archivo in sorted(_archs):
+                _tmp_p = TMP_DIR / Path(_archivo).name
+                with zipfile.ZipFile(_zip_path) as _zf:
+                    with _zf.open(_archivo) as _s, open(_tmp_p,'wb') as _d:
+                        shutil.copyfileobj(_s, _d, length=4*1024*1024)
+                with gzip.open(_tmp_p,'rt',encoding='utf-8',errors='replace') as _g:
+                    for _chunk in pd.read_csv(_g, dtype=str, chunksize=300_000, low_memory=False):
+                        _chunk['ean_norm'] = _chunk['id_producto'].apply(normalizar_ean)
+                        _chunk = _chunk[_chunk['ean_norm'].isin(CANASTA_EANS_NORM)].copy()
+                        if len(_chunk) == 0: continue
+                        _cols_p = [c for c in _chunk.columns if re.match(r'^precio_\\d{8}$', c)]
+                        if not _cols_p: continue
+                        _sub = _chunk[['ean_norm']+_cols_p].copy()
+                        for _cp in _cols_p:
+                            _sub[_cp] = pd.to_numeric(_sub[_cp].replace('NA',np.nan), errors='coerce')
+                        _mlt = _sub.melt(id_vars='ean_norm', value_vars=_cols_p,
+                                         var_name='_c', value_name='precio')
+                        _mlt = _mlt[_mlt['precio'].notna() & (_mlt['precio']>0)]
+                        _all_rows.append(_mlt[['ean_norm','precio']])
+                _tmp_p.unlink(missing_ok=True)
+            if not _all_rows: continue
+            _df_m = pd.concat(_all_rows, ignore_index=True)
+            _fac = 100 if _df_m['precio'].median() > 10_000 else 1
+            if _fac == 100: _df_m['precio'] /= 100
+            _agg = _df_m.groupby('ean_norm')['precio'].median().reset_index(name='precio_mediano')
+            _agg['anio_mes'] = _lbl
+            _registros.append(_agg)
+            print(f'  {_lbl}: {_agg["ean_norm"].nunique()} EANs | factor={_fac}')
+            del _df_m, _agg, _all_rows; gc.collect()
 
-    df_hist = pd.concat(registros, ignore_index=True) if registros else pd.DataFrame(
+    df_hist_raw = pd.concat(_registros, ignore_index=True) if _registros else pd.DataFrame(
         columns=['ean_norm','precio_mediano','anio_mes'])
-    if USE_CACHE and len(df_hist) > 0:
-        df_hist.to_parquet(_cache_path, compression='snappy', index=False)
+    if USE_CACHE and len(df_hist_raw) > 0:
+        df_hist_raw.to_parquet(_cache_path, compression='snappy', index=False)
         print(f'Cache guardado: {_cache_path}')
 
-df_hist['qty']        = df_hist['ean_norm'].map(ean_qty)
-df_hist['costo_item'] = df_hist['precio_mediano'] * df_hist['qty']
+# ── Agregar por canasta ──────────────────────────────────────────────────────
+serie_nac_dict = {}   # col_id -> serie_nacional_valida
 
-serie_nac = (df_hist.groupby('anio_mes')
-             .agg(canasta_nacional_ponderada=('costo_item','sum'), n_eans=('ean_norm','nunique'))
-             .reset_index()
-             .rename(columns={'anio_mes': 'mes'})
-             .sort_values('mes').reset_index(drop=True))
-serie_nac = serie_nac[serie_nac['mes'] >= MES_INICIO_HISTORICO].copy()
-serie_nac['variacion_mensual_%'] = serie_nac['canasta_nacional_ponderada'].pct_change() * 100
+for _col_id, _canasta in CANASTAS.items():
+    _name  = CANASTA_NAMES[_col_id]
+    _eans  = set(_canasta.keys())
+    _dh    = df_hist_raw[df_hist_raw['ean_norm'].isin(_eans)].copy()
+    _dh['qty']        = _dh['ean_norm'].map(lambda e, c=_canasta: c.get(e,('?',0,'?'))[1])
+    _dh['costo_item'] = _dh['precio_mediano'] * _dh['qty']
+    _sn = (_dh.groupby('anio_mes')
+           .agg(canasta_nacional_ponderada=('costo_item','sum'), n_eans=('ean_norm','nunique'))
+           .reset_index().rename(columns={'anio_mes':'mes'})
+           .sort_values('mes').reset_index(drop=True))
+    _sn = _sn[_sn['mes'] >= MES_INICIO_HISTORICO].copy()
+    _sn['variacion_mensual_%'] = _sn['canasta_nacional_ponderada'].pct_change() * 100
+    _bv = _sn['canasta_nacional_ponderada'].iloc[0] if len(_sn) > 0 else 1
+    _sn['indice_canasta_base100'] = (_sn['canasta_nacional_ponderada'] / _bv * 100).round(2)
+    serie_nac_dict[_col_id] = _sn.copy()
+    _rng = f'{_sn["mes"].min()} -> {_sn["mes"].max()}' if len(_sn) > 0 else 'sin datos'
+    print(f'  [{_name}] {len(_sn)} meses | {_rng}')"""))
 
-base_v = serie_nac['canasta_nacional_ponderada'].iloc[0]
-serie_nac['indice_canasta_base100'] = (serie_nac['canasta_nacional_ponderada'] / base_v * 100).round(2)
-serie_nacional_valida = serie_nac.copy()
-
-print(f'Serie historica: {len(serie_nacional_valida)} meses')
-print(f'  Periodo: {serie_nacional_valida["mes"].min()} -> {serie_nacional_valida["mes"].max()}')"""))
-
-# CELL 10 — IPC
+# ── CELL 10 — IPC ──────────────────────────────────────────────────────────────
 cells.append(cell_code("""\
 # ============================================================
 # CELDA 10 — IPC INDEC desde carga/IPC.xlsx
-# Formato real: columna 'date' = datetime64 (Excel seriales),
-# demás columnas = float64 con punto decimal.
 # ============================================================
 if not IPC_PATH.exists():
     raise FileNotFoundError(
         f'IPC.xlsx no encontrado en {SEPA_DIR}\\n'
-        'Asegurate de tener el archivo IPC.xlsx (o ipc.xlsx) en la carpeta carga/'
+        'Asegurate de tener el archivo IPC.xlsx en la carpeta carga/'
     )
 
 ipc_raw = pd.read_excel(IPC_PATH)
 print(f'IPC cargado: {len(ipc_raw)} filas, columnas: {list(ipc_raw.columns[:4])} ...')
 
-# Detectar columna de fecha
 fecha_col = next((c for c in ipc_raw.columns
                   if str(c).lower().strip() in ('date','fecha','mes','period')),
                  ipc_raw.columns[0])
 
-# Parsear fecha:
-#   Caso normal (IPC.xlsx real): columna ya es datetime64 porque Excel guarda
-#   fechas como seriales numéricos y pandas los convierte automáticamente.
-#   La visualización 'ene-2017' en Excel es solo formato de celda, no el dato.
-#   Caso fallback: texto 'ene-2017' (si alguna versión exportó como texto).
 if pd.api.types.is_datetime64_any_dtype(ipc_raw[fecha_col]):
     ipc_raw['mes'] = ipc_raw[fecha_col].dt.strftime('%Y-%m')
 else:
@@ -668,7 +706,6 @@ else:
         return pd.to_datetime(val, errors='coerce')
     ipc_raw['mes'] = ipc_raw[fecha_col].apply(_parse_ipc_fecha).dt.strftime('%Y-%m')
 
-# Renombrar columnas de interés
 rename_map = {}
 for c in ipc_raw.columns:
     cs = str(c).strip()
@@ -676,72 +713,79 @@ for c in ipc_raw.columns:
     elif 'alimentos y bebidas no alc' in cs.lower(): rename_map[c] = 'ipc_alimentos'
 ipc_raw = ipc_raw.rename(columns=rename_map)
 
-# Convertir a float (normalmente ya son float64; por robustez también maneja coma decimal)
 for c in ['ipc_general','ipc_alimentos']:
     if c in ipc_raw.columns:
         ipc_raw[c] = pd.to_numeric(
             ipc_raw[c].astype(str).str.replace(',', '.', regex=False), errors='coerce')
 
-# Construir serie IPC (con fallback si falta columna ipc_alimentos)
 _ipc_cols = ['mes','ipc_general'] + (['ipc_alimentos'] if 'ipc_alimentos' in ipc_raw.columns else [])
 ipc = (ipc_raw[_ipc_cols]
        .dropna(subset=['ipc_general']).sort_values('mes').reset_index(drop=True))
 if 'ipc_alimentos' not in ipc.columns:
     ipc['ipc_alimentos'] = np.nan
-    print('AVISO: no se encontro columna Alimentos y bebidas — se usara NaN')
 ipc['ipc_general_var_%']   = ipc['ipc_general'].pct_change(fill_method=None) * 100
 ipc['ipc_alimentos_var_%'] = ipc['ipc_alimentos'].pct_change(fill_method=None) * 100
 
 print(f'IPC procesado: {len(ipc)} meses | {ipc["mes"].min()} -> {ipc["mes"].max()}')
 print(ipc[['mes','ipc_general','ipc_general_var_%','ipc_alimentos','ipc_alimentos_var_%']].tail(6).to_string(index=False))"""))
 
-# CELL 11 — COMPARATIVA
+# ── CELL 11 — COMPARATIVA (multi-canasta) ─────────────────────────────────────
 cells.append(cell_code("""\
 # ============================================================
-# CELDA 11 — Tabla comparativa SEPA vs IPC
+# CELDA 11 — Comparativa SEPA vs IPC para cada canasta
 # ============================================================
-_serie_vacia = len(serie_nacional_valida) == 0
-if _serie_vacia:
-    print('AVISO: Serie histórica vacía para esta canasta.')
-    print('  Los productos pueden ser demasiado nuevos o usar PLU codes (EANs 27.../28...)')
-    print('  que no aparecen en el SEPA histórico. Celdas 11/12 sin datos de serie.')
-    comparativa = pd.DataFrame(columns=['mes','canasta_nacional_ponderada',
-        'variacion_mensual_%','ipc_general','ipc_general_var_%',
-        'ipc_alimentos','ipc_alimentos_var_%',
-        'indice_canasta_base100','indice_ipc_general_base100','indice_ipc_alimentos_base100'])
-    df_g = pd.DataFrame()
-    _lbl_base = PERIODO[5:7] + '-' + PERIODO[2:4]
-else:
-    comparativa = serie_nacional_valida.merge(
+comparativa_dict  = {}   # col_id -> comparativa DataFrame
+df_g_dict         = {}   # col_id -> df_g (desde MES_INICIO_GRAFICO)
+_lbl_base_dict    = {}   # col_id -> label base ej '03-24'
+_serie_vacia_dict = {}   # col_id -> bool
+
+for _col_id in CANASTAS_ACTIVAS:
+    _sn   = serie_nac_dict[_col_id]
+    _name = CANASTA_NAMES[_col_id]
+
+    if len(_sn) == 0:
+        print(f'AVISO [{_name}]: Serie histórica vacía — gráficos de índices no disponibles.')
+        _serie_vacia_dict[_col_id] = True
+        comparativa_dict[_col_id]  = pd.DataFrame()
+        df_g_dict[_col_id]         = pd.DataFrame()
+        _lbl_base_dict[_col_id]    = PERIODO[5:7] + '-' + PERIODO[2:4]
+        continue
+
+    _comp = _sn.merge(
         ipc[['mes','ipc_general','ipc_general_var_%','ipc_alimentos','ipc_alimentos_var_%']],
         on='mes', how='left')
-    ipc_b = comparativa['ipc_general'].dropna().iloc[0] if comparativa['ipc_general'].notna().any() else 1
-    ialb  = comparativa['ipc_alimentos'].dropna().iloc[0] if comparativa['ipc_alimentos'].notna().any() else 1
-    comparativa['indice_ipc_general_base100']   = (comparativa['ipc_general']   / ipc_b * 100).round(2)
-    comparativa['indice_ipc_alimentos_base100'] = (comparativa['ipc_alimentos'] / ialb  * 100).round(2)
-    _mg = MES_INICIO_GRAFICO
-    if _mg not in comparativa['mes'].values:
-        _mg = comparativa['mes'].min()
-        print(f'AVISO: MES_INICIO_GRAFICO {MES_INICIO_GRAFICO} no está en la serie → usando {_mg}')
-    df_g = comparativa[comparativa['mes'] >= _mg].copy().reset_index(drop=True)
-    bg   = df_g['canasta_nacional_ponderada'].iloc[0]
-    big  = df_g['ipc_general'].dropna().iloc[0] if df_g['ipc_general'].notna().any() else 1
-    bia  = df_g['ipc_alimentos'].dropna().iloc[0] if df_g['ipc_alimentos'].notna().any() else 1
-    _lbl_base = _mg[5:7] + '-' + _mg[2:4]
-    df_g['idx_canasta_base']       = (df_g['canasta_nacional_ponderada'] / bg  * 100).round(2)
-    df_g['idx_ipc_general_base']   = (df_g['ipc_general']                / big * 100).round(2)
-    df_g['idx_ipc_alimentos_base'] = (df_g['ipc_alimentos']              / bia * 100).round(2)
-    df_g['fecha'] = pd.to_datetime(df_g['mes'] + '-01')
-    print(f'Comparativa: {len(comparativa)} meses | Grafico desde: {_mg} ({len(df_g)} meses)')
-    cols = ['mes','canasta_nacional_ponderada','variacion_mensual_%','ipc_general_var_%']
-    print(comparativa[cols].tail(6).to_string(index=False))"""))
+    _ipc_b = _comp['ipc_general'].dropna().iloc[0] if _comp['ipc_general'].notna().any() else 1
+    _ialb  = _comp['ipc_alimentos'].dropna().iloc[0] if _comp['ipc_alimentos'].notna().any() else 1
+    _comp['indice_ipc_general_base100']   = (_comp['ipc_general']   / _ipc_b * 100).round(2)
+    _comp['indice_ipc_alimentos_base100'] = (_comp['ipc_alimentos'] / _ialb  * 100).round(2)
 
-# CELL 12 — IPC CHARTS
+    _mg = MES_INICIO_GRAFICO
+    if _mg not in _comp['mes'].values:
+        _mg = _comp['mes'].min()
+    _dg = _comp[_comp['mes'] >= _mg].copy().reset_index(drop=True)
+    _bg  = _dg['canasta_nacional_ponderada'].iloc[0]
+    _big = _dg['ipc_general'].dropna().iloc[0] if _dg['ipc_general'].notna().any() else 1
+    _bia = _dg['ipc_alimentos'].dropna().iloc[0] if _dg['ipc_alimentos'].notna().any() else 1
+    _lbl = _mg[5:7] + '-' + _mg[2:4]
+    _dg['idx_canasta_base']       = (_dg['canasta_nacional_ponderada'] / _bg  * 100).round(2)
+    _dg['idx_ipc_general_base']   = (_dg['ipc_general']                / _big * 100).round(2)
+    _dg['idx_ipc_alimentos_base'] = (_dg['ipc_alimentos']              / _bia * 100).round(2)
+    _dg['fecha'] = pd.to_datetime(_dg['mes'] + '-01')
+
+    comparativa_dict[_col_id]  = _comp
+    df_g_dict[_col_id]         = _dg
+    _lbl_base_dict[_col_id]    = _lbl
+    _serie_vacia_dict[_col_id] = False
+
+    print(f'  [{_name}] {len(_comp)} meses | desde {_mg} ({len(_dg)} pts) | '
+          f'último: ${_dg["canasta_nacional_ponderada"].iloc[-1]:,.0f} '
+          f'({_dg["variacion_mensual_%"].iloc[-1]:+.1f}%)')"""))
+
+# ── CELL 12 — CHARTS (multi-canasta) ──────────────────────────────────────────
 cells.append(cell_code("""\
 # ============================================================
-# CELDA 12 — Graficos: indices y variaciones vs IPC
+# CELDA 12 — Gráficos: índices y variaciones (todas las canastas)
 # ============================================================
-COLOR_CANASTA = '#0055A4'
 COLOR_IPC_GEN = '#D62728'
 COLOR_IPC_ALI = '#FF7F0E'
 out1 = out2 = None
@@ -755,152 +799,155 @@ def _fmt_mes_es(x, pos):
     except Exception:
         return ''
 
-if len(df_g) == 0:
-    print('AVISO: Sin serie histórica — gráficos de índices no disponibles para esta canasta.')
-    print('  Continuando con mapa, cobertura, rankings, Folium y CABA...')
+# Canastas con datos
+_activas_con_datos = [c for c in CANASTAS_ACTIVAS if not _serie_vacia_dict[c] and len(df_g_dict[c]) > 0]
+if not _activas_con_datos:
+    print('AVISO: Sin serie histórica para ninguna canasta. Saltando gráficos de índices.')
 else:
-    # ── GRAFICO 1: Indices base = 100 ────────────────────────────────────────
+    # Usar el lbl_base de la primera canasta activa con datos
+    _lbl_base = _lbl_base_dict[_activas_con_datos[0]]
+
+    # ── GRAFICO 1: Índices base ─────────────────────────────────────────────
     fig1, ax1 = plt.subplots(figsize=(13, 6))
-    ax1.plot(df_g['fecha'], df_g['idx_canasta_base'],
-             color=COLOR_CANASTA, linewidth=2.5,
-             label=f'ICM-UADE ({N_CANASTA} productos)', marker='o', markersize=5)
-    ax1.plot(df_g['fecha'], df_g['idx_ipc_general_base'],
-             color=COLOR_IPC_GEN, linewidth=2,
-             label='IPC INDEC - Nivel general', linestyle='--', marker='s', markersize=4)
-    ax1.plot(df_g['fecha'], df_g['idx_ipc_alimentos_base'],
-             color=COLOR_IPC_ALI, linewidth=2,
-             label='IPC INDEC - Alimentos y bebidas', linestyle=':', marker='^', markersize=4)
+    for _col_id in _activas_con_datos:
+        _dg   = df_g_dict[_col_id]
+        _name = CANASTA_NAMES[_col_id]
+        ax1.plot(_dg['fecha'], _dg['idx_canasta_base'],
+                 color=CANASTA_COLORS[_col_id], linewidth=2.5,
+                 linestyle=CANASTA_LINESTYLES[_col_id],
+                 marker=CANASTA_MARKERS[_col_id], markersize=5,
+                 label=f'ICM-UADE {_name}')
+        _ult = _dg.iloc[-1]
+        ax1.annotate(f"{_ult['idx_canasta_base']:.0f}",
+                     xy=(_ult['fecha'], _ult['idx_canasta_base']),
+                     xytext=(8, 0), textcoords='offset points',
+                     color=CANASTA_COLORS[_col_id], fontweight='bold', fontsize=9)
+    _dg0 = df_g_dict[_activas_con_datos[0]]
+    if _dg0['idx_ipc_general_base'].notna().any():
+        ax1.plot(_dg0['fecha'], _dg0['idx_ipc_general_base'],
+                 color=COLOR_IPC_GEN, linewidth=1.8, linestyle='--', marker='s', markersize=4,
+                 label='IPC INDEC - Nivel general')
+        _iu = _dg0.dropna(subset=['idx_ipc_general_base']).iloc[-1]
+        ax1.annotate(f"{_iu['idx_ipc_general_base']:.0f}",
+                     xy=(_iu['fecha'], _iu['idx_ipc_general_base']),
+                     xytext=(8,-3), textcoords='offset points',
+                     color=COLOR_IPC_GEN, fontweight='bold', fontsize=9)
+    if _dg0['idx_ipc_alimentos_base'].notna().any():
+        ax1.plot(_dg0['fecha'], _dg0['idx_ipc_alimentos_base'],
+                 color=COLOR_IPC_ALI, linewidth=1.8, linestyle=':', marker='^', markersize=4,
+                 label='IPC INDEC - Alimentos y bebidas')
+        _ia = _dg0.dropna(subset=['idx_ipc_alimentos_base']).iloc[-1]
+        ax1.annotate(f"{_ia['idx_ipc_alimentos_base']:.0f}",
+                     xy=(_ia['fecha'], _ia['idx_ipc_alimentos_base']),
+                     xytext=(8,3), textcoords='offset points',
+                     color=COLOR_IPC_ALI, fontweight='bold', fontsize=9)
     ax1.set_ylabel(f'Índice ({_lbl_base} = 100)', fontsize=11)
-    ax1.legend(loc='upper left', fontsize=10, framealpha=0.95)
+    ax1.legend(loc='upper left', fontsize=9, framealpha=0.95)
     ax1.grid(True, alpha=0.3)
     ax1.xaxis.set_major_locator(mdates.MonthLocator(interval=1))
     ax1.xaxis.set_major_formatter(mticker.FuncFormatter(_fmt_mes_es))
     plt.setp(ax1.xaxis.get_majorticklabels(), rotation=45, ha='right')
-    ult = df_g.iloc[-1]
-    ax1.annotate(f"{ult['idx_canasta_base']:.1f}",
-                 xy=(ult['fecha'], ult['idx_canasta_base']),
-                 xytext=(8,0), textcoords='offset points',
-                 color=COLOR_CANASTA, fontweight='bold', fontsize=11)
-    iu = df_g.dropna(subset=['idx_ipc_general_base']).iloc[-1]
-    ax1.annotate(f"{iu['idx_ipc_general_base']:.1f}",
-                 xy=(iu['fecha'], iu['idx_ipc_general_base']),
-                 xytext=(8,-3), textcoords='offset points',
-                 color=COLOR_IPC_GEN, fontweight='bold', fontsize=11)
-    if df_g['idx_ipc_alimentos_base'].notna().any():
-        ia = df_g.dropna(subset=['idx_ipc_alimentos_base']).iloc[-1]
-        ax1.annotate(f"{ia['idx_ipc_alimentos_base']:.1f}",
-                     xy=(ia['fecha'], ia['idx_ipc_alimentos_base']),
-                     xytext=(8,3), textcoords='offset points',
-                     color=COLOR_IPC_ALI, fontweight='bold', fontsize=11)
     plt.tight_layout()
     out1 = OUTPUT_DIR / f'indices_canasta_vs_ipc_{MES}.png'
     plt.savefig(out1, dpi=600, bbox_inches='tight', facecolor='white')
     plt.show()
-    print(f'Grafico 1 guardado: {out1}')
+    print(f'Gráfico 1 guardado: {out1}')
 
-    # ── GRAFICO 2: Variaciones mensuales ─────────────────────────────────────
-    fig2, ax2 = plt.subplots(figsize=(14, 6))
-    x      = df_g['fecha']
-    width  = pd.Timedelta(days=6)
-    offsets = [-width, pd.Timedelta(0), width]
-    bc  = ax2.bar(x + offsets[0], df_g['variacion_mensual_%'], width=width,
-                  color=COLOR_CANASTA, alpha=0.90, label='ICM-UADE')
-    big = ax2.bar(x + offsets[1], df_g['ipc_general_var_%'],  width=width,
-                  color=COLOR_IPC_GEN, alpha=0.75, label='IPC INDEC - Nivel general')
-    bia = ax2.bar(x + offsets[2], df_g['ipc_alimentos_var_%'], width=width,
-                  color=COLOR_IPC_ALI, alpha=0.75, label='IPC INDEC - Alimentos y bebidas')
-    for bars, vals, col in [
-        (bc,  df_g['variacion_mensual_%'], COLOR_CANASTA),
-        (big, df_g['ipc_general_var_%'],   COLOR_IPC_GEN),
-        (bia, df_g['ipc_alimentos_var_%'], COLOR_IPC_ALI),
-    ]:
-        for bar, val in zip(bars, vals):
-            if pd.notna(val) and val != 0:
-                ypos = bar.get_height() + 0.1 if val >= 0 else bar.get_height() - 0.6
-                ax2.text(bar.get_x()+bar.get_width()/2, ypos,
-                         f'{val:.1f}', ha='center', va='bottom',
-                         fontsize=6.5, color=col, fontweight='bold', rotation=90)
+    # ── GRAFICO 2: Variaciones mensuales (líneas) ───────────────────────────
+    fig2, ax2 = plt.subplots(figsize=(13, 6))
+    for _col_id in _activas_con_datos:
+        _dg   = df_g_dict[_col_id]
+        _name = CANASTA_NAMES[_col_id]
+        ax2.plot(_dg['fecha'], _dg['variacion_mensual_%'],
+                 color=CANASTA_COLORS[_col_id], linewidth=2,
+                 linestyle=CANASTA_LINESTYLES[_col_id],
+                 marker=CANASTA_MARKERS[_col_id], markersize=5,
+                 label=f'ICM-UADE {_name}')
+    if _dg0['ipc_general_var_%'].notna().any():
+        ax2.plot(_dg0['fecha'], _dg0['ipc_general_var_%'],
+                 color=COLOR_IPC_GEN, linewidth=1.8, linestyle='--', marker='s', markersize=4,
+                 label='IPC INDEC - Nivel general')
+    if _dg0['ipc_alimentos_var_%'].notna().any():
+        ax2.plot(_dg0['fecha'], _dg0['ipc_alimentos_var_%'],
+                 color=COLOR_IPC_ALI, linewidth=1.8, linestyle=':', marker='^', markersize=4,
+                 label='IPC INDEC - Alimentos y bebidas')
     ax2.axhline(0, color='black', linewidth=0.5)
     ax2.set_ylabel('Variación mensual (%)', fontsize=11)
     ax2.legend(loc='upper right', fontsize=9, framealpha=0.95)
-    ax2.grid(True, alpha=0.3, axis='y')
+    ax2.grid(True, alpha=0.3)
     ax2.xaxis.set_major_locator(mdates.MonthLocator(interval=1))
     ax2.xaxis.set_major_formatter(mticker.FuncFormatter(_fmt_mes_es))
     plt.setp(ax2.xaxis.get_majorticklabels(), rotation=45, ha='right')
-    _vals_max = [s.dropna().max() for s in [df_g['variacion_mensual_%'],
-                 df_g['ipc_general_var_%'], df_g['ipc_alimentos_var_%']] if s.notna().any()]
-    if _vals_max:
-        ax2.set_ylim(top=max(_vals_max) * 1.35)
     plt.tight_layout()
     out2 = OUTPUT_DIR / f'variaciones_canasta_vs_ipc_{MES}.png'
     plt.savefig(out2, dpi=600, bbox_inches='tight', facecolor='white')
     plt.show()
-    print(f'Grafico 2 guardado: {out2}')"""))
+    print(f'Gráfico 2 guardado: {out2}')"""))
 
-# CELL 13 — TABLE + LATEX
+# ── CELL 13 — CUADRO 1 + LaTeX (per-canasta) ──────────────────────────────────
 cells.append(cell_code("""\
 # ============================================================
-# CELDA 13 — Cuadro 1: canasta por provincia + LaTeX
+# CELDA 13 — Cuadro 1 provincial + LaTeX para cada canasta
 # ============================================================
 def fmt_ar(x, dec=0):
     s = f'{x:,.{dec}f}'
     return s.replace(',','X').replace('.',',').replace('X','.')
 
-df_prov = serie_provincia_valida.copy()
-df_prov['vs_%'] = ((df_prov['canasta_total'] / prom_nac_ponderado) - 1) * 100
-df_prov = df_prov.sort_values('canasta_total').reset_index(drop=True)
-
-print('=== CUADRO 1: CANASTA POR PROVINCIA ===\\n')
-print(f'{"Provincia":<25} {"Canasta":>14} {"Vs. promedio pais":>18}')
-print('-'*60)
-for _, r in df_prov.iterrows():
-    c = fmt_ar(r['canasta_total'])
-    v = f"{r['vs_%']:+.2f}%".replace('.',',')
-    print(f"{r['provincia']:<25} {c:>14} {v:>18}")
-print('-'*60)
-print(f'{"Promedio nacional":<25} {fmt_ar(prom_nac_ponderado):>14} {"0,00%":>18}')
-
-# LaTeX
 nom_mes = {'01':'enero','02':'febrero','03':'marzo','04':'abril','05':'mayo','06':'junio',
            '07':'julio','08':'agosto','09':'septiembre','10':'octubre','11':'noviembre','12':'diciembre'}
-mes_s = nom_mes[ULTIMO_MES[5:7]]
-anio_s = ULTIMO_MES[:4]
+_mes_s  = nom_mes[ULTIMO_MES[5:7]]
+_anio_s = ULTIMO_MES[:4]
 
-ltx = [
-    r'\\begin{table}[H]',
-    r'\\centering',
-    r'\\renewcommand{\\arraystretch}{1.15}',
-    f'\\\\caption{{Valor de la canasta por provincia ({mes_s} {anio_s})}}',
-    r'\\begin{tabular}{@{}l r r@{}}',
-    r'\\toprule',
-    r'\\textbf{Provincia} & \\textbf{Canasta} & \\shortstack{\\textbf{Vs. promedio}\\\\\\\\\\textbf{pais (\\%)}} \\\\\\\\',
-    r'\\midrule',
-]
-for _, r in df_prov.iterrows():
-    c = fmt_ar(r['canasta_total'])
-    v = f"{r['vs_%']:+.2f}".replace('.',',')
-    ltx.append(f"{r['provincia']:<22} & {c} & {v}\\\\% \\\\\\\\")
-ltx += [
-    r'\\midrule',
-    f'\\\\textbf{{Promedio}} & {fmt_ar(prom_nac_ponderado)} & 0,00\\\\% \\\\\\\\',
-    r'\\bottomrule',
-    r'\\end{tabular}\\\\[0.2cm]',
-    r'\\caption*{Fuente: Elaboracion propia en base a SEPA}',
-    r'\\label{tab:canasta_provincias}',
-    r'\\end{table}',
-]
-latex_out = '\\n'.join(ltx)
+for _col_id in CANASTAS_ACTIVAS:
+    _name  = CANASTA_NAMES[_col_id]
+    _short = CANASTA_SHORT[_col_id]
+    _spv   = serie_prov_dict[_col_id].copy()
+    _prom  = prom_nac_dict[_col_id]
+    _spv['vs_%'] = ((_spv['canasta_total'] / _prom) - 1) * 100
+    _spv = _spv.sort_values('canasta_total').reset_index(drop=True)
 
-out_tex = OUTPUT_DIR / f'tabla_canasta_provincias_{ULTIMO_MES}.tex'
-out_tex.write_text(latex_out, encoding='utf-8')
-print(f'\\nLaTeX guardado: {out_tex}')
-print('\\n=== LATEX ===')
-print(latex_out)"""))
+    print(f'\\n=== CUADRO 1: {_name.upper()} — {NOMBRE_MES_TITLE} ===\\n')
+    print(f'{"Provincia":<25} {"Canasta":>14} {"Vs. promedio":>14}')
+    print('-'*55)
+    for _, r in _spv.iterrows():
+        _c = fmt_ar(r['canasta_total'])
+        _v = f"{r['vs_%']:+.2f}%".replace('.',',')
+        print(f"{r['provincia']:<25} {_c:>14} {_v:>14}")
+    print('-'*55)
+    print(f'{"Promedio nacional":<25} {fmt_ar(_prom):>14} {"0,00%":>14}')
 
-# CELL 14 — MAP
+    ltx = [
+        r'\\begin{table}[H]',
+        r'\\centering',
+        r'\\renewcommand{\\arraystretch}{1.15}',
+        f'\\\\caption{{Canasta {_name} por provincia ({_mes_s} {_anio_s})}}',
+        r'\\begin{tabular}{@{}l r r@{}}',
+        r'\\toprule',
+        r'\\textbf{Provincia} & \\textbf{Canasta} & \\shortstack{\\textbf{Vs. promedio}\\\\\\\\\\textbf{pais (\\%)}} \\\\\\\\',
+        r'\\midrule',
+    ]
+    for _, r in _spv.iterrows():
+        _c = fmt_ar(r['canasta_total'])
+        _v = f"{r['vs_%']:+.2f}".replace('.',',')
+        ltx.append(f"{r['provincia']:<22} & {_c} & {_v}\\\\% \\\\\\\\")
+    ltx += [
+        r'\\midrule',
+        f'\\\\textbf{{Promedio}} & {fmt_ar(_prom)} & 0,00\\\\% \\\\\\\\',
+        r'\\bottomrule',
+        r'\\end{tabular}\\\\[0.2cm]',
+        r'\\caption*{Fuente: Elaboracion propia en base a SEPA}',
+        f'\\\\label{{tab:canasta_{_short}_{ULTIMO_MES}}}',
+        r'\\end{table}',
+    ]
+    _latex_out = '\\n'.join(ltx)
+    _out_tex = OUTPUT_DIR / f'tabla_canasta_{_short}_{ULTIMO_MES}.tex'
+    _out_tex.write_text(_latex_out, encoding='utf-8')
+    print(f'  LaTeX guardado: {_out_tex.name}')"""))
+
+# ── CELL 14 — CHOROPLETH MAPS (one per canasta) ────────────────────────────────
 cells.append(cell_code("""\
 # ============================================================
-# CELDA 14 — Mapa coropletico por provincia
+# CELDA 14 — Mapa coroplético por canasta
 # ============================================================
 if not GEOJSON_PATH.exists():
     print(f'GeoJSON no encontrado en {GEOJSON_PATH} — saltear celda')
@@ -909,12 +956,6 @@ else:
         geo = _json.load(f)
 
     NORM_GEO = {'Ciudad de Buenos Aires': 'CABA'}
-    can_prov = dict(zip(df_prov['provincia'], df_prov['canasta_total']))
-    vals = list(can_prov.values())
-    norm_c = Normalize(vmin=min(vals), vmax=max(vals))
-    cmap_m = LinearSegmentedColormap.from_list('c',
-        ['#1a9850','#66bd63','#a6d96a','#d9ef8b','#fee08b','#fdae61','#f46d43','#d73027'], N=256)
-
     AJUST = {
         'Salta':(0,-1),'Tucuman':(0.3,0),'Tucumán':(0.3,0),'Chaco':(0,-1),
         'Tierra del Fuego':(-1,-0.2),'Santa Fe':(0,1),'Santiago del Estero':(0.7,0),
@@ -938,60 +979,69 @@ else:
                 ax.fill([c[0] for c in poly[0]], [c[1] for c in poly[0]],
                         facecolor=color, edgecolor='white', linewidth=0.6)
 
-    fig, ax = plt.subplots(figsize=(12, 16))
-    caba_c = None
+    cmap_m = LinearSegmentedColormap.from_list('c',
+        ['#1a9850','#66bd63','#a6d96a','#d9ef8b','#fee08b','#fdae61','#f46d43','#d73027'], N=256)
 
-    for feat in geo['features']:
-        ng  = feat['properties']['name']
-        nom = NORM_GEO.get(ng, ng)
-        val = can_prov.get(nom)
-        col = cmap_m(norm_c(val)) if val is not None else '#dddddd'
-        gt  = feat['geometry']['type']
-        co  = feat['geometry']['coordinates']
-        draw(ax, [co] if gt == 'Polygon' else co, col)
-        cx, cy = centroide([co] if gt == 'Polygon' else co)
+    for _col_id in CANASTAS_ACTIVAS:
+        _name   = CANASTA_NAMES[_col_id]
+        _short  = CANASTA_SHORT[_col_id]
+        _spv    = serie_prov_dict[_col_id]
+        if len(_spv) == 0:
+            print(f'  [{_name}] Sin datos provinciales — saltear mapa')
+            continue
+        _can_prov = dict(zip(_spv['provincia'], _spv['canasta_total']))
+        _vals = list(_can_prov.values())
+        norm_c = Normalize(vmin=min(_vals), vmax=max(_vals))
 
-        if nom == 'CABA':
-            caba_c = (cx, cy); continue
+        fig, ax = plt.subplots(figsize=(12, 16))
+        caba_c = None
+        for feat in geo['features']:
+            ng  = feat['properties']['name']
+            nom = NORM_GEO.get(ng, ng)
+            val = _can_prov.get(nom)
+            col = cmap_m(norm_c(val)) if val is not None else '#dddddd'
+            gt  = feat['geometry']['type']
+            co  = feat['geometry']['coordinates']
+            draw(ax, [co] if gt=='Polygon' else co, col)
+            cx, cy = centroide([co] if gt=='Polygon' else co)
+            if nom == 'CABA':
+                caba_c = (cx, cy); continue
+            dx, dy = AJUST.get(nom, (0,0))
+            if val is not None:
+                ax.text(cx+dx, cy+dy, f'{nom}\\n${val/1000:.0f}k',
+                        ha='center', va='center', fontsize=7.5, fontweight='bold',
+                        bbox=dict(boxstyle='round,pad=0.25', facecolor='white', alpha=0.75, edgecolor='none'))
+        if caba_c and 'CABA' in _can_prov:
+            vc = _can_prov['CABA']
+            cc = cmap_m(norm_c(vc))
+            lx, ly = caba_c[0]+2.2, caba_c[1]+0.8
+            ax.annotate('', xy=caba_c, xytext=(lx,ly),
+                        arrowprops=dict(arrowstyle='-', color='black', linewidth=1.0))
+            ax.text(lx, ly, f'CABA\\n${vc/1000:.0f}k',
+                    ha='center', va='center', fontsize=9, fontweight='bold',
+                    bbox=dict(boxstyle='round,pad=0.5', facecolor=cc, alpha=0.95,
+                              edgecolor='black', linewidth=1.0))
+            ax.plot(*caba_c, marker='o', markersize=10, markerfacecolor=cc,
+                    markeredgecolor='black', markeredgewidth=1.2, zorder=5)
+        ax.set_aspect('equal'); ax.axis('off')
+        plt.tight_layout()
+        _out_m = OUTPUT_DIR / f'mapa_canasta_{_short}_{ULTIMO_MES}.png'
+        plt.savefig(_out_m, dpi=600, bbox_inches='tight', facecolor='white')
+        plt.show()
+        print(f'  Mapa [{_name}] guardado: {_out_m.name}')"""))
 
-        dx, dy = AJUST.get(nom, (0,0))
-        if val is not None:
-            ax.text(cx+dx, cy+dy, f'{nom}\\n${val/1000:.0f}k',
-                    ha='center', va='center', fontsize=7.5, fontweight='bold',
-                    bbox=dict(boxstyle='round,pad=0.25', facecolor='white', alpha=0.75, edgecolor='none'))
-
-    if caba_c and 'CABA' in can_prov:
-        vc = can_prov['CABA']
-        cc = cmap_m(norm_c(vc))
-        lx, ly = caba_c[0]+2.2, caba_c[1]+0.8
-        ax.annotate('', xy=caba_c, xytext=(lx,ly),
-                    arrowprops=dict(arrowstyle='-', color='black', linewidth=1.0))
-        ax.text(lx, ly, f'CABA\\n${vc/1000:.0f}k',
-                ha='center', va='center', fontsize=9, fontweight='bold',
-                bbox=dict(boxstyle='round,pad=0.5', facecolor=cc, alpha=0.95,
-                          edgecolor='black', linewidth=1.0))
-        ax.plot(*caba_c, marker='o', markersize=10, markerfacecolor=cc,
-                markeredgecolor='black', markeredgewidth=1.2, zorder=5)
-
-    ax.set_aspect('equal'); ax.axis('off')
-    plt.tight_layout()
-    out_m = OUTPUT_DIR / f'mapa_canasta_{ULTIMO_MES}.png'
-    plt.savefig(out_m, dpi=600, bbox_inches='tight', facecolor='white')
-    plt.show()
-    print(f'Mapa guardado: {out_m}')"""))
-
-# CELL 15 — COVERAGE
+# ── CELL 15 — COVERAGE ─────────────────────────────────────────────────────────
 cells.append(cell_code("""\
 # ============================================================
-# CELDA 15 — Graficos de cobertura (provincia, cadena, matrices)
+# CELDA 15 — Gráficos de cobertura (primera canasta activa)
 # ============================================================
-# Construir frames de cobertura con detalle de EANs por sucursal
-_pm_info = (canasta_geo_filtros[['id_comercio','id_bandera','id_sucursal',
-                                  'PROVINCIA_NORM','cadena']].drop_duplicates())
+_cgf0 = canasta_geo_dict[CANASTAS_ACTIVAS[0]]
+
+_pm_info = (_cgf0[['id_comercio','id_bandera','id_sucursal',
+                    'PROVINCIA_NORM','cadena']].drop_duplicates())
 _pm_geo  = precio_mes.merge(_pm_info, on=['id_comercio','id_bandera','id_sucursal'], how='inner')
 _pm_geo['suc_key'] = (_pm_geo['id_comercio'] + '_' +
-                      _pm_geo['id_bandera']   + '_' +
-                      _pm_geo['id_sucursal'])
+                      _pm_geo['id_bandera']   + '_' + _pm_geo['id_sucursal'])
 
 cob_provincia = (_pm_geo.groupby('PROVINCIA_NORM')
     .agg(n_productos_unicos=('ean_norm','nunique'),
@@ -1008,48 +1058,41 @@ cob_cadena = (_pm_geo.groupby('cadena')
 matriz_cad_prov = (_pm_geo.groupby(['cadena','PROVINCIA_NORM'])['ean_norm']
     .nunique().unstack(fill_value=0))
 
-# ── Grafico 1: Cobertura por provincia (3 paneles) ───────────────────────────
 df_p = cob_provincia.sort_values('n_productos_unicos', ascending=True).reset_index(drop=True)
 fig, axes = plt.subplots(1, 3, figsize=(15, max(9, len(df_p)*0.38+2)), sharey=True)
 for ax, (col, titulo, color) in zip(axes, [
-        ('n_productos_unicos', 'Productos únicos',   '#0055A4'),
-        ('n_cadenas',          'Cadenas presentes',  '#27ae60'),
-        ('n_sucursales',       'Sucursales',          '#c0392b'),
-]):
+        ('n_productos_unicos','Productos únicos','#0055A4'),
+        ('n_cadenas','Cadenas presentes','#27ae60'),
+        ('n_sucursales','Sucursales','#c0392b')]):
     ax.barh(df_p['provincia'], df_p[col], color=color, edgecolor='white')
     for i, v in enumerate(df_p[col]):
-        ax.text(v + max(df_p[col])*0.01, i, f'{int(v):,}',
-                va='center', fontsize=8, color='#2c3e50')
+        ax.text(v+max(df_p[col])*0.01, i, f'{int(v):,}', va='center', fontsize=8, color='#2c3e50')
     ax.set_title(titulo, fontsize=11, fontweight='bold', color=color)
-    ax.xaxis.set_major_formatter(mticker.FuncFormatter(lambda x, _: f'{int(x):,}'))
-    ax.set_xlim(0, max(df_p[col]) * 1.15)
+    ax.xaxis.set_major_formatter(mticker.FuncFormatter(lambda x,_: f'{int(x):,}'))
+    ax.set_xlim(0, max(df_p[col])*1.15)
     for sp in ['top','right']: ax.spines[sp].set_visible(False)
 plt.tight_layout()
 out_cp = OUTPUT_DIR / f'cobertura_provincia_{MES}.png'
 plt.savefig(out_cp, dpi=600, bbox_inches='tight'); plt.show()
 
-# ── Grafico 2: Cobertura por cadena (3 paneles) ──────────────────────────────
 df_c = cob_cadena.sort_values('n_productos_unicos', ascending=True).reset_index(drop=True)
 fig, axes = plt.subplots(1, 3, figsize=(15, max(8, len(df_c)*0.5+2)), sharey=True)
 for ax, (col, titulo, color) in zip(axes, [
-        ('n_productos_unicos', 'Productos únicos',    '#0055A4'),
-        ('n_provincias',       'Provincias presentes','#27ae60'),
-        ('n_sucursales',       'Sucursales',           '#c0392b'),
-]):
+        ('n_productos_unicos','Productos únicos','#0055A4'),
+        ('n_provincias','Provincias presentes','#27ae60'),
+        ('n_sucursales','Sucursales','#c0392b')]):
     ax.barh(df_c['cadena'], df_c[col], color=color, edgecolor='white')
     for i, v in enumerate(df_c[col]):
-        ax.text(v + max(df_c[col])*0.01, i, f'{int(v):,}',
-                va='center', fontsize=8, color='#2c3e50')
+        ax.text(v+max(df_c[col])*0.01, i, f'{int(v):,}', va='center', fontsize=8, color='#2c3e50')
     ax.set_title(titulo, fontsize=11, fontweight='bold', color=color)
-    ax.xaxis.set_major_formatter(mticker.FuncFormatter(lambda x, _: f'{int(x):,}'))
-    ax.set_xlim(0, max(df_c[col]) * 1.15)
+    ax.xaxis.set_major_formatter(mticker.FuncFormatter(lambda x,_: f'{int(x):,}'))
+    ax.set_xlim(0, max(df_c[col])*1.15)
     for sp in ['top','right']: ax.spines[sp].set_visible(False)
 axes[0].tick_params(axis='y', labelsize=8)
 plt.tight_layout()
 out_cc = OUTPUT_DIR / f'cobertura_cadena_{MES}.png'
 plt.savefig(out_cc, dpi=600, bbox_inches='tight'); plt.show()
 
-# ── Grafico 3: Matriz presencia cadena × provincia (binaria) ─────────────────
 df_m = matriz_cad_prov.copy()
 df_m['_total'] = df_m.sum(axis=1)
 df_m = df_m.sort_values('_total', ascending=False).drop(columns='_total')
@@ -1059,113 +1102,94 @@ df_m = df_m[orden_prov]
 fig, ax = plt.subplots(figsize=(13, max(6, len(df_m)*0.55+2)))
 binaria = (df_m > 0).astype(int)
 sns.heatmap(binaria, cmap='Blues', cbar=False,
-            linewidths=0.5, linecolor='white',
-            xticklabels=True, yticklabels=True, ax=ax)
+            linewidths=0.5, linecolor='white', xticklabels=True, yticklabels=True, ax=ax)
 for i in range(binaria.shape[0]):
     for j in range(binaria.shape[1]):
         if binaria.iat[i, j]:
-            ax.text(j+0.5, i+0.5, '●', ha='center', va='center',
-                    color='white', fontsize=9)
+            ax.text(j+0.5, i+0.5, '●', ha='center', va='center', color='white', fontsize=9)
 ax.set_xlabel(''); ax.set_ylabel('')
-plt.xticks(rotation=45, ha='right', fontsize=9)
-plt.yticks(rotation=0, fontsize=9)
+plt.xticks(rotation=45, ha='right', fontsize=9); plt.yticks(rotation=0, fontsize=9)
 plt.tight_layout()
 out_mp = OUTPUT_DIR / f'matriz_presencia_{MES}.png'
 plt.savefig(out_mp, dpi=600, bbox_inches='tight'); plt.show()
 
-# ── Grafico 4: Matriz intensidad cadena × provincia (log scale) ──────────────
 fig, ax = plt.subplots(figsize=(13, max(6, len(df_m)*0.55+2)))
 data_log = np.log10(df_m.replace(0, np.nan))
-sns.heatmap(data_log, cmap='YlOrRd',
-            linewidths=0.5, linecolor='white',
-            cbar_kws={'label': 'log₁₀(productos únicos)'},
+sns.heatmap(data_log, cmap='YlOrRd', linewidths=0.5, linecolor='white',
+            cbar_kws={'label': 'log10(productos unicos)'},
             xticklabels=True, yticklabels=True, ax=ax)
 ax.set_xlabel(''); ax.set_ylabel('')
-plt.xticks(rotation=45, ha='right', fontsize=9)
-plt.yticks(rotation=0, fontsize=9)
+plt.xticks(rotation=45, ha='right', fontsize=9); plt.yticks(rotation=0, fontsize=9)
 plt.tight_layout()
 out_mi = OUTPUT_DIR / f'matriz_intensidad_{MES}.png'
 plt.savefig(out_mi, dpi=600, bbox_inches='tight'); plt.show()
+print('Gráficos cobertura guardados')"""))
 
-print(f'Graficos cobertura guardados: provincia, cadena, matriz presencia, matriz intensidad')"""))
-
-# CELL 16 — RANKINGS
+# ── CELL 16 — RANKINGS (per-canasta) ──────────────────────────────────────────
 cells.append(cell_code("""\
 # ============================================================
-# CELDA 16 — Ranking de cadenas: nacional + AMBA
+# CELDA 16 — Rankings de cadenas: una por canasta activa
 # ============================================================
 def fmtn(x): return f'{x:,.0f}'.replace(',','.')
 
-rk_nac = (canasta_geo_filtros.groupby('cadena')
-           .agg(n_sucursales=('canasta_total','count'),
-                canasta_promedio=('canasta_total','mean'))
-           .round(0).reset_index())
-rk_nac = rk_nac[rk_nac['n_sucursales'] >= MIN_SUCURSALES_RANKING].sort_values('canasta_promedio')
-prom_nac_rk = canasta_geo_filtros['canasta_total'].mean()
+for _col_id in CANASTAS_ACTIVAS:
+    _name  = CANASTA_NAMES[_col_id]
+    _short = CANASTA_SHORT[_col_id]
+    _cgf   = canasta_geo_dict[_col_id]
 
-amba = canasta_geo_filtros[canasta_geo_filtros['PROVINCIA_NORM'].isin(['Buenos Aires','CABA'])]
-rk_amba = (amba.groupby('cadena')
-            .agg(n_sucursales=('canasta_total','count'),
-                 canasta_promedio=('canasta_total','mean'))
-            .round(0).reset_index())
-rk_amba = rk_amba[rk_amba['n_sucursales'] >= MIN_SUCURSALES_RANKING].sort_values('canasta_promedio')
-prom_amba_rk = amba['canasta_total'].mean() if len(amba) > 0 else 0
+    _rk_nac = (_cgf.groupby('cadena')
+               .agg(n_sucursales=('canasta_total','count'),
+                    canasta_promedio=('canasta_total','mean'))
+               .round(0).reset_index())
+    _rk_nac = _rk_nac[_rk_nac['n_sucursales'] >= MIN_SUCURSALES_RANKING].sort_values('canasta_promedio')
+    _prom_nac_rk = _cgf['canasta_total'].mean()
 
-for (rk, prom_r, titulo, out_name) in [
-        (rk_nac, prom_nac_rk, f'Ranking nacional — {NOMBRE_MES_TITLE}', f'ranking_cadenas_nacional_{MES}'),
-        (rk_amba, prom_amba_rk, f'Ranking AMBA — {NOMBRE_MES_TITLE}', f'ranking_cadenas_amba_{MES}'),
-]:
-    if len(rk) == 0: print(f'Sin datos suficientes para {titulo}'); continue
-    fig, ax = plt.subplots(figsize=(11, max(5, len(rk)*0.5+2)))
-    labs = [f"{r.cadena}  ({int(r.n_sucursales)})" for r in rk.itertuples()]
-    n_c  = len(rk)
-    cols_c = plt.cm.RdYlGn_r(np.linspace(0.1, 0.9, n_c)) if n_c > 1 else ['#0055A4']
-    bars = ax.barh(labs, rk['canasta_promedio'], color=cols_c, edgecolor='black', linewidth=0.4)
-    for bar, val in zip(bars, rk['canasta_promedio']):
-        ax.text(bar.get_width() + rk['canasta_promedio'].max()*0.005,
-                bar.get_y() + bar.get_height()/2,
-                f'${fmtn(val)}', va='center', fontsize=9, fontweight='bold')
-    ax.axvline(prom_r, color='#666', linestyle='--', linewidth=1.5,
-               label=f'Promedio: ${fmtn(prom_r)}')
-    ax.set_xlabel('Canasta promedio (ARS)', fontsize=11)
-    ax.set_xlim(rk['canasta_promedio'].min()*0.95, rk['canasta_promedio'].max()*1.07)
-    ax.xaxis.set_major_formatter(mticker.FuncFormatter(
-        lambda x, _: f'${int(x):,}'.replace(',','.')))
-    ax.legend(loc='lower right', fontsize=10)
-    ax.grid(True, alpha=0.3, axis='x'); ax.set_axisbelow(True)
-    for sp in ['top','right']: ax.spines[sp].set_visible(False)
-    plt.tight_layout()
-    out_r = OUTPUT_DIR / f'{out_name}.png'
-    plt.savefig(out_r, dpi=600, bbox_inches='tight'); plt.show()
-    print(f'Ranking guardado: {out_r}')
+    _amba = _cgf[_cgf['PROVINCIA_NORM'].isin(['Buenos Aires','CABA'])]
+    _rk_amba = (_amba.groupby('cadena')
+                .agg(n_sucursales=('canasta_total','count'),
+                     canasta_promedio=('canasta_total','mean'))
+                .round(0).reset_index())
+    _rk_amba = _rk_amba[_rk_amba['n_sucursales'] >= MIN_SUCURSALES_RANKING].sort_values('canasta_promedio')
+    _prom_amba_rk = _amba['canasta_total'].mean() if len(_amba) > 0 else 0
 
-print('\\n=== RANKING NACIONAL ===')
-for i, r in enumerate(rk_nac.sort_values('canasta_promedio',ascending=False).itertuples(),1):
-    print(f'  {i:>2}. {r.cadena:<25} ${fmtn(r.canasta_promedio):>12}  ({int(r.n_sucursales)} sucs)')"""))
+    for (_rk, _prom_r, _titulo, _out_name) in [
+        (_rk_nac,  _prom_nac_rk,  f'Ranking nacional [{_name}]',  f'ranking_cadenas_nacional_{MES}_{_short}'),
+        (_rk_amba, _prom_amba_rk, f'Ranking AMBA [{_name}]',      f'ranking_cadenas_amba_{MES}_{_short}'),
+    ]:
+        if len(_rk) == 0:
+            print(f'  Sin datos para {_titulo}'); continue
+        fig, ax = plt.subplots(figsize=(11, max(5, len(_rk)*0.5+2)))
+        labs   = [f"{r.cadena}  ({int(r.n_sucursales)})" for r in _rk.itertuples()]
+        _n_c   = len(_rk)
+        _cols  = plt.cm.RdYlGn_r(np.linspace(0.1, 0.9, _n_c)) if _n_c > 1 else [CANASTA_COLORS[_col_id]]
+        bars   = ax.barh(labs, _rk['canasta_promedio'], color=_cols, edgecolor='black', linewidth=0.4)
+        for bar, val in zip(bars, _rk['canasta_promedio']):
+            ax.text(bar.get_width() + _rk['canasta_promedio'].max()*0.005,
+                    bar.get_y()+bar.get_height()/2,
+                    f'${fmtn(val)}', va='center', fontsize=9, fontweight='bold')
+        ax.axvline(_prom_r, color='#666', linestyle='--', linewidth=1.5,
+                   label=f'Promedio: ${fmtn(_prom_r)}')
+        ax.set_xlabel('Canasta promedio (ARS)', fontsize=11)
+        ax.set_xlim(_rk['canasta_promedio'].min()*0.95, _rk['canasta_promedio'].max()*1.07)
+        ax.xaxis.set_major_formatter(mticker.FuncFormatter(
+            lambda x,_: f'${int(x):,}'.replace(',','.')))
+        ax.legend(loc='lower right', fontsize=10)
+        ax.grid(True, alpha=0.3, axis='x'); ax.set_axisbelow(True)
+        for sp in ['top','right']: ax.spines[sp].set_visible(False)
+        plt.tight_layout()
+        _out_r = OUTPUT_DIR / f'{_out_name}.png'
+        plt.savefig(_out_r, dpi=600, bbox_inches='tight'); plt.show()
+        print(f'  Ranking [{_name}] guardado: {_out_r.name}')
 
-# CELL 17 — FOLIUM
+    print(f'\\n  === RANKING NACIONAL [{_name}] ===')
+    for i, r in enumerate(_rk_nac.sort_values('canasta_promedio', ascending=False).itertuples(), 1):
+        print(f'    {i:>2}. {r.cadena:<25} ${fmtn(r.canasta_promedio):>12}  ({int(r.n_sucursales)} sucs)')"""))
+
+# ── CELL 17 — FOLIUM MAPS (one per canasta) ────────────────────────────────────
 cells.append(cell_code("""\
 # ============================================================
-# CELDA 17 — Mapa interactivo Folium por sucursal
+# CELDA 17 — Mapas Folium interactivos: uno por canasta activa
 # ============================================================
-cgf = canasta_geo_filtros.copy()
-vmin_m = cgf['canasta_total'].quantile(0.05)
-vmax_m = cgf['canasta_total'].quantile(0.95)
-
-m = folium.Map(location=[-38.0,-63.5], zoom_start=5,
-               tiles='cartodbpositron', control_scale=True)
-
-folium.map.Marker(
-    location=[-51.7963,-59.5236],
-    icon=folium.DivIcon(icon_size=(140,28), icon_anchor=(70,14),
-        html='<div style="background:rgba(255,255,255,.95);border:1px solid #777;border-radius:3px;padding:3px 7px;font-family:Arial;font-size:11px;font-weight:600;text-align:center;white-space:nowrap;">Islas Malvinas (ARG)</div>')
-).add_to(m)
-
-cm_m = LinearColormap(
-    colors=['#1a9850','#66bd63','#a6d96a','#fee08b','#fdae61','#f46d43','#d73027'],
-    vmin=vmin_m, vmax=vmax_m, caption=f'Canasta {NOMBRE_MES_TITLE} (ARS)')
-cm_m.add_to(m)
-
 def fmtm(x): return f'{x:,.0f}'.replace(',','.')
 
 def det_html(det):
@@ -1177,7 +1201,10 @@ def det_html(det):
         for nom,qty,pre,sub,esp in items:
             st = '' if esp else 'color:#888;font-style:italic;'
             mk = '' if esp else ' *'
-            rows.append(f'<tr style="{st}"><td style="padding:2px 5px;">{nom}{mk}</td><td style="padding:2px 5px;text-align:center;">x{qty}</td><td style="padding:2px 5px;text-align:right;">${fmtm(pre)}</td><td style="padding:2px 5px;text-align:right;font-weight:600;">${fmtm(sub)}</td></tr>')
+            rows.append(f'<tr style="{st}"><td style="padding:2px 5px;">{nom}{mk}</td>'
+                        f'<td style="padding:2px 5px;text-align:center;">x{qty}</td>'
+                        f'<td style="padding:2px 5px;text-align:right;">${fmtm(pre)}</td>'
+                        f'<td style="padding:2px 5px;text-align:right;font-weight:600;">${fmtm(sub)}</td></tr>')
     return ('<table style="width:100%;border-collapse:collapse;font-size:10px;font-family:Arial;">'
             '<thead><tr style="background:#e6eef7;font-weight:bold;">'
             '<th style="padding:3px 5px;text-align:left;">Producto</th>'
@@ -1187,94 +1214,111 @@ def det_html(det):
             f'<tbody>{"".join(rows)}</tbody></table>'
             '<div style="font-size:9px;color:#666;margin-top:4px;">* Precio imputado promedio nacional.</div>')
 
-cads_u = sorted(cgf['cadena'].unique())
-provs_u = sorted(cgf['PROVINCIA_NORM'].unique())
-tipos_u = sorted([t for t in cgf['sucursales_tipo'].dropna().unique() if t and t != 'Web'])
+for _col_id in CANASTAS_ACTIVAS:
+    _name  = CANASTA_NAMES[_col_id]
+    _short = CANASTA_SHORT[_col_id]
+    _cgf   = canasta_geo_dict[_col_id]
+    _n_can = len(CANASTAS[_col_id])
 
-fgs = {c: folium.FeatureGroup(name=f'🏪 {c} ({(cgf["cadena"]==c).sum()})', show=True) for c in cads_u}
+    if len(_cgf) == 0:
+        print(f'  [{_name}] Sin sucursales — saltear mapa Folium'); continue
 
-for _, row in cgf.iterrows():
-    val = row['canasta_total']
-    col = cm_m(max(vmin_m, min(vmax_m, val)))
-    cad = row['cadena']
-    tip = str(row.get('sucursales_tipo') or 'N/D')
-    prv = row['PROVINCIA_NORM']
-    tooltip_t = f"<b>{cad}</b><br>{prv}<br><b>${fmtm(val)}</b> · {tip}"
-    dh = det_html(row['detalle_productos'])
-    popup_h = (f'<div style="font-family:Arial;font-size:12px;width:420px;max-height:500px;overflow-y:auto;">'
-               f'<h4 style="margin:0;color:#0055A4;">{cad}</h4>'
-               f'<div style="font-size:11px;color:#555;margin-bottom:5px;"><b>{row["sucursales_nombre"]}</b><br>'
-               f'{row.get("sucursales_barrio") or row.get("sucursales_localidad") or "N/D"} — {prv}<br>'
-               f'<span style="background:#e6eef7;padding:2px 6px;border-radius:3px;font-size:10px;">{tip}</span></div>'
-               f'<hr style="margin:5px 0;">'
-               f'<div style="text-align:center;margin:8px 0;">'
-               f'<span style="font-size:11px;color:#666;">Canasta total</span><br>'
-               f'<span style="color:#0055A4;font-size:20px;font-weight:bold;">${fmtm(val)}</span><br>'
-               f'<span style="font-size:10px;color:#888;">({row["productos_propios"]}/{N_CANASTA} productos propios)</span></div>'
-               f'<hr style="margin:5px 0;">{dh}</div>')
-    cl = f'sucursal-marker cadena-{cad.replace(" ","_").replace("(","").replace(")","").replace("/","")} prov-{prv.replace(" ","_").replace("(","").replace(")","")}'
-    folium.CircleMarker(
-        location=[row['sucursales_latitud'], row['sucursales_longitud']],
-        radius=5, color=col, fill=True, fillColor=col, fillOpacity=0.8, weight=1,
-        tooltip=tooltip_t, popup=folium.Popup(popup_h, max_width=450), className=cl
-    ).add_to(fgs[cad])
+    _vmin = _cgf['canasta_total'].quantile(0.05)
+    _vmax = _cgf['canasta_total'].quantile(0.95)
+    if _vmin == _vmax:
+        _vmin = _cgf['canasta_total'].min()
+        _vmax = _cgf['canasta_total'].max()
 
-for fg in fgs.values(): fg.add_to(m)
-folium.LayerControl(position='topright', collapsed=False).add_to(m)
-m.get_root().html.add_child(folium.Element(
-    '<script>setTimeout(function(){document.querySelectorAll(".leaflet-control-layers-base,.leaflet-control-layers-separator").forEach(e=>e.style.display="none");},500);</script>'))
+    m = folium.Map(location=[-38.0,-63.5], zoom_start=5,
+                   tiles='cartodbpositron', control_scale=True)
+    folium.map.Marker(
+        location=[-51.7963,-59.5236],
+        icon=folium.DivIcon(icon_size=(140,28), icon_anchor=(70,14),
+            html='<div style="background:rgba(255,255,255,.95);border:1px solid #777;border-radius:3px;padding:3px 7px;font-family:Arial;font-size:11px;font-weight:600;text-align:center;white-space:nowrap;">Islas Malvinas (ARG)</div>')
+    ).add_to(m)
 
-prov_opts = ''.join([f'<option value="prov-{p.replace(" ","_")}">{p}</option>' for p in provs_u])
-tipo_opts = ''.join([f'<option value="tipo-{t.replace(" ","_")}">{t}</option>' for t in tipos_u])
-info_h = (f'<div style="position:fixed;top:10px;left:50px;width:340px;background:white;border:2px solid #0055A4;'
-          f'border-radius:8px;padding:12px 15px;font-family:Arial;z-index:9999;box-shadow:0 2px 8px rgba(0,0,0,.15);">'
-          f'<div style="color:#0055A4;font-size:15px;font-weight:bold;margin-bottom:5px;">'
-          f'Canasta SEPA por sucursal — {NOMBRE_MES_TITLE}</div>'
-          f'<div style="font-size:11px;color:#555;line-height:1.5;">'
-          f'<b>{len(cgf):,}</b> sucursales · <b>{len(cads_u)}</b> cadenas · <b>{len(provs_u)}</b> provincias<br>'
-          f'Promedio nacional: <b>${fmtm(cgf["canasta_total"].mean())}</b></div>'
-          f'<div style="font-size:10px;color:#888;margin-top:6px;padding-top:6px;border-top:1px solid #eee;">'
-          f'🏪 Cadenas: panel der. · 📍 Prov/Tipo: panel inf. izq. · Click para detalle</div></div>')
-m.get_root().html.add_child(folium.Element(info_h))
+    cm_m = LinearColormap(
+        colors=['#1a9850','#66bd63','#a6d96a','#fee08b','#fdae61','#f46d43','#d73027'],
+        vmin=_vmin, vmax=_vmax, caption=f'{_name} — {NOMBRE_MES_TITLE} (ARS)')
+    cm_m.add_to(m)
 
-filtros_h = (
-    f'<div id="pf" style="position:fixed;bottom:25px;left:50px;width:270px;background:white;'
-    f'border:2px solid #0055A4;border-radius:8px;padding:12px 15px;font-family:Arial;z-index:9999;'
-    f'box-shadow:0 2px 8px rgba(0,0,0,.15);">'
-    f'<div style="color:#0055A4;font-size:13px;font-weight:bold;margin-bottom:8px;">🔍 Filtros</div>'
-    f'<label style="font-size:11px;color:#555;display:block;margin-top:6px;">Provincia:'
-    f'<select id="fp" style="width:100%;padding:4px;font-size:11px;margin-top:3px;">'
-    f'<option value="all">Todas</option>{prov_opts}</select></label>'
-    f'<label style="font-size:11px;color:#555;display:block;margin-top:6px;">Tipo:'
-    f'<select id="ft" style="width:100%;padding:4px;font-size:11px;margin-top:3px;">'
-    f'<option value="all">Todos</option>{tipo_opts}</select></label>'
-    f'<button id="fr" style="width:100%;margin-top:10px;padding:6px;background:#f0f0f0;color:#555;'
-    f'border:1px solid #ccc;border-radius:4px;font-size:11px;cursor:pointer;">Restablecer</button>'
-    f'<div id="fr2" style="font-size:10px;color:#888;margin-top:8px;padding-top:6px;'
-    f'border-top:1px solid #eee;text-align:center;">Mostrando todas</div></div>'
-    '<script>function apl(){var p=document.getElementById("fp").value,t=document.getElementById("ft").value,v=0,tot=0;'
-    'document.querySelectorAll(".sucursal-marker").forEach(function(el){'
-    'tot++;var c=el.className.baseVal||el.className||"",'
-    'mp=(p==="all")||c.indexOf(p)>=0,mt=(t==="all")||c.indexOf(t)>=0;'
-    'if(mp&&mt){el.style.display="";v++;}else{el.style.display="none";}});'
-    'var d=document.getElementById("fr2");if(d)d.innerHTML=v===tot?"Mostrando todas ("+tot+")":"Mostrando "+v+" de "+tot;}'
-    'function rst(){document.getElementById("fp").value="all";document.getElementById("ft").value="all";'
-    'document.querySelectorAll(".sucursal-marker").forEach(e=>e.style.display="");'
-    'var d=document.getElementById("fr2");if(d)d.innerHTML="Mostrando todas";}'
-    'setTimeout(function(){var sp=document.getElementById("fp"),st=document.getElementById("ft"),btn=document.getElementById("fr");'
-    'if(sp)sp.addEventListener("change",apl);if(st)st.addEventListener("change",apl);if(btn)btn.addEventListener("click",rst);},1000);</script>'
-)
-m.get_root().html.add_child(folium.Element(filtros_h))
+    cads_u  = sorted(_cgf['cadena'].unique())
+    provs_u = sorted(_cgf['PROVINCIA_NORM'].unique())
+    tipos_u = sorted([t for t in _cgf['sucursales_tipo'].dropna().unique() if t and t != 'Web'])
+    fgs = {c: folium.FeatureGroup(name=f'🏪 {c} ({(_cgf["cadena"]==c).sum()})', show=True) for c in cads_u}
 
-out_map = OUTPUT_DIR / f'mapa_interactivo_{MES}.html'
-m.save(str(out_map))
-print(f'Mapa guardado: {out_map}  ({len(cgf):,} sucursales)')
-m"""))
+    for _, row in _cgf.iterrows():
+        val = row['canasta_total']
+        col = cm_m(max(_vmin, min(_vmax, val)))
+        cad = row['cadena']
+        tip = str(row.get('sucursales_tipo') or 'N/D')
+        prv = row['PROVINCIA_NORM']
+        popup_h = (f'<div style="font-family:Arial;font-size:12px;width:420px;max-height:500px;overflow-y:auto;">'
+                   f'<h4 style="margin:0;color:#0055A4;">{cad} — {_name}</h4>'
+                   f'<div style="font-size:11px;color:#555;margin-bottom:5px;">'
+                   f'<b>{row["sucursales_nombre"]}</b><br>'
+                   f'{row.get("sucursales_barrio") or row.get("sucursales_localidad") or "N/D"} — {prv}<br>'
+                   f'<span style="background:#e6eef7;padding:2px 6px;border-radius:3px;font-size:10px;">{tip}</span></div>'
+                   f'<hr style="margin:5px 0;">'
+                   f'<div style="text-align:center;margin:8px 0;">'
+                   f'<span style="font-size:11px;color:#666;">Canasta {_name}</span><br>'
+                   f'<span style="color:#0055A4;font-size:20px;font-weight:bold;">${fmtm(val)}</span><br>'
+                   f'<span style="font-size:10px;color:#888;">({row["productos_propios"]}/{_n_can} productos propios)</span></div>'
+                   f'<hr style="margin:5px 0;">{det_html(row["detalle_productos"])}</div>')
+        cl = (f'sucursal-marker cadena-{cad.replace(" ","_").replace("(","").replace(")","").replace("/","")}'
+              f' prov-{prv.replace(" ","_").replace("(","").replace(")","").replace("/","")}')
+        folium.CircleMarker(
+            location=[row['sucursales_latitud'], row['sucursales_longitud']],
+            radius=5, color=col, fill=True, fillColor=col, fillOpacity=0.8, weight=1,
+            tooltip=f'<b>{cad}</b><br>{prv}<br><b>${fmtm(val)}</b>',
+            popup=folium.Popup(popup_h, max_width=450), className=cl
+        ).add_to(fgs[cad])
 
-# CELL 18 — CABA
+    for fg in fgs.values(): fg.add_to(m)
+    folium.LayerControl(position='topright', collapsed=False).add_to(m)
+
+    prov_opts = ''.join([f'<option value="prov-{p.replace(" ","_")}">{p}</option>' for p in provs_u])
+    tipo_opts = ''.join([f'<option value="tipo-{t.replace(" ","_")}">{t}</option>' for t in tipos_u])
+    info_h = (f'<div style="position:fixed;top:10px;left:50px;width:320px;background:white;border:2px solid #0055A4;'
+              f'border-radius:8px;padding:12px 15px;font-family:Arial;z-index:9999;box-shadow:0 2px 8px rgba(0,0,0,.15);">'
+              f'<div style="color:#0055A4;font-size:15px;font-weight:bold;margin-bottom:5px;">ICM-UADE {_name} — {NOMBRE_MES_TITLE}</div>'
+              f'<div style="font-size:11px;color:#555;line-height:1.5;">'
+              f'<b>{len(_cgf):,}</b> sucursales · <b>{len(cads_u)}</b> cadenas · <b>{len(provs_u)}</b> provincias<br>'
+              f'Promedio: <b>${fmtm(_cgf["canasta_total"].mean())}</b></div></div>')
+    m.get_root().html.add_child(folium.Element(info_h))
+
+    filtros_h = (
+        f'<div id="pf" style="position:fixed;bottom:25px;left:50px;width:270px;background:white;'
+        f'border:2px solid #0055A4;border-radius:8px;padding:12px 15px;font-family:Arial;z-index:9999;">'
+        f'<div style="color:#0055A4;font-size:13px;font-weight:bold;margin-bottom:8px;">🔍 Filtros</div>'
+        f'<label style="font-size:11px;color:#555;display:block;margin-top:6px;">Provincia:'
+        f'<select id="fp" style="width:100%;padding:4px;font-size:11px;margin-top:3px;">'
+        f'<option value="all">Todas</option>{prov_opts}</select></label>'
+        f'<label style="font-size:11px;color:#555;display:block;margin-top:6px;">Tipo:'
+        f'<select id="ft" style="width:100%;padding:4px;font-size:11px;margin-top:3px;">'
+        f'<option value="all">Todos</option>{tipo_opts}</select></label>'
+        f'<button id="fr" style="width:100%;margin-top:10px;padding:6px;background:#f0f0f0;'
+        f'border:1px solid #ccc;border-radius:4px;font-size:11px;cursor:pointer;">Restablecer</button></div>'
+        '<script>function apl(){var p=document.getElementById("fp").value,t=document.getElementById("ft").value;'
+        'document.querySelectorAll(".sucursal-marker").forEach(function(el){'
+        'var c=el.className.baseVal||el.className||"",'
+        'mp=(p==="all")||c.indexOf(p)>=0,mt=(t==="all")||c.indexOf("tipo-"+t.replace("tipo-",""))>=0;'
+        'el.style.display=(mp&&mt)?"":"none";});}'
+        'setTimeout(function(){var sp=document.getElementById("fp"),st=document.getElementById("ft"),btn=document.getElementById("fr");'
+        'if(sp)sp.addEventListener("change",apl);if(st)st.addEventListener("change",apl);'
+        'if(btn)btn.addEventListener("click",function(){sp.value="all";st.value="all";'
+        'document.querySelectorAll(".sucursal-marker").forEach(e=>e.style.display="");});},1000);</script>'
+    )
+    m.get_root().html.add_child(folium.Element(filtros_h))
+
+    out_map = OUTPUT_DIR / f'mapa_interactivo_{MES}_{_short}.html'
+    m.save(str(out_map))
+    print(f'  Mapa [{_name}] guardado: {out_map.name}  ({len(_cgf):,} sucursales)')"""))
+
+# ── CELL 18 — CABA RANKINGS (per-canasta) ─────────────────────────────────────
 cells.append(cell_code("""\
 # ============================================================
-# CELDA 18 — Ranking de barrios de CABA
+# CELDA 18 — Ranking de barrios CABA para cada canasta
 # ============================================================
 BARRIOS_BBOX = {
     'Agronomia':           (-34.604,-34.587,-58.498,-58.476),
@@ -1327,54 +1371,52 @@ BARRIOS_BBOX = {
     'Villa Urquiza':       (-34.590,-34.565,-58.495,-58.470),
 }
 
-caba = canasta_geo_filtros[canasta_geo_filtros['PROVINCIA_NORM'] == 'CABA'].copy()
-print(f'Sucursales CABA: {len(caba)}')
-
 def det_barrio(lat, lon):
     if pd.isna(lat) or pd.isna(lon): return 'Sin clasificar'
     for b,(lmin,lmax,lonmin,lonmax) in BARRIOS_BBOX.items():
-        if lmin <= lat <= lmax and lonmin <= lon <= lonmax:
-            return b
+        if lmin <= lat <= lmax and lonmin <= lon <= lonmax: return b
     return 'Sin clasificar'
-
-caba['barrio'] = caba.apply(lambda r: det_barrio(r['sucursales_latitud'],r['sucursales_longitud']), axis=1)
-print(f'  Asignados: {(caba["barrio"] != "Sin clasificar").sum()} | Sin clasificar: {(caba["barrio"] == "Sin clasificar").sum()}')
-
-rk_b = (caba[caba['barrio'] != 'Sin clasificar']
-        .groupby('barrio')
-        .agg(n_sucs=('canasta_total','count'),
-             promedio=('canasta_total','mean'),
-             mediana=('canasta_total','median'),
-             minimo=('canasta_total','min'),
-             maximo=('canasta_total','max'))
-        .round(0).sort_values('promedio'))
-rk_b_fil = rk_b[rk_b['n_sucs'] >= 2]
-
-pc = caba['canasta_total'].mean()
-pp = canasta_geo_filtros['canasta_total'].mean()
 
 def fmtb(x): return f'${x:,.0f}'.replace(',','.')
 
-print(f'\\n{"="*78}')
-print(f'  RANKING DE BARRIOS CABA — {NOMBRE_MES_TITLE.upper()}')
-print(f'{"="*78}')
-print(f'\\n  {"#":<3} {"Barrio":<22} {"Sucs.":<7} {"Promedio":<13} {"vs CABA":<10} {"vs Pais"}')
-print(f'  {"-"*70}')
-for i, (b, r) in enumerate(rk_b_fil.iterrows(), 1):
-    vc = (r["promedio"]/pc-1)*100
-    vp = (r["promedio"]/pp-1)*100
-    print(f'  {i:<3} {b:<22} {int(r["n_sucs"]):<7} {fmtb(r["promedio"]):<13} {vc:+.2f}%  {vp:+.2f}%')
-print(f'  {"-"*70}')
-print(f'  Promedio CABA: {fmtb(pc)}   Promedio pais: {fmtb(pp)}')
+for _col_id in CANASTAS_ACTIVAS:
+    _name  = CANASTA_NAMES[_col_id]
+    _cgf   = canasta_geo_dict[_col_id]
+    _caba  = _cgf[_cgf['PROVINCIA_NORM'] == 'CABA'].copy()
+    if len(_caba) == 0:
+        print(f'  [{_name}] Sin sucursales en CABA'); continue
 
-barrios_sin = set(BARRIOS_BBOX.keys()) - set(rk_b.index)
-if barrios_sin:
-    print(f'\\n  Sin sucursales relevadas ({len(barrios_sin)}): {", ".join(sorted(barrios_sin))}')"""))
+    _caba['barrio'] = _caba.apply(
+        lambda r: det_barrio(r['sucursales_latitud'], r['sucursales_longitud']), axis=1)
+    _rk_b = (_caba[_caba['barrio'] != 'Sin clasificar']
+             .groupby('barrio')
+             .agg(n_sucs=('canasta_total','count'),
+                  promedio=('canasta_total','mean'),
+                  mediana=('canasta_total','median'))
+             .round(0).sort_values('promedio'))
+    _rk_b_fil = _rk_b[_rk_b['n_sucs'] >= 2]
+    _pc = _caba['canasta_total'].mean()
+    _pp = _cgf['canasta_total'].mean()
 
-# CELL 19 — EXPORT
+    print(f'\\n{"="*78}')
+    print(f'  RANKING BARRIOS CABA [{_name.upper()}] — {NOMBRE_MES_TITLE}')
+    print(f'{"="*78}')
+    print(f'  {"#":<3} {"Barrio":<22} {"Sucs.":<7} {"Promedio":<13} {"vs CABA":<10} {"vs Pais"}')
+    print(f'  {"-"*70}')
+    for i, (b, r) in enumerate(_rk_b_fil.iterrows(), 1):
+        vc = (r["promedio"]/max(_pc,1)-1)*100
+        vp = (r["promedio"]/max(_pp,1)-1)*100
+        print(f'  {i:<3} {b:<22} {int(r["n_sucs"]):<7} {fmtb(r["promedio"]):<13} {vc:+.2f}%  {vp:+.2f}%')
+    print(f'  {"-"*70}')
+    print(f'  Promedio CABA: {fmtb(_pc)}   Promedio pais: {fmtb(_pp)}')
+    _sin = set(BARRIOS_BBOX.keys()) - set(_rk_b.index)
+    if _sin:
+        print(f'  Sin sucursales ({len(_sin)}): {", ".join(sorted(_sin))}')"""))
+
+# ── CELL 19 — EXCEL EXPORT (multi-canasta) ────────────────────────────────────
 cells.append(cell_code("""\
 # ============================================================
-# CELDA 19 — Exportacion Excel consolidado
+# CELDA 19 — Exportación Excel multi-canasta
 # ============================================================
 from openpyxl.styles import Font, PatternFill, Alignment
 from openpyxl.utils import get_column_letter
@@ -1389,106 +1431,131 @@ def fmt_ws(ws):
     for cell in ws[1]:
         cell.fill = HDR_FILL; cell.font = HDR_FONT; cell.alignment = HDR_ALIG
 
-comp_exp = comparativa[['mes','canasta_nacional_ponderada','variacion_mensual_%',
-                         'ipc_general','ipc_general_var_%','ipc_alimentos',
-                         'ipc_alimentos_var_%','indice_canasta_base100']].copy()
-
-# ── Hoja Serie_precios: precio mediano por producto por mes (de df_hist) ─────
-_sp = df_hist[['ean_norm','anio_mes','precio_mediano','qty','costo_item']].copy()
-_sp['id_producto'] = _sp['ean_norm'].apply(lambda e: e.zfill(13))
-_sp['descripcion'] = _sp['ean_norm'].map(lambda e: CANASTA.get(e,('',0,''))[0])
-_sp['categoria']   = _sp['ean_norm'].map(lambda e: CANASTA.get(e,('',0,'?'))[2])
-serie_precios_exp = (
-    _sp[['anio_mes','id_producto','descripcion','categoria','qty','precio_mediano','costo_item']]
-    .rename(columns={'anio_mes':'mes'})
-    .sort_values(['id_producto','mes'])
-    .reset_index(drop=True)
-)
-del _sp
-
-prov_exp = serie_provincia_valida.copy()
-prov_exp['vs_promedio_%'] = ((prov_exp['canasta_total'] / prom_nac_ponderado) - 1) * 100
-prov_exp = prov_exp.sort_values('canasta_total').reset_index(drop=True)
-
-suc_exp = canasta_geo_filtros[[
-    'id_comercio','id_bandera','id_sucursal','cadena','PROVINCIA_NORM',
-    'sucursales_nombre','sucursales_localidad','sucursales_barrio',
-    'sucursales_latitud','sucursales_longitud','sucursales_tipo',
-    'canasta_total','productos_propios'
-]].sort_values(['PROVINCIA_NORM','cadena','canasta_total']).copy()
-
-rk_exp = rk_nac.sort_values('canasta_promedio', ascending=False).copy()
-rk_exp['vs_promedio_%'] = ((rk_exp['canasta_promedio'] / prom_nac_rk) - 1) * 100
+def auto_widths(ws):
+    for ci in range(1, ws.max_column+1):
+        cl  = get_column_letter(ci)
+        hdr = str(ws.cell(1,ci).value or '').lower()
+        w   = 28 if any(x in hdr for x in ('nombre','provincia','cadena','barrio')) else (42 if 'desc' in hdr else 14)
+        ws.column_dimensions[cl].width = w
+        if any(x in hdr for x in ('canasta','precio','ipc','costo','promedio','mediana')):
+            for row in ws.iter_rows(min_row=2, max_row=ws.max_row, min_col=ci, max_col=ci):
+                for cell in row: cell.number_format = '#,##0.00'
+        elif '%' in hdr:
+            for row in ws.iter_rows(min_row=2, max_row=ws.max_row, min_col=ci, max_col=ci):
+                for cell in row: cell.number_format = '+0.00"%"'
 
 out_xls = OUTPUT_DIR / f'canasta_analisis_{ULTIMO_MES}.xlsx'
 with pd.ExcelWriter(out_xls, engine='openpyxl') as writer:
-    comp_exp.to_excel        (writer, sheet_name='Evolucion_IPC',   index=False)
-    prov_exp.to_excel        (writer, sheet_name='Por_provincia',   index=False)
-    suc_exp.to_excel         (writer, sheet_name='Por_sucursal',    index=False)
-    rk_exp.to_excel          (writer, sheet_name='Ranking_cadenas', index=False)
-    serie_precios_exp.to_excel(writer, sheet_name='Serie_precios',  index=False)
-    for sn in ['Evolucion_IPC','Por_provincia','Por_sucursal','Ranking_cadenas','Serie_precios']:
+
+    # ── Hoja Evolucion_IPC: todas las canastas + IPC en una tabla ──────────
+    _ipc_base = ipc[['mes','ipc_general','ipc_general_var_%',
+                      'ipc_alimentos','ipc_alimentos_var_%']].copy()
+    _evo = _ipc_base
+    for _col_id in CANASTAS_ACTIVAS:
+        if len(serie_nac_dict[_col_id]) == 0: continue
+        _sn = serie_nac_dict[_col_id][['mes','canasta_nacional_ponderada','variacion_mensual_%']].copy()
+        _n  = CANASTA_SHORT[_col_id]
+        _sn = _sn.rename(columns={
+            'canasta_nacional_ponderada': f'canasta_{_n}',
+            'variacion_mensual_%':        f'var_{_n}_%'
+        })
+        _evo = _evo.merge(_sn, on='mes', how='outer')
+    _evo = _evo.sort_values('mes').reset_index(drop=True)
+    _evo.to_excel(writer, sheet_name='Evolucion_IPC', index=False)
+
+    # ── Hoja por canasta: Provincias y Ranking ──────────────────────────────
+    for _col_id in CANASTAS_ACTIVAS:
+        _name  = CANASTA_NAMES[_col_id]
+        _short = CANASTA_SHORT[_col_id]
+        _spv   = serie_prov_dict[_col_id].copy()
+        _prom  = prom_nac_dict[_col_id]
+        _spv['vs_promedio_%'] = ((_spv['canasta_total'] / _prom) - 1) * 100
+        _spv.sort_values('canasta_total').to_excel(
+            writer, sheet_name=f'Prov_{_short}', index=False)
+
+        _cgf = canasta_geo_dict[_col_id]
+        _rk  = (_cgf.groupby('cadena')
+                .agg(n_sucursales=('canasta_total','count'),
+                     canasta_promedio=('canasta_total','mean'))
+                .round(0).reset_index()
+                .sort_values('canasta_promedio', ascending=False))
+        _rk['vs_promedio_%'] = ((_rk['canasta_promedio'] / _cgf['canasta_total'].mean()) - 1) * 100
+        _rk.to_excel(writer, sheet_name=f'Ranking_{_short}', index=False)
+
+        _suc_exp = _cgf[[
+            'id_comercio','id_bandera','id_sucursal','cadena','PROVINCIA_NORM',
+            'sucursales_nombre','sucursales_localidad','sucursales_barrio',
+            'sucursales_latitud','sucursales_longitud','sucursales_tipo',
+            'canasta_total','productos_propios'
+        ]].sort_values(['PROVINCIA_NORM','cadena','canasta_total']).copy()
+        _suc_exp.to_excel(writer, sheet_name=f'Sucs_{_short}', index=False)
+
+    # ── Hoja Serie_precios: precio mediano por canasta x mes x producto ─────
+    _sp_rows = []
+    for _col_id, _canasta in CANASTAS.items():
+        _eans = set(_canasta.keys())
+        _dh   = df_hist_raw[df_hist_raw['ean_norm'].isin(_eans)].copy()
+        _dh['id_producto']  = _dh['ean_norm'].apply(lambda e: e.zfill(13))
+        _dh['descripcion']  = _dh['ean_norm'].map(lambda e, c=_canasta: c.get(e,('',0,''))[0])
+        _dh['categoria']    = _dh['ean_norm'].map(lambda e, c=_canasta: c.get(e,('',0,'?'))[2])
+        _dh['qty']          = _dh['ean_norm'].map(lambda e, c=_canasta: c.get(e,('',0,''))[1])
+        _dh['costo_item']   = _dh['precio_mediano'] * _dh['qty']
+        _dh['canasta_id']   = _col_id
+        _dh['canasta_name'] = CANASTA_NAMES[_col_id]
+        _sp_rows.append(_dh[['canasta_id','canasta_name','anio_mes',
+                              'id_producto','descripcion','categoria',
+                              'qty','precio_mediano','costo_item']])
+    if _sp_rows:
+        _sp_all = pd.concat(_sp_rows, ignore_index=True).sort_values(
+            ['canasta_id','id_producto','anio_mes']).reset_index(drop=True)
+        _sp_all = _sp_all.rename(columns={'anio_mes':'mes'})
+        _sp_all.to_excel(writer, sheet_name='Serie_precios', index=False)
+
+    # ── Formato ──────────────────────────────────────────────────────────────
+    for sn in writer.sheets:
         ws = writer.sheets[sn]
         fmt_ws(ws)
-        for ci in range(1, ws.max_column+1):
-            cl = get_column_letter(ci)
-            hdr = str(ws.cell(1,ci).value or '').lower()
-            w = 28 if any(x in hdr for x in ('nombre','provincia','cadena')) else (42 if 'desc' in hdr else 14)
-            ws.column_dimensions[cl].width = w
-            if any(x in hdr for x in ('canasta','precio','ipc','costo')):
-                for row in ws.iter_rows(min_row=2,max_row=ws.max_row,min_col=ci,max_col=ci):
-                    for cell in row: cell.number_format = '#,##0.00'
-            elif '%' in hdr:
-                for row in ws.iter_rows(min_row=2,max_row=ws.max_row,min_col=ci,max_col=ci):
-                    for cell in row: cell.number_format = '+0.00"%"'
+        auto_widths(ws)
 
 print(f'Excel guardado: {out_xls}')
 print()
 print('='*65)
-print(f'  RESUMEN — CANASTA {NOMBRE_MES_TITLE.upper()}')
+print(f'  RESUMEN — {NOMBRE_MES_TITLE.upper()}')
 print('='*65)
-print(f'  Productos:            {N_CANASTA}')
-print(f'  Sucursales validas:   {len(canasta_geo_filtros):,}')
-print(f'  Cadenas:              {canasta_geo_filtros["cadena"].nunique()}')
-print(f'  Provincias:           {canasta_geo_filtros["PROVINCIA_NORM"].nunique()}')
-print(f'  Promedio nacional:    ${prom_nac_ponderado:,.0f}')
-print(f'  Serie historica:      {serie_nacional_valida["mes"].min()} -> {serie_nacional_valida["mes"].max()}')
+for _col_id in CANASTAS_ACTIVAS:
+    _name = CANASTA_NAMES[_col_id]
+    _cgf  = canasta_geo_dict[_col_id]
+    _prom = prom_nac_dict[_col_id]
+    _sn   = serie_nac_dict[_col_id]
+    _rng  = f'{_sn["mes"].min()} -> {_sn["mes"].max()}' if len(_sn) > 0 else 'sin historia'
+    print(f'  [{_name}] {len(_cgf):,} sucs | Promedio: ${_prom:,.0f} | Serie: {_rng}')
 print('='*65)"""))
 
-# CELL 20 — DIAGNOSTIC: temporal traceability of Candidatos
+# ── CELL 20 — DIAGNOSTIC: trazabilidad temporal de Candidatos ──────────────────
 cells.append(cell_code("""\
 # ============================================================
 # CELDA 20 — DIAGNÓSTICO: Trazabilidad temporal de Candidatos
 # ============================================================
-# Escanea los ZIPs históricos leyendo SOLO la columna id_producto
-# (sin precios — mucho más rápido) para determinar en cuántos
-# meses aparece cada producto de la hoja Candidatos.
-# Útil para elegir productos estables para la canasta.
-#
-# Tiempo estimado: ~15-20 min (vs ~60 min de la serie histórica
-# completa, porque no lee las columnas de precio).
-# ============================================================
+# Lee hoja Candidatos, escanea ZIPs con usecols=['id_producto'] solo
+# (~15-20 min). Muestra qué candidatos son estables históricamente.
+# No modifica ninguna canasta — es solo informativo.
 
-# ── 1. Leer hoja Candidatos ──────────────────────────────────
 try:
     df_cand = pd.read_excel(CANASTA_EXCEL, sheet_name='Candidatos',
                             dtype={'id_producto': str})
     df_cand['ean_norm'] = df_cand['id_producto'].str.lstrip('0')
     CAND_EANS = set(df_cand['ean_norm'])
-    print(f'Candidatos cargados: {len(CAND_EANS):,} EANs unicos')
+    print(f'Candidatos cargados: {len(CAND_EANS):,} EANs únicos')
 except Exception as _e:
     raise RuntimeError(f'No se pudo leer hoja Candidatos: {_e}')
 
-# ── 2. Escanear ZIPs (solo id_producto) ─────────────────────
-_presencia   = {}   # ean_norm → set de meses donde aparece
-_meses_vis   = []
-
+_presencia = {}
+_meses_vis = []
 for _zip_path, _anio, _sem in detectar_semestres():
     _meses = archivos_por_mes(_zip_path)
     for (_anio_m, _mes_m), _archs in sorted(_meses.items()):
         _lbl = f'{_anio_m}-{_mes_m:02d}'
-        if _lbl < MES_INICIO_HISTORICO:
-            continue
+        if _lbl < MES_INICIO_HISTORICO: continue
         _meses_vis.append(_lbl)
         _found = set()
         for _archivo in sorted(_archs):
@@ -1510,36 +1577,23 @@ for _zip_path, _anio, _sem in detectar_semestres():
 _n_meses = len(set(_meses_vis))
 _mes_min  = min(_meses_vis) if _meses_vis else MES_INICIO_HISTORICO
 _mes_max  = max(_meses_vis) if _meses_vis else ULTIMO_MES
-print(f'\\nTotal meses escaneados: {_n_meses} ({_mes_min} -> {_mes_max})')
 
-# ── 3. Construir tabla de trazabilidad ───────────────────────
 _rows = []
 for _ean, _mp in _presencia.items():
-    _rows.append({
-        'ean_norm'         : _ean,
-        'meses_presentes'  : len(_mp),
-        'pct_trazabilidad' : len(_mp) / _n_meses * 100,
-        'primer_mes'       : min(_mp),
-        'ultimo_mes'       : max(_mp),
-        'en_canasta'       : _ean in CANASTA,
-    })
-# EANs con 0 presencia
+    _rows.append({'ean_norm':_ean,'meses_presentes':len(_mp),
+                  'pct_trazabilidad':len(_mp)/_n_meses*100,
+                  'primer_mes':min(_mp),'ultimo_mes':max(_mp),
+                  'en_canasta':_ean in CANASTA_EANS_NORM})
 for _ean in CAND_EANS - set(_presencia.keys()):
     _rows.append({'ean_norm':_ean,'meses_presentes':0,'pct_trazabilidad':0.0,
-                  'primer_mes':None,'ultimo_mes':None,'en_canasta':_ean in CANASTA})
+                  'primer_mes':None,'ultimo_mes':None,'en_canasta':_ean in CANASTA_EANS_NORM})
 
 df_traz = pd.DataFrame(_rows)
+_mc = ['ean_norm'] + [c for c in ['descripcion','marca','categoria','subcategoria',
+                                   'precio_mediano','score_cobertura'] if c in df_cand.columns]
+df_traz = (df_traz.merge(df_cand[_mc], on='ean_norm', how='left')
+           .sort_values('pct_trazabilidad', ascending=False).reset_index(drop=True))
 
-# Merge con metadata de candidatos
-_mc = ['ean_norm'] + [c for c in
-       ['descripcion','marca','categoria','subcategoria','precio_mediano','score_cobertura']
-       if c in df_cand.columns]
-df_traz = (df_traz
-           .merge(df_cand[_mc], on='ean_norm', how='left')
-           .sort_values('pct_trazabilidad', ascending=False)
-           .reset_index(drop=True))
-
-# ── 4. Resumen estadístico ───────────────────────────────────
 print(f'\\n{"="*60}')
 print(f'  TRAZABILIDAD TEMPORAL — {_mes_min} a {_mes_max} ({_n_meses} meses)')
 print(f'{"="*60}')
@@ -1547,65 +1601,47 @@ print(f'  Candidatos con trazabilidad 100%  : {(df_traz["pct_trazabilidad"]==100
 print(f'  Candidatos con trazabilidad  >90% : {(df_traz["pct_trazabilidad"]> 90).sum():>5,}')
 print(f'  Candidatos con trazabilidad  >75% : {(df_traz["pct_trazabilidad"]> 75).sum():>5,}')
 print(f'  Candidatos con trazabilidad  <50% : {(df_traz["pct_trazabilidad"]< 50).sum():>5,}')
-print(f'  Candidatos sin presencia historica: {(df_traz["pct_trazabilidad"]==  0).sum():>5,}')
 _can_traz = df_traz[df_traz['en_canasta']]['pct_trazabilidad']
-print(f'\\n  Tu canasta actual ({len(_can_traz)} productos):')
-print(f'    Trazabilidad promedio : {_can_traz.mean():.1f}%')
-print(f'    Trazabilidad minima   : {_can_traz.min():.1f}%')
+if len(_can_traz) > 0:
+    print(f'\\n  EANs en canastas activas ({len(_can_traz)} únicos):')
+    print(f'    Trazabilidad promedio : {_can_traz.mean():.1f}%')
+    print(f'    Trazabilidad mínima   : {_can_traz.min():.1f}%')
 print(f'{"="*60}')
 
-# ── 5. Tabla top 30 ──────────────────────────────────────────
-_cols_show = [c for c in
-    ['descripcion','marca','categoria','meses_presentes','pct_trazabilidad','primer_mes','en_canasta']
-    if c in df_traz.columns]
+_cols_show = [c for c in ['descripcion','marca','categoria','meses_presentes',
+                           'pct_trazabilidad','primer_mes','en_canasta'] if c in df_traz.columns]
 display(df_traz[_cols_show].head(30).style
     .background_gradient(subset=['pct_trazabilidad'], cmap='RdYlGn', vmin=0, vmax=100)
     .format({'pct_trazabilidad': '{:.1f}%'})
-    .set_caption(f'Top 30 candidatos por trazabilidad temporal ({_mes_min} → {_mes_max})')
-)
+    .set_caption(f'Top 30 candidatos por trazabilidad ({_mes_min} → {_mes_max})'))
 
-# ── 6. Gráficos ──────────────────────────────────────────────
 _fig, _axes = plt.subplots(1, 2, figsize=(14, 5))
-
-# Histograma de distribución
-_axes[0].hist(df_traz['pct_trazabilidad'], bins=20,
-              color='#0055A4', edgecolor='white', alpha=0.85)
-_axes[0].axvline(_can_traz.mean(), color='#D62728', linewidth=2,
-                 linestyle='--', label=f'Promedio canasta actual ({_can_traz.mean():.0f}%)')
-_axes[0].set_xlabel('Trazabilidad temporal (%)')
-_axes[0].set_ylabel('Número de productos')
-_axes[0].set_title('Distribución de trazabilidad\\n(todos los candidatos)')
-_axes[0].legend(fontsize=9)
-
-# Trazabilidad promedio por categoría
+_axes[0].hist(df_traz['pct_trazabilidad'], bins=20, color='#0055A4', edgecolor='white', alpha=0.85)
+if len(_can_traz) > 0:
+    _axes[0].axvline(_can_traz.mean(), color='#D62728', linewidth=2,
+                     linestyle='--', label=f'Promedio canastas activas ({_can_traz.mean():.0f}%)')
+    _axes[0].legend(fontsize=9)
+_axes[0].set_xlabel('Trazabilidad temporal (%)'); _axes[0].set_ylabel('Número de productos')
+_axes[0].set_title('Distribución de trazabilidad (todos los candidatos)')
 if 'categoria' in df_traz.columns:
     _top_cat = (df_traz.groupby('categoria')['pct_trazabilidad']
-                .agg(_mean='mean', _n='count')
-                .query('_n >= 5')
-                .sort_values('_mean', ascending=True)
-                .tail(15))
+                .agg(_mean='mean', _n='count').query('_n >= 5')
+                .sort_values('_mean', ascending=True).tail(15))
     _axes[1].barh(_top_cat.index, _top_cat['_mean'], color='#0055A4', alpha=0.85)
     _axes[1].axvline(90, color='gray', linestyle='--', linewidth=1, alpha=0.6)
-    _axes[1].set_xlabel('Trazabilidad promedio (%)')
-    _axes[1].set_title('Trazabilidad por categoría\\n(categorías con ≥5 candidatos)')
-    _axes[1].set_xlim(0, 105)
+    _axes[1].set_xlabel('Trazabilidad promedio (%)'); _axes[1].set_xlim(0, 105)
+    _axes[1].set_title('Trazabilidad por categoría (>=5 candidatos)')
     for _i, (_idx, _row) in enumerate(_top_cat.iterrows()):
         _axes[1].text(_row['_mean']+0.5, _i, f'{_row["_mean"]:.0f}%', va='center', fontsize=8)
-
 plt.tight_layout()
-_fig.savefig(OUTPUT_DIR / f'trazabilidad_candidatos_{ULTIMO_MES}.png',
-             dpi=600, bbox_inches='tight')
+_fig.savefig(OUTPUT_DIR / f'trazabilidad_candidatos_{ULTIMO_MES}.png', dpi=600, bbox_inches='tight')
 plt.show()
 
-# ── 7. Exportar tabla completa ───────────────────────────────
 _out_traz = OUTPUT_DIR / f'trazabilidad_candidatos_{ULTIMO_MES}.xlsx'
 df_traz.to_excel(_out_traz, index=False)
-print(f'Tabla completa guardada: {_out_traz.name}')
-print('Tip: filtra por pct_trazabilidad > 90 y en_canasta = False para ver '
-      'candidatos estables que aun no estan en tu canasta.')
-"""))
+print(f'Tabla completa guardada: {_out_traz.name}')"""))
 
-# Write notebook
+# ── Write notebook ──────────────────────────────────────────────────────────────
 nb = {
     'cells': cells,
     'metadata': {
