@@ -360,6 +360,13 @@ Los 4 reemplazos (Swift XL, Lavandina Anti-splash, Plusbelle, Listerine) están 
 
 ## Historial de cambios
 
+### 2026-06-01 — Soporte multi-canasta en nb01: 6 columnas cantidad (commit 566f033)
+
+- La hoja `Selección` (y `Productos unicos`) del Excel exportado por nb01 ahora tiene **6 columnas de cantidad** (`cantidad_01` ... `cantidad_06`) en lugar de una sola `cantidad`
+- Cada columna permite definir una canasta independiente
+- Todas resaltadas en amarillo (fill `FFF9C4`) con encabezado naranja (`F9A825`), ancho 10
+- Pendiente: adaptar nb02 para procesar las 6 canastas en paralelo (próxima sesión)
+
 ### 2026-05-29 — Robustez para canastas pequeñas/especializadas (commits e979ae2, 6289ab8)
 
 - **BUG-19**: `MIN_PRODUCTOS_PROPIOS = 15` con canasta de 12 productos → 0 sucursales válidas. Fix: safeguard en CELDA 3 que auto-ajusta a `N_CANASTA // 2` cuando `MIN_PRODUCTOS_PROPIOS >= N_CANASTA`. No afecta ICM-UADE (51 productos).
