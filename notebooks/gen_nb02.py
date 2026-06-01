@@ -152,16 +152,16 @@ CANASTA_NAMES = {
     'cantidad_02': 'Popular',
     'cantidad_03': 'Media',
     'cantidad_04': 'Media Alta',
-    'cantidad_05': 'Canasta 05',
-    'cantidad_06': 'Canasta 06',
+    'cantidad_05': 'Celíaca Media',
+    'cantidad_06': 'Vegana Básica',
 }
 CANASTA_SHORT = {
     'cantidad_01': 'vulnerable',
     'cantidad_02': 'popular',
     'cantidad_03': 'media',
     'cantidad_04': 'media_alta',
-    'cantidad_05': 'canasta05',
-    'cantidad_06': 'canasta06',
+    'cantidad_05': 'celiaca_media',
+    'cantidad_06': 'vegana_basica',
 }
 CANASTA_COLORS = {
     'cantidad_01': '#0055A4',
@@ -861,22 +861,29 @@ else:
         [(COLOR_IPC_GEN, 'IPC INDEC - Nivel general', _dg0['ipc_general_var_%']),
          (COLOR_IPC_ALI, 'IPC INDEC - Alimentos y bebidas', _dg0['ipc_alimentos_var_%'])]
     )
-    _n_b = len(_series_bar)
-    _bw2 = pd.Timedelta(days=max(1, int(12 / _n_b)))
-    _offs2 = [(_i - (_n_b - 1) / 2) * _bw2 for _i in range(_n_b)]
-    fig2, ax2 = plt.subplots(figsize=(16, 7))
+    _n_b    = len(_series_bar)
+    # Ancho y figura adaptados al número de series: más series → más ancho, barras más anchas
+    _fig_w  = max(20, _n_b * 2 + 10)
+    _bw2    = pd.Timedelta(days=max(3, int(22 / max(_n_b, 1))))
+    _offs2  = [(_i - (_n_b - 1) / 2) * _bw2 for _i in range(_n_b)]
+    _tick_i = 2 if _n_b > 5 else 1   # ticks cada 2 meses con muchas series
+    fig2, ax2 = plt.subplots(figsize=(_fig_w, 8))
     for _i, (_col, _lbl, _vals) in enumerate(_series_bar):
         if _vals.notna().any():
-            _alpha = 0.90 if _i < len(_activas_con_datos) else 0.70
+            _alpha = 0.88 if _i < len(_activas_con_datos) else 0.72
             ax2.bar(_dg0['fecha'] + _offs2[_i], _vals,
-                    width=_bw2, color=_col, alpha=_alpha, label=_lbl)
-    ax2.axhline(0, color='black', linewidth=0.5)
+                    width=_bw2, color=_col, alpha=_alpha, label=_lbl, edgecolor='none')
+    ax2.axhline(0, color='#444444', linewidth=0.8)
     ax2.set_ylabel('Variación mensual (%)', fontsize=11)
-    ax2.legend(loc='upper right', fontsize=9, framealpha=0.95)
-    ax2.grid(True, alpha=0.3, axis='y')
-    ax2.xaxis.set_major_locator(mdates.MonthLocator(interval=1))
+    ax2.legend(loc='upper right', fontsize=9, framealpha=0.95,
+               ncol=max(1, _n_b // 4 + 1))
+    ax2.grid(True, alpha=0.2, axis='y', linewidth=0.7)
+    ax2.xaxis.set_major_locator(mdates.MonthLocator(interval=_tick_i))
     ax2.xaxis.set_major_formatter(mticker.FuncFormatter(_fmt_mes_es))
-    plt.setp(ax2.xaxis.get_majorticklabels(), rotation=45, ha='right')
+    plt.setp(ax2.xaxis.get_majorticklabels(), rotation=45, ha='right', fontsize=9)
+    for sp in ['top', 'right']: ax2.spines[sp].set_visible(False)
+    ax2.spines['bottom'].set_color('#cccccc')
+    ax2.spines['left'].set_color('#cccccc')
     _vmax_l2 = [s.dropna().max() for _,_,s in _series_bar if s.notna().any()]
     if _vmax_l2: ax2.set_ylim(top=max(_vmax_l2) * 1.35)
     plt.tight_layout()

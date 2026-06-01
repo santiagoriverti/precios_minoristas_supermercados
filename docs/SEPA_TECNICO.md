@@ -1,6 +1,6 @@
 # SEPA — Referencia Técnica
 
-Última actualización: 2026-06-01 (multi-canasta nb02, canastas ENGHo, EAN format, caché unión)
+Última actualización: 2026-06-01 (Celíaca Media + Vegana Básica, sin TACC en SEPA)
 
 ## Dos formatos completamente distintos
 
@@ -218,6 +218,26 @@ _cache_path = CACHE_DIR / f'hist_union_{_cache_key}.parquet'
 **PLU codes (prefijo 27.../28.../29...)**: generados por balanzas en góndola para productos vendidos por peso. Son efímeros — no aparecen en el SEPA histórico de forma consistente. El notebook los detecta y produce una serie histórica vacía, saltando los gráficos de índices con un aviso.
 
 **EANs malformados** (menos de 12 dígitos): no matchean en SEPA. Agregar ceros iniciales hasta 13 dígitos. La normalización `lstrip('0')` hace que sean equivalentes al EAN con ceros.
+
+### Productos sin TACC en SEPA — cobertura y etiquetado
+
+El SEPA contiene productos con denominaciones explícitas "sin TACC" que facilitan armar canastas celíacas. Principales hallazgos para Argentina 2026:
+
+| Categoría | Producto sin TACC con mejor cobertura | Score | Sucursales |
+|-----------|---------------------------------------|-------|-----------|
+| Pasta | Fideos Mostacholes Blue Patna 500g | 0.927 | 499 |
+| Galletitas saladas | Chalitas Happy Food 100g | 0.901 | 545 |
+| Galletitas dulces | Smams Chocolate 200g | 0.902 | 526 |
+| Polenta/maíz | Prestopronta 730g (naturalmente GF) | 0.915 | 2.423 |
+| Almidón | Maizena 500g (naturalmente GF) | 0.908 | 2.458 |
+| Aceite | Aceite Oliva Puro sin TACC (etiquetado) | 0.893 | — |
+| Atún | La Campagnola sin TACC (etiquetado) | 0.923 | 2.500 |
+| Cacao | Nesquik sin TACC (etiquetado) | 0.931 | 2.466 |
+| Caldo | Caldo Verdura Knorr (sin gluten) | 0.918 | 2.512 |
+
+**No existe en SEPA con buena cobertura**: pasta sin TACC de arroz, harina de arroz, pan sin TACC. La cerveza sin gluten tampoco aparece en Candidatos.
+
+**Beer/malta**: Heineken y otras cervezas de malta contienen gluten (cebada). La **sidra** (`7790119002370` Saenz Briones 1888, score 0.870) es el sustituto alcohólico sin gluten con mejor cobertura en SEPA.
 
 ### EANs PLU (prefijo 27.../28...) — no están en el SEPA histórico
 

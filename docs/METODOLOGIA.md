@@ -1,6 +1,6 @@
 # Metodología — ICM-UADE (Índice de Canasta Mensual UADE)
 
-**Última actualización:** 2026-06-01
+**Última actualización:** 2026-06-01 (Celíaca Media + Vegana Básica)
 **Período de referencia:** enero 2024 – abril 2026
 
 ---
@@ -275,6 +275,42 @@ Los productos vendidos por peso en góndola (frutas, verduras, fiambres a granel
 ### Precios de lista vs. precios efectivos
 
 El SEPA publica precios de lista. No incluye descuentos por tarjeta, promociones puntuales ni precios de segunda unidad. Los precios efectivamente pagados por los consumidores pueden ser menores, especialmente en cadenas con programas de fidelización intensivos (DIA, ChangoMas).
+
+---
+
+## 6b. Canastas especiales (cantidad_05 y cantidad_06)
+
+### Celíaca Media (`cantidad_05`)
+
+Variante sin TACC de la Canasta Media. Metodología: reemplazar todos los productos con gluten (trigo, cebada, centeno) por equivalentes sin TACC disponibles en SEPA con buena cobertura.
+
+| Producto con gluten | Reemplazo sin TACC | EAN reemplazo |
+|--------------------|--------------------|---------------|
+| Fideos de trigo (Lucchetti) | Fideos Mostacholes sin TACC Blue Patna | 7730114100077 |
+| Harina de trigo (Caserita) | Almidón de Maíz Maizena 500 Gr | 7794000007468 |
+| Galletitas Traviata | Galletas Arroz sin TACC Grandiet + Chalitas Happy Food | 7797330102377 / 7798308250410 |
+| Alfajor Bagley B&N | Galletitas Smams Chocolate sin TACC | 7798181511011 |
+| Cacao Chocolino | Cacao sinTACC Nesquik 800 Gr | 8445291121904 |
+| Caldo de carne Knorr | Caldo de Verdura Knorr (sin gluten) | 7794000008557 |
+| Cerveza Heineken (malta/cebada) | Sidra Saenz Briones 1888 | 7790119002370 |
+| Avena | Eliminada (avena es controvertida para celíacos) | — |
+
+**Comparación**: Media estándar → diferencia revela la **prima celíaca** en Argentina.  
+**Costo estimado**: ~$663.000 ARS (+4.4% sobre Media).  
+**Hallazgo esperado**: la prima celíaca a nivel media es baja (~4%) porque la mayoría de los productos del hogar no contienen gluten — el mayor sobrecosto viene de la pasta y los snacks.
+
+### Vegana Básica (`cantidad_06`)
+
+Dieta vegana integral basada en alimentos completos (whole foods), sin sustitutos procesados de productos animales. Refleja el patrón alimentario vegano accesible en Argentina (legumbres + cereales + vegetales).
+
+**Eliminados** (productos animales): lácteos, carnes, huevos, pescado.  
+**Reemplazados por**: legumbres (porotos × 6, garbanzos × 4), proteína vegetal (Not Chicken × 4), bebida vegetal (Ades Soja × 12).
+
+**Comparación**: Popular → diferencia revela si el veganismo integral es más barato o más caro que la dieta estándar Q2.  
+**Costo estimado**: ~$390.000 ARS (−14% vs Popular $455.874).  
+**Hallazgo esperado**: la proteína vegetal (legumbres ~$1.750/lata) es ~3x más barata que la animal (embutidos ~$5.669, lácteos premium), por lo que una dieta vegana básica en Argentina es **más económica** que la dieta popular estándar.
+
+**Advertencia metodológica**: los productos de higiene y limpieza incluidos son los mismos que en Popular (no están específicamente certificados como veganos). En un análisis estricto, habría que reemplazar por marcas sin ingredientes de origen animal.
 
 ---
 

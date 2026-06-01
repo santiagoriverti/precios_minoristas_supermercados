@@ -1,6 +1,6 @@
 # Bugs Pendientes y Mejoras
 
-Última actualización: 2026-06-01 — multi-canasta nb02, 6 columnas cantidad nb01, canastas ENGHo v3
+Última actualización: 2026-06-01 — Celíaca Media + Vegana Básica, estética Gráfico 2
 
 ---
 

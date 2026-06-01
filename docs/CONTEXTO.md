@@ -1,6 +1,6 @@
 # Contexto del Proyecto — Precios Minoristas SEPA
 
-Última actualización: 2026-06-01 (multi-canasta nb02, 6 columnas cantidad nb01, canastas ENGHo)
+Última actualización: 2026-06-01 (Celíaca Media + Vegana Básica, mejoras estéticas Gráfico 2)
 
 ## Objetivo
 
@@ -362,6 +362,16 @@ Los 4 reemplazos (Swift XL, Lavandina Anti-splash, Plusbelle, Listerine) están 
 ---
 
 ## Historial de cambios
+
+### 2026-06-01 — Canastas especiales: Celíaca Media y Vegana Básica (cantidad_05/06)
+
+- **`cantidad_05` = Celíaca Media**: variante sin TACC de la Canasta Media. 72 productos. Cambios clave: pasta sin TACC Blue Patna, Almidón Maizena (reemplaza harina de trigo), galletitas sin TACC (Grandiet + Chalitas), Nesquik sin TACC, Caldo Verdura Knorr, sidra (reemplaza cerveza con malta). Costo estimado: ~$663k (+4% sobre Media).
+- **`cantidad_06` = Vegana Básica**: dieta vegana integral sin sustitutos procesados. 51 productos. Proteína: legumbres (porotos × 6, garbanzos × 4) + Not Chicken × 4. Bebida vegetal: Ades Soja × 12. Sin carne, lácteos, huevos ni pescado. Costo estimado: ~$390k (−14% vs Popular). Hallazgo: la proteína vegetal (legumbres $1.753) es 3x más barata que la animal (embutidos $5.669).
+- Gráfico 2 (variaciones): barras más anchas (`max(3, int(22/n))`), figura adaptativa (`max(20, n*2+10)`), ticks cada 2 meses cuando hay >5 series, leyenda multi-columna, estilo limpio sin bordes top/right.
+- `CANASTA_NAMES` actualizado: 'Canasta 05' → 'Celíaca Media', 'Canasta 06' → 'Vegana Básica'
+- `CANASTA_SHORT` actualizado: 'canasta05' → 'celiaca_media', 'canasta06' → 'vegana_basica'
+- Outputs con nuevos nombres: `mapa_interactivo_MMAAAA_celiaca_media.html`, `ranking_cadenas_nacional_MMAAAA_vegana_basica.png`, etc.
+- Ver archivo fuente: `canastas_argentina_2026_v3.txt` (contiene CANASTA_5 y CANASTA_6)
 
 ### 2026-06-01 — Mejoras visuales nb02 post primera ejecución multi-canasta
 
