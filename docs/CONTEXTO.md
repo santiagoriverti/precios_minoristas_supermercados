@@ -363,6 +363,15 @@ Los 4 reemplazos (Swift XL, Lavandina Anti-splash, Plusbelle, Listerine) están 
 
 ## Historial de cambios
 
+### 2026-06-01 — Mejoras visuales nb02 post primera ejecución multi-canasta
+
+- `MES_INICIO_GRAFICO = '2024-01'` (era '2024-03') — índice base desde enero 2024
+- **Gráfico 2**: cambio de líneas a **barras verticales** por canasta; IPC como líneas superpuestas
+- **Gráfico 3 nuevo**: ranking de valores absolutos (barras horizontales por canasta con promedio nacional)
+- **Mapa Folium único**: un solo HTML con selector de canasta en el panel de filtros; JS con `switchCanasta()` + FeatureGroups por canasta; filtros de provincia y tipo siguen funcionando
+- Nombre de output del mapa: `mapa_interactivo_{MES}.html` (sin sufijo de canasta)
+- Primera ejecución multi-canasta confirmada: Vulnerable $255.900, Popular $455.874, Media $634.923, Media Alta $908.166. 239/239 EANs encontrados, 28 meses historia, 24 provincias, 121 reclasificaciones por coordenadas.
+
 ### 2026-06-01 — Canastas ENGHo v3: 4 canastas por quintil con doble filtro calidad
 
 - **Canastas definidas** basadas en ENGHo 2017/18 (INDEC) + coeficiente de Engel:

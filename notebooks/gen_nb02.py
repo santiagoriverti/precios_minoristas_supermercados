@@ -45,7 +45,7 @@ USE_CACHE = True
 MES_INICIO_HISTORICO = '2024-01'
 
 # Mes base para gráficos de índice (auto-adapta si no está en la serie)
-MES_INICIO_GRAFICO = '2024-03'
+MES_INICIO_GRAFICO = '2024-01'
 
 # Mínimo productos propios para incluir sucursal en análisis
 MIN_PRODUCTOS_PROPIOS = 15
@@ -853,36 +853,68 @@ else:
     plt.show()
     print(f'Gráfico 1 guardado: {out1}')
 
-    # ── GRAFICO 2: Variaciones mensuales (líneas) ───────────────────────────
-    fig2, ax2 = plt.subplots(figsize=(13, 6))
-    for _col_id in _activas_con_datos:
+    # ── GRAFICO 2: Variaciones mensuales (barras verticales por canasta) ───────
+    _n_c = len(_activas_con_datos)
+    _bw  = pd.Timedelta(days=max(2, int(13 / (_n_c + 1))))
+    _offs = [(_i - (_n_c - 1) / 2) * _bw for _i in range(_n_c)]
+    fig2, ax2 = plt.subplots(figsize=(15, 7))
+    for _i, _col_id in enumerate(_activas_con_datos):
         _dg   = df_g_dict[_col_id]
-        _name = CANASTA_NAMES[_col_id]
-        ax2.plot(_dg['fecha'], _dg['variacion_mensual_%'],
-                 color=CANASTA_COLORS[_col_id], linewidth=2,
-                 linestyle=CANASTA_LINESTYLES[_col_id],
-                 marker=CANASTA_MARKERS[_col_id], markersize=5,
-                 label=f'ICM-UADE {_name}')
+        ax2.bar(_dg['fecha'] + _offs[_i], _dg['variacion_mensual_%'],
+                width=_bw, color=CANASTA_COLORS[_col_id], alpha=0.85,
+                label=f'ICM-UADE {CANASTA_NAMES[_col_id]}')
     if _dg0['ipc_general_var_%'].notna().any():
         ax2.plot(_dg0['fecha'], _dg0['ipc_general_var_%'],
-                 color=COLOR_IPC_GEN, linewidth=1.8, linestyle='--', marker='s', markersize=4,
+                 color=COLOR_IPC_GEN, linewidth=2, linestyle='--', marker='s', markersize=3,
                  label='IPC INDEC - Nivel general')
     if _dg0['ipc_alimentos_var_%'].notna().any():
         ax2.plot(_dg0['fecha'], _dg0['ipc_alimentos_var_%'],
-                 color=COLOR_IPC_ALI, linewidth=1.8, linestyle=':', marker='^', markersize=4,
+                 color=COLOR_IPC_ALI, linewidth=2, linestyle=':', marker='^', markersize=3,
                  label='IPC INDEC - Alimentos y bebidas')
     ax2.axhline(0, color='black', linewidth=0.5)
     ax2.set_ylabel('Variación mensual (%)', fontsize=11)
     ax2.legend(loc='upper right', fontsize=9, framealpha=0.95)
-    ax2.grid(True, alpha=0.3)
+    ax2.grid(True, alpha=0.3, axis='y')
     ax2.xaxis.set_major_locator(mdates.MonthLocator(interval=1))
     ax2.xaxis.set_major_formatter(mticker.FuncFormatter(_fmt_mes_es))
     plt.setp(ax2.xaxis.get_majorticklabels(), rotation=45, ha='right')
+    _vmax_l = [df_g_dict[c]['variacion_mensual_%'].dropna().max()
+               for c in _activas_con_datos if df_g_dict[c]['variacion_mensual_%'].notna().any()]
+    if _dg0['ipc_general_var_%'].notna().any():
+        _vmax_l.append(_dg0['ipc_general_var_%'].dropna().max())
+    if _vmax_l:
+        ax2.set_ylim(top=max(_vmax_l) * 1.35)
     plt.tight_layout()
     out2 = OUTPUT_DIR / f'variaciones_canasta_vs_ipc_{MES}.png'
     plt.savefig(out2, dpi=600, bbox_inches='tight', facecolor='white')
     plt.show()
-    print(f'Gráfico 2 guardado: {out2}')"""))
+    print(f'Gráfico 2 guardado: {out2}')
+
+    # ── GRAFICO 3: Ranking de valores absolutos por canasta ───────────────────
+    _abs_data = sorted(
+        [(CANASTA_NAMES[c], prom_nac_dict[c], CANASTA_COLORS[c]) for c in CANASTAS_ACTIVAS],
+        key=lambda x: x[1])
+    fig3, ax3 = plt.subplots(figsize=(10, max(4, len(_abs_data) * 1.5 + 2)))
+    _pnames  = [d[0] for d in _abs_data]
+    _pvals   = [d[1] for d in _abs_data]
+    _pcolors = [d[2] for d in _abs_data]
+    bars3 = ax3.barh(_pnames, _pvals, color=_pcolors, edgecolor='black', linewidth=0.4)
+    for bar, val in zip(bars3, _pvals):
+        ax3.text(bar.get_width() + max(_pvals) * 0.005,
+                 bar.get_y() + bar.get_height() / 2,
+                 f'${int(val):,}'.replace(',', '.'),
+                 va='center', fontsize=12, fontweight='bold')
+    ax3.set_xlabel('Costo mensual promedio nacional (ARS)', fontsize=11)
+    ax3.xaxis.set_major_formatter(mticker.FuncFormatter(
+        lambda x, _: f'${int(x):,}'.replace(',', '.')))
+    ax3.set_xlim(0, max(_pvals) * 1.18)
+    ax3.grid(True, alpha=0.3, axis='x'); ax3.set_axisbelow(True)
+    for sp in ['top', 'right']: ax3.spines[sp].set_visible(False)
+    plt.tight_layout()
+    out3 = OUTPUT_DIR / f'ranking_canastas_{MES}.png'
+    plt.savefig(out3, dpi=600, bbox_inches='tight', facecolor='white')
+    plt.show()
+    print(f'Gráfico 3 guardado: {out3}')"""))
 
 # ── CELL 13 — CUADRO 1 + LaTeX (per-canasta) ──────────────────────────────────
 cells.append(cell_code("""\
@@ -1185,10 +1217,10 @@ for _col_id in CANASTAS_ACTIVAS:
     for i, r in enumerate(_rk_nac.sort_values('canasta_promedio', ascending=False).itertuples(), 1):
         print(f'    {i:>2}. {r.cadena:<25} ${fmtn(r.canasta_promedio):>12}  ({int(r.n_sucursales)} sucs)')"""))
 
-# ── CELL 17 — FOLIUM MAPS (one per canasta) ────────────────────────────────────
+# ── CELL 17 — FOLIUM MAP (único con selector de canasta) ──────────────────────
 cells.append(cell_code("""\
 # ============================================================
-# CELDA 17 — Mapas Folium interactivos: uno por canasta activa
+# CELDA 17 — Mapa Folium único con selector de canasta
 # ============================================================
 def fmtm(x): return f'{x:,.0f}'.replace(',','.')
 
@@ -1214,42 +1246,45 @@ def det_html(det):
             f'<tbody>{"".join(rows)}</tbody></table>'
             '<div style="font-size:9px;color:#666;margin-top:4px;">* Precio imputado promedio nacional.</div>')
 
+# ── Mapa único con selector de canasta ────────────────────────────────────────
+# Usar la primera canasta activa como referencia de sucursales/provincias
+_cgf_ref  = canasta_geo_dict[CANASTAS_ACTIVAS[0]]
+provs_u   = sorted(_cgf_ref['PROVINCIA_NORM'].unique())
+tipos_u   = sorted([t for t in _cgf_ref['sucursales_tipo'].dropna().unique() if t and t != 'Web'])
+
+m = folium.Map(location=[-38.0,-63.5], zoom_start=5,
+               tiles='cartodbpositron', control_scale=True)
+folium.map.Marker(
+    location=[-51.7963,-59.5236],
+    icon=folium.DivIcon(icon_size=(140,28), icon_anchor=(70,14),
+        html='<div style="background:rgba(255,255,255,.95);border:1px solid #777;border-radius:3px;padding:3px 7px;font-family:Arial;font-size:11px;font-weight:600;text-align:center;white-space:nowrap;">Islas Malvinas (ARG)</div>')
+).add_to(m)
+
+# Un FeatureGroup por canasta — solo el primero visible
+_canasta_fg_ids = {}   # col_id -> nombre de variable JS (fg.get_name())
 for _col_id in CANASTAS_ACTIVAS:
     _name  = CANASTA_NAMES[_col_id]
     _short = CANASTA_SHORT[_col_id]
     _cgf   = canasta_geo_dict[_col_id]
+    _is_default = (_col_id == CANASTAS_ACTIVAS[0])
     _n_can = len(CANASTAS[_col_id])
-
-    if len(_cgf) == 0:
-        print(f'  [{_name}] Sin sucursales — saltear mapa Folium'); continue
 
     _vmin = _cgf['canasta_total'].quantile(0.05)
     _vmax = _cgf['canasta_total'].quantile(0.95)
-    if _vmin == _vmax:
-        _vmin = _cgf['canasta_total'].min()
-        _vmax = _cgf['canasta_total'].max()
-
-    m = folium.Map(location=[-38.0,-63.5], zoom_start=5,
-                   tiles='cartodbpositron', control_scale=True)
-    folium.map.Marker(
-        location=[-51.7963,-59.5236],
-        icon=folium.DivIcon(icon_size=(140,28), icon_anchor=(70,14),
-            html='<div style="background:rgba(255,255,255,.95);border:1px solid #777;border-radius:3px;padding:3px 7px;font-family:Arial;font-size:11px;font-weight:600;text-align:center;white-space:nowrap;">Islas Malvinas (ARG)</div>')
-    ).add_to(m)
-
-    cm_m = LinearColormap(
+    if _vmin == _vmax: _vmin, _vmax = _cgf['canasta_total'].min(), _cgf['canasta_total'].max()
+    _cm = LinearColormap(
         colors=['#1a9850','#66bd63','#a6d96a','#fee08b','#fdae61','#f46d43','#d73027'],
-        vmin=_vmin, vmax=_vmax, caption=f'{_name} — {NOMBRE_MES_TITLE} (ARS)')
-    cm_m.add_to(m)
+        vmin=_vmin, vmax=_vmax,
+        caption=f'ICM-UADE {_name} — {NOMBRE_MES_TITLE} (ARS)')
+    if _is_default:
+        _cm.add_to(m)
 
-    cads_u  = sorted(_cgf['cadena'].unique())
-    provs_u = sorted(_cgf['PROVINCIA_NORM'].unique())
-    tipos_u = sorted([t for t in _cgf['sucursales_tipo'].dropna().unique() if t and t != 'Web'])
-    fgs = {c: folium.FeatureGroup(name=f'🏪 {c} ({(_cgf["cadena"]==c).sum()})', show=True) for c in cads_u}
+    _fg = folium.FeatureGroup(name=_short, show=_is_default)
+    _canasta_fg_ids[_col_id] = _fg.get_name()
 
     for _, row in _cgf.iterrows():
         val = row['canasta_total']
-        col = cm_m(max(_vmin, min(_vmax, val)))
+        col = _cm(max(_vmin, min(_vmax, val)))
         cad = row['cadena']
         tip = str(row.get('sucursales_tipo') or 'N/D')
         prv = row['PROVINCIA_NORM']
@@ -1263,57 +1298,95 @@ for _col_id in CANASTAS_ACTIVAS:
                    f'<div style="text-align:center;margin:8px 0;">'
                    f'<span style="font-size:11px;color:#666;">Canasta {_name}</span><br>'
                    f'<span style="color:#0055A4;font-size:20px;font-weight:bold;">${fmtm(val)}</span><br>'
-                   f'<span style="font-size:10px;color:#888;">({row["productos_propios"]}/{_n_can} productos propios)</span></div>'
+                   f'<span style="font-size:10px;color:#888;">({row["productos_propios"]}/{_n_can} prod. propios)</span></div>'
                    f'<hr style="margin:5px 0;">{det_html(row["detalle_productos"])}</div>')
-        cl = (f'sucursal-marker cadena-{cad.replace(" ","_").replace("(","").replace(")","").replace("/","")}'
+        cl = (f'sucursal-marker canasta-{_short}'
+              f' cadena-{cad.replace(" ","_").replace("(","").replace(")","").replace("/","")}'
               f' prov-{prv.replace(" ","_").replace("(","").replace(")","").replace("/","")}')
         folium.CircleMarker(
             location=[row['sucursales_latitud'], row['sucursales_longitud']],
             radius=5, color=col, fill=True, fillColor=col, fillOpacity=0.8, weight=1,
             tooltip=f'<b>{cad}</b><br>{prv}<br><b>${fmtm(val)}</b>',
             popup=folium.Popup(popup_h, max_width=450), className=cl
-        ).add_to(fgs[cad])
+        ).add_to(_fg)
+    _fg.add_to(m)
 
-    for fg in fgs.values(): fg.add_to(m)
-    folium.LayerControl(position='topright', collapsed=False).add_to(m)
+# JS: obtener nombre de variable del mapa y de cada FeatureGroup
+_map_var = m.get_name()
+_fg_ids_str = '{' + ','.join(f'"{k}":"{v}"' for k,v in _canasta_fg_ids.items()) + '}'
+_names_str  = '{' + ','.join(f'"{k}":"{CANASTA_NAMES[k]}"' for k in CANASTAS_ACTIVAS) + '}'
+_avgs_str   = '{' + ','.join(f'"{k}":{int(canasta_geo_dict[k]["canasta_total"].mean())}' for k in CANASTAS_ACTIVAS) + '}'
 
-    prov_opts = ''.join([f'<option value="prov-{p.replace(" ","_")}">{p}</option>' for p in provs_u])
-    tipo_opts = ''.join([f'<option value="tipo-{t.replace(" ","_")}">{t}</option>' for t in tipos_u])
-    info_h = (f'<div style="position:fixed;top:10px;left:50px;width:320px;background:white;border:2px solid #0055A4;'
-              f'border-radius:8px;padding:12px 15px;font-family:Arial;z-index:9999;box-shadow:0 2px 8px rgba(0,0,0,.15);">'
-              f'<div style="color:#0055A4;font-size:15px;font-weight:bold;margin-bottom:5px;">ICM-UADE {_name} — {NOMBRE_MES_TITLE}</div>'
-              f'<div style="font-size:11px;color:#555;line-height:1.5;">'
-              f'<b>{len(_cgf):,}</b> sucursales · <b>{len(cads_u)}</b> cadenas · <b>{len(provs_u)}</b> provincias<br>'
-              f'Promedio: <b>${fmtm(_cgf["canasta_total"].mean())}</b></div></div>')
-    m.get_root().html.add_child(folium.Element(info_h))
+# Panel de info
+prov_opts = ''.join([f'<option value="prov-{p.replace(" ","_")}">{p}</option>' for p in provs_u])
+tipo_opts = ''.join([f'<option value="tipo-{t.replace(" ","_")}">{t}</option>' for t in tipos_u])
+_can_opts  = ''.join([f'<option value="{k}">{CANASTA_NAMES[k]}</option>' for k in CANASTAS_ACTIVAS])
 
-    filtros_h = (
-        f'<div id="pf" style="position:fixed;bottom:25px;left:50px;width:270px;background:white;'
-        f'border:2px solid #0055A4;border-radius:8px;padding:12px 15px;font-family:Arial;z-index:9999;">'
-        f'<div style="color:#0055A4;font-size:13px;font-weight:bold;margin-bottom:8px;">🔍 Filtros</div>'
-        f'<label style="font-size:11px;color:#555;display:block;margin-top:6px;">Provincia:'
-        f'<select id="fp" style="width:100%;padding:4px;font-size:11px;margin-top:3px;">'
-        f'<option value="all">Todas</option>{prov_opts}</select></label>'
-        f'<label style="font-size:11px;color:#555;display:block;margin-top:6px;">Tipo:'
-        f'<select id="ft" style="width:100%;padding:4px;font-size:11px;margin-top:3px;">'
-        f'<option value="all">Todos</option>{tipo_opts}</select></label>'
-        f'<button id="fr" style="width:100%;margin-top:10px;padding:6px;background:#f0f0f0;'
-        f'border:1px solid #ccc;border-radius:4px;font-size:11px;cursor:pointer;">Restablecer</button></div>'
-        '<script>function apl(){var p=document.getElementById("fp").value,t=document.getElementById("ft").value;'
-        'document.querySelectorAll(".sucursal-marker").forEach(function(el){'
-        'var c=el.className.baseVal||el.className||"",'
-        'mp=(p==="all")||c.indexOf(p)>=0,mt=(t==="all")||c.indexOf("tipo-"+t.replace("tipo-",""))>=0;'
-        'el.style.display=(mp&&mt)?"":"none";});}'
-        'setTimeout(function(){var sp=document.getElementById("fp"),st=document.getElementById("ft"),btn=document.getElementById("fr");'
-        'if(sp)sp.addEventListener("change",apl);if(st)st.addEventListener("change",apl);'
-        'if(btn)btn.addEventListener("click",function(){sp.value="all";st.value="all";'
-        'document.querySelectorAll(".sucursal-marker").forEach(e=>e.style.display="");});},1000);</script>'
-    )
-    m.get_root().html.add_child(folium.Element(filtros_h))
+info_h = (f'<div style="position:fixed;top:10px;left:50px;width:340px;background:white;border:2px solid #0055A4;'
+          f'border-radius:8px;padding:12px 15px;font-family:Arial;z-index:9999;box-shadow:0 2px 8px rgba(0,0,0,.15);">'
+          f'<div style="color:#0055A4;font-size:15px;font-weight:bold;margin-bottom:5px;">'
+          f'ICM-UADE — {NOMBRE_MES_TITLE}</div>'
+          f'<div style="font-size:11px;color:#555;line-height:1.5;">'
+          f'<b>{len(_cgf_ref):,}</b> sucursales · <b>{len(CANASTAS_ACTIVAS)}</b> canastas<br>'
+          f'Promedio nacional: <span id="info_avg" style="font-weight:bold;"></span></div></div>')
+m.get_root().html.add_child(folium.Element(info_h))
 
-    out_map = OUTPUT_DIR / f'mapa_interactivo_{MES}_{_short}.html'
-    m.save(str(out_map))
-    print(f'  Mapa [{_name}] guardado: {out_map.name}  ({len(_cgf):,} sucursales)')"""))
+filtros_h = (
+    f'<div id="pf" style="position:fixed;bottom:25px;left:50px;width:280px;background:white;'
+    f'border:2px solid #0055A4;border-radius:8px;padding:12px 15px;font-family:Arial;z-index:9999;">'
+    f'<div style="color:#0055A4;font-size:13px;font-weight:bold;margin-bottom:8px;">🔍 Filtros</div>'
+    f'<label style="font-size:11px;color:#555;display:block;margin-top:4px;">Canasta:'
+    f'<select id="fcan" style="width:100%;padding:4px;font-size:11px;margin-top:3px;">{_can_opts}</select></label>'
+    f'<label style="font-size:11px;color:#555;display:block;margin-top:6px;">Provincia:'
+    f'<select id="fp" style="width:100%;padding:4px;font-size:11px;margin-top:3px;">'
+    f'<option value="all">Todas</option>{prov_opts}</select></label>'
+    f'<label style="font-size:11px;color:#555;display:block;margin-top:6px;">Tipo:'
+    f'<select id="ft" style="width:100%;padding:4px;font-size:11px;margin-top:3px;">'
+    f'<option value="all">Todos</option>{tipo_opts}</select></label>'
+    f'<button id="fr" style="width:100%;margin-top:10px;padding:6px;background:#f0f0f0;'
+    f'border:1px solid #ccc;border-radius:4px;font-size:11px;cursor:pointer;">Restablecer</button></div>'
+    f'<script>'
+    f'var _fg_ids={_fg_ids_str};'
+    f'var _names={_names_str};'
+    f'var _avgs={_avgs_str};'
+    f'var _mapObj=null;'
+    f'function _getMap(){{return window["{_map_var}"];}}'
+    f'function switchCanasta(sel){{var mp=_getMap();if(!mp)return;'
+    f'Object.keys(_fg_ids).forEach(function(k){{'
+    f'var fg=window[_fg_ids[k]];if(!fg)return;'
+    f'if(k===sel){{mp.addLayer(fg);}}else{{mp.removeLayer(fg);}}'
+    f'}});'
+    f'var avgEl=document.getElementById("info_avg");'
+    f'if(avgEl)avgEl.innerHTML="$"+_avgs[sel].toLocaleString("es-AR")+" ("+_names[sel]+")";'
+    f'apl();'
+    f'}}'
+    f'function apl(){{var sel=document.getElementById("fcan")?document.getElementById("fcan").value:null;'
+    f'var p=document.getElementById("fp").value,t=document.getElementById("ft").value;'
+    f'document.querySelectorAll(".sucursal-marker").forEach(function(el){{'
+    f'var c=el.className.baseVal||el.className||"",'
+    f'mc=(!sel)||c.indexOf("canasta-"+sel.replace(/.*_/,"").replace(/-/g,"_"))>=0||true,'
+    f'mp=(p==="all")||c.indexOf(p)>=0,mt=(t==="all")||c.indexOf(t)>=0;'
+    f'el.style.display=(mp&&mt)?"":"none";}});}}'
+    f'setTimeout(function(){{'
+    f'var fc=document.getElementById("fcan"),sp=document.getElementById("fp");'
+    f'var st=document.getElementById("ft"),btn=document.getElementById("fr");'
+    f'var defKey=Object.keys(_fg_ids)[0];'
+    f'switchCanasta(defKey);'
+    f'if(fc)fc.addEventListener("change",function(){{switchCanasta(this.value);}});'
+    f'if(sp)sp.addEventListener("change",apl);'
+    f'if(st)st.addEventListener("change",apl);'
+    f'if(btn)btn.addEventListener("click",function(){{'
+    f'if(fc){{fc.value=Object.keys(_fg_ids)[0];switchCanasta(fc.value);}}'
+    f'if(sp)sp.value="all";if(st)st.value="all";'
+    f'document.querySelectorAll(".sucursal-marker").forEach(e=>e.style.display="");'
+    f'}});'
+    f'}},1200);</script>'
+)
+m.get_root().html.add_child(folium.Element(filtros_h))
+
+out_map = OUTPUT_DIR / f'mapa_interactivo_{MES}.html'
+m.save(str(out_map))
+print(f'Mapa único guardado: {out_map.name}  ({len(CANASTAS_ACTIVAS)} canastas · {len(_cgf_ref):,} sucursales)')"""))
 
 # ── CELL 18 — CABA RANKINGS (per-canasta) ─────────────────────────────────────
 cells.append(cell_code("""\
