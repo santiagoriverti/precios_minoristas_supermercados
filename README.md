@@ -55,8 +55,8 @@ El proyecto responde dos preguntas:
 | `cantidad_02` | **Popular** | Canasta de referencia para hogares populares |
 | `cantidad_03` | **Media** | Canasta de referencia para clase media |
 | `cantidad_04` | **Media Alta** | Canasta de referencia para clase media alta |
-| `cantidad_05` | Canasta 05 | Libre — para uso futuro o canasta específica |
-| `cantidad_06` | Canasta 06 | Libre — para uso futuro o canasta específica |
+| `cantidad_05` | **Celíaca Media** | Variante sin TACC de la Canasta Media (~$663k, +4% prima celíaca) |
+| `cantidad_06` | **Vegana Básica** | Dieta vegana integral comparable a Popular (~$390k, −14%) |
 
 Solo se procesan las columnas con al menos un producto con cantidad > 0. Las columnas vacías se ignoran automáticamente.
 
@@ -373,7 +373,12 @@ El Notebook 02 usa dos estrategias para manejar la complejidad de múltiples can
 | Cadenas con datos | 16 |
 | Provincias con datos | 24 |
 | Meses de serie histórica | 28 (ene-2024 → abr-2026) |
-| Costo ICM-UADE promedio nacional | **$478.836 ARS** |
+| Costo ICM-UADE promedio nacional (cantidad_01 Vulnerable) | **$255.900 ARS** |
+| Costo ICM-UADE promedio nacional (cantidad_02 Popular) | **$455.874 ARS** |
+| Costo ICM-UADE promedio nacional (cantidad_03 Media) | **$634.923 ARS** |
+| Costo ICM-UADE promedio nacional (cantidad_04 Media Alta) | **$908.166 ARS** |
+| Costo estimado cantidad_05 Celíaca Media | **~$663.000 ARS** (+4% vs Media) |
+| Costo estimado cantidad_06 Vegana Básica | **~$390.000 ARS** (−14% vs Popular) |
 | Rango por sucursal | $440.012 – $528.014 |
 | Provincia más barata | Chaco ($463.679, -3.17%) |
 | Provincia más cara | Santa Cruz ($507.864, +6.06%) |
