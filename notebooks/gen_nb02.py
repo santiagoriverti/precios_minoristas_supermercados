@@ -1238,40 +1238,46 @@ for _col_id in CANASTAS_ACTIVAS:
     for i, r in enumerate(_rk_nac.sort_values('canasta_promedio', ascending=False).itertuples(), 1):
         print(f'    {i:>2}. {r.cadena:<25} ${fmtn(r.canasta_promedio):>12}  ({int(r.n_sucursales)} sucs)')"""))
 
-# ── CELL 17 — FOLIUM MAP (único con selector de canasta) ──────────────────────
+# ── CELL 17 — FOLIUM MAP (único con selector de canasta, lazy popup) ──────────
 cells.append(cell_code("""\
 # ============================================================
-# CELDA 17 — Mapa Folium único con selector de canasta
+# CELDA 17 — Mapa Folium: lazy popup (datos JSON on-demand)
+# Arquitectura: datos almacenados una vez como JSON compacto;
+# popup HTML construido por JS al hacer click → archivo ~80% más liviano
 # ============================================================
 def fmtm(x): return f'{x:,.0f}'.replace(',','.')
 
-def det_html(det):
-    cats = {}
-    for nom,cat,qty,pre,sub,esp in det: cats.setdefault(cat,[]).append((nom,qty,pre,sub,esp))
-    rows = []
-    for cat, items in cats.items():
-        rows.append(f'<tr style="background:#0055A4;color:white;"><td colspan="4" style="padding:3px 5px;font-weight:bold;">{cat}</td></tr>')
-        for nom,qty,pre,sub,esp in items:
-            st = '' if esp else 'color:#888;font-style:italic;'
-            mk = '' if esp else ' *'
-            rows.append(f'<tr style="{st}"><td style="padding:2px 5px;">{nom}{mk}</td>'
-                        f'<td style="padding:2px 5px;text-align:center;">x{qty}</td>'
-                        f'<td style="padding:2px 5px;text-align:right;">${fmtm(pre)}</td>'
-                        f'<td style="padding:2px 5px;text-align:right;font-weight:600;">${fmtm(sub)}</td></tr>')
-    return ('<table style="width:100%;border-collapse:collapse;font-size:10px;font-family:Arial;">'
-            '<thead><tr style="background:#e6eef7;font-weight:bold;">'
-            '<th style="padding:3px 5px;text-align:left;">Producto</th>'
-            '<th style="padding:3px 5px;">Cant.</th>'
-            '<th style="padding:3px 5px;text-align:right;">P.Unit</th>'
-            '<th style="padding:3px 5px;text-align:right;">Subtotal</th></tr></thead>'
-            f'<tbody>{"".join(rows)}</tbody></table>'
-            '<div style="font-size:9px;color:#666;margin-top:4px;">* Precio imputado promedio nacional.</div>')
+# ── Construir datos compactos para popups (almacenados una vez) ──────────────
+_cgf_ref = canasta_geo_dict[CANASTAS_ACTIVAS[0]]
+provs_u  = sorted(_cgf_ref['PROVINCIA_NORM'].unique())
 
-# ── Mapa único con selector de canasta ────────────────────────────────────────
-# Usar la primera canasta activa como referencia de sucursales/provincias
-_cgf_ref  = canasta_geo_dict[CANASTAS_ACTIVAS[0]]
-provs_u   = sorted(_cgf_ref['PROVINCIA_NORM'].unique())
+_popup_data = {}
+for _col_id in CANASTAS_ACTIVAS:
+    _nc = len(CANASTAS[_col_id])
+    for _, _r in canasta_geo_dict[_col_id].iterrows():
+        _sk = f"{_r['id_comercio']}_{_r['id_bandera']}_{_r['id_sucursal']}"
+        if _sk not in _popup_data:
+            _popup_data[_sk] = {
+                'nom': str(_r['sucursales_nombre'])[:40],
+                'bar': str(_r.get('sucursales_barrio') or _r.get('sucursales_localidad') or '')[:30],
+                'prv': _r['PROVINCIA_NORM'],
+                'cad': _r['cadena'],
+                'tip': str(_r.get('sucursales_tipo') or 'N/D'),
+                'can': {}
+            }
+        _popup_data[_sk]['can'][_col_id] = {
+            't': int(_r['canasta_total']),
+            'p': int(_r['productos_propios']),
+            'n': _nc,
+            'it': [[it[0][:35], it[1][:20], int(it[2]),
+                    int(round(it[3])), int(round(it[4])), bool(it[5])]
+                   for it in _r['detalle_productos']]
+        }
 
+_popup_json = _json.dumps(_popup_data, ensure_ascii=False, separators=(',',':'))
+print(f'Datos popup: {len(_popup_data):,} sucursales | {len(_popup_json)/1024/1024:.1f} MB JSON compacto')
+
+# ── Mapa Folium ───────────────────────────────────────────────────────────────
 m = folium.Map(location=[-38.0,-63.5], zoom_start=5,
                tiles='cartodbpositron', control_scale=True)
 folium.map.Marker(
@@ -1280,74 +1286,60 @@ folium.map.Marker(
         html='<div style="background:rgba(255,255,255,.95);border:1px solid #777;border-radius:3px;padding:3px 7px;font-family:Arial;font-size:11px;font-weight:600;text-align:center;white-space:nowrap;">Islas Malvinas (ARG)</div>')
 ).add_to(m)
 
-# Un FeatureGroup por canasta — solo el primero visible
-_canasta_fg_ids = {}   # col_id -> nombre de variable JS (fg.get_name())
+_canasta_fg_ids = {}
 for _col_id in CANASTAS_ACTIVAS:
     _name  = CANASTA_NAMES[_col_id]
     _short = CANASTA_SHORT[_col_id]
     _cgf   = canasta_geo_dict[_col_id]
     _is_default = (_col_id == CANASTAS_ACTIVAS[0])
-    _n_can = len(CANASTAS[_col_id])
-
     _vmin = _cgf['canasta_total'].quantile(0.05)
     _vmax = _cgf['canasta_total'].quantile(0.95)
     if _vmin == _vmax: _vmin, _vmax = _cgf['canasta_total'].min(), _cgf['canasta_total'].max()
     _cm = LinearColormap(
         colors=['#1a9850','#66bd63','#a6d96a','#fee08b','#fdae61','#f46d43','#d73027'],
-        vmin=_vmin, vmax=_vmax,
-        caption=f'ICM-UADE {_name} — {NOMBRE_MES_TITLE} (ARS)')
-    if _is_default:
-        _cm.add_to(m)
-
+        vmin=_vmin, vmax=_vmax, caption=f'ICM-UADE {_name} — {NOMBRE_MES_TITLE} (ARS)')
+    if _is_default: _cm.add_to(m)
     _fg = folium.FeatureGroup(name=_short, show=_is_default)
     _canasta_fg_ids[_col_id] = _fg.get_name()
-
-    for _, row in _cgf.iterrows():
-        val = row['canasta_total']
-        col = _cm(max(_vmin, min(_vmax, val)))
-        cad = row['cadena']
-        tip = str(row.get('sucursales_tipo') or 'N/D')
-        prv = row['PROVINCIA_NORM']
-        popup_h = (f'<div style="font-family:Arial;font-size:12px;width:420px;max-height:500px;overflow-y:auto;">'
-                   f'<h4 style="margin:0;color:#0055A4;">{cad} — {_name}</h4>'
-                   f'<div style="font-size:11px;color:#555;margin-bottom:5px;">'
-                   f'<b>{row["sucursales_nombre"]}</b><br>'
-                   f'{row.get("sucursales_barrio") or row.get("sucursales_localidad") or "N/D"} — {prv}<br>'
-                   f'<span style="background:#e6eef7;padding:2px 6px;border-radius:3px;font-size:10px;">{tip}</span></div>'
-                   f'<hr style="margin:5px 0;">'
-                   f'<div style="text-align:center;margin:8px 0;">'
-                   f'<span style="font-size:11px;color:#666;">Canasta {_name}</span><br>'
-                   f'<span style="color:#0055A4;font-size:20px;font-weight:bold;">${fmtm(val)}</span><br>'
-                   f'<span style="font-size:10px;color:#888;">({row["productos_propios"]}/{_n_can} prod. propios)</span></div>'
-                   f'<hr style="margin:5px 0;">{det_html(row["detalle_productos"])}</div>')
-        cl = (f'sucursal-marker canasta-{_short}'
-              f' cadena-{cad.replace(" ","_").replace("(","").replace(")","").replace("/","")}'
-              f' prov-{prv.replace(" ","_").replace("(","").replace(")","").replace("/","")}')
+    for _, _r in _cgf.iterrows():
+        val  = _r['canasta_total']
+        col  = _cm(max(_vmin, min(_vmax, val)))
+        cad  = _r['cadena']
+        prv  = _r['PROVINCIA_NORM']
+        _sk  = f"{_r['id_comercio']}_{_r['id_bandera']}_{_r['id_sucursal']}"
+        cl   = (f'sucursal-marker canasta-{_short}'
+                f' cadena-{cad.replace(" ","_").replace("(","").replace(")","").replace("/","")}'
+                f' prov-{prv.replace(" ","_").replace("(","").replace(")","").replace("/","")}')
+        # Popup mínimo: placeholder que JS rellena on-demand al hacer click
+        _ph = (f'<div class="lz-pop" data-key="{_sk}" data-can="{_col_id}"'
+               f' style="font-family:Arial;min-width:200px;text-align:center;padding:15px">'
+               f'<span style="color:#aaa;font-size:12px">Cargando detalle...</span></div>')
         folium.CircleMarker(
-            location=[row['sucursales_latitud'], row['sucursales_longitud']],
+            location=[_r['sucursales_latitud'], _r['sucursales_longitud']],
             radius=5, color=col, fill=True, fillColor=col, fillOpacity=0.8, weight=1,
             tooltip=f'<b>{cad}</b><br>{prv}<br><b>${fmtm(val)}</b>',
-            popup=folium.Popup(popup_h, max_width=450), className=cl
+            popup=folium.Popup(_ph, max_width=450), className=cl
         ).add_to(_fg)
     _fg.add_to(m)
 
-# JS: obtener nombre de variable del mapa y de cada FeatureGroup
-_map_var = m.get_name()
+_map_var    = m.get_name()
 _fg_ids_str = '{' + ','.join(f'"{k}":"{v}"' for k,v in _canasta_fg_ids.items()) + '}'
 _names_str  = '{' + ','.join(f'"{k}":"{CANASTA_NAMES[k]}"' for k in CANASTAS_ACTIVAS) + '}'
 _avgs_str   = '{' + ','.join(f'"{k}":{int(canasta_geo_dict[k]["canasta_total"].mean())}' for k in CANASTAS_ACTIVAS) + '}'
 
-# Panel de info
+# Embeber JSON en script tag de tipo application/json (sin escape JS)
+m.get_root().html.add_child(folium.Element(
+    f'<script type="application/json" id="_pd_json">{_popup_json}</script>'))
+
 prov_opts = ''.join([f'<option value="prov-{p.replace(" ","_")}">{p}</option>' for p in provs_u])
 _can_opts  = ''.join([f'<option value="{k}">{CANASTA_NAMES[k]}</option>' for k in CANASTAS_ACTIVAS])
 
 info_h = (f'<div style="position:fixed;top:10px;left:50px;width:340px;background:white;border:2px solid #0055A4;'
           f'border-radius:8px;padding:12px 15px;font-family:Arial;z-index:9999;box-shadow:0 2px 8px rgba(0,0,0,.15);">'
-          f'<div style="color:#0055A4;font-size:15px;font-weight:bold;margin-bottom:5px;">'
-          f'ICM-UADE — {NOMBRE_MES_TITLE}</div>'
+          f'<div style="color:#0055A4;font-size:15px;font-weight:bold;margin-bottom:5px;">ICM-UADE — {NOMBRE_MES_TITLE}</div>'
           f'<div style="font-size:11px;color:#555;line-height:1.5;">'
           f'<b>{len(_cgf_ref):,}</b> sucursales · <b>{len(CANASTAS_ACTIVAS)}</b> canastas<br>'
-          f'Promedio nacional: <span id="info_avg" style="font-weight:bold;"></span></div></div>')
+          f'Promedio: <span id="info_avg" style="font-weight:bold;"></span></div></div>')
 m.get_root().html.add_child(folium.Element(info_h))
 
 filtros_h = (
@@ -1362,43 +1354,67 @@ filtros_h = (
     f'<button id="fr" style="width:100%;margin-top:10px;padding:6px;background:#f0f0f0;'
     f'border:1px solid #ccc;border-radius:4px;font-size:11px;cursor:pointer;">Restablecer</button></div>'
     f'<script>'
-    f'var _fg_ids={_fg_ids_str};'
-    f'var _names={_names_str};'
-    f'var _avgs={_avgs_str};'
-    f'function _getMap(){{return window["{_map_var}"];}}'
-    f'function switchCanasta(sel){{var mp=_getMap();if(!mp)return;'
-    f'Object.keys(_fg_ids).forEach(function(k){{'
-    f'var fg=window[_fg_ids[k]];if(!fg)return;'
-    f'if(k===sel){{mp.addLayer(fg);}}else{{mp.removeLayer(fg);}}'
-    f'}});'
+    f'var _fg_ids={_fg_ids_str};var _names={_names_str};var _avgs={_avgs_str};var _pd=null;'
+    f'function _gPD(){{if(!_pd){{var el=document.getElementById("_pd_json");if(el)_pd=JSON.parse(el.textContent);}}return _pd;}}'
+    f'function _bPop(key,cid){{'
+    f'var pd=_gPD();if(!pd||!pd[key]||!pd[key].can[cid])return "<div style=\'padding:15px;color:#999\'>Sin datos.</div>";'
+    f'var d=pd[key];var c=d.can[cid];var nm=_names[cid];'
+    f'var fmt=function(x){{return "$"+Math.round(x).toLocaleString("es-AR");}};'
+    f'var h="<div style=\'font-family:Arial;font-size:12px;width:420px;max-height:500px;overflow-y:auto\'>";'
+    f'h+="<h4 style=\'margin:0;color:#0055A4\'>"+d.cad+" — "+nm+"</h4>";'
+    f'h+="<div style=\'font-size:11px;color:#555;margin-bottom:5px\'><b>"+d.nom+"</b><br>"+(d.bar?d.bar+" — ":"")+d.prv;'
+    f'h+="<br><span style=\'background:#e6eef7;padding:2px 6px;border-radius:3px;font-size:10px\'>"+d.tip+"</span></div>";'
+    f'h+="<hr style=\'margin:5px 0\'><div style=\'text-align:center;margin:8px 0\'>";'
+    f'h+="<span style=\'font-size:11px;color:#666\'>Canasta "+nm+"</span><br>";'
+    f'h+="<span style=\'color:#0055A4;font-size:20px;font-weight:bold\'>"+fmt(c.t)+"</span><br>";'
+    f'h+="<span style=\'font-size:10px;color:#888\'>("+c.p+"/"+c.n+" prod. propios)</span></div>";'
+    f'h+="<hr style=\'margin:5px 0\'>";'
+    f'var cats={{}};c.it.forEach(function(it){{(cats[it[1]]=cats[it[1]]||[]).push(it);}});'
+    f'h+="<table style=\'width:100%;border-collapse:collapse;font-size:10px\'><thead>"'
+    f'+"<tr style=\'background:#e6eef7;font-weight:bold\'><th style=\'padding:3px 5px;text-align:left\'>Producto</th>"'
+    f'+"<th>Cant.</th><th style=\'text-align:right\'>P.Unit</th><th style=\'text-align:right\'>Subtotal</th></tr></thead><tbody>";'
+    f'Object.keys(cats).forEach(function(cat){{'
+    f'h+="<tr style=\'background:#0055A4;color:white\'><td colspan=\'4\' style=\'padding:3px 5px;font-weight:bold\'>"+cat+"</td></tr>";'
+    f'cats[cat].forEach(function(it){{'
+    f'var st=it[5]?"":"color:#888;font-style:italic";var mk=it[5]?"":"  *";'
+    f'h+="<tr style=\'"+st+"\'><td style=\'padding:2px 5px\'>"+it[0]+mk+"</td>"'
+    f'+"<td style=\'text-align:center\'>x"+it[2]+"</td>"'
+    f'+"<td style=\'text-align:right\'>"+fmt(it[3])+"</td>"'
+    f'+"<td style=\'text-align:right;font-weight:600\'>"+fmt(it[4])+"</td></tr>";'
+    f'}});}});'
+    f'h+="</tbody></table><div style=\'font-size:9px;color:#666;margin-top:4px\'>* Precio imputado promedio nacional.</div></div>";'
+    f'return h;}}'
+    f'function _initEvt(){{var mp=window["{_map_var}"];if(!mp)return;'
+    f'mp.on("popupopen",function(e){{'
+    f'var el=e.popup.getElement().querySelector(".lz-pop");'
+    f'if(el&&el.getAttribute("data-built")!=="1"){{'
+    f'el.innerHTML=_bPop(el.getAttribute("data-key"),el.getAttribute("data-can"));'
+    f'el.setAttribute("data-built","1");e.popup.update();}}}});}}'
+    f'function switchCanasta(sel){{var mp=window["{_map_var}"];if(!mp)return;'
+    f'Object.keys(_fg_ids).forEach(function(k){{var fg=window[_fg_ids[k]];if(!fg)return;'
+    f'if(k===sel){{mp.addLayer(fg);}}else{{mp.removeLayer(fg);}}}});'
     f'var avgEl=document.getElementById("info_avg");'
-    f'if(avgEl)avgEl.innerHTML="$"+_avgs[sel].toLocaleString("es-AR")+" ("+_names[sel]+")";'
-    f'apl();'
-    f'}}'
+    f'if(avgEl)avgEl.innerHTML="$"+_avgs[sel].toLocaleString("es-AR")+" ("+_names[sel]+")";apl();}}'
     f'function apl(){{var p=document.getElementById("fp").value;'
     f'document.querySelectorAll(".sucursal-marker").forEach(function(el){{'
-    f'var c=el.className.baseVal||el.className||"",'
-    f'mp=(p==="all")||c.indexOf(p)>=0;'
+    f'var c=el.className.baseVal||el.className||"",mp=(p==="all")||c.indexOf(p)>=0;'
     f'el.style.display=mp?"":"none";}});}}'
     f'setTimeout(function(){{'
-    f'var fc=document.getElementById("fcan"),sp=document.getElementById("fp");'
-    f'var btn=document.getElementById("fr");'
-    f'var defKey=Object.keys(_fg_ids)[0];'
-    f'switchCanasta(defKey);'
+    f'var fc=document.getElementById("fcan"),sp=document.getElementById("fp"),btn=document.getElementById("fr");'
+    f'var def=Object.keys(_fg_ids)[0];'
+    f'_initEvt();switchCanasta(def);'
     f'if(fc)fc.addEventListener("change",function(){{switchCanasta(this.value);}});'
     f'if(sp)sp.addEventListener("change",apl);'
     f'if(btn)btn.addEventListener("click",function(){{'
     f'if(fc){{fc.value=Object.keys(_fg_ids)[0];switchCanasta(fc.value);}}'
-    f'if(sp)sp.value="all";'
-    f'document.querySelectorAll(".sucursal-marker").forEach(e=>e.style.display="");'
-    f'}});'
+    f'if(sp)sp.value="all";document.querySelectorAll(".sucursal-marker").forEach(e=>e.style.display="");}});'
     f'}},1200);</script>'
 )
 m.get_root().html.add_child(folium.Element(filtros_h))
 
 out_map = OUTPUT_DIR / f'mapa_interactivo_{MES}.html'
 m.save(str(out_map))
-print(f'Mapa único guardado: {out_map.name}  ({len(CANASTAS_ACTIVAS)} canastas · {len(_cgf_ref):,} sucursales)')"""))
+print(f'Mapa guardado: {out_map.name} ({len(CANASTAS_ACTIVAS)} canastas · {len(_cgf_ref):,} sucs)')"""))
 
 # ── CELL 18 — CABA RANKINGS (per-canasta) ─────────────────────────────────────
 cells.append(cell_code("""\

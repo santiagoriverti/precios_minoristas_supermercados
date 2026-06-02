@@ -256,6 +256,19 @@ if MIN_PRODUCTOS_PROPIOS >= N_CANASTA:
 ```
 Para el ICM-UADE (51 productos) con `MIN_PRODUCTOS_PROPIOS=15` esto nunca se activa.
 
+### Mapa Folium lazy popup — archivos livianos con popup on-demand
+
+Con 6 canastas × 2.370 sucursales = 14.220 CircleMarkers, el popup HTML inline hace que el HTML pese 40-50 MB. La solución es **lazy popup**: datos almacenados una vez como JSON, HTML construido por JS al hacer click.
+
+**Arquitectura (CELDA 17 de gen_nb02.py):**
+1. `_popup_data` dict Python: por (suc_key) → `{nom, bar, prv, cad, tip, can: {col_id: {t, p, n, it[]}}}`. Items compactos: `[nom[:35], cat[:20], qty, price_int, subtotal_int, is_propio]`.
+2. Serializado con `json.dumps(..., separators=(',',':'))` y embebido como `<script type="application/json" id="_pd_json">...</script>` — sin escaping JS.
+3. JS lee con `JSON.parse(document.getElementById('_pd_json').textContent)` (lazy: solo cuando se necesita el primer popup).
+4. Cada CircleMarker tiene popup mínimo: `<div class="lz-pop" data-key="suc_key" data-can="col_id">Cargando...</div>`.
+5. Evento Leaflet `popupopen`: `_bPop(key, canasta_id)` construye el HTML desde el JSON → `e.popup.update()`. El atributo `data-built="1"` evita reconstrucción.
+
+**Resultado:** ~5-10 MB en lugar de ~40-50 MB. Misma funcionalidad y estética.
+
 ### Regla crítica en gen_nb02.py: no usar triple-quote dentro de cell_code
 
 El código de cada celda está contenido en un string `"""\..."""`. Usar triple comillas dobles `"""..."""` dentro del código (como docstrings) cierra prematuramente el string externo. Siempre usar comentarios de línea `#` en lugar de docstrings dentro de `cell_code("""\...""")`.
