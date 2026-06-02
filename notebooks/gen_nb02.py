@@ -1251,14 +1251,9 @@ def fmtm(x): return f'{x:,.0f}'.replace(',','.')
 _cgf_ref = canasta_geo_dict[CANASTAS_ACTIVAS[0]]
 provs_u  = sorted(_cgf_ref['PROVINCIA_NORM'].unique())
 
-# Catálogo: nombre+categoria+cantidad por canasta (igual para todas las sucursales)
-# Almacenado UNA VEZ bajo clave '_c'; por sucursal solo se guardan precios e is_own
-_cat = {}
-for _col_id in CANASTAS_ACTIVAS:
-    _first = canasta_geo_dict[_col_id].iloc[0]['detalle_productos']
-    _cat[_col_id] = [[it[0][:35], it[1][:20], int(it[2])] for it in _first]
-
-_popup_data = {'_c': _cat}
+# Popup compacto: solo totales por sucursal/canasta (sin detalle de productos)
+# → JSON ~300 KB en vez de ~60 MB
+_popup_data = {}
 for _col_id in CANASTAS_ACTIVAS:
     _nc = len(CANASTAS[_col_id])
     for _, _r in canasta_geo_dict[_col_id].iterrows():
@@ -1275,9 +1270,7 @@ for _col_id in CANASTAS_ACTIVAS:
         _popup_data[_sk]['can'][_col_id] = {
             't': int(_r['canasta_total']),
             'p': int(_r['productos_propios']),
-            'n': _nc,
-            'pr': [int(round(it[3])) for it in _r['detalle_productos']],
-            'ow': [1 if it[5] else 0 for it in _r['detalle_productos']]
+            'n': _nc
         }
 
 _popup_json = _json.dumps(_popup_data, ensure_ascii=False, separators=(',',':'))
@@ -1337,8 +1330,10 @@ _avgs_str   = '{' + ','.join(f'"{k}":{int(canasta_geo_dict[k]["canasta_total"].m
 m.get_root().html.add_child(folium.Element(
     f'<script type="application/json" id="_pd_json">{_popup_json}</script>'))
 
-prov_opts = ''.join([f'<option value="prov-{p.replace(" ","_")}">{p}</option>' for p in provs_u])
+prov_opts  = ''.join([f'<option value="prov-{p.replace(" ","_")}">{p}</option>' for p in provs_u])
 _can_opts  = ''.join([f'<option value="{k}">{CANASTA_NAMES[k]}</option>' for k in CANASTAS_ACTIVAS])
+_cadenas_u = sorted(_cgf_ref['cadena'].unique())
+_cad_opts  = ''.join([f'<option value="cadena-{c.replace(" ","_").replace("(","").replace(")","").replace("/","")}">{c}</option>' for c in _cadenas_u])
 
 info_h = (f'<div style="position:fixed;top:10px;left:50px;width:340px;background:white;border:2px solid #0055A4;'
           f'border-radius:8px;padding:12px 15px;font-family:Arial;z-index:9999;box-shadow:0 2px 8px rgba(0,0,0,.15);">'
@@ -1354,6 +1349,9 @@ filtros_h = (
     f'<div style="color:#0055A4;font-size:13px;font-weight:bold;margin-bottom:8px;">🔍 Filtros</div>'
     f'<label style="font-size:11px;color:#555;display:block;margin-top:4px;">Canasta:'
     f'<select id="fcan" style="width:100%;padding:4px;font-size:11px;margin-top:3px;">{_can_opts}</select></label>'
+    f'<label style="font-size:11px;color:#555;display:block;margin-top:6px;">Cadena:'
+    f'<select id="fca" style="width:100%;padding:4px;font-size:11px;margin-top:3px;">'
+    f'<option value="all">Todas</option>{_cad_opts}</select></label>'
     f'<label style="font-size:11px;color:#555;display:block;margin-top:6px;">Provincia:'
     f'<select id="fp" style="width:100%;padding:4px;font-size:11px;margin-top:3px;">'
     f'<option value="all">Todas</option>{prov_opts}</select></label>'
@@ -1365,8 +1363,9 @@ filtros_h = (
     f'.lz-nfo{{font-size:11px;color:#555;margin-bottom:5px}}'
     f'.lz-bg{{background:#e6eef7;padding:2px 6px;border-radius:3px;font-size:10px}}'
     f'.lz-cx{{text-align:center;margin:8px 0}}'
-    f'.lz-tot{{color:#0055A4;font-size:20px;font-weight:bold}}'
-    f'.lz-sub{{font-size:10px;color:#888}}'
+    f'.lz-lbl{{font-size:11px;color:#555;margin-bottom:2px}}'
+    f'.lz-tot{{color:#0055A4;font-size:22px;font-weight:bold}}'
+    f'.lz-sub{{font-size:11px;color:#888;text-align:center;margin-top:3px}}'
     f'.lz-tb{{width:100%;border-collapse:collapse;font-size:10px}}'
     f'.lz-hd{{background:#e6eef7;font-weight:bold}}'
     f'.lz-hd th{{padding:3px 5px;text-align:left}}'
@@ -1382,31 +1381,17 @@ filtros_h = (
     f'function _gPD(){{if(!_pd){{var el=document.getElementById("_pd_json");if(el)_pd=JSON.parse(el.textContent);}}return _pd;}}'
     # _bPop usa template literals JS (backtick) + clases CSS → sin single-quote CSS = sin conflicto Python
     f'function _bPop(key,cid){{'
-    f'var pd=_gPD();if(!pd||!pd[key]||!pd[key].can[cid]||!pd._c||!pd._c[cid])return "<div>Sin datos.</div>";'
-    f'var d=pd[key];var c=d.can[cid];var nm=_names[cid];var cl=pd._c[cid];'
+    f'var pd=_gPD();if(!pd||!pd[key]||!pd[key].can[cid])return "<div>Sin datos.</div>";'
+    f'var d=pd[key];var c=d.can[cid];var nm=_names[cid];'
     f'var fmt=function(x){{return "$"+Math.round(x).toLocaleString("es-AR");}};'
-    f'var cats={{}};cl.forEach(function(it,i){{'
-    f'var pr=c.pr[i]||0,sub=pr*it[2],ow=c.ow[i]===1;'
-    f'(cats[it[1]]=cats[it[1]]||[]).push([it[0],it[1],it[2],pr,sub,ow]);}});'
-    f'var rows="";'
-    f'Object.keys(cats).forEach(function(cat){{'
-    f'rows+=`<tr class=lz-ch><td colspan=4>${{cat}}</td></tr>`;'
-    f'cats[cat].forEach(function(it){{'
-    f'rows+=`<tr class="${{it[5]?"":"lz-imp"}}">`'
-    f'+"<td>"+it[0]+(it[5]?"":"  *")+"</td>"'
-    f'+"<td>x"+it[2]+"</td>"'
-    f'+"<td>"+fmt(it[3])+"</td>"'
-    f'+"<td class=lz-sb>"+fmt(it[4])+"</td></tr>";'
-    f'}});}});'
+    f'var cov=Math.round(c.p/c.n*100);'
     f'return `<div class=lz-w>`'
-    f'+`<h4 class=lz-h4>${{d.cad}} — ${{nm}}</h4>`'
+    f'+`<h4 class=lz-h4>${{d.cad}}</h4>`'
     f'+`<div class=lz-nfo><b>${{d.nom}}</b><br>${{d.bar?d.bar+" — ":""}}${{d.prv}}<br><span class=lz-bg>${{d.tip}}</span></div>`'
     f'+"<hr class=lz-hr>"'
-    f'+`<div class=lz-cx><span class=lz-tot>${{fmt(c.t)}}</span><br><span class=lz-sub>(${{c.p}}/${{c.n}} propios)</span></div>`'
-    f'+"<hr class=lz-hr><table class=lz-tb>"'
-    f'+"<thead><tr class=lz-hd><th>Producto</th><th>Cant.</th><th>P.Unit</th><th>Subtotal</th></tr></thead>"'
-    f'+"<tbody>"+rows+"</tbody></table>"'
-    f'+"<div class=lz-ft>* Precio imputado</div></div>";}}'
+    f'+`<div class=lz-cx><div class=lz-lbl>${{nm}}</div><span class=lz-tot>${{fmt(c.t)}}</span></div>`'
+    f'+`<div class=lz-sub>${{c.p}}/${{c.n}} productos propios (${{cov}}%)</div>`'
+    f'+"</div>";}}'
     f'function _initEvt(){{var mp=window["{_map_var}"];if(!mp)return;'
     f'mp.on("popupopen",function(e){{'
     f'var el=e.popup.getElement().querySelector(".lz-pop");'
@@ -1418,19 +1403,23 @@ filtros_h = (
     f'if(k===sel){{mp.addLayer(fg);}}else{{mp.removeLayer(fg);}}}});'
     f'var avgEl=document.getElementById("info_avg");'
     f'if(avgEl)avgEl.innerHTML="$"+_avgs[sel].toLocaleString("es-AR")+" ("+_names[sel]+")";apl();}}'
-    f'function apl(){{var p=document.getElementById("fp").value;'
+    f'function apl(){{var p=document.getElementById("fp").value;var ca=document.getElementById("fca").value;'
     f'document.querySelectorAll(".sucursal-marker").forEach(function(el){{'
-    f'var c=el.className.baseVal||el.className||"",mp=(p==="all")||c.indexOf(p)>=0;'
-    f'el.style.display=mp?"":"none";}});}}'
+    f'var c=el.className.baseVal||el.className||"";'
+    f'var mp=(p==="all")||c.indexOf(p)>=0;'
+    f'var mc=(ca==="all")||c.indexOf(ca)>=0;'
+    f'el.style.display=(mp&&mc)?"":"none";}});}}'
     f'setTimeout(function(){{'
-    f'var fc=document.getElementById("fcan"),sp=document.getElementById("fp"),btn=document.getElementById("fr");'
+    f'var fc=document.getElementById("fcan"),sp=document.getElementById("fp"),fca=document.getElementById("fca"),btn=document.getElementById("fr");'
     f'var def=Object.keys(_fg_ids)[0];'
     f'_initEvt();switchCanasta(def);'
     f'if(fc)fc.addEventListener("change",function(){{switchCanasta(this.value);}});'
     f'if(sp)sp.addEventListener("change",apl);'
+    f'if(fca)fca.addEventListener("change",apl);'
     f'if(btn)btn.addEventListener("click",function(){{'
     f'if(fc){{fc.value=Object.keys(_fg_ids)[0];switchCanasta(fc.value);}}'
-    f'if(sp)sp.value="all";document.querySelectorAll(".sucursal-marker").forEach(e=>e.style.display="");}});'
+    f'if(sp)sp.value="all";if(fca)fca.value="all";'
+    f'document.querySelectorAll(".sucursal-marker").forEach(e=>e.style.display="");}});'
     f'}},1200);</script>'
 )
 m.get_root().html.add_child(folium.Element(filtros_h))
