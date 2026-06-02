@@ -1251,7 +1251,14 @@ def fmtm(x): return f'{x:,.0f}'.replace(',','.')
 _cgf_ref = canasta_geo_dict[CANASTAS_ACTIVAS[0]]
 provs_u  = sorted(_cgf_ref['PROVINCIA_NORM'].unique())
 
-_popup_data = {}
+# Catálogo: nombre+categoria+cantidad por canasta (igual para todas las sucursales)
+# Almacenado UNA VEZ bajo clave '_c'; por sucursal solo se guardan precios e is_own
+_cat = {}
+for _col_id in CANASTAS_ACTIVAS:
+    _first = canasta_geo_dict[_col_id].iloc[0]['detalle_productos']
+    _cat[_col_id] = [[it[0][:35], it[1][:20], int(it[2])] for it in _first]
+
+_popup_data = {'_c': _cat}
 for _col_id in CANASTAS_ACTIVAS:
     _nc = len(CANASTAS[_col_id])
     for _, _r in canasta_geo_dict[_col_id].iterrows():
@@ -1269,9 +1276,8 @@ for _col_id in CANASTAS_ACTIVAS:
             't': int(_r['canasta_total']),
             'p': int(_r['productos_propios']),
             'n': _nc,
-            'it': [[it[0][:35], it[1][:20], int(it[2]),
-                    int(round(it[3])), int(round(it[4])), bool(it[5])]
-                   for it in _r['detalle_productos']]
+            'pr': [int(round(it[3])) for it in _r['detalle_productos']],
+            'ow': [1 if it[5] else 0 for it in _r['detalle_productos']]
         }
 
 _popup_json = _json.dumps(_popup_data, ensure_ascii=False, separators=(',',':'))
@@ -1376,10 +1382,12 @@ filtros_h = (
     f'function _gPD(){{if(!_pd){{var el=document.getElementById("_pd_json");if(el)_pd=JSON.parse(el.textContent);}}return _pd;}}'
     # _bPop usa template literals JS (backtick) + clases CSS → sin single-quote CSS = sin conflicto Python
     f'function _bPop(key,cid){{'
-    f'var pd=_gPD();if(!pd||!pd[key]||!pd[key].can[cid])return "<div>Sin datos.</div>";'
-    f'var d=pd[key];var c=d.can[cid];var nm=_names[cid];'
+    f'var pd=_gPD();if(!pd||!pd[key]||!pd[key].can[cid]||!pd._c||!pd._c[cid])return "<div>Sin datos.</div>";'
+    f'var d=pd[key];var c=d.can[cid];var nm=_names[cid];var cl=pd._c[cid];'
     f'var fmt=function(x){{return "$"+Math.round(x).toLocaleString("es-AR");}};'
-    f'var cats={{}};c.it.forEach(function(it){{(cats[it[1]]=cats[it[1]]||[]).push(it);}});'
+    f'var cats={{}};cl.forEach(function(it,i){{'
+    f'var pr=c.pr[i]||0,sub=pr*it[2],ow=c.ow[i]===1;'
+    f'(cats[it[1]]=cats[it[1]]||[]).push([it[0],it[1],it[2],pr,sub,ow]);}});'
     f'var rows="";'
     f'Object.keys(cats).forEach(function(cat){{'
     f'rows+=`<tr class=lz-ch><td colspan=4>${{cat}}</td></tr>`;'
