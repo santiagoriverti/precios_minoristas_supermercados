@@ -296,8 +296,8 @@ Variante sin TACC de la Canasta Media. Metodología: reemplazar todos los produc
 | Avena | Eliminada (avena es controvertida para celíacos) | — |
 
 **Comparación**: Media estándar → diferencia revela la **prima celíaca** en Argentina.  
-**Costo estimado**: ~$663.000 ARS (+4.4% sobre Media).  
-**Hallazgo esperado**: la prima celíaca a nivel media es baja (~4%) porque la mayoría de los productos del hogar no contienen gluten — el mayor sobrecosto viene de la pasta y los snacks.
+**Costo real confirmado (abril 2026)**: **$691.836 ARS (+9.0% sobre Media $634.923)**.  
+**Hallazgo**: la prima celíaca es del ~9%, mayor de lo estimado inicialmente. El mayor impacto viene de pasta sin TACC ($5.809 Blue Patna vs $2.200 Lucchetti), sidra ($10.775 vs $3.630 Heineken) y Almidón Maizena. La dispersión provincial es menor que en canastas estándar (rango Formosa−Santa Cruz de 5.3% vs 6.7% en Media).
 
 ### Vegana Básica (`cantidad_06`)
 
@@ -307,8 +307,8 @@ Dieta vegana integral basada en alimentos completos (whole foods), sin sustituto
 **Reemplazados por**: legumbres (porotos × 6, garbanzos × 4), proteína vegetal (Not Chicken × 4), bebida vegetal (Ades Soja × 12).
 
 **Comparación**: Popular → diferencia revela si el veganismo integral es más barato o más caro que la dieta estándar Q2.  
-**Costo estimado**: ~$390.000 ARS (−14% vs Popular $455.874).  
-**Hallazgo esperado**: la proteína vegetal (legumbres ~$1.750/lata) es ~3x más barata que la animal (embutidos ~$5.669, lácteos premium), por lo que una dieta vegana básica en Argentina es **más económica** que la dieta popular estándar.
+**Costo real confirmado (abril 2026)**: **$427.033 ARS (−5.4% vs Popular $451.672)**.  
+**Hallazgo**: la dieta vegana básica es efectivamente más barata que Popular pero la diferencia es moderada (−5.4%, no −14% como se estimaba). El Ades Soja y el Not Chicken son relativamente caros y compensan el ahorro de no comprar carnes. Ordenamiento definitivo: Vulnerable $252k → **Vegana Básica $427k** → Popular $451k → Media $634k → **Celíaca Media $691k** → Media Alta $879k. La Vegana queda entre Vulnerable y Popular (94.5% del costo Popular).
 
 **Advertencia metodológica**: los productos de higiene y limpieza incluidos son los mismos que en Popular (no están específicamente certificados como veganos). En un análisis estricto, habría que reemplazar por marcas sin ingredientes de origen animal.
 

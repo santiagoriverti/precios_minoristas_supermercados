@@ -377,8 +377,8 @@ El Notebook 02 usa dos estrategias para manejar la complejidad de múltiples can
 | Costo ICM-UADE promedio nacional (cantidad_02 Popular) | **$455.874 ARS** |
 | Costo ICM-UADE promedio nacional (cantidad_03 Media) | **$634.923 ARS** |
 | Costo ICM-UADE promedio nacional (cantidad_04 Media Alta) | **$908.166 ARS** |
-| Costo estimado cantidad_05 Celíaca Media | **~$663.000 ARS** (+4% vs Media) |
-| Costo estimado cantidad_06 Vegana Básica | **~$390.000 ARS** (−14% vs Popular) |
+| Costo cantidad_05 Celíaca Media (abril 2026) | **$691.836 ARS** (+9% vs Media) |
+| Costo cantidad_06 Vegana Básica (abril 2026) | **$427.033 ARS** (−5% vs Popular) |
 | Rango por sucursal | $440.012 – $528.014 |
 | Provincia más barata | Chaco ($463.679, -3.17%) |
 | Provincia más cara | Santa Cruz ($507.864, +6.06%) |
