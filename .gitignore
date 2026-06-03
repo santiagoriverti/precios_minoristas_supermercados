@@ -1,0 +1,27 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Outputs generados por los notebooks (no versionar — van en Drive)
+output_canasta/
+*.parquet
+*.html
+*.png
+*.tex
+
+# Excel de outputs (el de canasta_representativa SÍ se versiona si está en data/)
+# Excluir solo los outputs del notebook 02:
+canasta_analisis_*.xlsx
+trazabilidad_candidatos_*.xlsx
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Entornos locales
+.env
+*.env
