@@ -55,8 +55,8 @@ El proyecto responde dos preguntas:
 | `cantidad_02` | **Popular** | Canasta de referencia para hogares populares |
 | `cantidad_03` | **Media** | Canasta de referencia para clase media |
 | `cantidad_04` | **Media Alta** | Canasta de referencia para clase media alta |
-| `cantidad_05` | **Celíaca Media** | Variante sin TACC de la Canasta Media (~$663k, +4% prima celíaca) |
-| `cantidad_06` | **Vegana Básica** | Dieta vegana integral comparable a Popular (~$390k, −14%) |
+| `cantidad_05` | **Celíaca Media** | Variante sin TACC de la Canasta Media ($691.836, +9,0% prima celíaca) |
+| `cantidad_06` | **Vegana Básica** | Dieta vegana integral comparable a Popular ($427.033, −5,5% vs Popular) |
 
 Solo se procesan las columnas con al menos un producto con cantidad > 0. Las columnas vacías se ignoran automáticamente.
 
@@ -160,12 +160,16 @@ Donde `{canasta}` es `vulnerable`, `popular`, `media`, `media_alta`, `canasta05`
 | `ranking_cadenas_nacional_MMAAAA_{canasta}.png` | Ranking de cadenas por costo promedio (nacional) |
 | `ranking_cadenas_amba_MMAAAA_{canasta}.png` | Ídem para AMBA (Buenos Aires + CABA) |
 
-### Mapas interactivos (`.html`) — uno por cada canasta activa
+### Mapa interactivo (`.html`) — un único mapa con todas las canastas
 
-`mapa_interactivo_MMAAAA_{canasta}.html` — Mapa Folium con todas las sucursales, coloreadas por costo de esa canasta. Incluye:
-- Panel de capas por cadena (activar/desactivar)
-- Filtros de provincia y tipo de sucursal
-- Popup con detalle de cada producto y precio al hacer clic
+`mapa_interactivo_MMAAAA.html` — Mapa Folium con las ~2.373 sucursales de Argentina, coloreadas por costo de canasta. Incluye:
+- **Selector de canasta**: cambiar entre las 6 canastas activas sin recargar
+- **Filtro de cadena**: mostrar solo Coto, DIA, Carrefour, etc.
+- **Filtro de provincia**: aislar una jurisdicción
+- **Popup al click**: nombre de la sucursal, cadena, barrio, provincia, tipo y costo de la canasta seleccionada
+- Tamaño: ~3–5 MB (optimizado para servir desde GitHub Pages)
+
+> **Mapa publicado**: [santiagoriverti.github.io/mapa_precios_minoristas](https://santiagoriverti.github.io/mapa_precios_minoristas/)
 
 ### Excel de análisis — `canasta_analisis_YYYY-MM.xlsx`
 
@@ -365,23 +369,39 @@ El Notebook 02 usa dos estrategias para manejar la complejidad de múltiples can
 | RAM en pico (df_suc_enr) | ~7 GB |
 | RAM después de liberar df_suc_enr | ~600 MB |
 
-### Notebook 02 — canasta ICM-UADE (cantidad_01, abril 2026)
+### Notebook 02 — 6 canastas ICM-UADE (abril 2026)
 
 | Métrica | Valor |
 |---------|-------|
-| Sucursales válidas (≥15 productos propios) | 2.372 |
+| Sucursales válidas (≥15 productos propios) | ~2.370 por canasta |
 | Cadenas con datos | 16 |
 | Provincias con datos | 24 |
+| EANs únicos (unión de 6 canastas) | 257 |
 | Meses de serie histórica | 28 (ene-2024 → abr-2026) |
-| Costo ICM-UADE promedio nacional (cantidad_01 Vulnerable) | **$255.900 ARS** |
-| Costo ICM-UADE promedio nacional (cantidad_02 Popular) | **$455.874 ARS** |
-| Costo ICM-UADE promedio nacional (cantidad_03 Media) | **$634.923 ARS** |
-| Costo ICM-UADE promedio nacional (cantidad_04 Media Alta) | **$908.166 ARS** |
-| Costo cantidad_05 Celíaca Media (abril 2026) | **$691.836 ARS** (+9% vs Media) |
-| Costo cantidad_06 Vegana Básica (abril 2026) | **$427.033 ARS** (−5% vs Popular) |
-| Rango por sucursal | $440.012 – $528.014 |
-| Provincia más barata | Chaco ($463.679, -3.17%) |
-| Provincia más cara | Santa Cruz ($507.864, +6.06%) |
-| Trazabilidad promedio de la canasta | 99,4% (48/51 productos al 100%) |
-| Tiempo primera ejecución (sin caché, 4 canastas) | ~60–90 min |
-| Tiempo ejecuciones siguientes (con caché) | ~5–15 min |
+| Trazabilidad promedio de los 257 EANs | 99,6% |
+
+#### Resultados reales — promedio nacional ponderado por población (abril 2026)
+
+| # | Canasta | Productos | Sucursales | Costo mensual | Referencia |
+|---|---------|-----------|------------|---------------|------------|
+| 1 | **Vulnerable** | 44 | 2.373 | **$252.982** | Q1, Engel ~36% |
+| 2 | **Popular** | 59 | 2.371 | **$451.672** | Q2, Engel ~28% |
+| 3 | **Media** | 72 | 2.368 | **$634.923** | Q3–Q4, Engel ~22% |
+| 4 | **Media Alta** | 74 | 2.372 | **$879.459** | Q5, Engel ~15% |
+| 5 | **Celíaca Media** | 74 | 2.371 | **$691.836** | +9,0% vs Media |
+| 6 | **Vegana Básica** | 51 | 2.372 | **$427.033** | −5,5% vs Popular |
+
+#### Dispersión geográfica — canasta Media
+
+| | Provincia | Valor | vs. promedio |
+|-|-----------|-------|-------------|
+| Más barata | Formosa | $623.080 | −1,87% |
+| Más cara | Santa Cruz | $665.723 | +4,85% |
+| Dispersión total | | | **6,8%** |
+
+#### Tiempos de ejecución
+
+| Ejecución | Tiempo estimado |
+|-----------|-----------------|
+| Primera vez (sin caché, 6 canastas, 28 meses) | ~60–90 min |
+| Siguientes ejecuciones (con caché) | ~5–15 min |
