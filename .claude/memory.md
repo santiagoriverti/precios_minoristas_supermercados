@@ -1,0 +1,188 @@
+# precios_minoristas_supermercados
+
+GitHub: santiagoriverti/precios_minoristas_supermercados
+Local: C:\Users\sriverti\Desktop\INECO\Repositorios\precios_minoristas_supermercados
+Autor: Santiago Riverti — INECO/UADE
+
+## Estado actual [2026-06-03] — PRODUCCIÓN ✅
+
+### Notebook 01 — `01_exploracion_productos.ipynb` (commit 566f033)
+- Selecciona ~65 productos con mayor score de cobertura nacional
+- Output: `canasta_representativa_YYYY-MM.xlsx` con 4 hojas: Canasta, Candidatos, Selección (~25k prods), Productos unicos (~75k)
+- Hoja Selección: **6 columnas de cantidad** (`cantidad_01`..`cantidad_06`) para definir hasta 6 canastas
+- Todos los bugs resueltos (BUG-1..BUG-14)
+
+### Notebook 02 — `02_evolucion_canasta_representativa.ipynb` (commit 05e48ba)
+- **21 celdas de código**. Lee columnas `cantidad_01`..`cantidad_06`, procesa canastas activas simultáneamente
+- **Cache único**: `hist_union_{hash}.parquet` para la unión de todos los EANs. Hash solo por EANs (no cantidades). Cambiar qty no invalida cache; agregar/quitar EANs sí.
+- Cache actual: `hist_union_feead60a.parquet` (257 EANs, 28 meses 2024-01→2026-04)
+- Generado desde `notebooks/gen_nb02.py` (script fuente)
+
+## Las 6 canastas — Resultados reales abril 2026
+
+| # | Nombre | Slot | Productos | Costo nacional | Referencia |
+|---|--------|------|-----------|----------------|------------|
+| 1 | Vulnerable | cantidad_01 | 44 | **$252.982** | Q1, Engel ~36% |
+| 2 | Popular | cantidad_02 | 59 | **$451.672** | Q2, Engel ~28% |
+| 3 | Media | cantidad_03 | 72 | **$634.923** | Q3-Q4, Engel ~22% |
+| 4 | Media Alta | cantidad_04 | 74 | **$879.459** | Q5, Engel ~15% |
+| 5 | Celíaca Media | cantidad_05 | 74 | **$691.836** | +9% vs Media (prima celíaca) |
+| 6 | Vegana Básica | cantidad_06 | 51 | **$427.033** | −5.5% vs Popular |
+
+Ordenamiento: Vulnerable $252k → Vegana $427k → Popular $451k → Media $634k → Celíaca $691k → Media Alta $879k
+
+Archivo fuente de canastas: `canastas_argentina_2026_v3.txt` (EAN+cantidad por canasta)
+
+## Repositorios GitHub
+
+| Repo | Descripción | URL |
+|------|-------------|-----|
+| `precios_minoristas_supermercados` | Pipeline completo, notebooks, datos | github.com/santiagoriverti/precios_minoristas_supermercados |
+| `mapa_precios_minoristas` | Solo index.html del mapa (GitHub Pages) | santiagoriverti.github.io/mapa_precios_minoristas/ |
+
+El repo `mapa_precios_minoristas` tiene README y .gitignore propios. El mapa a subir debe ser el generado por CELDA 17 del nb02 (~3-5 MB).
+
+## Archivos requeridos en Drive (`carga/`)
+- ZIPs SEPA: 2024A.zip, 2024B.zip, 2025A.zip, 2025B.zip, 2026A.zip
+- `IPC.xlsx` (columna `date` = datetime64, columnas IPC = float64 con punto decimal)
+- `ar.json` (GeoJSON 24 provincias)
+- `output_canasta/canasta_representativa_YYYY-MM.xlsx` (del nb01, con cantidades completadas)
+
+## Outputs del nb02
+
+- `canasta_analisis_YYYY-MM.xlsx` — **6 hojas**: Evolucion_IPC, Prov_{short}, Ranking_{short}, Sucs_{short}, Serie_precios, **Valores_Documento** (nueva: todos los valores del LaTeX listos para copiar)
+- `mapa_interactivo_{MES}.html` — popup simple (cadena + precio + cobertura), sin tabla de productos. JSON ~300KB. Funciona en GitHub Pages. (~3-5 MB total)
+- `indices_canasta_vs_ipc_{MES}.png`, `variaciones_canasta_vs_ipc_{MES}.png`, `ranking_canastas_{MES}.png`
+- `mapa_canasta_{short}_{mes}.png`, `ranking_cadenas_{tipo}_{MES}_{short}.png` (por canasta)
+- `trazabilidad_candidatos_{YYYY-MM}.xlsx` (CELDA 21, ~20 min, escanea histórico)
+
+## Historial de commits relevantes
+
+| Commit | Descripción |
+|--------|-------------|
+| `05e48ba` | CELDA 20: exportar valores para documento técnico |
+| `b4727ad` | .gitignore agregado al repo |
+| `a2cd296` | README actualizado con resultados reales abril 2026 |
+| `c4585c5` | Popup simple + filtro cadena — mapa liviano para GitHub Pages |
+| `acda017` | Fix SyntaxError lazy popup (BUG-20) |
+
+## Reglas técnicas críticas
+
+**gen_nb02.py — BUG-17**: nunca usar `"""docstrings"""` dentro de `cell_code("""\...""")`. Usar `# comentarios`.
+
+**gen_nb02.py — Escaping CSS en cell_code**: `\'` dentro de `"""\..."""` produce `'` (Python consume el backslash). Para CSS inline en f-strings de CELDA 17: usar **CSS classes + template literals JS** (backtick). NUNCA `style='...'` dentro de Python f-string single-quoted. Ver BUG-20 (SyntaxError lazy popup).
+
+**PROV_NORM**: incluir variantes exactas del maestro. Conocida: `'San juan': 'San Juan'` (j minúscula).
+
+**Reclasificación por coordenadas (CELDA 7)**: `_PROV_BBOX` dict con 24 provincias. Branches con provincia incorrecta → reclasificar por lat/lon, no descartar.
+
+**IPC.xlsx**: columna `date` es `datetime64` (Excel serial). No parsear como texto. Fast path: `pd.api.types.is_datetime64_any_dtype()`.
+
+**Lazy popup Folium**: datos en `<script type="application/json" id="_pd_json">`. JS lee con `JSON.parse(document.getElementById('_pd_json').textContent)`. Evento `popupopen` → `_bPop(key, col_id)` → `e.popup.update()`.
+
+**EANs**: leer como str, `.str.lstrip('0')` para ean_norm, `.str.zfill(13)` para exportar a Excel.
+
+**MIN_PRODUCTOS_PROPIOS**: auto-ajusta a `N_CANASTA // 2` si la canasta tiene pocos productos (evita 0 sucursales válidas).
+
+**Series vacías (PLU codes 27.../28...)**: CELDA 11/12 tienen guards para `serie_nacional_valida` vacía. PLU codes no están en el SEPA histórico.
+
+**Gráfico 2 barras**: ancho = `max(3, int(22/n_series))` días; figura = `max(20, n*2+10)` pulgadas; ticks cada 2 meses si n>5.
+
+**Cache invalida cuando**: cambian los EANs activos (unión de canastas). No invalida cuando cambian solo cantidades.
+
+**Mapa Folium — tamaño**: Popup sin tabla de productos → JSON ~300KB (era 60MB con detalle). Panel de filtros: Canasta + Cadena + Provincia. `apl()` filtra por `className` con AND de provincia y cadena. `setTimeout(1200)` antes de `_initEvt()` evita `mp.on is not a function` en GitHub Pages (race condition con archivo grande).
+
+**Dos valores para canasta Media**: $634.923 (CELDA 8: mediana provincial ponderada por población) vs $639.259 (CELDA 11: mediana nacional por EAN). El documento usa $634.923. La var. mensual +2,84% viene de CELDA 11.
+
+**Patrón geográfico Vulnerable**: para la canasta Vulnerable las más baratas son San Juan y Mendoza (Cuyo), NO Formosa/NEA. Para las otras 5 canastas sí aplica el patrón NEA más barato.
+
+## Canastas especiales — Notas metodológicas
+
+**Celíaca Media** (+9% sobre Media):
+- Productos sin TACC disponibles en SEPA con buena cobertura: pasta Blue Patna (score 0.927), galletitas Grandiet/Chalitas, Nesquik sinTACC, Caldo Verdura Knorr, Almidón Maizena
+- Sin cerveza de malta (cebada = gluten) → sidra Saenz Briones 1888
+- Sin avena (controvertida para celíacos)
+- Nesquik sinTACC tiene trazabilidad 82.1% (por debajo del umbral general de 90%)
+
+**Vegana Básica** (−5.5% vs Popular):
+- Proteína: porotos × 6 + garbanzos × 4 + Not Chicken × 4
+- Bebida vegetal: Ades Soja × 12
+- Sin lácteos, carnes, huevos, pescado
+- Pasta de trigo incluida (sin huevo = vegana)
+- Caldo de Verdura Knorr (no caldo de carne)
+
+## Bugs resueltos (resumen)
+
+BUG-1..14: todos resueltos en nb01 (commit c61416e)
+BUG-15: `'San juan'` → `'San Juan'` en PROV_NORM
+BUG-16: reclasificación por bbox en lugar de descarte
+BUG-17: triple-quote dentro de cell_code
+BUG-18: CELDA 11/12 guard para serie histórica vacía
+BUG-19: MIN_PRODUCTOS_PROPIOS auto-ajuste
+BUG-20: SyntaxError lazy popup — `\'` en `"""\..."""` = `'` (sin escape). Fix: CSS classes + template literals JS. Commit acda017.
+BUG-21: JSON popup 60MB → popup simple sin detalle de productos (c4585c5).
+BUG-22: `mp.on is not a function` en GitHub Pages → `setTimeout(1200)` antes de `_initEvt()`.
+EAN v2→v3: 4 EANs malformados corregidos (78924468→0000078924468, etc.)
+
+## Documento técnico LaTeX — ICR-UADE (Overleaf)
+
+Informe de prensa en LaTeX (pdfLaTeX). Nombre del índice: **ICR-UADE** (Índice de Canastas Representativas UADE). Estado: en desarrollo activo [2026-06-03].
+
+### Errores pendientes de corregir en Overleaf
+
+**ERROR — Córdoba geográfico** (grave): El texto dice que NEA y NOA, junto con Entre Ríos y **Córdoba** están por debajo del promedio. FALSO: Córdoba = +0,84% sobre el promedio para la canasta Media. Las provincias por debajo del promedio son: NEA (Formosa, Chaco, Misiones, Corrientes), litoral (Entre Ríos, Santa Fe) y AMBA (CABA, Buenos Aires). El NOA está levemente por encima.
+
+**ERROR — Patrón Vulnerable**: el texto dice que el patrón "NEA más barato" se repite en todas las canastas. Para Vulnerable las más baratas son San Juan y Mendoza (Cuyo). Corregir con una oración de excepción.
+
+**Pendiente menor**: `\AutorInforme{Santiago Riverti \\ Instituto de Economía - INECO/UADE}` no fue definido → portada sin autor.
+
+**Pendiente menor**: `\usepackage{caption}` duplicado en el preámbulo (genera warning en Overleaf).
+
+### Datos verificados (cruzados notebook + .tex exportados)
+
+- $634.923 Media abril 2026 ✅ | $691.836 Celíaca (+9.0%) ✅ | $427.033 Vegana (−5.5%) ✅
+- Todas las tablas provinciales (6 canastas × 24 provincias) ✅
+- Rankings nacionales por cadena ✅ (Disco $656.205, Hipermercado Libertad $615.172)
+- Belgrano case study ✅ | Pinamar ✅ | Costa Atlántica (pendiente verificar en Excel)
+- Valores AMBA Disco $660.777, ChangoMas $622.626 (pendiente verificar en Excel)
+
+### Workflow actualización mensual
+
+Con el nb02 ejecutado para el nuevo mes:
+1. Ejecutar **CELDA 20** → genera hoja `Valores_Documento` en `canasta_analisis_MMAAAA.xlsx`
+2. La hoja tiene columnas: Sección | Variable | Valor_LaTeX | Valor_numero
+3. Buscar en `Valor_LaTeX` los nuevos valores y reemplazar en Overleaf
+4. Actualizar `\Fecha{...}` y el subtítulo de portada con el nuevo mes
+5. Completar manualmente **Belgrano** y **Costa Atlántica** desde hoja `Sucs_Media` (ver abajo)
+
+#### Cobertura detallada de CELDA 20 [2026-06-05]
+
+**CELDA 20 genera automáticamente (print + hoja Valores_Documento):**
+- Valores y variaciones mensuales de las 6 canastas
+- Provincias: min/max, dispersión interprovincial, rango sucursales (P25, P75)
+- Barrios CABA: ranking completo, top/bottom 3, dispersión, promedio CABA
+- Cadenas: ranking nacional completo con vs. promedio %; ranking AMBA
+- Especiales: prima celíaca %, ahorro vegano %
+- Acumulados desde MES_INICIO_GRAFICO (6 canastas + IPC)
+- Últimas 3 variaciones mensuales (todas las canastas + IPC general + alimentos)
+
+**NO cubre — requiere lookup manual desde hoja `Sucs_Media`:**
+1. **Caso Belgrano**: desglose por cadena dentro del barrio → filtrar `Sucs_Media` por barrio=Belgrano
+2. **Tablas Costa Atlántica/Pinamar**: valores por localidad y sucursal → filtrar `Sucs_Media` por localidad
+3. **Picos/mínimos históricos**: datos fijos, solo actualizar si el nuevo mes bate récord
+
+## Estado documento técnico LaTeX — abril 2026 [2026-06-05]
+
+**Documento FINALIZADO y publicado.** Errores corregidos en Overleaf:
+- ✅ Córdoba clasificada como sobre el promedio (no debajo)
+- ✅ NOA clasificado como levemente sobre el promedio (no debajo)
+- ✅ ".." doble punto al final del párrafo del mapa corregido
+- ✅ "2.368" → "2.373" sucursales uniformizado
+- ⚠️ `\usepackage{caption}` duplicado (warning Overleaf, no rompe compilación)
+- ⚠️ `\AutorInforme` definido pero sin valor → portada sin autor
+
+## Pendientes próxima sesión (mayo 2026)
+
+1. **Ejecutar notebook 02** con datos mayo 2026 (zip SEPA del 2do semestre o nuevo mes)
+2. **Mapa GitHub Pages**: CELDA 17 en Colab → descargar HTML (~3-5 MB) → subir `index.html` al repo `mapa_precios_minoristas`
+3. **Actualizar LaTeX**: copiar `Valores_Documento` al Overleaf; completar Belgrano y Costa Atlántica desde `Sucs_Media`
