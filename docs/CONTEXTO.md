@@ -47,7 +47,7 @@ Este proyecto no existe en aislamiento. Hay múltiples notebooks en otros reposi
 - CELDA 10: Serie histórica (todos los semestres disponibles) con caché parquet clave MD5 → `serie_nacional_valida`
 - CELDA 11: IPC desde `carga/IPC.xlsx` → `ipc_general`, `ipc_alimentos`
 - CELDA 12: `comparativa` — reindexar a base mar-2024, índice SEPA vs IPC
-- CELDA 13: Gráfico 1 — índices base dinámica (líneas, etiquetas en español, serie llamada "ICM-UADE"); Gráfico 2 — variaciones mensuales (3 barras: ICM-UADE + IPC General + IPC Alimentos, etiquetas español)
+- CELDA 13: Gráfico 1 — índices base dinámica (líneas, etiquetas en español, serie llamada "ICR"); Gráfico 2 — variaciones mensuales (3 barras: ICR + IPC General + IPC Alimentos, etiquetas español)
 - CELDA 14: Cuadro 1 provincial + código LaTeX
 - CELDA 15: Mapa coroplético provincial con `ar.json`
 - CELDA 16: Cobertura por provincia y por cadena
@@ -61,8 +61,8 @@ Este proyecto no existe en aislamiento. Hay múltiples notebooks en otros reposi
 **Cambios claves (2026-05-29)**:
 - BUG-15 resuelto: `'San juan'` → `'San Juan'` en `PROV_NORM`
 - Caché por hash de EANs+cantidades (cambiar qty invalida caché automáticamente)
-- Gráficos con nombre "ICM-UADE" y etiquetas de meses en español (ene-24, feb-24…)
-- Gráfico 2 con 3 barras: ICM-UADE + IPC General + IPC Alimentos
+- Gráficos con nombre "ICR" y etiquetas de meses en español (ene-24, feb-24…)
+- Gráfico 2 con 3 barras: ICR + IPC General + IPC Alimentos
 - `MES_INICIO_GRAFICO` auto-adapta al primer mes disponible si el configurado no existe
 - Nueva hoja Excel `Serie_precios`: precio mediano por producto por mes (serie completa)
 
@@ -260,7 +260,7 @@ Los 13 productos son **embutidos curados** (Leberwurst, Salamín, Bondiola, Pale
 
 ---
 
-## Canasta ICM-UADE — Composición vigente (51 productos, revisada 2026-05-29)
+## Canasta ICR — Composición vigente (51 productos, revisada 2026-05-29)
 
 La canasta fue construida a partir de la hoja `Selección` del nb01 y revisada en base a trazabilidad temporal y cobertura. Se reemplazaron 4 productos con baja trazabilidad por alternativas con 100% de presencia desde enero 2024.
 
@@ -332,7 +332,7 @@ La canasta fue construida a partir de la hoja `Selección` del nb01 y revisada e
 
 | Métrica | Valor |
 |---------|-------|
-| Costo ICM-UADE promedio nacional | **$478.836 ARS** |
+| Costo ICR promedio nacional | **$478.836 ARS** |
 | Rango por sucursal | $440.012 – $528.014 |
 | Provincia más barata | Chaco ($463.679, -3.17%) |
 | Provincia más cara | Santa Cruz ($507.864, +6.06%) |
@@ -344,7 +344,7 @@ La canasta fue construida a partir de la hoja `Selección` del nb01 y revisada e
 | Barrio CABA más barato | Villa Soldati ($477.650, -1.09% vs CABA) |
 | Barrio CABA más caro (ranking) | Recoleta ($485.969, +0.63% vs CABA) |
 | Meses en serie histórica | 28 (2024-01 → 2026-04) |
-| Costo ICM-UADE vs IPC General abr-2026 | +3.10% ICM vs +2.58% IPC |
+| Costo ICR vs IPC General abr-2026 | +3.10% ICR vs +2.58% IPC |
 | Cache parquet | `hist_0a6651c5.parquet` |
 
 ### Ramp-up de la serie histórica (por qué 48→51 EANs)
@@ -425,7 +425,7 @@ Los 4 reemplazos (Swift XL, Lavandina Anti-splash, Plusbelle, Listerine) están 
 
 ### 2026-05-29 — Robustez para canastas pequeñas/especializadas (commits e979ae2, 6289ab8)
 
-- **BUG-19**: `MIN_PRODUCTOS_PROPIOS = 15` con canasta de 12 productos → 0 sucursales válidas. Fix: safeguard en CELDA 3 que auto-ajusta a `N_CANASTA // 2` cuando `MIN_PRODUCTOS_PROPIOS >= N_CANASTA`. No afecta ICM-UADE (51 productos).
+- **BUG-19**: `MIN_PRODUCTOS_PROPIOS = 15` con canasta de 12 productos → 0 sucursales válidas. Fix: safeguard en CELDA 3 que auto-ajusta a `N_CANASTA // 2` cuando `MIN_PRODUCTOS_PROPIOS >= N_CANASTA`. No afecta ICR (51 productos).
 - **BUG-18**: `IndexError` en CELDA 11/12 cuando la serie histórica está vacía. Ocurre con EANs PLU (prefijo 27.../28...) que no existen en el SEPA histórico. Fix: guarda `_serie_vacia` en CELDA 11 y envuelve la lógica de gráficos de CELDA 12 en `if len(df_g) > 0:`.
 - El notebook ahora soporta **cualquier canasta** — desde 1 producto hasta 100+, con o sin historia disponible. Siempre ejecuta completo y produce todos los outputs disponibles para los datos que tiene.
 
@@ -447,16 +447,16 @@ Los 4 reemplazos (Swift XL, Lavandina Anti-splash, Plusbelle, Listerine) están 
 - ✅ 48/51 productos al 100%, promedio 99.4%. Mínimo: Nesquik 82.1% (nuevo desde jun-2024, no inestable)
 - Cache nuevo: `hist_0a6651c5.parquet`
 
-### 2026-05-29 — ICM-UADE, BUG-15, mejoras nb02 (commits 6fe5a5e, 17ae989, 96f83f5)
+### 2026-05-29 — ICR, BUG-15, mejoras nb02 (commits 6fe5a5e, 17ae989, 96f83f5)
 
 - **BUG-15**: San Juan no aparecía en mapa coroplético. El maestro usa `"San juan"` (j minúscula) → agregado a `PROV_NORM`
 - **Notebook 01**: nueva hoja `Productos unicos` (~70K–100K productos sin umbrales, mismas columnas que Selección)
-- **Notebook 02**: renombrado a "ICM-UADE"; gráficos con etiquetas en español (`ene-24`, `feb-24`...)
-- **Gráfico 2**: 3 barras por mes (ICM-UADE + IPC General + IPC Alimentos y bebidas)
+- **Notebook 02**: renombrado a "ICR"; gráficos con etiquetas en español (`ene-24`, `feb-24`...)
+- **Gráfico 2**: 3 barras por mes (ICR + IPC General + IPC Alimentos y bebidas)
 - **Cache**: hash MD5 incluye EANs + cantidades → cambiar `cantidad` invalida cache automáticamente
 - **MES_INICIO_GRAFICO**: auto-adapta al primer mes de la serie si el configurado no existe
 - **Hoja Serie_precios**: nueva hoja en Excel de nb02 con precio mediano por producto por mes (serie completa)
-- **Canasta ICM-UADE**: 4 reemplazos (ver tabla arriba). Trazabilidad promedio 99.4%
+- **Canasta ICR**: 4 reemplazos (ver tabla arriba). Trazabilidad promedio 99.4%
 - **README**: reescrito completo con guía de ejecución paso a paso, outputs de ambos notebooks, métricas
 
 ### 2026-05-29 — IPC.xlsx formato real confirmado (commit a409d7e)

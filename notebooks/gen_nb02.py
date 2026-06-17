@@ -816,7 +816,7 @@ else:
                  color=CANASTA_COLORS[_col_id], linewidth=2.5,
                  linestyle=CANASTA_LINESTYLES[_col_id],
                  marker=CANASTA_MARKERS[_col_id], markersize=5,
-                 label=f'ICM-UADE {_name}')
+                 label=f'ICR {_name}')
         _ult = _dg.iloc[-1]
         ax1.annotate(f"{_ult['idx_canasta_base']:.0f}",
                      xy=(_ult['fecha'], _ult['idx_canasta_base']),
@@ -856,7 +856,7 @@ else:
     # ── GRAFICO 2: Variaciones mensuales (solo barras verticales) ───────────────
     # Canastas activas + IPC General + IPC Alimentos como barras agrupadas
     _series_bar = (
-        [(CANASTA_COLORS[c], f'ICM-UADE {CANASTA_NAMES[c]}',
+        [(CANASTA_COLORS[c], f'ICR {CANASTA_NAMES[c]}',
           df_g_dict[c]['variacion_mensual_%']) for c in _activas_con_datos] +
         [(COLOR_IPC_GEN, 'IPC INDEC - Nivel general', _dg0['ipc_general_var_%']),
          (COLOR_IPC_ALI, 'IPC INDEC - Alimentos y bebidas', _dg0['ipc_alimentos_var_%'])]
@@ -1296,7 +1296,7 @@ for _col_id in CANASTAS_ACTIVAS:
     if _vmin == _vmax: _vmin, _vmax = _cgf['canasta_total'].min(), _cgf['canasta_total'].max()
     _cm = LinearColormap(
         colors=['#1a9850','#66bd63','#a6d96a','#fee08b','#fdae61','#f46d43','#d73027'],
-        vmin=_vmin, vmax=_vmax, caption=f'ICM-UADE {_name} — {NOMBRE_MES_TITLE} (ARS)')
+        vmin=_vmin, vmax=_vmax, caption=f'ICR {_name} — {NOMBRE_MES_TITLE} (ARS)')
     if _is_default: _cm.add_to(m)
     _fg = folium.FeatureGroup(name=_short, show=_is_default)
     _canasta_fg_ids[_col_id] = _fg.get_name()
@@ -1337,7 +1337,7 @@ _cad_opts  = ''.join([f'<option value="cadena-{c.replace(" ","_").replace("(",""
 
 info_h = (f'<div style="position:fixed;top:10px;left:50px;width:340px;background:white;border:2px solid #0055A4;'
           f'border-radius:8px;padding:12px 15px;font-family:Arial;z-index:9999;box-shadow:0 2px 8px rgba(0,0,0,.15);">'
-          f'<div style="color:#0055A4;font-size:15px;font-weight:bold;margin-bottom:5px;">ICM-UADE — {NOMBRE_MES_TITLE}</div>'
+          f'<div style="color:#0055A4;font-size:15px;font-weight:bold;margin-bottom:5px;">ICR — {NOMBRE_MES_TITLE}</div>'
           f'<div style="font-size:11px;color:#555;line-height:1.5;">'
           f'<b>{len(_cgf_ref):,}</b> sucursales · <b>{len(CANASTAS_ACTIVAS)}</b> canastas<br>'
           f'Promedio: <span id="info_avg" style="font-weight:bold;"></span></div></div>')

@@ -254,7 +254,7 @@ Cuando `MIN_PRODUCTOS_PROPIOS >= N_CANASTA` ninguna sucursal puede pasar el filt
 if MIN_PRODUCTOS_PROPIOS >= N_CANASTA:
     MIN_PRODUCTOS_PROPIOS = max(1, N_CANASTA // 2)
 ```
-Para el ICM-UADE (51 productos) con `MIN_PRODUCTOS_PROPIOS=15` esto nunca se activa.
+Para el ICR (51 productos) con `MIN_PRODUCTOS_PROPIOS=15` esto nunca se activa.
 
 ### Mapa Folium lazy popup — archivos livianos con popup on-demand
 
@@ -574,9 +574,9 @@ if _mg not in comparativa['mes'].values:
     print(f'AVISO: MES_INICIO_GRAFICO {MES_INICIO_GRAFICO} no está en la serie → usando {_mg}')
 ```
 
-### Nombre de la canasta: ICM-UADE
+### Nombre de la canasta: ICR
 
-El nombre institucional de la canasta en gráficos y visualizaciones es **"ICM-UADE"** (Índice de Canasta Mensual UADE), no "Canasta SEPA". La variable `COLOR_CANASTA = '#0055A4'` (azul UADE) se mantiene en todos los gráficos.
+El nombre del índice en gráficos y visualizaciones es **"ICR"** (Índice de Consumo Representativo), no "Canasta SEPA". La variable `COLOR_CANASTA = '#0055A4'` (azul) se mantiene en todos los gráficos.
 
 ### Hoja Serie_precios en el Excel de análisis
 

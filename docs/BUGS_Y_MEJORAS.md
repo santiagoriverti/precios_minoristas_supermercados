@@ -42,7 +42,7 @@ if MIN_PRODUCTOS_PROPIOS >= N_CANASTA:
     print(f'AVISO: MIN_PRODUCTOS_PROPIOS ajustado a {MIN_PRODUCTOS_PROPIOS} '
           f'(canasta tiene solo {N_CANASTA} productos)')
 ```
-**Comportamiento**: Para ICM-UADE (51 prod.): `15 >= 51` → False → no cambia. Para canasta pequeña (12 prod.): `15 >= 12` → True → ajusta a 6.
+**Comportamiento**: Para ICR (51 prod.): `15 >= 51` → False → no cambia. Para canasta pequeña (12 prod.): `15 >= 12` → True → ajusta a 6.
 **Regla general**: Siempre verificar que `MIN_PRODUCTOS_PROPIOS < N_CANASTA`. El safeguard lo hace automáticamente.
 
 ---
@@ -55,7 +55,7 @@ if MIN_PRODUCTOS_PROPIOS >= N_CANASTA:
 **Fix aplicado**:
 - CELDA 11: guarda `_serie_vacia = len(serie_nacional_valida) == 0`. Si True → imprime aviso, crea DataFrames vacíos con las columnas correctas (`comparativa`, `df_g`). Si False → ejecuta el código original sin cambios.
 - CELDA 12: envuelve toda la lógica de gráficos en `if len(df_g) == 0: print(aviso) / else: # código original`. Inicializa `out1 = out2 = None` para que CELDA 19 (export Excel) no crashee.
-**Sin efecto sobre ICM-UADE**: `len(serie_nacional_valida) = 28` → `_serie_vacia = False` → código original, sin cambios.
+**Sin efecto sobre ICR**: `len(serie_nacional_valida) = 28` → `_serie_vacia = False` → código original, sin cambios.
 
 ---
 

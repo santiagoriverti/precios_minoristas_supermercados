@@ -1,4 +1,4 @@
-# Metodología — ICM-UADE (Índice de Canasta Mensual UADE)
+# Metodología — ICR (Índice de Consumo Representativo)
 
 **Última actualización:** 2026-06-01 (Celíaca Media + Vegana Básica)
 **Período de referencia:** enero 2024 – abril 2026
@@ -98,7 +98,7 @@ Solo se procesan las columnas con al menos un producto con cantidad > 0. Las col
 
 ---
 
-## 3. Canastas ICM-UADE — Metodología ENGHo
+## 3. Canastas ICR — Metodología ENGHo
 
 Las 4 canastas nombradas se construyeron aplicando la metodología de la **Encuesta Nacional de Gastos de los Hogares 2017/18 (ENGHo)** del INDEC.
 
@@ -262,11 +262,11 @@ Para que un producto sea incluido en una canasta de análisis temporal, se recom
 
 ### Cadenas no cubiertas
 
-El SEPA cubre las cadenas de supermercados obligadas a reportar. Los comercios de proximidad, almacenes y mercados locales **no están incluidos**, por lo que los precios del ICM-UADE pueden diferir de los precios efectivamente pagados por hogares de bajos ingresos (que consumen más en comercios de barrio).
+El SEPA cubre las cadenas de supermercados obligadas a reportar. Los comercios de proximidad, almacenes y mercados locales **no están incluidos**, por lo que los precios del ICR pueden diferir de los precios efectivamente pagados por hogares de bajos ingresos (que consumen más en comercios de barrio).
 
 ### Identificación de cadenas en formato semestral
 
-En el formato semestral, `id_bandera` representa el grupo corporativo (5 valores), no el banner comercial (16 valores). Para obtener el banner real se combina `(id_comercio, id_bandera)`. El ICM-UADE usa `id_bandera` para los umbrales y el score (métrica de grupos corporativos), e informa `n_cadenas_com` (banners reales) como dato adicional no vinculante.
+En el formato semestral, `id_bandera` representa el grupo corporativo (5 valores), no el banner comercial (16 valores). Para obtener el banner real se combina `(id_comercio, id_bandera)`. El ICR usa `id_bandera` para los umbrales y el score (métrica de grupos corporativos), e informa `n_cadenas_com` (banners reales) como dato adicional no vinculante.
 
 ### PLU codes (prefijo 27.../28...)
 
@@ -316,7 +316,7 @@ Dieta vegana integral basada en alimentos completos (whole foods), sin sustituto
 
 ## 7. Historial de versiones de canastas
 
-### ICM-UADE (cantidad_01) — Canasta de referencia UADE
+### ICR (cantidad_01) — Canasta de referencia
 
 Canasta de 51 productos seleccionados por score de cobertura, representando el consumo de una familia tipo 4 integrantes. Revisada en mayo 2026 para reemplazar 4 productos con baja trazabilidad:
 

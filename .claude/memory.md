@@ -2,7 +2,7 @@
 
 GitHub: santiagoriverti/precios_minoristas_supermercados
 Local: C:\Users\sriverti\Desktop\INECO\Repositorios\precios_minoristas_supermercados
-Autor: Santiago Riverti — INECO/UADE
+Autor: Santiago Riverti — investigador independiente
 
 ## Estado actual [2026-06-03] — PRODUCCIÓN ✅
 
@@ -124,9 +124,9 @@ BUG-21: JSON popup 60MB → popup simple sin detalle de productos (c4585c5).
 BUG-22: `mp.on is not a function` en GitHub Pages → `setTimeout(1200)` antes de `_initEvt()`.
 EAN v2→v3: 4 EANs malformados corregidos (78924468→0000078924468, etc.)
 
-## Documento técnico LaTeX — ICR-UADE (Overleaf)
+## Documento técnico LaTeX — ICR (Overleaf)
 
-Informe de prensa en LaTeX (pdfLaTeX). Nombre del índice: **ICR-UADE** (Índice de Canastas Representativas UADE). Estado: en desarrollo activo [2026-06-03].
+Informe de prensa en LaTeX (pdfLaTeX). Nombre del índice: **ICR** (Índice de Consumo Representativo). Estado: en desarrollo activo [2026-06-03].
 
 ### Errores pendientes de corregir en Overleaf
 
@@ -134,7 +134,7 @@ Informe de prensa en LaTeX (pdfLaTeX). Nombre del índice: **ICR-UADE** (Índice
 
 **ERROR — Patrón Vulnerable**: el texto dice que el patrón "NEA más barato" se repite en todas las canastas. Para Vulnerable las más baratas son San Juan y Mendoza (Cuyo). Corregir con una oración de excepción.
 
-**Pendiente menor**: `\AutorInforme{Santiago Riverti \\ Instituto de Economía - INECO/UADE}` no fue definido → portada sin autor.
+**Pendiente menor**: `\AutorInforme{Santiago Riverti}` (investigador independiente) no fue definido → portada sin autor.
 
 **Pendiente menor**: `\usepackage{caption}` duplicado en el preámbulo (genera warning en Overleaf).
 

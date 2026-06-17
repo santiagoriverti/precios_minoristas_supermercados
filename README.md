@@ -1,6 +1,6 @@
-# Precios Minoristas en Supermercados — ICM-UADE
+# Precios Minoristas en Supermercados — ICR
 
-Construcción del **Índice de Canasta Mensual UADE (ICM-UADE)** a partir de los datos públicos del [SEPA](https://datos.produccion.gob.ar/dataset/sepa-precios) (Sistema Electrónico de Publicidad de Precios Argentinos). El pipeline selecciona automáticamente los productos con mayor cobertura geográfica y temporal, calcula el costo mensual de hasta **6 canastas simultáneas** por sucursal y provincia, y las compara con el IPC INDEC.
+Construcción del **Índice de Consumo Representativo (ICR)** a partir de los datos públicos del [SEPA](https://datos.produccion.gob.ar/dataset/sepa-precios) (Sistema Electrónico de Publicidad de Precios Argentinos). El pipeline selecciona automáticamente los productos con mayor cobertura geográfica y temporal, calcula el costo mensual de hasta **6 canastas simultáneas** por sucursal y provincia, y las compara con el IPC INDEC.
 
 ---
 
@@ -20,7 +20,7 @@ El proyecto responde dos preguntas:
 | Notebook | Descripción | Abrir en Colab |
 |----------|-------------|----------------|
 | `01_exploracion_productos` | Construye la canasta representativa. Detecta automáticamente el último mes disponible en los ZIPs del SEPA y genera `canasta_representativa_YYYY-MM.xlsx` con **cuatro hojas**, incluyendo la hoja `Selección` con **6 columnas de cantidad** para definir hasta 6 canastas distintas. | [![Abrir en Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/santiagoriverti/precios_minoristas_supermercados/blob/main/notebooks/01_exploracion_productos.ipynb) |
-| `02_evolucion_canasta_representativa` | Analiza la evolución del ICM-UADE para **hasta 6 canastas simultáneas**. Lee las columnas `cantidad_01`..`cantidad_06` de la hoja `Selección`, calcula el costo por sucursal y provincia para cada canasta activa, compara con el IPC INDEC, y genera gráficos, mapas y rankings independientes por canasta. | [![Abrir en Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/santiagoriverti/precios_minoristas_supermercados/blob/main/notebooks/02_evolucion_canasta_representativa.ipynb) |
+| `02_evolucion_canasta_representativa` | Analiza la evolución del ICR para **hasta 6 canastas simultáneas**. Lee las columnas `cantidad_01`..`cantidad_06` de la hoja `Selección`, calcula el costo por sucursal y provincia para cada canasta activa, compara con el IPC INDEC, y genera gráficos, mapas y rankings independientes por canasta. | [![Abrir en Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/santiagoriverti/precios_minoristas_supermercados/blob/main/notebooks/02_evolucion_canasta_representativa.ipynb) |
 
 > **¿Ves una versión vieja en Colab?** El badge siempre apunta a la última versión en GitHub, pero Colab puede mostrar una copia cacheada de tu Drive. Para forzar la actualización: eliminá el notebook de `Mi unidad/Colab Notebooks/` en Google Drive y volvé a hacer clic en el badge.
 
@@ -299,7 +299,7 @@ precios_minoristas_supermercados/
 ├── README.md
 ├── notebooks/
 │   ├── 01_exploracion_productos.ipynb            # Notebook 1 — canasta representativa
-│   ├── 02_evolucion_canasta_representativa.ipynb # Notebook 2 — análisis ICM-UADE multi-canasta
+│   ├── 02_evolucion_canasta_representativa.ipynb # Notebook 2 — análisis ICR multi-canasta
 │   └── gen_nb02.py                               # Script fuente que genera el Notebook 2
 ├── data/                                # Maestros de referencia (se descargan automáticamente)
 │   ├── Maestro de Productos Interno.xlsx    # ~176K productos con rubro/categoría/subcategoría
@@ -369,7 +369,7 @@ El Notebook 02 usa dos estrategias para manejar la complejidad de múltiples can
 | RAM en pico (df_suc_enr) | ~7 GB |
 | RAM después de liberar df_suc_enr | ~600 MB |
 
-### Notebook 02 — 6 canastas ICM-UADE (abril 2026)
+### Notebook 02 — 6 canastas ICR (abril 2026)
 
 | Métrica | Valor |
 |---------|-------|
