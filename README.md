@@ -21,7 +21,7 @@ El proyecto responde dos preguntas:
 |----------|-------------|----------------|
 | `01_exploracion_productos` | Construye la canasta representativa. Detecta automáticamente el último mes disponible en los ZIPs del SEPA y genera `canasta_representativa_YYYY-MM.xlsx` con **cuatro hojas**, incluyendo la hoja `Selección` con **6 columnas de cantidad** para definir hasta 6 canastas distintas. | [![Abrir en Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/santiagoriverti/precios_minoristas_supermercados/blob/main/notebooks/01_exploracion_productos.ipynb) |
 | `02_evolucion_canasta_representativa` | Analiza la evolución del ICR para **hasta 6 canastas simultáneas**. Lee las columnas `cantidad_01`..`cantidad_06` de la hoja `Selección`, calcula el costo por sucursal y provincia para cada canasta activa, compara con el IPC INDEC, y genera gráficos, mapas y rankings independientes por canasta. | [![Abrir en Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/santiagoriverti/precios_minoristas_supermercados/blob/main/notebooks/02_evolucion_canasta_representativa.ipynb) |
-| `03_consolidacion_ultimo_mes` | Convierte el SEPA **diario** al formato **semestral wide** para analizar el mes en curso sin esperar la consolidación oficial. Corre **localmente** (procesa el `.zip` diario de ~7 GB en tu PC) y produce los `.csv.gz` listos para subir a Drive. Ver [sección detallada](#adelantar-el-mes-en-curso--03_consolidacion_ultimo_mespy). | [Ver script](notebooks/03_consolidacion_ultimo_mes.py) · ⚙️ local |
+| `03_consolidacion_ultimo_mes` | Convierte el SEPA **diario** al formato **semestral wide** para analizar el mes en curso sin esperar la consolidación oficial. Subís `ultimo_mes.zip` al entorno de Colab y te devuelve los dos `.csv.gz` para descargar. Ver [sección detallada](#adelantar-el-mes-en-curso--03_consolidacion_ultimo_mes). | [![Abrir en Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/santiagoriverti/precios_minoristas_supermercados/blob/main/notebooks/03_consolidacion_ultimo_mes.ipynb) |
 
 > **¿Ves una versión vieja en Colab?** El badge siempre apunta a la última versión en GitHub, pero Colab puede mostrar una copia cacheada de tu Drive. Para forzar la actualización: eliminá el notebook de `Mi unidad/Colab Notebooks/` en Google Drive y volvé a hacer clic en el badge.
 
@@ -293,11 +293,22 @@ Los datos de **2025B en adelante ya vienen en pesos** (factor = 1). Los notebook
 
 ---
 
-## Adelantar el mes en curso — `03_consolidacion_ultimo_mes.py`
+## Adelantar el mes en curso — `03_consolidacion_ultimo_mes`
 
-El SEPA publica el archivo **semestral consolidado** de cada mes recién **una semana después** de que cierra. Pero también publica los datos **diarios** el mismo día. El script `notebooks/03_consolidacion_ultimo_mes.py` convierte el SEPA **diario** al formato **semestral wide** que consumen los notebooks 01 y 02, para poder analizar el mes en curso **sin esperar** la consolidación oficial.
+El SEPA publica el archivo **semestral consolidado** de cada mes recién **una semana después** de que cierra. Pero también publica los datos **diarios** el mismo día. El notebook `03_consolidacion_ultimo_mes` convierte el SEPA **diario** al formato **semestral wide** que consumen los notebooks 01 y 02, para poder analizar el mes en curso **sin esperar** la consolidación oficial.
 
-Se ejecuta **localmente** (no en Colab): toma el `.zip` diario desde el disco — que pesa ~7 GB y no entra cómodo en Drive — y produce solo los `.csv.gz` compactos (~150 MB por quincena), que sí se suben a Drive.
+### Flujo en Colab
+
+1. Abrir el notebook con el badge **Abrir en Colab**.
+2. Subir `ultimo_mes.zip` al entorno: panel **Archivos** (📁) → arrastrar el `.zip` a `/content/`.
+   > Pesa ~7 GB: la subida tarda. No cerrar la pestaña mientras sube.
+3. *Entorno de ejecución → Ejecutar todo*.
+4. Al terminar, el notebook **descarga automáticamente** los dos archivos:
+   - `MMAAAA_pais_parte1COMPLETO.csv.gz` (días 01–15)
+   - `MMAAAA_pais_parte2COMPLETO.csv.gz` (días 16–último)
+5. Subir esos `.csv.gz` al `2026A.zip` en Drive (`carga/`) y correr los notebooks 01 y 02.
+
+Se puede correr **cualquier día del mes**: con 23 días disponibles arma parte1 (15 días) + parte2 (días 16–23); el día 30 toma el mes completo; el 1° de julio se sube el `ultimo_mes.zip` de julio y arranca el mes nuevo.
 
 ### Qué hace
 
@@ -305,23 +316,17 @@ Se ejecuta **localmente** (no en Colab): toma el `.zip` diario desde el disco �
 |---|---|
 | **Entrada** | `ultimo_mes.zip` con carpetas diarias `YYYY-MM-DD/`, cada una con un `.zip` por comercio (`comercio.csv`, `sucursales.csv`, `productos.csv`, separador `\|`, precio en **pesos**). |
 | **Salida** | `MMAAAA_pais_parte1COMPLETO.csv.gz` (días 01–15) y `MMAAAA_pais_parte2COMPLETO.csv.gz` (días 16–último), formato **idéntico al oficial** (coma, columnas `precio_YYYYMMDD`, precio en **centavos**, faltantes `NA`). |
-| **Empaquetado** | Inserta los `.csv.gz` en un `2026A.zip` actualizado (reemplaza el mes viejo, conserva los demás) — listo para subir a `carga/` y correr los notebooks 01 y 02. |
-
-Se puede correr **cualquier día del mes**: con 23 días disponibles arma la parte1 (15 días) + parte2 (días 16–23); el día 30 toma el mes completo; el 1° de julio se reemplaza el `.zip` diario por el de julio y arranca el mes nuevo.
 
 ### Detalles técnicos resueltos
 
-- **Unidades**: el diario está en pesos, el semestral oficial en **centavos** → el script multiplica ×100. El autodetect de factor de los notebooks lo procesa sin cambios.
-- **`id_sucursal`**: el diario lo rellena con ceros (`004`), el maestro usa `4` → el script quita los ceros para que el join geográfico matchee (100% de cobertura verificada).
+- **Unidades**: el diario está en pesos, el semestral oficial en **centavos** → se multiplica ×100. El autodetect de factor de los notebooks lo procesa sin cambios.
+- **`id_sucursal`**: el diario lo rellena con ceros (`004`), el maestro usa `4` → se quitan los ceros para que el join geográfico matchee (cobertura ~99–100% verificada).
 - **Mayoristas**: el diario minorista **no** incluye las cadenas mayoristas (Maxiconsumo, Diarco…) que el oficial sí trae. Coherente con el objetivo "precios minoristas en supermercados".
-- **RAM**: pivota **por comercio**, así el pico de memoria queda acotado (~2–3 GB) aunque el dataset crudo del mes ronde decenas de GB.
+- **RAM**: pivota **por comercio**, así el pico de memoria queda acotado (~2–3 GB) y entra holgado en Colab aunque el dataset crudo del mes ronde decenas de GB.
 
-### Uso
+### Alternativa local
 
-```bash
-# Ajustar la sección CONFIGURACIÓN del script (rutas de la PC) y ejecutar:
-python notebooks/03_consolidacion_ultimo_mes.py
-```
+`notebooks/03_consolidacion_ultimo_mes.py` hace exactamente lo mismo pero corriendo en tu PC (sin Colab): además empaqueta los `.csv.gz` directamente dentro de un `2026A.zip` actualizado. Ajustar la sección `CONFIGURACIÓN` con las rutas y ejecutar `python notebooks/03_consolidacion_ultimo_mes.py`.
 
 ---
 
@@ -333,7 +338,8 @@ precios_minoristas_supermercados/
 ├── notebooks/
 │   ├── 01_exploracion_productos.ipynb            # Notebook 1 — canasta representativa
 │   ├── 02_evolucion_canasta_representativa.ipynb # Notebook 2 — análisis ICR multi-canasta
-│   ├── 03_consolidacion_ultimo_mes.py            # Script 3 — SEPA diario → semestral (mes en curso, local)
+│   ├── 03_consolidacion_ultimo_mes.ipynb         # Notebook 3 — SEPA diario → semestral (Colab, mes en curso)
+│   ├── 03_consolidacion_ultimo_mes.py            # Script 3 — misma lógica para correr local
 │   └── gen_nb02.py                               # Script fuente que genera el Notebook 2
 ├── data/                                # Maestros de referencia (se descargan automáticamente)
 │   ├── Maestro de Productos Interno.xlsx    # ~176K productos con rubro/categoría/subcategoría

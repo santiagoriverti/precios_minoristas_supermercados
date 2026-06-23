@@ -201,7 +201,11 @@ Con el nb02 ejecutado para el nuevo mes:
 
 **Config del script:** `ZIP_DIARIO`, `SEMESTRE_ZIP_IN` (2026A.zip a actualizar), `OUTPUT_DIR`, `MES_FORZADO`, `LIMITE_COMERCIOS`/`LIMITE_DIAS` (debug). Rutas locales: diario en `...\SEPA\sepa_diario_minoristas\ultimo_mes.zip`; semestrales en `...\SEPA\SEPA_Bases_Originales\carga\`.
 
-**Estado [2026-06-23]:** script commiteado + linkeado en README (tabla notebooks + sección dedicada). Validado en subconjunto (3 comercios × 3 días): formato idéntico al oficial, join maestro 99–100%. **PENDIENTE**: el usuario corre la consolidación completa de junio (~7 GB, 17 comercios × 23 días, ~20–40 min) y pasa los resultados para evaluar a escala (verificar que comercios grandes Carrefour/DIA no rompan y que las medianas/coberturas sean razonables). Datos de PC del usuario: 16 GB RAM (6,8 libres), 4 cores, 258 GB disco libre.
+**Dos formas de correrlo:**
+- **`03_consolidacion_ultimo_mes.ipynb`** (Colab, el que usa el usuario): sube `ultimo_mes.zip` al entorno `/content/`, ejecuta todo, y `files.download()` devuelve los dos `.csv.gz`. NO monta Drive ni empaqueta el zip — el usuario sube los `.csv.gz` al `2026A.zip` a mano. Generado desde el `.py` extrayendo el bloque de funciones (de `_COLS_PROD` hasta `escribir_parte`).
+- **`03_consolidacion_ultimo_mes.py`** (local): mismo motor + empaqueta en `2026A.zip` in-place.
+
+**Estado [2026-06-23]:** ambos commiteados + linkeados en README (notebook 03 con badge Colab). Validados: el .py en subconjunto, el .ipynb con smoke-test (2 comercios × 23 días → parte1=15 días + parte2=8 días, split correcto, descarga OK). Join maestro 99–100%. **PENDIENTE**: el usuario corre el notebook en Colab con junio completo y pasa resultados para evaluar a escala (comercios grandes Carrefour/DIA, medianas/coberturas razonables). Nota: comercio 2 (La Anónima) tardó ~94s para 23 días → full Colab estimado ~20–40 min. PC usuario: 16 GB RAM, 4 cores, 258 GB disco.
 
 ## Pendientes próxima sesión (mayo 2026)
 
