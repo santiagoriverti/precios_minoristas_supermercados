@@ -181,6 +181,28 @@ Con el nb02 ejecutado para el nuevo mes:
 - ⚠️ `\usepackage{caption}` duplicado (warning Overleaf, no rompe compilación)
 - ⚠️ `\AutorInforme` definido pero sin valor → portada sin autor
 
+## Script 03 — Consolidación diario → semestral [2026-06-23]
+
+`notebooks/03_consolidacion_ultimo_mes.py` (corre LOCAL, no Colab). Convierte el SEPA **diario** (`ultimo_mes.zip`, ~7 GB, carpetas `YYYY-MM-DD/` con un zip por comercio) al formato **semestral wide** que leen los notebooks 01/02. Permite analizar el mes en curso sin esperar la semana que tarda Hacienda en publicar el consolidado.
+
+**Contrato de salida (idéntico al oficial, verificado contra `2026A.zip`):**
+- `MMAAAA_pais_parte1COMPLETO.csv.gz` (días 01–15) + `parte2` (16–último)
+- Header: `id_comercio,id_bandera,id_sucursal,sucursales_provincia,id_producto,precio_YYYYMMDD,…` (coma)
+- Precio: **centavos enteros** (diario en pesos ×100). Faltante: `NA`.
+- Se empaqueta dentro de `2026A.zip` (nb02 solo lee zips `YYYYA/B` vía `_PAT_SEM`), reemplazando el mes viejo y conservando el resto.
+
+**Trampas resueltas (críticas):**
+- `id_sucursal`: el diario rellena con ceros (`004`), el maestro usa `4` → `_norm_suc()` quita los ceros. Sin esto el join geográfico cae a ~70%; con el fix, ~99–100%.
+- Unidades: diario en pesos / oficial en centavos → ×100. El autodetect de factor del notebook (mediana>10.000→/100) lo procesa.
+- El diario MINORISTA no trae mayoristas (id_comercio 2000/3001/etc.); el oficial sí. Coherente con el objetivo del proyecto.
+- RAM acotada: pivot **por comercio** (pico ~2–3 GB) en vez de pivotear los ~335M registros long del mes de una.
+
+**Esquema diario (pipe `|`):** `productos.csv` = id_comercio|id_bandera|id_sucursal|id_producto|productos_ean|…|productos_precio_lista(idx9)|…  ·  `sucursales.csv` trae `sucursales_provincia` (AR-X, igual que `maestro-provincias.xlsx`).
+
+**Config del script:** `ZIP_DIARIO`, `SEMESTRE_ZIP_IN` (2026A.zip a actualizar), `OUTPUT_DIR`, `MES_FORZADO`, `LIMITE_COMERCIOS`/`LIMITE_DIAS` (debug). Rutas locales: diario en `...\SEPA\sepa_diario_minoristas\ultimo_mes.zip`; semestrales en `...\SEPA\SEPA_Bases_Originales\carga\`.
+
+**Estado [2026-06-23]:** script commiteado + linkeado en README (tabla notebooks + sección dedicada). Validado en subconjunto (3 comercios × 3 días): formato idéntico al oficial, join maestro 99–100%. **PENDIENTE**: el usuario corre la consolidación completa de junio (~7 GB, 17 comercios × 23 días, ~20–40 min) y pasa los resultados para evaluar a escala (verificar que comercios grandes Carrefour/DIA no rompan y que las medianas/coberturas sean razonables). Datos de PC del usuario: 16 GB RAM (6,8 libres), 4 cores, 258 GB disco libre.
+
 ## Pendientes próxima sesión (mayo 2026)
 
 1. **Ejecutar notebook 02** con datos mayo 2026 (zip SEPA del 2do semestre o nuevo mes)
