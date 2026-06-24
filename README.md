@@ -316,11 +316,11 @@ Se puede correr **cualquier día del mes**: con 23 días disponibles arma parte1
 | | |
 |---|---|
 | **Entrada** | `ultimo_mes.zip` con carpetas diarias `YYYY-MM-DD/`, cada una con un `.zip` por comercio (`comercio.csv`, `sucursales.csv`, `productos.csv`, separador `\|`, precio en **pesos**). |
-| **Salida** | `MMAAAA_pais_parte1COMPLETO.csv.gz` (días 01–15) y `MMAAAA_pais_parte2COMPLETO.csv.gz` (días 16–último), formato **idéntico al oficial** (coma, columnas `precio_YYYYMMDD`, precio en **centavos**, faltantes `NA`). |
+| **Salida** | `MMAAAA_pais_parte1COMPLETO.csv.gz` (días 01–15) y `MMAAAA_pais_parte2COMPLETO.csv.gz` (días 16–último), formato **idéntico al oficial** (coma, columnas `precio_YYYYMMDD`, precio en **pesos**, faltantes `NA`). |
 
 ### Detalles técnicos resueltos
 
-- **Unidades**: el diario está en pesos, el semestral oficial en **centavos** → se multiplica ×100. El autodetect de factor de los notebooks lo procesa sin cambios.
+- **Unidades**: el diario y el semestral oficial 2026 están **ambos en pesos** → se exporta tal cual (sin multiplicar). Verificado: mediana oficial mayo ~$4.400.
 - **`id_sucursal`**: el diario lo rellena con ceros (`004`), el maestro usa `4` → se quitan los ceros para que el join geográfico matchee (cobertura ~99–100% verificada).
 - **Cobertura de comercios**: todos los datos son **minoristas** (no hay mayoristas en ninguna fuente). Los archivos oficiales del SEPA incluyen algunos comercios adicionales (ids 2000/3001…) que la fuente diaria no trae; son **irrelevantes para la canasta** (afectan ~−0,01% el costo, verificado).
 - **RAM**: pivota **por comercio**, así el pico de memoria queda acotado (~2–3 GB) y entra holgado en Colab aunque el dataset crudo del mes ronde decenas de GB.

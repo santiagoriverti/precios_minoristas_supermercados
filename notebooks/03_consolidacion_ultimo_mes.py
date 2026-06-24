@@ -32,8 +32,8 @@ SALIDA  (formato semestral, idéntico al oficial del SEPA)
     Header: id_comercio,id_bandera,id_sucursal,sucursales_provincia,id_producto,
             precio_YYYYMMDD,precio_YYYYMMDD,...
     - Separador: coma
-    - Precio: ENTERO en centavos (pesos x 100), igual que el oficial.
-              El notebook autodetecta el factor (mediana > 10.000 -> /100).
+    - Precio: ENTERO en PESOS, igual que el oficial 2026 (que ya viene en pesos).
+              El diario también viene en pesos, así que NO se multiplica.
     - Faltante: 'NA'
 
 Además, si SEMESTRE_ZIP_IN apunta a un 2026A.zip existente, genera una copia
@@ -50,8 +50,8 @@ NOTAS DE COMPATIBILIDAD (verificadas contra los archivos oficiales)
   diario no incluye algunos comercios minoristas adicionales (id_comercio 2000,
   3001, etc.) que sí están en los archivos oficiales, pero son irrelevantes
   para la canasta (afectan ~-0,01% el costo, verificado).
-- El precio diario está en PESOS; el oficial en CENTAVOS. Por eso se multiplica
-  x100 al exportar, dejando el archivo indistinguible del oficial.
+- El precio diario y el semestral oficial 2026 están AMBOS en PESOS, así que se
+  exporta tal cual (sin multiplicar). Verificado: mediana oficial 052026 ~$4.400.
 
 Uso:
     python notebooks/03_consolidacion_ultimo_mes.py
@@ -96,8 +96,9 @@ OUTPUT_DIR = Path(r"C:\Users\sriverti\Desktop\INECO\SEPA\salida_consolidada")
 # Forzar un mes 'YYYY-MM'. None = usar el último mes presente en el zip diario.
 MES_FORZADO = None
 
-# Multiplicar el precio por 100 para dejarlo en centavos (formato oficial).
-PRECIO_EN_CENTAVOS = True
+# Los semestrales oficiales 2026 vienen en PESOS (igual que el diario) -> dejar en False.
+# (Solo los históricos pre-2025B estaban en centavos; no aplica al diario actual.)
+PRECIO_EN_CENTAVOS = False
 
 # DEBUG: limitar a N comercios para una prueba rápida (None = todos).
 LIMITE_COMERCIOS = None
@@ -243,7 +244,7 @@ def procesar_comercio(zf, cid, dias_nested, columnas_dia):
     columnas_dia: lista de ('YYYY-MM-DD', 'precio_YYYYMMDD') de TODO el mes.
     Devuelve un DataFrame con columnas:
         id_comercio,id_bandera,id_sucursal,sucursales_provincia,id_producto,
-        precio_YYYYMMDD...   (precio en centavos enteros, NaN donde falta)
+        precio_YYYYMMDD...   (precio en pesos enteros, NaN donde falta)
     """
     factor = 100 if PRECIO_EN_CENTAVOS else 1
     wide = None

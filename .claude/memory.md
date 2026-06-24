@@ -209,12 +209,12 @@ Con el nb02 ejecutado para el nuevo mes:
 **Contrato de salida (idéntico al oficial, verificado contra `2026A.zip`):**
 - `MMAAAA_pais_parte1COMPLETO.csv.gz` (días 01–15) + `parte2` (16–último)
 - Header: `id_comercio,id_bandera,id_sucursal,sucursales_provincia,id_producto,precio_YYYYMMDD,…` (coma)
-- Precio: **centavos enteros** (diario en pesos ×100). Faltante: `NA`.
+- Precio: **pesos enteros** (`PRECIO_EN_CENTAVOS=False` desde 2026-06-24 — ver nota CRÍTICA abajo; antes salía en centavos por error). Faltante: `NA`.
 - Se empaqueta dentro de `2026A.zip` (nb02 solo lee zips `YYYYA/B` vía `_PAT_SEM`), reemplazando el mes viejo y conservando el resto.
 
 **Trampas resueltas (críticas):**
 - `id_sucursal`: el diario rellena con ceros (`004`), el maestro usa `4` → `_norm_suc()` quita los ceros. Sin esto el join geográfico cae a ~70%; con el fix, ~99–100%.
-- Unidades: diario en pesos / oficial en centavos → ×100. El autodetect de factor del notebook (mediana>10.000→/100) lo procesa.
+- Unidades: diario y oficial 2026 **ambos en pesos** → salida en pesos sin multiplicar (corregido 2026-06-24).
 - **TODO es minorista (no hay mayoristas en ninguna fuente).** El diario no trae unos comercios (ids 2000/3001/etc.) que sí están en los archivos oficiales, pero son comercios minoristas adicionales irrelevantes para la canasta (−0,01%).
 - RAM acotada: pivot **por comercio** (pico ~2–3 GB) en vez de pivotear los ~335M registros long del mes de una.
 
@@ -302,7 +302,9 @@ Todo (gráficos, tablas, acumulados, Excel) deriva de `serie_nac_dict`/`.iloc[-1
 
 Verificado con datos reales: `precio_20260501` mediana global = **4.400** (p25 2.349, p75 9.709), producto ref 7790132098459 = **1.695**. O sea **los .zip oficiales 2026 (ene–may) están en PESOS** (≈ misma escala que el diario, mediana ~3.990). Mi suposición previa (centavos) era por una muestra sesgada (primeras filas de un comercio caro).
 
-**Implica un bug en Script 03**: multiplica el diario ×100 (`PRECIO_EN_CENTAVOS=True`) asumiendo que el oficial es centavos → **junio quedó 100× respecto de ene–may**. NO rompe resultados porque nb01/nb02/nb04 autodetectan el factor POR mes (junio centavos→/100, resto pesos→/1, todo termina en pesos), pero es inconsistente y frágil. **PENDIENTE/RECOMENDADO**: cambiar Script 03 a salida en PESOS (no multiplicar) y regenerar junio para que 2026A quede homogéneo. (La doc del factor pre-2025 sí era centavos; 2025B+ es pesos.)
+Era un bug en Script 03: multiplicaba el diario ×100 asumiendo oficial=centavos → junio quedó 100× respecto de ene–may. No rompía resultados (nb01/nb02/nb04 autodetectan el factor POR mes), pero era inconsistente.
+
+**✅ RESUELTO [2026-06-24]**: Script 03 (`.py` + `.ipynb`) ahora usa `PRECIO_EN_CENTAVOS=False` → exporta en PESOS, homogéneo con ene–may. Docs (README, docstrings) corregidos. **PENDIENTE del usuario**: el junio que ya subió a Drive sigue en centavos (lo salva el autodetect); cuando regenere junio (cerrado) o suba julio con el Script 03 corregido, saldrá en pesos. Ideal: regenerar junio una vez para dejar 2026A 100% homogéneo. (La doc del factor pre-2025 sí era centavos; 2025B+ es pesos.)
 
 ## Pendientes próxima sesión (mayo 2026)
 
