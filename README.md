@@ -324,9 +324,44 @@ Se puede correr **cualquier día del mes**: con 23 días disponibles arma parte1
 - **Mayoristas**: el diario minorista **no** incluye las cadenas mayoristas (Maxiconsumo, Diarco…) que el oficial sí trae. Coherente con el objetivo "precios minoristas en supermercados".
 - **RAM**: pivota **por comercio**, así el pico de memoria queda acotado (~2–3 GB) y entra holgado en Colab aunque el dataset crudo del mes ronde decenas de GB.
 
-### Alternativa local
+### Correrlo localmente (recomendado para el zip de ~7 GB)
 
-`notebooks/03_consolidacion_ultimo_mes.py` hace exactamente lo mismo pero corriendo en tu PC (sin Colab): además empaqueta los `.csv.gz` directamente dentro de un `2026A.zip` actualizado. Ajustar la sección `CONFIGURACIÓN` con las rutas y ejecutar `python notebooks/03_consolidacion_ultimo_mes.py`.
+La subida de un `ultimo_mes.zip` de ~7 GB al entorno de Colab suele fallar (la transferencia del navegador no es resumible y se corta). En ese caso conviene correr la versión local `notebooks/03_consolidacion_ultimo_mes.py`, que hace **exactamente lo mismo** sin subir nada — procesa el `.zip` directo desde el disco — y además **empaqueta** los `.csv.gz` dentro de un `2026A.zip` actualizado, listo para subir a Drive.
+
+**Requisitos**: Python 3 con `pandas` y `numpy` (si faltan: `pip install pandas numpy`).
+
+**Paso 1 — configurar las rutas.** Abrir `notebooks/03_consolidacion_ultimo_mes.py` y editar la sección `CONFIGURACIÓN`:
+
+```python
+# Zip diario descargado del Ministerio (carpetas YYYY-MM-DD adentro)
+ZIP_DIARIO = Path(r"C:\...\sepa_diario_minoristas\ultimo_mes.zip")
+
+# Zip semestral existente a actualizar (debe llamarse YYYYA.zip / YYYYB.zip).
+# El mes generado se inserta acá conservando los demás meses.
+# Poner None si solo querés los .csv.gz sueltos.
+SEMESTRE_ZIP_IN = Path(r"C:\...\carga\2026A.zip")
+
+# Carpeta donde se escriben los .csv.gz y el zip semestral actualizado
+OUTPUT_DIR = Path(r"C:\...\salida_consolidada")
+
+MES_FORZADO = None   # None = último mes del zip; o forzar 'YYYY-MM'
+```
+
+**Paso 2 — ejecutar.** Abrir una terminal (PowerShell) en la carpeta del repositorio y correr:
+
+```powershell
+python notebooks/03_consolidacion_ultimo_mes.py
+```
+
+Tarda ~20–40 min (procesa todos los días de todos los comercios). Va imprimiendo el avance comercio por comercio.
+
+**Paso 3 — resultado.** En `OUTPUT_DIR` quedan:
+- `MMAAAA_pais_parte1COMPLETO.csv.gz` (días 01–15) y `parte2` (16–último)
+- `2026A.zip` actualizado (mes nuevo insertado, meses previos conservados)
+
+Subir ese `2026A.zip` a `carga/` en Drive (reemplaza el viejo) y correr los notebooks 01 y 02.
+
+> **Mes nuevo (julio, etc.)**: reemplazás el `ultimo_mes.zip` por el del mes nuevo y volvés a ejecutar. El mes se autodetecta.
 
 ---
 

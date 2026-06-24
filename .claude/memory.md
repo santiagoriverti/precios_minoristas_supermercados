@@ -205,7 +205,11 @@ Con el nb02 ejecutado para el nuevo mes:
 - **`03_consolidacion_ultimo_mes.ipynb`** (Colab, el que usa el usuario): sube `ultimo_mes.zip` al entorno `/content/`, ejecuta todo, y `files.download()` devuelve los dos `.csv.gz`. NO monta Drive ni empaqueta el zip — el usuario sube los `.csv.gz` al `2026A.zip` a mano. Generado desde el `.py` extrayendo el bloque de funciones (de `_COLS_PROD` hasta `escribir_parte`).
 - **`03_consolidacion_ultimo_mes.py`** (local): mismo motor + empaqueta en `2026A.zip` in-place.
 
-**Estado [2026-06-23]:** ambos commiteados + linkeados en README (notebook 03 con badge Colab). Validados: el .py en subconjunto, el .ipynb con smoke-test (2 comercios × 23 días → parte1=15 días + parte2=8 días, split correcto, descarga OK). Join maestro 99–100%. **PENDIENTE**: el usuario corre el notebook en Colab con junio completo y pasa resultados para evaluar a escala (comercios grandes Carrefour/DIA, medianas/coberturas razonables). Nota: comercio 2 (La Anónima) tardó ~94s para 23 días → full Colab estimado ~20–40 min. PC usuario: 16 GB RAM, 4 cores, 258 GB disco.
+**⚠️ Colab NO sirve para este zip**: la subida de `ultimo_mes.zip` (~7 GB) al panel de Colab falla (la rueda se pone roja; la transferencia navegador→runtime no es resumible y se corta con archivos grandes). **Vía recomendada: el `.py` LOCAL** — no sube nada, procesa el zip del disco. El notebook .ipynb queda igual en el repo por si en el futuro el zip es chico o se sube por Drive (resumible) + mount.
+
+**Cómo corre el usuario el `.py` local** (documentado paso a paso en README, sección "Correrlo localmente"): entorno ya tiene Python 3.14.5 + pandas 2.3.3 + numpy 2.4.6 (no instalar nada). Editar `CONFIGURACIÓN` (ZIP_DIARIO, SEMESTRE_ZIP_IN=2026A.zip, OUTPUT_DIR) y `python notebooks/03_consolidacion_ultimo_mes.py`. Salida: dos `.csv.gz` + `2026A.zip` actualizado in-place.
+
+**Estado [2026-06-23]:** ambos commiteados + linkeados en README. Validados: .py en subconjunto, .ipynb con smoke-test (2 comercios × 23 días → parte1=15 + parte2=8, split correcto). Join maestro 99–100%. **PENDIENTE**: el usuario corre el `.py` local con junio completo y pasa el log para evaluar a escala (Carrefour/DIA grandes, medianas/coberturas razonables). Comercio 2 (La Anónima) ~94s para 23 días → full local estimado ~20–40 min. PC: 16 GB RAM, 4 cores, 258 GB disco.
 
 ## Pendientes próxima sesión (mayo 2026)
 
