@@ -33,6 +33,27 @@ Ordenamiento: Vulnerable $252k → Vegana $427k → Popular $451k → Media $634
 
 Archivo fuente de canastas: `canastas_argentina_2026_v3.txt` (EAN+cantidad por canasta)
 
+## ⚠️ Carga MANUAL de cantidades — flujo mensual [2026-06-24]
+
+**Las cantidades que definen las 6 canastas se cargan A MANO.** El nb01 genera
+`canasta_representativa_YYYY-MM.xlsx` con las columnas `cantidad_01..06` (hoja
+`Selección`) **VACÍAS**. nb01 NO las autocompleta ni las hereda de meses previos.
+
+**Flujo mensual del usuario:**
+1. Ejecutar **nb01** → Excel con `cantidad_01..06` vacías.
+2. **Cargar las cantidades manualmente** en la hoja `Selección` (matchea por `id_producto`/EAN).
+3. Ejecutar **nb02** → lee las cantidades y calcula las canastas.
+
+**Implicancia crítica:** re-correr nb01 (o borrar el Excel) **borra las cantidades**.
+No re-correr nb01 salvo necesidad; si se hace, hay que recargar las cantidades antes del nb02.
+
+**Backup/recuperación de las definiciones:** la composición (EAN × cantidad por canasta)
+es recuperable desde la hoja `Serie_precios` del `canasta_analisis_YYYY-MM.xlsx` (output
+del nb02): columnas `canasta_id` (= nombre de columna `cantidad_NN`), `id_producto`, `qty`.
+Backup generado de junio 2026: `Downloads/canastas_definicion_2026-06_BACKUP.xlsx`
+(261 EANs × `cantidad_01..06`; Vulnerable 45 · Popular 60 · Media 72 · Media Alta 76 ·
+Celíaca 74 · Vegana 51).
+
 ## Repositorios GitHub
 
 | Repo | Descripción | URL |
@@ -218,7 +239,26 @@ Con el nb02 ejecutado para el nuevo mes:
 - Salida: `062026_pais_parte1COMPLETO.csv.gz` (140,3 MB, 15 días) + parte2 (124,7 MB, 8 días 16–23). `2026A.zip` actualizado = **1,73 GB** con los 6 meses (ene–jun) intactos.
 - Validación del 2026A.zip: header idéntico al oficial, mediana $4.650 (centavos OK), NA día 1 = 9,2% (normal). Tamaño junio ≈ meses oficiales (un poco menos: sin mayoristas + parte2 con 8 días porque junio no cerró).
 
-**PENDIENTE**: el usuario sube `2026A.zip` (1,73 GB) a Drive `carga/` y corre nb01 (verificar trazabilidad canasta ~99%) + nb02 (costos de las 6 canastas de junio vs mayo) para cerrar la evaluación end-to-end. Cuando junio cierre (día 30), re-correr con `ultimo_mes.zip` completo → parte2 tendrá 15 días (16–30).
+**Cuando junio cierre (día 30)**, re-correr Script 03 con `ultimo_mes.zip` completo → parte2 tendrá 15 días (16–30).
+
+## ✅ Resultados JUNIO 2026 (nb01 + nb02 end-to-end con datos de Script 03) [2026-06-24]
+
+Pipeline completo validado con el `2026A.zip` que incluye junio (23 días). **Trazabilidad de los EANs de la canasta: 99,7% promedio** (250 únicos, mínima 83,3%) → la calidad del Script 03 es excelente. nb02: factor 100 autodetectado OK, 261/261 EANs con datos, 2.616 sucursales.
+
+Costos nacionales junio 2026 (promedio provincial ponderado por población; valor de cuadro, no afectado por BUG-23):
+
+| Canasta | Costo jun-2026 | Var. mensual |
+|---|---|---|
+| Vulnerable | $270.580 | +3,19% |
+| Vegana Básica | $446.132 | +2,33% |
+| Popular | $479.319 | +2,53% |
+| Media | $662.441 | +3,14% |
+| Celíaca Media | $719.474 | +2,89% |
+| Media Alta | $948.549 | +2,11% |
+
+Prima celíaca +8,6% · ahorro vegano −6,92% · dispersión provincial 6,7% (Formosa más barata, Santa Cruz más cara). Patrón NEA-barato/Patagonia-cara confirmado.
+
+**NOTA**: los acumulados/variaciones-3-meses/Gráficos 1-2-3 de ESA corrida estaban en mayo por BUG-23 (ver abajo). Tras el fix + re-correr nb02, deben incluir junio. Pendiente: log del nb02 re-corrido para confirmar.
 
 ## BUG-23 — Serie/gráficos no incluían el mes en curso [2026-06-24]
 
