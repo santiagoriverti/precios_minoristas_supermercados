@@ -22,6 +22,7 @@ El proyecto responde dos preguntas:
 | `01_exploracion_productos` | Construye la canasta representativa. Detecta automáticamente el último mes disponible en los ZIPs del SEPA y genera `canasta_representativa_YYYY-MM.xlsx` con **cuatro hojas**, incluyendo la hoja `Selección` con **6 columnas de cantidad** para definir hasta 6 canastas distintas. | [![Abrir en Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/santiagoriverti/precios_minoristas_supermercados/blob/main/notebooks/01_exploracion_productos.ipynb) |
 | `02_evolucion_canasta_representativa` | Analiza la evolución del ICR para **hasta 6 canastas simultáneas**. Lee las columnas `cantidad_01`..`cantidad_06` de la hoja `Selección`, calcula el costo por sucursal y provincia para cada canasta activa, compara con el IPC INDEC, y genera gráficos, mapas y rankings independientes por canasta. | [![Abrir en Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/santiagoriverti/precios_minoristas_supermercados/blob/main/notebooks/02_evolucion_canasta_representativa.ipynb) |
 | `03_consolidacion_ultimo_mes` | Convierte el SEPA **diario** al formato **semestral wide** para analizar el mes en curso sin esperar la consolidación oficial. Subís `ultimo_mes.zip` al entorno de Colab y te devuelve los dos `.csv.gz` para descargar. Ver [sección detallada](#adelantar-el-mes-en-curso--03_consolidacion_ultimo_mes). | [![Abrir en Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/santiagoriverti/precios_minoristas_supermercados/blob/main/notebooks/03_consolidacion_ultimo_mes.ipynb) |
+| `04_precios_seleccion` | Exporta un **Excel** con los precios diarios del último mes para todos los supermercados a menos de X km de un punto: una hoja por sucursal (productos × días) + una hoja general (producto × super, precio promedio). Ver [sección detallada](#precios-por-selección-geográfica--04_precios_seleccion). | [![Abrir en Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/santiagoriverti/precios_minoristas_supermercados/blob/main/notebooks/04_precios_seleccion.ipynb) |
 
 > **¿Ves una versión vieja en Colab?** El badge siempre apunta a la última versión en GitHub, pero Colab puede mostrar una copia cacheada de tu Drive. Para forzar la actualización: eliminá el notebook de `Mi unidad/Colab Notebooks/` en Google Drive y volvé a hacer clic en el badge.
 
@@ -395,6 +396,37 @@ Subir ese `2026A.zip` a `carga/` en Drive (reemplaza el viejo) y correr los note
 
 ---
 
+## Precios por selección geográfica — `04_precios_seleccion`
+
+Exporta un **Excel con los precios diarios del último mes** para todos los supermercados ubicados a menos de una distancia dada de un **punto** (lat/lon). Útil para análisis local (una ciudad, una zona).
+
+### Flujo en Colab
+
+1. Abrir con el badge **Abrir en Colab**.
+2. En la celda de **CONFIGURACIÓN** ajustar el punto y el radio:
+   ```python
+   PUNTO_LAT   = -37.115479
+   PUNTO_LON   = -56.886020
+   DIST_MAX_KM = 20.0
+   ```
+3. *Entorno de ejecución → Ejecutar todo*. Al terminar descarga `precios_seleccion_YYYY-MM.xlsx`.
+
+### Qué contiene el Excel
+
+| Hoja | Contenido |
+|------|-----------|
+| `Sucursales` | Índice de los locales seleccionados: cadena, sucursal, tipo, localidad, lat/lon, distancia (km) y nº de productos. |
+| **una por sucursal** | Todos los productos del local (EAN, descripción, marca, rubro) y el **precio para cada día** del mes. |
+| `General` | Todos los productos únicos × supermercado con el **precio promedio del mes**; celda **vacía** si ese super no tiene el producto. Incluye `promedio_general`. |
+
+- Detecta automáticamente el **último mes disponible** (con los días que tenga, sea completo o en curso).
+- Distancia por **haversine** (línea recta). Factor centavos→pesos autodetectado sobre la mediana global del mes (robusto). Precios ≤ 0 se tratan como sin dato.
+- `MAX_SUCURSALES` limita el nº de hojas como salvaguarda en zonas muy densas.
+
+> Requiere en `carga/` (Drive) los ZIPs SEPA. Los maestros (sucursales y productos) se descargan solos desde GitHub.
+
+---
+
 ## Estructura del repositorio
 
 ```
@@ -405,7 +437,9 @@ precios_minoristas_supermercados/
 │   ├── 02_evolucion_canasta_representativa.ipynb # Notebook 2 — análisis ICR multi-canasta
 │   ├── 03_consolidacion_ultimo_mes.ipynb         # Notebook 3 — SEPA diario → semestral (Colab, mes en curso)
 │   ├── 03_consolidacion_ultimo_mes.py            # Script 3 — misma lógica para correr local
-│   └── gen_nb02.py                               # Script fuente que genera el Notebook 2
+│   ├── 04_precios_seleccion.ipynb                # Notebook 4 — precios diarios por sucursal cercana a un punto
+│   ├── gen_nb02.py                               # Script fuente que genera el Notebook 2
+│   └── gen_nb04.py                               # Script fuente que genera el Notebook 4
 ├── data/                                # Maestros de referencia (se descargan automáticamente)
 │   ├── Maestro de Productos Interno.xlsx    # ~176K productos con rubro/categoría/subcategoría
 │   ├── maestro_sucursales_completo.xlsx     # 3.611 sucursales con cadena, provincia, región

@@ -287,6 +287,23 @@ Detección validada (jun 23/30=parcial; may 31/31, jun 30/30, feb 28/28 = comple
 
 Todo (gráficos, tablas, acumulados, Excel) deriva de `serie_nac_dict`/`.iloc[-1]` → con la serie corregida, todo incluye el mes en curso. El merge serie×IPC es `how='left'` → el mes en curso se mantiene aunque el IPC de INDEC todavía no exista (la línea de canasta llega al mes, la del IPC corta donde haya dato). Los cuadros/rankings/barrios ya usaban bien los días vigentes (se calculan directo del archivo del mes). Bonus: ids de celda del notebook ahora deterministas (md5) para evitar "drift" espurio al regenerar.
 
+## Notebook 04 — Precios por selección geográfica [2026-06-24]
+
+`notebooks/04_precios_seleccion.ipynb` (Colab) + generador `gen_nb04.py`. Exporta `precios_seleccion_YYYY-MM.xlsx` con los precios diarios del último mes para los supermercados a ≤ X km de un punto (lat/lon).
+- Config: `PUNTO_LAT/PUNTO_LON` (default -37.115479, -56.886020 = Pinamar), `DIST_MAX_KM` (20), `INCLUIR_METADATA`, `MAX_SUCURSALES`.
+- Hojas: `Sucursales` (índice con distancia) + una por sucursal (EAN+desc+marca+rubro + 1 col por día) + `General` (producto × super, precio promedio del mes, vacío si el super no lo tiene, + `promedio_general`).
+- Distancia haversine; lee `carga/` en Drive; maestros desde GitHub.
+- **Cruce de metadata: la clave EAN del Maestro de Productos es `producto_sepa_id`** (NO `producto_ean`, que es un flag 0/1). Cruce ~91% de productos.
+- **Factor robusto**: mediana GLOBAL del mes (muestra de todas las filas antes de filtrar por sucursal), no del subconjunto (un subconjunto sesgado podía caer del lado equivocado del umbral 10.000). Precios ≤ 0 → NaN.
+- parte1/parte2 se combinan por (sucursal, producto) con `groupby().first()` (unión de columnas de día).
+- Validado end-to-end local contra mayo (12 sucursales en Pinamar/Madariaga/Villa Gesell, factor ÷1 pesos, 22.684 productos, descripción 91%).
+
+## ⚠️ CRÍTICO: los semestrales oficiales 2026 están en PESOS, no centavos [2026-06-24]
+
+Verificado con datos reales: `precio_20260501` mediana global = **4.400** (p25 2.349, p75 9.709), producto ref 7790132098459 = **1.695**. O sea **los .zip oficiales 2026 (ene–may) están en PESOS** (≈ misma escala que el diario, mediana ~3.990). Mi suposición previa (centavos) era por una muestra sesgada (primeras filas de un comercio caro).
+
+**Implica un bug en Script 03**: multiplica el diario ×100 (`PRECIO_EN_CENTAVOS=True`) asumiendo que el oficial es centavos → **junio quedó 100× respecto de ene–may**. NO rompe resultados porque nb01/nb02/nb04 autodetectan el factor POR mes (junio centavos→/100, resto pesos→/1, todo termina en pesos), pero es inconsistente y frágil. **PENDIENTE/RECOMENDADO**: cambiar Script 03 a salida en PESOS (no multiplicar) y regenerar junio para que 2026A quede homogéneo. (La doc del factor pre-2025 sí era centavos; 2025B+ es pesos.)
+
 ## Pendientes próxima sesión (mayo 2026)
 
 1. **Ejecutar notebook 02** con datos mayo 2026 (zip SEPA del 2do semestre o nuevo mes)
