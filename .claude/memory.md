@@ -31,7 +31,9 @@ Proyecto en producción. **4 herramientas**, todas en el repo y linkeadas desde 
 - **nb02 cache** (`hist_union_<hash>.parquet`): solo meses cerrados; el mes en curso se relee fresco (BUG-23). El mes parcial muestra aviso "PRELIMINAR" (su variación mensual está subestimada).
 - **Maestro de Productos**: la clave EAN es `producto_sepa_id` (NO `producto_ean`, que es flag).
 
-**Pendiente recomendado (no urgente):** regenerar junio una vez con el Script 03 corregido (pesos) y reemplazarlo en `2026A.zip` para dejar el semestre 100% homogéneo (el junio actual quedó en centavos pero el autodetect lo procesa bien).
+**Pendiente recomendado (no urgente):** regenerar junio una vez con el Script 03 corregido (pesos) y reemplazarlo en `2026A.zip` para dejar el semestre 100% homogéneo (el junio actual quedó en centavos pero el autodetect lo procesa bien). El usuario lo hará **el día 30** (cierre de mes), corriéndolo él localmente.
+
+**✅ Verificación estructural Script 03 (2026-06-24):** auditados los 5 meses oficiales (ene–may, parte1+parte2) contra el junio generado. La estructura del Script 03 es **idéntica y replicable mes a mes**. Detalle en sección "Verificación estructural" abajo.
 
 **Seguridad:** rotar el PAT de GitHub usado en esta sesión (quedó expuesto en el chat).
 
@@ -340,6 +342,41 @@ Verificado con datos reales: `precio_20260501` mediana global = **4.400** (p25 2
 Era un bug en Script 03: multiplicaba el diario ×100 asumiendo oficial=centavos → junio quedó 100× respecto de ene–may. No rompía resultados (nb01/nb02/nb04 autodetectan el factor POR mes), pero era inconsistente.
 
 **✅ RESUELTO [2026-06-24]**: Script 03 (`.py` + `.ipynb`) ahora usa `PRECIO_EN_CENTAVOS=False` → exporta en PESOS, homogéneo con ene–may. Docs (README, docstrings) corregidos. **PENDIENTE del usuario**: el junio que ya subió a Drive sigue en centavos (lo salva el autodetect); cuando regenere junio (cerrado) o suba julio con el Script 03 corregido, saldrá en pesos. Ideal: regenerar junio una vez para dejar 2026A 100% homogéneo. (La doc del factor pre-2025 sí era centavos; 2025B+ es pesos.)
+
+## ✅ Verificación estructural Script 03 vs oficial SEPA [2026-06-24]
+
+**Objetivo del usuario:** correr Script 03 LOCAL el último día de cada mes y obtener
+`MMAAAA_pais_parte1COMPLETO.csv.gz` + `parte2` con la **misma estructura** que publica
+Hacienda ~10 días después del cierre. Verificado contra datos reales (NO contra la memoria):
+se compararon los 5 meses oficiales del `carga/2026A.zip` (ene–may, parte1+parte2) entre sí
+y contra el junio generado por Script 03.
+
+**Resultado: estructura idéntica y replicable.** Tabla de auditoría de headers:
+
+| Archivo | Total cols | Base 5 OK | Días | Anomalía |
+|---|---|---|---|---|
+| Oficial ene/mar/may p1 | 20 (may 21) | ✅ | 01–15 | may: día 10 duplicado |
+| Oficial feb/abr p1 | 20 | ✅ | 01–15 | — |
+| Oficial p2 (varía) | 18–21 | ✅ | 16–fin | — |
+| **Generado jun p1** | **20** | ✅ | 01–15 | — |
+| **Generado jun p2** | 13 (parcial, 8 días) | ✅ | 16–23 | mes en curso |
+
+**Confirmaciones (todo verificado con lectura real de los .csv.gz):**
+- **Columnas base idénticas siempre**: `id_comercio,id_bandera,id_sucursal,sucursales_provincia,id_producto`, ese orden, en los 12 archivos.
+- **parte1 = siempre 5 base + 15 días (01–15) = 20 columnas.** El junio generado da 20, igual que ene/feb/mar/abr.
+- **parte2 varía con el largo del mes Y ESO ES CORRECTO** (no es bug): el propio SEPA varía — feb=13 cols (28 d), abr=15 (30 d), ene/mar/may=16 (31 d). Junio cerrado (30 d) tendrá días 16–30 = 15 días → 20 cols, idéntico a abril. El junio actual tiene parte2 de solo 8 días (16–23) porque se corrió el día 23 (mes en curso).
+- **Separador coma, faltante `NA`, gzip, provincia `AR-X`**: todo coincide. (Oficial usa `NA` para faltantes, verificado: ~1,8% de celdas; sin vacíos `''`.)
+- **Escala = PESOS**: mediana oficial mayo = **$4.450** (p25 $2.400, p75 $9.619). Por comercio: 10→$3.990, 11→$10.229, 2→$4.450 (precios sensatos de góndola en pesos). El código actual de Script 03 (`PRECIO_EN_CENTAVOS=False`) produce esa misma escala.
+
+**Única "diferencia" — la pone el SEPA, no el script:** el mayo oficial trae el día 10 **duplicado** (`precio_20260510.x` y `precio_20260510.y`, sufijos tipo merge de R) → 16 cols de precio en vez de 15. Es un defecto de compilación de Hacienda. Script 03 NUNCA reproduce eso: emite una columna limpia por día. Los notebooks leen ambos sin problema (toman todas las columnas `precio_*`).
+
+**Diferencias menores e inocuas (los notebooks normalizan):**
+- `id_producto`: el oficial guarda el EAN crudo de **largo variable (8–20 dígitos**, moda 13); Script 03/diario lo emiten con ceros a 13 (`0000040084107`). Tras `lstrip('0')` de los notebooks ambos coinciden. No tocar.
+- Decimales: ~5,6% de los precios oficiales traen 2 decimales (ej. `549999.02`); Script 03 redondea a entero (`Int64`). Diferencia < $1/producto → despreciable.
+
+**⚠️ Recordatorio de unidades:** el junio en `salida_consolidada/` (y el junio dentro del `2026A.zip` ya subido) son de la corrida del 23-jun, **en CENTAVOS** (×100 exacto: comercio 10 generado $399.000 vs oficial $3.990). El código YA está corregido (pesos); al regenerar el día 30 saldrá homogéneo. El autodetect ÷100 por mes de los notebooks lo salva mientras tanto.
+
+**Conclusión:** Script 03 NO requiere cambios — estructura y escala correctas. El flujo del usuario (correr el día 30, localmente) producirá archivos estructuralmente idénticos al oficial del SEPA.
 
 ## Pendientes próxima sesión [actualizado 2026-06-24]
 
