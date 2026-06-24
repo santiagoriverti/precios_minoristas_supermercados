@@ -209,7 +209,16 @@ Con el nb02 ejecutado para el nuevo mes:
 
 **Cómo corre el usuario el `.py` local** (documentado paso a paso en README, sección "Correrlo localmente"): entorno ya tiene Python 3.14.5 + pandas 2.3.3 + numpy 2.4.6 (no instalar nada). Editar `CONFIGURACIÓN` (ZIP_DIARIO, SEMESTRE_ZIP_IN=2026A.zip, OUTPUT_DIR) y `python notebooks/03_consolidacion_ultimo_mes.py`. Salida: dos `.csv.gz` + `2026A.zip` actualizado in-place.
 
-**Estado [2026-06-23]:** ambos commiteados + linkeados en README. Validados: .py en subconjunto, .ipynb con smoke-test (2 comercios × 23 días → parte1=15 + parte2=8, split correcto). Join maestro 99–100%. **EN CURSO**: el usuario está corriendo el `.py` local con junio completo. La corrida real detecta **20 comercios** (2,3,4,5,6,8,9,10,11,12,13,15,16,19,20,21,23,24,36,47) — más que los 17 de un solo día porque escanea los 23 días. El comercio 2 (La Anónima) tarda ~90s ANTES de imprimir su primera línea `[1/20]` (parece colgado pero trabaja). Full local ~25–45 min. README documenta "Qué vas a ver mientras corre". **PENDIENTE**: recibir el log final del usuario para evaluar a escala (Carrefour=10/DIA=15 grandes, medianas/coberturas razonables). PC: 16 GB RAM, 4 cores, 258 GB disco.
+**Estado [2026-06-23]:** ambos commiteados + linkeados en README. Validados: .py en subconjunto, .ipynb con smoke-test. Join maestro 99–100%.
+
+**✅ CORRIDA REAL DE JUNIO (días 1–23) EXITOSA — `.py` local, 29,7 min:**
+- 20 comercios detectados; 19 con datos. **Comercio 36 = "sin datos"** (zip de origen vacío/corrupto en el diario; tampoco aparece en los archivos oficiales del SEPA, no es cadena relevante → ignorar).
+- Filas totales: **16.029.900** (producto×sucursal). EANs únicos: **88.444** (coherente con minorista-puro; los ~170K del README incluyen mayoristas).
+- Comercios grandes OK: Carrefour(10)=3,79M filas/468s · DIA(15)=4,41M/470s · ChangoMas(11)=2,9M · Cencosud(9)=1,43M. RAM aguantó en 16 GB.
+- Salida: `062026_pais_parte1COMPLETO.csv.gz` (140,3 MB, 15 días) + parte2 (124,7 MB, 8 días 16–23). `2026A.zip` actualizado = **1,73 GB** con los 6 meses (ene–jun) intactos.
+- Validación del 2026A.zip: header idéntico al oficial, mediana $4.650 (centavos OK), NA día 1 = 9,2% (normal). Tamaño junio ≈ meses oficiales (un poco menos: sin mayoristas + parte2 con 8 días porque junio no cerró).
+
+**PENDIENTE**: el usuario sube `2026A.zip` (1,73 GB) a Drive `carga/` y corre nb01 (verificar trazabilidad canasta ~99%) + nb02 (costos de las 6 canastas de junio vs mayo) para cerrar la evaluación end-to-end. Cuando junio cierre (día 30), re-correr con `ultimo_mes.zip` completo → parte2 tendrá 15 días (16–30).
 
 ## Pendientes próxima sesión (mayo 2026)
 
