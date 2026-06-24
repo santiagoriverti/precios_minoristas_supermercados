@@ -353,7 +353,22 @@ MES_FORZADO = None   # None = último mes del zip; o forzar 'YYYY-MM'
 python notebooks/03_consolidacion_ultimo_mes.py
 ```
 
-Tarda ~20–40 min (procesa todos los días de todos los comercios). Va imprimiendo el avance comercio por comercio.
+**Qué vas a ver mientras corre.** Primero imprime el mes detectado y la lista de comercios (suelen ser ~20 — más que los presentes en un solo día, porque escanea los 23 días):
+
+```
+Mes detectado: 2026-06  |  23 días: 2026-06-01 … 2026-06-23
+Comercios a procesar: 20 -> ['2', '3', '4', ...]
+  [1/20] comercio 2: 960,027 filas (94.0s)
+  [2/20] comercio 3: 9,195 filas (1.5s)
+  ...
+```
+
+- El **primer comercio (2 = La Anónima) tarda ~90 s antes de imprimir su línea `[1/20]`**: parece colgado pero está trabajando, esperá.
+- Después baja comercio por comercio. Los grandes (Carrefour=10, DIA=15) son los más lentos.
+- **Total ~25–45 min.** No cierres la ventana; podés minimizarla y seguir usando la compu.
+- Cuando llega a **`Listo en … min.`**, terminó.
+
+> Si pegaste sin querer la línea del prompt (`PS C:\...>`) y salió un error tipo *"No se encuentra ningún proceso"*, es inofensivo: solo volvé a correr el comando del Paso 2.
 
 **Paso 3 — resultado.** En `OUTPUT_DIR` quedan:
 - `MMAAAA_pais_parte1COMPLETO.csv.gz` (días 01–15) y `parte2` (16–último)

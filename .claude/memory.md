@@ -209,7 +209,7 @@ Con el nb02 ejecutado para el nuevo mes:
 
 **Cómo corre el usuario el `.py` local** (documentado paso a paso en README, sección "Correrlo localmente"): entorno ya tiene Python 3.14.5 + pandas 2.3.3 + numpy 2.4.6 (no instalar nada). Editar `CONFIGURACIÓN` (ZIP_DIARIO, SEMESTRE_ZIP_IN=2026A.zip, OUTPUT_DIR) y `python notebooks/03_consolidacion_ultimo_mes.py`. Salida: dos `.csv.gz` + `2026A.zip` actualizado in-place.
 
-**Estado [2026-06-23]:** ambos commiteados + linkeados en README. Validados: .py en subconjunto, .ipynb con smoke-test (2 comercios × 23 días → parte1=15 + parte2=8, split correcto). Join maestro 99–100%. **PENDIENTE**: el usuario corre el `.py` local con junio completo y pasa el log para evaluar a escala (Carrefour/DIA grandes, medianas/coberturas razonables). Comercio 2 (La Anónima) ~94s para 23 días → full local estimado ~20–40 min. PC: 16 GB RAM, 4 cores, 258 GB disco.
+**Estado [2026-06-23]:** ambos commiteados + linkeados en README. Validados: .py en subconjunto, .ipynb con smoke-test (2 comercios × 23 días → parte1=15 + parte2=8, split correcto). Join maestro 99–100%. **EN CURSO**: el usuario está corriendo el `.py` local con junio completo. La corrida real detecta **20 comercios** (2,3,4,5,6,8,9,10,11,12,13,15,16,19,20,21,23,24,36,47) — más que los 17 de un solo día porque escanea los 23 días. El comercio 2 (La Anónima) tarda ~90s ANTES de imprimir su primera línea `[1/20]` (parece colgado pero trabaja). Full local ~25–45 min. README documenta "Qué vas a ver mientras corre". **PENDIENTE**: recibir el log final del usuario para evaluar a escala (Carrefour=10/DIA=15 grandes, medianas/coberturas razonables). PC: 16 GB RAM, 4 cores, 258 GB disco.
 
 ## Pendientes próxima sesión (mayo 2026)
 
