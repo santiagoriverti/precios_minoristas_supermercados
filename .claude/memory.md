@@ -4,6 +4,41 @@ GitHub: santiagoriverti/precios_minoristas_supermercados
 Local: C:\Users\sriverti\Desktop\INECO\Repositorios\precios_minoristas_supermercados
 Autor: Santiago Riverti — investigador independiente
 
+---
+
+## 🟢 ESTADO ACTUAL / HANDOFF [2026-06-24]
+
+Proyecto en producción. **4 herramientas**, todas en el repo y linkeadas desde el README (badges Colab). Datos SEPA **minoristas**, precios en **PESOS** (2026). Último ciclo trabajado: **junio 2026** (con días parciales 1–23).
+
+| Herramienta | Qué hace | Dónde corre |
+|---|---|---|
+| **nb01** `01_exploracion_productos.ipynb` | Arma `canasta_representativa_YYYY-MM.xlsx` (hoja `Selección` con cols `cantidad_01..06` VACÍAS). Autodetecta último mes. | Colab |
+| **nb02** `02_evolucion_canasta_representativa.ipynb` (← `gen_nb02.py`) | Evolución de las 6 canastas vs IPC; cuadros, mapas, rankings, Excel `canasta_analisis_YYYY-MM.xlsx`. | Colab |
+| **Script 03** `03_consolidacion_ultimo_mes.py` (+ `.ipynb` Colab) | Convierte el SEPA **diario** (`ultimo_mes.zip` ~7 GB) al formato **semestral** del mes en curso. | **LOCAL** (Colab falla por el peso). Genera dos `.csv.gz` + actualiza `2026A.zip`. |
+| **nb04** `04_precios_seleccion.ipynb` (← `gen_nb04.py`) | Excel con precios diarios de los supers a ≤ X km de un punto (hoja por sucursal + general). | Colab |
+
+**Flujo mensual del usuario:**
+1. **Script 03 LOCAL** (`python notebooks/03_consolidacion_ultimo_mes.py`) → genera `2026A.zip` con el mes nuevo (en pesos) → subir a `carga/` en Drive.
+2. **nb01** en Colab → `canasta_representativa` con cantidades vacías.
+3. **Cargar a mano** las cantidades `cantidad_01..06` (ver sección "Carga MANUAL").
+4. **nb02** en Colab → análisis.
+5. **nb04** cuando se quiera el detalle geográfico.
+
+**Gotchas críticos (no repetir errores):**
+- **Precios 2026 = PESOS** (no centavos). Script 03 NO multiplica ×100 (`PRECIO_EN_CENTAVOS=False`). Históricos pre-2025B sí eran centavos → los notebooks autodetectan factor por mes (mediana>10.000→/100).
+- **Cantidades de canasta = CARGA MANUAL**; nb01 las genera vacías; re-correr nb01 las borra. Backup recuperable de la hoja `Serie_precios` del `canasta_analisis`.
+- **TODO minorista** (no hay mayoristas en ninguna fuente).
+- **nb02 cache** (`hist_union_<hash>.parquet`): solo meses cerrados; el mes en curso se relee fresco (BUG-23). El mes parcial muestra aviso "PRELIMINAR" (su variación mensual está subestimada).
+- **Maestro de Productos**: la clave EAN es `producto_sepa_id` (NO `producto_ean`, que es flag).
+
+**Pendiente recomendado (no urgente):** regenerar junio una vez con el Script 03 corregido (pesos) y reemplazarlo en `2026A.zip` para dejar el semestre 100% homogéneo (el junio actual quedó en centavos pero el autodetect lo procesa bien).
+
+**Seguridad:** rotar el PAT de GitHub usado en esta sesión (quedó expuesto en el chat).
+
+Detalle de cada tema en las secciones de abajo (ordenadas por fecha).
+
+---
+
 ## Estado actual [2026-06-03] — PRODUCCIÓN ✅
 
 ### Notebook 01 — `01_exploracion_productos.ipynb` (commit 566f033)
@@ -306,8 +341,10 @@ Era un bug en Script 03: multiplicaba el diario ×100 asumiendo oficial=centavos
 
 **✅ RESUELTO [2026-06-24]**: Script 03 (`.py` + `.ipynb`) ahora usa `PRECIO_EN_CENTAVOS=False` → exporta en PESOS, homogéneo con ene–may. Docs (README, docstrings) corregidos. **PENDIENTE del usuario**: el junio que ya subió a Drive sigue en centavos (lo salva el autodetect); cuando regenere junio (cerrado) o suba julio con el Script 03 corregido, saldrá en pesos. Ideal: regenerar junio una vez para dejar 2026A 100% homogéneo. (La doc del factor pre-2025 sí era centavos; 2025B+ es pesos.)
 
-## Pendientes próxima sesión (mayo 2026)
+## Pendientes próxima sesión [actualizado 2026-06-24]
 
-1. **Ejecutar notebook 02** con datos mayo 2026 (zip SEPA del 2do semestre o nuevo mes)
-2. **Mapa GitHub Pages**: CELDA 17 en Colab → descargar HTML (~3-5 MB) → subir `index.html` al repo `mapa_precios_minoristas`
-3. **Actualizar LaTeX**: copiar `Valores_Documento` al Overleaf; completar Belgrano y Costa Atlántica desde `Sucs_Media`
+1. **Cierre de junio (día 30)**: re-correr Script 03 LOCAL con el `ultimo_mes.zip` completo (junio cerrado, en PESOS) → reemplazar en `2026A.zip` → re-correr nb01 (cargar cantidades a mano) + nb02. Con el mes completo desaparece el aviso "parcial" y la variación mensual se firma en su valor real.
+2. **(Opcional) Homogeneizar 2026A**: si se quiere, regenerar junio en pesos ya mismo y reemplazarlo (el junio actual quedó en centavos; el autodetect lo procesa bien, no afecta resultados).
+3. **Mapa GitHub Pages** (nb02 CELDA 17): descargar HTML → subir `index.html` al repo `mapa_precios_minoristas`.
+4. **Documento LaTeX (Overleaf)**: copiar `Valores_Documento` del `canasta_analisis`; completar Belgrano y Costa Atlántica desde `Sucs_Media`.
+5. **Seguridad**: rotar el PAT de GitHub.

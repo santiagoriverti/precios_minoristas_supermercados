@@ -296,9 +296,11 @@ Los datos de **2025B en adelante ya vienen en pesos** (factor = 1). Los notebook
 
 ## Adelantar el mes en curso — `03_consolidacion_ultimo_mes`
 
-El SEPA publica el archivo **semestral consolidado** de cada mes recién **una semana después** de que cierra. Pero también publica los datos **diarios** el mismo día. El notebook `03_consolidacion_ultimo_mes` convierte el SEPA **diario** al formato **semestral wide** que consumen los notebooks 01 y 02, para poder analizar el mes en curso **sin esperar** la consolidación oficial.
+El SEPA publica el archivo **semestral consolidado** de cada mes recién **una semana después** de que cierra. Pero también publica los datos **diarios** el mismo día. El `03_consolidacion_ultimo_mes` convierte el SEPA **diario** al formato **semestral wide** que consumen los notebooks 01 y 02, para poder analizar el mes en curso **sin esperar** la consolidación oficial.
 
-### Flujo en Colab
+> ⚠️ **Recomendado: correrlo LOCAL, no en Colab.** El `ultimo_mes.zip` pesa ~7 GB y subirlo al entorno de Colab suele fallar (la transferencia del navegador se corta). Usá la versión local `notebooks/03_consolidacion_ultimo_mes.py` (ver [**Correrlo localmente**](#correrlo-localmente-recomendado-para-el-zip-de-7-gb) más abajo). La variante Colab (`.ipynb`) queda solo por si algún día el zip es chico.
+
+### Flujo en Colab (solo si el zip es chico)
 
 1. Abrir el notebook con el badge **Abrir en Colab**.
 2. Subir `ultimo_mes.zip` al entorno: panel **Archivos** (📁) → arrastrar el `.zip` a `/content/`.
