@@ -395,6 +395,28 @@ PAT_FECHA = re.compile(r'^precio_(\\d{8})$')
 print(f'Procesando: {NOMBRE_MES_TITLE}  ({zip_actual.name})')
 print(f'Archivos: {archivos_mes}\\n')
 
+# ── Detección de MES PARCIAL (menos días cargados que los del calendario) ─────
+# El último mes en curso (ej. junio al día 23) tiene menos días que el mes
+# completo. Su NIVEL es un snapshot válido, pero su VARIACIÓN mensual queda
+# subestimada al compararse contra meses completos. Se marca para no confundir.
+import calendar as _cal
+_dias_cargados = set()
+with zipfile.ZipFile(zip_actual) as _zfh:
+    for _arch in archivos_mes:
+        with _zfh.open(_arch) as _s:
+            _hdr0 = gzip.open(_s, 'rt', encoding='utf-8', errors='replace').readline()
+        for _c in _hdr0.strip().split(','):
+            _mm = PAT_FECHA.match(_c)
+            if _mm: _dias_cargados.add(_mm.group(1))
+DIAS_CARGADOS  = len(_dias_cargados)
+DIAS_MES       = _cal.monthrange(ANIO_ACTUAL, MES_NUM_ACTUAL)[1]
+MES_PARCIAL    = 0 < DIAS_CARGADOS < DIAS_MES
+SUFIJO_PARCIAL = f' (parcial: {DIAS_CARGADOS}/{DIAS_MES} días)' if MES_PARCIAL else ''
+if MES_PARCIAL:
+    print(f'⚠️  {NOMBRE_MES_TITLE} es un MES PARCIAL: {DIAS_CARGADOS}/{DIAS_MES} días cargados.')
+    print(f'    El NIVEL es un snapshot al día {DIAS_CARGADOS}; la VARIACIÓN mensual está SUBESTIMADA')
+    print(f'    (se compara contra meses completos). Re-correr al cierre del mes para el dato definitivo.\\n')
+
 acumulador = []
 for archivo in sorted(archivos_mes):
     nombre = Path(archivo).name
@@ -887,6 +909,9 @@ else:
     ax1.xaxis.set_major_locator(mdates.MonthLocator(interval=1))
     ax1.xaxis.set_major_formatter(mticker.FuncFormatter(_fmt_mes_es))
     plt.setp(ax1.xaxis.get_majorticklabels(), rotation=45, ha='right')
+    if MES_PARCIAL:
+        ax1.set_title(f'Último mes ({NOMBRE_MES_TITLE}) PARCIAL — {DIAS_CARGADOS}/{DIAS_MES} días · última variación preliminar',
+                      fontsize=10, color='#C00000', style='italic', pad=8)
     plt.tight_layout()
     out1 = OUTPUT_DIR / f'indices_canasta_vs_ipc_{MES}.png'
     plt.savefig(out1, dpi=600, bbox_inches='tight', facecolor='white')
@@ -926,6 +951,9 @@ else:
     ax2.spines['left'].set_color('#cccccc')
     _vmax_l2 = [s.dropna().max() for _,_,s in _series_bar if s.notna().any()]
     if _vmax_l2: ax2.set_ylim(top=max(_vmax_l2) * 1.35)
+    if MES_PARCIAL:
+        ax2.set_title(f'Último mes ({NOMBRE_MES_TITLE}) PARCIAL — {DIAS_CARGADOS}/{DIAS_MES} días · variación preliminar (subestimada)',
+                      fontsize=10, color='#C00000', style='italic', pad=8)
     plt.tight_layout()
     out2 = OUTPUT_DIR / f'variaciones_canasta_vs_ipc_{MES}.png'
     plt.savefig(out2, dpi=600, bbox_inches='tight', facecolor='white')
@@ -969,8 +997,8 @@ else:
     for sp in ['top', 'right', 'left']: ax3.spines[sp].set_visible(False)
     ax3.spines['bottom'].set_color('#cccccc')
     # Nota al pie con el mes
-    fig3.text(0.98, 0.01, f'{NOMBRE_MES_TITLE}',
-              ha='right', va='bottom', fontsize=9, color='#999')
+    fig3.text(0.98, 0.01, f'{NOMBRE_MES_TITLE}{SUFIJO_PARCIAL}',
+              ha='right', va='bottom', fontsize=9, color=('#C00000' if MES_PARCIAL else '#999'))
     plt.tight_layout()
     out3 = OUTPUT_DIR / f'ranking_canastas_{MES}.png'
     plt.savefig(out3, dpi=600, bbox_inches='tight', facecolor='white')
@@ -1682,7 +1710,11 @@ for _col_id in CANASTAS_ACTIVAS:
     _sn   = serie_nac_dict[_col_id]
     _rng  = f'{_sn["mes"].min()} -> {_sn["mes"].max()}' if len(_sn) > 0 else 'sin historia'
     print(f'  [{_name}] {len(_cgf):,} sucs | Promedio: ${_prom:,.0f} | Serie: {_rng}')
-print('='*65)"""))
+print('='*65)
+if MES_PARCIAL:
+    print(f'\\n⚠️  {NOMBRE_MES_TITLE}: MES PARCIAL ({DIAS_CARGADOS}/{DIAS_MES} días).')
+    print('    Los promedios son un snapshot al día; la VARIACIÓN mensual es PRELIMINAR')
+    print('    (subestimada vs meses completos). Re-correr al cierre del mes para el dato final.')"""))
 
 # ── CELL 20 — VALORES PARA DOCUMENTO TÉCNICO ──────────────────────────────────
 cells.append(cell_code("""\
@@ -1794,9 +1826,9 @@ print(f"  VALORES PARA DOCUMENTO TÉCNICO — {NOMBRE_MES_TITLE.upper()}")
 print("=" * 72)
 
 print("\\n[PORTADA / TÍTULO]")
-print(f"  Mes:                 {NOMBRE_MES_TITLE}")
+print(f"  Mes:                 {NOMBRE_MES_TITLE}{SUFIJO_PARCIAL}")
 print(f"  Canasta media:       {_ar(_v_media)}")
-print(f"  Var. mensual media:  {_pp(_vars.get(_MEDIA_ID, float('nan')))}")
+print(f"  Var. mensual media:  {_pp(_vars.get(_MEDIA_ID, float('nan')))}" + ('  ⚠️ PRELIMINAR (mes parcial)' if MES_PARCIAL else ''))
 
 print("\\n[RESUMEN EJECUTIVO — Item 1: valores y variaciones por canasta]")
 for c in _sorted_ids:

@@ -245,20 +245,39 @@ Con el nb02 ejecutado para el nuevo mes:
 
 Pipeline completo validado con el `2026A.zip` que incluye junio (23 días). **Trazabilidad de los EANs de la canasta: 99,7% promedio** (250 únicos, mínima 83,3%) → la calidad del Script 03 es excelente. nb02: factor 100 autodetectado OK, 261/261 EANs con datos, 2.616 sucursales.
 
-Costos nacionales junio 2026 (promedio provincial ponderado por población; valor de cuadro, no afectado por BUG-23):
+Costos nacionales junio 2026 — **NIVEL** (promedio provincial ponderado por población = "cuadro"). El nivel es un snapshot al día 23, válido. **La variación mensual de junio es PRELIMINAR/subestimada por mes parcial (ver análisis abajo).**
 
-| Canasta | Costo jun-2026 | Var. mensual |
-|---|---|---|
-| Vulnerable | $270.580 | +3,19% |
-| Vegana Básica | $446.132 | +2,33% |
-| Popular | $479.319 | +2,53% |
-| Media | $662.441 | +3,14% |
-| Celíaca Media | $719.474 | +2,89% |
-| Media Alta | $948.549 | +2,11% |
+| Canasta | Costo jun-2026 (nivel) |
+|---|---|
+| Vulnerable | $270.580 |
+| Vegana Básica | $446.132 |
+| Popular | $479.319 |
+| Media | $662.441 |
+| Celíaca Media | $719.474 |
+| Media Alta | $948.549 |
 
 Prima celíaca +8,6% · ahorro vegano −6,92% · dispersión provincial 6,7% (Formosa más barata, Santa Cruz más cara). Patrón NEA-barato/Patagonia-cara confirmado.
 
-**NOTA**: los acumulados/variaciones-3-meses/Gráficos 1-2-3 de ESA corrida estaban en mayo por BUG-23 (ver abajo). Tras el fix + re-correr nb02, deben incluir junio. Pendiente: log del nb02 re-corrido para confirmar.
+**✅ BUG-23 confirmado resuelto en producción** (corrida del 2026-06-24): la serie ahora va `2024-01 → 2026-06` (30 meses, las 6 canastas), Gráficos 1/2/3 incluyen junio, variaciones-3-meses muestran 04/05/06. El caché funcionó como diseñado: reconstruyó 29 meses cerrados + junio fresco; próxima corrida será rápida.
+
+## ⚠️ Análisis: variación de junio salió baja (+0,37% Media) — NO es bug [2026-06-24]
+
+El usuario notó que la serie marcó **Media jun +0,37%** (mayo $659.355 → junio $661.785) mientras el headline/cuadro pasó de mayo $650.925 → junio $662.441 = **+1,77%**. Investigado con datos reales del zip local:
+
+- **Mayoristas DESCARTADO**: recalcular mayo solo-minoristas vs todos da **-0,01%** (los mayoristas no mueven la canasta). El que junio (Script 03) no traiga mayoristas no afecta.
+- **Causa principal = MES PARCIAL**: la serie compara mayo COMPLETO (31 d) contra junio incompleto (23 d). Probado: mayo recortado a 23 días = $655.529 vs $659.355 completo → **sesgo -0,58%**. Comparando 23d-vs-23d, la variación sube de +0,37% a **+0,95%**.
+- **Causa secundaria = dos metodologías**: el "cuadro" (mediana por sucursal ponderada por población, CELDA 8) ≠ la "serie" (mediana nacional por EAN, CELDA 9/11). Por eso cuadro +1,77% vs serie +0,95% (ya corregida por días). Ambas válidas, miden distinto. El cuadro TAMBIÉN sufre el sesgo de mes parcial.
+
+**Conclusión**: el código está bien; la variación mensual de un mes parcial está subestimada y NO debe reportarse hasta cerrar el mes. El NIVEL ($662.441) sí es un snapshot válido.
+
+## Feature: detección de MES PARCIAL en nb02 [2026-06-24]
+
+`gen_nb02.py` CELDA 6: lee los headers del mes actual, cuenta días-columna `precio_YYYYMMDD` y compara con `calendar.monthrange`. Define globals `MES_PARCIAL`, `DIAS_CARGADOS`, `DIAS_MES`, `SUFIJO_PARCIAL`. Si parcial:
+- Print de advertencia en CELDA 6 y en el RESUMEN.
+- Título rojo en Gráficos 1 y 2 ("Último mes PARCIAL — N/M días · variación preliminar").
+- Nota al pie roja en Gráfico 3 + sufijo en Valores_Documento (Mes y Var. mensual media → "⚠️ PRELIMINAR").
+
+Detección validada (jun 23/30=parcial; may 31/31, jun 30/30, feb 28/28 = completos).
 
 ## BUG-23 — Serie/gráficos no incluían el mes en curso [2026-06-24]
 
