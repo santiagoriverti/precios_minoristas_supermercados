@@ -321,7 +321,7 @@ Se puede correr **cualquier día del mes**: con 23 días disponibles arma parte1
 
 - **Unidades**: el diario está en pesos, el semestral oficial en **centavos** → se multiplica ×100. El autodetect de factor de los notebooks lo procesa sin cambios.
 - **`id_sucursal`**: el diario lo rellena con ceros (`004`), el maestro usa `4` → se quitan los ceros para que el join geográfico matchee (cobertura ~99–100% verificada).
-- **Mayoristas**: el diario minorista **no** incluye las cadenas mayoristas (Maxiconsumo, Diarco…) que el oficial sí trae. Coherente con el objetivo "precios minoristas en supermercados".
+- **Cobertura de comercios**: todos los datos son **minoristas** (no hay mayoristas en ninguna fuente). Los archivos oficiales del SEPA incluyen algunos comercios adicionales (ids 2000/3001…) que la fuente diaria no trae; son **irrelevantes para la canasta** (afectan ~−0,01% el costo, verificado).
 - **RAM**: pivota **por comercio**, así el pico de memoria queda acotado (~2–3 GB) y entra holgado en Colab aunque el dataset crudo del mes ronde decenas de GB.
 
 ### Correrlo localmente (recomendado para el zip de ~7 GB)

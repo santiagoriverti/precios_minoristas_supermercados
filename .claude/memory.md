@@ -215,7 +215,7 @@ Con el nb02 ejecutado para el nuevo mes:
 **Trampas resueltas (críticas):**
 - `id_sucursal`: el diario rellena con ceros (`004`), el maestro usa `4` → `_norm_suc()` quita los ceros. Sin esto el join geográfico cae a ~70%; con el fix, ~99–100%.
 - Unidades: diario en pesos / oficial en centavos → ×100. El autodetect de factor del notebook (mediana>10.000→/100) lo procesa.
-- El diario MINORISTA no trae mayoristas (id_comercio 2000/3001/etc.); el oficial sí. Coherente con el objetivo del proyecto.
+- **TODO es minorista (no hay mayoristas en ninguna fuente).** El diario no trae unos comercios (ids 2000/3001/etc.) que sí están en los archivos oficiales, pero son comercios minoristas adicionales irrelevantes para la canasta (−0,01%).
 - RAM acotada: pivot **por comercio** (pico ~2–3 GB) en vez de pivotear los ~335M registros long del mes de una.
 
 **Esquema diario (pipe `|`):** `productos.csv` = id_comercio|id_bandera|id_sucursal|id_producto|productos_ean|…|productos_precio_lista(idx9)|…  ·  `sucursales.csv` trae `sucursales_provincia` (AR-X, igual que `maestro-provincias.xlsx`).
@@ -234,10 +234,10 @@ Con el nb02 ejecutado para el nuevo mes:
 
 **✅ CORRIDA REAL DE JUNIO (días 1–23) EXITOSA — `.py` local, 29,7 min:**
 - 20 comercios detectados; 19 con datos. **Comercio 36 = "sin datos"** (zip de origen vacío/corrupto en el diario; tampoco aparece en los archivos oficiales del SEPA, no es cadena relevante → ignorar).
-- Filas totales: **16.029.900** (producto×sucursal). EANs únicos: **88.444** (coherente con minorista-puro; los ~170K del README incluyen mayoristas).
+- Filas totales: **16.029.900** (producto×sucursal). EANs únicos: **88.444** (la diferencia con catálogos mayores es por cobertura de comercios/meses, NO por mayoristas — todo es minorista).
 - Comercios grandes OK: Carrefour(10)=3,79M filas/468s · DIA(15)=4,41M/470s · ChangoMas(11)=2,9M · Cencosud(9)=1,43M. RAM aguantó en 16 GB.
 - Salida: `062026_pais_parte1COMPLETO.csv.gz` (140,3 MB, 15 días) + parte2 (124,7 MB, 8 días 16–23). `2026A.zip` actualizado = **1,73 GB** con los 6 meses (ene–jun) intactos.
-- Validación del 2026A.zip: header idéntico al oficial, mediana $4.650 (centavos OK), NA día 1 = 9,2% (normal). Tamaño junio ≈ meses oficiales (un poco menos: sin mayoristas + parte2 con 8 días porque junio no cerró).
+- Validación del 2026A.zip: header idéntico al oficial, mediana $4.650 (centavos OK), NA día 1 = 9,2% (normal). Tamaño junio ≈ meses oficiales (un poco menos: faltan algunos comercios minoristas ids 2000/3001 + parte2 con 8 días porque junio no cerró).
 
 **Cuando junio cierre (día 30)**, re-correr Script 03 con `ultimo_mes.zip` completo → parte2 tendrá 15 días (16–30).
 
@@ -264,7 +264,7 @@ Prima celíaca +8,6% · ahorro vegano −6,92% · dispersión provincial 6,7% (F
 
 El usuario notó que la serie marcó **Media jun +0,37%** (mayo $659.355 → junio $661.785) mientras el headline/cuadro pasó de mayo $650.925 → junio $662.441 = **+1,77%**. Investigado con datos reales del zip local:
 
-- **Mayoristas DESCARTADO**: recalcular mayo solo-minoristas vs todos da **-0,01%** (los mayoristas no mueven la canasta). El que junio (Script 03) no traiga mayoristas no afecta.
+- **Comercios extra DESCARTADO**: recalcular mayo sin los comercios ids 2000/3001 (ausentes en el junio de Script 03) vs con todos da **-0,01%**. (TODO es minorista — no hay mayoristas; esos comercios extra no mueven la canasta.)
 - **Causa principal = MES PARCIAL**: la serie compara mayo COMPLETO (31 d) contra junio incompleto (23 d). Probado: mayo recortado a 23 días = $655.529 vs $659.355 completo → **sesgo -0,58%**. Comparando 23d-vs-23d, la variación sube de +0,37% a **+0,95%**.
 - **Causa secundaria = dos metodologías**: el "cuadro" (mediana por sucursal ponderada por población, CELDA 8) ≠ la "serie" (mediana nacional por EAN, CELDA 9/11). Por eso cuadro +1,77% vs serie +0,95% (ya corregida por días). Ambas válidas, miden distinto. El cuadro TAMBIÉN sufre el sesgo de mes parcial.
 

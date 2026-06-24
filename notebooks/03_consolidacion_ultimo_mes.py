@@ -46,9 +46,10 @@ NOTAS DE COMPATIBILIDAD (verificadas contra los archivos oficiales)
 - Las claves (id_comercio, id_bandera, id_sucursal) del diario coinciden con
   las del semestral oficial y con el maestro de sucursales -> el join
   geográfico de los notebooks funciona sin cambios.
-- El diario MINORISTA no incluye las cadenas mayoristas (id_comercio 2000,
-  3001, etc.) que el oficial sí trae. Esto es coherente con el objetivo del
-  proyecto ("precios minoristas en supermercados").
+- Todos los datos son MINORISTAS (no hay mayoristas en ninguna fuente). El
+  diario no incluye algunos comercios minoristas adicionales (id_comercio 2000,
+  3001, etc.) que sí están en los archivos oficiales, pero son irrelevantes
+  para la canasta (afectan ~-0,01% el costo, verificado).
 - El precio diario está en PESOS; el oficial en CENTAVOS. Por eso se multiplica
   x100 al exportar, dejando el archivo indistinguible del oficial.
 
