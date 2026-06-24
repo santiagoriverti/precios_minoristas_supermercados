@@ -347,11 +347,26 @@ OUTPUT_DIR = Path(r"C:\...\salida_consolidada")
 MES_FORZADO = None   # None = último mes del zip; o forzar 'YYYY-MM'
 ```
 
-**Paso 2 — ejecutar.** Abrir una terminal (PowerShell) en la carpeta del repositorio y correr:
+**Paso 2 — abrir PowerShell en la carpeta del repositorio.**
+
+1. En el **Explorador de Windows** (📁) navegá hasta la carpeta del repo:
+   ```
+   C:\Users\<usuario>\...\precios_minoristas_supermercados
+   ```
+2. Hacé clic en la **barra de direcciones** de arriba (la ruta se pone editable), borrala, escribí **`powershell`** y apretá **Enter**.
+3. Se abre PowerShell **ya parado en esa carpeta**. El prompt termina con la ruta del repo:
+   ```
+   PS C:\Users\<usuario>\...\precios_minoristas_supermercados>
+   ```
+   > Que aparezca esa ruta al final es la señal de que estás en el lugar correcto. (No copies la línea `PS ...>` como comando: es solo el prompt.)
+
+**Paso 3 — ejecutar.** Escribí (o pegá con clic derecho) este comando y apretá **Enter**:
 
 ```powershell
 python notebooks/03_consolidacion_ultimo_mes.py
 ```
+
+> Si `python` no se reconoce, probá con `py notebooks/03_consolidacion_ultimo_mes.py`.
 
 **Qué vas a ver mientras corre.** Primero imprime el mes detectado y la lista de comercios (suelen ser ~20 — más que los presentes en un solo día, porque escanea los 23 días):
 
@@ -370,7 +385,7 @@ Comercios a procesar: 20 -> ['2', '3', '4', ...]
 
 > Si pegaste sin querer la línea del prompt (`PS C:\...>`) y salió un error tipo *"No se encuentra ningún proceso"*, es inofensivo: solo volvé a correr el comando del Paso 2.
 
-**Paso 3 — resultado.** En `OUTPUT_DIR` quedan:
+**Paso 4 — resultado.** En `OUTPUT_DIR` quedan:
 - `MMAAAA_pais_parte1COMPLETO.csv.gz` (días 01–15) y `parte2` (16–último)
 - `2026A.zip` actualizado (mes nuevo insertado, meses previos conservados)
 
