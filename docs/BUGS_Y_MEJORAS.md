@@ -1,12 +1,32 @@
 # Bugs Pendientes y Mejoras
 
-Última actualización: 2026-06-01 — Celíaca Media + Vegana Básica, estética Gráfico 2
+Última actualización: 2026-06-24 — BUG-23: serie/gráficos no incluían el mes en curso
 
 ---
 
 ## 🔴 Bugs críticos (pendientes de fix)
 
 > ✅ Todos los bugs críticos están resueltos. Ver sección "Resueltos" más abajo.
+
+---
+
+## 🟠 Bug resuelto (2026-06-24)
+
+### BUG-23: La serie histórica y los gráficos 1/2/3 no incluían el mes en curso
+
+**Archivo**: `notebooks/gen_nb02.py` → CELDA 9 (y `02_evolucion_canasta_representativa.ipynb` regenerado).
+
+**Síntoma**: con junio 2026 cargado, los cuadros provinciales/rankings/barrios mostraban junio (se calculan directo del archivo del mes), pero los **Gráficos 1 (índices), 2 (variaciones) y 3 (ranking canastas)** y los acumulados/variaciones del Excel terminaban en **mayo**. La serie histórica imprimía `2024-01 -> 2026-05`.
+
+**Causa**: el caché de la serie (`hist_union_<hash>.parquet`) se identificaba **solo por la unión de EANs** de las canastas. Al agregar un mes nuevo, el set de EANs no cambia → mismo hash → se cargaba el caché viejo (construido hasta mayo) sin releer los meses nuevos. Agravante: el código original cacheaba **todos** los meses leídos, incluido el mes en curso; como ese mes crece día a día, quedaba "congelado" en la cantidad de días que tenía al cachearse.
+
+**Fix**: CELDA 9 reescrita con dos niveles:
+1. **Meses cerrados** (todos menos el último disponible) → se cachean y se leen incrementalmente: solo se procesan los meses que faltan en el caché.
+2. **Mes en curso** (el último disponible) → se **relee SIEMPRE fresco** y nunca se cachea, así sus promedios usan los días efectivamente cargados (ej. junio con 23 días).
+
+El caché viejo sigue siendo válido (se reutiliza para los meses cerrados), por lo que la primera corrida tras el fix es rápida: solo relee el mes en curso. Al cerrar el mes (cuando aparece el siguiente), pasa a "cerrado" y se incorpora al caché.
+
+**Validado**: lógica de control testeada en 4 escenarios (primera corrida con mes nuevo, re-corrida mismo mes con más días, rollover de mes, sin caché). Solo cambió la CELDA 9 del notebook.
 
 ---
 

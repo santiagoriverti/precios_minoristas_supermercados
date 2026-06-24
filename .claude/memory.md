@@ -220,6 +220,14 @@ Con el nb02 ejecutado para el nuevo mes:
 
 **PENDIENTE**: el usuario sube `2026A.zip` (1,73 GB) a Drive `carga/` y corre nb01 (verificar trazabilidad canasta ~99%) + nb02 (costos de las 6 canastas de junio vs mayo) para cerrar la evaluación end-to-end. Cuando junio cierre (día 30), re-correr con `ultimo_mes.zip` completo → parte2 tendrá 15 días (16–30).
 
+## BUG-23 — Serie/gráficos no incluían el mes en curso [2026-06-24]
+
+`gen_nb02.py` CELDA 9. Con junio cargado, los cuadros/rankings mostraban junio pero los **Gráficos 1/2/3 + acumulados/variaciones** terminaban en mayo (serie `2024-01 -> 2026-05`). Causa: el caché `hist_union_<hash>.parquet` se identifica solo por EANs; agregar un mes no cambia el hash → cargaba caché viejo. Agravante: cacheaba el mes en curso, que crece día a día → quedaba congelado.
+
+**Fix (CELDA 9 reescrita):** caché solo de **meses cerrados** (incremental, lee solo los que faltan) + **mes en curso SIEMPRE releído fresco** (nunca cacheado) → usa los días vigentes. El caché viejo se reutiliza para meses cerrados → primera corrida post-fix es rápida (solo relee el mes en curso). Helper `_leer_mes_hist(_lbl)` + `_mapa_mes` (mes→zip/archivos). `_mes_actual = _meses_disp[-1]`.
+
+Todo (gráficos, tablas, acumulados, Excel) deriva de `serie_nac_dict`/`.iloc[-1]` → con la serie corregida, todo incluye el mes en curso. El merge serie×IPC es `how='left'` → el mes en curso se mantiene aunque el IPC de INDEC todavía no exista (la línea de canasta llega al mes, la del IPC corta donde haya dato). Los cuadros/rankings/barrios ya usaban bien los días vigentes (se calculan directo del archivo del mes). Bonus: ids de celda del notebook ahora deterministas (md5) para evitar "drift" espurio al regenerar.
+
 ## Pendientes próxima sesión (mayo 2026)
 
 1. **Ejecutar notebook 02** con datos mayo 2026 (zip SEPA del 2do semestre o nuevo mes)

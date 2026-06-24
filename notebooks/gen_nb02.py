@@ -1,13 +1,17 @@
 """Script to generate 02_evolucion_canasta_representativa.ipynb — Multi-canasta version"""
-import json, os
+import json, os, hashlib
+
+def _cell_id(prefix, src):
+    # id determinista (md5 del contenido) — evita 'drift' espurio al regenerar
+    return prefix + hashlib.md5(src.encode('utf-8')).hexdigest()[:6]
 
 def cell_md(src):
     lines = src.split('\n')
     source = [l + '\n' for l in lines[:-1]] + ([lines[-1]] if lines[-1] else [])
-    return {'cell_type':'markdown','id':f'md{abs(hash(src))%65536:04x}','metadata':{},'source':source}
+    return {'cell_type':'markdown','id':_cell_id('md', src),'metadata':{},'source':source}
 
 def cell_code(src):
-    return {'cell_type':'code','execution_count':None,'id':f'c{abs(hash(src))%65536:04x}','metadata':{},'outputs':[],'source':[src]}
+    return {'cell_type':'code','execution_count':None,'id':_cell_id('c', src),'metadata':{},'outputs':[],'source':[src]}
 
 cells = []
 
@@ -594,60 +598,96 @@ print(f'\\nProvincias con datos (primera canasta): {len(serie_prov_dict[CANASTAS
 # ── CELL 9 — HISTORICAL SERIES (one raw cache, per-canasta aggregation) ───────
 cells.append(cell_code("""\
 # ============================================================
-# CELDA 9 — Serie histórica (1 cache unión EANs + serie por canasta)
+# CELDA 9 — Serie histórica (cache de meses cerrados + mes en curso fresco)
 # ============================================================
-# Cache keyed by union of all active EANs (not quantities)
-# so adding/removing EANs invalidates, but changing quantities reuses cache.
+# Cache identificado por la unión de EANs activos (cambiar cantidades reusa;
+# agregar/quitar EANs invalida). IMPORTANTE: el cache guarda SOLO meses
+# CERRADOS. El último mes disponible (en curso, crece día a día) se RELEE
+# SIEMPRE fresco, así sus promedios usan los días efectivamente cargados.
 _cache_key  = hashlib.md5('|'.join(sorted(CANASTA_EANS_NORM)).encode()).hexdigest()[:8]
 _cache_path = CACHE_DIR / f'hist_union_{_cache_key}.parquet'
 
-if USE_CACHE and _cache_path.exists():
-    print(f'Cargando cache unión: {_cache_path.name}')
-    df_hist_raw = pd.read_parquet(_cache_path)
-else:
-    _sems = detectar_semestres()
-    _registros = []
-    for _zip_path, _anio, _sem in _sems:
-        _meses = archivos_por_mes(_zip_path)
-        for (_anio_m, _mes_m), _archs in sorted(_meses.items()):
-            _lbl = f'{_anio_m}-{_mes_m:02d}'
-            if _lbl < MES_INICIO_HISTORICO: continue
-            _all_rows = []
-            for _archivo in sorted(_archs):
-                _tmp_p = TMP_DIR / Path(_archivo).name
-                with zipfile.ZipFile(_zip_path) as _zf:
-                    with _zf.open(_archivo) as _s, open(_tmp_p,'wb') as _d:
-                        shutil.copyfileobj(_s, _d, length=4*1024*1024)
-                with gzip.open(_tmp_p,'rt',encoding='utf-8',errors='replace') as _g:
-                    for _chunk in pd.read_csv(_g, dtype=str, chunksize=300_000, low_memory=False):
-                        _chunk['ean_norm'] = _chunk['id_producto'].apply(normalizar_ean)
-                        _chunk = _chunk[_chunk['ean_norm'].isin(CANASTA_EANS_NORM)].copy()
-                        if len(_chunk) == 0: continue
-                        _cols_p = [c for c in _chunk.columns if re.match(r'^precio_\\d{8}$', c)]
-                        if not _cols_p: continue
-                        _sub = _chunk[['ean_norm']+_cols_p].copy()
-                        for _cp in _cols_p:
-                            _sub[_cp] = pd.to_numeric(_sub[_cp].replace('NA',np.nan), errors='coerce')
-                        _mlt = _sub.melt(id_vars='ean_norm', value_vars=_cols_p,
-                                         var_name='_c', value_name='precio')
-                        _mlt = _mlt[_mlt['precio'].notna() & (_mlt['precio']>0)]
-                        _all_rows.append(_mlt[['ean_norm','precio']])
-                _tmp_p.unlink(missing_ok=True)
-            if not _all_rows: continue
-            _df_m = pd.concat(_all_rows, ignore_index=True)
-            _fac = 100 if _df_m['precio'].median() > 10_000 else 1
-            if _fac == 100: _df_m['precio'] /= 100
-            _agg = _df_m.groupby('ean_norm')['precio'].median().reset_index(name='precio_mediano')
-            _agg['anio_mes'] = _lbl
-            _registros.append(_agg)
-            print(f'  {_lbl}: {_agg["ean_norm"].nunique()} EANs | factor={_fac}')
-            del _df_m, _agg, _all_rows; gc.collect()
+# Mapa de meses disponibles -> (zip, archivos del mes)
+_mapa_mes = {}
+for _zip_path, _anio, _sem in detectar_semestres():
+    for (_anio_m, _mes_m), _archs in archivos_por_mes(_zip_path).items():
+        _lbl = f'{_anio_m}-{_mes_m:02d}'
+        if _lbl >= MES_INICIO_HISTORICO:
+            _mapa_mes[_lbl] = (_zip_path, _archs)
+_meses_disp = sorted(_mapa_mes)
+if not _meses_disp:
+    raise RuntimeError(f'No hay meses disponibles >= {MES_INICIO_HISTORICO}')
+_mes_actual = _meses_disp[-1]   # mes en curso -> NUNCA se cachea
 
-    df_hist_raw = pd.concat(_registros, ignore_index=True) if _registros else pd.DataFrame(
-        columns=['ean_norm','precio_mediano','anio_mes'])
-    if USE_CACHE and len(df_hist_raw) > 0:
-        df_hist_raw.to_parquet(_cache_path, compression='snappy', index=False)
-        print(f'Cache guardado: {_cache_path}')
+def _leer_mes_hist(_lbl):
+    # Lee los archivos del mes _lbl, filtra a los EANs de las canastas y
+    # devuelve [ean_norm, precio_mediano, anio_mes] (mediana sobre todos los
+    # días cargados de ese mes). Devuelve None si no hay datos.
+    _zip_path, _archs = _mapa_mes[_lbl]
+    _all_rows = []
+    for _archivo in sorted(_archs):
+        _tmp_p = TMP_DIR / Path(_archivo).name
+        with zipfile.ZipFile(_zip_path) as _zf:
+            with _zf.open(_archivo) as _s, open(_tmp_p,'wb') as _d:
+                shutil.copyfileobj(_s, _d, length=4*1024*1024)
+        with gzip.open(_tmp_p,'rt',encoding='utf-8',errors='replace') as _g:
+            for _chunk in pd.read_csv(_g, dtype=str, chunksize=300_000, low_memory=False):
+                _chunk['ean_norm'] = _chunk['id_producto'].apply(normalizar_ean)
+                _chunk = _chunk[_chunk['ean_norm'].isin(CANASTA_EANS_NORM)].copy()
+                if len(_chunk) == 0: continue
+                _cols_p = [c for c in _chunk.columns if re.match(r'^precio_\\d{8}$', c)]
+                if not _cols_p: continue
+                _sub = _chunk[['ean_norm']+_cols_p].copy()
+                for _cp in _cols_p:
+                    _sub[_cp] = pd.to_numeric(_sub[_cp].replace('NA',np.nan), errors='coerce')
+                _mlt = _sub.melt(id_vars='ean_norm', value_vars=_cols_p,
+                                 var_name='_c', value_name='precio')
+                _mlt = _mlt[_mlt['precio'].notna() & (_mlt['precio']>0)]
+                _all_rows.append(_mlt[['ean_norm','precio']])
+        _tmp_p.unlink(missing_ok=True)
+    if not _all_rows:
+        return None
+    _df_m = pd.concat(_all_rows, ignore_index=True)
+    _fac = 100 if _df_m['precio'].median() > 10_000 else 1
+    if _fac == 100: _df_m['precio'] /= 100
+    _agg = _df_m.groupby('ean_norm')['precio'].median().reset_index(name='precio_mediano')
+    _agg['anio_mes'] = _lbl
+    del _df_m, _all_rows; gc.collect()
+    return _agg
+
+# ── 1) Meses CERRADOS (todos menos el último): usar/actualizar cache ──────────
+if USE_CACHE and _cache_path.exists():
+    df_cache = pd.read_parquet(_cache_path)
+    df_cache = df_cache[df_cache['anio_mes'] < _mes_actual].copy()
+else:
+    df_cache = pd.DataFrame(columns=['ean_norm','precio_mediano','anio_mes'])
+
+_meses_en_cache = set(df_cache['anio_mes'].unique())
+_faltantes = [m for m in _meses_disp if m < _mes_actual and m not in _meses_en_cache]
+_nuevos = []
+for _lbl in _faltantes:
+    _agg = _leer_mes_hist(_lbl)
+    if _agg is not None:
+        _nuevos.append(_agg)
+        print(f'  {_lbl}: {_agg["ean_norm"].nunique()} EANs (agregado al cache)')
+if _nuevos:
+    df_cache = pd.concat([df_cache] + _nuevos, ignore_index=True)
+    if USE_CACHE:
+        df_cache.to_parquet(_cache_path, compression='snappy', index=False)
+        print(f'Cache actualizado: {_cache_path.name} ({df_cache["anio_mes"].nunique()} meses cerrados)')
+elif USE_CACHE and _cache_path.exists():
+    print(f'Cache al día: {_cache_path.name} ({len(_meses_en_cache)} meses cerrados)')
+
+# ── 2) Mes en curso: SIEMPRE fresco (usa los días cargados a la fecha) ────────
+_actual = _leer_mes_hist(_mes_actual)
+if _actual is not None:
+    print(f'  {_mes_actual}: {_actual["ean_norm"].nunique()} EANs (mes en curso — recalculado fresco)')
+
+df_hist_raw = (pd.concat([df_cache] + ([_actual] if _actual is not None else []),
+                         ignore_index=True)
+               if (len(df_cache) > 0 or _actual is not None)
+               else pd.DataFrame(columns=['ean_norm','precio_mediano','anio_mes']))
+df_hist_raw = df_hist_raw.sort_values('anio_mes').reset_index(drop=True)
 
 # ── Agregar por canasta ──────────────────────────────────────────────────────
 serie_nac_dict = {}   # col_id -> serie_nacional_valida
