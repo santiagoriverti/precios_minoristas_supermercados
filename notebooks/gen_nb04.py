@@ -1,4 +1,8 @@
-"""Genera 04_precios_seleccion.ipynb — precios diarios por sucursal cercana a un punto."""
+"""Genera 04_precios_seleccion.ipynb — precios diarios por sucursal cercana a un punto.
+
+Incluye la pestaña 'analisis_comparativo' (canasta por rubro comparando cadenas, solo
+EANs presentes en todas las cadenas) + 'resumen_general' + 'comparativo_sucursal'.
+Excluye los comercios de EXCLUIR_COMERCIOS (estaciones de servicio: 3 y 19)."""
 import json, os, hashlib
 
 def _cid(prefix, src):
@@ -23,12 +27,16 @@ los supermercados ubicados a una distancia máxima de un **punto** dado.
 
 **Salida** (`precios_seleccion_YYYY-MM.xlsx`):
 - Hoja **`Sucursales`**: índice de los locales seleccionados (cadena, localidad, tipo, distancia, nº de productos).
+- Hoja **`analisis_comparativo`**: por **rubro**, costo de la **canasta comparable** en cada cadena (solo EANs presentes en **todas** las cadenas), cadena más barata, promedio, ahorro % y brecha. Fila `TOTAL` con la canasta de todos los rubros.
+- Hoja **`resumen_general`**: ranking de cadenas por canasta total comparable (en cuántos rubros es la más barata, % vs promedio).
+- Hoja **`comparativo_sucursal`**: el mismo set comparable visto por sucursal (precio promedio por producto, cobertura, distancia, ranking dentro del rubro).
 - **Una hoja por sucursal**: todos sus productos (EAN, descripción, marca, rubro) y el **precio para cada día** del mes.
 - Hoja **`General`**: todos los productos únicos × supermercado con el **precio promedio del mes**; celda vacía si ese super no tiene el producto. Incluye `promedio_general`.
 
 **Cómo usar:** ajustá el punto y la distancia en la celda de CONFIGURACIÓN, *Entorno de ejecución → Ejecutar todo*. Al final descarga el Excel.
 
-> Requiere en `carga/` (Drive): los ZIPs SEPA (`2024A.zip`…`2026A.zip`). Los maestros se descargan solos desde GitHub. Precios en centavos → se autodetecta y pasa a pesos."""))
+> Requiere en `carga/` (Drive): los ZIPs SEPA (`2024A.zip`…`2026A.zip`). Los maestros se descargan solos desde GitHub. Precios en centavos → se autodetecta y pasa a pesos.
+> Se excluyen los comercios `EXCLUIR_COMERCIOS` (estaciones de servicio: 3 y 19)."""))
 
 # ── CELL 1 — CONFIG ─────────────────────────────────────────────────────────────
 cells.append(cell_code("""\
@@ -50,7 +58,16 @@ PERIODO = None
 INCLUIR_METADATA = True
 
 # Tope de sucursales (seguridad para puntos en zonas muy densas)
-MAX_SUCURSALES = 80"""))
+MAX_SUCURSALES = 80
+
+# Comercios a excluir de TODO el Excel (id_comercio). 3 y 19 = estaciones de servicio.
+EXCLUIR_COMERCIOS = ['3', '19']
+
+# Comparabilidad para 'analisis_comparativo': un EAN entra si está presente en
+# TODAS las cadenas comparadas (canasta idéntica = ranking justo).
+#   0 = todas las cadenas (recomendado). Un entero N relaja a 'presente en >= N cadenas'
+#   (mínimo 2 siempre: nunca se compara un producto que vende un solo super).
+MIN_CADENAS_COMPARABLE = 0"""))
 
 # ── CELL 2 — Setup ────────────────────────────────────────────────────────────
 cells.append(cell_code("""\
@@ -181,6 +198,13 @@ cells.append(cell_code("""\
 MS['distancia_km'] = haversine_km(PUNTO_LAT, PUNTO_LON, MS['lat'].values, MS['lon'].values)
 sel = MS[MS['distancia_km'] <= DIST_MAX_KM].copy()
 sel = sel.drop_duplicates('key').sort_values('distancia_km').reset_index(drop=True)
+
+# Excluir comercios indicados (estaciones de servicio, etc.) de TODO el Excel
+_excl = {nid(x) for x in EXCLUIR_COMERCIOS}
+if _excl:
+    _antes = len(sel)
+    sel = sel[~sel['id_comercio'].map(nid).isin(_excl)].reset_index(drop=True)
+    print(f'Excluidos {_antes - len(sel)} locales por EXCLUIR_COMERCIOS={sorted(_excl)}')
 
 if len(sel) == 0:
     raise RuntimeError(f'No hay sucursales a <= {DIST_MAX_KM} km del punto. Probá ampliar DIST_MAX_KM.')
@@ -331,19 +355,141 @@ general = general[META_COLS + _labels + ['promedio_general']]
 general = general.sort_values(['rubro', 'descripcion'], na_position='last').reset_index(drop=True)
 
 df_index = pd.DataFrame(idx_rows)
+print(f'Hojas por sucursal: {len(hojas)} | productos únicos (General): {len(general):,}')"""))
 
+# ── CELL 7 — Análisis comparativo por rubro (solo EAN comparable entre cadenas) ─
+cells.append(cell_code("""\
+# ===========================================================
+# CELDA 7 — Análisis comparativo por rubro (solo EAN comparable entre cadenas)
+# ===========================================================
+# Precio del mes por fila (promedio de los días con dato)
+_df = df_precios.copy()
+_df['precio_mes'] = _df[day_cols].mean(axis=1)
+_df = _df.dropna(subset=['precio_mes'])
+_df['rubro'] = _df['rubro'].fillna('(sin rubro)').replace('', '(sin rubro)')
+
+# Mapas key -> atributos de la sucursal
+k2cad  = dict(zip(sel['key'], sel['cadena']))
+k2nom  = dict(zip(sel['key'], sel['sucursales_nombre']))
+k2loc  = dict(zip(sel['key'], sel['localidad']))
+k2dist = dict(zip(sel['key'], sel['distancia_km'].round(2)))
+_df['cadena'] = _df['key'].map(k2cad)
+
+# Precio de cada EAN por CADENA = promedio de sus sucursales dentro del radio
+ce = _df.groupby(['cadena', 'ean_norm'], as_index=False)['precio_mes'].mean()
+_ean_rubro = _df.drop_duplicates('ean_norm').set_index('ean_norm')['rubro']
+ce['rubro'] = ce['ean_norm'].map(_ean_rubro)
+
+CADENAS = sorted(_df['cadena'].dropna().unique().tolist())
+n_cad_total = len(CADENAS)
+
+# EAN comparable = presente en TODAS las cadenas (MIN_CADENAS_COMPARABLE=0) o en >= N
+_umbral = n_cad_total if (not MIN_CADENAS_COMPARABLE) else min(int(MIN_CADENAS_COMPARABLE), n_cad_total)
+_umbral = max(_umbral, 2)   # nunca menos de 2 (excluye productos de un solo super)
+_cad_x_ean = ce.groupby('ean_norm')['cadena'].nunique()
+eans_comp = set(_cad_x_ean[_cad_x_ean >= _umbral].index)
+cec = ce[ce['ean_norm'].isin(eans_comp)].copy()
+
+print(f'Cadenas comparadas: {n_cad_total} -> {CADENAS}')
+print(f'Umbral de comparabilidad: EAN en >= {_umbral} cadenas')
+print(f'EAN comparables: {len(eans_comp):,} de {ce[\"ean_norm\"].nunique():,} totales')
+
+if n_cad_total < 2 or not eans_comp:
+    _nota = ('Se necesitan al menos 2 cadenas y productos con EAN compartido. '
+             f'Cadenas={n_cad_total}, EAN comparables={len(eans_comp)}. '
+             'Ampliá DIST_MAX_KM o revisá EXCLUIR_COMERCIOS.')
+    analisis_comparativo = pd.DataFrame({'analisis_comparativo': [_nota]})
+    resumen_general      = analisis_comparativo.copy()
+    comparativo_sucursal = analisis_comparativo.copy()
+    print('AVISO:', _nota)
+else:
+    # Costo de canasta por (rubro, cadena) = suma de precios de los EAN comparables del rubro
+    basket = cec.groupby(['rubro', 'cadena'])['precio_mes'].sum().unstack('cadena').reindex(columns=CADENAS)
+    n_rubro = cec.groupby('rubro')['ean_norm'].nunique()
+
+    res = pd.DataFrame(index=basket.index)
+    res['n_productos'] = n_rubro
+    for c in CADENAS:
+        res[c] = basket[c].round(2)
+    res['promedio_cadenas']   = basket[CADENAS].mean(axis=1).round(2)
+    res['cadena_mas_barata']  = basket[CADENAS].idxmin(axis=1)
+    res['costo_mas_barata']   = basket[CADENAS].min(axis=1).round(2)
+    res['cadena_mas_cara']    = basket[CADENAS].idxmax(axis=1)
+    res['costo_mas_cara']     = basket[CADENAS].max(axis=1).round(2)
+    res['ahorro_vs_prom_pct'] = ((res['promedio_cadenas'] - res['costo_mas_barata']) / res['promedio_cadenas'] * 100).round(2)
+    res['brecha_pct']         = ((res['costo_mas_cara'] - res['costo_mas_barata']) / res['costo_mas_barata'] * 100).round(2)
+    res = res.reset_index().sort_values('rubro').reset_index(drop=True)
+
+    # Fila TOTAL: canasta con TODOS los EAN comparables
+    tot = cec.groupby('cadena')['precio_mes'].sum().reindex(CADENAS)
+    fila = {'rubro': 'TOTAL (todos los rubros)', 'n_productos': len(eans_comp)}
+    for c in CADENAS:
+        fila[c] = round(float(tot[c]), 2)
+    fila['promedio_cadenas']   = round(float(tot.mean()), 2)
+    fila['cadena_mas_barata']  = tot.idxmin()
+    fila['costo_mas_barata']   = round(float(tot.min()), 2)
+    fila['cadena_mas_cara']    = tot.idxmax()
+    fila['costo_mas_cara']     = round(float(tot.max()), 2)
+    fila['ahorro_vs_prom_pct'] = round((tot.mean() - tot.min()) / tot.mean() * 100, 2)
+    fila['brecha_pct']         = round((tot.max() - tot.min()) / tot.min() * 100, 2)
+    analisis_comparativo = pd.concat([res, pd.DataFrame([fila])], ignore_index=True)
+
+    # Resumen general por cadena (canasta total de todos los rubros comparables)
+    gana = res['cadena_mas_barata'].value_counts()
+    rg = pd.DataFrame({'cadena': CADENAS})
+    rg['costo_canasta_total']   = rg['cadena'].map(tot).round(2)
+    rg['n_productos']           = len(eans_comp)
+    rg['precio_prom_producto']  = (rg['costo_canasta_total'] / len(eans_comp)).round(2)
+    _pt = rg['costo_canasta_total'].mean()
+    rg['vs_promedio_pct']       = ((rg['costo_canasta_total'] - _pt) / _pt * 100).round(2)
+    rg['rubros_es_mas_barata']  = rg['cadena'].map(lambda c: int(gana.get(c, 0)))
+    rg = rg.sort_values('costo_canasta_total').reset_index(drop=True)
+    rg.insert(0, 'ranking', range(1, len(rg) + 1))
+    resumen_general = rg
+
+    # Detalle por SUCURSAL (mismo set comparable; robusto a faltantes por sucursal)
+    ds = _df[_df['ean_norm'].isin(eans_comp)].copy()
+    g = ds.groupby(['key', 'rubro']).agg(
+            precio_prom_producto=('precio_mes', 'mean'),
+            n_disp=('ean_norm', 'nunique')).reset_index()
+    g['cadena']             = g['key'].map(k2cad)
+    g['sucursal']           = g['key'].map(k2nom)
+    g['localidad']          = g['key'].map(k2loc)
+    g['distancia_km']       = g['key'].map(k2dist)
+    g['n_comparable_rubro'] = g['rubro'].map(n_rubro)
+    g['cobertura_pct']      = (g['n_disp'] / g['n_comparable_rubro'] * 100).round(1)
+    g['precio_prom_producto'] = g['precio_prom_producto'].round(2)
+    g['ranking_en_rubro']   = g.groupby('rubro')['precio_prom_producto'].rank(method='min').astype(int)
+    _best = g.groupby('rubro')['precio_prom_producto'].transform('min')
+    g['vs_mejor_pct']       = ((g['precio_prom_producto'] - _best) / _best * 100).round(2)
+    comparativo_sucursal = (g.sort_values(['rubro', 'precio_prom_producto'])
+        [['rubro', 'ranking_en_rubro', 'cadena', 'sucursal', 'localidad', 'distancia_km',
+          'n_disp', 'n_comparable_rubro', 'cobertura_pct', 'precio_prom_producto', 'vs_mejor_pct']]
+        .reset_index(drop=True))
+
+    print(f'analisis_comparativo: {len(res)} rubros + TOTAL')
+    print(f'Cadena mas barata (canasta total): {rg.iloc[0][\"cadena\"]} '
+          f'(${rg.iloc[0][\"costo_canasta_total\"]:,.0f})')"""))
+
+# ── CELL 8 — Escribir el Excel (todas las hojas) y descargar ───────────────────
+cells.append(cell_code("""\
+# ===========================================================
+# CELDA 8 — Escribir el Excel (todas las hojas) y descargar
+# ===========================================================
 out_path = OUTPUT_DIR / f'precios_seleccion_{PERIODO}.xlsx'
 with pd.ExcelWriter(out_path, engine='openpyxl') as writer:
     df_index.to_excel(writer, sheet_name='Sucursales', index=False)
-    for name, df in hojas:
-        df.to_excel(writer, sheet_name=name, index=False)
+    analisis_comparativo.to_excel(writer, sheet_name='analisis_comparativo', index=False)
+    resumen_general.to_excel(writer, sheet_name='resumen_general', index=False)
+    comparativo_sucursal.to_excel(writer, sheet_name='comparativo_sucursal', index=False)
+    for name, dfh in hojas:
+        dfh.to_excel(writer, sheet_name=name, index=False)
     general.to_excel(writer, sheet_name='General', index=False)
 
 print(f'Excel guardado: {out_path}')
-print(f'  Hojas: Sucursales (índice) + {len(hojas)} sucursales + General')
-print(f'  Productos únicos (General): {len(general):,}')
+print(f'  Hojas: Sucursales + analisis_comparativo + resumen_general + '
+      f'comparativo_sucursal + {len(hojas)} sucursales + General')
 
-# Descargar
 try:
     from google.colab import files
     files.download(str(out_path))

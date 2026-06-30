@@ -418,12 +418,17 @@ Exporta un **Excel con los precios diarios del último mes** para todos los supe
 | Hoja | Contenido |
 |------|-----------|
 | `Sucursales` | Índice de los locales seleccionados: cadena, sucursal, tipo, localidad, lat/lon, distancia (km) y nº de productos. |
+| `analisis_comparativo` | Por **rubro**, costo de la **canasta comparable** en cada cadena (solo EANs presentes en **todas** las cadenas), cadena más barata, promedio, **ahorro %** y **brecha %**. Fila `TOTAL` con la canasta de todos los rubros. Responde *qué supermercado es más barato en cada rubro*. |
+| `resumen_general` | Ranking de cadenas por canasta total comparable: en cuántos rubros es la más barata, % vs promedio. |
+| `comparativo_sucursal` | El mismo set comparable visto **por sucursal**: precio promedio por producto, cobertura, distancia y ranking dentro del rubro. |
 | **una por sucursal** | Todos los productos del local (EAN, descripción, marca, rubro) y el **precio para cada día** del mes. |
 | `General` | Todos los productos únicos × supermercado con el **precio promedio del mes**; celda **vacía** si ese super no tiene el producto. Incluye `promedio_general`. |
 
 - Detecta automáticamente el **último mes disponible** (con los días que tenga, sea completo o en curso).
 - Distancia por **haversine** (línea recta). Factor centavos→pesos autodetectado sobre la mediana global del mes (robusto). Precios ≤ 0 se tratan como sin dato.
 - `MAX_SUCURSALES` limita el nº de hojas como salvaguarda en zonas muy densas.
+- `EXCLUIR_COMERCIOS` (default `['3','19']`) saca de **todo** el Excel a esos comercios (estaciones de servicio).
+- **Comparabilidad** (`analisis_comparativo`): el costo por rubro de cada cadena = suma de precios de los EANs presentes en **todas** las cadenas (canasta idéntica → ranking justo). El precio de un EAN por cadena promedia sus sucursales dentro del radio. `MIN_CADENAS_COMPARABLE=0` = todas las cadenas (un entero N lo relaja a "presente en ≥ N", mínimo 2).
 
 > Requiere en `carga/` (Drive) los ZIPs SEPA. Los maestros (sucursales y productos) se descargan solos desde GitHub.
 

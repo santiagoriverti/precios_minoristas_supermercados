@@ -378,6 +378,21 @@ y contra el junio generado por Script 03.
 
 **Conclusión:** Script 03 NO requiere cambios — estructura y escala correctas. El flujo del usuario (correr el día 30, localmente) producirá archivos estructuralmente idénticos al oficial del SEPA.
 
+## nb04 — Exclusión de comercios + pestaña analisis_comparativo [2026-06-30]
+
+Cambios en `gen_nb04.py` (regenera `04_precios_seleccion.ipynb`; el usuario commitea y corre en Colab desde el badge del README).
+
+**1. Exclusión de comercios (estaciones de servicio):** CONFIG `EXCLUIR_COMERCIOS = ['3','19']`. Se filtran en CELDA 4 (tras el radio, antes del cap `MAX_SUCURSALES` y antes de leer precios) → salen de **todo** el Excel (hojas por sucursal, General y las comparativas). Comercio 3 = "Cadena 3", comercio 19 = "Comercio 19".
+
+**2. Tres hojas nuevas** (criterio elegido por el usuario: **unidad = ambas (cadena + sucursal)**, **comparabilidad = intersección estricta**):
+- `analisis_comparativo` (CELDA 7): matriz **rubro × cadena** con el costo de canasta = suma de precios de los EANs presentes en **todas** las cadenas (config `MIN_CADENAS_COMPARABLE=0`; mínimo forzado 2 → nunca compara un producto de un solo super). Precio de un EAN por cadena = **promedio de sus sucursales** dentro del radio. Cols: `n_productos`, una por cadena, `promedio_cadenas`, `cadena_mas_barata/cara`, `costo_*`, `ahorro_vs_prom_pct`, `brecha_pct`. Fila `TOTAL` = canasta de todos los rubros comparables.
+- `resumen_general`: ranking de cadenas por canasta total (col `rubros_es_mas_barata`, `vs_promedio_pct`).
+- `comparativo_sucursal`: mismo set comparable por sucursal (`precio_prom_producto` = media de los comparables que tiene, robusto a faltantes; `cobertura_pct`, `distancia_km`, `ranking_en_rubro`, `vs_mejor_pct`).
+
+**3. Reestructura de celdas:** CELDA 6 ya NO escribe/descarga (solo arma `hojas`, `general`, `df_index`). CELDA 7 = análisis. **CELDA 8** = escribe TODAS las hojas (comparativas primero, tras `Sucursales`) y descarga. Notebook pasó de 7 a 9 celdas.
+
+**Validado:** JSON OK, 9 celdas compilan, smoke test con datos sintéticos (promedio por cadena correcto, EAN de un solo super excluido, rankings y TOTAL consistentes). Sufijos de columnas `_pct` (no `%`) para evitar líos. Pendiente: el usuario commitea y corre en Colab.
+
 ## Pendientes próxima sesión [actualizado 2026-06-24]
 
 1. **Cierre de junio (día 30)**: re-correr Script 03 LOCAL con el `ultimo_mes.zip` completo (junio cerrado, en PESOS) → reemplazar en `2026A.zip` → re-correr nb01 (cargar cantidades a mano) + nb02. Con el mes completo desaparece el aviso "parcial" y la variación mensual se firma en su valor real.
