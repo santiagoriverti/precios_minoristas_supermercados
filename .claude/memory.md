@@ -6,7 +6,18 @@ Autor: Santiago Riverti — investigador independiente
 
 ---
 
-## 🟢 ESTADO ACTUAL / HANDOFF [2026-06-24]
+## 🟢 ESTADO ACTUAL / HANDOFF [2026-07-07]
+
+**Sesión de repaso (sin cambios de código):** se verificó el repo local contra `origin/main` — sincronizados, HEAD = `8326744` ("Actualizacion nb04", 2026-06-30). No hubo commits nuevos entre el 30-jun y el 07-jul; el handoff de la sección anterior [2026-06-24] sigue vigente casi entero, con estos matices:
+
+- **nb04 (exclusión comercios + `analisis_comparativo`/`resumen_general`/`comparativo_sucursal`)** quedó commiteado el 30-jun pero validado solo con datos sintéticos (smoke test). **Falta confirmar** que el usuario ya lo corrió en Colab con datos reales.
+- **Cierre de junio (pendiente #1 de la lista de abajo)**: no hay evidencia en git de que se haya re-corrido el Script 03 LOCAL con el mes completo (30 días) ni de que se haya reemplazado el junio parcial/centavos en `2026A.zip`. **Confirmar con el usuario** si ya lo hizo el día 30 (fuera de git, porque el script solo toca el zip local, no commitea).
+- **Archivos sin trackear detectados**: `notebooks/out.txt` y `notebooks/out2.txt` (dumps de debug tipo `--- CELL N code hash ---`, generados al inspeccionar celdas de `gen_nb02.py`/`gen_nb04.py`). Inofensivos, no son output de ningún notebook real — se pueden borrar o agregar a `.gitignore` si se repiten.
+- **⚠️ Seguridad — PAT de GitHub expuesto en el chat DE NUEVO** (segunda vez; la primera fue el 24-jun y sigue sin rotar). Recomendación fuerte: rotar el PAT ahora y pasar a Git Credential Manager / `gh auth login` para no tener que pegar tokens en el chat.
+
+---
+
+## Estado handoff anterior [2026-06-24]
 
 Proyecto en producción. **4 herramientas**, todas en el repo y linkeadas desde el README (badges Colab). Datos SEPA **minoristas**, precios en **PESOS** (2026). Último ciclo trabajado: **junio 2026** (con días parciales 1–23).
 
