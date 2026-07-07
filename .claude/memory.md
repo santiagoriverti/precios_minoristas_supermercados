@@ -8,18 +8,23 @@ Autor: Santiago Riverti — investigador independiente
 
 ## 🟢 ESTADO ACTUAL / HANDOFF [2026-07-07]
 
-**Sesión de repaso (sin cambios de código):** se verificó el repo local contra `origin/main` — sincronizados, HEAD = `8326744` ("Actualizacion nb04", 2026-06-30). No hubo commits nuevos entre el 30-jun y el 07-jul; el handoff de la sección anterior [2026-06-24] sigue vigente casi entero, con estos matices:
+**Repaso de sesión (temprano en el día, sin cambios de código):** se verificó el repo local contra `origin/main` — sincronizados, HEAD = `8326744` ("Actualizacion nb04", 2026-06-30). El handoff de la sección anterior [2026-06-24] seguía vigente casi entero, con estos matices:
 
 - **nb04 (exclusión comercios + `analisis_comparativo`/`resumen_general`/`comparativo_sucursal`)** quedó commiteado el 30-jun pero validado solo con datos sintéticos (smoke test). **Falta confirmar** que el usuario ya lo corrió en Colab con datos reales.
 - **Cierre de junio (pendiente #1 de la lista de abajo)**: no hay evidencia en git de que se haya re-corrido el Script 03 LOCAL con el mes completo (30 días) ni de que se haya reemplazado el junio parcial/centavos en `2026A.zip`. **Confirmar con el usuario** si ya lo hizo el día 30 (fuera de git, porque el script solo toca el zip local, no commitea).
-- **Archivos sin trackear detectados**: `notebooks/out.txt` y `notebooks/out2.txt` (dumps de debug tipo `--- CELL N code hash ---`, generados al inspeccionar celdas de `gen_nb02.py`/`gen_nb04.py`). Inofensivos, no son output de ningún notebook real — se pueden borrar o agregar a `.gitignore` si se repiten.
-- **⚠️ Seguridad — PAT de GitHub expuesto en el chat DE NUEVO** (segunda vez; la primera fue el 24-jun y sigue sin rotar). Recomendación fuerte: rotar el PAT ahora y pasar a Git Credential Manager / `gh auth login` para no tener que pegar tokens en el chat.
+- **Archivos sin trackear detectados**: `notebooks/out.txt` y `notebooks/out2.txt` (dumps de debug tipo `--- CELL N code hash ---`, generados al inspeccionar celdas de `gen_nb02.py`/`gen_nb04.py`). Inofensivos, no son output de ningún notebook real — se pueden borrar o agregar a `.gitignore` si se repiten. **Siguen sin trackear**, no tocados.
+- **⚠️ Seguridad — PAT de GitHub expuesto en el chat DOS VECES** (24-jun y 07-jul), sigue sin rotar. Recomendación fuerte: rotar el PAT ahora y pasar a Git Credential Manager / `gh auth login` para no tener que pegar tokens en el chat. **Ninguna de las dos veces hizo falta usarlo** — el push funcionó con las credenciales ya cacheadas.
+
+**Más tarde, misma sesión — revisión exhaustiva de nb02 + nueva herramienta nb05:**
+
+1. **Auditoría de código de `gen_nb02.py`/nb02** (a pedido del usuario, sin aplicar fixes): confirmé que el generador y el `.ipynb` commiteado están perfectamente sincronizados (bytes idénticos al regenerar). Encontré un bug real y verificado por ejecución real: **CELDA 13 (tabla LaTeX por provincia) tiene el `\\` duplicado en la fila de encabezado** (mezcla de convención de escape: esa fila usa un string raw pero le copiaron la cantidad de backslashes de un f-string) → el header de cada `tabla_canasta_*.tex` sale con `\\\\` en vez de `\\`, lo cual rompe la compilación LaTeX ("There's no line here to end this one") si se usa ese archivo directo en Overleaf. Las filas de datos SÍ están bien. **No se tocó nb02** (el pedido era solo diagnóstico). Otros hallazgos menores: CELDA 20 asume sin guard que la canasta `cantidad_03` (Media) siempre existe (KeyError si no); `CADENAS_FILTRAR` de nb02 (`{'19','2013','3001','4'}`) no coincide con `EXCLUIR_COMERCIOS` de nb04 (`['3','19']`) y no está documentado por qué.
+2. **Nueva herramienta: `05_evolucion_productos_representativos.ipynb`** (← `notebooks/gen_nb05.py`, nuevo). Mismo análisis que nb02 (provincias, IPC, mapas, rankings, mapa Folium) pero para **productos individuales por EAN** en vez de canastas ponderadas. La lista de EANs se ingresa en la CELDA 1 (`EANS_INPUT`, separados por coma, **sin límite de cantidad**); cada EAN se cruza contra `Maestro de Productos Interno.xlsx` (columna clave `producto_sepa_id`) para mostrar su descripción real; si no está en el maestro, se muestra por su código y se avisa. Detalle en la sección "Notebook 05" más abajo.
 
 ---
 
 ## Estado handoff anterior [2026-06-24]
 
-Proyecto en producción. **4 herramientas**, todas en el repo y linkeadas desde el README (badges Colab). Datos SEPA **minoristas**, precios en **PESOS** (2026). Último ciclo trabajado: **junio 2026** (con días parciales 1–23).
+Proyecto en producción. **5 herramientas** (nb05 agregado el 07-jul), todas en el repo y linkeadas desde el README (badges Colab). Datos SEPA **minoristas**, precios en **PESOS** (2026). Último ciclo trabajado: **junio 2026** (con días parciales 1–23).
 
 | Herramienta | Qué hace | Dónde corre |
 |---|---|---|
@@ -27,6 +32,7 @@ Proyecto en producción. **4 herramientas**, todas en el repo y linkeadas desde 
 | **nb02** `02_evolucion_canasta_representativa.ipynb` (← `gen_nb02.py`) | Evolución de las 6 canastas vs IPC; cuadros, mapas, rankings, Excel `canasta_analisis_YYYY-MM.xlsx`. | Colab |
 | **Script 03** `03_consolidacion_ultimo_mes.py` (+ `.ipynb` Colab) | Convierte el SEPA **diario** (`ultimo_mes.zip` ~7 GB) al formato **semestral** del mes en curso. | **LOCAL** (Colab falla por el peso). Genera dos `.csv.gz` + actualiza `2026A.zip`. |
 | **nb04** `04_precios_seleccion.ipynb` (← `gen_nb04.py`) | Excel con precios diarios de los supers a ≤ X km de un punto (hoja por sucursal + general). | Colab |
+| **nb05** `05_evolucion_productos_representativos.ipynb` (← `gen_nb05.py`, nuevo 07-jul) | Igual que nb02 pero por **producto individual (EAN)** en vez de canasta ponderada; lista de EANs sin límite en la CELDA 1. Excel `productos_analisis_YYYY-MM.xlsx`. | Colab |
 
 **Flujo mensual del usuario:**
 1. **Script 03 LOCAL** (`python notebooks/03_consolidacion_ultimo_mes.py`) → genera `2026A.zip` con el mes nuevo (en pesos) → subir a `carga/` en Drive.
@@ -404,10 +410,38 @@ Cambios en `gen_nb04.py` (regenera `04_precios_seleccion.ipynb`; el usuario comm
 
 **Validado:** JSON OK, 9 celdas compilan, smoke test con datos sintéticos (promedio por cadena correcto, EAN de un solo super excluido, rankings y TOTAL consistentes). Sufijos de columnas `_pct` (no `%`) para evitar líos. Pendiente: el usuario commitea y corre en Colab.
 
-## Pendientes próxima sesión [actualizado 2026-06-24]
+## Notebook 05 — Evolución de productos individuales [2026-07-07]
 
-1. **Cierre de junio (día 30)**: re-correr Script 03 LOCAL con el `ultimo_mes.zip` completo (junio cerrado, en PESOS) → reemplazar en `2026A.zip` → re-correr nb01 (cargar cantidades a mano) + nb02. Con el mes completo desaparece el aviso "parcial" y la variación mensual se firma en su valor real.
-2. **(Opcional) Homogeneizar 2026A**: si se quiere, regenerar junio en pesos ya mismo y reemplazarlo (el junio actual quedó en centavos; el autodetect lo procesa bien, no afecta resultados).
-3. **Mapa GitHub Pages** (nb02 CELDA 17): descargar HTML → subir `index.html` al repo `mapa_precios_minoristas`.
-4. **Documento LaTeX (Overleaf)**: copiar `Valores_Documento` del `canasta_analisis`; completar Belgrano y Costa Atlántica desde `Sucs_Media`.
-5. **Seguridad**: rotar el PAT de GitHub.
+Herramienta nueva (`notebooks/gen_nb05.py` → `05_evolucion_productos_representativos.ipynb`, 21 celdas). Pedido del usuario: mismo análisis que nb02 (evolución vs IPC, provincias, mapas, rankings, mapa Folium) pero por **producto individual** en vez de canasta ponderada — ej. seguir Coca-Cola y Fernet por separado, no agrupados.
+
+**Diseño — clon adaptado de `gen_nb02.py`, no una herramienta desde cero:**
+- **CELDA 1 (config)**: `EANS_INPUT = '7790895000782, 7790085000010, ...'` — string separado por coma, **sin límite de cantidad**. Se parsea en la CELDA 4 (`re.sub(r'\D','',e)` tolera espacios/guiones, `lstrip('0')` normaliza, dedupe silencioso).
+- **CELDA 3 (maestros)**: además del maestro de sucursales/cadenas/provincias (idéntico a nb02, mismos `PROV_NORM`/`PESOS_POBLACION`/`NOMBRES_COMPUESTOS` ya validados), suma la carga de `Maestro de Productos Interno.xlsx` (clave `producto_sepa_id`, **no** `producto_ean`) con el mismo patrón que `gen_nb04.py` (`dtype=str` + `usecols` — evita el bug de floats tipo "40084107.0" en el EAN). `leer_maestro()` ahora acepta `**kwargs` y hace `urllib.parse.quote()` del nombre de archivo (necesario porque "Maestro de Productos Interno.xlsx" tiene espacios; nb02 no lo necesitaba porque solo baja el maestro de sucursales, sin espacios).
+- **Cada producto = una "canasta" de 1 EAN, cantidad=1**: sin imputación por mediana nacional — una sucursal solo cuenta para un producto si efectivamente lo vende. Colores/estilos de línea/marcadores se generan dinámicamente (paleta `tab20` cíclica) en vez de los 6 fijos de nb02.
+- **CELDA 15 (cobertura)**: a diferencia de nb02 (usa la primera canasta como referencia), acá se calcula sobre la **unión de todos los productos consultados** (más representativo cuando los productos son independientes).
+- **CELDA 20 (valores resumen)**: reescrita **genérica**, sin ningún ID de producto hardcodeado (a diferencia de la CELDA 20 de nb02, que asume que existe `cantidad_03`/Media) — itera sobre `_prods_con_datos` y calcula todo (más caro/barato, brecha, dispersión provincial, cadenas, acumulados) sin asumir qué productos están presentes.
+- Se **omitió** el equivalente a la CELDA 21 de nb02 (diagnóstico de trazabilidad contra la hoja "Candidatos" de nb01): no aplica porque acá no hay Excel de candidatos, los EANs se tipean a mano.
+
+**Validación exhaustiva (no fue solo smoke test):**
+1. Las 20 celdas de código compilan (`compile()` individual, sin errores de sintaxis).
+2. Se armó un **dataset SEPA sintético completo** (6 sucursales, 3 comercios/cadenas reales, 3 meses de ZIPs semestrales con parte1/parte2, maestro de productos, IPC.xlsx, ar.json minimal) y se **ejecutaron las 20 celdas reales del notebook generado, en secuencia, contra ese dataset** — no fue una revisión de código nomás, corrió el pipeline completo end-to-end.
+3. Este test end-to-end **encontró y permitió corregir 2 bugs reales antes de commitear**:
+   - **CELDA 9**: un producto con CERO datos históricos (EAN inexistente o mal tipeado, caso realista dado que acá el usuario tipea EANs a mano) hacía que la agregación quedara con dtype `object` en vez de numérico → `.round()` explotaba con `TypeError`. Fix: guard explícito que arma una serie vacía con columnas tipadas cuando `_dh` (datos históricos filtrados a ese EAN) está vacío, antes de intentar el `.map()`/`.round()`.
+   - **CELDA 19 (Excel)**: los nombres de hoja `Prov_/Rank_/Sucs_{producto}` se truncaban a 31 caracteres (límite de Excel) **después** de anteponer el prefijo, lo que en teoría podía hacer coincidir dos productos con descripciones largas casi idénticas. Fix: un único set de nombres-ya-usados compartido entre los tres prefijos, con dedupe en el nombre final (no en el nombre base).
+   - Tras los fixes, el test end-to-end volvió a correr limpio, incluyendo casos borde: producto excluido por `CADENAS_FILTRAR`, producto sin metadata en el maestro (fallback a mostrar el EAN), producto con datos parciales (mes en curso), y mes parcial (15/31 días, detectado y marcado igual que en nb02).
+4. Se verificó a mano el `.tex` generado por la CELDA 13 (tabla LaTeX): la fila de encabezado sale con `\\` simple (correcto) — deliberadamente reescrita usando f-strings en **todas** las filas (encabezado incluido) para no repetir el bug de escape mixto raw-string/f-string que se encontró en la CELDA 13 de nb02 (ver auditoría de nb02 más abajo/arriba en esta sesión).
+5. Se confirmó que el `.ipynb` commiteado es **byte-a-byte idéntico** a lo que generó el script y a lo que se testeó (regenerado y diffeado antes de escribir al repo).
+
+**README actualizado**: nueva fila en la tabla de notebooks + sección detallada "Evolución de productos individuales — `05_evolucion_productos_representativos`" + entrada en "Estructura del repositorio".
+
+**Pendiente:** el usuario tiene que abrir el notebook desde el badge de Colab, completar `EANS_INPUT` con los EANs reales que quiera seguir, y ejecutar — no se pudo probar con datos reales de Drive (el test fue con datos sintéticos locales).
+
+## Pendientes próxima sesión [actualizado 2026-07-07]
+
+1. **nb05 recién agregado**: correrlo en Colab con EANs reales (`EANS_INPUT`) para validar contra datos reales de Drive — solo se probó con datos sintéticos locales.
+2. **Bug de LaTeX en nb02 CELDA 13** (encontrado 07-jul, NO corregido — el pedido fue solo diagnóstico): la fila de encabezado de `tabla_canasta_*.tex` sale con `\\` duplicado, rompe la compilación en Overleaf si se usa ese archivo directo. Fix sencillo si el usuario lo pide (usar f-strings consistentes, igual que se hizo en nb05).
+3. **Cierre de junio (día 30)**: re-correr Script 03 LOCAL con el `ultimo_mes.zip` completo (junio cerrado, en PESOS) → reemplazar en `2026A.zip` → re-correr nb01 (cargar cantidades a mano) + nb02. Con el mes completo desaparece el aviso "parcial" y la variación mensual se firma en su valor real. **Estado sin confirmar** (no hay evidencia en git de que se haya hecho).
+4. **(Opcional) Homogeneizar 2026A**: si se quiere, regenerar junio en pesos ya mismo y reemplazarlo (el junio actual quedó en centavos; el autodetect lo procesa bien, no afecta resultados).
+5. **Mapa GitHub Pages** (nb02 CELDA 17): descargar HTML → subir `index.html` al repo `mapa_precios_minoristas`.
+6. **Documento LaTeX (Overleaf)**: copiar `Valores_Documento` del `canasta_analisis`; completar Belgrano y Costa Atlántica desde `Sucs_Media`.
+7. **Seguridad**: rotar el PAT de GitHub (expuesto dos veces: 24-jun y 07-jul).

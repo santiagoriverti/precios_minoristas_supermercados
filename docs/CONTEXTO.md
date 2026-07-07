@@ -363,6 +363,19 @@ Los 4 reemplazos (Swift XL, Lavandina Anti-splash, Plusbelle, Listerine) están 
 
 ## Historial de cambios
 
+### 2026-07-07 — Notebook 05: evolución de productos individuales (nuevo, `gen_nb05.py`)
+
+Nueva herramienta pedida por el usuario: mismo análisis que el notebook 02 (evolución vs IPC, provincias, mapas, rankings, mapa Folium) pero por **producto individual (EAN)** en vez de canasta ponderada — ej. seguir Coca-Cola y Fernet por separado.
+
+- **`05_evolucion_productos_representativos.ipynb`** (← `notebooks/gen_nb05.py`, 21 celdas): clon adaptado de `gen_nb02.py`. CELDA 1 (config) reemplaza el Excel de canastas por un campo `EANS_INPUT` (string de EANs separados por coma, **sin límite de cantidad**); cada EAN se cruza contra `Maestro de Productos Interno.xlsx` para mostrar su descripción real.
+- Cada producto es una "canasta" de 1 EAN con cantidad=1 (sin imputación: una sucursal solo cuenta si vende ese producto específico). Colores/estilos se generan dinámicamente en vez de los 6 fijos de nb02.
+- CELDA 20 (valores resumen) reescrita 100% genérica, sin ningún ID de canasta hardcodeado (nb02 sí asume que existe `cantidad_03`/Media, ver hallazgo de auditoría abajo).
+- Validado con un dataset SEPA sintético completo (6 sucursales, 3 meses, maestros, IPC, geojson): se ejecutaron las 20 celdas reales del notebook generado end-to-end, lo que encontró y permitió corregir 2 bugs antes de commitear (agregación con dtype `object` cuando un EAN no tiene ningún dato histórico; colisión teórica de nombres de hoja Excel al truncar a 31 caracteres). Detalle completo en `.claude/memory.md`.
+
+### 2026-07-07 — Auditoría de `gen_nb02.py`/notebook 02 (solo diagnóstico, sin cambios)
+
+A pedido del usuario, revisión exhaustiva del notebook 02 sin aplicar fixes. Confirmado: generador y `.ipynb` commiteado están sincronizados (bytes idénticos al regenerar). Hallazgo principal (verificado ejecutando el código real, no solo lectura): **CELDA 13 (tabla LaTeX por provincia) tiene el `\\` duplicado en la fila de encabezado** — mezcla de convención de escape (esa fila usa un string raw pero con la cantidad de backslashes de un f-string) → rompe la compilación LaTeX si se usa ese `.tex` directo en Overleaf. Las filas de datos están bien. Hallazgos menores: CELDA 20 asume sin guard que `cantidad_03` (Media) siempre existe; `CADENAS_FILTRAR` de nb02 no coincide con `EXCLUIR_COMERCIOS` de nb04 sin documentación de por qué. Pendiente de corrección si el usuario lo pide.
+
 ### 2026-06-01 — Canastas especiales: Celíaca Media y Vegana Básica (cantidad_05/06)
 
 - **`cantidad_05` = Celíaca Media**: variante sin TACC de la Canasta Media. 72 productos. **Costo real (abr-2026): $691.836 (+9.0% sobre Media $634.923)**. Prima celíaca mayor de lo esperado; mayor impacto: pasta sin TACC, sidra y almidón Maizena.

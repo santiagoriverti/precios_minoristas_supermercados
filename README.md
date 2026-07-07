@@ -8,10 +8,11 @@ Construcción del **Índice de Consumo Representativo (ICR)** a partir de los da
 
 El SEPA publica diariamente los precios reportados por las principales cadenas de supermercados de Argentina: Carrefour, Coto, DIA, Jumbo, La Anónima, Disco, Vea, ChangoMas, Cooperativa Obrera y otras. Los archivos cubren decenas de miles de productos en miles de sucursales a lo largo de todo el país.
 
-El proyecto responde dos preguntas:
+El proyecto responde tres preguntas:
 
 1. **¿Qué productos tienen la mayor cobertura comercial y geográfica?** → Notebook 01 selecciona automáticamente los más representativos y los entrega como base para armar canastas.
 2. **¿Cómo evolucionó el costo de esas canastas y cómo se comparan con el IPC?** → Notebook 02 calcula el costo mensual por sucursal para cada canasta definida, las agrega por provincia y cadena, y genera comparativas, mapas y rankings.
+3. **¿Cómo evolucionó el precio de un producto puntual (Coca-Cola, Fernet, etc.), sin agruparlo en una canasta?** → Notebook 05 hace el mismo análisis que el 02 (provincias, IPC, mapas, rankings) pero para una lista de productos individuales que se define por código EAN, sin límite de cantidad.
 
 ---
 
@@ -23,6 +24,7 @@ El proyecto responde dos preguntas:
 | `02_evolucion_canasta_representativa` | Analiza la evolución del ICR para **hasta 6 canastas simultáneas**. Lee las columnas `cantidad_01`..`cantidad_06` de la hoja `Selección`, calcula el costo por sucursal y provincia para cada canasta activa, compara con el IPC INDEC, y genera gráficos, mapas y rankings independientes por canasta. | [![Abrir en Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/santiagoriverti/precios_minoristas_supermercados/blob/main/notebooks/02_evolucion_canasta_representativa.ipynb) |
 | `03_consolidacion_ultimo_mes` | Convierte el SEPA **diario** al formato **semestral wide** para analizar el mes en curso sin esperar la consolidación oficial. Subís `ultimo_mes.zip` al entorno de Colab y te devuelve los dos `.csv.gz` para descargar. Ver [sección detallada](#adelantar-el-mes-en-curso--03_consolidacion_ultimo_mes). | [![Abrir en Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/santiagoriverti/precios_minoristas_supermercados/blob/main/notebooks/03_consolidacion_ultimo_mes.ipynb) |
 | `04_precios_seleccion` | Exporta un **Excel** con los precios diarios del último mes para todos los supermercados a menos de X km de un punto: una hoja por sucursal (productos × días) + una hoja general (producto × super, precio promedio). Ver [sección detallada](#precios-por-selección-geográfica--04_precios_seleccion). | [![Abrir en Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/santiagoriverti/precios_minoristas_supermercados/blob/main/notebooks/04_precios_seleccion.ipynb) |
+| `05_evolucion_productos_representativos` | Igual que el Notebook 02, pero para **productos individuales** en vez de canastas: evolución de precio, mapas provinciales, comparación con el IPC y rankings por cadena/barrio de cada EAN que se ingrese. Ver [sección detallada](#evolución-de-productos-individuales--05_evolucion_productos_representativos). | [![Abrir en Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/santiagoriverti/precios_minoristas_supermercados/blob/main/notebooks/05_evolucion_productos_representativos.ipynb) |
 
 > **¿Ves una versión vieja en Colab?** El badge siempre apunta a la última versión en GitHub, pero Colab puede mostrar una copia cacheada de tu Drive. Para forzar la actualización: eliminá el notebook de `Mi unidad/Colab Notebooks/` en Google Drive y volvé a hacer clic en el badge.
 
@@ -434,6 +436,43 @@ Exporta un **Excel con los precios diarios del último mes** para todos los supe
 
 ---
 
+## Evolución de productos individuales — `05_evolucion_productos_representativos`
+
+Mismo análisis que el Notebook 02 (evolución vs. IPC, provincias, mapas, rankings por cadena y barrio), pero en vez de agrupar productos en hasta 6 canastas ponderadas, sigue la evolución de **productos individuales** (Coca-Cola, Fernet, etc.) por separado. Sin límite de cantidad de productos.
+
+### Flujo en Colab
+
+1. Abrir con el badge **Abrir en Colab**.
+2. En la **CELDA 1** (CONFIGURACIÓN), completar `EANS_INPUT` con los códigos EAN separados por coma:
+   ```python
+   EANS_INPUT = '7790895000782, 7790085000010, 7794000618213'
+   ```
+   Cada EAN se cruza contra el Maestro de Productos del repo para mostrar su descripción real en gráficos, mapas y hojas de Excel; si un EAN no aparece en el maestro, igual se analiza (se muestra por su propio código).
+3. *Entorno de ejecución → Ejecutar todo*.
+
+### Qué genera (por cada producto)
+
+| Salida | Contenido |
+|--------|-----------|
+| `indices_productos_vs_ipc_MMAAAA.png` / `variaciones_productos_vs_ipc_MMAAAA.png` | Índice base 100 y variación mensual de cada producto vs. IPC General y Alimentos |
+| `ranking_productos_MMAAAA.png` | Ranking de precio promedio nacional entre los productos consultados |
+| `mapa_producto_{ean}_MMAAAA.png` | Mapa coroplético por provincia (uno por producto) |
+| `mapa_interactivo_MMAAAA.html` | Mapa Folium con selector de producto, filtro de cadena y provincia (igual que el Notebook 02) |
+| `ranking_cadenas_nacional/amba_MMAAAA_{ean}.png` | Ranking de cadenas por precio promedio (uno por producto) |
+| `tabla_producto_{ean}_YYYY-MM.tex` | Tabla LaTeX de precios por provincia (una por producto) |
+| `productos_analisis_YYYY-MM.xlsx` | Excel con hoja `Productos` (índice), `Evolucion_IPC`, `Prov_/Rank_/Sucs_` por producto, `Serie_precios` y `Valores_Documento` |
+
+### Diferencias clave frente al Notebook 02
+
+- **Sin cantidades ni ponderación**: cada producto es su propio EAN (cantidad = 1), no hay imputación por mediana nacional — una sucursal aparece para un producto solo si efectivamente lo vende.
+- **Sin límite de productos**: a diferencia de las 6 columnas fijas de canasta, `EANS_INPUT` acepta cualquier cantidad de EANs.
+- **Cobertura combinada**: los gráficos de cobertura (`cobertura_provincia`/`cobertura_cadena`) se calculan sobre la unión de todos los productos consultados, no sobre uno de referencia.
+- Comparte con el Notebook 02 el mismo maestro de sucursales/cadenas/provincias, el mismo caché de serie histórica (`hist_union_HASH.parquet`, invalidado solo si cambian los EANs) y la misma detección de **mes parcial**.
+
+> Requiere en `carga/` (Drive) los ZIPs SEPA, `IPC.xlsx` y `ar.json` (igual que el Notebook 02). Los maestros se descargan solos desde GitHub.
+
+---
+
 ## Estructura del repositorio
 
 ```
@@ -445,8 +484,10 @@ precios_minoristas_supermercados/
 │   ├── 03_consolidacion_ultimo_mes.ipynb         # Notebook 3 — SEPA diario → semestral (Colab, mes en curso)
 │   ├── 03_consolidacion_ultimo_mes.py            # Script 3 — misma lógica para correr local
 │   ├── 04_precios_seleccion.ipynb                # Notebook 4 — precios diarios por sucursal cercana a un punto
+│   ├── 05_evolucion_productos_representativos.ipynb # Notebook 5 — análisis tipo Notebook 2 por producto individual (EAN)
 │   ├── gen_nb02.py                               # Script fuente que genera el Notebook 2
-│   └── gen_nb04.py                               # Script fuente que genera el Notebook 4
+│   ├── gen_nb04.py                               # Script fuente que genera el Notebook 4
+│   └── gen_nb05.py                               # Script fuente que genera el Notebook 5
 ├── data/                                # Maestros de referencia (se descargan automáticamente)
 │   ├── Maestro de Productos Interno.xlsx    # ~176K productos con rubro/categoría/subcategoría
 │   ├── maestro_sucursales_completo.xlsx     # 3.611 sucursales con cadena, provincia, región
