@@ -363,6 +363,10 @@ Los 4 reemplazos (Swift XL, Lavandina Anti-splash, Plusbelle, Listerine) están 
 
 ## Historial de cambios
 
+### 2026-07-07 — Fix nb05: factor centavos/pesos mal detectado con pocos productos
+
+El usuario corrió nb05 con Coca-Cola y Fernet y encontró caídas de precio ~100x en meses puntuales (ago-nov 2024, jun 2026). Causa: la detección del factor (mediana de precios > 10.000 ⇒ centavos) se calculaba sobre la mediana de **solo los EANs pedidos por el usuario** — robusta con las canastas de 40-75 productos de nb02, frágil con los 1-2 productos típicos de nb05. El resguardo de EANs de referencia copiado de nb02 quedaba inerte porque el CSV ya se filtraba a los EANs del usuario antes de buscar la referencia. Fix en `gen_nb05.py` (CELDA 6 y CELDA 9): se lee siempre la unión `PRODUCTOS_EANS_NORM | REF_EANS_FACTOR` y el factor se ancla a la muestra de referencia (mismos 3 EANs que usa nb02), con fallback a la muestra propia si la referencia no aparece ese mes. Validado con un caso dirigido (sin fix devuelve un valor 100x mayor al correcto; con fix, correcto) y re-corrida completa del smoke test end-to-end.
+
 ### 2026-07-07 — Notebook 05: evolución de productos individuales (nuevo, `gen_nb05.py`)
 
 Nueva herramienta pedida por el usuario: mismo análisis que el notebook 02 (evolución vs IPC, provincias, mapas, rankings, mapa Folium) pero por **producto individual (EAN)** en vez de canasta ponderada — ej. seguir Coca-Cola y Fernet por separado.

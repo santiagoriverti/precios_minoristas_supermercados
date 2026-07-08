@@ -131,6 +131,14 @@ def normalizar_ean(s):
     s = str(s).strip().lstrip('0')
     return s if s else '0'
 
+# EANs de referencia SOLO para detectar el factor centavos/pesos de cada mes
+# (mismos que usa nb02). Acá hace falta anclarlo a EANs conocidos porque el
+# usuario puede pedir 1 o 2 productos nada más: el precio de un único producto
+# puede caer cerca del umbral de 10.000 por azar y el factor se detecta mal
+# (bug real visto en producción: caídas ~100x en meses puntuales). Con 40-70
+# productos (como en nb02) la mediana general ya es robusta y no hace falta.
+REF_EANS_FACTOR = {'7790072002080'.lstrip('0'), '7790070320285'.lstrip('0'), '7790132098459'.lstrip('0')}
+
 print(f'SEPA_DIR:   {SEPA_DIR}')
 print(f'OUTPUT_DIR: {OUTPUT_DIR}')
 print(f'  IPC.xlsx: {"OK — " + IPC_PATH.name if IPC_PATH.exists() else "NO ENCONTRADO"}')
@@ -403,7 +411,10 @@ if MES_PARCIAL:
     print(f'    El NIVEL es un snapshot al día {DIAS_CARGADOS}; la VARIACIÓN mensual está SUBESTIMADA')
     print(f'    (se compara contra meses completos). Re-correr al cierre del mes para el dato definitivo.\\n')
 
+_EANS_LECTURA = PRODUCTOS_EANS_NORM | REF_EANS_FACTOR   # + referencia, solo para el factor
+
 acumulador = []
+muestra_factor = []   # precios crudos de los EANs de referencia (para detectar el factor)
 for archivo in sorted(archivos_mes):
     nombre = Path(archivo).name
     tmp_p  = TMP_DIR / nombre
@@ -414,7 +425,7 @@ for archivo in sorted(archivos_mes):
     with gzip.open(tmp_p, 'rt', encoding='utf-8', errors='replace') as g:
         for chunk in pd.read_csv(g, dtype=str, chunksize=300_000, low_memory=False):
             chunk['ean_norm'] = chunk['id_producto'].apply(normalizar_ean)
-            chunk = chunk[chunk['ean_norm'].isin(PRODUCTOS_EANS_NORM)].copy()
+            chunk = chunk[chunk['ean_norm'].isin(_EANS_LECTURA)].copy()
             if len(chunk) == 0: continue
             for c in ['id_comercio','id_bandera','id_sucursal']:
                 chunk[c] = chunk[c].astype(str)
@@ -430,7 +441,12 @@ for archivo in sorted(archivos_mes):
                 df_long['precio_raw'].replace('NA', np.nan), errors='coerce')
             df_long = df_long[df_long['precio'].notna() & (df_long['precio'] > 0)].copy()
             df_long.drop(columns=['_col','precio_raw'], inplace=True)
-            acumulador.append(df_long)
+            _es_ref = df_long['ean_norm'].isin(REF_EANS_FACTOR)
+            if _es_ref.any():
+                muestra_factor.extend(df_long.loc[_es_ref, 'precio'].tolist())
+            df_long = df_long[df_long['ean_norm'].isin(PRODUCTOS_EANS_NORM)].copy()
+            if len(df_long) > 0:
+                acumulador.append(df_long)
     tmp_p.unlink(missing_ok=True)
     del chunk, df_long; gc.collect()
 
@@ -442,9 +458,11 @@ del acumulador; gc.collect()
 datos = datos.drop_duplicates(
     subset=['id_comercio','id_bandera','id_sucursal','ean_norm'], keep='first')
 
-ref_e = {'7790072002080'.lstrip('0'), '7790070320285'.lstrip('0'), '7790132098459'.lstrip('0')}
-ref_d = datos[datos['ean_norm'].isin(ref_e)]
-med_r = ref_d['precio'].median() if len(ref_d) > 0 else datos['precio'].median()
+# Factor centavos->pesos: se ancla a los EANs de referencia (muestra robusta,
+# independiente de cuántos productos pidió el usuario). Si por algún motivo
+# la referencia no aparece ese mes, cae a la mediana de los productos propios.
+med_r = (pd.Series(muestra_factor).median() if muestra_factor
+         else datos['precio'].median())
 FACTOR = 100 if med_r > 10_000 else 1
 if FACTOR == 100:
     datos['precio'] /= 100
@@ -614,6 +632,7 @@ cells.append(cell_code("""\
 # disponible (en curso, crece día a día) se RELEE SIEMPRE fresco.
 _cache_key  = hashlib.md5('|'.join(sorted(PRODUCTOS_EANS_NORM)).encode()).hexdigest()[:8]
 _cache_path = CACHE_DIR / f'hist_union_{_cache_key}.parquet'
+_EANS_LECTURA = PRODUCTOS_EANS_NORM | REF_EANS_FACTOR   # + referencia, solo para el factor
 
 # Mapa de meses disponibles -> (zip, archivos del mes)
 _mapa_mes = {}
@@ -628,11 +647,12 @@ if not _meses_disp:
 _mes_actual = _meses_disp[-1]   # mes en curso -> NUNCA se cachea
 
 def _leer_mes_hist(_lbl):
-    # Lee los archivos del mes _lbl, filtra a los EANs pedidos y devuelve
-    # [ean_norm, precio_mediano, anio_mes] (mediana sobre todos los días
-    # cargados de ese mes). Devuelve None si no hay datos.
+    # Lee los archivos del mes _lbl, filtra a los EANs pedidos (+ referencia
+    # para el factor) y devuelve [ean_norm, precio_mediano, anio_mes] (mediana
+    # sobre todos los días cargados de ese mes). Devuelve None si no hay datos.
     _zip_path, _archs = _mapa_mes[_lbl]
     _all_rows = []
+    _muestra_ref = []
     for _archivo in sorted(_archs):
         _tmp_p = TMP_DIR / Path(_archivo).name
         with zipfile.ZipFile(_zip_path) as _zf:
@@ -641,7 +661,7 @@ def _leer_mes_hist(_lbl):
         with gzip.open(_tmp_p,'rt',encoding='utf-8',errors='replace') as _g:
             for _chunk in pd.read_csv(_g, dtype=str, chunksize=300_000, low_memory=False):
                 _chunk['ean_norm'] = _chunk['id_producto'].apply(normalizar_ean)
-                _chunk = _chunk[_chunk['ean_norm'].isin(PRODUCTOS_EANS_NORM)].copy()
+                _chunk = _chunk[_chunk['ean_norm'].isin(_EANS_LECTURA)].copy()
                 if len(_chunk) == 0: continue
                 _cols_p = [c for c in _chunk.columns if re.match(r'^precio_\\d{8}$', c)]
                 if not _cols_p: continue
@@ -651,16 +671,25 @@ def _leer_mes_hist(_lbl):
                 _mlt = _sub.melt(id_vars='ean_norm', value_vars=_cols_p,
                                  var_name='_c', value_name='precio')
                 _mlt = _mlt[_mlt['precio'].notna() & (_mlt['precio']>0)]
-                _all_rows.append(_mlt[['ean_norm','precio']])
+                _es_ref = _mlt['ean_norm'].isin(REF_EANS_FACTOR)
+                if _es_ref.any():
+                    _muestra_ref.extend(_mlt.loc[_es_ref, 'precio'].tolist())
+                _mlt = _mlt[_mlt['ean_norm'].isin(PRODUCTOS_EANS_NORM)]
+                if len(_mlt) > 0:
+                    _all_rows.append(_mlt[['ean_norm','precio']])
         _tmp_p.unlink(missing_ok=True)
     if not _all_rows:
         return None
     _df_m = pd.concat(_all_rows, ignore_index=True)
-    _fac = 100 if _df_m['precio'].median() > 10_000 else 1
+    # Factor anclado a la referencia (robusto aunque se pidan 1-2 productos);
+    # si la referencia no aparece ese mes, cae a la mediana de lo leído.
+    _med_ref = (pd.Series(_muestra_ref).median() if _muestra_ref
+                else _df_m['precio'].median())
+    _fac = 100 if _med_ref > 10_000 else 1
     if _fac == 100: _df_m['precio'] /= 100
     _agg = _df_m.groupby('ean_norm')['precio'].median().reset_index(name='precio_mediano')
     _agg['anio_mes'] = _lbl
-    del _df_m, _all_rows; gc.collect()
+    del _df_m, _all_rows, _muestra_ref; gc.collect()
     return _agg
 
 # ── 1) Meses CERRADOS (todos menos el último): usar/actualizar cache ──────────
