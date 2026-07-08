@@ -1280,10 +1280,13 @@ cells.append(cell_code("""\
 # ============================================================
 def fmtn(x): return f'{x:,.2f}'.replace(',','X').replace('.',',').replace('X','.')
 
+CADENAS_EXCLUIR_RANKING = {'Cadena 23'}   # se saca de estos rankings (y de su promedio)
+
 for _pid in _prods_con_datos:
     _name  = PRODUCTO_NOMBRES[_pid]
     _short = PRODUCTO_SHORT[_pid]
     _pgeo  = producto_geo_dict[_pid]
+    _pgeo  = _pgeo[~_pgeo['cadena'].isin(CADENAS_EXCLUIR_RANKING)]
 
     _rk_nac = (_pgeo.groupby('cadena')
                .agg(n_sucursales=('precio_producto','count'),
