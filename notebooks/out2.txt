@@ -1,0 +1,8 @@
+=== CELL 0 (mdb54816) ===
+   *Canastas:** leídas desde las columnas `cantidad_01`...`cantidad_06` de la hoja `Selección`
+=== CELL 3 (c501dbc) ===
+   NT_COLS = ['cantidad_01','cantidad_02','cantidad_03','cantidad_04','cantidad_05','cantidad_
+=== CELL 20 (c12e7f3) ===
+    = ((_vals.get('cantidad_06', _vals.get(_POP_ID, 1)) / _vals.get(_POP_ID, 1)) - 1) * 10
+   f"  Var. mensual media:  {_pp(_vars.get(_MEDIA_ID, float('nan')))}" + ('  ⚠️ PRELIMINAR (
+   nasta media var.mensual', _pp(_vars.get(_MEDIA_ID, 0)), round(_vars.get(_MEDIA_ID, 0), 2)
