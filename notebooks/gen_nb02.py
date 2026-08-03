@@ -1692,6 +1692,109 @@ with pd.ExcelWriter(out_xls, engine='openpyxl') as writer:
         _sp_all = _sp_all.rename(columns={'anio_mes':'mes'})
         _sp_all.to_excel(writer, sheet_name='Serie_precios', index=False)
 
+    # ── Hojas de detalle geografico (canasta MEDIA) — belgrano, Pinamar, costa, CABA ──
+    # Se arman con la MISMA fuente que la hoja Sucs_Media (canasta_geo_dict['cantidad_03']),
+    # geolocalizando cada sucursal por lat/lon (no por el campo localidad, poco fiable).
+    _MID = 'cantidad_03'
+    if _MID in canasta_geo_dict:
+        _cgm    = canasta_geo_dict[_MID]
+        _pais_m = prom_nac_dict[_MID]   # promedio pais (ponderado por poblacion) = 'cuadro'
+
+        # ── Barrios de CABA por lat/lon (reusa det_barrio / BARRIOS_BBOX de CELDA 18) ──
+        _cgm_caba = _cgm[_cgm['PROVINCIA_NORM'] == 'CABA'].copy()
+        _cgm_caba['barrio'] = _cgm_caba.apply(
+            lambda r: det_barrio(r['sucursales_latitud'], r['sucursales_longitud']), axis=1)
+
+        # Hoja 'belgrano': cadenas presentes en Belgrano (cadena, n_sucursales, canasta_promedio)
+        _bel = _cgm_caba[_cgm_caba['barrio'] == 'Belgrano']
+        if len(_bel):
+            _bel_g = (_bel.groupby('cadena')
+                      .agg(n_sucursales=('canasta_total','count'),
+                           canasta_promedio=('canasta_total','mean'))
+                      .reset_index().sort_values('canasta_promedio'))
+            _bel_g['canasta_promedio'] = _bel_g['canasta_promedio'].round(0)
+            _bel_g = pd.concat([_bel_g, pd.DataFrame([{
+                'cadena': 'Promedio Belgrano',
+                'n_sucursales': int(_bel_g['n_sucursales'].sum()),
+                'canasta_promedio': round(_bel['canasta_total'].mean(), 0)}])],
+                ignore_index=True)
+            _bel_g.to_excel(writer, sheet_name='belgrano', index=False)
+
+        # Hoja 'CABA': ranking de barrios (barrio, n_sucursales, canasta_promedio), n>=2
+        _caba_rk = (_cgm_caba[_cgm_caba['barrio'] != 'Sin clasificar']
+                    .groupby('barrio')
+                    .agg(n_sucursales=('canasta_total','count'),
+                         canasta_promedio=('canasta_total','mean'))
+                    .reset_index())
+        _caba_rk = _caba_rk[_caba_rk['n_sucursales'] >= 2].sort_values(
+            'canasta_promedio', ascending=False)
+        _caba_rk['canasta_promedio'] = _caba_rk['canasta_promedio'].round(0)
+        if len(_caba_rk):
+            _prom_caba_x = _cgm_caba['canasta_total'].mean()
+            _caba_rk = pd.concat([_caba_rk, pd.DataFrame([
+                {'barrio': 'Promedio CABA',
+                 'n_sucursales': int(_caba_rk['n_sucursales'].sum()),
+                 'canasta_promedio': round(_prom_caba_x, 0)},
+                {'barrio': 'Promedio pais', 'n_sucursales': '',
+                 'canasta_promedio': round(_pais_m, 0)}])], ignore_index=True)
+            _caba_rk.to_excel(writer, sheet_name='CABA', index=False)
+
+        # ── Localidades de la Costa Atlantica bonaerense por lat/lon ──────────────
+        COSTA_BBOX = {
+            'San Clemente':  (-36.44,  -36.32,  -56.80, -56.64),
+            'Mar del Tuyu':  (-36.62,  -36.50,  -56.76, -56.62),
+            'San Bernardo':  (-36.712, -36.66,  -56.74, -56.61),
+            'Mar de Ajo':    (-36.76,  -36.713, -56.74, -56.61),
+            'Pinamar':       (-37.19,  -37.05,  -56.94, -56.81),
+            'Gesell':        (-37.37,  -37.20,  -57.04, -56.91),
+            'Madariaga':     (-37.07,  -36.93,  -57.24, -57.05),
+            'Mar del Plata': (-38.13,  -37.87,  -57.74, -57.45),
+            'Miramar':       (-38.35,  -38.19,  -57.94, -57.75),
+            'Necochea':      (-38.63,  -38.47,  -58.84, -58.62),
+        }
+        def _det_costa(_lat, _lon):
+            if pd.isna(_lat) or pd.isna(_lon): return 'Sin clasificar'
+            for _loc, (_a0, _a1, _o0, _o1) in COSTA_BBOX.items():
+                if _a0 <= _lat <= _a1 and _o0 <= _lon <= _o1: return _loc
+            return 'Sin clasificar'
+
+        _cgm_ba = _cgm[_cgm['PROVINCIA_NORM'] == 'Buenos Aires'].copy()
+        _cgm_ba['loc_costa'] = _cgm_ba.apply(
+            lambda r: _det_costa(r['sucursales_latitud'], r['sucursales_longitud']), axis=1)
+
+        # Hoja 'Pinamar': una fila por sucursal (cadena, sucursal, canasta)
+        _pin = _cgm_ba[_cgm_ba['loc_costa'] == 'Pinamar']
+        if len(_pin):
+            _pin_out = (_pin[['cadena','sucursales_nombre','canasta_total']]
+                        .rename(columns={'sucursales_nombre':'sucursal',
+                                         'canasta_total':'canasta'})
+                        .sort_values('canasta'))
+            _pin_out['canasta'] = _pin_out['canasta'].round(0)
+            _pin_out = pd.concat([_pin_out, pd.DataFrame([{
+                'cadena': 'Promedio Pinamar', 'sucursal': '',
+                'canasta': round(_pin['canasta_total'].mean(), 0)}])],
+                ignore_index=True)
+            _pin_out.to_excel(writer, sheet_name='Pinamar', index=False)
+
+        # Hoja 'costa': ranking de localidades (localidad, n_sucursales, canasta_promedio, vs_pais_%)
+        _costa = _cgm_ba[_cgm_ba['loc_costa'] != 'Sin clasificar']
+        if len(_costa):
+            _costa_g = (_costa.groupby('loc_costa')
+                        .agg(n_sucursales=('canasta_total','count'),
+                             canasta_promedio=('canasta_total','mean'))
+                        .reset_index().rename(columns={'loc_costa':'localidad'}))
+            _costa_g['canasta_promedio'] = _costa_g['canasta_promedio'].round(0)
+            _costa_g['vs_pais_%'] = (_costa_g['canasta_promedio'] / _pais_m - 1) * 100
+            _costa_g = _costa_g.sort_values('canasta_promedio')
+            _costa_prom = _costa['canasta_total'].mean()
+            _costa_g = pd.concat([_costa_g, pd.DataFrame([{
+                'localidad': 'Promedio Costa Atlantica',
+                'n_sucursales': int(_costa_g['n_sucursales'].sum()),
+                'canasta_promedio': round(_costa_prom, 0),
+                'vs_pais_%': (_costa_prom / _pais_m - 1) * 100}])], ignore_index=True)
+            _costa_g = _costa_g[['localidad','n_sucursales','canasta_promedio','vs_pais_%']]
+            _costa_g.to_excel(writer, sheet_name='costa', index=False)
+
     # ── Formato ──────────────────────────────────────────────────────────────
     for sn in writer.sheets:
         ws = writer.sheets[sn]

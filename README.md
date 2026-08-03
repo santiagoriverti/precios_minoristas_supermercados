@@ -184,6 +184,11 @@ Donde `{canasta}` es `vulnerable`, `popular`, `media`, `media_alta`, `canasta05`
 | `Ranking_{canasta}` | Ranking de cadenas por costo promedio (una hoja por canasta) |
 | `Sucs_{canasta}` | Costo por sucursal con cadena, provincia y coordenadas (una hoja por canasta) |
 | `Serie_precios` | Precio mediano por canasta × producto × mes (toda la serie histórica, formato largo) |
+| `Valores_Documento` | Todos los valores del informe LaTeX listos para copiar (por sección) |
+| `belgrano` | Cadenas presentes en el barrio de Belgrano (canasta media): cadena, nº de sucursales y canasta promedio. Sucursales geolocalizadas por lat/lon. |
+| `Pinamar` | Sucursales relevadas en Pinamar (canasta media): cadena, nombre de sucursal y canasta. Una fila por sucursal, geolocalizadas por lat/lon. |
+| `costa` | Ranking de localidades de la Costa Atlántica bonaerense (canasta media): localidad, nº de sucursales, canasta promedio y desvío vs. promedio país. Geolocalizadas por lat/lon. |
+| `CABA` | Ranking de barrios de CABA (canasta media, barrios con ≥2 sucursales): barrio, nº de sucursales y canasta promedio, más promedio CABA y promedio país. Geolocalizados por lat/lon. |
 
 ### LaTeX (`.tex`) — uno por cada canasta activa
 

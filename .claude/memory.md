@@ -28,6 +28,24 @@ Detalle completo de cada punto en las secciones fechadas más abajo.
 
 ---
 
+## Feature: 4 hojas de detalle geográfico en nb02 [2026-08-03]
+
+Pedido del usuario: agregar al Excel `canasta_analisis_YYYY-MM.xlsx` cuatro pestañas con el detalle geográfico de la **canasta Media** (`cantidad_03`), para armar las tablas del informe de prensa (Belgrano, Pinamar, Costa Atlántica, ranking barrios CABA). Todas geolocalizan las sucursales por **lat/lon** (no por el campo `localidad`, poco fiable — muchas vienen `nan`).
+
+Implementado en `gen_nb02.py` **CELDA 19** (dentro del `with pd.ExcelWriter`, después de `Serie_precios`, antes del bloque de Formato). Reusa `det_barrio`/`BARRIOS_BBOX` de CELDA 18 y `canasta_geo_dict['cantidad_03']` (**misma fuente que la hoja `Sucs_Media`**) + `prom_nac_dict['cantidad_03']` (promedio país ponderado por población = "cuadro"). Guard `if 'cantidad_03' in canasta_geo_dict` (si la Media no está activa, no se generan).
+
+Hojas nuevas:
+- **`belgrano`**: filtra CABA → `det_barrio == 'Belgrano'`, agrupa por cadena (n_sucursales, canasta_promedio), ordena ascendente, fila `Promedio Belgrano` al final (media de todas las sucursales del barrio).
+- **`CABA`**: agrupa barrios CABA (n≥2), ordena descendente, + filas `Promedio CABA` (media de TODAS las sucursales CABA) y `Promedio pais`.
+- **`Pinamar`**: una fila por sucursal (cadena, sucursal, canasta), ordena ascendente, + `Promedio Pinamar`.
+- **`costa`**: agrupa las 10 localidades de la Costa (localidad, n_sucursales, canasta_promedio, vs_pais_%), ordena ascendente, + `Promedio Costa Atlantica`.
+
+**`COSTA_BBOX`** (bounding boxes lat/lon, 10 localidades) definido inline en CELDA 19 con `_det_costa()`. Incluye la franja difícil del Partido de la Costa (San Clemente −36.36 / Mar del Tuyú −36.575 / San Bernardo −36.69 / Mar de Ajó −36.72, cajas de latitud angostas y NO solapadas) + Pinamar, Gesell, Madariaga (mediterránea, −57.14), Mar del Plata, Miramar, Necochea. Se aplica solo a sucursales `PROVINCIA_NORM == 'Buenos Aires'`.
+
+**⚠️ Aclaración de valores**: los promedios de estas hojas coinciden con `Sucs_Media` (la canasta media por sucursal, con imputación por promedio nacional para EANs faltantes), **no** con los números del LaTeX viejo que pasó el usuario (ej. Promedio Pinamar LaTeX $677.156 vs el cálculo real ≈ media de 673.493/673.995/708.951 = $685.480). El Excel es la fuente de verdad nueva; el usuario reescribe el LaTeX desde ahí.
+
+**Validación**: `ast.parse` de `gen_nb02.py` OK; las 21 celdas del `.ipynb` compilan; `.ipynb` regenerado byte-idéntico salvo CELDA 19 (id md5 + contenido). Smoke test con dataset sintético (28 sucursales con coords conocidas): 0 mismatches de clasificación (todas las localidades/barrios bien, incluida la franja de la Costa), las 4 hojas se escriben y los promedios/vs_país dan correctos. No se pudo probar con datos reales de Drive (pendiente del usuario correr en Colab).
+
 ## Estado handoff anterior [2026-06-24]
 
 Proyecto en producción. **5 herramientas** (nb05 agregado el 07-jul), todas en el repo y linkeadas desde el README (badges Colab). Datos SEPA **minoristas**, precios en **PESOS** (2026). Último ciclo trabajado: **junio 2026** (con días parciales 1–23).
