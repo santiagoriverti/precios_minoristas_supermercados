@@ -589,21 +589,37 @@ def fmt_ar(x, dec=0):
     s = f'{x:,.{dec}f}'
     return s.replace(',','X').replace('.',',').replace('X','.')
 
-serie_prov_dict = {}   # col_id -> serie_provincia_valida
-prom_nac_dict   = {}   # col_id -> promedio nacional ponderado
+# _tmean: media RECORTADA al 1% (descarta el 1% inferior y superior antes de
+# promediar). Robusta a los outliers de carga del SEPA; se usa para TODAS las
+# columnas 'media' nuevas. Se define aca porque la CELDA 8 es el primer consumidor
+# (tambien la usa _leer_mes_hist en la CELDA 9, que corre despues).
+def _tmean(_s, _p=0.01):
+    _s = pd.to_numeric(_s, errors='coerce').dropna().sort_values()
+    _n = len(_s)
+    if _n == 0: return float('nan')
+    _k = int(_n * _p)   # cuantos recortar de CADA extremo (0 si la muestra es chica)
+    if _k > 0: _s = _s.iloc[_k:_n - _k]
+    return _s.mean() if len(_s) else float('nan')
+
+serie_prov_dict     = {}   # col_id -> serie_provincia_valida (mediana + media por provincia)
+prom_nac_dict       = {}   # col_id -> promedio nacional ponderado de las MEDIANAS provinciales
+prom_nac_media_dict = {}   # col_id -> promedio nacional ponderado de las MEDIAS recortadas provinciales
 
 for _col_id in CANASTAS_ACTIVAS:
     _cgf  = canasta_geo_dict[_col_id]
     _cpp  = (_cgf.groupby('PROVINCIA_NORM')['canasta_total']
-             .median().reset_index()
+             .agg(canasta_total='median', canasta_total_media=_tmean).reset_index()
              .rename(columns={'PROVINCIA_NORM':'provincia'}))
     _cpp['mes']  = PERIODO
     _cpp['peso'] = _cpp['provincia'].map(PESOS_POBLACION).fillna(0)
     _pob = _cpp[_cpp['peso'] > 0]['peso'].sum()
     _prom = ((_cpp['canasta_total'] * _cpp['peso']).sum() / _pob
              if _pob > 0 else _cpp['canasta_total'].mean())
-    serie_prov_dict[_col_id] = _cpp[['mes','provincia','canasta_total']].copy()
-    prom_nac_dict[_col_id]   = _prom
+    _prom_media = ((_cpp['canasta_total_media'] * _cpp['peso']).sum() / _pob
+                   if _pob > 0 else _cpp['canasta_total_media'].mean())
+    serie_prov_dict[_col_id]     = _cpp[['mes','provincia','canasta_total','canasta_total_media']].copy()
+    prom_nac_dict[_col_id]       = _prom
+    prom_nac_media_dict[_col_id] = _prom_media
 
 print(f'=== CUADRO: Canastas por provincia — {NOMBRE_MES_TITLE} ===')
 for _col_id in CANASTAS_ACTIVAS:
@@ -627,7 +643,10 @@ cells.append(cell_code("""\
 # CERRADOS. El último mes disponible (en curso, crece día a día) se RELEE
 # SIEMPRE fresco, así sus promedios usan los días efectivamente cargados.
 _cache_key  = hashlib.md5('|'.join(sorted(CANASTA_EANS_NORM)).encode()).hexdigest()[:8]
-_cache_path = CACHE_DIR / f'hist_union_{_cache_key}.parquet'
+# _v2m: esquema con precio_medio (media recortada 1%) ademas de precio_mediano.
+# Al cambiar el nombre, la primera corrida reconstruye el cache con ambas medidas
+# (los .parquet viejos sin precio_medio quedan huerfanos; se pueden borrar).
+_cache_path = CACHE_DIR / f'hist_union_{_cache_key}_v2m.parquet'
 
 # Mapa de meses disponibles -> (zip, archivos del mes)
 _mapa_mes = {}
@@ -672,7 +691,8 @@ def _leer_mes_hist(_lbl):
     _df_m = pd.concat(_all_rows, ignore_index=True)
     _fac = 100 if _df_m['precio'].median() > 10_000 else 1
     if _fac == 100: _df_m['precio'] /= 100
-    _agg = _df_m.groupby('ean_norm')['precio'].median().reset_index(name='precio_mediano')
+    _agg = (_df_m.groupby('ean_norm')['precio']
+            .agg(precio_mediano='median', precio_medio=_tmean).reset_index())
     _agg['anio_mes'] = _lbl
     del _df_m, _all_rows; gc.collect()
     return _agg
@@ -682,7 +702,7 @@ if USE_CACHE and _cache_path.exists():
     df_cache = pd.read_parquet(_cache_path)
     df_cache = df_cache[df_cache['anio_mes'] < _mes_actual].copy()
 else:
-    df_cache = pd.DataFrame(columns=['ean_norm','precio_mediano','anio_mes'])
+    df_cache = pd.DataFrame(columns=['ean_norm','precio_mediano','precio_medio','anio_mes'])
 
 _meses_en_cache = set(df_cache['anio_mes'].unique())
 _faltantes = [m for m in _meses_disp if m < _mes_actual and m not in _meses_en_cache]
@@ -708,7 +728,7 @@ if _actual is not None:
 df_hist_raw = (pd.concat([df_cache] + ([_actual] if _actual is not None else []),
                          ignore_index=True)
                if (len(df_cache) > 0 or _actual is not None)
-               else pd.DataFrame(columns=['ean_norm','precio_mediano','anio_mes']))
+               else pd.DataFrame(columns=['ean_norm','precio_mediano','precio_medio','anio_mes']))
 df_hist_raw = df_hist_raw.sort_values('anio_mes').reset_index(drop=True)
 
 # ── Agregar por canasta ──────────────────────────────────────────────────────
@@ -718,14 +738,18 @@ for _col_id, _canasta in CANASTAS.items():
     _name  = CANASTA_NAMES[_col_id]
     _eans  = set(_canasta.keys())
     _dh    = df_hist_raw[df_hist_raw['ean_norm'].isin(_eans)].copy()
-    _dh['qty']        = _dh['ean_norm'].map(lambda e, c=_canasta: c.get(e,('?',0,'?'))[1])
-    _dh['costo_item'] = _dh['precio_mediano'] * _dh['qty']
+    _dh['qty']              = _dh['ean_norm'].map(lambda e, c=_canasta: c.get(e,('?',0,'?'))[1])
+    _dh['costo_item']       = _dh['precio_mediano'] * _dh['qty']
+    _dh['costo_item_media'] = _dh['precio_medio']   * _dh['qty']
     _sn = (_dh.groupby('anio_mes')
-           .agg(canasta_nacional_ponderada=('costo_item','sum'), n_eans=('ean_norm','nunique'))
+           .agg(canasta_nacional_ponderada=('costo_item','sum'),
+                canasta_nacional_ponderada_media=('costo_item_media','sum'),
+                n_eans=('ean_norm','nunique'))
            .reset_index().rename(columns={'anio_mes':'mes'})
            .sort_values('mes').reset_index(drop=True))
     _sn = _sn[_sn['mes'] >= MES_INICIO_HISTORICO].copy()
-    _sn['variacion_mensual_%'] = _sn['canasta_nacional_ponderada'].pct_change() * 100
+    _sn['variacion_mensual_%']       = _sn['canasta_nacional_ponderada'].pct_change() * 100
+    _sn['variacion_mensual_media_%'] = _sn['canasta_nacional_ponderada_media'].pct_change() * 100
     _bv = _sn['canasta_nacional_ponderada'].iloc[0] if len(_sn) > 0 else 1
     _sn['indice_canasta_base100'] = (_sn['canasta_nacional_ponderada'] / _bv * 100).round(2)
     serie_nac_dict[_col_id] = _sn.copy()
@@ -1634,11 +1658,14 @@ with pd.ExcelWriter(out_xls, engine='openpyxl') as writer:
     _evo = _ipc_base
     for _col_id in CANASTAS_ACTIVAS:
         if len(serie_nac_dict[_col_id]) == 0: continue
-        _sn = serie_nac_dict[_col_id][['mes','canasta_nacional_ponderada','variacion_mensual_%']].copy()
+        _sn = serie_nac_dict[_col_id][['mes','canasta_nacional_ponderada','variacion_mensual_%',
+                                       'canasta_nacional_ponderada_media','variacion_mensual_media_%']].copy()
         _n  = CANASTA_SHORT[_col_id]
         _sn = _sn.rename(columns={
-            'canasta_nacional_ponderada': f'canasta_{_n}',
-            'variacion_mensual_%':        f'var_{_n}_%'
+            'canasta_nacional_ponderada':       f'canasta_{_n}',
+            'variacion_mensual_%':              f'var_{_n}_%',
+            'canasta_nacional_ponderada_media': f'canasta_{_n}_media',
+            'variacion_mensual_media_%':        f'var_{_n}_media_%'
         })
         _evo = _evo.merge(_sn, on='mes', how='outer')
     _evo = _evo.sort_values('mes').reset_index(drop=True)
@@ -1650,17 +1677,25 @@ with pd.ExcelWriter(out_xls, engine='openpyxl') as writer:
         _short = CANASTA_SHORT[_col_id]
         _spv   = serie_prov_dict[_col_id].copy()
         _prom  = prom_nac_dict[_col_id]
-        _spv['vs_promedio_%'] = ((_spv['canasta_total'] / _prom) - 1) * 100
+        _prom_media = prom_nac_media_dict[_col_id]
+        _spv['vs_promedio_%']       = ((_spv['canasta_total'] / _prom) - 1) * 100
+        _spv['vs_promedio_media_%'] = ((_spv['canasta_total_media'] / _prom_media) - 1) * 100
+        _spv = _spv[['mes','provincia','canasta_total','vs_promedio_%',
+                     'canasta_total_media','vs_promedio_media_%']]
         _spv.sort_values('canasta_total').to_excel(
             writer, sheet_name=f'Prov_{_short}', index=False)
 
         _cgf = canasta_geo_dict[_col_id]
         _rk  = (_cgf.groupby('cadena')
                 .agg(n_sucursales=('canasta_total','count'),
-                     canasta_promedio=('canasta_total','mean'))
+                     canasta_promedio=('canasta_total','mean'),
+                     canasta_mediana=('canasta_total','median'))
                 .round(0).reset_index()
                 .sort_values('canasta_promedio', ascending=False))
         _rk['vs_promedio_%'] = ((_rk['canasta_promedio'] / _cgf['canasta_total'].mean()) - 1) * 100
+        _rk['vs_mediana_%']  = ((_rk['canasta_mediana'] / _cgf['canasta_total'].median()) - 1) * 100
+        _rk = _rk[['cadena','n_sucursales','canasta_promedio','vs_promedio_%',
+                   'canasta_mediana','vs_mediana_%']]
         _rk.to_excel(writer, sheet_name=f'Ranking_{_short}', index=False)
 
         _suc_exp = _cgf[[
@@ -1679,13 +1714,15 @@ with pd.ExcelWriter(out_xls, engine='openpyxl') as writer:
         _dh['id_producto']  = _dh['ean_norm'].apply(lambda e: e.zfill(13))
         _dh['descripcion']  = _dh['ean_norm'].map(lambda e, c=_canasta: c.get(e,('',0,''))[0])
         _dh['categoria']    = _dh['ean_norm'].map(lambda e, c=_canasta: c.get(e,('',0,'?'))[2])
-        _dh['qty']          = _dh['ean_norm'].map(lambda e, c=_canasta: c.get(e,('',0,''))[1])
-        _dh['costo_item']   = _dh['precio_mediano'] * _dh['qty']
+        _dh['qty']              = _dh['ean_norm'].map(lambda e, c=_canasta: c.get(e,('',0,''))[1])
+        _dh['costo_item']       = _dh['precio_mediano'] * _dh['qty']
+        _dh['costo_item_media'] = _dh['precio_medio']   * _dh['qty']
         _dh['canasta_id']   = _col_id
         _dh['canasta_name'] = CANASTA_NAMES[_col_id]
         _sp_rows.append(_dh[['canasta_id','canasta_name','anio_mes',
                               'id_producto','descripcion','categoria',
-                              'qty','precio_mediano','costo_item']])
+                              'qty','precio_mediano','costo_item',
+                              'precio_medio','costo_item_media']])
     if _sp_rows:
         _sp_all = pd.concat(_sp_rows, ignore_index=True).sort_values(
             ['canasta_id','id_producto','anio_mes']).reset_index(drop=True)
@@ -1840,11 +1877,14 @@ _POP_ID   = 'cantidad_02'
 
 # ── 1. Valores por canasta ────────────────────────────────────────────────────
 _vals = {c: prom_nac_dict[c] for c in CANASTAS_ACTIVAS}
+_vals_media = {c: prom_nac_media_dict[c] for c in CANASTAS_ACTIVAS}
 _vars = {}
+_vars_media = {}
 for c in CANASTAS_ACTIVAS:
     _sn = serie_nac_dict[c]
     if len(_sn) > 1:
         _vars[c] = _sn['variacion_mensual_%'].iloc[-1]
+        _vars_media[c] = _sn['variacion_mensual_media_%'].iloc[-1]
 
 _sorted_ids = sorted(CANASTAS_ACTIVAS, key=lambda c: _vals[c])
 _min_id, _max_id = _sorted_ids[0], _sorted_ids[-1]
@@ -1853,6 +1893,7 @@ _brecha_pct = _brecha_abs / _vals[_min_id] * 100
 
 # ── 2. Análisis provincial (canasta media) ────────────────────────────────────
 _v_media = _vals[_MEDIA_ID]
+_v_media_media = _vals_media[_MEDIA_ID]
 _spv = serie_prov_dict[_MEDIA_ID].copy()
 _spv['vs_%'] = (_spv['canasta_total'] / _v_media - 1) * 100
 _prov_min = _spv.loc[_spv['canasta_total'].idxmin()]
@@ -2038,12 +2079,15 @@ try:
     # Portada
     _rows_doc.append(['Portada', 'Mes', NOMBRE_MES_TITLE, NOMBRE_MES_TITLE])
     _rows_doc.append(['Portada', 'Canasta media valor', _ar(_v_media), round(_v_media, 0)])
+    _rows_doc.append(['Portada', 'Canasta media valor (media)', _ar(_v_media_media), round(_v_media_media, 0)])
     _rows_doc.append(['Portada', 'Canasta media var.mensual', _pp(_vars.get(_MEDIA_ID, 0)), round(_vars.get(_MEDIA_ID, 0), 2)])
-    # Canastas
+    # Canastas (valor y var.mensual: MEDIANA y su gemela MEDIA recortada)
     for c in _sorted_ids:
         _nm = CANASTA_NAMES[c]
         _rows_doc.append(['Canastas', f'{_nm} — valor', _ar(_vals[c]), round(_vals[c], 0)])
+        _rows_doc.append(['Canastas', f'{_nm} — valor (media)', _ar(_vals_media[c]), round(_vals_media[c], 0)])
         _rows_doc.append(['Canastas', f'{_nm} — var.mensual', _pp(_vars.get(c, 0)), round(_vars.get(c, 0), 2)])
+        _rows_doc.append(['Canastas', f'{_nm} — var.mensual (media)', _pp(_vars_media.get(c, 0)), round(_vars_media.get(c, 0), 2)])
     _rows_doc.append(['Canastas', 'Brecha absoluta', _ar(_brecha_abs), round(_brecha_abs, 0)])
     _rows_doc.append(['Canastas', 'Brecha relativa (%)', f'{_brecha_pct:.1f}%', round(_brecha_pct, 1)])
     # Provincias

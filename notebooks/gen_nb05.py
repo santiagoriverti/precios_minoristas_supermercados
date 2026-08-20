@@ -590,25 +590,42 @@ def fmt_ar(x, dec=0):
     s = f'{x:,.{dec}f}'
     return s.replace(',','X').replace('.',',').replace('X','.')
 
-serie_prov_dict = {}   # pid -> serie_provincia_valida
-prom_nac_dict   = {}   # pid -> precio nacional ponderado (NaN si el producto no tuvo datos)
+# _tmean: media RECORTADA al 1% (descarta el 1% inferior y superior antes de
+# promediar). Robusta a los outliers de carga del SEPA; se usa para TODAS las
+# columnas 'media' nuevas. Se define aca porque la CELDA 8 es el primer consumidor
+# (tambien la usa _leer_mes_hist en la CELDA 9, que corre despues).
+def _tmean(_s, _p=0.01):
+    _s = pd.to_numeric(_s, errors='coerce').dropna().sort_values()
+    _n = len(_s)
+    if _n == 0: return float('nan')
+    _k = int(_n * _p)   # cuantos recortar de CADA extremo (0 si la muestra es chica)
+    if _k > 0: _s = _s.iloc[_k:_n - _k]
+    return _s.mean() if len(_s) else float('nan')
+
+serie_prov_dict     = {}   # pid -> serie_provincia_valida (mediana + media por provincia)
+prom_nac_dict       = {}   # pid -> precio nacional ponderado MEDIANA (NaN si sin datos)
+prom_nac_media_dict = {}   # pid -> precio nacional ponderado MEDIA recortada (NaN si sin datos)
 
 for _pid in PRODUCTOS_ACTIVOS:
     _pgeo = producto_geo_dict[_pid]
     if len(_pgeo) == 0:
-        serie_prov_dict[_pid] = pd.DataFrame(columns=['mes','provincia','precio_producto'])
-        prom_nac_dict[_pid]   = float('nan')
+        serie_prov_dict[_pid]     = pd.DataFrame(columns=['mes','provincia','precio_producto','precio_producto_media'])
+        prom_nac_dict[_pid]       = float('nan')
+        prom_nac_media_dict[_pid] = float('nan')
         continue
     _cpp  = (_pgeo.groupby('PROVINCIA_NORM')['precio_producto']
-             .median().reset_index()
+             .agg(precio_producto='median', precio_producto_media=_tmean).reset_index()
              .rename(columns={'PROVINCIA_NORM':'provincia'}))
     _cpp['mes']  = PERIODO
     _cpp['peso'] = _cpp['provincia'].map(PESOS_POBLACION).fillna(0)
     _pob = _cpp[_cpp['peso'] > 0]['peso'].sum()
     _prom = ((_cpp['precio_producto'] * _cpp['peso']).sum() / _pob
              if _pob > 0 else _cpp['precio_producto'].mean())
-    serie_prov_dict[_pid] = _cpp[['mes','provincia','precio_producto']].copy()
-    prom_nac_dict[_pid]   = _prom
+    _prom_media = ((_cpp['precio_producto_media'] * _cpp['peso']).sum() / _pob
+                   if _pob > 0 else _cpp['precio_producto_media'].mean())
+    serie_prov_dict[_pid]     = _cpp[['mes','provincia','precio_producto','precio_producto_media']].copy()
+    prom_nac_dict[_pid]       = _prom
+    prom_nac_media_dict[_pid] = _prom_media
 
 print(f'=== CUADRO: Precio por provincia — {NOMBRE_MES_TITLE} ===')
 for _pid in _prods_con_datos:
@@ -631,7 +648,10 @@ cells.append(cell_code("""\
 # el cache). IMPORTANTE: el cache guarda SOLO meses CERRADOS. El último mes
 # disponible (en curso, crece día a día) se RELEE SIEMPRE fresco.
 _cache_key  = hashlib.md5('|'.join(sorted(PRODUCTOS_EANS_NORM)).encode()).hexdigest()[:8]
-_cache_path = CACHE_DIR / f'hist_union_{_cache_key}.parquet'
+# _v2m: esquema con precio_medio (media recortada 1%) ademas de precio_mediano.
+# Al cambiar el nombre, la primera corrida reconstruye el cache con ambas medidas
+# (los .parquet viejos sin precio_medio quedan huerfanos; se pueden borrar).
+_cache_path = CACHE_DIR / f'hist_union_{_cache_key}_v2m.parquet'
 _EANS_LECTURA = PRODUCTOS_EANS_NORM | REF_EANS_FACTOR   # + referencia, solo para el factor
 
 # Mapa de meses disponibles -> (zip, archivos del mes)
@@ -687,7 +707,8 @@ def _leer_mes_hist(_lbl):
                 else _df_m['precio'].median())
     _fac = 100 if _med_ref > 10_000 else 1
     if _fac == 100: _df_m['precio'] /= 100
-    _agg = _df_m.groupby('ean_norm')['precio'].median().reset_index(name='precio_mediano')
+    _agg = (_df_m.groupby('ean_norm')['precio']
+            .agg(precio_mediano='median', precio_medio=_tmean).reset_index())
     _agg['anio_mes'] = _lbl
     del _df_m, _all_rows, _muestra_ref; gc.collect()
     return _agg
@@ -697,7 +718,7 @@ if USE_CACHE and _cache_path.exists():
     df_cache = pd.read_parquet(_cache_path)
     df_cache = df_cache[df_cache['anio_mes'] < _mes_actual].copy()
 else:
-    df_cache = pd.DataFrame(columns=['ean_norm','precio_mediano','anio_mes'])
+    df_cache = pd.DataFrame(columns=['ean_norm','precio_mediano','precio_medio','anio_mes'])
 
 _meses_en_cache = set(df_cache['anio_mes'].unique())
 _faltantes = [m for m in _meses_disp if m < _mes_actual and m not in _meses_en_cache]
@@ -723,7 +744,7 @@ if _actual is not None:
 df_hist_raw = (pd.concat([df_cache] + ([_actual] if _actual is not None else []),
                          ignore_index=True)
                if (len(df_cache) > 0 or _actual is not None)
-               else pd.DataFrame(columns=['ean_norm','precio_mediano','anio_mes']))
+               else pd.DataFrame(columns=['ean_norm','precio_mediano','precio_medio','anio_mes']))
 df_hist_raw = df_hist_raw.sort_values('anio_mes').reset_index(drop=True)
 
 # ── Serie histórica por producto (un único EAN cada uno) ─────────────────────
@@ -739,18 +760,22 @@ for _pid, _prod in PRODUCTOS.items():
         # dejar que .map()/.round() corran sobre un DataFrame vacío de origen
         # produce columnas dtype=object y .round() falla más abajo.
         serie_nac_dict[_pid] = pd.DataFrame(columns=[
-            'mes','precio_nacional_ponderado','n_eans',
-            'variacion_mensual_%','indice_precio_base100'])
+            'mes','precio_nacional_ponderado','precio_nacional_ponderado_media','n_eans',
+            'variacion_mensual_%','variacion_mensual_media_%','indice_precio_base100'])
         print(f'  [{_name}] 0 meses | sin datos históricos (revisar EAN)')
         continue
-    _dh['qty']        = _dh['ean_norm'].map(lambda e, c=_prod: c.get(e,('?',0,'?'))[1]).astype(float)
-    _dh['costo_item'] = _dh['precio_mediano'].astype(float) * _dh['qty']
+    _dh['qty']              = _dh['ean_norm'].map(lambda e, c=_prod: c.get(e,('?',0,'?'))[1]).astype(float)
+    _dh['costo_item']       = _dh['precio_mediano'].astype(float) * _dh['qty']
+    _dh['costo_item_media'] = _dh['precio_medio'].astype(float)   * _dh['qty']
     _sn = (_dh.groupby('anio_mes')
-           .agg(precio_nacional_ponderado=('costo_item','sum'), n_eans=('ean_norm','nunique'))
+           .agg(precio_nacional_ponderado=('costo_item','sum'),
+                precio_nacional_ponderado_media=('costo_item_media','sum'),
+                n_eans=('ean_norm','nunique'))
            .reset_index().rename(columns={'anio_mes':'mes'})
            .sort_values('mes').reset_index(drop=True))
     _sn = _sn[_sn['mes'] >= MES_INICIO_HISTORICO].copy()
-    _sn['variacion_mensual_%'] = _sn['precio_nacional_ponderado'].pct_change() * 100
+    _sn['variacion_mensual_%']       = _sn['precio_nacional_ponderado'].pct_change() * 100
+    _sn['variacion_mensual_media_%'] = _sn['precio_nacional_ponderado_media'].pct_change() * 100
     _bv = _sn['precio_nacional_ponderado'].iloc[0] if len(_sn) > 0 else 1
     _sn['indice_precio_base100'] = (_sn['precio_nacional_ponderado'] / _bv * 100).round(2)
     serie_nac_dict[_pid] = _sn.copy()
@@ -1659,11 +1684,14 @@ with pd.ExcelWriter(out_xls, engine='openpyxl') as writer:
     _evo = _ipc_base
     for _pid in _prods_con_datos:
         if len(serie_nac_dict[_pid]) == 0: continue
-        _sn = serie_nac_dict[_pid][['mes','precio_nacional_ponderado','variacion_mensual_%']].copy()
+        _sn = serie_nac_dict[_pid][['mes','precio_nacional_ponderado','variacion_mensual_%',
+                                    'precio_nacional_ponderado_media','variacion_mensual_media_%']].copy()
         _n  = PRODUCTO_SHORT[_pid]
         _sn = _sn.rename(columns={
-            'precio_nacional_ponderado': f'precio_{_n}',
-            'variacion_mensual_%':       f'var_{_n}_%'
+            'precio_nacional_ponderado':       f'precio_{_n}',
+            'variacion_mensual_%':             f'var_{_n}_%',
+            'precio_nacional_ponderado_media': f'precio_{_n}_media',
+            'variacion_mensual_media_%':       f'var_{_n}_media_%'
         })
         _evo = _evo.merge(_sn, on='mes', how='outer')
     _evo = _evo.sort_values('mes').reset_index(drop=True)
@@ -1683,6 +1711,8 @@ with pd.ExcelWriter(out_xls, engine='openpyxl') as writer:
             'con_datos_este_mes': _pid in _prods_con_datos,
             'precio_promedio': round(prom_nac_dict.get(_pid, float('nan')), 2)
                 if not pd.isna(prom_nac_dict.get(_pid, float('nan'))) else None,
+            'precio_promedio_media': round(prom_nac_media_dict.get(_pid, float('nan')), 2)
+                if not pd.isna(prom_nac_media_dict.get(_pid, float('nan'))) else None,
             'hoja': _sh,
         })
     pd.DataFrame(_idx_rows).to_excel(writer, sheet_name='Productos', index=False)
@@ -1697,19 +1727,27 @@ with pd.ExcelWriter(out_xls, engine='openpyxl') as writer:
         _sh  = _sheet_by_pid[_pid]
         _spv = serie_prov_dict[_pid].copy()
         _prom = prom_nac_dict[_pid]
+        _prom_media = prom_nac_media_dict[_pid]
         if len(_spv) > 0 and not pd.isna(_prom):
-            _spv['vs_promedio_%'] = ((_spv['precio_producto'] / _prom) - 1) * 100
+            _spv['vs_promedio_%']       = ((_spv['precio_producto'] / _prom) - 1) * 100
+            _spv['vs_promedio_media_%'] = ((_spv['precio_producto_media'] / _prom_media) - 1) * 100
+            _spv = _spv[['mes','provincia','precio_producto','vs_promedio_%',
+                         'precio_producto_media','vs_promedio_media_%']]
             _spv.sort_values('precio_producto').to_excel(
                 writer, sheet_name=_safe_sheet(f'Prov_{_sh}', _usados_full, maxlen=31), index=False)
 
         _pgeo = producto_geo_dict[_pid]
         _rk  = (_pgeo.groupby('cadena')
                 .agg(n_sucursales=('precio_producto','count'),
-                     precio_promedio=('precio_producto','mean'))
+                     precio_promedio=('precio_producto','mean'),
+                     precio_mediana=('precio_producto','median'))
                 .round(2).reset_index()
                 .sort_values('precio_promedio', ascending=False))
         if len(_pgeo) > 0:
             _rk['vs_promedio_%'] = ((_rk['precio_promedio'] / _pgeo['precio_producto'].mean()) - 1) * 100
+            _rk['vs_mediana_%']  = ((_rk['precio_mediana'] / _pgeo['precio_producto'].median()) - 1) * 100
+            _rk = _rk[['cadena','n_sucursales','precio_promedio','vs_promedio_%',
+                       'precio_mediana','vs_mediana_%']]
         _rk.to_excel(writer, sheet_name=_safe_sheet(f'Rank_{_sh}', _usados_full, maxlen=31), index=False)
 
         _suc_exp = _pgeo[[
@@ -1731,7 +1769,7 @@ with pd.ExcelWriter(out_xls, engine='openpyxl') as writer:
         _dh['rubro']        = _dh['ean_norm'].map(lambda e, c=_prod: c.get(e,('',0,'?'))[2])
         _dh['producto_id']  = _pid
         _sp_rows.append(_dh[['producto_id','descripcion','anio_mes',
-                              'id_producto','rubro','precio_mediano']])
+                              'id_producto','rubro','precio_mediano','precio_medio']])
     if _sp_rows:
         _sp_all = pd.concat(_sp_rows, ignore_index=True).sort_values(
             ['producto_id','anio_mes']).reset_index(drop=True)
@@ -1776,11 +1814,14 @@ def _pp(x, dec=2):
     s = "+" if x >= 0 else ""; return f"{s}{x:.{dec}f}%".replace(".", ",")
 
 _vals = {p: prom_nac_dict[p] for p in _prods_con_datos if not pd.isna(prom_nac_dict.get(p))}
+_vals_media = {p: prom_nac_media_dict[p] for p in _prods_con_datos if not pd.isna(prom_nac_media_dict.get(p))}
 _vars = {}
+_vars_media = {}
 for p in _prods_con_datos:
     _sn = serie_nac_dict.get(p)
     if _sn is not None and len(_sn) > 1:
         _vars[p] = _sn['variacion_mensual_%'].iloc[-1]
+        _vars_media[p] = _sn['variacion_mensual_media_%'].iloc[-1]
 
 if not _vals:
     print('AVISO: ningún producto tiene precio válido este mes — no hay valores resumen para calcular.')
@@ -1805,8 +1846,12 @@ else:
         _line = f"{_pp(_vars.get(p, float('nan')))}"
         print(f"  {_nm:<40} {_ar(_vals[p]):>14}   var.mensual: {_line}")
         _rows_doc.append(['Productos', f'{_nm} — precio', _ar(_vals[p]), round(_vals[p], 2)])
+        if p in _vals_media:
+            _rows_doc.append(['Productos', f'{_nm} — precio (media)', _ar(_vals_media[p]), round(_vals_media[p], 2)])
         if p in _vars:
             _rows_doc.append(['Productos', f'{_nm} — var.mensual', _pp(_vars[p]), round(_vars[p], 2)])
+        if p in _vars_media:
+            _rows_doc.append(['Productos', f'{_nm} — var.mensual (media)', _pp(_vars_media[p]), round(_vars_media[p], 2)])
     print(f"  Producto mas caro:    {PRODUCTO_NOMBRES[_max_id]:<30} {_ar(_vals[_max_id])}")
     print(f"  Producto mas barato:  {PRODUCTO_NOMBRES[_min_id]:<30} {_ar(_vals[_min_id])}")
     print(f"  Brecha:               {_ar(_brecha_abs)}  ({_brecha_pct:.1f}%)")

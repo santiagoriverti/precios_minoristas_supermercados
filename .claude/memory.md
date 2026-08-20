@@ -28,6 +28,27 @@ Detalle completo de cada punto en las secciones fechadas más abajo.
 
 ---
 
+## Feature: columnas MEDIA (recortada 1%) junto a MEDIANA en los Excel de nb02 y nb05 [2026-08-20]
+
+Pedido: que los Excel exportados (`canasta_analisis_YYYY-MM.xlsx` y `productos_analisis_YYYY-MM.xlsx`) incluyan los análisis con **precio medio Y mediano** en paralelo. Alcance elegido por el usuario: **serie + cuadro** (NO gráficos, NO mapas, NO hojas geográficas), **columnas gemelas** (no hojas separadas), media **recortada al 1%**.
+
+**Concepto clave — la mediana↔media vive en 2 niveles:**
+- **Serie temporal** (CELDA 9 `_leer_mes_hist` → `serie_nac_dict`): antes solo `precio_mediano` (mediana nacional de todos los puntos sucursal×día por EAN). Ahora también `precio_medio`.
+- **Cuadro del mes** (CELDA 8 → `serie_prov_dict`/`prom_nac_dict`): mediana provincial + promedio ponderado por población. Ahora además la media recortada provincial y `prom_nac_media_dict`.
+
+**`_tmean` (media recortada por CONTEO, no por banda de percentil):** definida en CELDA 8 (primer consumidor; CELDA 9 la reusa). `_k = int(n*0.01)` recorta k de cada extremo; si la muestra es chica (n<100) k=0 → media simple (no colapsa hacia la mediana como sí hacía la versión por quantile-band que se descartó). Robusta a los outliers de carga del SEPA.
+
+**Cambios por celda (idénticos en `gen_nb02.py` y `gen_nb05.py`):**
+- CELDA 8: define `_tmean`; groupby provincial pasa a `.agg(col='median', col_media=_tmean)`; nuevo dict global `prom_nac_media_dict` (ponderado por población de la media recortada).
+- CELDA 9: `_leer_mes_hist` devuelve `precio_mediano` **y** `precio_medio` (named-agg mixto string+callable). Serie agrega `..._ponderada_media` + `variacion_mensual_media_%`.
+- **Caché versionado:** `hist_union_{key}.parquet` → `hist_union_{key}_v2m.parquet` (esquema nuevo con `precio_medio`). **La primera corrida reconstruye el caché** (los `.parquet` viejos quedan huérfanos, se pueden borrar).
+- Excel CELDA 19: `Evolucion_IPC` gana `canasta_{n}_media`/`precio_{n}_media` + `var_{n}_media_%`; `Prov_*` gana `canasta_total_media`/`precio_producto_media` + `vs_promedio_media_%`; `Ranking_*`/`Rank_*` gana `canasta_mediana`/`precio_mediana` + `vs_mediana_%` (la columna promedio pre-existente ya era una media SIN recortar — se dejó igual para no cambiar números viejos); `Serie_precios` gana `precio_medio` (+ `costo_item_media` en nb02); nb05 hoja `Productos` gana `precio_promedio_media`.
+- Excel CELDA 20 `Valores_Documento`: filas gemelas `— valor (media)` / `— var.mensual (media)` (y en nb02 `Canasta media valor (media)`). Las stats de dispersión/percentiles (P25/P75, dispersión inter-sucursal) siguen SOLO en su versión original — no tienen un análogo media/mediana simple.
+
+**Lo que NO cambió (a propósito, por el alcance elegido):** gráficos vs IPC (CELDA 11/12 referencian columnas por nombre → las nuevas columnas viajan en el DF pero no se grafican), mapas coropléticos/Folium, cuadro LaTeX de CELDA 13 (itera columnas puntuales, no se filtra), y las 4 hojas geográficas de nb02 (belgrano/CABA/Pinamar/costa).
+
+**Validación:** las 21/20 celdas compilan (`compile()` por celda tras regenerar). Mecánica pandas testeada en aislamiento con outlier (media recortada saca la basura, mediana y media simple contrastadas; named-agg mixto OK; ponderación por población OK). **Pendiente del usuario:** correr en Colab con datos reales para confirmar los valores media/mediana (los tests fueron sintéticos/aislados, sin Drive). Nota: al abrir en Colab, borrar el caché viejo o dejar que se reconstruya (nombre `_v2m` nuevo).
+
 ## Feature: 4 hojas de detalle geográfico en nb02 [2026-08-03]
 
 Pedido del usuario: agregar al Excel `canasta_analisis_YYYY-MM.xlsx` cuatro pestañas con el detalle geográfico de la **canasta Media** (`cantidad_03`), para armar las tablas del informe de prensa (Belgrano, Pinamar, Costa Atlántica, ranking barrios CABA). Todas geolocalizan las sucursales por **lat/lon** (no por el campo `localidad`, poco fiable — muchas vienen `nan`).
