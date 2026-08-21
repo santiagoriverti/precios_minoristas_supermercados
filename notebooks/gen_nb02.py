@@ -1100,7 +1100,7 @@ for _col_id in CANASTAS_ACTIVAS:
             f'\\\\caption{{Canasta {_name} por provincia ({_mes_s} {_anio_s}) --- analisis {_TIT}}}',
             r'\\begin{tabular}{@{}l r r@{}}',
             r'\\toprule',
-            r'\\textbf{Provincia} & \\textbf{Canasta} & \\shortstack{\\textbf{Vs. promedio}\\\\\\\\\\textbf{pais (\\%)}} \\\\\\\\',
+            f'\\\\textbf{{Provincia}} & \\\\textbf{{Canasta}} & \\\\shortstack{{\\\\textbf{{Vs. promedio}}\\\\\\\\\\\\textbf{{pais (\\\\%)}}}} \\\\\\\\',
             r'\\midrule',
         ]
         for _, r in _spv.iterrows():

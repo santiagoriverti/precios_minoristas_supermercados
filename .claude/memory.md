@@ -17,7 +17,7 @@ Autor: Santiago Riverti — investigador independiente
 **⚠️ Los NIVELES medianos del cuadro cambian respecto de meses previos**: antes el precio por sucursal era el del PRIMER día; ahora es la mediana sobre todos los días. El "nivel" mediano de julio 2026 en adelante NO es comparable 1:1 con informes viejos calculados con el método del primer día.
 
 ### Pendientes inmediatos
-1. **Correr en Colab con datos reales** (nb01→nb02 y nb05) y revisar que media y mediana den coherentes en todos los artefactos (gráficos, mapas, rankings, Excel). Todo lo validado hasta ahora fue con datos sintéticos, nunca con Drive real.
+1. **✅ Corrido en Colab con datos reales (julio 2026)**: media y mediana coherentes en `.tex` y Excel (Media mediana $674.848 ≈ prom $674.799; Coca/Fernet con la cuantización esperada en mediana y granularidad en promedio). **Bug de LaTeX en nb02 CELDA 13 (encabezado con `\\` duplicado) — RESUELTO**: al revisar los `.tex` reales se vio que las tablas de CANASTA salían con `\\\\` en el header (las de producto estaban bien); se reescribió el header como f-string (igual que nb05). Verificado: ahora sale `\\` simple. Queda seguir validando meses nuevos.
 2. **Caché**: al abrir en Colab se reconstruye solo (nombre nuevo `hist_union_..._v2m.parquet`); los `.parquet` viejos quedan huérfanos y se pueden borrar de `output_*/_cache`.
 3. **Mapa GitHub Pages**: ahora hay 2 HTML (`mapa_interactivo_MMAAAA.html` mediana y `..._prom.html`). Elegir cuál subir a `mapa_precios_minoristas`.
 4. **Seguridad**: rotar el PAT de GitHub (expuesto en sesiones jun/jul, nunca hizo falta usarlo — push con credenciales cacheadas).
