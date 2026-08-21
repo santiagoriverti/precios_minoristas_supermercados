@@ -58,38 +58,48 @@ cells.append(cell_code("""\
 #   - El precio del tipo en cada sucursal/día = PROMEDIO de los EANs presentes.
 #   - Un tipo cuenta en una sucursal/día SOLO si hay al menos 1 EAN TACC y 1 sin-TACC.
 #   - 'qty' = cuántas unidades de ese tipo entran en la canasta (pondera su peso).
-# ⚠️ Los EANs de abajo son EJEMPLOS/PLACEHOLDER: reemplazalos por los reales del SEPA
-#    (numéricos). Las descripciones son solo comentarios para ubicarte.
+# PLANTILLA REAL curada del Maestro de Productos (marcas mainstream, presentaciones
+# estándar). Verificá/ajustá según cobertura: algunas marcas sin-TACC (Blue Patna,
+# Grandiet, Smams…) tienen menos presencia en góndola. Como se usan VARIOS
+# representativos promediados, si en una sucursal falta uno, los presentes lo cubren.
 TIPOS = {
     'Fideos secos': {
         'qty': 4,
-        'tacc':     ['7790387001234', '7798062540011'],   # ej. Lucchetti / Matarazzo (con TACC)
-        'sin_tacc': ['7798164060010', '7790387009999'],   # ej. Blue Patna / otra pasta sin TACC
+        # TACC: Lucchetti Spaghetti / Lucchetti Tallarín / Marolio Tallarines (500 g)
+        'tacc':     ['7790070318282', '7790070318299', '7797470000809'],
+        # sin-TACC: Matarazzo Tirabuzón / Grandiet Spaguetti / Blue Patna Dedalitos (500 g)
+        'sin_tacc': ['7790070321855', '7797330105606', '7730114000780'],
     },
-    'Galletitas': {
+    'Galletitas dulces': {
         'qty': 3,
-        'tacc':     ['7790040991010', '7622300736019'],    # ej. galletitas comunes
-        'sin_tacc': ['7798140250010', '7791234560010'],    # ej. Grandiet / Chalitas sin TACC
+        # TACC: Oreo Chocolate / Trío Scons / Gaona Vainilla c-chips
+        'tacc':     ['7622210692481', '7791787000026', '7798126071150'],
+        # sin-TACC: Santa María Chocolate / Smams Chocolate / Natuzen Vainilla
+        'sin_tacc': ['7798079230017', '7798181510199', '7798082000331'],
+    },
+    'Galletitas saladas / crackers': {
+        'qty': 2,
+        # TACC (base trigo): Saladix Kesitos / Granix con Salvado / Cerealitas con Cereal
+        'tacc':     ['7790040102064', '7790045000174', '7622300324100'],
+        # sin-TACC (arroz): Crisppino Queso / Olienka Salada / Shiva Crackers
+        'sin_tacc': ['7798199770042', '7798289620080', '0617308824087'],
     },
     'Pan rallado / rebozador': {
         'qty': 2,
-        'tacc':     ['7790387004321'],                     # ej. Preferido con TACC
-        'sin_tacc': ['7798140251111'],                     # ej. rebozador sin TACC
+        # TACC: Preferido 500 g / Favorita 900 g / Mamá Cocina 500 g
+        'tacc':     ['7790060004348', '7790070413673', '7792180004741'],
+        # sin-TACC: Maizena Rebozador / Marvese Rebozador de arroz / Bio Pan Rallado
+        'sin_tacc': ['7794000005303', '7798306830164', '7798221641845'],
     },
+    # ⚠️ SUSTITUCIÓN (no es el mismo producto sin gluten): harina de trigo vs premezcla.
+    #    La brecha de este tipo es grande (la premezcla es mucho más cara). Es un costo
+    #    celíaco real, pero si querés una brecha "like-for-like" pura, comentá este tipo.
     'Harina / premezcla': {
         'qty': 2,
-        'tacc':     ['7790387005555'],                     # ej. harina 0000 común
-        'sin_tacc': ['7798140252222', '7791234561234'],    # ej. premezcla sin TACC
-    },
-    'Caldo': {
-        'qty': 2,
-        'tacc':     ['7794000010010'],                     # ej. caldo común
-        'sin_tacc': ['7794000010027'],                     # ej. Caldo Verdura Knorr sin TACC
-    },
-    'Almidón / espesante': {
-        'qty': 1,
-        'tacc':     ['7790387006666'],
-        'sin_tacc': ['7790580001234'],                     # ej. Maizena / almidón de maíz (sin TACC)
+        # TACC: Pureza 000 / Blancaflor 0000 / Cañuelas 000 (1 kg)
+        'tacc':     ['7792180004512', '7790070506924', '7792180001528'],
+        # sin-TACC: Blancaflor Premezcla Pizza / Maizena Premezcla Ñoquis / 123 Listo! Pizza
+        'sin_tacc': ['7790070508010', '7794000005273', '7798239780178'],
     },
 }
 
