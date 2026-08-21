@@ -367,3 +367,28 @@ Correcciones aplicadas sobre v2:
 | `USE_CACHE` | `True` | Reutiliza parquet histórico si el hash de EANs no cambió. |
 | `score_cobertura >= 0.88` | — | Umbral mínimo recomendado para inclusión en canastas ENGHo |
 | `pct_trazabilidad >= 90%` | — | Umbral mínimo recomendado de estabilidad histórica |
+
+---
+
+## 9. Notebook 06 — Brecha celíaca (TACC vs sin-TACC)
+
+Herramienta dedicada a medir la **brecha** entre una canasta **base** (con TACC) y su
+equivalente **sin-TACC** (celíaca), y su evolución **diaria, semanal y mensual**, desagregada por
+provincia, cadena y concentración de comercios.
+
+Resumen metodológico (detalle completo en **`docs/BRECHA_CELIACA.md`**):
+- **Solo tipos con dicotomía celíaca** (fideos, galletitas, pan rallado, harina/premezcla…). Nada
+  de limpieza/higiene/otros alimentos: la brecha se reporta sobre esa canasta acotada, sin maquillar.
+- **2–3 EANs representativos por lado y por tipo, promediados** ("LOS" representativos): el precio
+  del tipo en una sucursal/día = promedio de los presentes → robusto a faltantes y a la elección
+  de una marca puntual.
+- **Brecha intra-sucursal**: `brecha = canasta_celíaca / canasta_base − 1` por sucursal/día (misma
+  composición de tipos), luego agregada por dimensión. Al ser intra-sucursal, el % es comparable
+  entre provincias y cadenas.
+- Agregación por **mediana** (robusta) y **promedio** (outliers fuera, `_pmean`), como nb02/nb05.
+- Resolución **diaria** (ventana), **semanal** (ISO) y **mensual** (histórico completo), leyendo
+  las columnas `precio_YYYYMMDD` de los semestrales.
+
+Contraste con el **IPC del INDEC**: el IPC no usa mediana; es una canasta fija ponderada por gasto
+(ENGHo) con promedios de relativos de precio sobre una muestra relevada. La brecha celíaca es un
+indicador específico y complementario, no una réplica del IPC.

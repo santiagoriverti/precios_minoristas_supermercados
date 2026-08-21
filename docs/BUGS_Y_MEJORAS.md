@@ -1,12 +1,48 @@
 # Bugs Pendientes y Mejoras
 
-Última actualización: 2026-06-24 — BUG-23: serie/gráficos no incluían el mes en curso
+Última actualización: 2026-08-21 — doble análisis media/mediana, fix LaTeX, Notebook 06
 
 ---
 
 ## 🔴 Bugs críticos (pendientes de fix)
 
 > ✅ Todos los bugs críticos están resueltos. Ver sección "Resueltos" más abajo.
+
+---
+
+## 🟢 Cambios y fixes 2026-08
+
+### ✅ Fix — Encabezado LaTeX de tablas de canasta con `\\` duplicado (2026-08-21)
+
+**Archivo**: `notebooks/gen_nb02.py` → CELDA 13.
+
+**Síntoma**: las `tabla_canasta_*.tex` salían con el encabezado (`\shortstack` y el terminador
+de fila) en `\\\\` (doble), lo que genera filas/renglones vacíos y **rompe el render en
+Overleaf**. Las tablas de producto (nb05) ya estaban bien. Era el bug histórico "CELDA 13 header
+`\\` duplicado" que se arrastraba desde el raw-string original.
+
+**Fix**: el header se reescribió como **f-string** (mismo patrón que nb05), produciendo `\\` simple.
+Verificado en el `.tex` generado. Las filas de datos y la fila Promedio ya eran f-strings correctos.
+
+### ✅ Feature — Doble análisis MEDIANA + PROMEDIO por duplicado (2026-08-21)
+
+nb02 y nb05 generan **todo por duplicado**: análisis mediana (nombres base) y promedio
+(sufijo `_prom`, con outliers fuera `[mediana/4, mediana×4]`). Además el precio por sucursal se
+calcula sobre **todos los días del mes** (antes: solo el primer día). Detalle en `METODOLOGIA.md`
+§4 ("Doble análisis") y en `.claude/memory.md`.
+
+> ⚠️ **No es un bug, es un cambio de criterio**: los **niveles medianos** del cuadro de julio 2026
+> en adelante **no son comparables 1:1** con informes viejos calculados con el método del primer día.
+
+### 🟢 Notebook 06 — Brecha celíaca (nuevo)
+
+Herramienta nueva (`gen_nb06.py`). Ver `docs/BRECHA_CELIACA.md`. Mejoras/limitaciones abiertas:
+- **Cobertura de los representativos sin-TACC**: la plantilla se curó por marca mainstream, no por
+  la métrica de cobertura del `canasta_representativa`. Revisar con la hoja `Detalle_producto` del
+  primer run y reemplazar EANs de baja presencia.
+- **Departamento**: falta un shapefile departamental (hoy: provincia + localidad).
+- **Tipos ambiguos**: galletitas saladas (arroz vs trigo) y harina/premezcla (sustitución) — la
+  decisión de incluirlos es del investigador (ver caveats en `BRECHA_CELIACA.md` §6.1).
 
 ---
 

@@ -3,6 +3,8 @@
 Última actualización: 2026-08-21 (precio por sucursal = mes completo; doble análisis mediana/promedio)
 
 > **Cambio 2026-08-21 (nb02/nb05, CELDA 6/7)**: el precio por sucursal del mes reportado ahora se calcula sobre **todos los días del mes** —mediana de los días y media con outliers fuera— en vez de tomar solo el primer día (`drop_duplicates keep='first'`, eliminado). El promedio descarta valores fuera de `[mediana/4, mediana×4]` antes de promediar (helper `_pmean`, vectorizado en la CELDA 7). Esto DUPLICA los artefactos: análisis mediana (nombres base) y promedio (sufijo `_prom`). Detalle en `.claude/memory.md`.
+>
+> **Lectura DIARIA (nb06 — brecha celíaca)**: los archivos semestrales traen **una columna de precio por día** (`precio_YYYYMMDD`; parte1 = días 01–15, parte2 = 16–fin). El Notebook 06 melt-ea esas columnas **conservando la fecha** (`pd.to_datetime(col[-8:], format='%Y%m%d')`) para construir series diarias/semanales/mensuales de la brecha. Cache incremental de meses cerrados + mes en curso fresco (`brecha_dia_{hash}_v1.parquet`). Detalle en `docs/BRECHA_CELIACA.md`.
 
 ## Dos formatos completamente distintos
 

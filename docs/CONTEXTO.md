@@ -1,8 +1,21 @@
 # Contexto del Proyecto — Precios Minoristas SEPA
 
-Última actualización: 2026-08-21 (doble análisis MEDIANA + PROMEDIO en nb02/nb05)
+Última actualización: 2026-08-21 (doble análisis MEDIANA + PROMEDIO; Notebook 06 brecha celíaca)
 
-> **Novedad 2026-08-21**: nb02 y nb05 generan TODO por duplicado — análisis **mediana** (nombres base) y **promedio** (sufijo `_prom`, con outliers fuera `[mediana/4, mediana×4]`). Además el precio por sucursal se calcula sobre **todos los días del mes** (antes: primer día). El handoff completo y el detalle por celda están en `.claude/memory.md`; la metodología, en `docs/METODOLOGIA.md` (sección 4, "Doble análisis").
+> **El proyecto tiene 6 herramientas (nb01–nb06).** Las descripciones detalladas por celda más
+> abajo en este archivo son **históricas** (describen la arquitectura previa de nb02); el estado
+> vigente y el detalle por celda están en `.claude/memory.md`. Documentos por tema:
+> `docs/METODOLOGIA.md` (metodología ICR + doble análisis), `docs/BRECHA_CELIACA.md` (Notebook 06),
+> `docs/SEPA_TECNICO.md` y `docs/BUGS_Y_MEJORAS.md`.
+>
+> **Novedades 2026-08-21**:
+> - **nb02 y nb05** generan TODO por duplicado — análisis **mediana** (nombres base) y **promedio**
+>   (sufijo `_prom`, outliers fuera `[mediana/4, mediana×4]`). El precio por sucursal se calcula
+>   sobre **todos los días del mes** (antes: primer día). Metodología: `METODOLOGIA.md` §4.
+> - **Notebook 06 — Brecha celíaca (TACC vs sin-TACC)**: evolución diaria/semanal/mensual de la
+>   brecha entre canasta base y celíaca, desagregada por provincia/cadena/concentración. Detalle
+>   completo en `docs/BRECHA_CELIACA.md`.
+> - Fix del encabezado LaTeX de las tablas de canasta (`\\` duplicado) — ver `BUGS_Y_MEJORAS.md`.
 
 ## Objetivo
 
@@ -67,6 +80,26 @@ Este proyecto no existe en aislamiento. Hay múltiples notebooks en otros reposi
 - Gráfico 2 con 3 barras: ICR + IPC General + IPC Alimentos
 - `MES_INICIO_GRAFICO` auto-adapta al primer mes disponible si el configurado no existe
 - Nueva hoja Excel `Serie_precios`: precio mediano por producto por mes (serie completa)
+
+> ⚠️ La descripción de celdas de arriba es **histórica**. La arquitectura vigente de nb02 (doble
+> análisis mediana/promedio, precio del mes completo, hojas geográficas) está en `.claude/memory.md`.
+
+### 2b. `03_consolidacion_ultimo_mes` (Script 03 — este repo)
+**Propósito**: convertir el SEPA **diario** (`ultimo_mes.zip` ~7 GB) al formato **semestral wide**
+para adelantar el mes en curso. Corre **local** (Colab falla por el peso). Detalle: `SEPA_TECNICO.md`.
+
+### 2c. `04_precios_seleccion` (notebook 04 — este repo)
+**Propósito**: Excel con precios diarios de los supermercados a ≤ X km de un punto (lat/lon).
+
+### 2d. `05_evolucion_productos_representativos` (notebook 05 — este repo)
+**Propósito**: igual que nb02 pero por **producto individual (EAN)** en vez de canasta ponderada.
+Mismo doble análisis mediana/promedio. Config: `EANS_INPUT` (lista de EANs) en la CELDA 1.
+
+### 2e. `06_evolucion_brecha_celiaca` (notebook 06 — este repo)
+**Propósito**: brecha **TACC vs sin-TACC** (canasta base vs celíaca) y su evolución
+**diaria/semanal/mensual**, desagregada por provincia, cadena y concentración de comercios.
+Solo tipos con dicotomía celíaca; 2–3 EANs representativos por lado, promediados; brecha
+intra-sucursal. Config: dict `TIPOS` en la CELDA 1. **Detalle completo: `docs/BRECHA_CELIACA.md`.**
 
 ### 3. `analisis_SEPA_evolucion.ipynb`
 **Propósito**: evolución mensual de precios con canasta fija de 30 EANs.

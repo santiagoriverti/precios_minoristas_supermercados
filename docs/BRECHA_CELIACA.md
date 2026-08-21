@@ -1,0 +1,229 @@
+# Brecha Celíaca (TACC vs sin-TACC) — `06_evolucion_brecha_celiaca`
+
+Documento técnico del **Notebook 06**. Mide la **brecha** entre una canasta **base**
+(productos con TACC) y su equivalente **sin-TACC** (canasta celíaca), y su evolución
+**diaria, semanal y mensual**, desagregada por provincia, cadena y concentración de
+comercios.
+
+Última actualización: 2026-08-21.
+
+---
+
+## 1. Objetivo y contexto
+
+La canasta **Celíaca Media** del proyecto (columna `cantidad_05` en nb01/nb02) mostró una
+**prima celíaca de ~9%** sobre la canasta Media, aparentemente constante en los últimos años.
+Los investigadores (Fernando Delbianco, Andrés) pidieron **estimar cómo se distribuye esa
+prima por ubicación geográfica y cadena comercial**, y si se mantiene o se amplía en el tiempo.
+
+El Notebook 06 responde eso de forma **específica y robusta**: en vez de comparar dos canastas
+completas (donde la prima queda "diluida" por productos sin dicotomía), compara **solo los
+tipos de producto donde existe la dicotomía celiaquía / no-celiaquía**, y reporta la brecha
+sobre esa canasta acotada.
+
+---
+
+## 2. Decisiones metodológicas (acordadas con los investigadores)
+
+Del intercambio con Fernando y Andrés (jul 2026), dos decisiones quedan **explícitas**:
+
+### 2.1. Alcance: solo tipos con dicotomía TACC / sin-TACC
+> *"Limitarse a productos tacc - sin tacc y aclarar que la brecha que hablamos se hace
+> específicamente sobre esa % de la canasta total. Porque si uno sigue extendiéndose […]
+> la idea es justamente que no quede maquillada la brecha en esos productos debajo de
+> productos de limpieza, accesorios, etc, donde no hay una dicotomía celiaquía/no-celiaquía."*
+
+→ La canasta incluye **únicamente** tipos donde hay sustitución celíaca real (fideos,
+galletitas, pan rallado, harina/premezcla, etc.). **No** se incluyen limpieza, higiene, carne,
+leche, ni otros alimentos sin dicotomía. La brecha se reporta sobre esa canasta acotada.
+
+### 2.2. Representatividad: "LOS" representativos, no "EL"
+> *"Para cada tipo de producto (por ejemplo, paquete de fideos), tomar 2 o 3 como
+> representativos, y usar el promedio. Esto te salva en que en todos los períodos, los que
+> quedan le salvan las papas al faltante en el promedio. Y este último nos saca de la
+> discusión de qué tan dependiente de la elección de 'EL' representativo, a pasar a tener
+> 'LOS' representativos."*
+
+→ Cada tipo lleva **2–3 EANs TACC y 2–3 sin-TACC**. El precio del tipo en una sucursal/día es
+el **promedio de los representativos presentes** (por lado). Si en esa sucursal/día falta un
+representativo, el promedio de los presentes lo cubre → robusto a faltantes y a la elección de
+una marca puntual. (Reemplaza la alternativa de splines suavizados para faltantes, que Fernando
+mencionó pero valoró menos que este enfoque.)
+
+### 2.3. Robustez / no cherry-picking
+> *"La única crítica que uno debe cuidarse es no hacer cherry-picking y que los resultados
+> no sean robustos."*
+
+→ La brecha es **intra-sucursal** (controla el nivel de precios de cada sucursal) y se agrega
+por **mediana** (robusta) y **promedio con outliers fuera**. La elección final de qué tipos y
+EANs entran es del investigador; la plantilla es un punto de partida, no la lista definitiva.
+
+---
+
+## 3. Definición de las canastas y de la brecha
+
+Para cada **sucursal `s`** y **día `d`**:
+
+1. Para cada **tipo `t`** (con al menos un EAN TACC y uno sin-TACC presentes en `s,d`):
+   - `precio_base(t,s,d)`   = promedio de los EANs **TACC** de `t` presentes en `s,d`.
+   - `precio_cel(t,s,d)`    = promedio de los EANs **sin-TACC** de `t` presentes en `s,d`.
+2. Canasta base    `B(s,d)`  = `Σ_t precio_base(t,s,d) × qty(t)`
+3. Canasta celíaca `C(s,d)`  = `Σ_t precio_cel(t,s,d)  × qty(t)`
+   - (ambas sumas sobre **los mismos tipos** presentes en ambos lados → comparables)
+4. Se exige `n_tipos(s,d) ≥ MIN_TIPOS` para que la observación cuente.
+5. **Brecha** `brecha_pct(s,d) = (C(s,d) / B(s,d) − 1) × 100`.
+
+La agregación por provincia / cadena / tiempo se hace sobre las brechas por sucursal×día,
+con **mediana** y **promedio (outliers fuera)**. Al ser intra-sucursal, el % es directamente
+comparable entre provincias y cadenas (no lo contamina la composición geográfica).
+
+> **Nota**: como el conjunto de tipos presentes puede variar entre sucursales/días, la brecha
+> se calcula siempre sobre los tipos presentes en **ambos** lados en esa sucursal/día. Esto es
+> lo que permite compararla; el `Detalle_producto` deja ver la composición efectiva.
+
+---
+
+## 4. Resolución temporal
+
+Los archivos semestrales del SEPA traen **una columna de precio por día** (`precio_YYYYMMDD`),
+así que la brecha diaria sale directo:
+
+- **Diaria**: por cada día con dato. Solo para una **ventana** configurable
+  (`VENTANA_DIARIA_MESES`, default 3 meses) para no generar gráficos gigantes.
+- **Semanal**: por semana ISO (`%G-S%V`), todo el histórico.
+- **Mensual**: por mes, todo el histórico.
+
+El histórico completo se usa para responder *"¿la prima se mantiene o se amplía?"*.
+
+---
+
+## 5. Desagregaciones
+
+- **Serie temporal** nacional (diaria/semanal/mensual), mediana y promedio.
+- **Por provincia** (barras + mapa coroplético de la brecha).
+- **Por cadena** (barras, cadenas con ≥5 sucursales).
+- **Por concentración de comercios**: brecha vs. nº de sucursales por **localidad**
+  (scatter + correlación) → ¿más concentración = más o menos brecha?
+- **Detalle intra-sucursal por producto**: precio de **cada EAN en cada sucursal** (último mes).
+
+> **Departamento**: hoy la geolocalización llega a **provincia** (por bounding box lat/lon) y a
+> **localidad** (campo `sucursales_localidad` del maestro, con su caveat de fiabilidad — muchas
+> vienen `nan`). Departamento requeriría un **shapefile departamental** que el proyecto no tiene;
+> queda como mejora futura.
+
+---
+
+## 6. Configuración (CELDA 1)
+
+```python
+TIPOS = {
+    'Fideos secos': {'qty': 4, 'tacc': ['EAN1','EAN2','EAN3'], 'sin_tacc': ['EAN4','EAN5','EAN6']},
+    # ...
+}
+MIN_TIPOS            = 3   # mínimo de tipos presentes (ambos lados) por sucursal/día
+VENTANA_DIARIA_MESES = 3   # meses de detalle diario (semanal/mensual usan todo el histórico)
+MES_INICIO_HISTORICO = '2024-01'
+CADENAS_FILTRAR      = {'19','2013','3001','4'}   # estaciones de servicio / no minoristas
+```
+
+### 6.1. Plantilla real precargada (5 tipos, 30 EANs verificados del Maestro)
+
+Se eligieron marcas mainstream y presentaciones estándar. **Ajustar según cobertura**:
+algunas marcas sin-TACC (Blue Patna, Grandiet, Smams…) pueden tener menos presencia en góndola;
+como se promedian varios representativos, un faltante lo cubren los presentes.
+
+| Tipo | qty | TACC (base) | sin-TACC (celíaca) |
+|------|-----|-------------|--------------------|
+| **Fideos secos** | 4 | Lucchetti Spaghetti · Lucchetti Tallarín · Marolio Tallarines (500 g) | Matarazzo Tirabuzón s/TACC · Grandiet Spaguetti · Blue Patna Dedalitos (500 g) |
+| **Galletitas dulces** | 3 | Oreo Chocolate · Trío Scons · Gaona Vainilla c/chips | Santa María Chocolate · Smams Chocolate · Natuzen Vainilla |
+| **Galletitas saladas / crackers** | 2 | Saladix Kesitos · Granix c/Salvado · Cerealitas c/Cereal *(trigo)* | Crisppino Queso · Olienka Salada · Shiva Crackers *(arroz)* |
+| **Pan rallado / rebozador** | 2 | Preferido 500 g · Favorita 900 g · Mamá Cocina 500 g | Maizena Rebozador · Marvese Rebozador arroz · Bio Pan Rallado |
+| **Harina / premezcla** ⚠️ | 2 | Pureza 000 · Blancaflor 0000 · Cañuelas 000 (1 kg) | Blancaflor Premezcla Pizza · Maizena Premezcla Ñoquis · 123 Listo! Pizza |
+
+**Caveats de tipos**:
+- **Galletitas saladas**: las sin-TACC del SEPA suelen ser **de arroz** (naturalmente sin
+  gluten); por eso el lado TACC usa crackers de **trigo**. Si se considera ambiguo, comentar el tipo.
+- **Harina / premezcla** ⚠️: es una **sustitución** (harina de trigo → premezcla), no el mismo
+  producto sin gluten. La brecha de este tipo es **grande** (la premezcla es mucho más cara). Es
+  un costo celíaco real, pero para una brecha "like-for-like" pura conviene **comentar este tipo**.
+
+Los EANs concretos están en la CELDA 1 de `notebooks/gen_nb06.py` (fuente) y del `.ipynb`.
+
+---
+
+## 7. Outputs
+
+### Gráficos (`.png`)
+| Archivo | Contenido |
+|---------|-----------|
+| `brecha_mensual_MMAAAA.png` | Serie mensual de la brecha (mediana + promedio) + media del período |
+| `brecha_diaria_MMAAAA.png` | Serie diaria (ventana) |
+| `brecha_provincia_MMAAAA.png` | Brecha por provincia |
+| `brecha_cadena_MMAAAA.png` | Brecha por cadena (≥5 sucursales) |
+| `brecha_concentracion_MMAAAA.png` | Scatter brecha vs. nº de sucursales por localidad (+ correlación) |
+| `mapa_brecha_MMAAAA.png` | Mapa coroplético de la brecha por provincia |
+
+### Excel — `brecha_celiaca_YYYY-MM.xlsx`
+| Hoja | Contenido |
+|------|-----------|
+| `Serie_diaria` / `Serie_semanal` / `Serie_mensual` | brecha mediana y promedio, base/celíaca medianas, nº sucursales, nº obs |
+| `Brecha_provincia` | brecha por provincia (mediana + promedio) |
+| `Brecha_cadena` | brecha por cadena |
+| `Concentracion` | por localidad: nº de sucursales + brecha (base del scatter) |
+| `Brecha_sucursal` | por sucursal (último mes): base, celíaca, brecha, nº tipos, nº días |
+| `Detalle_producto` | **precio por sucursal × EAN** (último mes), con tipo, rol (tacc/sin) y descripción |
+
+---
+
+## 8. Arquitectura (celdas del generador)
+
+`notebooks/gen_nb06.py` → `06_evolucion_brecha_celiaca.ipynb` (12 celdas). Reusa de nb05 la
+CELDA 2 (setup/mount), CELDA 3 (maestros) y CELDA 5 (funciones ZIP) **verbatim**.
+
+- **CELDA 1** — Config (`TIPOS`, `MIN_TIPOS`, `VENTANA_DIARIA_MESES`, paths).
+- **CELDA 4** — Parseo de `TIPOS`: sets `TIPO_TACC`/`TIPO_SIN`, `TIPO_QTY`, mapas `EAN_TIPO`/`EAN_ROL`/`EAN_DESC`.
+- **CELDA 6** — Lectura **diaria**: melt de las columnas `precio_YYYYMMDD` conservando `fecha`;
+  cache `brecha_dia_{hash}_v1.parquet` de **meses cerrados** + **mes en curso fresco**; factor
+  centavos/pesos por mes anclado a `REF_EANS_FACTOR`.
+- **CELDA 7** — Brecha vectorizada: promedio de representativos por (suc, día, tipo, rol) →
+  pivot rol→`tacc`/`sin` (solo tipos con ambos lados) → canasta base/celíaca por (suc, día) con
+  `n_tipos ≥ MIN_TIPOS` → `brecha_pct`; merge con geo (provincia por bbox, cadena, localidad).
+- **CELDA 8** — Series (`_serie()`: mediana + `_pmean`) diaria (ventana) / semanal / mensual +
+  `brecha_prov` / `brecha_cadena` / `concentracion`.
+- **CELDA 9** — 5 gráficos. **CELDA 10** — coroplético. **CELDA 11** — Excel.
+
+`_pmean` = media con outliers fuera (banda `[mediana/4, mediana×4]`), la misma que nb02/nb05.
+
+---
+
+## 9. Validación
+
+- `ast.parse` OK; **11/11 celdas compilan**.
+- **Test end-to-end sintético** (celdas 7→11 ejecutadas de verdad con matplotlib + openpyxl):
+  con 3 tipos y una prima inyectada del 9%, la brecha mediana global da **+9,07%**; un outlier
+  100× **no** la infla; se generan las 8 hojas de Excel (incluida `Detalle_producto`) y 6 PNGs.
+- **Pendiente**: correr en Colab con datos reales (los tests son sintéticos). Requiere en
+  `carga/` los ZIPs SEPA y `ar.json` (para el mapa); los maestros se descargan solos.
+
+---
+
+## 10. Limitaciones y mejoras futuras
+
+- **Cobertura de los representativos**: no se usa (todavía) la métrica de cobertura del
+  `canasta_representativa`; la plantilla se curó por marca mainstream. El primer run + la hoja
+  `Detalle_producto` muestran qué EANs aparecen en pocas sucursales para reemplazarlos.
+- **Departamento**: falta shapefile departamental (hoy: provincia + localidad).
+- **Tipos ambiguos**: galletitas saladas (arroz vs trigo) y harina/premezcla (sustitución) —
+  ver caveats en §6.1. La decisión de incluirlos es del investigador.
+- **Posible extensión**: agregar más tipos con dicotomía (cereales/copos, budines, tapas de
+  empanada, cerveza→sidra), y una versión de la brecha ponderada por gasto celíaco si se
+  consigue una fuente de ponderaciones.
+
+---
+
+## 11. Cómo continuar (otra sesión / otra PC)
+
+1. El generador es la fuente de verdad: `python notebooks/gen_nb06.py` regenera el `.ipynb`.
+2. Para un primer resultado, correr nb06 **tal cual** (ya trae `TIPOS` con datos reales).
+3. Ajustar `TIPOS` según lo que muestre `Detalle_producto` (cobertura por EAN/sucursal).
+4. Handoff y detalle por celda: `.claude/memory.md` (sección "Notebook 06").

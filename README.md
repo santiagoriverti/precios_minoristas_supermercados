@@ -494,6 +494,8 @@ Mismo análisis que el Notebook 02 (evolución vs. IPC, provincias, mapas, ranki
 
 Mide la **brecha** entre una canasta **base** (productos con TACC) y su equivalente **sin-TACC** (canasta celíaca), y su evolución **diaria, semanal y mensual**, desagregada por provincia, cadena y concentración de comercios.
 
+> **Documento técnico completo**: [`docs/BRECHA_CELIACA.md`](docs/BRECHA_CELIACA.md) (metodología detallada, plantilla de tipos/EANs, outputs, limitaciones).
+
 ### Metodología (acordada con los investigadores)
 - **Solo tipos con dicotomía celíaca** (fideos, galletitas, pan rallado, harina/premezcla, caldo, almidón…). Nada de limpieza/higiene/otros alimentos: la brecha se reporta sobre esa canasta acotada, sin maquillarla debajo de productos sin dicotomía.
 - **2–3 EANs representativos por lado y por tipo**, promediados: el precio del tipo en una sucursal/día = promedio de los representativos presentes. Si falta uno, los presentes lo cubren → robusto a faltantes y a la elección de "EL" representativo.
@@ -538,8 +540,10 @@ precios_minoristas_supermercados/
 │   ├── maestro_sucursales_completo.xlsx     # 3.611 sucursales con cadena, provincia, región
 │   └── maestro-provincias.xlsx              # Códigos SEPA → nombres de provincia
 └── docs/                                # Documentación técnica
+    ├── METODOLOGIA.md                   # Metodología ICR, canastas ENGHo, doble análisis media/mediana
     ├── CONTEXTO.md                      # Arquitectura, pipeline detallado, historial de cambios
-    ├── SEPA_TECNICO.md                  # Formato SEPA, factor precio, cadenas, trampas conocidas
+    ├── SEPA_TECNICO.md                  # Formato SEPA, factor precio, cadenas, lectura diaria, trampas
+    ├── BRECHA_CELIACA.md               # Notebook 06 — brecha TACC vs sin-TACC (metodología completa)
     └── BUGS_Y_MEJORAS.md               # Bugs resueltos y mejoras pendientes
 ```
 
@@ -579,6 +583,7 @@ El Notebook 02 usa dos estrategias para manejar la complejidad de múltiples can
 | [`docs/METODOLOGIA.md`](docs/METODOLOGIA.md) | **Metodología completa**: fuente de datos, score de cobertura, canastas ENGHo por quintil (coeficiente de Engel), filtros de calidad (score ≥ 0.88, trazabilidad ≥ 90%), limitaciones conocidas, historial de versiones de canastas |
 | [`docs/CONTEXTO.md`](docs/CONTEXTO.md) | Objetivo del proyecto, descripción del pipeline celda por celda, métricas de ejecución reales, historial completo de cambios |
 | [`docs/SEPA_TECNICO.md`](docs/SEPA_TECNICO.md) | Formato semestral vs. diario, autodetección de FACTOR_PRECIO, diccionario de cadenas, maestros de referencia, arquitectura anti-OOM, trampas conocidas en la selección de grupos, patrones técnicos del Notebook 02 |
+| [`docs/BRECHA_CELIACA.md`](docs/BRECHA_CELIACA.md) | **Notebook 06 — brecha celíaca (TACC vs sin-TACC)**: metodología (decisiones con los investigadores), definición de canastas y brecha intra-sucursal, resolución diaria/semanal/mensual, plantilla curada de tipos/EANs, outputs, limitaciones |
 | [`docs/BUGS_Y_MEJORAS.md`](docs/BUGS_Y_MEJORAS.md) | Bugs resueltos y mejoras pendientes, causa raíz, evidencia y fix aplicado |
 
 ---
