@@ -8,7 +8,9 @@ Autor: Santiago Riverti — investigador independiente
 
 ## 🟢 ESTADO ACTUAL / HANDOFF [2026-08-21]
 
-**Cambio grande**: nb02 y nb05 ahora generan TODO por duplicado — análisis **MEDIANA** (base, sin sufijo) y análisis **PROMEDIO** (sufijo `_prom`, con outliers fuera). Aplica a: gráficos vs IPC, mapas coropléticos, mapa Folium (**2 HTML**: uno mediana + uno `_prom`), rankings de cadenas, tablas LaTeX (2 `.tex` por canasta/producto), y todas las hojas/columnas del Excel. Detalle completo en la sección **"Feature: análisis MEDIANA + PROMEDIO por duplicado [2026-08-21]"** más abajo.
+**Ahora hay 6 herramientas (nb01–nb06).** Se agregó **Notebook 06 — Brecha celíaca (TACC vs sin-TACC)**, con evolución diaria/semanal/mensual y desagregación por provincia/cadena/concentración; detalle completo en la sección "Notebook 06" más abajo. Pendiente del usuario: completar el dict `TIPOS` (CELDA 1) con los EANs reales y correr en Colab.
+
+**Cambio grande** (misma fecha): nb02 y nb05 ahora generan TODO por duplicado — análisis **MEDIANA** (base, sin sufijo) y análisis **PROMEDIO** (sufijo `_prom`, con outliers fuera). Aplica a: gráficos vs IPC, mapas coropléticos, mapa Folium (**2 HTML**: uno mediana + uno `_prom`), rankings de cadenas, tablas LaTeX (2 `.tex` por canasta/producto), y todas las hojas/columnas del Excel. Detalle completo en la sección **"Feature: análisis MEDIANA + PROMEDIO por duplicado [2026-08-21]"** más abajo.
 
 **Segundo cambio clave**: el precio por sucursal del mes reportado ahora se calcula sobre **TODOS los días del mes** (mediana y promedio), antes era **solo el primer día** (`drop_duplicates keep='first'`). Es lo pedido (más representativo del mes).
 
@@ -45,6 +47,23 @@ Proyecto en producción, **5 herramientas** (nb01–nb05). Repo local y `origin/
 Detalle completo de cada punto en las secciones fechadas más abajo.
 
 ---
+
+## Notebook 06 — Brecha celíaca (TACC vs sin-TACC) [2026-08-21]
+
+Herramienta nueva (`notebooks/gen_nb06.py` → `06_evolucion_brecha_celiaca.ipynb`, 12 celdas). **Ahora hay 6 herramientas** (nb01–nb06). Pedido: seguir la evolución **diaria/semanal/mensual** de la **brecha** entre una canasta con TACC (base) y su equivalente sin-TACC (celíaca).
+
+**Decisiones metodológicas (del diálogo con Fernando/Andrés + respuestas del usuario):**
+- **Solo tipos con dicotomía celíaca** (fideos, galletitas, pan rallado, harina/premezcla, caldo, almidón…). Nada de limpieza/higiene/otros alimentos: la brecha se reporta sobre esa canasta acotada (evita maquillarla).
+- **2–3 EANs representativos por lado y por tipo, promediados** ("LOS representativos", no "EL"): precio del tipo en una sucursal/día = promedio de los representativos presentes → robusto a faltantes.
+- **Brecha intra-sucursal**: por sucursal/día se arman ambas canastas (misma composición) y `brecha = celíaca/base − 1`; después se agrega. Además el usuario pidió una salida con el **detalle intra-sucursal de cada producto** (hoja `Detalle_producto`: precio por sucursal × EAN del último mes).
+- **Diaria en ventana** (`VENTANA_DIARIA_MESES`, default 3) + **semanal/mensual todo el histórico**.
+- Agregación **mediana + promedio** (`_pmean`, outliers fuera), como nb02/nb05.
+
+**Config (CELDA 1)**: dict `TIPOS = {tipo: {qty, tacc:[EANs], sin_tacc:[EANs]}}`, precargado con **plantilla de EANs placeholder** (el usuario los reemplaza por los reales). `MIN_TIPOS` (mín. tipos presentes por sucursal/día para contar).
+
+**Arquitectura**: CELDA 2/3/5 copiadas verbatim de nb05 (setup, maestros, funciones ZIP). CELDA 4 parsea `TIPOS`→sets/roles. **CELDA 6** lee DIARIO (conserva `fecha` de las columnas `precio_YYYYMMDD`; cache `brecha_dia_{hash}_v1.parquet` de meses cerrados + mes en curso fresco; factor por mes anclado a REF_EANS). **CELDA 7** brecha vectorizada: promedio de reps por (suc,día,tipo,rol) → pivot rol→tacc/sin (solo tipos con AMBOS lados) → canasta base/celíaca por (suc,día) con `n_tipos>=MIN_TIPOS` → brecha_pct; merge geo (provincia por bbox, cadena, localidad). **CELDA 8** series `_serie()` (diaria ventana / semanal ISO `%G-S%V` / mensual) + `brecha_prov`/`brecha_cadena`/`concentracion`. **CELDA 9** 5 gráficos (mensual, diaria, por provincia, por cadena, scatter brecha vs concentración). **CELDA 10** coroplético de la brecha por provincia. **CELDA 11** Excel (`Serie_diaria/semanal/mensual`, `Brecha_provincia/cadena`, `Concentracion`, `Brecha_sucursal`, `Detalle_producto`).
+
+**Validación**: `ast.parse` OK, 11/11 celdas compilan, **test end-to-end sintético** (celdas 7→11 ejecutadas con matplotlib/openpyxl): con 3 tipos y prima inyectada del 9%, brecha mediana global = **+9,07%** (el outlier 100× NO la infla), 8 hojas de Excel + `Detalle_producto` (30 sucs × 10 EANs), 6 PNGs. **Pendiente del usuario**: completar `TIPOS` con los EANs reales TACC/sin-TACC y correr en Colab. Departamento (además de localidad) queda como mejora futura (falta shapefile departamental).
 
 ## Feature: análisis MEDIANA + PROMEDIO por duplicado [2026-08-21]
 

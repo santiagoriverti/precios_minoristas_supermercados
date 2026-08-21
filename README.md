@@ -25,6 +25,7 @@ El proyecto responde tres preguntas:
 | `03_consolidacion_ultimo_mes` | Convierte el SEPA **diario** al formato **semestral wide** para analizar el mes en curso sin esperar la consolidación oficial. Subís `ultimo_mes.zip` al entorno de Colab y te devuelve los dos `.csv.gz` para descargar. Ver [sección detallada](#adelantar-el-mes-en-curso--03_consolidacion_ultimo_mes). | [![Abrir en Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/santiagoriverti/precios_minoristas_supermercados/blob/main/notebooks/03_consolidacion_ultimo_mes.ipynb) |
 | `04_precios_seleccion` | Exporta un **Excel** con los precios diarios del último mes para todos los supermercados a menos de X km de un punto: una hoja por sucursal (productos × días) + una hoja general (producto × super, precio promedio). Ver [sección detallada](#precios-por-selección-geográfica--04_precios_seleccion). | [![Abrir en Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/santiagoriverti/precios_minoristas_supermercados/blob/main/notebooks/04_precios_seleccion.ipynb) |
 | `05_evolucion_productos_representativos` | Igual que el Notebook 02, pero para **productos individuales** en vez de canastas: evolución de precio, mapas provinciales, comparación con el IPC y rankings por cadena/barrio de cada EAN que se ingrese. Ver [sección detallada](#evolución-de-productos-individuales--05_evolucion_productos_representativos). | [![Abrir en Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/santiagoriverti/precios_minoristas_supermercados/blob/main/notebooks/05_evolucion_productos_representativos.ipynb) |
+| `06_evolucion_brecha_celiaca` | Mide la **brecha celíaca** (canasta sin-TACC vs. base con TACC) y su evolución **diaria, semanal y mensual**, usando solo tipos de producto con dicotomía celíaca (2–3 EANs representativos por lado, promediados). Brecha **intra-sucursal**, desagregada por provincia, cadena y concentración de comercios. Ver [sección detallada](#brecha-celíaca--06_evolucion_brecha_celiaca). | [![Abrir en Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/santiagoriverti/precios_minoristas_supermercados/blob/main/notebooks/06_evolucion_brecha_celiaca.ipynb) |
 
 > **¿Ves una versión vieja en Colab?** El badge siempre apunta a la última versión en GitHub, pero Colab puede mostrar una copia cacheada de tu Drive. Para forzar la actualización: eliminá el notebook de `Mi unidad/Colab Notebooks/` en Google Drive y volvé a hacer clic en el badge.
 
@@ -489,6 +490,32 @@ Mismo análisis que el Notebook 02 (evolución vs. IPC, provincias, mapas, ranki
 
 ---
 
+## Brecha celíaca — `06_evolucion_brecha_celiaca`
+
+Mide la **brecha** entre una canasta **base** (productos con TACC) y su equivalente **sin-TACC** (canasta celíaca), y su evolución **diaria, semanal y mensual**, desagregada por provincia, cadena y concentración de comercios.
+
+### Metodología (acordada con los investigadores)
+- **Solo tipos con dicotomía celíaca** (fideos, galletitas, pan rallado, harina/premezcla, caldo, almidón…). Nada de limpieza/higiene/otros alimentos: la brecha se reporta sobre esa canasta acotada, sin maquillarla debajo de productos sin dicotomía.
+- **2–3 EANs representativos por lado y por tipo**, promediados: el precio del tipo en una sucursal/día = promedio de los representativos presentes. Si falta uno, los presentes lo cubren → robusto a faltantes y a la elección de "EL" representativo.
+- **Brecha intra-sucursal**: en cada sucursal/día se arman ambas canastas (misma composición de tipos y cantidades) y `brecha = celíaca/base − 1`; recién después se agrega por provincia/cadena/tiempo. Controla el nivel de precios propio de cada sucursal.
+- Agregación por **mediana** (robusta) y **promedio** (outliers fuera), como el resto del proyecto.
+
+### Config (CELDA 1)
+El diccionario `TIPOS` — un tipo por entrada, con `qty`, `tacc: [EANs]`, `sin_tacc: [EANs]`. Viene con una **plantilla de ejemplo** (EANs placeholder) que hay que reemplazar por los EANs reales. Otros parámetros: `MIN_TIPOS` (mínimo de tipos presentes por sucursal/día), `VENTANA_DIARIA_MESES` (la serie diaria usa solo los últimos N meses; semanal y mensual usan todo el histórico).
+
+### Qué genera
+| Salida | Contenido |
+|--------|-----------|
+| `brecha_mensual_MMAAAA.png` / `brecha_diaria_MMAAAA.png` | Evolución de la brecha (mediana + promedio); ¿se mantiene o se amplía? |
+| `brecha_provincia_MMAAAA.png` / `brecha_cadena_MMAAAA.png` | Brecha por provincia y por cadena |
+| `brecha_concentracion_MMAAAA.png` | Brecha vs. nº de sucursales por localidad (scatter + correlación) |
+| `mapa_brecha_MMAAAA.png` | Mapa coroplético de la brecha por provincia |
+| `brecha_celiaca_YYYY-MM.xlsx` | Excel: `Serie_diaria`/`Serie_semanal`/`Serie_mensual`, `Brecha_provincia`, `Brecha_cadena`, `Concentracion`, `Brecha_sucursal`, y **`Detalle_producto`** (precio por sucursal × EAN del último mes, con tipo/rol/descripción) |
+
+> Requiere en `carga/` (Drive) los ZIPs SEPA y `ar.json` (para el mapa). Los maestros se descargan solos desde GitHub. Los días salen de las columnas `precio_YYYYMMDD` de los semestrales.
+
+---
+
 ## Estructura del repositorio
 
 ```
@@ -501,9 +528,11 @@ precios_minoristas_supermercados/
 │   ├── 03_consolidacion_ultimo_mes.py            # Script 3 — misma lógica para correr local
 │   ├── 04_precios_seleccion.ipynb                # Notebook 4 — precios diarios por sucursal cercana a un punto
 │   ├── 05_evolucion_productos_representativos.ipynb # Notebook 5 — análisis tipo Notebook 2 por producto individual (EAN)
+│   ├── 06_evolucion_brecha_celiaca.ipynb        # Notebook 6 — brecha celíaca (TACC vs sin-TACC), diaria/semanal/mensual
 │   ├── gen_nb02.py                               # Script fuente que genera el Notebook 2
 │   ├── gen_nb04.py                               # Script fuente que genera el Notebook 4
-│   └── gen_nb05.py                               # Script fuente que genera el Notebook 5
+│   ├── gen_nb05.py                               # Script fuente que genera el Notebook 5
+│   └── gen_nb06.py                               # Script fuente que genera el Notebook 6
 ├── data/                                # Maestros de referencia (se descargan automáticamente)
 │   ├── Maestro de Productos Interno.xlsx    # ~176K productos con rubro/categoría/subcategoría
 │   ├── maestro_sucursales_completo.xlsx     # 3.611 sucursales con cadena, provincia, región
