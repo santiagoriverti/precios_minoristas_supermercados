@@ -1,6 +1,8 @@
 # SEPA — Referencia Técnica
 
-Última actualización: 2026-06-01 (Celíaca Media + Vegana Básica, sin TACC en SEPA)
+Última actualización: 2026-08-21 (precio por sucursal = mes completo; doble análisis mediana/promedio)
+
+> **Cambio 2026-08-21 (nb02/nb05, CELDA 6/7)**: el precio por sucursal del mes reportado ahora se calcula sobre **todos los días del mes** —mediana de los días y media con outliers fuera— en vez de tomar solo el primer día (`drop_duplicates keep='first'`, eliminado). El promedio descarta valores fuera de `[mediana/4, mediana×4]` antes de promediar (helper `_pmean`, vectorizado en la CELDA 7). Esto DUPLICA los artefactos: análisis mediana (nombres base) y promedio (sufijo `_prom`). Detalle en `.claude/memory.md`.
 
 ## Dos formatos completamente distintos
 

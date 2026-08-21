@@ -6,7 +6,25 @@ Autor: Santiago Riverti — investigador independiente
 
 ---
 
-## 🟢 ESTADO ACTUAL / HANDOFF [2026-07-07]
+## 🟢 ESTADO ACTUAL / HANDOFF [2026-08-21]
+
+**Cambio grande**: nb02 y nb05 ahora generan TODO por duplicado — análisis **MEDIANA** (base, sin sufijo) y análisis **PROMEDIO** (sufijo `_prom`, con outliers fuera). Aplica a: gráficos vs IPC, mapas coropléticos, mapa Folium (**2 HTML**: uno mediana + uno `_prom`), rankings de cadenas, tablas LaTeX (2 `.tex` por canasta/producto), y todas las hojas/columnas del Excel. Detalle completo en la sección **"Feature: análisis MEDIANA + PROMEDIO por duplicado [2026-08-21]"** más abajo.
+
+**Segundo cambio clave**: el precio por sucursal del mes reportado ahora se calcula sobre **TODOS los días del mes** (mediana y promedio), antes era **solo el primer día** (`drop_duplicates keep='first'`). Es lo pedido (más representativo del mes).
+
+**Estado**: commiteado + pusheado a `main`. Ambos generadores regeneran su `.ipynb`; **21/20 celdas compilan** y pasan un **test end-to-end sintético** (celdas 8→20 ejecutadas de verdad con matplotlib/folium/openpyxl: gráficos, 2 mapas Folium, Excel con columnas mediana+prom, hojas geográficas). Validado también el `_calc` de la CELDA 7 (outlier 100x removido del promedio).
+
+**⚠️ Los NIVELES medianos del cuadro cambian respecto de meses previos**: antes el precio por sucursal era el del PRIMER día; ahora es la mediana sobre todos los días. El "nivel" mediano de julio 2026 en adelante NO es comparable 1:1 con informes viejos calculados con el método del primer día.
+
+### Pendientes inmediatos
+1. **Correr en Colab con datos reales** (nb01→nb02 y nb05) y revisar que media y mediana den coherentes en todos los artefactos (gráficos, mapas, rankings, Excel). Todo lo validado hasta ahora fue con datos sintéticos, nunca con Drive real.
+2. **Caché**: al abrir en Colab se reconstruye solo (nombre nuevo `hist_union_..._v2m.parquet`); los `.parquet` viejos quedan huérfanos y se pueden borrar de `output_*/_cache`.
+3. **Mapa GitHub Pages**: ahora hay 2 HTML (`mapa_interactivo_MMAAAA.html` mediana y `..._prom.html`). Elegir cuál subir a `mapa_precios_minoristas`.
+4. **Seguridad**: rotar el PAT de GitHub (expuesto en sesiones jun/jul, nunca hizo falta usarlo — push con credenciales cacheadas).
+
+---
+
+## 🟡 HANDOFF ANTERIOR [2026-07-07]
 
 Proyecto en producción, **5 herramientas** (nb01–nb05). Repo local y `origin/main` **sincronizados**, HEAD = `d8fcfdb`. Sin cambios pendientes de commitear (solo quedan sin trackear, a propósito, `notebooks/out.txt`/`out2.txt` — dumps de debug inofensivos, no son output de ningún notebook real).
 
@@ -28,26 +46,48 @@ Detalle completo de cada punto en las secciones fechadas más abajo.
 
 ---
 
-## Feature: columnas MEDIA (recortada 1%) junto a MEDIANA en los Excel de nb02 y nb05 [2026-08-20]
+## Feature: análisis MEDIANA + PROMEDIO por duplicado [2026-08-21]
 
-Pedido: que los Excel exportados (`canasta_analisis_YYYY-MM.xlsx` y `productos_analisis_YYYY-MM.xlsx`) incluyan los análisis con **precio medio Y mediano** en paralelo. Alcance elegido por el usuario: **serie + cuadro** (NO gráficos, NO mapas, NO hojas geográficas), **columnas gemelas** (no hojas separadas), media **recortada al 1%**.
+Pedido: que nb02 (canastas) y nb05 (productos) generen TODOS los análisis por duplicado —con **valores medianos** y **valores promedio**— y que el usuario elija cuál usar. Además: el precio por sucursal debe ser sobre el mes completo (no el primer día), y el promedio debe sacar outliers. (Supera la feature `_media`/recorte-1% del 2026-08-20.)
 
-**Concepto clave — la mediana↔media vive en 2 niveles:**
-- **Serie temporal** (CELDA 9 `_leer_mes_hist` → `serie_nac_dict`): antes solo `precio_mediano` (mediana nacional de todos los puntos sucursal×día por EAN). Ahora también `precio_medio`.
-- **Cuadro del mes** (CELDA 8 → `serie_prov_dict`/`prom_nac_dict`): mediana provincial + promedio ponderado por población. Ahora además la media recortada provincial y `prom_nac_media_dict`.
+### Convención de nombres
+- **MEDIANA = base, SIN sufijo** (columnas/archivos como estaban: `canasta_total`, `precio_producto`, `mapa_canasta_media_2026-07.png`, `Prov_media`, `tabla_canasta_media_2026-07.tex`, `mapa_interactivo_MMAAAA.html`).
+- **PROMEDIO = sufijo `_prom`** (`canasta_total_prom`, `precio_producto_prom`, `mapa_canasta_media_2026-07_prom.png`, `..._prom.tex`, `mapa_interactivo_MMAAAA_prom.html`, columnas `_prom` en el Excel).
 
-**`_tmean` (media recortada por CONTEO, no por banda de percentil):** definida en CELDA 8 (primer consumidor; CELDA 9 la reusa). `_k = int(n*0.01)` recorta k de cada extremo; si la muestra es chica (n<100) k=0 → media simple (no colapsa hacia la mediana como sí hacía la versión por quantile-band que se descartó). Robusta a los outliers de carga del SEPA.
+### Interpretación COHERENTE (clave)
+Cada análisis usa su estadístico en TODOS los niveles de agregación:
+- **Análisis mediana**: por sucursal = mediana sobre los días → por provincia/cadena/barrio = **mediana** → nacional = mediana provincial ponderada por población.
+- **Análisis promedio**: por sucursal = **media con outliers fuera** sobre los días → por provincia/cadena/barrio = **media con outliers fuera** (`_pmean`) → nacional = ponderado por población de esas medias.
 
-**Cambios por celda (idénticos en `gen_nb02.py` y `gen_nb05.py`):**
-- CELDA 8: define `_tmean`; groupby provincial pasa a `.agg(col='median', col_media=_tmean)`; nuevo dict global `prom_nac_media_dict` (ponderado por población de la media recortada).
-- CELDA 9: `_leer_mes_hist` devuelve `precio_mediano` **y** `precio_medio` (named-agg mixto string+callable). Serie agrega `..._ponderada_media` + `variacion_mensual_media_%`.
-- **Caché versionado:** `hist_union_{key}.parquet` → `hist_union_{key}_v2m.parquet` (esquema nuevo con `precio_medio`). **La primera corrida reconstruye el caché** (los `.parquet` viejos quedan huérfanos, se pueden borrar).
-- Excel CELDA 19: `Evolucion_IPC` gana `canasta_{n}_media`/`precio_{n}_media` + `var_{n}_media_%`; `Prov_*` gana `canasta_total_media`/`precio_producto_media` + `vs_promedio_media_%`; `Ranking_*`/`Rank_*` gana `canasta_mediana`/`precio_mediana` + `vs_mediana_%` (la columna promedio pre-existente ya era una media SIN recortar — se dejó igual para no cambiar números viejos); `Serie_precios` gana `precio_medio` (+ `costo_item_media` en nb02); nb05 hoja `Productos` gana `precio_promedio_media`.
-- Excel CELDA 20 `Valores_Documento`: filas gemelas `— valor (media)` / `— var.mensual (media)` (y en nb02 `Canasta media valor (media)`). Las stats de dispersión/percentiles (P25/P75, dispersión inter-sucursal) siguen SOLO en su versión original — no tienen un análogo media/mediana simple.
+### `_pmean` — promedio robusto (banda relativa a la mediana)
+Definido en la CELDA 6 de ambos generadores. En cada grupo descarta los valores fuera de **[mediana/4, mediana×4]** y recién después promedia. Saca los errores gruesos del SEPA (100x, centavos sueltos, $569.471) a CUALQUIER tamaño de muestra (a diferencia de un recorte por percentil, que no recorta nada en muestras chicas). Para el groupby GRANDE (sucursal×EAN sobre días) se usa una versión VECTORIZADA equivalente en la CELDA 7 (`transform('median')` + máscara + `mean`), por rendimiento. Descartada una versión previa `_tmean` (recorte 1% por conteo) que no removía outliers en muestras chatas.
 
-**Lo que NO cambió (a propósito, por el alcance elegido):** gráficos vs IPC (CELDA 11/12 referencian columnas por nombre → las nuevas columnas viajan en el DF pero no se grafican), mapas coropléticos/Folium, cuadro LaTeX de CELDA 13 (itera columnas puntuales, no se filtra), y las 4 hojas geográficas de nb02 (belgrano/CABA/Pinamar/costa).
+### Cambios por celda (idénticos en ambos, salvo canasta↔producto)
+- **CELDA 6**: ya NO deduplica (`drop_duplicates keep='first'` eliminado) → conserva todas las obs (sucursal×día) del mes; define `_pmean`. Antes el precio por sucursal era el del PRIMER día.
+- **CELDA 7**: `precio_mes` trae `precio_mediana` y `precio_prom` (mediana / media-sin-outliers sobre los días, vectorizado). nb02: `_calc` arma DOS costos de canasta por sucursal (`canasta_total`, `canasta_total_prom`) con doble imputación (ref. nacional mediana vs promedio). nb05: `producto_geo_dict` trae `precio_producto` y `precio_producto_prom`.
+- **CELDA 8**: `serie_prov_dict` con ambas columnas; `prom_nac_dict` (mediana) + nuevo `prom_nac_prom_dict` (promedio).
+- **CELDA 9**: `_leer_mes_hist` devuelve `precio_mediano` y `precio_medio` (=`_pmean`). Serie nacional con `..._ponderada`/`_ponderado` + gemela `_prom`, y `variacion_mensual_%`/`_prom_%`. **Caché versionado a `hist_union_..._v2m.parquet`** (esquema con la columna nueva; se reconstruye la 1ª corrida).
+- **CELDA 11**: agrega `idx_canasta_base_prom` / `idx_producto_base_prom` al df de gráficos.
+- **CELDA 12 (gráficos)**: loop `_MEDIDAS_G` → 2 juegos de PNG (índices, variaciones, ranking absoluto).
+- **CELDA 13 (LaTeX)**: 2 `.tex` por canasta/producto (`_prom`), con `_TIT` en caption y label único.
+- **CELDA 14 (coropléticos)**: 2 PNG por canasta/producto.
+- **CELDA 16 (rankings de cadenas)**: 2 PNG + prints; mediana = mediana por cadena, promedio = `_pmean` por cadena. (Antes el ranking era una media simple.)
+- **CELDA 17 (Folium)**: **2 HTML** (`mapa_interactivo_MMAAAA.html` y `..._prom.html`). Decisión del usuario: dos archivos separados, no un toggle.
+- **CELDA 18 (barrios CABA)**: prints por partida doble (mediana / promedio).
+- **CELDA 19 (Excel)**: `Evolucion_IPC` con `_prom`; `Prov_*` con base + `_prom` + `vs_promedio(_prom)_%`; `Ranking_/Rank_*` con `canasta_mediana`+`canasta_prom` (nb05: `precio_mediana`+`precio_prom`) + vs_; `Sucs_*` con la columna `_prom`; `Serie_precios` con `precio_prom` (nb02 además `costo_item_prom`); nb05 hoja `Productos` con `precio_mediana`+`precio_prom`; nb02 hojas geográficas (belgrano/CABA/Pinamar/costa) con `canasta_mediana`+`canasta_prom` y `vs_pais(_prom)_%`.
+- **CELDA 20 (Valores_Documento)**: filas gemelas `(prom)` para valores y variaciones. Las stats de dispersión/percentiles (P25/P75, dispersión inter-sucursal) siguen SOLO en versión mediana (no tienen análogo media/mediana simple).
 
-**Validación:** las 21/20 celdas compilan (`compile()` por celda tras regenerar). Mecánica pandas testeada en aislamiento con outlier (media recortada saca la basura, mediana y media simple contrastadas; named-agg mixto OK; ponderación por población OK). **Pendiente del usuario:** correr en Colab con datos reales para confirmar los valores media/mediana (los tests fueron sintéticos/aislados, sin Drive). Nota: al abrir en Colab, borrar el caché viejo o dejar que se reconstruya (nombre `_v2m` nuevo).
+### Cómo se implementó (para reproducir/mantener)
+Las celdas grandes de matplotlib/folium se reescribieron envueltas en un loop `for _SFX,_TIT,_VCOL,...:` (o wrap por script) para NO duplicar código y evitar errores de reindentado. Los generadores son la fuente de verdad; `python notebooks/gen_nb02.py` y `python notebooks/gen_nb05.py` regeneran los `.ipynb`. Los scripts de splice/wrap usados quedaron en el scratchpad de la sesión (no versionados).
+
+### Validación
+- `ast.parse` de ambos generadores OK; **todas las celdas compilan** (nb02 21/21, nb05 20/20).
+- **Test end-to-end sintético**: `_pmean` y `_calc` con outlier 100x (removido del promedio, no de la mediana), + celdas 8→20 ejecutadas de verdad con matplotlib Agg + folium + openpyxl → ambos notebooks generan gráficos, 2 mapas Folium, rankings, LaTeX y el Excel con hojas/columnas mediana+prom, sin errores de runtime.
+- **Pendiente**: validar con datos reales en Colab.
+
+### Nota — qué revelan los datos (de la revisión con julio 2026 real, pre-cambio)
+- **Canastas** (nb02): media ≈ mediana (canastas grandes, bien comportadas) → la media es chequeo de robustez.
+- **Productos** (nb05): la mediana se "cuantiza" a precios redondos (ej. Coca 2300→2500 con muchos 0% de variación); la media captura mejor la trayectoria mensual. Para productos con precio de lista pegajoso, la media es MÁS informativa que la mediana.
 
 ## Feature: 4 hojas de detalle geográfico en nb02 [2026-08-03]
 

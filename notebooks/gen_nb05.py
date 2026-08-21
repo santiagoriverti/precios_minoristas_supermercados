@@ -455,8 +455,21 @@ if not acumulador:
 
 datos = pd.concat(acumulador, ignore_index=True)
 del acumulador; gc.collect()
-datos = datos.drop_duplicates(
-    subset=['id_comercio','id_bandera','id_sucursal','ean_norm'], keep='first')
+# NO se deduplica: se conservan TODAS las observaciones (sucursal x dia) del mes.
+# El precio por sucursal (mediana Y promedio sobre los dias) se calcula en CELDA 7.
+
+# ── Promedio con outliers fuera (banda relativa a la mediana) ────────────────
+# Para el analisis PROMEDIO: en cada grupo se descartan los valores fuera de
+# [mediana/4, mediana x4] (errores gruesos del SEPA) y recien despues se promedia.
+# Robusto a cualquier tamano de muestra. Version VECTORIZADA equivalente en CELDA 7.
+def _pmean(_s):
+    _s = pd.to_numeric(_s, errors='coerce').dropna()
+    if len(_s) == 0: return float('nan')
+    _m = _s.median()
+    if _m and _m > 0:
+        _f = _s[(_s >= _m/4) & (_s <= _m*4)]
+        if len(_f) > 0: _s = _f
+    return _s.mean()
 
 # Factor centavos->pesos: se ancla a los EANs de referencia (muestra robusta,
 # independiente de cuántos productos pidió el usuario). Si por algún motivo
@@ -470,7 +483,8 @@ if FACTOR == 100:
 else:
     print(f'Factor: {FACTOR} (ya en pesos)')
 
-print(f'Datos: {len(datos):,} obs | {datos.groupby(["id_comercio","id_bandera","id_sucursal"]).ngroups:,} sucursales')
+_n_suc = datos.groupby(['id_comercio','id_bandera','id_sucursal']).ngroups
+print(f'Observaciones (sucursal x dia): {len(datos):,} | Sucursales: {_n_suc:,}')
 print(f'EANs con datos: {datos["ean_norm"].nunique()} / {N_PRODUCTOS} (productos consultados)')"""))
 
 # ── CELL 7 — PER-SUCURSAL PRICES (multi-producto) ─────────────────────────────
@@ -481,8 +495,15 @@ cells.append(cell_code("""\
 # A diferencia de una canasta (varios productos ponderados, con imputación por
 # mediana nacional si falta un producto), acá cada 'producto' es un único EAN:
 # una sucursal aparece para un producto SOLO si lo vende (sin imputación).
-precio_mes = (datos.groupby(['id_comercio','id_bandera','id_sucursal','ean_norm'])
-              ['precio'].mean().reset_index())
+# Precio por sucursal-EAN agregando sobre TODOS los dias del mes:
+#   precio_mediana = mediana de los dias | precio_prom = media con outliers fuera
+_keys = ['id_comercio','id_bandera','id_sucursal','ean_norm']
+_med_dia = datos.groupby(_keys)['precio'].transform('median')
+_mask_ok = (datos['precio'] >= _med_dia/4) & (datos['precio'] <= _med_dia*4)
+_gm = datos.groupby(_keys)['precio'].median().rename('precio_mediana')
+_gp = datos[_mask_ok].groupby(_keys)['precio'].mean().rename('precio_prom')
+precio_mes = pd.concat([_gm, _gp], axis=1).reset_index()
+precio_mes['precio_prom'] = precio_mes['precio_prom'].fillna(precio_mes['precio_mediana'])
 precio_mes = precio_mes[~precio_mes['id_comercio'].isin(CADENAS_FILTRAR)].copy()
 
 # ── Bboxes y función de geocodificación ─────────────────────────────────────
@@ -562,8 +583,9 @@ for _pid, _prod in PRODUCTOS.items():
     _ean  = next(iter(_prod))   # único EAN de este producto
 
     _suc  = (precio_mes[precio_mes['ean_norm'] == _ean]
-             [['id_comercio','id_bandera','id_sucursal','precio']]
-             .rename(columns={'precio': 'precio_producto'}))
+             [['id_comercio','id_bandera','id_sucursal','precio_mediana','precio_prom']]
+             .rename(columns={'precio_mediana': 'precio_producto',
+                              'precio_prom': 'precio_producto_prom'}))
     _pgeo = _suc.merge(suc_geo_clean, on=['id_comercio','id_bandera','id_sucursal'], how='inner')
     producto_geo_dict[_pid] = _pgeo.copy()
     if len(_pgeo) > 0:
@@ -590,42 +612,33 @@ def fmt_ar(x, dec=0):
     s = f'{x:,.{dec}f}'
     return s.replace(',','X').replace('.',',').replace('X','.')
 
-# _tmean: media RECORTADA al 1% (descarta el 1% inferior y superior antes de
-# promediar). Robusta a los outliers de carga del SEPA; se usa para TODAS las
-# columnas 'media' nuevas. Se define aca porque la CELDA 8 es el primer consumidor
-# (tambien la usa _leer_mes_hist en la CELDA 9, que corre despues).
-def _tmean(_s, _p=0.01):
-    _s = pd.to_numeric(_s, errors='coerce').dropna().sort_values()
-    _n = len(_s)
-    if _n == 0: return float('nan')
-    _k = int(_n * _p)   # cuantos recortar de CADA extremo (0 si la muestra es chica)
-    if _k > 0: _s = _s.iloc[_k:_n - _k]
-    return _s.mean() if len(_s) else float('nan')
-
-serie_prov_dict     = {}   # pid -> serie_provincia_valida (mediana + media por provincia)
-prom_nac_dict       = {}   # pid -> precio nacional ponderado MEDIANA (NaN si sin datos)
-prom_nac_media_dict = {}   # pid -> precio nacional ponderado MEDIA recortada (NaN si sin datos)
+serie_prov_dict     = {}   # pid -> provincia: precio_producto (mediana) + precio_producto_prom (promedio)
+prom_nac_dict       = {}   # pid -> nacional ponderado por poblacion — MEDIANA (NaN si sin datos)
+prom_nac_prom_dict  = {}   # pid -> nacional ponderado por poblacion — PROMEDIO outliers fuera (NaN si sin datos)
 
 for _pid in PRODUCTOS_ACTIVOS:
     _pgeo = producto_geo_dict[_pid]
     if len(_pgeo) == 0:
-        serie_prov_dict[_pid]     = pd.DataFrame(columns=['mes','provincia','precio_producto','precio_producto_media'])
-        prom_nac_dict[_pid]       = float('nan')
-        prom_nac_media_dict[_pid] = float('nan')
+        serie_prov_dict[_pid]    = pd.DataFrame(columns=['mes','provincia','precio_producto','precio_producto_prom'])
+        prom_nac_dict[_pid]      = float('nan')
+        prom_nac_prom_dict[_pid] = float('nan')
         continue
-    _cpp  = (_pgeo.groupby('PROVINCIA_NORM')['precio_producto']
-             .agg(precio_producto='median', precio_producto_media=_tmean).reset_index()
+    # MEDIANA : mediana provincial del precio mediano por sucursal.
+    # PROMEDIO: media provincial (outliers fuera, _pmean) del precio promedio por sucursal.
+    _cpp  = (_pgeo.groupby('PROVINCIA_NORM')
+             .agg(precio_producto=('precio_producto','median'),
+                  precio_producto_prom=('precio_producto_prom', _pmean)).reset_index()
              .rename(columns={'PROVINCIA_NORM':'provincia'}))
     _cpp['mes']  = PERIODO
     _cpp['peso'] = _cpp['provincia'].map(PESOS_POBLACION).fillna(0)
     _pob = _cpp[_cpp['peso'] > 0]['peso'].sum()
-    _prom = ((_cpp['precio_producto'] * _cpp['peso']).sum() / _pob
-             if _pob > 0 else _cpp['precio_producto'].mean())
-    _prom_media = ((_cpp['precio_producto_media'] * _cpp['peso']).sum() / _pob
-                   if _pob > 0 else _cpp['precio_producto_media'].mean())
-    serie_prov_dict[_pid]     = _cpp[['mes','provincia','precio_producto','precio_producto_media']].copy()
-    prom_nac_dict[_pid]       = _prom
-    prom_nac_media_dict[_pid] = _prom_media
+    _prom      = ((_cpp['precio_producto'] * _cpp['peso']).sum() / _pob
+                  if _pob > 0 else _cpp['precio_producto'].mean())
+    _prom_prom = ((_cpp['precio_producto_prom'] * _cpp['peso']).sum() / _pob
+                  if _pob > 0 else _cpp['precio_producto_prom'].mean())
+    serie_prov_dict[_pid]    = _cpp[['mes','provincia','precio_producto','precio_producto_prom']].copy()
+    prom_nac_dict[_pid]      = _prom
+    prom_nac_prom_dict[_pid] = _prom_prom
 
 print(f'=== CUADRO: Precio por provincia — {NOMBRE_MES_TITLE} ===')
 for _pid in _prods_con_datos:
@@ -708,7 +721,7 @@ def _leer_mes_hist(_lbl):
     _fac = 100 if _med_ref > 10_000 else 1
     if _fac == 100: _df_m['precio'] /= 100
     _agg = (_df_m.groupby('ean_norm')['precio']
-            .agg(precio_mediano='median', precio_medio=_tmean).reset_index())
+            .agg(precio_mediano='median', precio_medio=_pmean).reset_index())
     _agg['anio_mes'] = _lbl
     del _df_m, _all_rows, _muestra_ref; gc.collect()
     return _agg
@@ -760,22 +773,22 @@ for _pid, _prod in PRODUCTOS.items():
         # dejar que .map()/.round() corran sobre un DataFrame vacío de origen
         # produce columnas dtype=object y .round() falla más abajo.
         serie_nac_dict[_pid] = pd.DataFrame(columns=[
-            'mes','precio_nacional_ponderado','precio_nacional_ponderado_media','n_eans',
-            'variacion_mensual_%','variacion_mensual_media_%','indice_precio_base100'])
+            'mes','precio_nacional_ponderado','precio_nacional_ponderado_prom','n_eans',
+            'variacion_mensual_%','variacion_mensual_prom_%','indice_precio_base100'])
         print(f'  [{_name}] 0 meses | sin datos históricos (revisar EAN)')
         continue
     _dh['qty']              = _dh['ean_norm'].map(lambda e, c=_prod: c.get(e,('?',0,'?'))[1]).astype(float)
-    _dh['costo_item']       = _dh['precio_mediano'].astype(float) * _dh['qty']
-    _dh['costo_item_media'] = _dh['precio_medio'].astype(float)   * _dh['qty']
+    _dh['costo_item']      = _dh['precio_mediano'].astype(float) * _dh['qty']
+    _dh['costo_item_prom'] = _dh['precio_medio'].astype(float)   * _dh['qty']
     _sn = (_dh.groupby('anio_mes')
            .agg(precio_nacional_ponderado=('costo_item','sum'),
-                precio_nacional_ponderado_media=('costo_item_media','sum'),
+                precio_nacional_ponderado_prom=('costo_item_prom','sum'),
                 n_eans=('ean_norm','nunique'))
            .reset_index().rename(columns={'anio_mes':'mes'})
            .sort_values('mes').reset_index(drop=True))
     _sn = _sn[_sn['mes'] >= MES_INICIO_HISTORICO].copy()
-    _sn['variacion_mensual_%']       = _sn['precio_nacional_ponderado'].pct_change() * 100
-    _sn['variacion_mensual_media_%'] = _sn['precio_nacional_ponderado_media'].pct_change() * 100
+    _sn['variacion_mensual_%']      = _sn['precio_nacional_ponderado'].pct_change() * 100
+    _sn['variacion_mensual_prom_%'] = _sn['precio_nacional_ponderado_prom'].pct_change() * 100
     _bv = _sn['precio_nacional_ponderado'].iloc[0] if len(_sn) > 0 else 1
     _sn['indice_precio_base100'] = (_sn['precio_nacional_ponderado'] / _bv * 100).round(2)
     serie_nac_dict[_pid] = _sn.copy()
@@ -876,10 +889,12 @@ for _pid in PRODUCTOS_ACTIVOS:
         _mg = _comp['mes'].min()
     _dg = _comp[_comp['mes'] >= _mg].copy().reset_index(drop=True)
     _bg  = _dg['precio_nacional_ponderado'].iloc[0]
+    _bgp = _dg['precio_nacional_ponderado_prom'].iloc[0]
     _big = _dg['ipc_general'].dropna().iloc[0] if _dg['ipc_general'].notna().any() else 1
     _bia = _dg['ipc_alimentos'].dropna().iloc[0] if _dg['ipc_alimentos'].notna().any() else 1
     _lbl = _mg[5:7] + '-' + _mg[2:4]
-    _dg['idx_producto_base']      = (_dg['precio_nacional_ponderado'] / _bg  * 100).round(2)
+    _dg['idx_producto_base']      = (_dg['precio_nacional_ponderado']      / _bg  * 100).round(2)
+    _dg['idx_producto_base_prom'] = (_dg['precio_nacional_ponderado_prom'] / _bgp * 100).round(2)
     _dg['idx_ipc_general_base']   = (_dg['ipc_general']               / _big * 100).round(2)
     _dg['idx_ipc_alimentos_base'] = (_dg['ipc_alimentos']             / _bia * 100).round(2)
     _dg['fecha'] = pd.to_datetime(_dg['mes'] + '-01')
@@ -896,11 +911,11 @@ for _pid in PRODUCTOS_ACTIVOS:
 # ── CELL 12 — CHARTS (multi-producto) ──────────────────────────────────────────
 cells.append(cell_code("""\
 # ============================================================
-# CELDA 12 — Gráficos: índices y variaciones (todos los productos)
+# CELDA 12 — Gráficos: índices y variaciones (MEDIANA y PROMEDIO, por duplicado)
 # ============================================================
+# Cada gráfico se genera DOS veces: análisis MEDIANA (sin sufijo) y PROMEDIO (_prom).
 COLOR_IPC_GEN = '#D62728'
 COLOR_IPC_ALI = '#FF7F0E'
-out1 = out2 = None
 
 _MESES_ES = {1:'ene',2:'feb',3:'mar',4:'abr',5:'may',6:'jun',
              7:'jul',8:'ago',9:'sep',10:'oct',11:'nov',12:'dic'}
@@ -911,150 +926,155 @@ def _fmt_mes_es(x, pos):
     except Exception:
         return ''
 
-# Productos con datos
 _activos_con_datos = [p for p in PRODUCTOS_ACTIVOS if not _serie_vacia_dict[p] and len(df_g_dict[p]) > 0]
 if not _activos_con_datos:
     print('AVISO: Sin serie histórica para ningún producto. Saltando gráficos de índices.')
 else:
-    # Usar el lbl_base del primer producto activo con datos
     _lbl_base = _lbl_base_dict[_activos_con_datos[0]]
-
-    # ── GRAFICO 1: Índices base ─────────────────────────────────────────────
-    fig1, ax1 = plt.subplots(figsize=(13, 6))
-    for _pid in _activos_con_datos:
-        _dg   = df_g_dict[_pid]
-        _name = PRODUCTO_NOMBRES[_pid]
-        ax1.plot(_dg['fecha'], _dg['idx_producto_base'],
-                 color=PRODUCTO_COLORS[_pid], linewidth=2.5,
-                 linestyle=PRODUCTO_LINESTYLES[_pid],
-                 marker=PRODUCTO_MARKERS[_pid], markersize=5,
-                 label=_name)
-        _ult = _dg.iloc[-1]
-        ax1.annotate(f"{_ult['idx_producto_base']:.0f}",
-                     xy=(_ult['fecha'], _ult['idx_producto_base']),
-                     xytext=(8, 0), textcoords='offset points',
-                     color=PRODUCTO_COLORS[_pid], fontweight='bold', fontsize=9)
     _dg0 = df_g_dict[_activos_con_datos[0]]
-    if _dg0['idx_ipc_general_base'].notna().any():
-        ax1.plot(_dg0['fecha'], _dg0['idx_ipc_general_base'],
-                 color=COLOR_IPC_GEN, linewidth=1.8, linestyle='--', marker='s', markersize=4,
-                 label='IPC INDEC - Nivel general')
-        _iu = _dg0.dropna(subset=['idx_ipc_general_base']).iloc[-1]
-        ax1.annotate(f"{_iu['idx_ipc_general_base']:.0f}",
-                     xy=(_iu['fecha'], _iu['idx_ipc_general_base']),
-                     xytext=(8,-3), textcoords='offset points',
-                     color=COLOR_IPC_GEN, fontweight='bold', fontsize=9)
-    if _dg0['idx_ipc_alimentos_base'].notna().any():
-        ax1.plot(_dg0['fecha'], _dg0['idx_ipc_alimentos_base'],
-                 color=COLOR_IPC_ALI, linewidth=1.8, linestyle=':', marker='^', markersize=4,
-                 label='IPC INDEC - Alimentos y bebidas')
-        _ia = _dg0.dropna(subset=['idx_ipc_alimentos_base']).iloc[-1]
-        ax1.annotate(f"{_ia['idx_ipc_alimentos_base']:.0f}",
-                     xy=(_ia['fecha'], _ia['idx_ipc_alimentos_base']),
-                     xytext=(8,3), textcoords='offset points',
-                     color=COLOR_IPC_ALI, fontweight='bold', fontsize=9)
-    ax1.set_ylabel(f'Índice ({_lbl_base} = 100)', fontsize=11)
-    ax1.legend(loc='upper left', fontsize=8, framealpha=0.95, ncol=max(1, len(_activos_con_datos)//10+1))
-    ax1.grid(True, alpha=0.3)
-    ax1.xaxis.set_major_locator(mdates.MonthLocator(interval=1))
-    ax1.xaxis.set_major_formatter(mticker.FuncFormatter(_fmt_mes_es))
-    plt.setp(ax1.xaxis.get_majorticklabels(), rotation=45, ha='right')
-    if MES_PARCIAL:
-        ax1.set_title(f'Último mes ({NOMBRE_MES_TITLE}) PARCIAL — {DIAS_CARGADOS}/{DIAS_MES} días · última variación preliminar',
-                      fontsize=10, color='#C00000', style='italic', pad=8)
-    plt.tight_layout()
-    out1 = OUTPUT_DIR / f'indices_productos_vs_ipc_{MES}.png'
-    plt.savefig(out1, dpi=600, bbox_inches='tight', facecolor='white')
-    plt.show()
-    print(f'Gráfico 1 guardado: {out1}')
+    _MEDIDAS_G = [
+        ('',      'mediana',  'idx_producto_base',      'variacion_mensual_%',      prom_nac_dict),
+        ('_prom', 'promedio', 'idx_producto_base_prom', 'variacion_mensual_prom_%', prom_nac_prom_dict),
+    ]
+    for _SFX, _TIT, _IDXCOL, _VARCOL, _PROMD in _MEDIDAS_G:
 
-    # ── GRAFICO 2: Variaciones mensuales (solo barras verticales) ───────────────
-    # Productos activos + IPC General + IPC Alimentos como barras agrupadas
-    _series_bar = (
-        [(PRODUCTO_COLORS[p], PRODUCTO_NOMBRES[p], df_g_dict[p]['variacion_mensual_%'])
-         for p in _activos_con_datos] +
-        [(COLOR_IPC_GEN, 'IPC INDEC - Nivel general', _dg0['ipc_general_var_%']),
-         (COLOR_IPC_ALI, 'IPC INDEC - Alimentos y bebidas', _dg0['ipc_alimentos_var_%'])]
-    )
-    _n_b    = len(_series_bar)
-    # Ancho y figura adaptados al número de series: más series → más ancho, barras más anchas
-    _fig_w  = max(20, _n_b * 2 + 10)
-    _bw2    = pd.Timedelta(days=max(1, int(22 / max(_n_b, 1))))
-    _offs2  = [(_i - (_n_b - 1) / 2) * _bw2 for _i in range(_n_b)]
-    _tick_i = 2 if _n_b > 5 else 1   # ticks cada 2 meses con muchas series
-    fig2, ax2 = plt.subplots(figsize=(_fig_w, 8))
-    for _i, (_col, _lbl, _vals) in enumerate(_series_bar):
-        if _vals.notna().any():
-            _alpha = 0.88 if _i < len(_activos_con_datos) else 0.72
-            ax2.bar(_dg0['fecha'] + _offs2[_i], _vals,
-                    width=_bw2, color=_col, alpha=_alpha, label=_lbl, edgecolor='none')
-    ax2.axhline(0, color='#444444', linewidth=0.8)
-    ax2.set_ylabel('Variación mensual (%)', fontsize=11)
-    ax2.legend(loc='upper right', fontsize=8, framealpha=0.95,
-               ncol=max(1, _n_b // 4 + 1))
-    ax2.grid(True, alpha=0.2, axis='y', linewidth=0.7)
-    ax2.xaxis.set_major_locator(mdates.MonthLocator(interval=_tick_i))
-    ax2.xaxis.set_major_formatter(mticker.FuncFormatter(_fmt_mes_es))
-    plt.setp(ax2.xaxis.get_majorticklabels(), rotation=45, ha='right', fontsize=9)
-    for sp in ['top', 'right']: ax2.spines[sp].set_visible(False)
-    ax2.spines['bottom'].set_color('#cccccc')
-    ax2.spines['left'].set_color('#cccccc')
-    _vmax_l2 = [s.dropna().max() for _,_,s in _series_bar if s.notna().any()]
-    if _vmax_l2: ax2.set_ylim(top=max(_vmax_l2) * 1.35)
-    if MES_PARCIAL:
-        ax2.set_title(f'Último mes ({NOMBRE_MES_TITLE}) PARCIAL — {DIAS_CARGADOS}/{DIAS_MES} días · variación preliminar (subestimada)',
-                      fontsize=10, color='#C00000', style='italic', pad=8)
-    plt.tight_layout()
-    out2 = OUTPUT_DIR / f'variaciones_productos_vs_ipc_{MES}.png'
-    plt.savefig(out2, dpi=600, bbox_inches='tight', facecolor='white')
-    plt.show()
-    print(f'Gráfico 2 guardado: {out2}')
+        # ── GRAFICO 1: Índices base ─────────────────────────────────────────────
+        fig1, ax1 = plt.subplots(figsize=(13, 6))
+        for _pid in _activos_con_datos:
+            _dg   = df_g_dict[_pid]
+            _name = PRODUCTO_NOMBRES[_pid]
+            ax1.plot(_dg['fecha'], _dg[_IDXCOL],
+                     color=PRODUCTO_COLORS[_pid], linewidth=2.5,
+                     linestyle=PRODUCTO_LINESTYLES[_pid],
+                     marker=PRODUCTO_MARKERS[_pid], markersize=5,
+                     label=_name)
+            _ult = _dg.iloc[-1]
+            ax1.annotate(f"{_ult[_IDXCOL]:.0f}",
+                         xy=(_ult['fecha'], _ult[_IDXCOL]),
+                         xytext=(8, 0), textcoords='offset points',
+                         color=PRODUCTO_COLORS[_pid], fontweight='bold', fontsize=9)
+        if _dg0['idx_ipc_general_base'].notna().any():
+            ax1.plot(_dg0['fecha'], _dg0['idx_ipc_general_base'],
+                     color=COLOR_IPC_GEN, linewidth=1.8, linestyle='--', marker='s', markersize=4,
+                     label='IPC INDEC - Nivel general')
+            _iu = _dg0.dropna(subset=['idx_ipc_general_base']).iloc[-1]
+            ax1.annotate(f"{_iu['idx_ipc_general_base']:.0f}",
+                         xy=(_iu['fecha'], _iu['idx_ipc_general_base']),
+                         xytext=(8,-3), textcoords='offset points',
+                         color=COLOR_IPC_GEN, fontweight='bold', fontsize=9)
+        if _dg0['idx_ipc_alimentos_base'].notna().any():
+            ax1.plot(_dg0['fecha'], _dg0['idx_ipc_alimentos_base'],
+                     color=COLOR_IPC_ALI, linewidth=1.8, linestyle=':', marker='^', markersize=4,
+                     label='IPC INDEC - Alimentos y bebidas')
+            _ia = _dg0.dropna(subset=['idx_ipc_alimentos_base']).iloc[-1]
+            ax1.annotate(f"{_ia['idx_ipc_alimentos_base']:.0f}",
+                         xy=(_ia['fecha'], _ia['idx_ipc_alimentos_base']),
+                         xytext=(8,3), textcoords='offset points',
+                         color=COLOR_IPC_ALI, fontweight='bold', fontsize=9)
+        ax1.set_ylabel(f'Índice ({_lbl_base} = 100)', fontsize=11)
+        ax1.legend(loc='upper left', fontsize=8, framealpha=0.95, ncol=max(1, len(_activos_con_datos)//10+1))
+        ax1.grid(True, alpha=0.3)
+        ax1.xaxis.set_major_locator(mdates.MonthLocator(interval=1))
+        ax1.xaxis.set_major_formatter(mticker.FuncFormatter(_fmt_mes_es))
+        plt.setp(ax1.xaxis.get_majorticklabels(), rotation=45, ha='right')
+        _t1 = f'Índices de productos vs IPC — análisis {_TIT}'
+        if MES_PARCIAL:
+            _t1 += f'  ·  {NOMBRE_MES_TITLE} PARCIAL {DIAS_CARGADOS}/{DIAS_MES} días (preliminar)'
+        ax1.set_title(_t1, fontsize=10, color=('#C00000' if MES_PARCIAL else '#333'),
+                      style=('italic' if MES_PARCIAL else 'normal'), pad=8)
+        plt.tight_layout()
+        out1 = OUTPUT_DIR / f'indices_productos_vs_ipc_{MES}{_SFX}.png'
+        plt.savefig(out1, dpi=600, bbox_inches='tight', facecolor='white')
+        plt.show()
+        print(f'Gráfico 1 [{_TIT}] guardado: {out1}')
 
-    # ── GRAFICO 3: Ranking de precios absolutos por producto ────────────────────
-    _abs_data = sorted(
-        [(PRODUCTO_NOMBRES[p], prom_nac_dict[p], PRODUCTO_COLORS[p])
-         for p in PRODUCTOS_ACTIVOS if not pd.isna(prom_nac_dict[p])],
-        key=lambda x: x[1])
-    _pnames  = [d[0] for d in _abs_data]
-    _pvals   = [d[1] for d in _abs_data]
-    _pcolors = [d[2] for d in _abs_data]
-    _base_v  = _pvals[0] if _pvals else 1   # producto más barato como referencia
-    _n_bars  = len(_pvals)
-    fig3, ax3 = plt.subplots(figsize=(12, max(5, _n_bars * 0.5 + 2)))
-    bars3 = ax3.barh(_pnames, _pvals, color=_pcolors,
-                     edgecolor='none', height=0.55, zorder=2)
-    ax3.barh(_pnames, _pvals, color='black', alpha=0.06,
-             height=0.60, zorder=1)
-    ax3.axvline(_base_v, color='#aaaaaa', linewidth=1.2, linestyle='--', zorder=3)
-    for bar, val, name in zip(bars3, _pvals, _pnames):
-        _ratio = val / _base_v if _base_v > 0 else 1
-        _ratio_str = f'  ×{_ratio:.1f}' if _ratio > 1.05 else '  base'
-        ax3.text(val + max(_pvals) * 0.008,
-                 bar.get_y() + bar.get_height() / 2,
-                 f'${val:,.2f}'.replace(',', 'X').replace('.', ',').replace('X', '.') + _ratio_str,
-                 va='center', fontsize=10, fontweight='bold',
-                 color='#2c3e50')
-    ax3.set_yticklabels(_pnames, fontsize=10, fontweight='bold')
-    ax3.set_xlabel('Precio promedio nacional (ARS)', fontsize=11, color='#444')
-    ax3.xaxis.set_major_formatter(mticker.FuncFormatter(
-        lambda x, _: f'${x:,.0f}'.replace(',', '.')))
-    ax3.set_xlim(0, max(_pvals) * 1.25)
-    ax3.tick_params(axis='x', labelsize=10, colors='#555')
-    ax3.grid(True, alpha=0.25, axis='x', zorder=0); ax3.set_axisbelow(True)
-    for sp in ['top', 'right', 'left']: ax3.spines[sp].set_visible(False)
-    ax3.spines['bottom'].set_color('#cccccc')
-    fig3.text(0.98, 0.01, f'{NOMBRE_MES_TITLE}{SUFIJO_PARCIAL}',
-              ha='right', va='bottom', fontsize=9, color=('#C00000' if MES_PARCIAL else '#999'))
-    plt.tight_layout()
-    out3 = OUTPUT_DIR / f'ranking_productos_{MES}.png'
-    plt.savefig(out3, dpi=600, bbox_inches='tight', facecolor='white')
-    plt.show()
-    print(f'Gráfico 3 guardado: {out3}')"""))
+        # ── GRAFICO 2: Variaciones mensuales (barras agrupadas) ─────────────────
+        _series_bar = (
+            [(PRODUCTO_COLORS[p], PRODUCTO_NOMBRES[p], df_g_dict[p][_VARCOL])
+             for p in _activos_con_datos] +
+            [(COLOR_IPC_GEN, 'IPC INDEC - Nivel general', _dg0['ipc_general_var_%']),
+             (COLOR_IPC_ALI, 'IPC INDEC - Alimentos y bebidas', _dg0['ipc_alimentos_var_%'])]
+        )
+        _n_b    = len(_series_bar)
+        _fig_w  = max(20, _n_b * 2 + 10)
+        _bw2    = pd.Timedelta(days=max(1, int(22 / max(_n_b, 1))))
+        _offs2  = [(_i - (_n_b - 1) / 2) * _bw2 for _i in range(_n_b)]
+        _tick_i = 2 if _n_b > 5 else 1
+        fig2, ax2 = plt.subplots(figsize=(_fig_w, 8))
+        for _i, (_col, _lbl, _vals) in enumerate(_series_bar):
+            if _vals.notna().any():
+                _alpha = 0.88 if _i < len(_activos_con_datos) else 0.72
+                ax2.bar(_dg0['fecha'] + _offs2[_i], _vals,
+                        width=_bw2, color=_col, alpha=_alpha, label=_lbl, edgecolor='none')
+        ax2.axhline(0, color='#444444', linewidth=0.8)
+        ax2.set_ylabel('Variación mensual (%)', fontsize=11)
+        ax2.legend(loc='upper right', fontsize=8, framealpha=0.95,
+                   ncol=max(1, _n_b // 4 + 1))
+        ax2.grid(True, alpha=0.2, axis='y', linewidth=0.7)
+        ax2.xaxis.set_major_locator(mdates.MonthLocator(interval=_tick_i))
+        ax2.xaxis.set_major_formatter(mticker.FuncFormatter(_fmt_mes_es))
+        plt.setp(ax2.xaxis.get_majorticklabels(), rotation=45, ha='right', fontsize=9)
+        for sp in ['top', 'right']: ax2.spines[sp].set_visible(False)
+        ax2.spines['bottom'].set_color('#cccccc')
+        ax2.spines['left'].set_color('#cccccc')
+        _vmax_l2 = [s.dropna().max() for _,_,s in _series_bar if s.notna().any()]
+        if _vmax_l2: ax2.set_ylim(top=max(_vmax_l2) * 1.35)
+        _t2 = f'Variación mensual — análisis {_TIT}'
+        if MES_PARCIAL:
+            _t2 += f'  ·  {NOMBRE_MES_TITLE} PARCIAL {DIAS_CARGADOS}/{DIAS_MES} días (preliminar)'
+        ax2.set_title(_t2, fontsize=10, color=('#C00000' if MES_PARCIAL else '#333'),
+                      style=('italic' if MES_PARCIAL else 'normal'), pad=8)
+        plt.tight_layout()
+        out2 = OUTPUT_DIR / f'variaciones_productos_vs_ipc_{MES}{_SFX}.png'
+        plt.savefig(out2, dpi=600, bbox_inches='tight', facecolor='white')
+        plt.show()
+        print(f'Gráfico 2 [{_TIT}] guardado: {out2}')
+
+        # ── GRAFICO 3: Ranking de precios absolutos por producto ────────────────
+        _abs_data = sorted(
+            [(PRODUCTO_NOMBRES[p], _PROMD[p], PRODUCTO_COLORS[p])
+             for p in PRODUCTOS_ACTIVOS if not pd.isna(_PROMD[p])],
+            key=lambda x: x[1])
+        _pnames  = [d[0] for d in _abs_data]
+        _pvals   = [d[1] for d in _abs_data]
+        _pcolors = [d[2] for d in _abs_data]
+        _base_v  = _pvals[0] if _pvals else 1
+        _n_bars  = len(_pvals)
+        fig3, ax3 = plt.subplots(figsize=(12, max(5, _n_bars * 0.5 + 2)))
+        bars3 = ax3.barh(_pnames, _pvals, color=_pcolors,
+                         edgecolor='none', height=0.55, zorder=2)
+        ax3.barh(_pnames, _pvals, color='black', alpha=0.06,
+                 height=0.60, zorder=1)
+        ax3.axvline(_base_v, color='#aaaaaa', linewidth=1.2, linestyle='--', zorder=3)
+        for bar, val, name in zip(bars3, _pvals, _pnames):
+            _ratio = val / _base_v if _base_v > 0 else 1
+            _ratio_str = f'  ×{_ratio:.1f}' if _ratio > 1.05 else '  base'
+            ax3.text(val + max(_pvals) * 0.008,
+                     bar.get_y() + bar.get_height() / 2,
+                     f'${val:,.2f}'.replace(',', 'X').replace('.', ',').replace('X', '.') + _ratio_str,
+                     va='center', fontsize=10, fontweight='bold',
+                     color='#2c3e50')
+        ax3.set_yticklabels(_pnames, fontsize=10, fontweight='bold')
+        ax3.set_xlabel(f'Precio nacional (ARS) — análisis {_TIT}', fontsize=11, color='#444')
+        ax3.xaxis.set_major_formatter(mticker.FuncFormatter(
+            lambda x, _: f'${x:,.0f}'.replace(',', '.')))
+        ax3.set_xlim(0, max(_pvals) * 1.25)
+        ax3.tick_params(axis='x', labelsize=10, colors='#555')
+        ax3.grid(True, alpha=0.25, axis='x', zorder=0); ax3.set_axisbelow(True)
+        for sp in ['top', 'right', 'left']: ax3.spines[sp].set_visible(False)
+        ax3.spines['bottom'].set_color('#cccccc')
+        fig3.text(0.98, 0.01, f'{NOMBRE_MES_TITLE}{SUFIJO_PARCIAL}',
+                  ha='right', va='bottom', fontsize=9, color=('#C00000' if MES_PARCIAL else '#999'))
+        plt.tight_layout()
+        out3 = OUTPUT_DIR / f'ranking_productos_{MES}{_SFX}.png'
+        plt.savefig(out3, dpi=600, bbox_inches='tight', facecolor='white')
+        plt.show()
+        print(f'Gráfico 3 [{_TIT}] guardado: {out3}')"""))
 
 # ── CELL 13 — CUADRO 1 + LaTeX (per-producto) ──────────────────────────────────
 cells.append(cell_code("""\
 # ============================================================
-# CELDA 13 — Cuadro 1 provincial + LaTeX para cada producto
+# CELDA 13 — Cuadro 1 provincial + LaTeX (MEDIANA y PROMEDIO, por duplicado)
 # ============================================================
 def fmt_ar(x, dec=0):
     s = f'{x:,.{dec}f}'
@@ -1065,60 +1085,64 @@ nom_mes = {'01':'enero','02':'febrero','03':'marzo','04':'abril','05':'mayo','06
 _mes_s  = nom_mes[ULTIMO_MES[5:7]]
 _anio_s = ULTIMO_MES[:4]
 
+# (sufijo_archivo, titulo, col_valor, dict_prom_nacional)
+_MEDIDAS13 = [
+    ('',      'mediana',  'precio_producto',      prom_nac_dict),
+    ('_prom', 'promedio', 'precio_producto_prom', prom_nac_prom_dict),
+]
 for _pid in _prods_con_datos:
     _name  = PRODUCTO_NOMBRES[_pid]
     _short = PRODUCTO_SHORT[_pid]
-    _spv   = serie_prov_dict[_pid].copy()
-    _prom  = prom_nac_dict[_pid]
-    if len(_spv) == 0 or pd.isna(_prom):
-        print(f'  [{_name}] Sin datos provinciales — saltear cuadro/LaTeX'); continue
-    _spv['vs_%'] = ((_spv['precio_producto'] / _prom) - 1) * 100
-    _spv = _spv.sort_values('precio_producto').reset_index(drop=True)
+    for _SFX, _TIT, _VCOL, _PROMD in _MEDIDAS13:
+        _spv   = serie_prov_dict[_pid].copy()
+        _prom  = _PROMD[_pid]
+        if len(_spv) == 0 or pd.isna(_prom):
+            print(f'  [{_name}/{_TIT}] Sin datos provinciales — saltear cuadro/LaTeX'); continue
+        _spv['vs_%'] = ((_spv[_VCOL] / _prom) - 1) * 100
+        _spv = _spv.sort_values(_VCOL).reset_index(drop=True)
 
-    print(f'\\n=== CUADRO 1: {_name.upper()} — {NOMBRE_MES_TITLE} ===\\n')
-    print(f'{"Provincia":<25} {"Precio":>14} {"Vs. promedio":>14}')
-    print('-'*55)
-    for _, r in _spv.iterrows():
-        _c = fmt_ar(r['precio_producto'], dec=2)
-        _v = f"{r['vs_%']:+.2f}%".replace('.',',')
-        print(f"{r['provincia']:<25} {_c:>14} {_v:>14}")
-    print('-'*55)
-    print(f'{"Promedio nacional":<25} {fmt_ar(_prom, dec=2):>14} {"0,00%":>14}')
+        print(f'\\n=== CUADRO 1: {_name.upper()} [{_TIT}] — {NOMBRE_MES_TITLE} ===\\n')
+        print(f'{"Provincia":<25} {"Precio":>14} {"Vs. promedio":>14}')
+        print('-'*55)
+        for _, r in _spv.iterrows():
+            _c = fmt_ar(r[_VCOL], dec=2)
+            _v = f"{r['vs_%']:+.2f}%".replace('.',',')
+            print(f"{r['provincia']:<25} {_c:>14} {_v:>14}")
+        print('-'*55)
+        print(f'{"Promedio nacional":<25} {fmt_ar(_prom, dec=2):>14} {"0,00%":>14}')
 
-    # Todas las filas se arman como f-strings (mismo nivel de escape en todo el
-    # bloque, incluido el encabezado) para no mezclar convenciones de backslash.
-    ltx = [
-        f'\\\\begin{{table}}[H]',
-        f'\\\\centering',
-        f'\\\\renewcommand{{\\\\arraystretch}}{{1.15}}',
-        f'\\\\caption{{{_name} por provincia ({_mes_s} {_anio_s})}}',
-        f'\\\\begin{{tabular}}{{@{{}}l r r@{{}}}}',
-        f'\\\\toprule',
-        f'\\\\textbf{{Provincia}} & \\\\textbf{{Precio}} & \\\\shortstack{{\\\\textbf{{Vs. promedio}}\\\\\\\\\\\\textbf{{pais (\\\\%)}}}} \\\\\\\\',
-        f'\\\\midrule',
-    ]
-    for _, r in _spv.iterrows():
-        _c = fmt_ar(r['precio_producto'], dec=2)
-        _v = f"{r['vs_%']:+.2f}".replace('.',',')
-        ltx.append(f"{r['provincia']:<22} & {_c} & {_v}\\\\% \\\\\\\\")
-    ltx += [
-        f'\\\\midrule',
-        f'\\\\textbf{{Promedio}} & {fmt_ar(_prom, dec=2)} & 0,00\\\\% \\\\\\\\',
-        f'\\\\bottomrule',
-        f'\\\\end{{tabular}}\\\\\\\\[0.2cm]',
-        f'\\\\caption*{{Fuente: Elaboracion propia en base a SEPA}}',
-        f'\\\\label{{tab:producto_{_short}_{ULTIMO_MES}}}',
-        f'\\\\end{{table}}',
-    ]
-    _latex_out = '\\n'.join(ltx)
-    _out_tex = OUTPUT_DIR / f'tabla_producto_{_short}_{ULTIMO_MES}.tex'
-    _out_tex.write_text(_latex_out, encoding='utf-8')
-    print(f'  LaTeX guardado: {_out_tex.name}')"""))
+        ltx = [
+            f'\\\\begin{{table}}[H]',
+            f'\\\\centering',
+            f'\\\\renewcommand{{\\\\arraystretch}}{{1.15}}',
+            f'\\\\caption{{{_name} por provincia ({_mes_s} {_anio_s}) --- analisis {_TIT}}}',
+            f'\\\\begin{{tabular}}{{@{{}}l r r@{{}}}}',
+            f'\\\\toprule',
+            f'\\\\textbf{{Provincia}} & \\\\textbf{{Precio}} & \\\\shortstack{{\\\\textbf{{Vs. promedio}}\\\\\\\\\\\\textbf{{pais (\\\\%)}}}} \\\\\\\\',
+            f'\\\\midrule',
+        ]
+        for _, r in _spv.iterrows():
+            _c = fmt_ar(r[_VCOL], dec=2)
+            _v = f"{r['vs_%']:+.2f}".replace('.',',')
+            ltx.append(f"{r['provincia']:<22} & {_c} & {_v}\\\\% \\\\\\\\")
+        ltx += [
+            f'\\\\midrule',
+            f'\\\\textbf{{Promedio}} & {fmt_ar(_prom, dec=2)} & 0,00\\\\% \\\\\\\\',
+            f'\\\\bottomrule',
+            f'\\\\end{{tabular}}\\\\\\\\[0.2cm]',
+            f'\\\\caption*{{Fuente: Elaboracion propia en base a SEPA}}',
+            f'\\\\label{{tab:producto_{_short}_{ULTIMO_MES}{_SFX}}}',
+            f'\\\\end{{table}}',
+        ]
+        _latex_out = '\\n'.join(ltx)
+        _out_tex = OUTPUT_DIR / f'tabla_producto_{_short}_{ULTIMO_MES}{_SFX}.tex'
+        _out_tex.write_text(_latex_out, encoding='utf-8')
+        print(f'  LaTeX [{_TIT}] guardado: {_out_tex.name}')"""))
 
 # ── CELL 14 — CHOROPLETH MAPS (one per producto) ────────────────────────────────
 cells.append(cell_code("""\
 # ============================================================
-# CELDA 14 — Mapa coroplético por producto
+# CELDA 14 — Mapa coroplético por producto (MEDIANA y PROMEDIO, por duplicado)
 # ============================================================
 if not GEOJSON_PATH.exists():
     print(f'GeoJSON no encontrado en {GEOJSON_PATH} — saltear celda')
@@ -1160,46 +1184,49 @@ else:
         if len(_spv) == 0:
             print(f'  [{_name}] Sin datos provinciales — saltear mapa')
             continue
-        _prod_prov = dict(zip(_spv['provincia'], _spv['precio_producto']))
-        _vals = list(_prod_prov.values())
-        norm_c = Normalize(vmin=min(_vals), vmax=max(_vals))
+        for _SFX, _TIT, _VCOL in [('','mediana','precio_producto'), ('_prom','promedio','precio_producto_prom')]:
+            _prod_prov = dict(zip(_spv['provincia'], _spv[_VCOL]))
+            _vals = list(_prod_prov.values())
+            norm_c = Normalize(vmin=min(_vals), vmax=max(_vals))
 
-        fig, ax = plt.subplots(figsize=(12, 16))
-        caba_c = None
-        for feat in geo['features']:
-            ng  = feat['properties']['name']
-            nom = NORM_GEO.get(ng, ng)
-            val = _prod_prov.get(nom)
-            col = cmap_m(norm_c(val)) if val is not None else '#dddddd'
-            gt  = feat['geometry']['type']
-            co  = feat['geometry']['coordinates']
-            draw(ax, [co] if gt=='Polygon' else co, col)
-            cx, cy = centroide([co] if gt=='Polygon' else co)
-            if nom == 'CABA':
-                caba_c = (cx, cy); continue
-            dx, dy = AJUST.get(nom, (0,0))
-            if val is not None:
-                ax.text(cx+dx, cy+dy, f'{nom}\\n${val:,.0f}',
-                        ha='center', va='center', fontsize=7.5, fontweight='bold',
-                        bbox=dict(boxstyle='round,pad=0.25', facecolor='white', alpha=0.75, edgecolor='none'))
-        if caba_c and 'CABA' in _prod_prov:
-            vc = _prod_prov['CABA']
-            cc = cmap_m(norm_c(vc))
-            lx, ly = caba_c[0]+2.2, caba_c[1]+0.8
-            ax.annotate('', xy=caba_c, xytext=(lx,ly),
-                        arrowprops=dict(arrowstyle='-', color='black', linewidth=1.0))
-            ax.text(lx, ly, f'CABA\\n${vc:,.0f}',
-                    ha='center', va='center', fontsize=9, fontweight='bold',
-                    bbox=dict(boxstyle='round,pad=0.5', facecolor=cc, alpha=0.95,
-                              edgecolor='black', linewidth=1.0))
-            ax.plot(*caba_c, marker='o', markersize=10, markerfacecolor=cc,
-                    markeredgecolor='black', markeredgewidth=1.2, zorder=5)
-        ax.set_aspect('equal'); ax.axis('off')
-        plt.tight_layout()
-        _out_m = OUTPUT_DIR / f'mapa_producto_{_short}_{ULTIMO_MES}.png'
-        plt.savefig(_out_m, dpi=600, bbox_inches='tight', facecolor='white')
-        plt.show()
-        print(f'  Mapa [{_name}] guardado: {_out_m.name}')"""))
+            fig, ax = plt.subplots(figsize=(12, 16))
+            caba_c = None
+            for feat in geo['features']:
+                ng  = feat['properties']['name']
+                nom = NORM_GEO.get(ng, ng)
+                val = _prod_prov.get(nom)
+                col = cmap_m(norm_c(val)) if val is not None else '#dddddd'
+                gt  = feat['geometry']['type']
+                co  = feat['geometry']['coordinates']
+                draw(ax, [co] if gt=='Polygon' else co, col)
+                cx, cy = centroide([co] if gt=='Polygon' else co)
+                if nom == 'CABA':
+                    caba_c = (cx, cy); continue
+                dx, dy = AJUST.get(nom, (0,0))
+                if val is not None:
+                    ax.text(cx+dx, cy+dy, f'{nom}\\n${val:,.0f}',
+                            ha='center', va='center', fontsize=7.5, fontweight='bold',
+                            bbox=dict(boxstyle='round,pad=0.25', facecolor='white', alpha=0.75, edgecolor='none'))
+            if caba_c and 'CABA' in _prod_prov:
+                vc = _prod_prov['CABA']
+                cc = cmap_m(norm_c(vc))
+                lx, ly = caba_c[0]+2.2, caba_c[1]+0.8
+                ax.annotate('', xy=caba_c, xytext=(lx,ly),
+                            arrowprops=dict(arrowstyle='-', color='black', linewidth=1.0))
+                ax.text(lx, ly, f'CABA\\n${vc:,.0f}',
+                        ha='center', va='center', fontsize=9, fontweight='bold',
+                        bbox=dict(boxstyle='round,pad=0.5', facecolor=cc, alpha=0.95,
+                                  edgecolor='black', linewidth=1.0))
+                ax.plot(*caba_c, marker='o', markersize=10, markerfacecolor=cc,
+                        markeredgecolor='black', markeredgewidth=1.2, zorder=5)
+            ax.set_title(f'{_name} por provincia — análisis {_TIT}',
+                         fontsize=13, fontweight='bold', pad=6)
+            ax.set_aspect('equal'); ax.axis('off')
+            plt.tight_layout()
+            _out_m = OUTPUT_DIR / f'mapa_producto_{_short}_{ULTIMO_MES}{_SFX}.png'
+            plt.savefig(_out_m, dpi=600, bbox_inches='tight', facecolor='white')
+            plt.show()
+            print(f'  Mapa [{_name}/{_TIT}] guardado: {_out_m.name}')"""))
 
 # ── CELL 15 — COVERAGE ─────────────────────────────────────────────────────────
 cells.append(cell_code("""\
@@ -1301,65 +1328,66 @@ print('Gráficos cobertura guardados')"""))
 # ── CELL 16 — RANKINGS (per-producto) ──────────────────────────────────────────
 cells.append(cell_code("""\
 # ============================================================
-# CELDA 16 — Rankings de cadenas: una por producto activo
+# CELDA 16 — Rankings de cadenas (MEDIANA y PROMEDIO, por duplicado)
 # ============================================================
 def fmtn(x): return f'{x:,.2f}'.replace(',','X').replace('.',',').replace('X','.')
 
 CADENAS_EXCLUIR_RANKING = {'Cadena 23'}   # se saca de estos rankings (y de su promedio)
 
+_MEDIDAS16 = [('','mediana','precio_producto','median'), ('_prom','promedio','precio_producto_prom',_pmean)]
 for _pid in _prods_con_datos:
     _name  = PRODUCTO_NOMBRES[_pid]
     _short = PRODUCTO_SHORT[_pid]
     _pgeo  = producto_geo_dict[_pid]
     _pgeo  = _pgeo[~_pgeo['cadena'].isin(CADENAS_EXCLUIR_RANKING)]
+    for _SFX, _TIT, _VCOL, _AGG in _MEDIDAS16:
 
-    _rk_nac = (_pgeo.groupby('cadena')
-               .agg(n_sucursales=('precio_producto','count'),
-                    precio_promedio=('precio_producto','mean'))
-               .round(2).reset_index())
-    _rk_nac = _rk_nac[_rk_nac['n_sucursales'] >= MIN_SUCURSALES_RANKING].sort_values('precio_promedio')
-    _prom_nac_rk = _pgeo['precio_producto'].mean()
+        _rk_nac = (_pgeo.groupby('cadena')
+                   .agg(n_sucursales=(_VCOL,'count'), valor=(_VCOL,_AGG))
+                   .round(2).reset_index())
+        _rk_nac = _rk_nac[_rk_nac['n_sucursales'] >= MIN_SUCURSALES_RANKING].sort_values('valor')
+        _prom_nac_rk = (_pgeo[_VCOL].median() if _SFX == '' else _pmean(_pgeo[_VCOL]))
 
-    _amba = _pgeo[_pgeo['PROVINCIA_NORM'].isin(['Buenos Aires','CABA'])]
-    _rk_amba = (_amba.groupby('cadena')
-                .agg(n_sucursales=('precio_producto','count'),
-                     precio_promedio=('precio_producto','mean'))
-                .round(2).reset_index())
-    _rk_amba = _rk_amba[_rk_amba['n_sucursales'] >= MIN_SUCURSALES_RANKING].sort_values('precio_promedio')
-    _prom_amba_rk = _amba['precio_producto'].mean() if len(_amba) > 0 else 0
+        _amba = _pgeo[_pgeo['PROVINCIA_NORM'].isin(['Buenos Aires','CABA'])]
+        _rk_amba = (_amba.groupby('cadena')
+                    .agg(n_sucursales=(_VCOL,'count'), valor=(_VCOL,_AGG))
+                    .round(2).reset_index())
+        _rk_amba = _rk_amba[_rk_amba['n_sucursales'] >= MIN_SUCURSALES_RANKING].sort_values('valor')
+        _prom_amba_rk = ((_amba[_VCOL].median() if _SFX == '' else _pmean(_amba[_VCOL])) if len(_amba) > 0 else 0)
 
-    for (_rk, _prom_r, _titulo, _out_name) in [
-        (_rk_nac,  _prom_nac_rk,  f'Ranking nacional [{_name}]',  f'ranking_cadenas_nacional_{MES}_{_short}'),
-        (_rk_amba, _prom_amba_rk, f'Ranking AMBA [{_name}]',      f'ranking_cadenas_amba_{MES}_{_short}'),
-    ]:
-        if len(_rk) == 0:
-            print(f'  Sin datos para {_titulo}'); continue
-        fig, ax = plt.subplots(figsize=(11, max(5, len(_rk)*0.5+2)))
-        labs   = [f"{r.cadena}  ({int(r.n_sucursales)})" for r in _rk.itertuples()]
-        _n_c   = len(_rk)
-        _cols  = plt.cm.RdYlGn_r(np.linspace(0.1, 0.9, _n_c)) if _n_c > 1 else [PRODUCTO_COLORS[_pid]]
-        bars   = ax.barh(labs, _rk['precio_promedio'], color=_cols, edgecolor='black', linewidth=0.4)
-        for bar, val in zip(bars, _rk['precio_promedio']):
-            ax.text(bar.get_width() + _rk['precio_promedio'].max()*0.005,
-                    bar.get_y()+bar.get_height()/2,
-                    f'${fmtn(val)}', va='center', fontsize=9, fontweight='bold')
-        ax.axvline(_prom_r, color='#666', linestyle='--', linewidth=1.5,
-                   label=f'Promedio: ${fmtn(_prom_r)}')
-        ax.set_xlabel('Precio promedio (ARS)', fontsize=11)
-        ax.set_xlim(_rk['precio_promedio'].min()*0.95, _rk['precio_promedio'].max()*1.07)
-        ax.xaxis.set_major_formatter(mticker.FuncFormatter(
-            lambda x,_: f'${x:,.0f}'.replace(',','.')))
-        ax.legend(loc='lower right', fontsize=10)
-        ax.grid(True, alpha=0.3, axis='x'); ax.set_axisbelow(True)
-        for sp in ['top','right']: ax.spines[sp].set_visible(False)
-        plt.tight_layout()
-        _out_r = OUTPUT_DIR / f'{_out_name}.png'
-        plt.savefig(_out_r, dpi=600, bbox_inches='tight'); plt.show()
-        print(f'  Ranking [{_name}] guardado: {_out_r.name}')
+        for (_rk, _prom_r, _titulo, _out_name) in [
+            (_rk_nac,  _prom_nac_rk,  f'Ranking nacional [{_name}/{_TIT}]',  f'ranking_cadenas_nacional_{MES}_{_short}{_SFX}'),
+            (_rk_amba, _prom_amba_rk, f'Ranking AMBA [{_name}/{_TIT}]',      f'ranking_cadenas_amba_{MES}_{_short}{_SFX}'),
+        ]:
+            if len(_rk) == 0:
+                print(f'  Sin datos para {_titulo}'); continue
+            fig, ax = plt.subplots(figsize=(11, max(5, len(_rk)*0.5+2)))
+            labs   = [f"{r.cadena}  ({int(r.n_sucursales)})" for r in _rk.itertuples()]
+            _n_c   = len(_rk)
+            _cols  = plt.cm.RdYlGn_r(np.linspace(0.1, 0.9, _n_c)) if _n_c > 1 else [PRODUCTO_COLORS[_pid]]
+            bars   = ax.barh(labs, _rk['valor'], color=_cols, edgecolor='black', linewidth=0.4)
+            for bar, val in zip(bars, _rk['valor']):
+                ax.text(bar.get_width() + _rk['valor'].max()*0.005,
+                        bar.get_y()+bar.get_height()/2,
+                        f'${fmtn(val)}', va='center', fontsize=9, fontweight='bold')
+            ax.axvline(_prom_r, color='#666', linestyle='--', linewidth=1.5,
+                       label=f'Nacional: ${fmtn(_prom_r)}')
+            ax.set_xlabel(f'Precio por cadena (ARS) — {_TIT}', fontsize=11)
+            ax.set_title(_titulo, fontsize=11, fontweight='bold')
+            ax.set_xlim(_rk['valor'].min()*0.95, _rk['valor'].max()*1.07)
+            ax.xaxis.set_major_formatter(mticker.FuncFormatter(
+                lambda x,_: f'${x:,.0f}'.replace(',','.')))
+            ax.legend(loc='lower right', fontsize=10)
+            ax.grid(True, alpha=0.3, axis='x'); ax.set_axisbelow(True)
+            for sp in ['top','right']: ax.spines[sp].set_visible(False)
+            plt.tight_layout()
+            _out_r = OUTPUT_DIR / f'{_out_name}.png'
+            plt.savefig(_out_r, dpi=600, bbox_inches='tight'); plt.show()
+            print(f'  Ranking [{_name}/{_TIT}] guardado: {_out_r.name}')
 
-    print(f'\\n  === RANKING NACIONAL [{_name}] ===')
-    for i, r in enumerate(_rk_nac.sort_values('precio_promedio', ascending=False).itertuples(), 1):
-        print(f'    {i:>2}. {r.cadena:<25} ${fmtn(r.precio_promedio):>12}  ({int(r.n_sucursales)} sucs)')"""))
+        print(f'\\n  === RANKING NACIONAL [{_name}/{_TIT}] ===')
+        for i, r in enumerate(_rk_nac.sort_values('valor', ascending=False).itertuples(), 1):
+            print(f'    {i:>2}. {r.cadena:<25} ${fmtn(r.valor):>12}  ({int(r.n_sucursales)} sucs)')"""))
 
 # ── CELL 17 — FOLIUM MAP (selector de producto, lazy popup) ───────────────────
 cells.append(cell_code("""\
@@ -1370,171 +1398,173 @@ cells.append(cell_code("""\
 # ============================================================
 def fmtm(x): return f'{x:,.2f}'.replace(',','X').replace('.',',').replace('X','.')
 
-# ── Construir datos compactos para popups (almacenados una vez) ──────────────
-_pgeo_ref = producto_geo_dict[_prods_con_datos[0]]
-provs_u   = sorted(_pgeo_ref['PROVINCIA_NORM'].unique())
+# Dos mapas: analisis MEDIANA (sin sufijo) y PROMEDIO (_prom)
+for _SFX, _TIT, _VCOL in [('','mediana','precio_producto'), ('_prom','promedio','precio_producto_prom')]:
+    # ── Construir datos compactos para popups (almacenados una vez) ──────────────
+    _pgeo_ref = producto_geo_dict[_prods_con_datos[0]]
+    provs_u   = sorted(_pgeo_ref['PROVINCIA_NORM'].unique())
 
-# Popup compacto: solo precio por sucursal/producto (sin detalle adicional)
-_popup_data = {}
-for _pid in _prods_con_datos:
-    for _, _r in producto_geo_dict[_pid].iterrows():
-        _sk = f"{_r['id_comercio']}_{_r['id_bandera']}_{_r['id_sucursal']}"
-        if _sk not in _popup_data:
-            _popup_data[_sk] = {
-                'nom': str(_r['sucursales_nombre'])[:40],
-                'bar': str(_r.get('sucursales_barrio') or _r.get('sucursales_localidad') or '')[:30],
-                'prv': _r['PROVINCIA_NORM'],
-                'cad': _r['cadena'],
-                'tip': str(_r.get('sucursales_tipo') or 'N/D'),
-                'can': {}
-            }
-        _popup_data[_sk]['can'][_pid] = {'t': float(_r['precio_producto'])}
+    # Popup compacto: solo precio por sucursal/producto (sin detalle adicional)
+    _popup_data = {}
+    for _pid in _prods_con_datos:
+        for _, _r in producto_geo_dict[_pid].iterrows():
+            _sk = f"{_r['id_comercio']}_{_r['id_bandera']}_{_r['id_sucursal']}"
+            if _sk not in _popup_data:
+                _popup_data[_sk] = {
+                    'nom': str(_r['sucursales_nombre'])[:40],
+                    'bar': str(_r.get('sucursales_barrio') or _r.get('sucursales_localidad') or '')[:30],
+                    'prv': _r['PROVINCIA_NORM'],
+                    'cad': _r['cadena'],
+                    'tip': str(_r.get('sucursales_tipo') or 'N/D'),
+                    'can': {}
+                }
+            _popup_data[_sk]['can'][_pid] = {'t': float(_r[_VCOL])}
 
-_popup_json = _json.dumps(_popup_data, ensure_ascii=False, separators=(',',':'))
-print(f'Datos popup: {len(_popup_data):,} sucursales | {len(_popup_json)/1024/1024:.1f} MB JSON compacto')
+    _popup_json = _json.dumps(_popup_data, ensure_ascii=False, separators=(',',':'))
+    print(f'Datos popup: {len(_popup_data):,} sucursales | {len(_popup_json)/1024/1024:.1f} MB JSON compacto')
 
-# ── Mapa Folium ───────────────────────────────────────────────────────────────
-m = folium.Map(location=[-38.0,-63.5], zoom_start=5,
-               tiles='cartodbpositron', control_scale=True)
-folium.map.Marker(
-    location=[-51.7963,-59.5236],
-    icon=folium.DivIcon(icon_size=(140,28), icon_anchor=(70,14),
-        html='<div style="background:rgba(255,255,255,.95);border:1px solid #777;border-radius:3px;padding:3px 7px;font-family:Arial;font-size:11px;font-weight:600;text-align:center;white-space:nowrap;">Islas Malvinas (ARG)</div>')
-).add_to(m)
+    # ── Mapa Folium ───────────────────────────────────────────────────────────────
+    m = folium.Map(location=[-38.0,-63.5], zoom_start=5,
+                   tiles='cartodbpositron', control_scale=True)
+    folium.map.Marker(
+        location=[-51.7963,-59.5236],
+        icon=folium.DivIcon(icon_size=(140,28), icon_anchor=(70,14),
+            html='<div style="background:rgba(255,255,255,.95);border:1px solid #777;border-radius:3px;padding:3px 7px;font-family:Arial;font-size:11px;font-weight:600;text-align:center;white-space:nowrap;">Islas Malvinas (ARG)</div>')
+    ).add_to(m)
 
-_producto_fg_ids = {}
-for _pid in _prods_con_datos:
-    _name  = PRODUCTO_NOMBRES[_pid]
-    _short = PRODUCTO_SHORT[_pid]
-    _pgeo  = producto_geo_dict[_pid]
-    _is_default = (_pid == _prods_con_datos[0])
-    _vmin = _pgeo['precio_producto'].quantile(0.05)
-    _vmax = _pgeo['precio_producto'].quantile(0.95)
-    if _vmin == _vmax: _vmin, _vmax = _pgeo['precio_producto'].min(), _pgeo['precio_producto'].max()
-    _cm = LinearColormap(
-        colors=['#1a9850','#66bd63','#a6d96a','#fee08b','#fdae61','#f46d43','#d73027'],
-        vmin=_vmin, vmax=_vmax, caption=f'{_name} — {NOMBRE_MES_TITLE} (ARS)')
-    if _is_default: _cm.add_to(m)
-    _fg = folium.FeatureGroup(name=_short, show=_is_default)
-    _producto_fg_ids[_pid] = _fg.get_name()
-    for _, _r in _pgeo.iterrows():
-        val  = _r['precio_producto']
-        col  = _cm(max(_vmin, min(_vmax, val)))
-        cad  = _r['cadena']
-        prv  = _r['PROVINCIA_NORM']
-        _sk  = f"{_r['id_comercio']}_{_r['id_bandera']}_{_r['id_sucursal']}"
-        cl   = (f'sucursal-marker producto-{_short}'
-                f' cadena-{cad.replace(" ","_").replace("(","").replace(")","").replace("/","")}'
-                f' prov-{prv.replace(" ","_").replace("(","").replace(")","").replace("/","")}')
-        # Popup mínimo: placeholder que JS rellena on-demand al hacer click
-        _ph = (f'<div class="lz-pop" data-key="{_sk}" data-can="{_pid}"'
-               f' style="font-family:Arial;min-width:200px;text-align:center;padding:15px">'
-               f'<span style="color:#aaa;font-size:12px">Cargando detalle...</span></div>')
-        folium.CircleMarker(
-            location=[_r['sucursales_latitud'], _r['sucursales_longitud']],
-            radius=5, color=col, fill=True, fillColor=col, fillOpacity=0.8, weight=1,
-            tooltip=f'<b>{cad}</b><br>{prv}<br><b>${fmtm(val)}</b>',
-            popup=folium.Popup(_ph, max_width=450), className=cl
-        ).add_to(_fg)
-    _fg.add_to(m)
+    _producto_fg_ids = {}
+    for _pid in _prods_con_datos:
+        _name  = PRODUCTO_NOMBRES[_pid]
+        _short = PRODUCTO_SHORT[_pid]
+        _pgeo  = producto_geo_dict[_pid]
+        _is_default = (_pid == _prods_con_datos[0])
+        _vmin = _pgeo[_VCOL].quantile(0.05)
+        _vmax = _pgeo[_VCOL].quantile(0.95)
+        if _vmin == _vmax: _vmin, _vmax = _pgeo[_VCOL].min(), _pgeo[_VCOL].max()
+        _cm = LinearColormap(
+            colors=['#1a9850','#66bd63','#a6d96a','#fee08b','#fdae61','#f46d43','#d73027'],
+            vmin=_vmin, vmax=_vmax, caption=f'{_name} — {NOMBRE_MES_TITLE} ({_TIT}, ARS)')
+        if _is_default: _cm.add_to(m)
+        _fg = folium.FeatureGroup(name=_short, show=_is_default)
+        _producto_fg_ids[_pid] = _fg.get_name()
+        for _, _r in _pgeo.iterrows():
+            val  = _r[_VCOL]
+            col  = _cm(max(_vmin, min(_vmax, val)))
+            cad  = _r['cadena']
+            prv  = _r['PROVINCIA_NORM']
+            _sk  = f"{_r['id_comercio']}_{_r['id_bandera']}_{_r['id_sucursal']}"
+            cl   = (f'sucursal-marker producto-{_short}'
+                    f' cadena-{cad.replace(" ","_").replace("(","").replace(")","").replace("/","")}'
+                    f' prov-{prv.replace(" ","_").replace("(","").replace(")","").replace("/","")}')
+            # Popup mínimo: placeholder que JS rellena on-demand al hacer click
+            _ph = (f'<div class="lz-pop" data-key="{_sk}" data-can="{_pid}"'
+                   f' style="font-family:Arial;min-width:200px;text-align:center;padding:15px">'
+                   f'<span style="color:#aaa;font-size:12px">Cargando detalle...</span></div>')
+            folium.CircleMarker(
+                location=[_r['sucursales_latitud'], _r['sucursales_longitud']],
+                radius=5, color=col, fill=True, fillColor=col, fillOpacity=0.8, weight=1,
+                tooltip=f'<b>{cad}</b><br>{prv}<br><b>${fmtm(val)}</b>',
+                popup=folium.Popup(_ph, max_width=450), className=cl
+            ).add_to(_fg)
+        _fg.add_to(m)
 
-_map_var    = m.get_name()
-_fg_ids_str = '{' + ','.join(f'"{k}":"{v}"' for k,v in _producto_fg_ids.items()) + '}'
-_names_str  = '{' + ','.join(f'"{k}":"{PRODUCTO_NOMBRES[k]}"' for k in _prods_con_datos) + '}'
-_avgs_str   = '{' + ','.join(f'"{k}":{producto_geo_dict[k]["precio_producto"].mean():.2f}' for k in _prods_con_datos) + '}'
+    _map_var    = m.get_name()
+    _fg_ids_str = '{' + ','.join(f'"{k}":"{v}"' for k,v in _producto_fg_ids.items()) + '}'
+    _names_str  = '{' + ','.join(f'"{k}":"{PRODUCTO_NOMBRES[k]}"' for k in _prods_con_datos) + '}'
+    _avgs_str   = '{' + ','.join(f'"{k}":{producto_geo_dict[k][_VCOL].mean():.2f}' for k in _prods_con_datos) + '}'
 
-# Embeber JSON en script tag de tipo application/json (sin escape JS)
-m.get_root().html.add_child(folium.Element(
-    f'<script type="application/json" id="_pd_json">{_popup_json}</script>'))
+    # Embeber JSON en script tag de tipo application/json (sin escape JS)
+    m.get_root().html.add_child(folium.Element(
+        f'<script type="application/json" id="_pd_json">{_popup_json}</script>'))
 
-prov_opts  = ''.join([f'<option value="prov-{p.replace(" ","_")}">{p}</option>' for p in provs_u])
-_can_opts  = ''.join([f'<option value="{k}">{PRODUCTO_NOMBRES[k]}</option>' for k in _prods_con_datos])
-_cadenas_u = sorted(_pgeo_ref['cadena'].unique())
-_cad_opts  = ''.join([f'<option value="cadena-{c.replace(" ","_").replace("(","").replace(")","").replace("/","")}">{c}</option>' for c in _cadenas_u])
+    prov_opts  = ''.join([f'<option value="prov-{p.replace(" ","_")}">{p}</option>' for p in provs_u])
+    _can_opts  = ''.join([f'<option value="{k}">{PRODUCTO_NOMBRES[k]}</option>' for k in _prods_con_datos])
+    _cadenas_u = sorted(_pgeo_ref['cadena'].unique())
+    _cad_opts  = ''.join([f'<option value="cadena-{c.replace(" ","_").replace("(","").replace(")","").replace("/","")}">{c}</option>' for c in _cadenas_u])
 
-info_h = (f'<div style="position:fixed;top:10px;left:50px;width:340px;background:white;border:2px solid #0055A4;'
-          f'border-radius:8px;padding:12px 15px;font-family:Arial;z-index:9999;box-shadow:0 2px 8px rgba(0,0,0,.15);">'
-          f'<div style="color:#0055A4;font-size:15px;font-weight:bold;margin-bottom:5px;">Productos — {NOMBRE_MES_TITLE}</div>'
-          f'<div style="font-size:11px;color:#555;line-height:1.5;">'
-          f'<b>{len(_pgeo_ref):,}</b> sucursales · <b>{len(_prods_con_datos)}</b> productos<br>'
-          f'Promedio: <span id="info_avg" style="font-weight:bold;"></span></div></div>')
-m.get_root().html.add_child(folium.Element(info_h))
+    info_h = (f'<div style="position:fixed;top:10px;left:50px;width:340px;background:white;border:2px solid #0055A4;'
+              f'border-radius:8px;padding:12px 15px;font-family:Arial;z-index:9999;box-shadow:0 2px 8px rgba(0,0,0,.15);">'
+              f'<div style="color:#0055A4;font-size:15px;font-weight:bold;margin-bottom:5px;">Productos — {NOMBRE_MES_TITLE} ({_TIT})</div>'
+              f'<div style="font-size:11px;color:#555;line-height:1.5;">'
+              f'<b>{len(_pgeo_ref):,}</b> sucursales · <b>{len(_prods_con_datos)}</b> productos<br>'
+              f'Promedio: <span id="info_avg" style="font-weight:bold;"></span></div></div>')
+    m.get_root().html.add_child(folium.Element(info_h))
 
-filtros_h = (
-    f'<div id="pf" style="position:fixed;bottom:25px;left:50px;width:280px;background:white;'
-    f'border:2px solid #0055A4;border-radius:8px;padding:12px 15px;font-family:Arial;z-index:9999;">'
-    f'<div style="color:#0055A4;font-size:13px;font-weight:bold;margin-bottom:8px;">🔍 Filtros</div>'
-    f'<label style="font-size:11px;color:#555;display:block;margin-top:4px;">Producto:'
-    f'<select id="fcan" style="width:100%;padding:4px;font-size:11px;margin-top:3px;">{_can_opts}</select></label>'
-    f'<label style="font-size:11px;color:#555;display:block;margin-top:6px;">Cadena:'
-    f'<select id="fca" style="width:100%;padding:4px;font-size:11px;margin-top:3px;">'
-    f'<option value="all">Todas</option>{_cad_opts}</select></label>'
-    f'<label style="font-size:11px;color:#555;display:block;margin-top:6px;">Provincia:'
-    f'<select id="fp" style="width:100%;padding:4px;font-size:11px;margin-top:3px;">'
-    f'<option value="all">Todas</option>{prov_opts}</select></label>'
-    f'<button id="fr" style="width:100%;margin-top:10px;padding:6px;background:#f0f0f0;'
-    f'border:1px solid #ccc;border-radius:4px;font-size:11px;cursor:pointer;">Restablecer</button></div>'
-    f'<style>'
-    f'.lz-w{{font-family:Arial;font-size:12px;width:420px;max-height:500px;overflow-y:auto}}'
-    f'.lz-h4{{margin:0;color:#0055A4}}'
-    f'.lz-nfo{{font-size:11px;color:#555;margin-bottom:5px}}'
-    f'.lz-bg{{background:#e6eef7;padding:2px 6px;border-radius:3px;font-size:10px}}'
-    f'.lz-cx{{text-align:center;margin:8px 0}}'
-    f'.lz-lbl{{font-size:11px;color:#555;margin-bottom:2px}}'
-    f'.lz-tot{{color:#0055A4;font-size:22px;font-weight:bold}}'
-    f'.lz-sub{{font-size:11px;color:#888;text-align:center;margin-top:3px}}'
-    f'.lz-ft{{font-size:9px;color:#666;margin-top:4px}}'
-    f'.lz-hr{{margin:5px 0}}'
-    f'</style>'
-    f'<script>'
-    f'var _fg_ids={_fg_ids_str};var _names={_names_str};var _avgs={_avgs_str};var _pd=null;'
-    f'function _gPD(){{if(!_pd){{var el=document.getElementById("_pd_json");if(el)_pd=JSON.parse(el.textContent);}}return _pd;}}'
-    # _bPop usa template literals JS (backtick) + clases CSS → sin single-quote CSS = sin conflicto Python
-    f'function _bPop(key,cid){{'
-    f'var pd=_gPD();if(!pd||!pd[key]||!pd[key].can[cid])return "<div>Sin datos.</div>";'
-    f'var d=pd[key];var c=d.can[cid];var nm=_names[cid];'
-    f'var fmt=function(x){{return "$"+x.toLocaleString("es-AR",{{minimumFractionDigits:2,maximumFractionDigits:2}});}};'
-    f'return `<div class=lz-w>`'
-    f'+`<h4 class=lz-h4>${{d.cad}}</h4>`'
-    f'+`<div class=lz-nfo><b>${{d.nom}}</b><br>${{d.bar?d.bar+" — ":""}}${{d.prv}}<br><span class=lz-bg>${{d.tip}}</span></div>`'
-    f'+"<hr class=lz-hr>"'
-    f'+`<div class=lz-cx><div class=lz-lbl>${{nm}}</div><span class=lz-tot>${{fmt(c.t)}}</span></div>`'
-    f'+"</div>";}}'
-    f'function _initEvt(){{var mp=window["{_map_var}"];if(!mp)return;'
-    f'mp.on("popupopen",function(e){{'
-    f'var el=e.popup.getElement().querySelector(".lz-pop");'
-    f'if(el&&el.getAttribute("data-built")!=="1"){{'
-    f'el.innerHTML=_bPop(el.getAttribute("data-key"),el.getAttribute("data-can"));'
-    f'el.setAttribute("data-built","1");e.popup.update();}}}});}}'
-    f'function switchProducto(sel){{var mp=window["{_map_var}"];if(!mp)return;'
-    f'Object.keys(_fg_ids).forEach(function(k){{var fg=window[_fg_ids[k]];if(!fg)return;'
-    f'if(k===sel){{mp.addLayer(fg);}}else{{mp.removeLayer(fg);}}}});'
-    f'var avgEl=document.getElementById("info_avg");'
-    f'if(avgEl)avgEl.innerHTML="$"+_avgs[sel].toLocaleString("es-AR",{{minimumFractionDigits:2,maximumFractionDigits:2}})+" ("+_names[sel]+")";apl();}}'
-    f'function apl(){{var p=document.getElementById("fp").value;var ca=document.getElementById("fca").value;'
-    f'document.querySelectorAll(".sucursal-marker").forEach(function(el){{'
-    f'var c=el.className.baseVal||el.className||"";'
-    f'var mp=(p==="all")||c.indexOf(p)>=0;'
-    f'var mc=(ca==="all")||c.indexOf(ca)>=0;'
-    f'el.style.display=(mp&&mc)?"":"none";}});}}'
-    f'setTimeout(function(){{'
-    f'var fc=document.getElementById("fcan"),sp=document.getElementById("fp"),fca=document.getElementById("fca"),btn=document.getElementById("fr");'
-    f'var def=Object.keys(_fg_ids)[0];'
-    f'_initEvt();switchProducto(def);'
-    f'if(fc)fc.addEventListener("change",function(){{switchProducto(this.value);}});'
-    f'if(sp)sp.addEventListener("change",apl);'
-    f'if(fca)fca.addEventListener("change",apl);'
-    f'if(btn)btn.addEventListener("click",function(){{'
-    f'if(fc){{fc.value=Object.keys(_fg_ids)[0];switchProducto(fc.value);}}'
-    f'if(sp)sp.value="all";if(fca)fca.value="all";'
-    f'document.querySelectorAll(".sucursal-marker").forEach(e=>e.style.display="");}});'
-    f'}},1200);</script>'
-)
-m.get_root().html.add_child(folium.Element(filtros_h))
+    filtros_h = (
+        f'<div id="pf" style="position:fixed;bottom:25px;left:50px;width:280px;background:white;'
+        f'border:2px solid #0055A4;border-radius:8px;padding:12px 15px;font-family:Arial;z-index:9999;">'
+        f'<div style="color:#0055A4;font-size:13px;font-weight:bold;margin-bottom:8px;">🔍 Filtros</div>'
+        f'<label style="font-size:11px;color:#555;display:block;margin-top:4px;">Producto:'
+        f'<select id="fcan" style="width:100%;padding:4px;font-size:11px;margin-top:3px;">{_can_opts}</select></label>'
+        f'<label style="font-size:11px;color:#555;display:block;margin-top:6px;">Cadena:'
+        f'<select id="fca" style="width:100%;padding:4px;font-size:11px;margin-top:3px;">'
+        f'<option value="all">Todas</option>{_cad_opts}</select></label>'
+        f'<label style="font-size:11px;color:#555;display:block;margin-top:6px;">Provincia:'
+        f'<select id="fp" style="width:100%;padding:4px;font-size:11px;margin-top:3px;">'
+        f'<option value="all">Todas</option>{prov_opts}</select></label>'
+        f'<button id="fr" style="width:100%;margin-top:10px;padding:6px;background:#f0f0f0;'
+        f'border:1px solid #ccc;border-radius:4px;font-size:11px;cursor:pointer;">Restablecer</button></div>'
+        f'<style>'
+        f'.lz-w{{font-family:Arial;font-size:12px;width:420px;max-height:500px;overflow-y:auto}}'
+        f'.lz-h4{{margin:0;color:#0055A4}}'
+        f'.lz-nfo{{font-size:11px;color:#555;margin-bottom:5px}}'
+        f'.lz-bg{{background:#e6eef7;padding:2px 6px;border-radius:3px;font-size:10px}}'
+        f'.lz-cx{{text-align:center;margin:8px 0}}'
+        f'.lz-lbl{{font-size:11px;color:#555;margin-bottom:2px}}'
+        f'.lz-tot{{color:#0055A4;font-size:22px;font-weight:bold}}'
+        f'.lz-sub{{font-size:11px;color:#888;text-align:center;margin-top:3px}}'
+        f'.lz-ft{{font-size:9px;color:#666;margin-top:4px}}'
+        f'.lz-hr{{margin:5px 0}}'
+        f'</style>'
+        f'<script>'
+        f'var _fg_ids={_fg_ids_str};var _names={_names_str};var _avgs={_avgs_str};var _pd=null;'
+        f'function _gPD(){{if(!_pd){{var el=document.getElementById("_pd_json");if(el)_pd=JSON.parse(el.textContent);}}return _pd;}}'
+        # _bPop usa template literals JS (backtick) + clases CSS → sin single-quote CSS = sin conflicto Python
+        f'function _bPop(key,cid){{'
+        f'var pd=_gPD();if(!pd||!pd[key]||!pd[key].can[cid])return "<div>Sin datos.</div>";'
+        f'var d=pd[key];var c=d.can[cid];var nm=_names[cid];'
+        f'var fmt=function(x){{return "$"+x.toLocaleString("es-AR",{{minimumFractionDigits:2,maximumFractionDigits:2}});}};'
+        f'return `<div class=lz-w>`'
+        f'+`<h4 class=lz-h4>${{d.cad}}</h4>`'
+        f'+`<div class=lz-nfo><b>${{d.nom}}</b><br>${{d.bar?d.bar+" — ":""}}${{d.prv}}<br><span class=lz-bg>${{d.tip}}</span></div>`'
+        f'+"<hr class=lz-hr>"'
+        f'+`<div class=lz-cx><div class=lz-lbl>${{nm}}</div><span class=lz-tot>${{fmt(c.t)}}</span></div>`'
+        f'+"</div>";}}'
+        f'function _initEvt(){{var mp=window["{_map_var}"];if(!mp)return;'
+        f'mp.on("popupopen",function(e){{'
+        f'var el=e.popup.getElement().querySelector(".lz-pop");'
+        f'if(el&&el.getAttribute("data-built")!=="1"){{'
+        f'el.innerHTML=_bPop(el.getAttribute("data-key"),el.getAttribute("data-can"));'
+        f'el.setAttribute("data-built","1");e.popup.update();}}}});}}'
+        f'function switchProducto(sel){{var mp=window["{_map_var}"];if(!mp)return;'
+        f'Object.keys(_fg_ids).forEach(function(k){{var fg=window[_fg_ids[k]];if(!fg)return;'
+        f'if(k===sel){{mp.addLayer(fg);}}else{{mp.removeLayer(fg);}}}});'
+        f'var avgEl=document.getElementById("info_avg");'
+        f'if(avgEl)avgEl.innerHTML="$"+_avgs[sel].toLocaleString("es-AR",{{minimumFractionDigits:2,maximumFractionDigits:2}})+" ("+_names[sel]+")";apl();}}'
+        f'function apl(){{var p=document.getElementById("fp").value;var ca=document.getElementById("fca").value;'
+        f'document.querySelectorAll(".sucursal-marker").forEach(function(el){{'
+        f'var c=el.className.baseVal||el.className||"";'
+        f'var mp=(p==="all")||c.indexOf(p)>=0;'
+        f'var mc=(ca==="all")||c.indexOf(ca)>=0;'
+        f'el.style.display=(mp&&mc)?"":"none";}});}}'
+        f'setTimeout(function(){{'
+        f'var fc=document.getElementById("fcan"),sp=document.getElementById("fp"),fca=document.getElementById("fca"),btn=document.getElementById("fr");'
+        f'var def=Object.keys(_fg_ids)[0];'
+        f'_initEvt();switchProducto(def);'
+        f'if(fc)fc.addEventListener("change",function(){{switchProducto(this.value);}});'
+        f'if(sp)sp.addEventListener("change",apl);'
+        f'if(fca)fca.addEventListener("change",apl);'
+        f'if(btn)btn.addEventListener("click",function(){{'
+        f'if(fc){{fc.value=Object.keys(_fg_ids)[0];switchProducto(fc.value);}}'
+        f'if(sp)sp.value="all";if(fca)fca.value="all";'
+        f'document.querySelectorAll(".sucursal-marker").forEach(e=>e.style.display="");}});'
+        f'}},1200);</script>'
+    )
+    m.get_root().html.add_child(folium.Element(filtros_h))
 
-out_map = OUTPUT_DIR / f'mapa_interactivo_{MES}.html'
-m.save(str(out_map))
-print(f'Mapa guardado: {out_map.name} ({len(_prods_con_datos)} productos · {len(_pgeo_ref):,} sucs)')"""))
+    out_map = OUTPUT_DIR / f'mapa_interactivo_{MES}{_SFX}.html'
+    m.save(str(out_map))
+    print(f'Mapa [{_TIT}] guardado: {out_map.name} ({len(_prods_con_datos)} productos · {len(_pgeo_ref):,} sucs)')"""))
 
 # ── CELL 18 — CABA RANKINGS (per-producto) ─────────────────────────────────────
 cells.append(cell_code("""\
@@ -1600,39 +1630,39 @@ def det_barrio(lat, lon):
 
 def fmtb(x): return f'${x:,.2f}'.replace(',','X').replace('.',',').replace('X','.')
 
+# Dos rankings por producto: analisis MEDIANA y PROMEDIO (outliers fuera).
+_MEDIDAS18 = [('mediana','precio_producto','median'), ('promedio','precio_producto_prom',_pmean)]
 for _pid in _prods_con_datos:
     _name  = PRODUCTO_NOMBRES[_pid]
     _pgeo  = producto_geo_dict[_pid]
     _caba  = _pgeo[_pgeo['PROVINCIA_NORM'] == 'CABA'].copy()
     if len(_caba) == 0:
         print(f'  [{_name}] Sin sucursales en CABA'); continue
-
     _caba['barrio'] = _caba.apply(
         lambda r: det_barrio(r['sucursales_latitud'], r['sucursales_longitud']), axis=1)
-    _rk_b = (_caba[_caba['barrio'] != 'Sin clasificar']
-             .groupby('barrio')
-             .agg(n_sucs=('precio_producto','count'),
-                  promedio=('precio_producto','mean'),
-                  mediana=('precio_producto','median'))
-             .round(2).sort_values('promedio'))
-    _rk_b_fil = _rk_b[_rk_b['n_sucs'] >= 2]
-    _pc = _caba['precio_producto'].mean()
-    _pp = _pgeo['precio_producto'].mean()
+    for _TIT, _VCOL, _AGG in _MEDIDAS18:
+        _rk_b = (_caba[_caba['barrio'] != 'Sin clasificar']
+                 .groupby('barrio')
+                 .agg(n_sucs=(_VCOL,'count'), valor=(_VCOL,_AGG))
+                 .round(2).sort_values('valor'))
+        _rk_b_fil = _rk_b[_rk_b['n_sucs'] >= 2]
+        _pc = (_caba[_VCOL].median() if _TIT == 'mediana' else _pmean(_caba[_VCOL]))
+        _pp = (_pgeo[_VCOL].median() if _TIT == 'mediana' else _pmean(_pgeo[_VCOL]))
 
-    print(f'\\n{"="*78}')
-    print(f'  RANKING BARRIOS CABA [{_name.upper()}] — {NOMBRE_MES_TITLE}')
-    print(f'{"="*78}')
-    print(f'  {"#":<3} {"Barrio":<22} {"Sucs.":<7} {"Promedio":<13} {"vs CABA":<10} {"vs Pais"}')
-    print(f'  {"-"*70}')
-    for i, (b, r) in enumerate(_rk_b_fil.iterrows(), 1):
-        vc = (r["promedio"]/max(_pc,1)-1)*100
-        vp = (r["promedio"]/max(_pp,1)-1)*100
-        print(f'  {i:<3} {b:<22} {int(r["n_sucs"]):<7} {fmtb(r["promedio"]):<13} {vc:+.2f}%  {vp:+.2f}%')
-    print(f'  {"-"*70}')
-    print(f'  Promedio CABA: {fmtb(_pc)}   Promedio pais: {fmtb(_pp)}')
-    _sin = set(BARRIOS_BBOX.keys()) - set(_rk_b.index)
-    if _sin:
-        print(f'  Sin sucursales ({len(_sin)}): {", ".join(sorted(_sin))}')"""))
+        print(f'\\n{"="*78}')
+        print(f'  RANKING BARRIOS CABA [{_name.upper()}/{_TIT}] — {NOMBRE_MES_TITLE}')
+        print(f'{"="*78}')
+        print(f'  {"#":<3} {"Barrio":<22} {"Sucs.":<7} {"Valor":<13} {"vs CABA":<10} {"vs Pais"}')
+        print(f'  {"-"*70}')
+        for i, (b, r) in enumerate(_rk_b_fil.iterrows(), 1):
+            vc = (r["valor"]/max(_pc,1)-1)*100
+            vp = (r["valor"]/max(_pp,1)-1)*100
+            print(f'  {i:<3} {b:<22} {int(r["n_sucs"]):<7} {fmtb(r["valor"]):<13} {vc:+.2f}%  {vp:+.2f}%')
+        print(f'  {"-"*70}')
+        print(f'  [{_TIT}] Promedio CABA: {fmtb(_pc)}   Promedio pais: {fmtb(_pp)}')
+        _sin = set(BARRIOS_BBOX.keys()) - set(_rk_b.index)
+        if _sin:
+            print(f'  Sin sucursales ({len(_sin)}): {", ".join(sorted(_sin))}')"""))
 
 # ── CELL 19 — EXCEL EXPORT (multi-producto) ────────────────────────────────────
 cells.append(cell_code("""\
@@ -1658,7 +1688,7 @@ def auto_widths(ws):
         hdr = str(ws.cell(1,ci).value or '').lower()
         w   = 28 if any(x in hdr for x in ('nombre','provincia','cadena','barrio','producto')) else (42 if 'desc' in hdr else 14)
         ws.column_dimensions[cl].width = w
-        if any(x in hdr for x in ('precio','ipc','promedio','mediana')):
+        if any(x in hdr for x in ('precio','ipc','promedio','mediana','prom')):
             for row in ws.iter_rows(min_row=2, max_row=ws.max_row, min_col=ci, max_col=ci):
                 for cell in row: cell.number_format = '#,##0.00'
         elif '%' in hdr:
@@ -1685,13 +1715,13 @@ with pd.ExcelWriter(out_xls, engine='openpyxl') as writer:
     for _pid in _prods_con_datos:
         if len(serie_nac_dict[_pid]) == 0: continue
         _sn = serie_nac_dict[_pid][['mes','precio_nacional_ponderado','variacion_mensual_%',
-                                    'precio_nacional_ponderado_media','variacion_mensual_media_%']].copy()
+                                    'precio_nacional_ponderado_prom','variacion_mensual_prom_%']].copy()
         _n  = PRODUCTO_SHORT[_pid]
         _sn = _sn.rename(columns={
-            'precio_nacional_ponderado':       f'precio_{_n}',
-            'variacion_mensual_%':             f'var_{_n}_%',
-            'precio_nacional_ponderado_media': f'precio_{_n}_media',
-            'variacion_mensual_media_%':       f'var_{_n}_media_%'
+            'precio_nacional_ponderado':      f'precio_{_n}',
+            'variacion_mensual_%':            f'var_{_n}_%',
+            'precio_nacional_ponderado_prom': f'precio_{_n}_prom',
+            'variacion_mensual_prom_%':       f'var_{_n}_prom_%'
         })
         _evo = _evo.merge(_sn, on='mes', how='outer')
     _evo = _evo.sort_values('mes').reset_index(drop=True)
@@ -1709,10 +1739,10 @@ with pd.ExcelWriter(out_xls, engine='openpyxl') as writer:
             'producto': PRODUCTO_NOMBRES[_pid], 'EAN': _ean,
             'rubro': next(iter(PRODUCTOS[_pid].values()))[2],
             'con_datos_este_mes': _pid in _prods_con_datos,
-            'precio_promedio': round(prom_nac_dict.get(_pid, float('nan')), 2)
+            'precio_mediana': round(prom_nac_dict.get(_pid, float('nan')), 2)
                 if not pd.isna(prom_nac_dict.get(_pid, float('nan'))) else None,
-            'precio_promedio_media': round(prom_nac_media_dict.get(_pid, float('nan')), 2)
-                if not pd.isna(prom_nac_media_dict.get(_pid, float('nan'))) else None,
+            'precio_prom': round(prom_nac_prom_dict.get(_pid, float('nan')), 2)
+                if not pd.isna(prom_nac_prom_dict.get(_pid, float('nan'))) else None,
             'hoja': _sh,
         })
     pd.DataFrame(_idx_rows).to_excel(writer, sheet_name='Productos', index=False)
@@ -1726,35 +1756,36 @@ with pd.ExcelWriter(out_xls, engine='openpyxl') as writer:
     for _pid in _prods_con_datos:
         _sh  = _sheet_by_pid[_pid]
         _spv = serie_prov_dict[_pid].copy()
-        _prom = prom_nac_dict[_pid]
-        _prom_media = prom_nac_media_dict[_pid]
+        _prom      = prom_nac_dict[_pid]
+        _prom_prom = prom_nac_prom_dict[_pid]
         if len(_spv) > 0 and not pd.isna(_prom):
-            _spv['vs_promedio_%']       = ((_spv['precio_producto'] / _prom) - 1) * 100
-            _spv['vs_promedio_media_%'] = ((_spv['precio_producto_media'] / _prom_media) - 1) * 100
+            _spv['vs_promedio_%']      = ((_spv['precio_producto'] / _prom) - 1) * 100
+            _spv['vs_promedio_prom_%'] = ((_spv['precio_producto_prom'] / _prom_prom) - 1) * 100
             _spv = _spv[['mes','provincia','precio_producto','vs_promedio_%',
-                         'precio_producto_media','vs_promedio_media_%']]
+                         'precio_producto_prom','vs_promedio_prom_%']]
             _spv.sort_values('precio_producto').to_excel(
                 writer, sheet_name=_safe_sheet(f'Prov_{_sh}', _usados_full, maxlen=31), index=False)
 
+        # Ranking por cadena: MEDIANA (mediana por cadena) y PROMEDIO (_pmean por cadena)
         _pgeo = producto_geo_dict[_pid]
         _rk  = (_pgeo.groupby('cadena')
                 .agg(n_sucursales=('precio_producto','count'),
-                     precio_promedio=('precio_producto','mean'),
-                     precio_mediana=('precio_producto','median'))
+                     precio_mediana=('precio_producto','median'),
+                     precio_prom=('precio_producto_prom', _pmean))
                 .round(2).reset_index()
-                .sort_values('precio_promedio', ascending=False))
+                .sort_values('precio_mediana', ascending=False))
         if len(_pgeo) > 0:
-            _rk['vs_promedio_%'] = ((_rk['precio_promedio'] / _pgeo['precio_producto'].mean()) - 1) * 100
-            _rk['vs_mediana_%']  = ((_rk['precio_mediana'] / _pgeo['precio_producto'].median()) - 1) * 100
-            _rk = _rk[['cadena','n_sucursales','precio_promedio','vs_promedio_%',
-                       'precio_mediana','vs_mediana_%']]
+            _rk['vs_mediana_%'] = ((_rk['precio_mediana'] / _pgeo['precio_producto'].median()) - 1) * 100
+            _rk['vs_prom_%']    = ((_rk['precio_prom'] / _pmean(_pgeo['precio_producto_prom'])) - 1) * 100
+            _rk = _rk[['cadena','n_sucursales','precio_mediana','vs_mediana_%',
+                       'precio_prom','vs_prom_%']]
         _rk.to_excel(writer, sheet_name=_safe_sheet(f'Rank_{_sh}', _usados_full, maxlen=31), index=False)
 
         _suc_exp = _pgeo[[
             'id_comercio','id_bandera','id_sucursal','cadena','PROVINCIA_NORM',
             'sucursales_nombre','sucursales_localidad','sucursales_barrio',
             'sucursales_latitud','sucursales_longitud','sucursales_tipo',
-            'precio_producto'
+            'precio_producto','precio_producto_prom'
         ]].sort_values(['PROVINCIA_NORM','cadena','precio_producto']).copy()
         _suc_exp.to_excel(writer, sheet_name=_safe_sheet(f'Sucs_{_sh}', _usados_full, maxlen=31), index=False)
 
@@ -1773,7 +1804,7 @@ with pd.ExcelWriter(out_xls, engine='openpyxl') as writer:
     if _sp_rows:
         _sp_all = pd.concat(_sp_rows, ignore_index=True).sort_values(
             ['producto_id','anio_mes']).reset_index(drop=True)
-        _sp_all = _sp_all.rename(columns={'anio_mes':'mes'})
+        _sp_all = _sp_all.rename(columns={'anio_mes':'mes','precio_medio':'precio_prom'})
         _sp_all.to_excel(writer, sheet_name='Serie_precios', index=False)
 
     # ── Formato ──────────────────────────────────────────────────────────────
@@ -1791,9 +1822,10 @@ for _pid in _prods_con_datos:
     _name = PRODUCTO_NOMBRES[_pid]
     _pgeo = producto_geo_dict[_pid]
     _prom = prom_nac_dict[_pid]
+    _promp = prom_nac_prom_dict[_pid]
     _sn   = serie_nac_dict[_pid]
     _rng  = f'{_sn["mes"].min()} -> {_sn["mes"].max()}' if len(_sn) > 0 else 'sin historia'
-    print(f'  [{_name}] {len(_pgeo):,} sucs | Promedio: ${_prom:,.2f} | Serie: {_rng}')
+    print(f'  [{_name}] {len(_pgeo):,} sucs | Mediana: ${_prom:,.2f} | Promedio: ${_promp:,.2f} | Serie: {_rng}')
 print('='*65)
 if MES_PARCIAL:
     print(f'\\n⚠️  {NOMBRE_MES_TITLE}: MES PARCIAL ({DIAS_CARGADOS}/{DIAS_MES} días).')
@@ -1814,14 +1846,14 @@ def _pp(x, dec=2):
     s = "+" if x >= 0 else ""; return f"{s}{x:.{dec}f}%".replace(".", ",")
 
 _vals = {p: prom_nac_dict[p] for p in _prods_con_datos if not pd.isna(prom_nac_dict.get(p))}
-_vals_media = {p: prom_nac_media_dict[p] for p in _prods_con_datos if not pd.isna(prom_nac_media_dict.get(p))}
+_vals_prom = {p: prom_nac_prom_dict[p] for p in _prods_con_datos if not pd.isna(prom_nac_prom_dict.get(p))}
 _vars = {}
-_vars_media = {}
+_vars_prom = {}
 for p in _prods_con_datos:
     _sn = serie_nac_dict.get(p)
     if _sn is not None and len(_sn) > 1:
         _vars[p] = _sn['variacion_mensual_%'].iloc[-1]
-        _vars_media[p] = _sn['variacion_mensual_media_%'].iloc[-1]
+        _vars_prom[p] = _sn['variacion_mensual_prom_%'].iloc[-1]
 
 if not _vals:
     print('AVISO: ningún producto tiene precio válido este mes — no hay valores resumen para calcular.')
@@ -1846,12 +1878,12 @@ else:
         _line = f"{_pp(_vars.get(p, float('nan')))}"
         print(f"  {_nm:<40} {_ar(_vals[p]):>14}   var.mensual: {_line}")
         _rows_doc.append(['Productos', f'{_nm} — precio', _ar(_vals[p]), round(_vals[p], 2)])
-        if p in _vals_media:
-            _rows_doc.append(['Productos', f'{_nm} — precio (media)', _ar(_vals_media[p]), round(_vals_media[p], 2)])
+        if p in _vals_prom:
+            _rows_doc.append(['Productos', f'{_nm} — precio (prom)', _ar(_vals_prom[p]), round(_vals_prom[p], 2)])
         if p in _vars:
             _rows_doc.append(['Productos', f'{_nm} — var.mensual', _pp(_vars[p]), round(_vars[p], 2)])
-        if p in _vars_media:
-            _rows_doc.append(['Productos', f'{_nm} — var.mensual (media)', _pp(_vars_media[p]), round(_vars_media[p], 2)])
+        if p in _vars_prom:
+            _rows_doc.append(['Productos', f'{_nm} — var.mensual (prom)', _pp(_vars_prom[p]), round(_vars_prom[p], 2)])
     print(f"  Producto mas caro:    {PRODUCTO_NOMBRES[_max_id]:<30} {_ar(_vals[_max_id])}")
     print(f"  Producto mas barato:  {PRODUCTO_NOMBRES[_min_id]:<30} {_ar(_vals[_min_id])}")
     print(f"  Brecha:               {_ar(_brecha_abs)}  ({_brecha_pct:.1f}%)")

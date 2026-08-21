@@ -143,6 +143,15 @@ Todos los productos presentes en el dataset que tienen información en el maestr
 
 El Notebook 02 genera outputs **por cada canasta activa** (columnas con al menos un producto con cantidad > 0).
 
+> ### 🔵 Doble análisis: MEDIANA y PROMEDIO (desde 2026-08)
+> **Todos** los artefactos se generan por duplicado, con dos criterios de agregación, y vos elegís cuál usar:
+> - **MEDIANA** — nombres **sin sufijo** (como siempre): `mapa_canasta_media_2026-07.png`, `Prov_media`, `tabla_canasta_media_2026-07.tex`, `mapa_interactivo_MMAAAA.html`, columna `canasta_total`.
+> - **PROMEDIO** — mismos nombres con sufijo **`_prom`**: `mapa_canasta_media_2026-07_prom.png`, `..._prom.tex`, `mapa_interactivo_MMAAAA_prom.html`, columnas `canasta_total_prom` / `_prom_%`.
+>
+> El **promedio saca outliers**: en cada grupo descarta los valores fuera de `[mediana/4, mediana×4]` (errores de carga del SEPA) antes de promediar. Cada análisis es **coherente en todos los niveles** (sucursal → provincia → cadena → nacional usa siempre su estadístico).
+>
+> **⚠️ Cambio de criterio del mes**: el precio por sucursal ahora se calcula sobre **todos los días del mes** (mediana o promedio), antes era solo el primer día. Los niveles medianos de julio 2026 en adelante no son comparables 1:1 con informes viejos.
+
 ### Gráficos combinados (`.png`) — todas las canastas en un solo gráfico
 
 | Archivo | Contenido |
@@ -166,7 +175,7 @@ Donde `{canasta}` es `vulnerable`, `popular`, `media`, `media_alta`, `canasta05`
 
 ### Mapa interactivo (`.html`) — un único mapa con todas las canastas
 
-`mapa_interactivo_MMAAAA.html` — Mapa Folium con las ~2.373 sucursales de Argentina, coloreadas por costo de canasta. Incluye:
+Se generan **dos** mapas: `mapa_interactivo_MMAAAA.html` (costo mediano) y `mapa_interactivo_MMAAAA_prom.html` (costo promedio, outliers fuera). Mapa Folium con las ~2.373 sucursales de Argentina, coloreadas por costo de canasta. Incluye:
 - **Selector de canasta**: cambiar entre las 6 canastas activas sin recargar
 - **Filtro de cadena**: mostrar solo Coto, DIA, Carrefour, etc.
 - **Filtro de provincia**: aislar una jurisdicción
@@ -180,19 +189,19 @@ Donde `{canasta}` es `vulnerable`, `popular`, `media`, `media_alta`, `canasta05`
 | Hoja | Contenido |
 |------|-----------|
 | `Evolucion_IPC` | Serie mensual en formato ancho: todas las canastas + IPC General + IPC Alimentos |
-| `Prov_{canasta}` | Costo mediano por provincia + desvío vs. promedio nacional (una hoja por canasta) |
-| `Ranking_{canasta}` | Ranking de cadenas por costo promedio (una hoja por canasta) |
-| `Sucs_{canasta}` | Costo por sucursal con cadena, provincia y coordenadas (una hoja por canasta) |
-| `Serie_precios` | Precio mediano por canasta × producto × mes (toda la serie histórica, formato largo) |
+| `Prov_{canasta}` | Costo por provincia + desvío vs. promedio nacional — columnas `canasta_total`/`vs_promedio_%` (mediana) y `canasta_total_prom`/`vs_promedio_prom_%` (promedio) |
+| `Ranking_{canasta}` | Ranking de cadenas — columnas `canasta_mediana` y `canasta_prom` (con sus `vs_%`) |
+| `Sucs_{canasta}` | Costo por sucursal con cadena, provincia y coordenadas — columnas `canasta_total` y `canasta_total_prom` |
+| `Serie_precios` | Precio mediano **y promedio** por canasta × producto × mes (`precio_mediano`/`costo_item` + `precio_prom`/`costo_item_prom`) |
 | `Valores_Documento` | Todos los valores del informe LaTeX listos para copiar (por sección) |
 | `belgrano` | Cadenas presentes en el barrio de Belgrano (canasta media): cadena, nº de sucursales y canasta promedio. Sucursales geolocalizadas por lat/lon. |
 | `Pinamar` | Sucursales relevadas en Pinamar (canasta media): cadena, nombre de sucursal y canasta. Una fila por sucursal, geolocalizadas por lat/lon. |
 | `costa` | Ranking de localidades de la Costa Atlántica bonaerense (canasta media): localidad, nº de sucursales, canasta promedio y desvío vs. promedio país. Geolocalizadas por lat/lon. |
 | `CABA` | Ranking de barrios de CABA (canasta media, barrios con ≥2 sucursales): barrio, nº de sucursales y canasta promedio, más promedio CABA y promedio país. Geolocalizados por lat/lon. |
 
-### LaTeX (`.tex`) — uno por cada canasta activa
+### LaTeX (`.tex`) — dos por cada canasta activa (mediana y `_prom`)
 
-`tabla_canasta_{canasta}_YYYY-MM.tex` — Tabla de provincias lista para incluir en un paper.
+`tabla_canasta_{canasta}_YYYY-MM.tex` (mediana) y `tabla_canasta_{canasta}_YYYY-MM_prom.tex` (promedio) — Tabla de provincias lista para incluir en un paper.
 
 ---
 
@@ -457,22 +466,24 @@ Mismo análisis que el Notebook 02 (evolución vs. IPC, provincias, mapas, ranki
 
 ### Qué genera (por cada producto)
 
+> Igual que el Notebook 02, **todo se genera por duplicado**: análisis **mediana** (sin sufijo) y análisis **promedio** (sufijo `_prom`, outliers fuera). Ver el recuadro azul de "Output del Notebook 02".
+
 | Salida | Contenido |
 |--------|-----------|
-| `indices_productos_vs_ipc_MMAAAA.png` / `variaciones_productos_vs_ipc_MMAAAA.png` | Índice base 100 y variación mensual de cada producto vs. IPC General y Alimentos |
-| `ranking_productos_MMAAAA.png` | Ranking de precio promedio nacional entre los productos consultados |
-| `mapa_producto_{ean}_MMAAAA.png` | Mapa coroplético por provincia (uno por producto) |
-| `mapa_interactivo_MMAAAA.html` | Mapa Folium con selector de producto, filtro de cadena y provincia (igual que el Notebook 02) |
-| `ranking_cadenas_nacional/amba_MMAAAA_{ean}.png` | Ranking de cadenas por precio promedio (uno por producto) |
-| `tabla_producto_{ean}_YYYY-MM.tex` | Tabla LaTeX de precios por provincia (una por producto) |
-| `productos_analisis_YYYY-MM.xlsx` | Excel con hoja `Productos` (índice), `Evolucion_IPC`, `Prov_/Rank_/Sucs_` por producto, `Serie_precios` y `Valores_Documento` |
+| `indices_productos_vs_ipc_MMAAAA{_prom}.png` / `variaciones_productos_vs_ipc_MMAAAA{_prom}.png` | Índice base 100 y variación mensual de cada producto vs. IPC General y Alimentos |
+| `ranking_productos_MMAAAA{_prom}.png` | Ranking de precio nacional entre los productos consultados |
+| `mapa_producto_{ean}_MMAAAA{_prom}.png` | Mapa coroplético por provincia (uno por producto) |
+| `mapa_interactivo_MMAAAA.html` + `..._prom.html` | Dos mapas Folium (mediana y promedio) con selector de producto, filtro de cadena y provincia |
+| `ranking_cadenas_nacional/amba_MMAAAA_{ean}{_prom}.png` | Ranking de cadenas por precio (uno por producto) |
+| `tabla_producto_{ean}_YYYY-MM{_prom}.tex` | Tabla LaTeX de precios por provincia (una por producto) |
+| `productos_analisis_YYYY-MM.xlsx` | Excel con hoja `Productos` (índice, con `precio_mediana` y `precio_prom`), `Evolucion_IPC`, `Prov_/Rank_/Sucs_` por producto (columnas mediana + `_prom`), `Serie_precios` y `Valores_Documento` |
 
 ### Diferencias clave frente al Notebook 02
 
 - **Sin cantidades ni ponderación**: cada producto es su propio EAN (cantidad = 1), no hay imputación por mediana nacional — una sucursal aparece para un producto solo si efectivamente lo vende.
 - **Sin límite de productos**: a diferencia de las 6 columnas fijas de canasta, `EANS_INPUT` acepta cualquier cantidad de EANs.
 - **Cobertura combinada**: los gráficos de cobertura (`cobertura_provincia`/`cobertura_cadena`) se calculan sobre la unión de todos los productos consultados, no sobre uno de referencia.
-- Comparte con el Notebook 02 el mismo maestro de sucursales/cadenas/provincias, el mismo caché de serie histórica (`hist_union_HASH.parquet`, invalidado solo si cambian los EANs) y la misma detección de **mes parcial**.
+- Comparte con el Notebook 02 el mismo maestro de sucursales/cadenas/provincias, el mismo caché de serie histórica (`hist_union_HASH_v2m.parquet`, invalidado solo si cambian los EANs) y la misma detección de **mes parcial**.
 
 > Requiere en `carga/` (Drive) los ZIPs SEPA, `IPC.xlsx` y `ar.json` (igual que el Notebook 02). Los maestros se descargan solos desde GitHub.
 

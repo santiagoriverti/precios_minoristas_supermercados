@@ -1,6 +1,8 @@
 # Contexto del Proyecto — Precios Minoristas SEPA
 
-Última actualización: 2026-06-01 (Celíaca Media + Vegana Básica, mejoras estéticas Gráfico 2)
+Última actualización: 2026-08-21 (doble análisis MEDIANA + PROMEDIO en nb02/nb05)
+
+> **Novedad 2026-08-21**: nb02 y nb05 generan TODO por duplicado — análisis **mediana** (nombres base) y **promedio** (sufijo `_prom`, con outliers fuera `[mediana/4, mediana×4]`). Además el precio por sucursal se calcula sobre **todos los días del mes** (antes: primer día). El handoff completo y el detalle por celda están en `.claude/memory.md`; la metodología, en `docs/METODOLOGIA.md` (sección 4, "Doble análisis").
 
 ## Objetivo
 

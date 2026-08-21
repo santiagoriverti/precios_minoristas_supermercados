@@ -223,6 +223,16 @@ promedio_nacional = Σ_prov [costo_mediano(prov) × población(prov)] / Σ_prov 
 
 Solo se incluyen las provincias con datos en el período.
 
+### Doble análisis: MEDIANA y PROMEDIO (desde 2026-08)
+
+Todos los cálculos del Notebook 02 (y del Notebook 05) se hacen por partida doble, con dos medidas de tendencia central, y se exportan en paralelo (nombres base = mediana; sufijo `_prom` = promedio):
+
+- **Precio por sucursal**: agregando sobre **todos los días del mes** del SEPA (antes: solo el primer día). Mediana de los días, y **media con outliers fuera** de los días.
+- **Media con outliers fuera** (`_pmean`): en cada grupo se descartan los valores fuera de `[mediana/4, mediana×4]` —errores gruesos de carga del SEPA (100×, centavos sueltos)— y recién después se promedia. Funciona a cualquier tamaño de muestra, a diferencia de un recorte por percentil.
+- **Coherencia por niveles**: cada análisis usa su estadístico en TODOS los niveles. El *análisis mediana* usa mediana en sucursal→provincia→cadena→barrio y mediana provincial ponderada por población; el *análisis promedio* usa `_pmean` en todos esos niveles.
+
+Por qué tener ambos: para las canastas (muchos productos) mediana ≈ promedio, y la media sirve de chequeo de robustez. Para productos individuales con precio de lista "pegajoso" (que se cuantiza a valores redondos), la mediana escalona y da variaciones 0% espurias, mientras que el promedio captura mejor la trayectoria mensual. El IPC del INDEC, para contraste, no usa mediana: es una canasta fija ponderada por gasto (ENGHo) con promedios de relativos de precio sobre una muestra relevada.
+
 ---
 
 ## 5. Trazabilidad temporal como métrica de calidad
