@@ -6,9 +6,9 @@ Autor: Santiago Riverti — investigador independiente
 
 ---
 
-## 🟢 ESTADO ACTUAL / HANDOFF [2026-08-21]
+## 🟢 ESTADO ACTUAL / HANDOFF [2026-08-22]
 
-**Ahora hay 6 herramientas (nb01–nb06).** Se agregó **Notebook 06 — Brecha celíaca (TACC vs sin-TACC)**, con evolución diaria/semanal/mensual y desagregación por provincia/cadena/concentración; detalle completo en la sección "Notebook 06" más abajo. Pendiente del usuario: completar el dict `TIPOS` (CELDA 1) con los EANs reales y correr en Colab.
+**Ahora hay 6 herramientas (nb01–nb06).** Se agregó **Notebook 06 — Brecha celíaca (TACC vs sin-TACC)**. Método FINAL (evolucionó en 3 runs reales, ver sección "Notebook 06"): **brecha INTRA-SUCURSAL por tipo**, con **listas amplias de candidatos** por tipo/lado (precargadas en la CELDA 1), precio normalizado a **$/100g**, y el **output clave = brecha POR TIPO** (`Brecha_tipo`). Hallazgo confirmado con datos reales: la prima celíaca sobre productos TACC-sustituibles es **grande** ($/100g: galletitas ~+100/200%, pan rallado ~+300%), muy por encima del ~9% de la canasta Celíaca Media completa (que "maquilla" al promediar productos naturalmente sin gluten). Doc completo: `docs/BRECHA_CELIACA.md`.
 
 **Cambio grande** (misma fecha): nb02 y nb05 ahora generan TODO por duplicado — análisis **MEDIANA** (base, sin sufijo) y análisis **PROMEDIO** (sufijo `_prom`, con outliers fuera). Aplica a: gráficos vs IPC, mapas coropléticos, mapa Folium (**2 HTML**: uno mediana + uno `_prom`), rankings de cadenas, tablas LaTeX (2 `.tex` por canasta/producto), y todas las hojas/columnas del Excel. Detalle completo en la sección **"Feature: análisis MEDIANA + PROMEDIO por duplicado [2026-08-21]"** más abajo.
 
@@ -19,10 +19,11 @@ Autor: Santiago Riverti — investigador independiente
 **⚠️ Los NIVELES medianos del cuadro cambian respecto de meses previos**: antes el precio por sucursal era el del PRIMER día; ahora es la mediana sobre todos los días. El "nivel" mediano de julio 2026 en adelante NO es comparable 1:1 con informes viejos calculados con el método del primer día.
 
 ### Pendientes inmediatos
-1. **✅ Corrido en Colab con datos reales (julio 2026)**: media y mediana coherentes en `.tex` y Excel (Media mediana $674.848 ≈ prom $674.799; Coca/Fernet con la cuantización esperada en mediana y granularidad en promedio). **Bug de LaTeX en nb02 CELDA 13 (encabezado con `\\` duplicado) — RESUELTO**: al revisar los `.tex` reales se vio que las tablas de CANASTA salían con `\\\\` en el header (las de producto estaban bien); se reescribió el header como f-string (igual que nb05). Verificado: ahora sale `\\` simple. Queda seguir validando meses nuevos.
-2. **Caché**: al abrir en Colab se reconstruye solo (nombre nuevo `hist_union_..._v2m.parquet`); los `.parquet` viejos quedan huérfanos y se pueden borrar de `output_*/_cache`.
-3. **Mapa GitHub Pages**: ahora hay 2 HTML (`mapa_interactivo_MMAAAA.html` mediana y `..._prom.html`). Elegir cuál subir a `mapa_precios_minoristas`.
-4. **Seguridad**: rotar el PAT de GitHub (expuesto en sesiones jun/jul, nunca hizo falta usarlo — push con credenciales cacheadas).
+1. **nb06 — correr con las listas amplias y vetar cobertura**: la última versión cambió los EANs de `TIPOS`, así que el **caché diario se invalida** (nombre por hash de EANs) → la próxima corrida re-lee los ~30 meses una vez (~44 min; después queda cacheado). Cuando corra, revisar el print/hoja **`Cobertura`** (sucursales con TACC / sin-TACC / AMBOS por tipo) y **`Brecha_tipo`** ($/100g); reemplazar EANs de baja cobertura o brecha rara. Objetivo: cuadro por tipo limpio para los investigadores.
+2. **nb02/nb05 — ✅ ya corridos en Colab (julio 2026)**: media y mediana coherentes en `.tex` y Excel. Bug de LaTeX del encabezado de canasta (`\\` duplicado) **RESUELTO** (f-string). Queda validar meses nuevos.
+3. **Caché**: al abrir en Colab se reconstruye solo (nb02/nb05: `hist_union_..._v2m.parquet`; nb06: `brecha_dia_..._v1.parquet`). Los `.parquet` viejos/huérfanos se pueden borrar de `output_*/_cache`.
+4. **Mapa GitHub Pages**: nb02/nb05 generan 2 HTML (`mapa_interactivo_MMAAAA.html` mediana y `..._prom.html`). Elegir cuál subir a `mapa_precios_minoristas`.
+5. **Seguridad**: rotar el PAT de GitHub (expuesto en sesiones jun/jul, nunca hizo falta usarlo — push con credenciales cacheadas).
 
 ---
 
