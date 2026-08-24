@@ -62,24 +62,43 @@ EANs entran es del investigador; la plantilla es un punto de partida, no la list
 
 ## 3. Definición de las canastas y de la brecha
 
-Para cada **sucursal `s`** y **día `d`**:
+> **⚠️ Realidad de los datos (corregido tras el primer run real, 2026-08)**: los productos
+> sin-TACC tienen **baja cobertura** — están en pocas góndolas. Exigir que la **misma sucursal**
+> tenga TACC **y** sin-TACC del mismo tipo el **mismo día**, para ≥3 tipos, da **0 observaciones**
+> en la práctica (con la plantilla real: 23/30 EANs con datos pero 0 pares intra-sucursal-día).
+> Por eso la brecha se calcula **pooled por grupo**, no intra-sucursal-diaria.
 
-1. Para cada **tipo `t`** (con al menos un EAN TACC y uno sin-TACC presentes en `s,d`):
-   - `precio_base(t,s,d)`   = promedio de los EANs **TACC** de `t` presentes en `s,d`.
-   - `precio_cel(t,s,d)`    = promedio de los EANs **sin-TACC** de `t` presentes en `s,d`.
-2. Canasta base    `B(s,d)`  = `Σ_t precio_base(t,s,d) × qty(t)`
-3. Canasta celíaca `C(s,d)`  = `Σ_t precio_cel(t,s,d)  × qty(t)`
-   - (ambas sumas sobre **los mismos tipos** presentes en ambos lados → comparables)
-4. Se exige `n_tipos(s,d) ≥ MIN_TIPOS` para que la observación cuente.
-5. **Brecha** `brecha_pct(s,d) = (C(s,d) / B(s,d) − 1) × 100`.
+### 3.1. Cálculo POOLED por grupo (método principal)
 
-La agregación por provincia / cadena / tiempo se hace sobre las brechas por sucursal×día,
-con **mediana** y **promedio (outliers fuera)**. Al ser intra-sucursal, el % es directamente
-comparable entre provincias y cadenas (no lo contamina la composición geográfica).
+Para un **grupo `G`** (nacional, provincia, cadena o localidad) y un **período `P`** (día,
+semana o mes):
 
-> **Nota**: como el conjunto de tipos presentes puede variar entre sucursales/días, la brecha
-> se calcula siempre sobre los tipos presentes en **ambos** lados en esa sucursal/día. Esto es
-> lo que permite compararla; el `Detalle_producto` deja ver la composición efectiva.
+1. Para cada **tipo `t`**:
+   - `precio_base(t,G,P)` = **mediana** (y **promedio** con outliers fuera) del precio TACC del
+     tipo sobre **las sucursales del grupo `G` que ofrecen TACC** en `P`.
+   - `precio_cel(t,G,P)`  = ídem sobre las sucursales del grupo que ofrecen **sin-TACC**.
+   - El tipo cuenta si hay ≥1 sucursal con TACC **y** ≥1 con sin-TACC en `G,P` (no exige que sea
+     la misma sucursal).
+2. `B(G,P) = Σ_t precio_base × qty(t)` ; `C(G,P) = Σ_t precio_cel × qty(t)` (sobre tipos con
+   ambos lados en `G,P`).
+3. `brecha_pct(G,P) = (C / B − 1) × 100`, para **mediana** y **promedio** por separado.
+
+Al pooolear dentro del grupo, la brecha es robusta a la baja cobertura y sigue siendo comparable
+entre provincias/cadenas. El **precio del tipo en una sucursal/día** sigue siendo el promedio de
+los representativos presentes de ese lado (§2.2). Para las desagregaciones (provincia/cadena/
+localidad) la brecha del grupo = **mediana de las brechas mensuales** del grupo.
+
+> **Trade-off honesto**: al no exigir la misma sucursal, la canasta base y la celíaca de un grupo
+> pueden apoyarse en **sucursales distintas** (las que venden cada lado). Es el precio a pagar por
+> la baja cobertura sin-TACC. Se mitiga agrupando (provincia/cadena/localidad concentran sucursales
+> comparables) y se documenta en la hoja `Cobertura`.
+
+### 3.2. Brecha intra-sucursal (best-effort)
+
+Además se calcula, **por sucursal × mes** (no día), la brecha para las sucursales que **sí**
+ofrecen ambos lados (típicamente grandes cadenas con línea sin-TACC). Sale en la hoja
+`Brecha_sucursal`. Puede ser un subconjunto chico; la hoja `Cobertura` muestra cuántas sucursales
+ofrecen cada lado y **ambos** por tipo.
 
 ---
 
@@ -166,11 +185,12 @@ Los EANs concretos están en la CELDA 1 de `notebooks/gen_nb06.py` (fuente) y de
 ### Excel — `brecha_celiaca_YYYY-MM.xlsx`
 | Hoja | Contenido |
 |------|-----------|
-| `Serie_diaria` / `Serie_semanal` / `Serie_mensual` | brecha mediana y promedio, base/celíaca medianas, nº sucursales, nº obs |
-| `Brecha_provincia` | brecha por provincia (mediana + promedio) |
-| `Brecha_cadena` | brecha por cadena |
+| `Cobertura` | **diagnóstico**: por tipo, nº de sucursales que ofrecen TACC, sin-TACC y **ambos** (todo el período) |
+| `Serie_diaria` / `Serie_semanal` / `Serie_mensual` | brecha pooled nacional: mediana y promedio, base/celíaca medianas, nº sucursales |
+| `Brecha_provincia` | brecha pooled por provincia (mediana + promedio) |
+| `Brecha_cadena` | brecha pooled por cadena |
 | `Concentracion` | por localidad: nº de sucursales + brecha (base del scatter) |
-| `Brecha_sucursal` | por sucursal (último mes): base, celíaca, brecha, nº tipos, nº días |
+| `Brecha_sucursal` | **intra-sucursal** (best-effort, último mes): sucursales que ofrecen ambos lados — base, celíaca, brecha, nº tipos |
 | `Detalle_producto` | **precio por sucursal × EAN** (último mes), con tipo, rol (tacc/sin) y descripción |
 
 ---

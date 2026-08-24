@@ -8,8 +8,12 @@ Metodologia (acordada con los investigadores):
 - Cada TIPO de producto (fideos, galletitas, pan rallado, etc.) tiene 2-3 EANs TACC y
   2-3 EANs sin-TACC representativos. El precio del tipo en una sucursal/dia = PROMEDIO
   de los representativos PRESENTES (robusto a faltantes y a la eleccion del representativo).
-- La brecha se calcula DENTRO de cada sucursal (celiaca/base - 1) y luego se agrega por
-  provincia, cadena, concentracion de comercios y tiempo.
+- La brecha se calcula POOLED por grupo (nacional/provincia/cadena/localidad): para cada
+  tipo se toma el precio TACC y el sin-TACC sobre las sucursales del grupo que ofrecen cada
+  lado, y se arma la canasta base y celiaca. Esto es robusto a la BAJA COBERTURA sin-TACC
+  (los productos sin-TACC estan en pocas gondolas, asi que exigir ambos lados en la MISMA
+  sucursal el mismo dia da 0 obs). Se calcula ademas una brecha intra-sucursal por mes
+  (best-effort) para las sucursales que si ofrecen ambos lados.
 - Series por partida doble: MEDIANA (robusta) y PROMEDIO (outliers fuera), como nb02/nb05.
 """
 import json, os, hashlib
@@ -40,7 +44,10 @@ desagregada por provincia, cadena, concentración de comercios y localidad.
   alimentos: la brecha se reporta sobre esa canasta acotada, sin maquillar.
 - Cada tipo usa **2–3 EANs TACC y 2–3 sin-TACC representativos**; el precio del tipo en
   una sucursal/día = **promedio de los representativos presentes** (robusto a faltantes).
-- La brecha se calcula **dentro de cada sucursal** (celíaca/base − 1) y luego se agrega.
+- La brecha se calcula **pooled por grupo** (nacional/provincia/cadena/localidad): por tipo se
+  toma el precio TACC y el sin-TACC sobre las sucursales del grupo que ofrecen cada lado. Es
+  robusto a la **baja cobertura** de los sin-TACC (exigir ambos lados en la misma sucursal el
+  mismo día da 0 obs). Hay además una brecha **intra-sucursal por mes** (best-effort).
 - Series por partida doble: **mediana** (robusta) y **promedio** (outliers fuera).
 
 **Config en la CELDA 1**: el diccionario `TIPOS` (tipo → EANs TACC / sin-TACC / cantidad).
@@ -475,28 +482,23 @@ print(f'Rango: {datos_dia["fecha"].min().date()} → {datos_dia["fecha"].max().d
 # ── CELL 7 — BRECHA POR SUCURSAL × DÍA ─────────────────────────────────────────
 cells.append(cell_code("""\
 # ============================================================
-# CELDA 7 — Brecha (celíaca vs base) por sucursal × día
+# CELDA 7 — Precio por tipo (sucursal×día) + geo + diagnóstico de cobertura
 # ============================================================
-# Precio del tipo = PROMEDIO de los representativos presentes (por lado).
+# La brecha NO se calcula intra-sucursal-diaria: los productos sin-TACC tienen
+# baja cobertura (están en pocas góndolas), así que exigir TACC y sin-TACC del
+# mismo tipo en la misma sucursal el mismo día casi nunca se cumple. En su lugar
+# se arma un precio por (sucursal, día, tipo, lado) y la brecha se calcula POOLED
+# por grupo (nacional / provincia / cadena / localidad) en la CELDA 8. Como bonus
+# se calcula una brecha intra-sucursal por MES (best-effort) para las sucursales
+# que sí ofrecen ambos lados.
 datos_dia['tipo'] = datos_dia['ean_norm'].map(EAN_TIPO)
 datos_dia['rol']  = datos_dia['ean_norm'].map(EAN_ROL)
 datos_dia = datos_dia[~datos_dia['id_comercio'].isin(CADENAS_FILTRAR)].copy()
 
+# Precio del tipo por sucursal/día/lado = promedio de los representativos presentes
 _keys = ['id_comercio','id_bandera','id_sucursal','fecha']
-# 1) promedio de representativos presentes por (sucursal, día, tipo, rol)
-_tp = datos_dia.groupby(_keys + ['tipo','rol'])['precio'].mean().reset_index()
-# 2) pivot rol -> columnas tacc / sin; solo tipos con AMBOS lados presentes
-_piv = _tp.pivot_table(index=_keys + ['tipo'], columns='rol', values='precio').reset_index()
-_piv = _piv.dropna(subset=['tacc','sin'])
-_piv['qty']    = _piv['tipo'].map(TIPO_QTY)
-_piv['base_c'] = _piv['tacc'] * _piv['qty']
-_piv['cel_c']  = _piv['sin']  * _piv['qty']
-# 3) canastas por (sucursal, día): suma sobre tipos presentes
-brecha_suc_dia = (_piv.groupby(_keys)
-                  .agg(base=('base_c','sum'), celiaca=('cel_c','sum'), n_tipos=('tipo','nunique'))
-                  .reset_index())
-brecha_suc_dia = brecha_suc_dia[brecha_suc_dia['n_tipos'] >= MIN_TIPOS].copy()
-brecha_suc_dia['brecha_pct'] = (brecha_suc_dia['celiaca'] / brecha_suc_dia['base'] - 1) * 100
+tp = (datos_dia.groupby(_keys + ['tipo','rol'])['precio'].mean()
+      .reset_index().rename(columns={'precio':'precio_rep'}))
 
 # ── Geo: cadena, provincia, localidad (una vez) ──────────────────────────────
 _PROV_BBOX = {
@@ -535,64 +537,124 @@ for _idx,_row in suc_geo.iterrows():
         suc_geo.at[_idx,'PROVINCIA_NORM'] = _nueva; _n_recl += 1
 if _n_recl: print(f'  Reclasificadas {_n_recl} sucursales por coordenadas')
 
-brecha_suc_dia = brecha_suc_dia.merge(
-    suc_geo[['id_comercio','id_bandera','id_sucursal','cadena','PROVINCIA_NORM',
-             'sucursales_localidad','sucursales_nombre']],
-    on=['id_comercio','id_bandera','id_sucursal'], how='inner')
-brecha_suc_dia['semana'] = brecha_suc_dia['fecha'].dt.strftime('%G-S%V')   # año-semana ISO
-brecha_suc_dia['mes']    = brecha_suc_dia['fecha'].dt.strftime('%Y-%m')
+tp = tp.merge(suc_geo[['id_comercio','id_bandera','id_sucursal','cadena','PROVINCIA_NORM',
+                       'sucursales_localidad','sucursales_nombre']],
+              on=['id_comercio','id_bandera','id_sucursal'], how='inner')
+tp['mes']    = tp['fecha'].dt.strftime('%Y-%m')
+tp['semana'] = tp['fecha'].dt.strftime('%G-S%V')
+tp['localidad'] = (tp['sucursales_localidad'].astype(str).str.strip()
+                   .replace({'':'N/D','nan':'N/D','None':'N/D'}))
 
-_bmed = brecha_suc_dia['brecha_pct'].median()
-print(f'Brecha por sucursal×día: {len(brecha_suc_dia):,} obs | mediana global {_bmed:+.2f}%')
-print(f'Sucursales con brecha: {brecha_suc_dia.groupby(["id_comercio","id_bandera","id_sucursal"]).ngroups:,}')"""))
+# ── DIAGNÓSTICO de cobertura por tipo ────────────────────────────────────────
+_sk = ['id_comercio','id_bandera','id_sucursal']
+_cob_rows = []
+print('=== Cobertura por tipo (sucursales que ofrecen cada lado, todo el período) ===')
+for _t in TIPO_TACC:
+    _st = tp[tp['tipo'] == _t]
+    _set_t = set(map(tuple, _st[_st['rol']=='tacc'][_sk].drop_duplicates().to_numpy()))
+    _set_s = set(map(tuple, _st[_st['rol']=='sin'][_sk].drop_duplicates().to_numpy()))
+    _both  = _set_t & _set_s
+    print(f'  [{_t}] sucursales con TACC: {len(_set_t):>5} · sin-TACC: {len(_set_s):>5} · con AMBOS: {len(_both):>5}')
+    _cob_rows.append({'tipo':_t,'sucursales_tacc':len(_set_t),'sucursales_sin_tacc':len(_set_s),'sucursales_ambos':len(_both)})
+cobertura_tipo = pd.DataFrame(_cob_rows)
+
+# ── Brecha INTRA-SUCURSAL por mes (best-effort: sucursales que ofrecen ambos) ─
+_pm = (tp.groupby(_sk + ['mes','PROVINCIA_NORM','cadena','localidad','tipo','rol'])['precio_rep']
+       .median().reset_index())
+_pmp = _pm.pivot_table(index=_sk + ['mes','PROVINCIA_NORM','cadena','localidad','tipo'],
+                       columns='rol', values='precio_rep').reset_index()
+if 'tacc' in _pmp.columns and 'sin' in _pmp.columns:
+    _pmp = _pmp.dropna(subset=['tacc','sin'])
+    _pmp['qty'] = _pmp['tipo'].map(TIPO_QTY)
+    _pmp['base_c'] = _pmp['tacc'] * _pmp['qty']; _pmp['cel_c'] = _pmp['sin'] * _pmp['qty']
+    brecha_suc_mes = (_pmp.groupby(_sk + ['mes','PROVINCIA_NORM','cadena','localidad'])
+                      .agg(base=('base_c','sum'), celiaca=('cel_c','sum'), n_tipos=('tipo','nunique'))
+                      .reset_index())
+    brecha_suc_mes = brecha_suc_mes[brecha_suc_mes['n_tipos'] >= 1].copy()
+    brecha_suc_mes['brecha_pct'] = (brecha_suc_mes['celiaca'] / brecha_suc_mes['base'] - 1) * 100
+else:
+    brecha_suc_mes = pd.DataFrame(columns=_sk + ['mes','PROVINCIA_NORM','cadena','localidad','base','celiaca','n_tipos','brecha_pct'])
+
+print(f'\\nPrecio por sucursal×día×tipo×lado: {len(tp):,} filas')
+print(f'Intra-sucursal (sucursal×mes con ambos lados, ≥1 tipo): {len(brecha_suc_mes):,} obs'
+      + (f' | brecha mediana {brecha_suc_mes["brecha_pct"].median():+.2f}%' if len(brecha_suc_mes) else ''))"""))
 
 # ── CELL 8 — SERIES (diaria / semanal / mensual) + desagregaciones ─────────────
 cells.append(cell_code("""\
 # ============================================================
-# CELDA 8 — Series de brecha (diaria / semanal / mensual) + por prov/cadena
+# CELDA 8 — Series de brecha POOLED (nacional) + desagregaciones
 # ============================================================
-def _serie(_df, _col):
-    return (_df.groupby(_col)
-            .agg(brecha_mediana=('brecha_pct','median'),
-                 brecha_prom=('brecha_pct', _pmean),
-                 base_mediana=('base','median'),
-                 celiaca_mediana=('celiaca','median'),
-                 n_sucursales=('id_sucursal','nunique'),
-                 n_obs=('brecha_pct','size'))
-            .reset_index())
+# La brecha se calcula POOLED por grupo: para cada tipo se toma el precio TACC
+# (mediana/promedio sobre las sucursales del grupo que lo ofrecen) y el precio
+# sin-TACC (sobre las que lo ofrecen), y se arma la canasta base y celíaca. Es
+# comparable entre grupos y robusto a la baja cobertura sin-TACC (no exige que
+# la MISMA sucursal tenga ambos lados). Un tipo cuenta en un grupo si hay al
+# menos una sucursal con TACC y otra con sin-TACC de ese tipo en el grupo.
+def _basket(df, keys):
+    if len(df) == 0:
+        return pd.DataFrame(columns=keys + ['base_mediana','celiaca_mediana','brecha_mediana','brecha_prom','n_tipos'])
+    g = (df.groupby(keys + ['tipo','rol'])['precio_rep']
+         .agg(med='median', prom=_pmean).reset_index())
+    def _bk(valcol):
+        p = g.pivot_table(index=keys + ['tipo'], columns='rol', values=valcol).reset_index()
+        if 'tacc' not in p.columns or 'sin' not in p.columns:
+            return None
+        p = p.dropna(subset=['tacc','sin']).copy()
+        if len(p) == 0: return None
+        p['qty'] = p['tipo'].map(TIPO_QTY)
+        p['b'] = p['tacc'] * p['qty']; p['c'] = p['sin'] * p['qty']
+        b = (p.groupby(keys).agg(base=('b','sum'), celiaca=('c','sum'), n_tipos=('tipo','nunique')).reset_index())
+        b['brecha'] = (b['celiaca'] / b['base'] - 1) * 100
+        return b
+    med = _bk('med'); pro = _bk('prom')
+    if med is None:
+        return pd.DataFrame(columns=keys + ['base_mediana','celiaca_mediana','brecha_mediana','brecha_prom','n_tipos'])
+    res = med.rename(columns={'base':'base_mediana','celiaca':'celiaca_mediana','brecha':'brecha_mediana'})
+    if pro is not None:
+        res = res.merge(pro[keys + ['brecha']].rename(columns={'brecha':'brecha_prom'}), on=keys, how='left')
+    else:
+        res['brecha_prom'] = np.nan
+    return res
 
-# Ventana diaria: últimos VENTANA_DIARIA_MESES meses
-_meses_ord = sorted(brecha_suc_dia['mes'].unique())
-_meses_ventana = set(_meses_ord[-VENTANA_DIARIA_MESES:]) if len(_meses_ord) > VENTANA_DIARIA_MESES else set(_meses_ord)
-_bdia_v = brecha_suc_dia[brecha_suc_dia['mes'].isin(_meses_ventana)]
+def _nsuc(df, keys):
+    return (df.groupby(keys)['id_sucursal'].nunique().reset_index()
+            .rename(columns={'id_sucursal':'n_sucursales'}))
 
-serie_diaria   = _serie(_bdia_v, 'fecha').sort_values('fecha')
-serie_semanal  = _serie(brecha_suc_dia, 'semana').sort_values('semana')
-serie_mensual  = _serie(brecha_suc_dia, 'mes').sort_values('mes')
+# ── Series nacionales (pooled) ───────────────────────────────────────────────
+serie_mensual = _basket(tp, ['mes']).merge(_nsuc(tp, ['mes']), on='mes', how='left').sort_values('mes')
+serie_semanal = _basket(tp, ['semana']).merge(_nsuc(tp, ['semana']), on='semana', how='left').sort_values('semana')
+_meses_ord = sorted(tp['mes'].unique())
+_vent = set(_meses_ord[-VENTANA_DIARIA_MESES:]) if len(_meses_ord) > VENTANA_DIARIA_MESES else set(_meses_ord)
+_tpd = tp[tp['mes'].isin(_vent)]
+serie_diaria = _basket(_tpd, ['fecha']).merge(_nsuc(_tpd, ['fecha']), on='fecha', how='left').sort_values('fecha')
 
-# Desagregaciones (todo el período)
-brecha_prov   = _serie(brecha_suc_dia, 'PROVINCIA_NORM').rename(columns={'PROVINCIA_NORM':'provincia'}).sort_values('brecha_mediana')
-brecha_cadena = _serie(brecha_suc_dia, 'cadena').sort_values('brecha_mediana')
+# ── Desagregaciones: brecha por grupo = mediana de las brechas mensuales ─────
+def _por_grupo(gcol):
+    bm = _basket(tp, [gcol, 'mes'])
+    if len(bm) == 0:
+        return pd.DataFrame(columns=[gcol,'brecha_mediana','brecha_prom','n_sucursales','n_meses'])
+    agg = (bm.groupby(gcol).agg(brecha_mediana=('brecha_mediana','median'),
+                                brecha_prom=('brecha_prom','median'),
+                                n_meses=('mes','nunique')).reset_index())
+    return agg.merge(_nsuc(tp, [gcol]), on=gcol, how='left')
 
-# Concentración: por localidad (nº de sucursales) vs brecha
-_bl = brecha_suc_dia.copy()
-_bl['localidad'] = (_bl['sucursales_localidad'].astype(str).str.strip()
-                    .replace({'': 'N/D', 'nan': 'N/D', 'None': 'N/D'}))
-concentracion = (_bl.groupby('localidad')
-                 .agg(n_sucursales=('id_sucursal','nunique'),
-                      brecha_mediana=('brecha_pct','median'),
-                      brecha_prom=('brecha_pct', _pmean))
-                 .reset_index())
+brecha_prov   = _por_grupo('PROVINCIA_NORM').rename(columns={'PROVINCIA_NORM':'provincia'}).sort_values('brecha_mediana')
+brecha_cadena = _por_grupo('cadena').sort_values('brecha_mediana')
+concentracion = _por_grupo('localidad')
 concentracion = concentracion[concentracion['localidad'] != 'N/D'].sort_values('n_sucursales', ascending=False)
 
-print('=== Brecha mensual (últimos 6) ===')
-print(serie_mensual.tail(6)[['mes','brecha_mediana','brecha_prom','n_sucursales']].to_string(index=False))
-if len(serie_mensual) >= 2:
-    _b0, _b1 = serie_mensual['brecha_mediana'].iloc[0], serie_mensual['brecha_mediana'].iloc[-1]
-    print(f'\\nBrecha mediana: {_b0:+.2f}% ({serie_mensual["mes"].iloc[0]}) → {_b1:+.2f}% ({serie_mensual["mes"].iloc[-1]})  '
-          f'| cambio {(_b1-_b0):+.2f} pp')
-print(f'\\nProvincia con MENOR brecha: {brecha_prov.iloc[0]["provincia"]} ({brecha_prov.iloc[0]["brecha_mediana"]:+.2f}%)')
-print(f'Provincia con MAYOR brecha: {brecha_prov.iloc[-1]["provincia"]} ({brecha_prov.iloc[-1]["brecha_mediana"]:+.2f}%)')"""))
+# ── Resumen ──────────────────────────────────────────────────────────────────
+print('=== Brecha mensual (nacional, pooled) — últimos 6 ===')
+if len(serie_mensual):
+    print(serie_mensual.tail(6)[['mes','brecha_mediana','brecha_prom','n_sucursales']].to_string(index=False))
+    if len(serie_mensual) >= 2:
+        _b0, _b1 = serie_mensual['brecha_mediana'].iloc[0], serie_mensual['brecha_mediana'].iloc[-1]
+        print(f'Brecha mediana: {_b0:+.2f}% ({serie_mensual["mes"].iloc[0]}) -> {_b1:+.2f}% ({serie_mensual["mes"].iloc[-1]}) | cambio {(_b1-_b0):+.2f} pp')
+else:
+    print('  (sin datos — revisá la cobertura por tipo arriba y los EANs de TIPOS)')
+if len(brecha_prov):
+    print(f'Provincia MENOR brecha: {brecha_prov.iloc[0]["provincia"]} ({brecha_prov.iloc[0]["brecha_mediana"]:+.2f}%)')
+    print(f'Provincia MAYOR brecha: {brecha_prov.iloc[-1]["provincia"]} ({brecha_prov.iloc[-1]["brecha_mediana"]:+.2f}%)')"""))
 
 # ── CELL 9 — GRÁFICOS ──────────────────────────────────────────────────────────
 cells.append(cell_code("""\
@@ -760,16 +822,22 @@ _det = _det[['cadena','PROVINCIA_NORM','sucursales_localidad','sucursales_nombre
              'id_comercio','id_bandera','id_sucursal','tipo','rol','ean_norm','descripcion','precio_mediano_mes']]
 _det = _det.sort_values(['PROVINCIA_NORM','cadena','sucursales_nombre','tipo','rol'])
 
-# ── Brecha por sucursal (último mes): base, celíaca, brecha ───────────────────
-_bsm = brecha_suc_dia[brecha_suc_dia['mes'] == ULTIMO_MES]
-_brecha_suc = (_bsm.groupby(['id_comercio','id_bandera','id_sucursal','cadena','PROVINCIA_NORM',
-                             'sucursales_localidad','sucursales_nombre'])
-               .agg(base_mediana=('base','median'), celiaca_mediana=('celiaca','median'),
-                    brecha_mediana=('brecha_pct','median'), n_tipos=('n_tipos','max'), n_dias=('fecha','nunique'))
-               .reset_index().sort_values('brecha_mediana', ascending=False))
+# ── Brecha INTRA-SUCURSAL (best-effort) — último mes ──────────────────────────
+_bsm = brecha_suc_mes[brecha_suc_mes['mes'] == ULTIMO_MES].copy()
+if len(_bsm):
+    _bsm = _bsm.merge(suc_geo[['id_comercio','id_bandera','id_sucursal','sucursales_nombre']],
+                      on=['id_comercio','id_bandera','id_sucursal'], how='left')
+    _brecha_suc = (_bsm.rename(columns={'base':'base_mediana','celiaca':'celiaca_mediana','brecha_pct':'brecha_mediana'})
+                   [['cadena','PROVINCIA_NORM','localidad','sucursales_nombre','id_comercio','id_bandera',
+                     'id_sucursal','base_mediana','celiaca_mediana','n_tipos','brecha_mediana']]
+                   .sort_values('brecha_mediana', ascending=False))
+else:
+    _brecha_suc = pd.DataFrame(columns=['cadena','PROVINCIA_NORM','localidad','sucursales_nombre',
+                                        'base_mediana','celiaca_mediana','n_tipos','brecha_mediana'])
 
 out_xls = OUTPUT_DIR / f'brecha_celiaca_{ULTIMO_MES}.xlsx'
 with pd.ExcelWriter(out_xls, engine='openpyxl') as writer:
+    cobertura_tipo.to_excel(writer, sheet_name='Cobertura', index=False)
     serie_diaria.to_excel(writer, sheet_name='Serie_diaria', index=False)
     serie_semanal.to_excel(writer, sheet_name='Serie_semanal', index=False)
     serie_mensual.to_excel(writer, sheet_name='Serie_mensual', index=False)
@@ -781,8 +849,8 @@ with pd.ExcelWriter(out_xls, engine='openpyxl') as writer:
     for sn in writer.sheets:
         ws = writer.sheets[sn]; fmt_ws(ws); auto_widths(ws)
 print(f'Excel guardado: {out_xls}')
-print(f'  Hojas: Serie_diaria/semanal/mensual · Brecha_provincia/cadena · Concentracion · Brecha_sucursal · Detalle_producto')
-print(f'  Detalle_producto: {len(_det):,} filas (sucursal × EAN, {ULTIMO_MES})')"""))
+print(f'  Hojas: Cobertura · Serie_diaria/semanal/mensual · Brecha_provincia/cadena · Concentracion · Brecha_sucursal · Detalle_producto')
+print(f'  Detalle_producto: {len(_det):,} filas (sucursal × EAN, {ULTIMO_MES}) · Brecha_sucursal (intra): {len(_brecha_suc):,}')"""))
 
 # ── Write notebook ──────────────────────────────────────────────────────────────
 nb = {
