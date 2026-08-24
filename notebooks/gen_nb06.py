@@ -295,11 +295,22 @@ PESOS_POBLACION = {
 }
 
 _mp_raw = leer_maestro('Maestro de Productos Interno.xlsx', dtype=str,
-                       usecols=['producto_sepa_id','producto_descripcion','producto_marca','rubro'])
+                       usecols=['producto_sepa_id','producto_descripcion','producto_marca','rubro',
+                                'producto_cantidad_presentacion','producto_unidad_medida_presentac'])
 MP_META = _mp_raw.rename(columns={'producto_descripcion':'descripcion','producto_marca':'marca'})
 MP_META['ean_norm'] = MP_META['producto_sepa_id'].map(normalizar_ean)
+# gramos/ml de la presentación → para normalizar el precio a $/100g (comparabilidad
+# entre presentaciones distintas: fideos 500g vs harina 1kg, etc.)
+def _to_gramos(_q, _u):
+    _q = pd.to_numeric(str(_q).replace(',', '.'), errors='coerce'); _u = str(_u).strip().lower()
+    if pd.isna(_q) or _q <= 0: return np.nan
+    if _u in ('kg','kgm','l','lt','litro','litros','kilogramo','kilogramos'): return _q * 1000
+    if _u in ('gr','g','grs','gramo','gramos','ml','cc','mililitro'): return _q
+    return np.nan
+MP_META['grams'] = [_to_gramos(a, b) for a, b in zip(MP_META['producto_cantidad_presentacion'],
+                                                     MP_META['producto_unidad_medida_presentac'])]
 MP_META = (MP_META.dropna(subset=['ean_norm']).drop_duplicates('ean_norm')
-           .set_index('ean_norm')[['descripcion','marca','rubro']])
+           .set_index('ean_norm')[['descripcion','marca','rubro','grams']])
 print(f'  Maestro de productos: {len(MP_META):,} EANs con metadata')
 print('Maestros OK')"""))
 
@@ -339,11 +350,21 @@ if not TIPO_TACC:
     raise ValueError('Ningún tipo válido en TIPOS (cada tipo necesita EANs TACC y sin-TACC).')
 
 EANS_CONFIG = set(EAN_TIPO.keys())
+EAN_GRAMS = {}      # ean_norm -> gramos/ml de la presentación (para normalizar a $/100g)
+_sin_gramos = []
 for _e in EANS_CONFIG:
     if _e in MP_META.index and pd.notna(MP_META.loc[_e, 'descripcion']):
         EAN_DESC[_e] = str(MP_META.loc[_e, 'descripcion'])[:50]
     else:
         EAN_DESC[_e] = f'EAN {_e}'
+    _g = MP_META.loc[_e, 'grams'] if _e in MP_META.index else np.nan
+    if pd.notna(_g) and _g > 0:
+        EAN_GRAMS[_e] = float(_g)
+    else:
+        _sin_gramos.append(_e)
+if _sin_gramos:
+    print(f'AVISO: {len(_sin_gramos)} EAN sin presentación en el maestro — usan precio por paquete '
+          f'(NO normalizado a $/100g): {_sin_gramos}')
 
 print(f'Tipos activos: {len(TIPO_TACC)} | EANs de config: {len(EANS_CONFIG)}')
 for _t in TIPO_TACC:
@@ -495,10 +516,17 @@ datos_dia['tipo'] = datos_dia['ean_norm'].map(EAN_TIPO)
 datos_dia['rol']  = datos_dia['ean_norm'].map(EAN_ROL)
 datos_dia = datos_dia[~datos_dia['id_comercio'].isin(CADENAS_FILTRAR)].copy()
 
-# Precio del tipo por sucursal/día/lado = promedio de los representativos presentes
+# Precio normalizado a $/100g (comparable entre presentaciones distintas). Si un EAN
+# no tiene presentación en el maestro, usa el precio por paquete (fallback).
+datos_dia['grams'] = datos_dia['ean_norm'].map(EAN_GRAMS)
+datos_dia['precio_100'] = np.where(datos_dia['grams'].notna() & (datos_dia['grams'] > 0),
+                                   datos_dia['precio'] / datos_dia['grams'] * 100,
+                                   datos_dia['precio'])
+
+# Precio del tipo por sucursal/día/lado = promedio ($/100g) de los representativos presentes
 _keys = ['id_comercio','id_bandera','id_sucursal','fecha']
-tp = (datos_dia.groupby(_keys + ['tipo','rol'])['precio'].mean()
-      .reset_index().rename(columns={'precio':'precio_rep'}))
+tp = (datos_dia.groupby(_keys + ['tipo','rol'])['precio_100'].mean()
+      .reset_index().rename(columns={'precio_100':'precio_rep'}))
 
 # ── Geo: cadena, provincia, localidad (una vez) ──────────────────────────────
 _PROV_BBOX = {
@@ -643,6 +671,37 @@ brecha_cadena = _por_grupo('cadena').sort_values('brecha_mediana')
 concentracion = _por_grupo('localidad')
 concentracion = concentracion[concentracion['localidad'] != 'N/D'].sort_values('n_sucursales', ascending=False)
 
+# ── Brecha POR TIPO (output principal): precio $/100g TACC vs sin-TACC por tipo ─
+def _brecha_tipo(df, keys):
+    _cols = keys + ['tipo','tacc_100','sin_100','brecha_mediana','brecha_prom','n_tacc','n_sin']
+    if len(df) == 0:
+        return pd.DataFrame(columns=_cols)
+    g = df.groupby(keys + ['tipo','rol'])['precio_rep'].agg(med='median', prom=_pmean).reset_index()
+    n = (df.groupby(keys + ['tipo','rol'])['id_sucursal'].nunique().reset_index()
+         .rename(columns={'id_sucursal':'n'}))
+    pm = g.pivot_table(index=keys + ['tipo'], columns='rol', values='med')
+    pp = g.pivot_table(index=keys + ['tipo'], columns='rol', values='prom')
+    nn = n.pivot_table(index=keys + ['tipo'], columns='rol', values='n')
+    res = pd.DataFrame(index=pm.index)
+    res['tacc_100'] = pm['tacc'] if 'tacc' in pm.columns else np.nan
+    res['sin_100']  = pm['sin']  if 'sin'  in pm.columns else np.nan
+    res['brecha_mediana'] = (res['sin_100'] / res['tacc_100'] - 1) * 100
+    res['brecha_prom'] = ((pp['sin'] if 'sin' in pp.columns else np.nan) /
+                          (pp['tacc'] if 'tacc' in pp.columns else np.nan) - 1) * 100
+    res['n_tacc'] = nn['tacc'] if 'tacc' in nn.columns else 0
+    res['n_sin']  = nn['sin']  if 'sin'  in nn.columns else 0
+    return res.reset_index().dropna(subset=['brecha_mediana']).sort_values(keys + ['brecha_mediana'] if keys else 'brecha_mediana')
+
+brecha_tipo         = _brecha_tipo(tp, [])                    # nacional, todo el período
+brecha_tipo_mensual = _brecha_tipo(tp, ['mes'])              # por tipo × mes (evolución)
+brecha_tipo_prov    = _brecha_tipo(tp, ['PROVINCIA_NORM']).rename(columns={'PROVINCIA_NORM':'provincia'})
+
+print('=== Brecha POR TIPO (nacional, $/100g) — el número clave ===')
+if len(brecha_tipo):
+    print(brecha_tipo[['tipo','tacc_100','sin_100','brecha_mediana','n_tacc','n_sin']].round(1).to_string(index=False))
+    print('  ⚠️ Revisá n_tacc/n_sin: tipos con pocas sucursales de un lado dan brechas poco confiables.')
+    print('  ⚠️ La canasta pooled agregada mezcla tipos de brecha muy distinta — mirá el por-tipo.')
+
 # ── Resumen ──────────────────────────────────────────────────────────────────
 print('=== Brecha mensual (nacional, pooled) — últimos 6 ===')
 if len(serie_mensual):
@@ -727,7 +786,35 @@ if len(_cc) >= 3:
     ax.grid(True, alpha=0.3)
     plt.tight_layout(); _o = OUTPUT_DIR / f'brecha_concentracion_{MES}.png'
     plt.savefig(_o, dpi=200, bbox_inches='tight', facecolor='white'); plt.show()
-    print(f'Guardado: {_o.name} | correlación brecha–concentración: {_corr_str}')"""))
+    print(f'Guardado: {_o.name} | correlación brecha–concentración: {_corr_str}')
+
+# 6) Brecha POR TIPO (barras) — el gráfico clave
+if len(brecha_tipo):
+    _bt = brecha_tipo.sort_values('brecha_mediana')
+    fig, ax = plt.subplots(figsize=(11, max(4, len(_bt)*0.7+2)))
+    _cols = plt.cm.RdYlGn_r(np.linspace(0.2, 0.9, len(_bt)))
+    ax.barh(_bt['tipo'], _bt['brecha_mediana'], color=_cols, edgecolor='black', lw=0.4)
+    for _i,(_,_r) in enumerate(_bt.iterrows()):
+        ax.text(_r['brecha_mediana'], _i, f'  {_r["brecha_mediana"]:+.0f}%  (TACC {int(_r["n_tacc"])} / sin {int(_r["n_sin"])} sucs)',
+                va='center', fontsize=8)
+    ax.set_xlabel('Brecha mediana (%) — precio sin-TACC vs TACC, $/100g')
+    ax.set_title('Brecha celíaca POR TIPO de producto')
+    ax.grid(True, alpha=0.3, axis='x')
+    plt.tight_layout(); _o = OUTPUT_DIR / f'brecha_por_tipo_{MES}.png'
+    plt.savefig(_o, dpi=200, bbox_inches='tight', facecolor='white'); plt.show()
+    print(f'Guardado: {_o.name}')
+
+# 7) Evolución mensual de la brecha por tipo
+if len(brecha_tipo_mensual):
+    fig, ax = plt.subplots(figsize=(13, 6))
+    for _t, _g in brecha_tipo_mensual.groupby('tipo'):
+        _g = _g.sort_values('mes'); _x = pd.to_datetime(_g['mes'] + '-01')
+        ax.plot(_x, _g['brecha_mediana'], marker='o', ms=4, lw=1.8, label=_t)
+    ax.set_ylabel('Brecha (%)'); ax.set_title('Evolución mensual de la brecha por tipo')
+    ax.legend(fontsize=8, ncol=2); ax.grid(True, alpha=0.3)
+    plt.tight_layout(); _o = OUTPUT_DIR / f'brecha_tipo_mensual_{MES}.png'
+    plt.savefig(_o, dpi=200, bbox_inches='tight', facecolor='white'); plt.show()
+    print(f'Guardado: {_o.name}')"""))
 
 # ── CELL 10 — MAPA COROPLÉTICO de la brecha por provincia ──────────────────────
 cells.append(cell_code("""\
@@ -805,7 +892,7 @@ def auto_widths(ws):
     for ci in range(1, ws.max_column+1):
         cl = get_column_letter(ci); hdr = str(ws.cell(1,ci).value or '').lower()
         ws.column_dimensions[cl].width = 30 if any(x in hdr for x in ('provincia','cadena','localidad','tipo','desc','producto','sucursal','nombre')) else 14
-        if any(x in hdr for x in ('brecha','base','celiaca','precio','n_')):
+        if any(x in hdr for x in ('brecha','base','celiaca','precio','n_','100','tacc','grams')):
             for row in ws.iter_rows(min_row=2, max_row=ws.max_row, min_col=ci, max_col=ci):
                 for cell in row:
                     cell.number_format = ('+0.00"%"' if 'brecha' in hdr else '#,##0.00')
@@ -815,11 +902,15 @@ _ult = datos_dia[datos_dia['mes'] == ULTIMO_MES]
 _det = (_ult.groupby(['id_comercio','id_bandera','id_sucursal','ean_norm','tipo','rol'])['precio']
         .median().reset_index().rename(columns={'precio':'precio_mediano_mes'}))
 _det['descripcion'] = _det['ean_norm'].map(EAN_DESC)
+_det['grams'] = _det['ean_norm'].map(EAN_GRAMS)
+_det['precio_100g'] = np.where(_det['grams'].notna() & (_det['grams'] > 0),
+                               _det['precio_mediano_mes'] / _det['grams'] * 100, np.nan)
 _det = _det.merge(suc_geo[['id_comercio','id_bandera','id_sucursal','cadena','PROVINCIA_NORM',
                            'sucursales_localidad','sucursales_nombre']],
                   on=['id_comercio','id_bandera','id_sucursal'], how='left')
 _det = _det[['cadena','PROVINCIA_NORM','sucursales_localidad','sucursales_nombre',
-             'id_comercio','id_bandera','id_sucursal','tipo','rol','ean_norm','descripcion','precio_mediano_mes']]
+             'id_comercio','id_bandera','id_sucursal','tipo','rol','ean_norm','descripcion',
+             'grams','precio_mediano_mes','precio_100g']]
 _det = _det.sort_values(['PROVINCIA_NORM','cadena','sucursales_nombre','tipo','rol'])
 
 # ── Brecha INTRA-SUCURSAL (best-effort) — último mes ──────────────────────────
@@ -838,6 +929,9 @@ else:
 out_xls = OUTPUT_DIR / f'brecha_celiaca_{ULTIMO_MES}.xlsx'
 with pd.ExcelWriter(out_xls, engine='openpyxl') as writer:
     cobertura_tipo.to_excel(writer, sheet_name='Cobertura', index=False)
+    brecha_tipo.to_excel(writer, sheet_name='Brecha_tipo', index=False)
+    brecha_tipo_mensual.to_excel(writer, sheet_name='Brecha_tipo_mes', index=False)
+    brecha_tipo_prov.to_excel(writer, sheet_name='Brecha_tipo_prov', index=False)
     serie_diaria.to_excel(writer, sheet_name='Serie_diaria', index=False)
     serie_semanal.to_excel(writer, sheet_name='Serie_semanal', index=False)
     serie_mensual.to_excel(writer, sheet_name='Serie_mensual', index=False)
@@ -849,8 +943,9 @@ with pd.ExcelWriter(out_xls, engine='openpyxl') as writer:
     for sn in writer.sheets:
         ws = writer.sheets[sn]; fmt_ws(ws); auto_widths(ws)
 print(f'Excel guardado: {out_xls}')
-print(f'  Hojas: Cobertura · Serie_diaria/semanal/mensual · Brecha_provincia/cadena · Concentracion · Brecha_sucursal · Detalle_producto')
-print(f'  Detalle_producto: {len(_det):,} filas (sucursal × EAN, {ULTIMO_MES}) · Brecha_sucursal (intra): {len(_brecha_suc):,}')"""))
+print(f'  Hojas: Cobertura · Brecha_tipo/_mes/_prov · Serie_diaria/semanal/mensual · Brecha_provincia/cadena · Concentracion · Brecha_sucursal · Detalle_producto')
+print(f'  Detalle_producto: {len(_det):,} filas (sucursal × EAN, {ULTIMO_MES}) · Brecha_sucursal (intra): {len(_brecha_suc):,}')
+print(f'  ⚠️ El número clave está en Brecha_tipo (brecha por tipo en $/100g). La canasta pooled mezcla tipos de brecha muy distinta.')"""))
 
 # ── Write notebook ──────────────────────────────────────────────────────────────
 nb = {

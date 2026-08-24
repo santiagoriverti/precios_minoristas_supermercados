@@ -93,6 +93,30 @@ localidad) la brecha del grupo = **mediana de las brechas mensuales** del grupo.
 > la baja cobertura sin-TACC. Se mitiga agrupando (provincia/cadena/localidad concentran sucursales
 > comparables) y se documenta en la hoja `Cobertura`.
 
+### 3.1b. Normalización por $/100g y BRECHA POR TIPO (lo importante)
+
+> **⚠️ Corrección 2026-08 (segundo run real)**: la canasta pooled agregada daba **+237%** — no
+> es una prima uniforme sino la mezcla de tipos con brecha muy distinta y con dos distorsiones:
+> **(a)** presentaciones diferentes (harina 1 kg vs premezcla 400 g) y **(b)** EANs de baja
+> cobertura o precio espurio (fideos TACC en 7 sucursales con precio irreal).
+
+Dos cambios corrigen esto:
+
+1. **Precio normalizado a `$/100g`**: cada EAN se divide por su presentación (gramos/ml del maestro:
+   `producto_cantidad_presentacion` × unidad → gramos). Así 500 g vs 1 kg vs 400 g son comparables.
+   EANs sin presentación caen a precio por paquete (con aviso).
+2. **La brecha se reporta POR TIPO** (`brecha_tipo`, `brecha_tipo_mes`, `brecha_tipo_prov`): para
+   cada tipo, precio TACC vs sin-TACC en `$/100g`, con `n_tacc`/`n_sin` (sucursales de cada lado).
+   **Este es el número clave**, no la canasta agregada.
+
+**Hallazgo (no es un bug)**: la brecha por producto TACC-sustituible es **grande** (galletitas ~+140/200%,
+pan rallado ~+320%), muy por encima del ~9% de la canasta **completa** Celíaca Media. Es coherente con
+lo que buscaba Fernando: el 9% "maquilla" la brecha real porque promedia productos **naturalmente sin
+gluten** (carne, lácteos, verdura) con 0% de prima. Al aislar los productos con dicotomía, la prima real
+aparece. **Se debe reportar por tipo** (no como una canasta única), y **vetando cada tipo con
+`n_tacc`/`n_sin` y `Cobertura`** (descartar tipos con un lado en muy pocas sucursales, y la
+harina/premezcla que es sustitución, no like-for-like).
+
 ### 3.2. Brecha intra-sucursal (best-effort)
 
 Además se calcula, **por sucursal × mes** (no día), la brecha para las sucursales que **sí**
@@ -186,6 +210,8 @@ Los EANs concretos están en la CELDA 1 de `notebooks/gen_nb06.py` (fuente) y de
 | Hoja | Contenido |
 |------|-----------|
 | `Cobertura` | **diagnóstico**: por tipo, nº de sucursales que ofrecen TACC, sin-TACC y **ambos** (todo el período) |
+| `Brecha_tipo` | **el número clave**: por tipo, precio TACC vs sin-TACC en `$/100g`, brecha (mediana + promedio), `n_tacc`/`n_sin` |
+| `Brecha_tipo_mes` / `Brecha_tipo_prov` | la brecha por tipo desagregada por mes (evolución) y por provincia |
 | `Serie_diaria` / `Serie_semanal` / `Serie_mensual` | brecha pooled nacional: mediana y promedio, base/celíaca medianas, nº sucursales |
 | `Brecha_provincia` | brecha pooled por provincia (mediana + promedio) |
 | `Brecha_cadena` | brecha pooled por cadena |
