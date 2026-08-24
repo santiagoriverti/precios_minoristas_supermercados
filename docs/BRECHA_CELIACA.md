@@ -62,11 +62,21 @@ EANs entran es del investigador; la plantilla es un punto de partida, no la list
 
 ## 3. Definición de las canastas y de la brecha
 
-> **⚠️ Realidad de los datos (corregido tras el primer run real, 2026-08)**: los productos
-> sin-TACC tienen **baja cobertura** — están en pocas góndolas. Exigir que la **misma sucursal**
-> tenga TACC **y** sin-TACC del mismo tipo el **mismo día**, para ≥3 tipos, da **0 observaciones**
-> en la práctica (con la plantilla real: 23/30 EANs con datos pero 0 pares intra-sucursal-día).
-> Por eso la brecha se calcula **pooled por grupo**, no intra-sucursal-diaria.
+> **✅ Método vigente (2026-08, tras 3 runs reales): brecha INTRA-SUCURSAL con listas amplias
+> de candidatos y precio $/100g.** Para cada **sucursal**, por tipo, se usa el precio ($/100g)
+> de **los candidatos que esa sucursal tenga** (mediana robusta a un EAN mal cargado). Un tipo
+> cuenta en esa sucursal si tiene ≥1 candidato TACC y ≥1 sin-TACC → la brecha del tipo se calcula
+> **dentro de la sucursal**. El **output principal es la brecha POR TIPO** (`brecha_tipo`); la
+> canasta por sucursal (suma de tipos con ambos lados) alimenta las series y desagregaciones.
+> La clave para que funcione: **listas amplias** por lado (muchas marcas/presentaciones) → más
+> sucursales tienen ambos lados. La hoja `Cobertura` muestra cuántas sucursales ofrecen cada lado.
+>
+> *(Historia: el 1er run con la condición estricta "ambos lados misma sucursal el MISMO DÍA, ≥3
+> tipos" dio 0 obs por baja cobertura sin-TACC; una versión intermedia usó pooling por grupo. La
+> versión final es intra-sucursal por tipo + listas amplias + $/100g, que es lo pedido.)*
+
+> **⚠️ Sub-sección histórica (pooled)** — se conserva por trazabilidad; el método vigente es el
+> de arriba (intra-sucursal por tipo):
 
 ### 3.1. Cálculo POOLED por grupo (método principal)
 
@@ -169,11 +179,13 @@ MES_INICIO_HISTORICO = '2024-01'
 CADENAS_FILTRAR      = {'19','2013','3001','4'}   # estaciones de servicio / no minoristas
 ```
 
-### 6.1. Plantilla real precargada (5 tipos, 30 EANs verificados del Maestro)
+### 6.1. Plantilla precargada — LISTAS AMPLIAS (4 tipos like-for-like)
 
-Se eligieron marcas mainstream y presentaciones estándar. **Ajustar según cobertura**:
-algunas marcas sin-TACC (Blue Patna, Grandiet, Smams…) pueden tener menos presencia en góndola;
-como se promedian varios representativos, un faltante lo cubren los presentes.
+Se precargan **listas amplias** por lado (muchas marcas + presentaciones) para maximizar la
+cobertura intra-sucursal: fideos (~10 TACC / 8 sin), galletitas dulces (~8/9), galletitas
+saladas (~6/7), pan rallado (~5/7). El tipo **Harina / premezcla** viene **comentado** (es una
+sustitución, brecha ~+700%, no like-for-like). Los EANs están en la CELDA 1 de `gen_nb06.py`.
+**Ajustar con la hoja `Cobertura`** del primer run (n de sucursales con cada lado por tipo).
 
 | Tipo | qty | TACC (base) | sin-TACC (celíaca) |
 |------|-----|-------------|--------------------|
