@@ -71,36 +71,35 @@ cells.append(cell_code("""\
 TIPOS = {
     'Fideos secos': {
         'qty': 4,
-        # TACC: Matarazzo · Lucchetti · Marolio · Terrabusi · Don Vicente (varias formas, 500 g)
-        'tacc':     ['7790070313713','7790070318114','7790070318282','7790070318299',
-                     '7797470000809','7797470000892','7790070311412','7798138552319',
-                     '7798138554429','0000077900739'],
+        # TACC: Lucchetti · Matarazzo · Favorita (todos 500 g) — alta cobertura (canasta_repr. 07/2026, ~1900-2500 suc.)
+        'tacc':     ['7790070336385','7790070336118','7790070336149','7790070336316',
+                     '7790070336293','7790070320285','7790070320308','7790070320292'],
         # sin-TACC: Blue Patna · Grandiet · Matarazzo s/TACC · otras (maíz/arroz, 500 g)
         'sin_tacc': ['7730114000780','7730114000797','7797330105590','7797330105606',
                      '7790070321800','7790070321794','7798031470024','7794903232240'],
     },
     'Galletitas dulces': {
         'qty': 3,
-        # TACC: Oreo · Trío · Gaona · Chocolinas · Manon · Sonrisas · Rumba
-        'tacc':     ['7790040111004','7790040132764','7798126071129','7622201509552',
-                     '7790040002395','7622210692481','7790040108202','7791787000026'],
+        # TACC: 9deOro · Don Satur · Chocolinas · Bagley Rumba · Sonrisas · Maná (galletita dulce base) — alta cobertura
+        'tacc':     ['7792200000128','7795735000335','7790040143234','7790040143524',
+                     '7790040133471','7790040137844'],
         # sin-TACC: Santa María · Smams · Natuzen · Nina · varias
         'sin_tacc': ['7798294150435','7798308250205','7798082000317','7798082000331',
                      '0655257736631','7798079230017','7798079230062','7798181510120','7798181510199'],
     },
     'Galletitas saladas / crackers': {
         'qty': 2,
-        # TACC (base trigo): Saladix · Cerealitas · Granix · Criollitas
-        'tacc':     ['7622300160975','7790040001374','7622300790233','7790045000174',
-                     '7790040494206','7790040102057'],
+        # TACC (base trigo): 9deOro · Don Satur · Traviata · Tosti · Hogareñas — alta cobertura
+        'tacc':     ['7792200000159','7795735000328','7790040144095','7794529041608',
+                     '7790040136069'],
         # sin-TACC (arroz): Crisppino · Olienka · Shiva · Viavita
         'sin_tacc': ['7798199770035','7798199770042','7798289620080','7798289620097',
                      '0617308824087','0617308824094','7798195940173'],
     },
     'Pan rallado / rebozador': {
         'qty': 2,
-        # TACC: Favorita · Mamá Cocina · Preferido · Rosa Blanca
-        'tacc':     ['7790070413673','7790070413628','7792180003027','7790060004348','7791990019297'],
+        # TACC: Preferido · Mamá Cocina · Lucchetti · Pureza · Favorita (pan rallado) — alta cobertura
+        'tacc':     ['7790070433169','7792180004741','7790070433275','7792180136480','7790070433312'],
         # sin-TACC: Bio · La Delfina · Maizena · Marvese
         'sin_tacc': ['7798221641845','7798221641944','7798131130200','7798131130231',
                      '7794000005303','7794000007291','7798306830164'],

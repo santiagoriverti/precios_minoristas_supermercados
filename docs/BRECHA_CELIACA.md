@@ -73,11 +73,17 @@ EANs entran es del investigador; la plantilla es un punto de partida, no la list
 > no aplican a este método y salen vacías). La hoja `Cobertura` muestra cuántas sucursales ofrecen
 > cada lado por tipo.
 >
-> **⚠️ Limitación abierta**: la brecha depende de que los EANs **TACC (regular)** tengan buena
-> cobertura y precio correcto. En el 4º run los EANs TACC elegidos resultaron nicho (~7 sucursales)
-> y con precios espurios ($40-53/100g); el lado sin-TACC estaba bien (100-400 sucursales). El
-> Maestro **no** tiene métrica de cobertura → hay que elegir los EANs TACC desde el
-> `canasta_representativa` de nb01 (que sí trae n_sucursales por producto).
+> **✅ EANs TACC curados [2026-08-25]**: los EANs TACC (regular) de la CELDA 1 se reemplazaron por
+> los de **alta cobertura** de `canasta_representativa_2026-07.xlsx` (hoja `Candidatos`, que sí trae
+> `n_sucursales` por producto — el Maestro no). Se filtró por subcategoría (Pastas Secas, Galletitas
+> Dulces/Saladas, Pan Rallado y Rebozadores) y se eligieron los de mayor cobertura (~1900-2500
+> sucursales), excluyendo premium/snacks (Kit Kat, Oreo, Don Vicente, Saladix…) que distorsionan el
+> `tacc_100` en $/100g. Fideos: Lucchetti/Matarazzo/Favorita 500g · Galletitas dulces: 9deOro, Don
+> Satur, Chocolinas, Bagley Rumba, Sonrisas, Maná · Galletitas saladas: 9deOro, Don Satur, Traviata,
+> Tosti, Hogareñas · Pan rallado: Preferido, Mamá Cocina, Lucchetti, Pureza, Favorita.
+> **Limitación remanente**: el lado **sin-TACC** es de cobertura intrínsecamente baja (productos
+> celíacos = nicho); la brecha por tipo solo se calcula donde una sucursal tenga ambos lados. Revisar
+> la hoja `Cobertura` tras el primer run y afinar las listas sin-TACC de los tipos con pocos supers.
 >
 > *(Historia: el 1er run con la condición estricta "ambos lados misma sucursal el MISMO DÍA, ≥3
 > tipos" dio 0 obs por baja cobertura sin-TACC; una versión intermedia usó pooling por grupo. La
