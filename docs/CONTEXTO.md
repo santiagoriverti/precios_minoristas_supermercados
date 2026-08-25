@@ -1,6 +1,6 @@
 # Contexto del Proyecto — Precios Minoristas SEPA
 
-Última actualización: 2026-08-21 (doble análisis MEDIANA + PROMEDIO; Notebook 06 brecha celíaca)
+Última actualización: 2026-08-25 (nb06 corrido y validado con EANs curados + fix de RAM; base para paper académico)
 
 > **El proyecto tiene 6 herramientas (nb01–nb06).** Las descripciones detalladas por celda más
 > abajo en este archivo son **históricas** (describen la arquitectura previa de nb02); el estado
@@ -12,10 +12,19 @@
 > - **nb02 y nb05** generan TODO por duplicado — análisis **mediana** (nombres base) y **promedio**
 >   (sufijo `_prom`, outliers fuera `[mediana/4, mediana×4]`). El precio por sucursal se calcula
 >   sobre **todos los días del mes** (antes: primer día). Metodología: `METODOLOGIA.md` §4.
-> - **Notebook 06 — Brecha celíaca (TACC vs sin-TACC)**: evolución diaria/semanal/mensual de la
->   brecha entre canasta base y celíaca, desagregada por provincia/cadena/concentración. Detalle
->   completo en `docs/BRECHA_CELIACA.md`.
+> - **Notebook 06 — Brecha celíaca (TACC vs sin-TACC)**: evolución mensual de la brecha entre
+>   canasta base y celíaca (método vigente: **intra-super por sucursal-mes, $/100g**; las series
+>   diaria/semanal quedan vacías), desagregada por provincia/cadena/concentración. Detalle completo
+>   en `docs/BRECHA_CELIACA.md`.
 > - Fix del encabezado LaTeX de las tablas de canasta (`\\` duplicado) — ver `BUGS_Y_MEJORAS.md`.
+>
+> **Novedades 2026-08-25**:
+> - **nb06 corrido y validado** (julio 2026) con EANs TACC curados por cobertura + **fix de RAM**
+>   (lectura colapsada a mediana mensual; caché `_v2`). Brecha por tipo +138% a +362%; canasta
+>   acotada +240%. Resultados en `docs/BRECHA_CELIACA.md` §12.
+> - **🎓 nb06 es ahora la base de un PAPER ACADÉMICO** sobre la brecha celíaca y sus determinantes
+>   (tiempo, concentración, geografía, cadena). Agenda metodológica (amenazas a la validez a resolver
+>   con rigor científico) en `docs/BRECHA_CELIACA.md` §13. Método/EANs congelados por ahora.
 
 ## Objetivo
 
