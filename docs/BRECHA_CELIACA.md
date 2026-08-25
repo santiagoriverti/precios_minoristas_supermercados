@@ -62,14 +62,22 @@ EANs entran es del investigador; la plantilla es un punto de partida, no la list
 
 ## 3. Definición de las canastas y de la brecha
 
-> **✅ Método vigente (2026-08, tras 3 runs reales): brecha INTRA-SUCURSAL con listas amplias
-> de candidatos y precio $/100g.** Para cada **sucursal**, por tipo, se usa el precio ($/100g)
-> de **los candidatos que esa sucursal tenga** (mediana robusta a un EAN mal cargado). Un tipo
-> cuenta en esa sucursal si tiene ≥1 candidato TACC y ≥1 sin-TACC → la brecha del tipo se calcula
-> **dentro de la sucursal**. El **output principal es la brecha POR TIPO** (`brecha_tipo`); la
-> canasta por sucursal (suma de tipos con ambos lados) alimenta las series y desagregaciones.
-> La clave para que funcione: **listas amplias** por lado (muchas marcas/presentaciones) → más
-> sucursales tienen ambos lados. La hoja `Cobertura` muestra cuántas sucursales ofrecen cada lado.
+> **✅ Método vigente (2026-08, tras 4 runs reales): brecha INTRA-SUPERMERCADO por (sucursal, MES),
+> listas amplias de candidatos, precio $/100g.** Para cada **sucursal** y **mes**, por tipo, se usa
+> el precio ($/100g) de **los candidatos que esa sucursal tuvo ese mes** (mediana, sobre todos sus
+> días → robusta a un EAN mal cargado). Un tipo cuenta si la sucursal tuvo ≥1 candidato TACC y ≥1
+> sin-TACC **en ese mes** (NO exige el mismo día → mucho más robusto que la versión por-día, que
+> daba n=1). La brecha del tipo se calcula **dentro del mismo super**, y luego se **promedia entre
+> supers** (mediana + promedio), con desagregación por provincia/cadena/localidad. El **output
+> principal es la brecha POR TIPO** (`brecha_tipo`). La granularidad es **mensual** (diaria/semanal
+> no aplican a este método y salen vacías). La hoja `Cobertura` muestra cuántas sucursales ofrecen
+> cada lado por tipo.
+>
+> **⚠️ Limitación abierta**: la brecha depende de que los EANs **TACC (regular)** tengan buena
+> cobertura y precio correcto. En el 4º run los EANs TACC elegidos resultaron nicho (~7 sucursales)
+> y con precios espurios ($40-53/100g); el lado sin-TACC estaba bien (100-400 sucursales). El
+> Maestro **no** tiene métrica de cobertura → hay que elegir los EANs TACC desde el
+> `canasta_representativa` de nb01 (que sí trae n_sucursales por producto).
 >
 > *(Historia: el 1er run con la condición estricta "ambos lados misma sucursal el MISMO DÍA, ≥3
 > tipos" dio 0 obs por baja cobertura sin-TACC; una versión intermedia usó pooling por grupo. La
