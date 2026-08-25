@@ -418,12 +418,14 @@ print(f'Meses disponibles: {len(_meses_disp)}  ({_meses_disp[0]} → {_meses_dis
 # ── CELL 6 — LECTURA DIARIA (todos los meses, dimensión fecha) ─────────────────
 cells.append(cell_code("""\
 # ============================================================
-# CELDA 6 — Lectura DIARIA de precios (una fila por sucursal×EAN×día)
+# CELDA 6 — Lectura MENSUAL de precios (una fila por sucursal×EAN×mes)
 # ============================================================
-# Lee los EANs de config en todos los meses >= MES_INICIO_HISTORICO conservando el
-# día (columnas precio_YYYYMMDD). Cache de meses cerrados; el mes en curso se relee.
+# Lee los EANs de config en todos los meses >= MES_INICIO_HISTORICO. Dentro de cada
+# mes COLAPSA los días a la MEDIANA mensual por (sucursal, EAN) → footprint ~30× menor
+# (clave para no reventar la RAM de Colab cuando los EANs tienen mucha cobertura). El
+# método vigente agrega por MES, así que no se pierde nada. Cache de meses cerrados.
 _cache_key    = hashlib.md5('|'.join(sorted(EANS_CONFIG)).encode()).hexdigest()[:8]
-_cache_path   = CACHE_DIR / f'brecha_dia_{_cache_key}_v1.parquet'
+_cache_path   = CACHE_DIR / f'brecha_dia_{_cache_key}_v2.parquet'
 _EANS_LECTURA = EANS_CONFIG | REF_EANS_FACTOR
 
 def _leer_mes_dia(_lbl):
@@ -458,7 +460,12 @@ def _leer_mes_dia(_lbl):
                     _muestra_ref.extend(_mlt.loc[_es_ref, 'precio'].tolist())
                 _mlt = _mlt[_mlt['ean_norm'].isin(EANS_CONFIG)]
                 if len(_mlt) > 0:
-                    _rows.append(_mlt[['id_comercio','id_bandera','id_sucursal','ean_norm','fecha','precio']])
+                    # Colapso parcial por chunk: mediana del mes por (suc, EAN) sobre los días
+                    # del chunk. Reduce el pico de RAM antes de concatenar (los días de un
+                    # mismo mes pueden venir en varios archivos/chunks → se re-agrega al final).
+                    _rows.append(_mlt.groupby(
+                        ['id_comercio','id_bandera','id_sucursal','ean_norm'],
+                        as_index=False)['precio'].median())
         _tmp_p.unlink(missing_ok=True)
     if not _rows:
         return None
@@ -466,6 +473,9 @@ def _leer_mes_dia(_lbl):
     _med_ref = (pd.Series(_muestra_ref).median() if _muestra_ref else _df['precio'].median())
     _fac = 100 if _med_ref > 10_000 else 1
     if _fac == 100: _df['precio'] /= 100
+    # Mediana mensual definitiva por (sucursal, EAN) — colapsa los distintos chunks/archivos
+    _df = _df.groupby(['id_comercio','id_bandera','id_sucursal','ean_norm'],
+                      as_index=False)['precio'].median()
     _df['mes'] = _lbl
     del _rows, _muestra_ref; gc.collect()
     return _df
@@ -475,7 +485,7 @@ if USE_CACHE and _cache_path.exists():
     df_cache = pd.read_parquet(_cache_path)
     df_cache = df_cache[df_cache['mes'] < _mes_actual].copy()
 else:
-    df_cache = pd.DataFrame(columns=['id_comercio','id_bandera','id_sucursal','ean_norm','fecha','precio','mes'])
+    df_cache = pd.DataFrame(columns=['id_comercio','id_bandera','id_sucursal','ean_norm','precio','mes'])
 
 _en_cache = set(df_cache['mes'].unique())
 _faltantes = [m for m in _meses_disp if m < _mes_actual and m not in _en_cache]
@@ -496,14 +506,14 @@ datos_dia = (pd.concat([df_cache] + ([_actual] if _actual is not None else []), 
              else pd.DataFrame(columns=df_cache.columns))
 if len(datos_dia) == 0:
     raise RuntimeError('Sin datos para los EANs de config. Revisá los EANs de TIPOS (CELDA 1).')
-datos_dia = datos_dia.sort_values('fecha').reset_index(drop=True)
+datos_dia = datos_dia.sort_values('mes').reset_index(drop=True)
 
 ULTIMO_MES = _mes_actual
 _NOM = {'01':'enero','02':'febrero','03':'marzo','04':'abril','05':'mayo','06':'junio',
         '07':'julio','08':'agosto','09':'septiembre','10':'octubre','11':'noviembre','12':'diciembre'}
 NOMBRE_MES_TITLE = f"{_NOM[_mes_actual[5:7]]} {_mes_actual[:4]}".title()
-print(f'Observaciones diarias: {len(datos_dia):,} | EANs con datos: {datos_dia["ean_norm"].nunique()}/{len(EANS_CONFIG)}')
-print(f'Rango: {datos_dia["fecha"].min().date()} → {datos_dia["fecha"].max().date()} | Sucursales: {datos_dia.groupby(["id_comercio","id_bandera","id_sucursal"]).ngroups:,}')"""))
+print(f'Observaciones (sucursal×EAN×mes): {len(datos_dia):,} | EANs con datos: {datos_dia["ean_norm"].nunique()}/{len(EANS_CONFIG)}')
+print(f'Meses: {datos_dia["mes"].min()} → {datos_dia["mes"].max()} | Sucursales: {datos_dia.groupby(["id_comercio","id_bandera","id_sucursal"]).ngroups:,}')"""))
 
 # ── CELL 7 — BRECHA POR SUCURSAL × DÍA ─────────────────────────────────────────
 cells.append(cell_code("""\
