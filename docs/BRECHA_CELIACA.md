@@ -299,3 +299,73 @@ CELDA 2 (setup/mount), CELDA 3 (maestros) y CELDA 5 (funciones ZIP) **verbatim**
 2. Para un primer resultado, correr nb06 **tal cual** (ya trae `TIPOS` con datos reales).
 3. Ajustar `TIPOS` según lo que muestre `Detalle_producto` (cobertura por EAN/sucursal).
 4. Handoff y detalle por celda: `.claude/memory.md` (sección "Notebook 06").
+
+---
+
+## 12. Resultados de referencia (run real, julio 2026)
+
+Primer run válido con los EANs TACC curados (post fix de RAM). 1.426.879 obs
+sucursal×EAN×mes · 2.742 sucursales · 31 meses (2024-01 → 2026-07).
+
+**Brecha por tipo (intra-super, $/100 g):**
+
+| Tipo | TACC | sin-TACC | Brecha (mediana) | n suc. (ambos) |
+|---|--:|--:|--:|--:|
+| Galletitas dulces | 923,8 | 2.129,8 | **+138,5 %** | 767 |
+| Fideos secos | 280,0 | 962,0 | **+269,8 %** | 561 |
+| Galletitas saladas | 568,8 | 2.200,0 | **+302,1 %** | 520 |
+| Pan rallado | 307,9 | 1.387,3 | **+361,5 %** | 119 |
+
+**Canasta acotada:** +240,6 % (jul-2026), desde +111,2 % (ene-2024) → +129 pp.
+Prov. menor: Formosa (+169 %) · mayor: Misiones (+270 %). Cadena atípica:
+Carrefour Express (+21 %, efecto composición).
+
+---
+
+## 13. Agenda metodológica para el paper (rigor científico — PENDIENTE de revisión)
+
+> Objetivo: este pipeline es la **base empírica** de un paper sobre la brecha celíaca
+> y sus determinantes (**tiempo, concentración de mercado, geografía, cadena**). Antes de
+> publicar hay que resolver estas amenazas a la validez. Nada de esto está resuelto aún;
+> se registra para la revisión metodológica futura.
+
+**A. Validez de constructo (qué se mide).**
+- La brecha compara el **sustituto sin gluten** vs el producto TACC de referencia, **no** el
+  "mismo producto sin gluten" (no existe fideo de trigo sin TACC). Declararlo explícitamente.
+- Selección de EANs por **cobertura** (`n_sucursales`), no por participación de consumo. SEPA
+  no tiene cantidades vendidas → riesgo de sesgo de selección. Buscar ponderadores (canasta
+  INDEC, gasto celíaco) o justificar la selección.
+- Falta un **criterio de matching reproducible** TACC↔sin-TACC (tipo + presentación + calidad).
+
+**B. Medición del precio ($/100 g).**
+- Depurar los **2 EANs sin presentación** (`7790040133471`, `7798079230062`) que hoy entran
+  sin normalizar ($/paquete) y distorsionan Galletitas dulces.
+- El **efecto tamaño de envase**: los sin-TACC vienen en presentaciones más chicas, que suelen
+  tener mayor $/100 g por sí mismas. Parte de la brecha podría ser efecto envase, no efecto
+  gluten → controlar por gramaje de la presentación.
+- La **mediana-de-medianas por chunk** (CELDA 6) es una aproximación; para el paper, recalcular
+  con mediana exacta o media ponderada por días.
+
+**C. Sesgo de selección de sucursales (validez externa).**
+- La brecha solo se calcula donde hay **ambos lados** (119–964 de 2.742 sucursales). Las
+  sucursales que ofrecen sin-TACC pueden ser sistemáticamente distintas (urbanas, grandes,
+  ingresos altos) → sesgo. Considerar corrección tipo Heckman o reportar el sesgo explícito.
+- **Pan rallado n=119**: potencia estadística baja; reportar con salvedad o excluir de agregados.
+
+**D. Comparaciones entre grupos (efecto composición).**
+- La canasta por sucursal suma **solo los tipos presentes** → comparar cadenas/provincias mezcla
+  composición distinta (es lo que hace ver a Carrefour Express en +21 %). Para el paper: fijar la
+  canasta (mismos tipos) o estimar un modelo con **efectos fijos por tipo y por tiempo**:
+  `brecha_ist = α + β·concentración + γ·región + δ·cadena + FE_tipo + FE_mes + ε`.
+
+**E. Dimensión temporal.**
+- La brecha en % ya es relativa, pero para "cómo cambia en el tiempo" analizar también niveles
+  **reales** (deflactar $/100 g). Cuidar que la entrada/salida de EANs no confunda la evolución
+  (índice encadenado / panel balanceado).
+
+**F. Concentración de mercado.**
+- Reemplazar la métrica cruda (`localidad` / `n_sucursales`, corr. −0,20) por un **HHI** por
+  mercado geográfico bien definido, y modelarlo (no solo correlación).
+
+**G. Reproducibilidad.** Ya versionado en git (generador + listas de EANs). Falta: fijar y
+  documentar fecha/versión de descarga SEPA usada para cada corte del paper.
