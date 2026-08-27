@@ -336,23 +336,36 @@ CELDA 2 (setup/mount), CELDA 3 (maestros) y CELDA 5 (funciones ZIP) **verbatim**
 
 ---
 
-## 12. Resultados de referencia (run real, julio 2026)
+## 12. Resultados de referencia (run real, agosto 2026)
 
-Primer run válido con los EANs TACC curados (post fix de RAM). 1.426.879 obs
-sucursal×EAN×mes · 2.742 sucursales · 31 meses (2024-01 → 2026-07).
+Estimador **primario = mediana** (§3.3), listas sin-TACC ampliadas con el Maestro (§3.8),
+Maná excluido. 1.816.833 obs sucursal×EAN×mes · **2.532 de 2.742 sucursales con ≥1 par** ·
+32 meses (2024-01 → 2026-08).
 
-**Brecha por tipo (intra-super, $/100 g):**
+**Brecha por tipo (intra-super, $/100 g, mediana):**
 
-| Tipo | TACC | sin-TACC | Brecha (mediana) | n suc. (ambos) |
-|---|--:|--:|--:|--:|
-| Galletitas dulces | 923,8 | 2.129,8 | **+138,5 %** | 767 |
-| Fideos secos | 280,0 | 962,0 | **+269,8 %** | 561 |
-| Galletitas saladas | 568,8 | 2.200,0 | **+302,1 %** | 520 |
-| Pan rallado | 307,9 | 1.387,3 | **+361,5 %** | 119 |
+| Tipo | TACC | sin-TACC | Brecha (mediana) | "más barato" (ilustr.) | n suc. (ambos) |
+|---|--:|--:|--:|--:|--:|
+| Galletitas dulces | 667,9 | 1.300,0 | **+89,4 %** | +106,4 % | 797 |
+| Fideos secos | 276,5 | 790,0 | **+172,7 %** | +256,5 % | 1.291 |
+| Galletitas saladas | 502,1 | 1.538,0 | **+187,7 %** | +162,7 % | 1.332 |
+| Pan rallado | 313,8 | 949,8 | **+194,4 %** | +209,4 % | 727 |
 
-**Canasta acotada:** +240,6 % (jul-2026), desde +111,2 % (ene-2024) → +129 pp.
-Prov. menor: Formosa (+169 %) · mayor: Misiones (+270 %). Cadena atípica:
-Carrefour Express (+21 %, efecto composición).
+**Canasta acotada:** +178,4 % (ago-2026), desde +102,3 % (ene-2024) → +76 pp.
+Prov. menor: Entre Ríos (+116 %) · mayor: Misiones (+228 %). Correlación brecha–concentración −0,08.
+
+> **La ampliación del sin-TACC bajó las brechas** (Fideos +270→+173 %, Saladas +302→+188 %, Pan
+> rallado +362→+194 %) y **multiplicó la cobertura** (ambos lados: Fideos 963→2.458, Saladas
+> 621→2.319, **Pan rallado 119→792**). Interpretación: la brecha anterior estaba **sesgada al alza**
+> porque el sin-TACC eran solo productos de **nicho caros**; al sumar marcas mainstream y marca
+> blanca (más baratas y de más cobertura), el precio sin-TACC representativo es menor → la brecha
+> "verdadera" es más baja y con base empírica mucho más sólida. Además min y mediana ahora casi
+> coinciden (menos asimetría de candidatos) → resultado robusto.
+>
+> **Cobertura sin-TACC (con qué EANs pega cada tipo)**: Fideos = **Matarazzo GF** (741+727 suc.,
+> 500 g) · Dulces = **Santa María** línea 200 g (limón 499, vainilla 444…) · Saladas = Crisppino/
+> Shiva/Tía Maruca/Carrefour (envases 50–130 g → efecto envase fuerte, §3.7) · Pan rallado =
+> **Preferido** (661) + **Carrefour marca blanca** (436+149+91), 350 g.
 
 ---
 
