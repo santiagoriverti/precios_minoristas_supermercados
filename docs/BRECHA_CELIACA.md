@@ -5,7 +5,8 @@ Documento técnico del **Notebook 06**. Mide la **brecha** entre una canasta **b
 **diaria, semanal y mensual**, desagregada por provincia, cadena y concentración de
 comercios.
 
-Última actualización: 2026-08-27 (definición formal del estimador a nivel sucursal — §3).
+Última actualización: 2026-08-27 (revisión exhaustiva nivel-paper del estimador a nivel sucursal:
+filtro de plausibilidad por regla, tratamiento del efecto envase, especificación hedónica §3.9).
 
 ---
 
@@ -138,20 +139,53 @@ Para un grupo `G` (nacional, provincia, cadena, estrato de concentración) y tip
   mínimo por número de candidatos**, no un fenómeno económico. La **mediana** es estable a esto
   (su esperanza no depende de `n`) → es el estimador primario. El mínimo queda como
   `brecha_min_ilustr` (cota ilustrativa, con esta advertencia).
-- **Efecto tamaño de envase**: los sin-TACC vienen en **presentaciones más chicas** (44–120 g) que
-  los TACC (200–540 g), y los envases chicos tienen mayor $/100 g por sí mismos → parte de la brecha
-  puede ser efecto envase, no gluten. Controlar con el gramaje como covariable (o emparejando
-  presentaciones donde se pueda).
+- **Efecto tamaño de envase (presentaciones distintas)**: los sin-TACC vienen en **presentaciones
+  más chicas** (44–130 g) que los TACC (200–540 g), y por costos fijos de envasado el $/100 g de un
+  paquete chico es mayor *aunque el producto no sea más caro*. La normalización a $/100 g corrige la
+  diferencia de **primer orden** (500 g vs 250 g), pero no este efecto de **segundo orden**. Doble
+  tratamiento: **(a)** el $/100 g es igualmente el **costo real por unidad de alimento** que paga el
+  celíaco (relevante para bienestar) → se reporta como brecha descriptiva **con la salvedad
+  explícita** de que incluye un componente de envase; **(b)** el modelo hedónico (§3.9) **separa** la
+  prima pura de gluten del efecto envase incluyendo `ln(gramos)` como control. El panel conserva
+  `grams` por observación para esto. El tipo más afectado es **Galletitas saladas** (sin-TACC de
+  50–130 g, tostadas/galletas de arroz) → se reporta como el de menor comparabilidad like-for-like.
 - **Efectos fijos de producto/marca** en el modelo de determinantes: los coeficientes de
   concentración, geografía, cadena y tiempo se estiman *neteando* qué surtido stockea cada sucursal
   — así la heterogeneidad de composición (§3.2) no confunde el efecto de interés.
+- **Sesgo de selección de sucursales**: la brecha solo se calcula donde hay **ambos lados**; las
+  sucursales que ofrecen sin-TACC pueden diferir sistemáticamente (urbanas, grandes, ingreso alto).
+  Tras la ampliación del sin-TACC la cobertura subió a **2.532 de 2.742** sucursales (92 %), lo que
+  **reduce** mucho este sesgo, pero se **reporta** la cobertura por tipo/grupo y, para el paper, se
+  caracterizan las sucursales incluidas vs excluidas (y, si hace falta, corrección tipo Heckman).
 
-### 3.8. Exclusiones y curación de listas
+### 3.8. Data-quality y exclusiones (regla reproducible, sin cherry-picking)
 
-- EANs **sin presentación en el Maestro** (no normalizables a $/100 g) — hoy `7790040133471` (Sonrisas, TACC dulces) y `7798079230062` (sin-TACC dulces). Se filtran automáticamente por `grams`.
-- **Outliers de comparabilidad** (set `EANS_EXCLUIR` en CELDA 1, filtrado en CELDA 7 → cache-preserving): hoy `7790040137844` (Maná vainilla, dulces TACC) — envase premium de 131 g a $2607/100 g que desentona frente a las galletitas dulces mainstream (~$700–1500/100 g). Sacarlo baja la mediana TACC de dulces (de ~$1026 a ~$887) → sube algo la brecha de ese tipo (más honesto).
-- Precios fuera de la banda de plausibilidad por EAN (errores de carga SEPA).
-- Tipos con un lado en **muy pocas sucursales** (vetar con `Cobertura`/`n_sucursales`): **Pan rallado** tiene sin-TACC en solo ~119 sucursales en el período (y ~0 algunos meses) → reportar con salvedad. La harina/premezcla (sustitución, no like-for-like) queda comentada.
+**Principio (anti cherry-picking)**: no se sacan productos por ser "caros" o "baratos" (eso movería
+la brecha a gusto). Solo se excluye por **(i) no normalizable**, **(ii) error de carga** detectado
+por una regla simétrica, o **(iii) no-comparabilidad documentada**. Los criterios se aplican por
+igual a ambos lados.
+
+1. **No normalizables a $/100 g** (sin presentación en gramos/ml en el Maestro): se filtran
+   automáticamente por `grams` (los multipacks tipo "N Un" quedan sin gramos → fuera). Verificado
+   que NO hay cálculo erróneo de multipacks (los "6 Un 500 Gr" se codifican como cantidad=6,
+   unidad="Un" → `grams` NaN → excluidos, no mal computados).
+2. **Errores de carga (regla simétrica)** — `FILTRO DE PLAUSIBILIDAD`, CELDA 7: se descarta un EAN si
+   su precio $/100 g **mediano en todo el panel** cae fuera de un factor `FACTOR_PLAUS` (=4) respecto
+   de la **mediana de su (tipo, lado)**. Es simétrico (banda `[med/4, med×4]`) → no favorece ni sube
+   ni baja la brecha. Con los datos de ago-2026 marca **un solo EAN**: `7798181510441` (Smams
+   chocolate a $184/100 g, ~8× más barato que sus pares → error de carga). El caro Carrefour
+   ($6.300/100 g, real, 260 sucursales) y las galletitas premium **se conservan** (sacarlos sería
+   cherry-picking). `FACTOR_PLAUS` es un parámetro de robustez documentado.
+3. **No-comparabilidad documentada** (`EANS_EXCLUIR`, hoy **vacío**): escape hatch para casos que la
+   regla no capture. *No se usa para outliers de precio.* La **harina/premezcla** (sustitución, no
+   like-for-like) queda comentada por esta razón. **Nota**: NO se saca a mano el Maná (multipack
+   131 g): es un producto real y su inclusión da una brecha **más conservadora** (sube la mediana
+   TACC) → se conserva; la mediana robusta absorbe su formato chico.
+
+> **Cobertura desigual**: tras la ampliación del sin-TACC (abajo), la cobertura de "ambos lados"
+> quedó Fideos 2.458 · Saladas 2.319 · Dulces 1.001 · **Pan rallado 792** — todos utilizables. Se
+> reporta `n_sucursales` por tipo/grupo; los tipos con menor `n` (dulces, pan rallado) se leen con
+> esa salvedad.
 
 > **Criterio de curación de listas (Palanca 2)**: la comparabilidad *like-for-like* se controla en
 > QUÉ EANs son elegibles por tipo/lado, no en la regla de agregación. Regla: el lado **TACC** se
@@ -176,11 +210,45 @@ Para un grupo `G` (nacional, provincia, cadena, estrato de concentración) y tip
 > $/100 g**, con la agregación de candidatos por **mediana** (el mínimo se exploró y se descartó
 > como primario por el sesgo del §3.7).
 
-**Hallazgo (no es un bug)**: la brecha por producto TACC-sustituible es **grande** (galletitas
-+138%, fideos +270%, saladas +302%, pan rallado +362% — ver §12), muy por encima del ~9% de la
-canasta **completa** Celíaca Media. Es coherente con lo que buscaba Fernando: el 9% "maquilla" la
-brecha real porque promedia productos **naturalmente sin gluten** (carne, lácteos, verdura) con 0%
-de prima. Al aislar los productos con dicotomía, la prima real aparece.
+**Hallazgo (no es un bug)**: la brecha por producto TACC-sustituible es **grande** (dulces +89%,
+fideos +173%, saladas +188%, pan rallado +194% con listas ampliadas — ver §12), muy por encima del
+~9% de la canasta **completa** Celíaca Media. Es coherente con lo que buscaba Fernando: el 9%
+"maquilla" la brecha real porque promedia productos **naturalmente sin gluten** (carne, lácteos,
+verdura) con 0% de prima. Al aislar los productos con dicotomía, la prima real aparece.
+
+---
+
+## 3.9. Especificación econométrica (identificación de la prima y sus determinantes)
+
+La brecha descriptiva (§3.4–§3.6) es el **titular**; la **identificación** de la prima celíaca y de
+sus determinantes se hace con una **regresión hedónica de precios** sobre el panel a nivel
+**producto × sucursal × mes** (una observación por EAN presente, con su $/100 g y sus gramos):
+
+```
+ln(precio_100g)_{i,s,k,t} = β·SINTACC_i + θ·ln(gramos_i)
+                            + λ_k (EF tipo) + μ_s (EF sucursal) + τ_t (EF mes) + ε
+```
+
+- **β** = **prima celíaca** promedio (en log-puntos, ≈ % con `exp(β)−1`), **neta de tamaño de
+  envase** (`ln gramos`), del tipo, de la sucursal y del mes. Los EF de sucursal absorben el nivel
+  de precios local y qué surtido stockea cada una (§3.2); los EF de mes, la inflación.
+- **`θ·ln(gramos)`** aísla el **efecto envase** (§3.7) → separa "prima pura de gluten" de "costo por
+  paquete chico". Se puede refinar con EF de marca/subtipo (o EF de EAN) para acercarse a un
+  contraste *within* clase de producto.
+- **Determinantes** (cómo cambia la prima): se interactúa `SINTACC` con los ejes de interés →
+  `β_HHI·(SINTACC × HHI_localidad)`, `β_reg·(SINTACC × región)`, `β_cad·(SINTACC × cadena)`,
+  `β_t·(SINTACC × tiempo)`. Cada coeficiente responde una pregunta del paper (concentración,
+  geografía, cadena, evolución temporal) con **errores estándar** (clusterizados por sucursal/mes).
+- **Datos**: el panel para la hedónica = caché `brecha_dia_*_v2.parquet` (precio mensual por
+  sucursal×EAN) + metadata del Maestro (`grams`, tipo, rol) + covariables de sucursal (provincia,
+  cadena, HHI). La hoja `Detalle_producto` es el corte del último mes de ese panel.
+- **Robustez**: (i) misma regresión con la muestra restringida a envases comparables (≥150 g) para
+  ver cuánto de β es envase; (ii) mediana vs mínimo (§3.7); (iii) `FACTOR_PLAUS` alternativo (§3.8);
+  (iv) panel balanceado para la dimensión temporal.
+
+> **Estado**: la especificación está **definida** acá; la **implementación** del modelo (paquete
+> `linearmodels`/`pyfixest` o `statsmodels`) es la **fase de análisis** siguiente. La medición
+> descriptiva (nb06) ya produce el panel y las covariables necesarias.
 
 ---
 

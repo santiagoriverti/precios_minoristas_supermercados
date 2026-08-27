@@ -130,14 +130,13 @@ TIPOS = {
     # },
 }
 
-# EANs a EXCLUIR de las listas de arriba (curación de comparabilidad, §3.8). Se filtran
-# en la CELDA 7 DESPUÉS de leer → NO cambian el hash del caché (corrida rápida). Motivo
-# de cada exclusión documentado. Para dejar la config "canónica" se pueden borrar de las
-# listas de TIPOS en una corrida final (eso sí invalida el caché).
-EANS_EXCLUIR = {
-    '7790040137844',  # Maná vainilla (dulces TACC): envase premium 131 g, $2607/100g → outlier
-    # '7790040133471' (Sonrisas) ya se excluye solo por no tener presentación en el Maestro.
-}
+# EANs a EXCLUIR a mano (escape hatch documentado, §3.8). Se filtran en la CELDA 7 DESPUÉS
+# de leer → NO cambian el hash del caché. Vacío por diseño: la limpieza de errores de carga
+# la hace el FILTRO DE PLAUSIBILIDAD por regla (banda ×FACTOR_PLAUS, CELDA 7), que es simétrico
+# y reproducible (preferible a sacar productos a mano en un paper). Usar este set solo para
+# casos de NO-comparabilidad documentados que la regla no capture (hoy: ninguno).
+EANS_EXCLUIR = set()
+FACTOR_PLAUS = 4   # factor de la banda de plausibilidad a nivel EAN (data-quality, §3.8)
 
 SEPA_SOURCE = 'mi_drive'   # 'mi_drive' | 'local'
 SEPA_DIR    = '/content/drive/MyDrive/carga'
@@ -571,6 +570,22 @@ _n_excl = _n0 - len(datos_dia)
 if _n_excl:
     print(f'  Excluidas {_n_excl:,} obs de EANs sin presentación (no normalizables a $/100g)')
 datos_dia['precio_100'] = datos_dia['precio'] / datos_dia['grams'] * 100
+
+# ── Filtro de plausibilidad a nivel EAN (data-quality, §3.8) ──────────────────
+# Regla SIMÉTRICA y reproducible (no curación a mano): se descarta un EAN candidato si su
+# precio $/100g mediano en TODO el panel cae fuera de un factor FACTOR_PLAUS respecto de la
+# mediana de su (tipo, lado). Quita errores de carga groseros (p.ej. un valor varias veces
+# más barato/caro que sus pares) sin elegir productos a mano ni favorecer la dirección de la
+# brecha. FACTOR_PLAUS es un parámetro de robustez documentado (default 4).
+_fp = FACTOR_PLAUS if 'FACTOR_PLAUS' in dir() else 4
+_em = datos_dia.groupby(['tipo','rol','ean_norm'])['precio_100'].median().reset_index(name='_em')
+_em['_ts'] = _em.groupby(['tipo','rol'])['_em'].transform('median')
+_bad = set(_em.loc[(_em['_em'] < _em['_ts']/_fp) | (_em['_em'] > _em['_ts']*_fp), 'ean_norm'])
+if _bad:
+    _n0p = len(datos_dia)
+    datos_dia = datos_dia[~datos_dia['ean_norm'].isin(_bad)].copy()
+    print(f'  Filtro plausibilidad (banda ×{_fp}): {len(_bad)} EAN(s) fuera de banda → '
+          f'{_n0p - len(datos_dia):,} obs quitadas (data-quality)')
 
 # Precio del tipo por (sucursal, mes, lado) — definición §3.3: MEDIANA $/100g de los
 # candidatos presentes (estimador PRIMARIO: estable a la asimetría en el nº de candidatos
