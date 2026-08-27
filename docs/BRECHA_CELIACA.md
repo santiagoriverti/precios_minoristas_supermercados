@@ -337,6 +337,11 @@ Los EANs concretos están en la CELDA 1 de `notebooks/gen_nb06.py` (fuente) y de
 | `brecha_concentracion_MMAAAA.png` | Scatter brecha vs. nº de sucursales por localidad (+ correlación) |
 | `mapa_brecha_MMAAAA.png` | Mapa coroplético de la brecha por provincia |
 
+### Mapa interactivo (`.html`) — CELDA 12
+| Archivo | Contenido |
+|---------|-----------|
+| `mapa_sucursales_brecha_MMAAAA.html` | **Mapa Folium por sucursal** (último mes): un punto por supermercado georreferenciado, color **verde→rojo** graduado por la brecha de canasta. Popup con: (1) valor de cada canasta (convencional/celíaca, índice $/100g ponderado) y **% de brecha**; (2) tabla de comparación **uno-vs-uno** de productos por tipo (convencional con TACC vs sin-TACC), con **presentación (gramos) y $/100g**; (3) cadena y localidad/provincia; (4) n° de tipos comparados. Leyenda + caja de resumen (n sucursales, brecha mediana nacional). |
+
 ### Excel — `brecha_celiaca_YYYY-MM.xlsx`
 | Hoja | Contenido |
 |------|-----------|
