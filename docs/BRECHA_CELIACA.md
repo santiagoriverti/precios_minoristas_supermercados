@@ -5,7 +5,7 @@ Documento técnico del **Notebook 06**. Mide la **brecha** entre una canasta **b
 **diaria, semanal y mensual**, desagregada por provincia, cadena y concentración de
 comercios.
 
-Última actualización: 2026-08-21.
+Última actualización: 2026-08-27 (definición formal del estimador a nivel sucursal — §3).
 
 ---
 
@@ -60,93 +60,91 @@ EANs entran es del investigador; la plantilla es un punto de partida, no la list
 
 ---
 
-## 3. Definición de las canastas y de la brecha
+## 3. Definición formal de la brecha (estimador canónico)
 
-> **✅ Método vigente (2026-08, tras 4 runs reales): brecha INTRA-SUPERMERCADO por (sucursal, MES),
-> listas amplias de candidatos, precio $/100g.** Para cada **sucursal** y **mes**, por tipo, se usa
-> el precio ($/100g) de **los candidatos que esa sucursal tuvo ese mes** (mediana, sobre todos sus
-> días → robusta a un EAN mal cargado). Un tipo cuenta si la sucursal tuvo ≥1 candidato TACC y ≥1
-> sin-TACC **en ese mes** (NO exige el mismo día → mucho más robusto que la versión por-día, que
-> daba n=1). La brecha del tipo se calcula **dentro del mismo super**, y luego se **promedia entre
-> supers** (mediana + promedio), con desagregación por provincia/cadena/localidad. El **output
-> principal es la brecha POR TIPO** (`brecha_tipo`). La granularidad es **mensual** (diaria/semanal
-> no aplican a este método y salen vacías). La hoja `Cobertura` muestra cuántas sucursales ofrecen
-> cada lado por tipo.
->
-> **✅ EANs TACC curados [2026-08-25]**: los EANs TACC (regular) de la CELDA 1 se reemplazaron por
-> los de **alta cobertura** de `canasta_representativa_2026-07.xlsx` (hoja `Candidatos`, que sí trae
-> `n_sucursales` por producto — el Maestro no). Se filtró por subcategoría (Pastas Secas, Galletitas
-> Dulces/Saladas, Pan Rallado y Rebozadores) y se eligieron los de mayor cobertura (~1900-2500
-> sucursales), excluyendo premium/snacks (Kit Kat, Oreo, Don Vicente, Saladix…) que distorsionan el
-> `tacc_100` en $/100g. Fideos: Lucchetti/Matarazzo/Favorita 500g · Galletitas dulces: 9deOro, Don
-> Satur, Chocolinas, Bagley Rumba, Sonrisas, Maná · Galletitas saladas: 9deOro, Don Satur, Traviata,
-> Tosti, Hogareñas · Pan rallado: Preferido, Mamá Cocina, Lucchetti, Pureza, Favorita.
-> **Limitación remanente**: el lado **sin-TACC** es de cobertura intrínsecamente baja (productos
-> celíacos = nicho); la brecha por tipo solo se calcula donde una sucursal tenga ambos lados. Revisar
-> la hoja `Cobertura` tras el primer run y afinar las listas sin-TACC de los tipos con pocos supers.
->
-> *(Historia: el 1er run con la condición estricta "ambos lados misma sucursal el MISMO DÍA, ≥3
-> tipos" dio 0 obs por baja cobertura sin-TACC; una versión intermedia usó pooling por grupo. La
-> versión final es intra-sucursal por tipo + listas amplias + $/100g, que es lo pedido.)*
+> **Estado [2026-08-27]**: esta es la **definición acordada** del estimador a nivel sucursal, que
+> rige el paper. **Brecha del lado = opción MÁS BARATA disponible (mínimo robusto), intra-sucursal,
+> por tipo, en $/100 g.** El notebook hoy agrega los candidatos por **mediana** (no por mínimo); la
+> migración del código al mínimo robusto está **pendiente** (implica un re-read ~70 min). La mediana
+> se conserva como **chequeo de robustez**. Ver §3.7.
 
-> **⚠️ Sub-sección histórica (pooled)** — se conserva por trazabilidad; el método vigente es el
-> de arriba (intra-sucursal por tipo):
+### 3.0. Notación
 
-### 3.1. Cálculo POOLED por grupo (método principal)
+- `s` = sucursal · `m` = mes · `k` = tipo de producto (fideos, galletitas dulces, …) · `r ∈ {TACC, sin-TACC}` = lado.
+- Cada tipo `k` y lado `r` tiene una **lista fija de EANs candidatos** (definida en la CELDA 1), curada por cobertura y marcas mainstream.
+- `P(e,s,m)` = precio observado del EAN `e` en la sucursal `s` durante el mes `m` (mediana de los precios diarios del mes). `gramos(e)` = contenido del EAN según el Maestro.
 
-Para un **grupo `G`** (nacional, provincia, cadena o localidad) y un **período `P`** (día,
-semana o mes):
+### 3.1. Precio de cada EAN, normalizado ($/100 g)
 
-1. Para cada **tipo `t`**:
-   - `precio_base(t,G,P)` = **mediana** (y **promedio** con outliers fuera) del precio TACC del
-     tipo sobre **las sucursales del grupo `G` que ofrecen TACC** en `P`.
-   - `precio_cel(t,G,P)`  = ídem sobre las sucursales del grupo que ofrecen **sin-TACC**.
-   - El tipo cuenta si hay ≥1 sucursal con TACC **y** ≥1 con sin-TACC en `G,P` (no exige que sea
-     la misma sucursal).
-2. `B(G,P) = Σ_t precio_base × qty(t)` ; `C(G,P) = Σ_t precio_cel × qty(t)` (sobre tipos con
-   ambos lados en `G,P`).
-3. `brecha_pct(G,P) = (C / B − 1) × 100`, para **mediana** y **promedio** por separado.
+$$p(e,s,m) = \frac{P(e,s,m)}{\text{gramos}(e)} \times 100$$
 
-Al pooolear dentro del grupo, la brecha es robusta a la baja cobertura y sigue siendo comparable
-entre provincias/cadenas. El **precio del tipo en una sucursal/día** sigue siendo el promedio de
-los representativos presentes de ese lado (§2.2). Para las desagregaciones (provincia/cadena/
-localidad) la brecha del grupo = **mediana de las brechas mensuales** del grupo.
+La normalización a **$/100 g** hace comparables presentaciones distintas (500 g vs 1 kg vs 350 g). EANs **sin gramos en el Maestro se excluyen** (§3.8), para que la definición sea siempre en $/100 g.
 
-> **Trade-off honesto**: al no exigir la misma sucursal, la canasta base y la celíaca de un grupo
-> pueden apoyarse en **sucursales distintas** (las que venden cada lado). Es el precio a pagar por
-> la baja cobertura sin-TACC. Se mitiga agrupando (provincia/cadena/localidad concentran sucursales
-> comparables) y se documenta en la hoja `Cobertura`.
+### 3.2. Qué productos se usan en cada sucursal (surtido heterogéneo)
 
-### 3.1b. Normalización por $/100g y BRECHA POR TIPO (lo importante)
+Cada sucursal ofrece un **surtido distinto**. La regla es **matching flexible a nivel de tipo**, no de EAN:
 
-> **⚠️ Corrección 2026-08 (segundo run real)**: la canasta pooled agregada daba **+237%** — no
-> es una prima uniforme sino la mezcla de tipos con brecha muy distinta y con dos distorsiones:
-> **(a)** presentaciones diferentes (harina 1 kg vs premezcla 400 g) y **(b)** EANs de baja
-> cobertura o precio espurio (fideos TACC en 7 sucursales con precio irreal).
+> En la sucursal `s`, mes `m`, tipo `k`, lado `r`, se usan **los candidatos de la lista que esa
+> sucursal efectivamente tiene en góndola ese mes** (con precio y precio plausible). No se exige
+> que sea el mismo EAN en todas las sucursales: se compara el mismo **tipo**, con el subconjunto de
+> candidatos que cada sucursal stockea.
 
-Dos cambios corrigen esto:
+Esto **maximiza la cobertura** (usa lo que hay en el estante) y refleja el **conjunto de elección real** del consumidor en esa góndola. El costo es que la **composición del surtido varía entre sucursales** → se neutraliza en la etapa econométrica con **efectos fijos de producto/marca** (§3.7), no en la medición.
 
-1. **Precio normalizado a `$/100g`**: cada EAN se divide por su presentación (gramos/ml del maestro:
-   `producto_cantidad_presentacion` × unidad → gramos). Así 500 g vs 1 kg vs 400 g son comparables.
-   EANs sin presentación caen a precio por paquete (con aviso).
-2. **La brecha se reporta POR TIPO** (`brecha_tipo`, `brecha_tipo_mes`, `brecha_tipo_prov`): para
-   cada tipo, precio TACC vs sin-TACC en `$/100g`, con `n_tacc`/`n_sin` (sucursales de cada lado).
-   **Este es el número clave**, no la canasta agregada.
+*(Alternativa descartada — "par fijo emparejado": exigir 1 EAN TACC y 1 sin-TACC idénticos en todas las sucursales daría la comparación más limpia, pero con productos sin-TACC de nicho colapsa el `n` — pan rallado ya está en 119 sucursales con la regla flexible. Inviable con estos datos.)*
 
-**Hallazgo (no es un bug)**: la brecha por producto TACC-sustituible es **grande** (galletitas ~+140/200%,
-pan rallado ~+320%), muy por encima del ~9% de la canasta **completa** Celíaca Media. Es coherente con
-lo que buscaba Fernando: el 9% "maquilla" la brecha real porque promedia productos **naturalmente sin
-gluten** (carne, lácteos, verdura) con 0% de prima. Al aislar los productos con dicotomía, la prima real
-aparece. **Se debe reportar por tipo** (no como una canasta única), y **vetando cada tipo con
-`n_tacc`/`n_sin` y `Cobertura`** (descartar tipos con un lado en muy pocas sucursales, y la
-harina/premezcla que es sustitución, no like-for-like).
+### 3.3. Precio del lado = la opción más barata disponible (mínimo robusto)
 
-### 3.2. Brecha intra-sucursal (best-effort)
+$$\text{precio}(s,m,k,r) = \min_{\substack{e \,\in\, \text{candidatos}(k,r) \\ \text{presentes en } s,m \,\wedge\, p(e,s,m)\,\in\,[\tilde p/4,\; \tilde p\cdot 4]}} p(e,s,m)$$
 
-Además se calcula, **por sucursal × mes** (no día), la brecha para las sucursales que **sí**
-ofrecen ambos lados (típicamente grandes cadenas con línea sin-TACC). Sale en la hoja
-`Brecha_sucursal`. Puede ser un subconjunto chico; la hoja `Cobertura` muestra cuántas sucursales
-ofrecen cada lado y **ambos** por tipo.
+donde `p̃` es la mediana de los candidatos presentes de ese lado (banda de plausibilidad que descarta errores de carga de SEPA antes de tomar el mínimo). **Interpretación**: un celíaco no tiene opción — compra sin-TACC; un consumidor de costo mínimo compra la opción **más barata** de cada tipo. La brecha entre ambos mínimos es el **sobrecosto real e inevitable**. Que en una zona no haya una opción sin-TACC barata **es parte del sobrecosto** (disponibilidad), y el mínimo lo capta.
+
+Requisito: al menos **1 candidato plausible de cada lado** presente en `s,m`.
+
+### 3.4. Brecha intra-sucursal por tipo (estimador atómico)
+
+$$\boxed{\;\text{brecha}(s,m,k) = \frac{\text{precio}(s,m,k,\text{sin-TACC})}{\text{precio}(s,m,k,\text{TACC})} - 1\;}$$
+
+Es el **número atómico** del paper: el sobrecosto celíaco del tipo `k`, dentro de la misma sucursal y mes. Todas las desagregaciones (tiempo, provincia, cadena, concentración) son **agregaciones de este número entre sucursales** (§3.6).
+
+### 3.5. Brecha de canasta por sucursal (secundaria)
+
+Para un resumen agregado por sucursal, se ponderan los tipos con ambos lados por `qty_k`, exigiendo ≥ `MIN_TIPOS` tipos:
+
+$$\text{brecha}(s,m) = \frac{\sum_k qty_k \cdot \text{precio}(s,m,k,\text{sin-TACC})}{\sum_k qty_k \cdot \text{precio}(s,m,k,\text{TACC})} - 1$$
+
+> Los pesos `qty_k` son **ilustrativos** (no fundados en gasto/consumo). Por eso el **resultado
+> primario del paper es la brecha POR TIPO** (§3.4); la canasta se reporta como resumen, aclarando
+> que la ponderación no está calibrada. Si se consigue una fuente de ponderaciones (gasto celíaco),
+> se recalibra.
+
+### 3.6. Agregación entre sucursales (grupos)
+
+Para un grupo `G` (nacional, provincia, cadena, estrato de concentración) y tipo `k`, la brecha del grupo = **mediana** (robusta) y **promedio con outliers fuera** de `brecha(s,m,k)` sobre las sucursales `s ∈ G` con ambos lados. Se reporta `n_sucursales` por grupo/tipo (la hoja `Cobertura` documenta cuántas sucursales ofrecen cada lado).
+
+### 3.7. Robustez y control de composición
+
+- **Mínimo robusto** (§3.3): banda `[mediana/4, mediana×4]` antes del `min`, para que un precio espurio bajo no defina el mínimo.
+- **Efectos fijos de producto/marca** en el modelo de determinantes: los coeficientes de concentración, geografía, cadena y tiempo se estiman *neteando* qué surtido stockea cada sucursal — así la heterogeneidad de composición (§3.2) no confunde el efecto de interés.
+- **Chequeo de robustez con mediana**: se reporta también la brecha usando la **mediana** de los candidatos (en vez del mínimo). Si el resultado por tipo es parecido bajo ambas reglas, es robusto a la elección de agregación (calcularlo en la misma pasada es barato).
+
+### 3.8. Exclusiones
+
+- EANs **sin presentación en el Maestro** (no normalizables a $/100 g) — hoy `7790040133471` (Sonrisas, TACC dulces) y `7798079230062` (sin-TACC dulces).
+- Precios fuera de la banda de plausibilidad por EAN (errores de carga SEPA).
+- Tipos con un lado en **muy pocas sucursales** (vetar con `Cobertura`/`n_sucursales`), y la harina/premezcla (sustitución, no like-for-like) — hoy comentada.
+
+> **Trazabilidad (versiones previas)**: el 1er run exigía ambos lados en la **misma sucursal el
+> mismo día** para ≥3 tipos → 0 obs por baja cobertura sin-TACC. Una versión intermedia usó
+> **pooling por grupo** (base y celíaca podían apoyarse en sucursales distintas del grupo) → daba
+> +237% por mezcla de tipos y presentaciones. La versión vigente es **intra-sucursal por tipo, en
+> $/100 g**, con la agregación de candidatos migrando de mediana a **mínimo robusto**.
+
+**Hallazgo (no es un bug)**: la brecha por producto TACC-sustituible es **grande** (galletitas
++138%, fideos +270%, saladas +302%, pan rallado +362% — ver §12), muy por encima del ~9% de la
+canasta **completa** Celíaca Media. Es coherente con lo que buscaba Fernando: el 9% "maquilla" la
+brecha real porque promedia productos **naturalmente sin gluten** (carne, lácteos, verdura) con 0%
+de prima. Al aislar los productos con dicotomía, la prima real aparece.
 
 ---
 
