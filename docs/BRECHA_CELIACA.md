@@ -157,8 +157,17 @@ Para un grupo `G` (nacional, provincia, cadena, estrato de concentración) y tip
 > QUÉ EANs son elegibles por tipo/lado, no en la regla de agregación. Regla: el lado **TACC** se
 > cura (tiene cobertura de sobra) sacando premium/snacks/outliers; el lado **sin-TACC NO se poda**
 > (su cobertura es escasa y **varía mes a mes** en el panel 2024–2026, así que un EAN con baja
-> cobertura en un mes puede aportar en otro). **Ampliar** el sin-TACC (más candidatos, sobre todo
-> pan rallado) requiere buscar en el `Maestro de Productos` — pendiente de tener el archivo a mano.
+> cobertura en un mes puede aportar en otro).
+>
+> **Ampliación del sin-TACC [2026-08-27]**: con el `Maestro de Productos Interno.xlsx`
+> (`data/`, 176.702 EANs) se buscaron todos los productos con indicador "sin TACC / sin gluten" por
+> tipo (1.086 en total). Se **ampliaron las 4 listas sin-TACC** priorizando **marcas mainstream y
+> marca blanca de cadena** (las de mayor probabilidad de cobertura real): Fideos 8→21 (Matarazzo/
+> Gallo GF, Blue Patna, Grandiet, Yuka) · Dulces →23 (línea completa Santa María 200 g, Natuzen,
+> Smams, Arrozen) · Saladas 7→20 (Tía Maruca, Carrefour, Granix, Crisppino, Shiva) · **Pan rallado
+> 7→20** (Carrefour marca blanca, Preferido, Santa María, Natuzen — antes solo nicho con ~0 cob.).
+> El Maestro **no** tiene cobertura, así que cuáles pegan lo revela la corrida (la mediana usa solo
+> los presentes). Este cambio **invalida el caché** (nuevos EANs → nuevo hash) → un re-read ~70 min.
 
 > **Trazabilidad (versiones previas)**: el 1er run exigía ambos lados en la **misma sucursal el
 > mismo día** para ≥3 tipos → 0 obs por baja cobertura sin-TACC. Una versión intermedia usó

@@ -74,35 +74,51 @@ TIPOS = {
         # TACC: Lucchetti · Matarazzo · Favorita (todos 500 g) — alta cobertura (canasta_repr. 07/2026, ~1900-2500 suc.)
         'tacc':     ['7790070336385','7790070336118','7790070336149','7790070336316',
                      '7790070336293','7790070320285','7790070320308','7790070320292'],
-        # sin-TACC: Blue Patna · Grandiet · Matarazzo s/TACC · otras (maíz/arroz, 500 g)
-        'sin_tacc': ['7730114000780','7730114000797','7797330105590','7797330105606',
-                     '7790070321800','7790070321794','7798031470024','7794903232240'],
+        # sin-TACC (maíz/arroz/legumbres, mayormente 500 g) — AMPLIADA [2026-08-27] con marcas
+        # mainstream (Matarazzo/Gallo GF, Blue Patna, Grandiet, Yuka) para maximizar cobertura; §3.8.
+        'sin_tacc': ['7730114000780','7730114000797','7730114100015','7730114100046','7730114100077',
+                     '7797330105590','7797330105606','7797330105613',
+                     '7790070321800','7790070321794','7790070321855','7790070335999','7790070335982','7790070336224',
+                     '7790070321817','7790070321824',
+                     '7798031470024','7794903232240','7794903232257','7794903232264','7794903232271'],
     },
     'Galletitas dulces': {
         'qty': 3,
         # TACC: 9deOro · Don Satur · Chocolinas · Bagley Rumba · Sonrisas · Maná (galletita dulce base) — alta cobertura
         'tacc':     ['7792200000128','7795735000335','7790040143234','7790040143524',
                      '7790040133471','7790040137844'],
-        # sin-TACC: Santa María · Smams · Natuzen · Nina · varias
-        'sin_tacc': ['7798294150435','7798308250205','7798082000317','7798082000331',
-                     '0655257736631','7798079230017','7798079230062','7798181510120','7798181510199'],
+        # sin-TACC — AMPLIADA [2026-08-27]: Santa María (línea completa 200 g), Natuzen, Smams,
+        # Arrozen, Nina. Se quitó 7798079230062 (Vainillas 12Un, sin gramos). §3.8.
+        'sin_tacc': ['7798079230017','7798079230147','7798079230109','7798079230116','7798079230598',
+                     '7798079230628','7798079230161','7798079230659','7798079230673',
+                     '7798082000317','7798082000331','7798082000393','7798082000492',
+                     '7798181510120','7798181510199','7798181510441','7798181510236','7798181510243',
+                     '7798082001017','7798082001024','0655257736631','7798294150435','7798308250205'],
     },
     'Galletitas saladas / crackers': {
         'qty': 2,
         # TACC (base trigo): 9deOro · Don Satur · Traviata · Tosti · Hogareñas — alta cobertura
         'tacc':     ['7792200000159','7795735000328','7790040144095','7794529041608',
                      '7790040136069'],
-        # sin-TACC (arroz): Crisppino · Olienka · Shiva · Viavita
-        'sin_tacc': ['7798199770035','7798199770042','7798289620080','7798289620097',
-                     '0617308824087','0617308824094','7798195940173'],
+        # sin-TACC (crackers/tostadas de arroz) — AMPLIADA [2026-08-27]: Tía Maruca, Carrefour,
+        # Granix, Crisppino, Shiva, Olienka, Viavita, Yuka, Apóstoles. §3.8.
+        'sin_tacc': ['7798199770035','7798199770042','7798199770103','7798199770110','7798199770134','7798199770141',
+                     '7798289620080','7798289620097','0617308824087','0617308824094','0617308824100','0617308824117',
+                     '7798195940173','7798082743726','7798082743849','7791720019054','7791720019061',
+                     '7790045826859','7794903232226','7791120098857'],
     },
     'Pan rallado / rebozador': {
         'qty': 2,
         # TACC: Preferido · Mamá Cocina · Lucchetti · Pureza · Favorita (pan rallado) — alta cobertura
         'tacc':     ['7790070433169','7792180004741','7790070433275','7792180136480','7790070433312'],
-        # sin-TACC: Bio · La Delfina · Maizena · Marvese
-        'sin_tacc': ['7798221641845','7798221641944','7798131130200','7798131130231',
-                     '7794000005303','7794000007291','7798306830164'],
+        # sin-TACC (pan rallado/rebozador de arroz) — AMPLIADA [2026-08-27]: se sumaron marca
+        # blanca de cadena (Carrefour) y mainstream (Preferido, Santa María, Natuzen) porque las
+        # marcas de nicho previas (Bio/La Delfina/Maizena/Marvese) tenían ~0 cobertura. §3.8.
+        'sin_tacc': ['7791720018453','7791720018460','7791720018477','7791720003411',
+                     '7790070100283','7798079230086','7798082000294','7798082000553',
+                     '7798221641845','7798221641944','7798131130200','7798131130231',
+                     '7794000005303','7794000007291','7794000008212',
+                     '7798306830164','7798306830171','7798306830201','7798075280559','7798239780123'],
     },
     # ⚠️ SUSTITUCIÓN (harina de trigo vs premezcla) — NO es el mismo producto sin gluten
     #    y su brecha es enorme (~+700%). Descomentá SOLO si la querés incluir; para una
