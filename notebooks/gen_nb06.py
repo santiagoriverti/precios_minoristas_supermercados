@@ -1086,153 +1086,99 @@ print(f'  Hojas: Cobertura · Brecha_tipo/_mes/_prov · Serie_diaria/semanal/men
 print(f'  Detalle_producto: {len(_det):,} filas · Comparacion_productos: {len(_comp):,} filas (sucursal×tipo×subtipo) · Brecha_sucursal: {len(_brecha_suc):,}')
 print(f'  ⚠️ El número clave está en Brecha_tipo (brecha por tipo en $/100g). La canasta pooled mezcla tipos de brecha muy distinta.')"""))
 
-# ── CELL 12 — MAPA FOLIUM POR SUCURSAL ─────────────────────────────────────────
+# ── CELL 12 — MAPA FOLIUM POR SUCURSAL (lazy-load) ─────────────────────────────
 cells.append(cell_code("""\
 # ============================================================
 # CELDA 12 — Mapa Folium interactivo POR SUCURSAL (brecha celíaca, último mes)
 # ============================================================
 # Un punto por supermercado; color VERDE→ROJO graduado por la brecha de canasta.
-# Popup: (1) valor de cada canasta y % de brecha; (2) comparación por EQUIVALENCIA de
-# productos (subtipo: Spaghetti vs Spaghetti, Vainilla vs Vainilla, …) — con TACC vs sin
-# TACC, presentación y $/100g, y brecha del subtipo; (3) cadena + localidad/provincia;
-# (4) filtro por cadena (LayerControl) y pantalla completa. Tiles OpenStreetMap (sin API key).
+# LIVIANO: los popups se arman al hacer clic (lazy-load desde un JSON compacto), así el
+# HTML no pesa (antes ~15 MB con todos los popups embebidos → carga al instante). Popup:
+# (1) valor de cada canasta y % de brecha; (2) productos por EQUIVALENCIA (subtipo) —
+# Con TACC vs Sin TACC, con presentación y $/100g; (3) cadena + localidad/provincia. La
+# brecha AUTORITATIVA es la del tipo (§3). Filtro por cadena (LayerControl) + pantalla
+# completa. Tiles OpenStreetMap (sin API key).
 import folium
 from folium.plugins import Fullscreen
 from branca.colormap import LinearColormap
+import json as _json
 
 _um = ULTIMO_MES
-
-# Canasta por sucursal (último mes) + geo (nombre/lat/lon del maestro)
 _bk = (brecha_suc_mes[brecha_suc_mes['mes'] == _um]
        .merge(suc_geo[['id_comercio','id_bandera','id_sucursal','sucursales_nombre',
                        'sucursales_latitud','sucursales_longitud']],
               on=['id_comercio','id_bandera','id_sucursal'], how='left')
        .dropna(subset=['sucursales_latitud','sucursales_longitud']))
 
-# Brecha por TIPO (último mes) por sucursal
 _btm = bt_sm[bt_sm['mes'] == _um][['id_comercio','id_bandera','id_sucursal','tipo','tacc','sin','brecha_pct']]
 _bt_por_suc = {}
 for _r in _btm.itertuples(index=False):
     _bt_por_suc.setdefault((_r.id_comercio, _r.id_bandera, _r.id_sucursal), {})[_r.tipo] = (_r.tacc, _r.sin, _r.brecha_pct)
 
-# Productos presentes por (sucursal, tipo, SUBTIPO, rol) con descripción + gramos + $/100g
 _pu = datos_dia[datos_dia['mes'] == _um].copy()
 _pu['descripcion'] = _pu['ean_norm'].map(EAN_DESC)
 _pu['subtipo'] = _pu['ean_norm'].map(EAN_SUBTIPO)
 _prod = {}
 for _r in _pu.itertuples(index=False):
     _d = (_prod.setdefault((_r.id_comercio, _r.id_bandera, _r.id_sucursal), {})
-              .setdefault(_r.tipo, {}).setdefault(_r.subtipo, {'tacc': [], 'sin': []}))
-    _d[_r.rol].append((_r.descripcion, _r.grams, _r.precio_100))
+              .setdefault(_r.tipo, {}).setdefault(_r.subtipo, {'A': [], 'B': []}))
+    _d['A' if _r.rol == 'tacc' else 'B'].append((str(_r.descripcion)[:38], _r.grams, _r.precio_100))
 
-def _medp(_lst):
-    _v = [p for _, _, p in _lst if p == p]
-    return float(np.median(_v)) if _v else float('nan')
-def _fmt_prods(_lst):
-    if not _lst:
-        return '<span style="color:#bbb">—</span>'
-    _lst = sorted(_lst, key=lambda x: (x[2] if x[2] == x[2] else 9e9))
-    _out = []
-    for _desc, _g, _p in _lst[:4]:
-        _gt = f'{int(_g)} g' if (_g == _g and _g > 0) else 's/pres'
-        _pt = f'${_p:,.0f}/100g' if (_p == _p) else 's/precio'
-        _out.append(f'<div style="margin:1px 0">• {str(_desc)[:36]} <span style="color:#777">({_gt}, {_pt})</span></div>')
-    if len(_lst) > 4:
-        _out.append(f'<div style="color:#999">+{len(_lst)-4} más</div>')
-    return ''.join(_out)
+def _iround(_x):
+    try: return int(round(float(_x)))
+    except Exception: return None
+def _p_arr(_lst):
+    _lst = sorted(_lst, key=lambda x: (x[2] if x[2] == x[2] else 9e9))[:8]
+    return [[_d, (int(_g) if (_g == _g and _g > 0) else 0), (_iround(_p) if _p == _p else None)] for _d, _g, _p in _lst]
 
-# Colormap VERDE (baja brecha) → ROJO (alta), recortado a percentiles 5-95
+# JSON compacto por sucursal (lo consume el JS al abrir el popup)
+_pd = {}
+for _r in _bk.itertuples(index=False):
+    _sk = (_r.id_comercio, _r.id_bandera, _r.id_sucursal)
+    _key = f'{_r.id_comercio}_{_r.id_bandera}_{_r.id_sucursal}'
+    _tipos = _bt_por_suc.get(_sk, {})
+    _T = []
+    for _tp in sorted(_tipos, key=lambda t: -_tipos[t][2]):
+        _tacc_p, _sin_p, _brk = _tipos[_tp]
+        _subs = _prod.get(_sk, {}).get(_tp, {})
+        def _ord(_s):
+            _d = _subs[_s]; return (0 if (_d['A'] and _d['B']) else 1, _s)
+        _S = [{'s': _s, 'A': _p_arr(_subs[_s]['A']), 'B': _p_arr(_subs[_s]['B'])} for _s in sorted(_subs, key=_ord)]
+        _T.append({'t': _tp, 'ta': _iround(_tacc_p), 'si': _iround(_sin_p), 'g': _iround(_brk), 'S': _S})
+    _pd[_key] = {'c': str(_r.cadena), 'n': str(_r.sucursales_nombre)[:46], 'p': str(_r.PROVINCIA_NORM),
+                 'l': str(_r.localidad), 'b': _iround(_r.brecha_pct), 'bs': _iround(_r.base),
+                 'cl': _iround(_r.celiaca), 'nt': int(_r.n_tipos), 'T': _T}
+_json_str = _json.dumps(_pd, ensure_ascii=False, separators=(',', ':'))
+
 _vmin = float(_bk['brecha_pct'].quantile(0.05)); _vmax = float(_bk['brecha_pct'].quantile(0.95))
 if _vmin == _vmax: _vmin, _vmax = float(_bk['brecha_pct'].min()), float(_bk['brecha_pct'].max())
 _cm = LinearColormap(colors=['#1a9850','#66bd63','#a6d96a','#fee08b','#fdae61','#f46d43','#d73027'],
                      vmin=_vmin, vmax=_vmax, caption=f'Brecha de canasta celíaca (%) — {NOMBRE_MES_TITLE}')
-def _colb(_v):
-    return _cm(max(_vmin, min(_vmax, _v)))
 
 m = folium.Map(location=[-38.0, -63.5], zoom_start=5, tiles='OpenStreetMap', control_scale=True)
 _cm.add_to(m)
 Fullscreen(position='topright', title='Pantalla completa', title_cancel='Salir').add_to(m)
 
-# FeatureGroups por cadena → filtro nativo con LayerControl
 _fgs = {}
 def _fg(_cad):
     if _cad not in _fgs:
         _fgs[_cad] = folium.FeatureGroup(name=str(_cad), show=True)
     return _fgs[_cad]
 
-# LAZY-LOAD: el HTML de cada popup se guarda en un JSON (no en el DOM) y se inyecta al
-# hacer click → el mapa carga liviano aunque haya miles de sucursales.
-import json as _json
-_pd = {}
-
 for _r in _bk.itertuples(index=False):
-    _key = (_r.id_comercio, _r.id_bandera, _r.id_sucursal)
-    _b = float(_r.brecha_pct); _col = _colb(_b)
-    # Secciones por tipo; dentro de cada tipo, filas por SUBTIPO (equivalencia)
-    _secs = ''
-    _tipos_suc = _bt_por_suc.get(_key, {})
-    for _tp in sorted(_tipos_suc, key=lambda t: -_tipos_suc[t][2]):
-        _tacc_p, _sin_p, _brk = _tipos_suc[_tp]
-        _subs = _prod.get(_key, {}).get(_tp, {})
-        def _ord(_s):
-            _d = _subs[_s]; return (0 if (_d['tacc'] and _d['sin']) else 1, _s)
-        _rows = ''
-        for _sub in sorted(_subs, key=_ord):
-            _d = _subs[_sub]; _mt = _medp(_d['tacc']); _ms = _medp(_d['sin'])
-            if _mt == _mt and _ms == _ms and _mt > 0:
-                _g = (_ms/_mt - 1)*100; _gtxt = f'+{_g:.0f}%'; _gcol = _colb(_g)
-            else:
-                _gtxt = '—'; _gcol = '#999'
-            _rows += (f'<tr>'
-                      f'<td style="border:1px solid #ddd;padding:3px;vertical-align:top;font-weight:600">{_sub}</td>'
-                      f'<td style="border:1px solid #ddd;padding:3px;vertical-align:top">{_fmt_prods(_d["tacc"])}</td>'
-                      f'<td style="border:1px solid #ddd;padding:3px;vertical-align:top">{_fmt_prods(_d["sin"])}</td>'
-                      f'<td style="border:1px solid #ddd;padding:3px;text-align:center;vertical-align:top;font-weight:700;color:{_gcol}">{_gtxt}</td>'
-                      f'</tr>')
-        _secs += (f'<div style="margin-top:7px;font-weight:bold;color:#1F4E79">{_tp} '
-                  f'<span style="color:{_colb(_brk)}">· brecha del tipo +{_brk:.0f}%</span>'
-                  f'<span style="color:#888;font-weight:normal"> (mediana con-TACC ${_tacc_p:,.0f} vs sin ${_sin_p:,.0f}/100g)</span></div>'
-                  f'<table style="border-collapse:collapse;width:100%;font-size:11px">'
-                  f'<tr style="background:#1F4E79;color:#fff"><th style="padding:2px">Equivalente</th>'
-                  f'<th style="padding:2px">Con TACC</th><th style="padding:2px">Sin TACC</th><th style="padding:2px">Brecha</th></tr>'
-                  f'{_rows}</table>')
-    _html = (f'<div style="font-family:Arial;font-size:12px;min-width:360px;max-width:480px">'
-             f'<div style="font-size:14px;font-weight:bold">{str(_r.sucursales_nombre)[:46]}</div>'
-             f'<div style="color:#555;margin-bottom:5px">{_r.cadena} · {str(_r.localidad)}, {_r.PROVINCIA_NORM}</div>'
-             f'<div style="padding:6px;background:#f5f5f5;border-radius:4px;margin-bottom:4px">'
-             f'Brecha de canasta celíaca: <b style="color:{_col};font-size:15px">+{_b:.0f}%</b><br>'
-             f'Canasta convencional: <b>{_r.base:,.0f}</b> · celíaca: <b>{_r.celiaca:,.0f}</b> '
-             f'<span style="color:#888">(índice $/100g ponderado por qty)</span><br>'
-             f'<span style="color:#888;font-size:11px">{int(_r.n_tipos)} tipo(s) · {NOMBRE_MES_TITLE}</span></div>'
-             f'{_secs}'
-             f'<div style="color:#999;font-size:10px;margin-top:5px">Filas = productos <b>equivalentes</b> (fideos por forma; otros tipos comparan el conjunto). '
-             f'La brecha del tipo usa la mediana $/100g de todos los presentes de cada lado (§3); la del subtipo, solo esa fila.</div></div>')
-    _sk = f'{_r.id_comercio}_{_r.id_bandera}_{_r.id_sucursal}'
-    _pd[_sk] = _html
-    _ph = f'<div class="lz-pop" data-key="{_sk}" data-built="0" style="min-width:280px;text-align:center;padding:14px;color:#999;font-family:Arial;font-size:12px">Cargando detalle…</div>'
+    _key = f'{_r.id_comercio}_{_r.id_bandera}_{_r.id_sucursal}'
+    _b = float(_r.brecha_pct); _col = _cm(max(_vmin, min(_vmax, _b)))
+    _ph = (f'<div class="lz-pop" data-key="{_key}" style="min-width:320px">'
+           f'<span style="color:#aaa;font-family:Arial;font-size:12px">Cargando detalle…</span></div>')
     folium.CircleMarker(
         location=[_r.sucursales_latitud, _r.sucursales_longitud],
         radius=6, color='#333', weight=0.6, fill=True, fillColor=_col, fillOpacity=0.9,
         tooltip=f'<b>{_r.cadena}</b><br>{_r.PROVINCIA_NORM}<br>Brecha <b>+{_b:.0f}%</b>',
-        popup=folium.Popup(_ph, max_width=490)
+        popup=folium.Popup(_ph, max_width=500)
     ).add_to(_fg(_r.cadena))
 
 for _c in sorted(_fgs): _fgs[_c].add_to(m)
 folium.LayerControl(collapsed=True, position='topright').add_to(m)
-
-# JSON de popups (una sola vez) + JS que los inyecta al abrir (lazy)
-_pd_json = _json.dumps(_pd, ensure_ascii=False, separators=(',', ':'))
-m.get_root().html.add_child(folium.Element(
-    f'<script type="application/json" id="_pd_json">{_pd_json}</script>'))
-_map_var = m.get_name()
-m.get_root().html.add_child(folium.Element(
-    '<script>var _pd=null;'
-    'function _gPD(){if(!_pd){var el=document.getElementById("_pd_json");if(el)_pd=JSON.parse(el.textContent);}return _pd;}'
-    'function _initLZ(){var mp=window["' + _map_var + '"];if(!mp){setTimeout(_initLZ,300);return;}'
-    'mp.on("popupopen",function(e){var el=e.popup.getElement().querySelector(".lz-pop");'
-    'if(el&&el.getAttribute("data-built")!=="1"){var pd=_gPD();var k=el.getAttribute("data-key");'
-    'el.innerHTML=(pd&&pd[k])?pd[k]:"<div>Sin datos.</div>";el.setAttribute("data-built","1");e.popup.update();}});}'
-    'setTimeout(_initLZ,500);</script>'))
 
 _med_nac = _bk['brecha_pct'].median()
 _info = (f'<div style="position:fixed;top:10px;left:50px;width:335px;background:white;border:2px solid #0055A4;'
@@ -1243,11 +1189,40 @@ _info = (f'<div style="position:fixed;top:10px;left:50px;width:335px;background:
          f'<span style="color:#1a9850">■</span> menor &nbsp; <span style="color:#d73027">■</span> mayor brecha &nbsp;·&nbsp; '
          f'filtrá cadenas con el control de capas (arriba der.)</div></div>')
 m.get_root().html.add_child(folium.Element(_info))
+m.get_root().html.add_child(folium.Element(f'<script type="application/json" id="_pd_json">{_json_str}</script>'))
+
+_MV = m.get_name()
+_JS = '''<script>
+var _MV="__MAPVAR__", _MES="__MES__", _PD=null;
+function _gpd(){ if(!_PD){ var el=document.getElementById("_pd_json"); if(el) _PD=JSON.parse(el.textContent); } return _PD; }
+function _fmt(x){ return "$"+Number(x).toLocaleString("es-AR"); }
+function _plist(a){ if(!a||!a.length) return '<span style="color:#bbb">—</span>'; var s=""; for(var i=0;i<a.length;i++){ var g=a[i][1]?a[i][1]+" g":"s/pres"; var p=(a[i][2]!=null)?_fmt(a[i][2])+"/100g":"s/precio"; s+='<div style="margin:1px 0">• '+a[i][0]+' <span style="color:#777">('+g+", "+p+')</span></div>'; } return s; }
+function _bpop(k){ var pd=_gpd(); if(!pd||!pd[k]) return "<div>Sin datos.</div>"; var d=pd[k];
+  var h='<div style="font-family:Arial;font-size:12px;min-width:360px;max-width:480px;max-height:520px;overflow-y:auto">';
+  h+='<div style="font-size:14px;font-weight:bold">'+d.n+'</div>';
+  h+='<div style="color:#555;margin-bottom:5px">'+d.c+" · "+d.l+", "+d.p+'</div>';
+  h+='<div style="padding:6px;background:#f5f5f5;border-radius:4px;margin-bottom:4px">Brecha de canasta celíaca: <b style="font-size:15px">+'+d.b+'%</b><br>Canasta convencional: <b>'+_fmt(d.bs)+'</b> · celíaca: <b>'+_fmt(d.cl)+'</b> <span style="color:#888">(índice $/100g ponderado)</span><br><span style="color:#888;font-size:11px">'+d.nt+" tipo(s) · "+_MES+'</span></div>';
+  for(var i=0;i<d.T.length;i++){ var t=d.T[i];
+    h+='<div style="margin-top:7px;font-weight:bold;color:#1F4E79">'+t.t+" · brecha del tipo +"+t.g+'% <span style="color:#888;font-weight:normal">(mediana con-TACC '+_fmt(t.ta)+" vs sin "+_fmt(t.si)+'/100g)</span></div>';
+    h+='<table style="border-collapse:collapse;width:100%;font-size:11px"><tr style="background:#1F4E79;color:#fff"><th style="padding:2px">Equivalente</th><th style="padding:2px">Con TACC</th><th style="padding:2px">Sin TACC</th></tr>';
+    for(var j=0;j<t.S.length;j++){ var s=t.S[j];
+      h+='<tr><td style="border:1px solid #ddd;padding:3px;vertical-align:top;font-weight:600">'+s.s+'</td><td style="border:1px solid #ddd;padding:3px;vertical-align:top">'+_plist(s.A)+'</td><td style="border:1px solid #ddd;padding:3px;vertical-align:top">'+_plist(s.B)+'</td></tr>';
+    }
+    h+="</table>";
+  }
+  h+='<div style="color:#999;font-size:10px;margin-top:5px">Filas = productos equivalentes. La brecha autoritativa es la del tipo (§3); acá se listan los productos comparados de cada lado.</div></div>';
+  return h;
+}
+function _init(){ var mp=window[_MV]; if(!mp){ setTimeout(_init,300); return; } mp.on("popupopen",function(e){ var el=e.popup.getElement().querySelector(".lz-pop"); if(el&&el.getAttribute("data-b")!=="1"){ el.innerHTML=_bpop(el.getAttribute("data-key")); el.setAttribute("data-b","1"); e.popup.update(); } }); }
+setTimeout(_init,500);
+</script>'''
+_JS = _JS.replace('__MAPVAR__', _MV).replace('__MES__', NOMBRE_MES_TITLE)
+m.get_root().html.add_child(folium.Element(_JS))
 
 _out_map = OUTPUT_DIR / f'mapa_sucursales_brecha_{MES}.html'
 m.save(str(_out_map))
 print(f'Mapa Folium por sucursal guardado: {_out_map}')
-print(f'  {len(_bk):,} sucursales · {len(_fgs)} cadenas (filtrables) · popup por equivalencia de productos (subtipo)')"""))
+print(f'  {len(_bk):,} sucursales · {len(_fgs)} cadenas (filtrables) · popup lazy-load · JSON {len(_json_str)/1024/1024:.1f} MB')"""))
 
 # ── Write notebook ──────────────────────────────────────────────────────────────
 nb = {
