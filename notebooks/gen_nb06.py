@@ -520,12 +520,12 @@ cells.append(cell_code("""\
 # ============================================================
 # CELDA 7 — Brecha INTRA-SUPERMERCADO por tipo (por sucursal, sobre el mes)
 # ============================================================
-# Para cada SUCURSAL y MES, por tipo, el precio de cada lado = la opción MÁS BARATA
-# disponible en $/100g (mínimo robusto, §3.3) de los candidatos que esa sucursal tuvo
-# ese mes. Un tipo cuenta en esa sucursal-mes si tuvo ≥1 candidato TACC y ≥1 sin-TACC →
-# la brecha del tipo se calcula DENTRO del mismo super (sin exigir el MISMO día → mucho
-# más robusto). Luego se promedia entre supers (y por zonas/provincia/cadena). Se guarda
-# en paralelo la versión con MEDIANA de candidatos como chequeo de robustez (§3.7).
+# Para cada SUCURSAL y MES, por tipo, el precio de cada lado = MEDIANA $/100g (§3.3) de
+# los candidatos que esa sucursal tuvo ese mes. Un tipo cuenta en esa sucursal-mes si tuvo
+# ≥1 candidato TACC y ≥1 sin-TACC → la brecha del tipo se calcula DENTRO del mismo super
+# (sin exigir el MISMO día → mucho más robusto). Luego se promedia entre supers (y por
+# zonas/provincia/cadena). Se guarda en paralelo el "más barato" (mínimo) como referencia
+# ilustrativa (sesgada por el nº desigual de candidatos por lado; §3.7).
 datos_dia['tipo'] = datos_dia['ean_norm'].map(EAN_TIPO)
 datos_dia['rol']  = datos_dia['ean_norm'].map(EAN_ROL)
 datos_dia = datos_dia[~datos_dia['id_comercio'].isin(CADENAS_FILTRAR)].copy()
@@ -541,10 +541,11 @@ if _n_excl:
     print(f'  Excluidas {_n_excl:,} obs de EANs sin presentación (no normalizables a $/100g)')
 datos_dia['precio_100'] = datos_dia['precio'] / datos_dia['grams'] * 100
 
-# Precio del tipo por (sucursal, mes, lado) — definición §3.3: la opción MÁS BARATA
-# disponible (mínimo robusto). Se descartan precios fuera de la banda [med/4, med×4] de
-# los candidatos presentes (errores de carga de SEPA) y luego se toma el mínimo. En
-# paralelo se calcula la MEDIANA como chequeo de robustez (§3.7).
+# Precio del tipo por (sucursal, mes, lado) — definición §3.3: MEDIANA $/100g de los
+# candidatos presentes (estimador PRIMARIO: estable a la asimetría en el nº de candidatos
+# por lado). En paralelo se calcula el "más barato" (mínimo robusto) SOLO como referencia
+# ilustrativa — está sesgado al alza porque el lado TACC tiene muchos más candidatos que
+# el sin-TACC (min de más tiros baja más); ver §3.7.
 def _min_robusto(_s):
     _s = pd.to_numeric(_s, errors='coerce').dropna()
     if len(_s) == 0: return float('nan')
@@ -555,7 +556,7 @@ def _min_robusto(_s):
     return _s.min()
 _sk = ['id_comercio','id_bandera','id_sucursal']
 tp = (datos_dia.groupby(_sk + ['mes','tipo','rol'])['precio_100']
-      .agg(precio_rep=_min_robusto, precio_med='median').reset_index())
+      .agg(precio_rep='median', precio_min=_min_robusto).reset_index())
 
 # ── Geo (una vez) ────────────────────────────────────────────────────────────
 _PROV_BBOX = {
@@ -613,11 +614,11 @@ cobertura_tipo = pd.DataFrame(_cob_rows)
 
 # ── ATÓMICO: brecha por (sucursal, mes, tipo) con AMBOS lados en ese super-mes ─
 _idx = _sk + ['mes','PROVINCIA_NORM','cadena','localidad','sucursales_nombre','tipo']
-_tacc = tp[tp['rol']=='tacc'][_idx + ['precio_rep','precio_med']].rename(columns={'precio_rep':'tacc','precio_med':'tacc_med'})
-_sin  = tp[tp['rol']=='sin'][_idx + ['precio_rep','precio_med']].rename(columns={'precio_rep':'sin','precio_med':'sin_med'})
+_tacc = tp[tp['rol']=='tacc'][_idx + ['precio_rep','precio_min']].rename(columns={'precio_rep':'tacc','precio_min':'tacc_min'})
+_sin  = tp[tp['rol']=='sin'][_idx + ['precio_rep','precio_min']].rename(columns={'precio_rep':'sin','precio_min':'sin_min'})
 bt_sm = _tacc.merge(_sin, on=_idx, how='inner')   # inner = ambos lados en el mismo super-mes
-bt_sm['brecha_pct'] = (bt_sm['sin'] / bt_sm['tacc'] - 1) * 100          # PRIMARIO: mínimo robusto (§3.4)
-bt_sm['brecha_med'] = (bt_sm['sin_med'] / bt_sm['tacc_med'] - 1) * 100  # robustez: mediana (§3.7)
+bt_sm['brecha_pct'] = (bt_sm['sin'] / bt_sm['tacc'] - 1) * 100          # PRIMARIO: mediana de candidatos (§3.4)
+bt_sm['brecha_min'] = (bt_sm['sin_min'] / bt_sm['tacc_min'] - 1) * 100  # ilustrativo "más barato" (sesgo por nº de candidatos, §3.7)
 bt_sm['qty'] = bt_sm['tipo'].map(TIPO_QTY)
 bt_sm['base_c'] = bt_sm['tacc'] * bt_sm['qty']
 bt_sm['cel_c']  = bt_sm['sin']  * bt_sm['qty']
@@ -646,16 +647,16 @@ cells.append(cell_code("""\
 # Todo se deriva de bt_sm (brecha por sucursal×mes×tipo) y brecha_suc_mes (canasta
 # por sucursal×mes). Se promedia ENTRE sucursales (mediana + promedio robusto).
 # brecha_mediana/_prom = agregación ENTRE sucursales (mediana/promedio) de la brecha
-# intra-super, que es el MÍNIMO robusto (§3.4). brecha_med_rob = misma agregación pero
-# de la brecha calculada con MEDIANA de candidatos → chequeo de robustez (§3.7).
+# intra-super, que usa la MEDIANA de candidatos (§3.4). brecha_min_ilustr = misma
+# agregación pero con el "más barato" → referencia ilustrativa, sesgada al alza (§3.7).
 def _agg_tipo(df, keys):
-    _cols = keys + ['tipo','tacc_100','sin_100','brecha_mediana','brecha_prom','brecha_med_rob','n_sucursales']
+    _cols = keys + ['tipo','tacc_100','sin_100','brecha_mediana','brecha_prom','brecha_min_ilustr','n_sucursales']
     if len(df) == 0:
         return pd.DataFrame(columns=_cols)
     return (df.groupby(keys + ['tipo'])
             .agg(tacc_100=('tacc','median'), sin_100=('sin','median'),
                  brecha_mediana=('brecha_pct','median'), brecha_prom=('brecha_pct', _pmean),
-                 brecha_med_rob=('brecha_med','median'),
+                 brecha_min_ilustr=('brecha_min','median'),
                  n_sucursales=('id_sucursal','nunique')).reset_index())
 
 def _agg_suc(df, keys):
@@ -690,10 +691,10 @@ if len(concentracion):
 
 # ── Resumen ──────────────────────────────────────────────────────────────────
 print('=== Brecha POR TIPO (intra-super, $/100g) — el número clave ===')
-print('    brecha_mediana = estimador PRIMARIO (opción más barata / mínimo robusto, §3.4)')
-print('    brecha_med_rob = chequeo de robustez (mediana de candidatos, §3.7)')
+print('    brecha_mediana    = estimador PRIMARIO (mediana de candidatos, §3.4)')
+print('    brecha_min_ilustr = referencia "más barato" (sesgada al alza por nº de candidatos, §3.7)')
 if len(brecha_tipo):
-    print(brecha_tipo[['tipo','tacc_100','sin_100','brecha_mediana','brecha_med_rob','n_sucursales']].round(1).to_string(index=False))
+    print(brecha_tipo[['tipo','tacc_100','sin_100','brecha_mediana','brecha_min_ilustr','n_sucursales']].round(1).to_string(index=False))
     print('  ⚠️ Revisá n_sucursales por tipo (y la hoja Cobertura): pocas = poco confiable.')
 else:
     print('  (sin datos — revisá la Cobertura por tipo y los EANs de TIPOS)')

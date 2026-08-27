@@ -62,12 +62,12 @@ EANs entran es del investigador; la plantilla es un punto de partida, no la list
 
 ## 3. Definición formal de la brecha (estimador canónico)
 
-> **Estado [2026-08-27]**: esta es la **definición acordada** del estimador a nivel sucursal, que
-> rige el paper, y **ya está implementada** en `gen_nb06.py` (CELDA 7). **Brecha del lado = opción
-> MÁS BARATA disponible (mínimo robusto), intra-sucursal, por tipo, en $/100 g.** La **mediana** de
-> candidatos se calcula en paralelo como **chequeo de robustez** (columna `brecha_med_rob` en la
-> hoja `Brecha_tipo`). Ver §3.7. El cambio es **cache-preserving** (no toca la lista de EANs) → la
-> corrida reutiliza `brecha_dia_*_v2.parquet` y solo re-lee el mes en curso.
+> **Estado [2026-08-27, corregido]**: estimador a nivel sucursal, implementado en `gen_nb06.py`
+> (CELDA 7). **Brecha del lado = MEDIANA $/100 g de los candidatos presentes, intra-sucursal, por
+> tipo.** El "más barato" (mínimo robusto) se calcula en paralelo **solo como referencia
+> ilustrativa** (columna `brecha_min_ilustr`): un run real mostró que **sesga la brecha al alza**
+> porque el lado TACC tiene muchos más candidatos por sucursal que el sin-TACC (ver §3.7), así que
+> **NO** se usa como primario. Cache-preserving (no toca la lista de EANs).
 
 ### 3.0. Notación
 
@@ -94,13 +94,16 @@ Esto **maximiza la cobertura** (usa lo que hay en el estante) y refleja el **con
 
 *(Alternativa descartada — "par fijo emparejado": exigir 1 EAN TACC y 1 sin-TACC idénticos en todas las sucursales daría la comparación más limpia, pero con productos sin-TACC de nicho colapsa el `n` — pan rallado ya está en 119 sucursales con la regla flexible. Inviable con estos datos.)*
 
-### 3.3. Precio del lado = la opción más barata disponible (mínimo robusto)
+### 3.3. Precio del lado = mediana de los candidatos presentes
 
-$$\text{precio}(s,m,k,r) = \min_{\substack{e \,\in\, \text{candidatos}(k,r) \\ \text{presentes en } s,m \,\wedge\, p(e,s,m)\,\in\,[\tilde p/4,\; \tilde p\cdot 4]}} p(e,s,m)$$
+$$\text{precio}(s,m,k,r) = \operatorname{mediana}_{\substack{e \,\in\, \text{candidatos}(k,r) \\ \text{presentes en } s,m}} \; p(e,s,m)$$
 
-donde `p̃` es la mediana de los candidatos presentes de ese lado (banda de plausibilidad que descarta errores de carga de SEPA antes de tomar el mínimo). **Interpretación**: un celíaco no tiene opción — compra sin-TACC; un consumidor de costo mínimo compra la opción **más barata** de cada tipo. La brecha entre ambos mínimos es el **sobrecosto real e inevitable**. Que en una zona no haya una opción sin-TACC barata **es parte del sobrecosto** (disponibilidad), y el mínimo lo capta.
+Es el **precio típico** del lado `r` para el tipo `k` en esa sucursal‑mes. Se elige la **mediana** (no el mínimo) porque es **estable a la asimetría en el número de candidatos por lado** — ver §3.7, donde se documenta por qué el mínimo ("más barato") queda descartado como primario. Requisito: al menos **1 candidato de cada lado** presente en `s,m`.
 
-Requisito: al menos **1 candidato plausible de cada lado** presente en `s,m`.
+> **Referencia ilustrativa — "más barato disponible"**: en paralelo se calcula el **mínimo robusto**
+> (mínimo de los candidatos tras descartar precios fuera de `[p̃/4, p̃·4]`). Tiene una interpretación
+> económica atractiva (lo mínimo que paga un consumidor de costo mínimo de cada lado), pero **no es
+> el primario** por el sesgo del §3.7. Se reporta como columna `brecha_min_ilustr`.
 
 ### 3.4. Brecha intra-sucursal por tipo (estimador atómico)
 
@@ -125,9 +128,23 @@ Para un grupo `G` (nacional, provincia, cadena, estrato de concentración) y tip
 
 ### 3.7. Robustez y control de composición
 
-- **Mínimo robusto** (§3.3): banda `[mediana/4, mediana×4]` antes del `min`, para que un precio espurio bajo no defina el mínimo.
-- **Efectos fijos de producto/marca** en el modelo de determinantes: los coeficientes de concentración, geografía, cadena y tiempo se estiman *neteando* qué surtido stockea cada sucursal — así la heterogeneidad de composición (§3.2) no confunde el efecto de interés.
-- **Chequeo de robustez con mediana**: se reporta también la brecha usando la **mediana** de los candidatos (en vez del mínimo). Si el resultado por tipo es parecido bajo ambas reglas, es robusto a la elección de agregación (calcularlo en la misma pasada es barato).
+- **Por qué mediana y no mínimo (evidencia empírica, run ago-2026)**: el lado TACC tiene **muchos
+  más candidatos presentes por sucursal** que el sin-TACC — Fideos 7,7 vs 1,2 · Galletitas dulces
+  4,9 vs 1,7 · Saladas 4,6 vs 3,4 · Pan rallado 3,7 vs ~1. El **mínimo de más candidatos es
+  mecánicamente más bajo** (E[mín] decrece con `n`), así que el mínimo TACC se hunde más que el
+  mínimo sin-TACC → **la brecha se infla artificialmente**. La prueba: la brecha con mínimo se
+  dispara **justo donde la asimetría es mayor** (Fideos, asimetría 6,7× → mín +426% vs mediana
+  +270%; Saladas, asimetría 1,4× → mín +363% vs mediana +306%). Es un **sesgo estadístico del
+  mínimo por número de candidatos**, no un fenómeno económico. La **mediana** es estable a esto
+  (su esperanza no depende de `n`) → es el estimador primario. El mínimo queda como
+  `brecha_min_ilustr` (cota ilustrativa, con esta advertencia).
+- **Efecto tamaño de envase**: los sin-TACC vienen en **presentaciones más chicas** (44–120 g) que
+  los TACC (200–540 g), y los envases chicos tienen mayor $/100 g por sí mismos → parte de la brecha
+  puede ser efecto envase, no gluten. Controlar con el gramaje como covariable (o emparejando
+  presentaciones donde se pueda).
+- **Efectos fijos de producto/marca** en el modelo de determinantes: los coeficientes de
+  concentración, geografía, cadena y tiempo se estiman *neteando* qué surtido stockea cada sucursal
+  — así la heterogeneidad de composición (§3.2) no confunde el efecto de interés.
 
 ### 3.8. Exclusiones
 
@@ -139,7 +156,8 @@ Para un grupo `G` (nacional, provincia, cadena, estrato de concentración) y tip
 > mismo día** para ≥3 tipos → 0 obs por baja cobertura sin-TACC. Una versión intermedia usó
 > **pooling por grupo** (base y celíaca podían apoyarse en sucursales distintas del grupo) → daba
 > +237% por mezcla de tipos y presentaciones. La versión vigente es **intra-sucursal por tipo, en
-> $/100 g**, con la agregación de candidatos migrando de mediana a **mínimo robusto**.
+> $/100 g**, con la agregación de candidatos por **mediana** (el mínimo se exploró y se descartó
+> como primario por el sesgo del §3.7).
 
 **Hallazgo (no es un bug)**: la brecha por producto TACC-sustituible es **grande** (galletitas
 +138%, fideos +270%, saladas +302%, pan rallado +362% — ver §12), muy por encima del ~9% de la
