@@ -395,6 +395,51 @@ if _sin_gramos:
     print(f'AVISO: {len(_sin_gramos)} EAN sin presentación en el maestro — usan precio por paquete '
           f'(NO normalizado a $/100g): {_sin_gramos}')
 
+# ── Subtipo / EQUIVALENCIA dentro de cada tipo ───────────────────────────────
+# Para comparar producto-vs-producto equivalente (no solo por tipo): se extrae de la
+# descripción una CLAVE de forma/variedad. Un producto TACC y uno sin-TACC con la misma
+# clave son "equivalentes directos" (p.ej. Spaghetti con TACC vs Spaghetti sin TACC).
+_SUBTIPO_KW = {
+    'Fideos secos': [
+        ('Spaghetti', ['spaghetti','spagueti','spaghettini','cabello','vermicelli']),
+        ('Tallarín/Cintas', ['tallarin','tallarín','fettuccini','fetuccini','fettuccine','cintas','nido','fideos finos']),
+        ('Mostachol', ['mostachol','rigati','rigato']),
+        ('Tirabuzón/Fusilli', ['tirabuzon','tirabuzón','fusilli','fusili','caracol','spirali']),
+        ('Penne', ['penne','pluma','plumita']),
+        ('Codito/Corto', ['codito','dedalitos','tornillo','moñito','moñitos','farfalle','risoni','cornetti']),
+        ('Ñoquis', ['ñoqui','noqui']),
+    ],
+    'Galletitas dulces': [
+        ('Vainilla', ['vainilla']),
+        ('Chocolate/Chips', ['chocolate','chips','chocolinas','cacao']),
+        ('Coco', ['coco']),
+        ('Limón', ['limon','limón']),
+        ('Marmoladas', ['marmolad']),
+        ('Pepas/Membrillo', ['pepas','membrillo']),
+        ('Bizcocho/Agridulce', ['bizcoch','agridulce','scon']),
+        ('Rellenas/Obleas', ['rellena','oblea','rumba','opera','ópera','alfajor','sonrisa','nevadit']),
+        ('Biscuit/María', ['biscuit','maria','maría','naranja','quinoa','sésamo','sesamo']),
+    ],
+    'Galletitas saladas / crackers': [
+        ('Tostada/Galleta de arroz', ['arroz','tostada','tostadita','tortita','talita']),
+        ('Crackers', ['cracker','chalita','mediterran','pimenton','pimentón','carbon','carbón']),
+        ('Bizcochito salado', ['bizcochito','bizcocho','clásic','clasic']),
+        ('Con semillas', ['semilla']),
+        ('Snack/Sabor (queso/jamón)', ['queso','jamon','jamón','palito','snack','saladix','tosti']),
+    ],
+    'Pan rallado / rebozador': [
+        ('Pan rallado', ['pan rallado','rallado']),
+        ('Rebozador', ['rebozador','rebozar']),
+    ],
+}
+def _subtipo(_desc, _tipo):
+    _d = str(_desc).lower()
+    for _lab, _kws in _SUBTIPO_KW.get(_tipo, []):
+        if any(_k in _d for _k in _kws):
+            return _lab
+    return 'Otros'
+EAN_SUBTIPO = {_e: _subtipo(EAN_DESC.get(_e, ''), EAN_TIPO[_e]) for _e in EANS_CONFIG}
+
 print(f'Tipos activos: {len(TIPO_TACC)} | EANs de config: {len(EANS_CONFIG)}')
 for _t in TIPO_TACC:
     print(f'  [{_t}] qty={TIPO_QTY[_t]:.0f} | TACC: {len(TIPO_TACC[_t])} · sin-TACC: {len(TIPO_SIN[_t])}')"""))
@@ -985,6 +1030,52 @@ else:
     _brecha_suc = pd.DataFrame(columns=['cadena','PROVINCIA_NORM','localidad','sucursales_nombre',
                                         'base_mediana','celiaca_mediana','n_tipos','brecha_mediana'])
 
+# ── Comparación de productos EQUIVALENTES por sucursal (último mes) ────────────
+# Para cada sucursal, tipo y SUBTIPO (equivalencia: Spaghetti vs Spaghetti, Vainilla vs
+# Vainilla, Pan rallado vs Pan rallado…): qué producto(s) con TACC se comparan con qué
+# producto(s) sin-TACC, con presentación y $/100g, y la brecha de ese subtipo.
+_cu = _ult.copy()
+_cu['subtipo'] = _cu['ean_norm'].map(EAN_SUBTIPO)
+_cu['descripcion'] = _cu['ean_norm'].map(EAN_DESC)
+_cu['grams'] = _cu['ean_norm'].map(EAN_GRAMS)
+def _items_lado(_g):
+    _g = _g.sort_values('precio_100')
+    _p = []
+    for _t in _g.itertuples(index=False):
+        _gt = f'{int(_t.grams)}g' if (_t.grams == _t.grams) else 's/pres'
+        _pt = f'${_t.precio_100:,.0f}/100g' if (_t.precio_100 == _t.precio_100) else 's/precio'
+        _p.append(f'{_t.descripcion} ({_gt}, {_pt})')
+    return '; '.join(_p)
+_rows_c = []
+for _kk, _g in _cu.groupby(['id_comercio','id_bandera','id_sucursal','tipo','subtipo','rol']):
+    _rows_c.append((*_kk, _items_lado(_g), float(_g['precio_100'].median()), int(_g['ean_norm'].nunique())))
+_cg = pd.DataFrame(_rows_c, columns=['id_comercio','id_bandera','id_sucursal','tipo','subtipo','rol',
+                                     'productos','precio_100g_med','n'])
+if len(_cg):
+    _tc = _cg[_cg['rol']=='tacc'].drop(columns='rol').rename(
+        columns={'productos':'productos_tacc','precio_100g_med':'precio_tacc_100g','n':'n_tacc'})
+    _sc = _cg[_cg['rol']=='sin'].drop(columns='rol').rename(
+        columns={'productos':'productos_sin','precio_100g_med':'precio_sin_100g','n':'n_sin'})
+    _comp = _tc.merge(_sc, on=['id_comercio','id_bandera','id_sucursal','tipo','subtipo'], how='outer')
+    _comp['n_tacc'] = _comp['n_tacc'].fillna(0).astype(int)
+    _comp['n_sin']  = _comp['n_sin'].fillna(0).astype(int)
+    _comp['equivalencia'] = np.where((_comp['n_tacc']>0) & (_comp['n_sin']>0), 'ambos',
+                              np.where(_comp['n_tacc']>0, 'solo con-TACC', 'solo sin-TACC'))
+    _comp['brecha_subtipo_pct'] = np.where((_comp['precio_tacc_100g']>0) & (_comp['precio_sin_100g']>0),
+                                           (_comp['precio_sin_100g']/_comp['precio_tacc_100g']-1)*100, np.nan)
+    _comp = _comp.merge(suc_geo[['id_comercio','id_bandera','id_sucursal','cadena','PROVINCIA_NORM',
+                                 'sucursales_localidad','sucursales_nombre']],
+                        on=['id_comercio','id_bandera','id_sucursal'], how='left')
+    _comp = _comp[['cadena','PROVINCIA_NORM','sucursales_localidad','sucursales_nombre',
+                   'id_comercio','id_bandera','id_sucursal','tipo','subtipo','equivalencia',
+                   'n_tacc','productos_tacc','precio_tacc_100g','n_sin','productos_sin','precio_sin_100g',
+                   'brecha_subtipo_pct']].sort_values(['PROVINCIA_NORM','cadena','sucursales_nombre','tipo','subtipo'])
+else:
+    _comp = pd.DataFrame(columns=['cadena','PROVINCIA_NORM','sucursales_localidad','sucursales_nombre',
+                                  'id_comercio','id_bandera','id_sucursal','tipo','subtipo','equivalencia',
+                                  'n_tacc','productos_tacc','precio_tacc_100g','n_sin','productos_sin',
+                                  'precio_sin_100g','brecha_subtipo_pct'])
+
 out_xls = OUTPUT_DIR / f'brecha_celiaca_{ULTIMO_MES}.xlsx'
 with pd.ExcelWriter(out_xls, engine='openpyxl') as writer:
     cobertura_tipo.to_excel(writer, sheet_name='Cobertura', index=False)
@@ -998,12 +1089,13 @@ with pd.ExcelWriter(out_xls, engine='openpyxl') as writer:
     brecha_cadena.to_excel(writer, sheet_name='Brecha_cadena', index=False)
     concentracion.to_excel(writer, sheet_name='Concentracion', index=False)
     _brecha_suc.to_excel(writer, sheet_name='Brecha_sucursal', index=False)
+    _comp.to_excel(writer, sheet_name='Comparacion_productos', index=False)
     _det.to_excel(writer, sheet_name='Detalle_producto', index=False)
     for sn in writer.sheets:
         ws = writer.sheets[sn]; fmt_ws(ws); auto_widths(ws)
 print(f'Excel guardado: {out_xls}')
 print(f'  Hojas: Cobertura · Brecha_tipo/_mes/_prov · Serie_diaria/semanal/mensual · Brecha_provincia/cadena · Concentracion · Brecha_sucursal · Detalle_producto')
-print(f'  Detalle_producto: {len(_det):,} filas (sucursal × EAN, {ULTIMO_MES}) · Brecha_sucursal (intra): {len(_brecha_suc):,}')
+print(f'  Detalle_producto: {len(_det):,} filas · Comparacion_productos: {len(_comp):,} filas (sucursal×tipo×subtipo) · Brecha_sucursal: {len(_brecha_suc):,}')
 print(f'  ⚠️ El número clave está en Brecha_tipo (brecha por tipo en $/100g). La canasta pooled mezcla tipos de brecha muy distinta.')"""))
 
 # ── CELL 12 — MAPA FOLIUM POR SUCURSAL ─────────────────────────────────────────
@@ -1011,13 +1103,13 @@ cells.append(cell_code("""\
 # ============================================================
 # CELDA 12 — Mapa Folium interactivo POR SUCURSAL (brecha celíaca, último mes)
 # ============================================================
-# Un punto por supermercado georreferenciado; color VERDE→ROJO según la brecha de
-# canasta celíaca (verde = menor brecha, rojo = mayor, con gradación). El popup trae:
-#   (1) valor de cada canasta (convencional y celíaca) y % de brecha,
-#   (2) comparación UNO-VS-UNO de productos (convencional vs sin-TACC) con presentación y $/100g,
-#   (3) la cadena (Carrefour, Coto, …), y localidad/provincia,
-#   (4) n° de tipos comparados y nota metodológica.
+# Un punto por supermercado; color VERDE→ROJO graduado por la brecha de canasta.
+# Popup: (1) valor de cada canasta y % de brecha; (2) comparación por EQUIVALENCIA de
+# productos (subtipo: Spaghetti vs Spaghetti, Vainilla vs Vainilla, …) — con TACC vs sin
+# TACC, presentación y $/100g, y brecha del subtipo; (3) cadena + localidad/provincia;
+# (4) filtro por cadena (LayerControl) y pantalla completa. Tiles OpenStreetMap (sin API key).
 import folium
+from folium.plugins import Fullscreen
 from branca.colormap import LinearColormap
 
 _um = ULTIMO_MES
@@ -1029,95 +1121,123 @@ _bk = (brecha_suc_mes[brecha_suc_mes['mes'] == _um]
               on=['id_comercio','id_bandera','id_sucursal'], how='left')
        .dropna(subset=['sucursales_latitud','sucursales_longitud']))
 
-# Brecha por TIPO (último mes) por sucursal: precio $/100g de cada lado + brecha del tipo
+# Brecha por TIPO (último mes) por sucursal
 _btm = bt_sm[bt_sm['mes'] == _um][['id_comercio','id_bandera','id_sucursal','tipo','tacc','sin','brecha_pct']]
 _bt_por_suc = {}
 for _r in _btm.itertuples(index=False):
     _bt_por_suc.setdefault((_r.id_comercio, _r.id_bandera, _r.id_sucursal), {})[_r.tipo] = (_r.tacc, _r.sin, _r.brecha_pct)
 
-# Productos presentes por (sucursal, tipo, rol) con descripción + gramos + $/100g (último mes)
+# Productos presentes por (sucursal, tipo, SUBTIPO, rol) con descripción + gramos + $/100g
 _pu = datos_dia[datos_dia['mes'] == _um].copy()
 _pu['descripcion'] = _pu['ean_norm'].map(EAN_DESC)
-_prod_por_suc = {}
+_pu['subtipo'] = _pu['ean_norm'].map(EAN_SUBTIPO)
+_prod = {}
 for _r in _pu.itertuples(index=False):
-    _d = _prod_por_suc.setdefault((_r.id_comercio, _r.id_bandera, _r.id_sucursal), {}).setdefault(_r.tipo, {'tacc': [], 'sin': []})
+    _d = (_prod.setdefault((_r.id_comercio, _r.id_bandera, _r.id_sucursal), {})
+              .setdefault(_r.tipo, {}).setdefault(_r.subtipo, {'tacc': [], 'sin': []}))
     _d[_r.rol].append((_r.descripcion, _r.grams, _r.precio_100))
 
+def _medp(_lst):
+    _v = [p for _, _, p in _lst if p == p]
+    return float(np.median(_v)) if _v else float('nan')
 def _fmt_prods(_lst):
     if not _lst:
         return '<span style="color:#bbb">—</span>'
     _lst = sorted(_lst, key=lambda x: (x[2] if x[2] == x[2] else 9e9))
     _out = []
-    for _desc, _g, _p in _lst[:5]:
+    for _desc, _g, _p in _lst[:6]:
         _gt = f'{int(_g)} g' if (_g == _g and _g > 0) else 's/pres'
         _pt = f'${_p:,.0f}/100g' if (_p == _p) else 's/precio'
-        _out.append(f'<div style="margin:1px 0">• {str(_desc)[:40]} <span style="color:#777">({_gt}, {_pt})</span></div>')
-    if len(_lst) > 5:
-        _out.append(f'<div style="color:#999">+{len(_lst)-5} más</div>')
+        _out.append(f'<div style="margin:1px 0">• {str(_desc)[:38]} <span style="color:#777">({_gt}, {_pt})</span></div>')
+    if len(_lst) > 6:
+        _out.append(f'<div style="color:#999">+{len(_lst)-6} más</div>')
     return ''.join(_out)
 
-# Colormap VERDE (baja brecha) → ROJO (alta brecha), recortado a percentiles 5-95
+# Colormap VERDE (baja brecha) → ROJO (alta), recortado a percentiles 5-95
 _vmin = float(_bk['brecha_pct'].quantile(0.05)); _vmax = float(_bk['brecha_pct'].quantile(0.95))
 if _vmin == _vmax: _vmin, _vmax = float(_bk['brecha_pct'].min()), float(_bk['brecha_pct'].max())
 _cm = LinearColormap(colors=['#1a9850','#66bd63','#a6d96a','#fee08b','#fdae61','#f46d43','#d73027'],
                      vmin=_vmin, vmax=_vmax, caption=f'Brecha de canasta celíaca (%) — {NOMBRE_MES_TITLE}')
+def _colb(_v):
+    return _cm(max(_vmin, min(_vmax, _v)))
 
-m = folium.Map(location=[-38.0, -63.5], zoom_start=5, tiles='cartodbpositron', control_scale=True)
+m = folium.Map(location=[-38.0, -63.5], zoom_start=5, tiles='OpenStreetMap', control_scale=True)
 _cm.add_to(m)
+Fullscreen(position='topright', title='Pantalla completa', title_cancel='Salir').add_to(m)
+
+# FeatureGroups por cadena → filtro nativo con LayerControl
+_fgs = {}
+def _fg(_cad):
+    if _cad not in _fgs:
+        _fgs[_cad] = folium.FeatureGroup(name=str(_cad), show=True)
+    return _fgs[_cad]
 
 for _r in _bk.itertuples(index=False):
     _key = (_r.id_comercio, _r.id_bandera, _r.id_sucursal)
-    _b = float(_r.brecha_pct)
-    _col = _cm(max(_vmin, min(_vmax, _b)))
-    _rows = ''
+    _b = float(_r.brecha_pct); _col = _colb(_b)
+    # Secciones por tipo; dentro de cada tipo, filas por SUBTIPO (equivalencia)
+    _secs = ''
     _tipos_suc = _bt_por_suc.get(_key, {})
     for _tp in sorted(_tipos_suc, key=lambda t: -_tipos_suc[t][2]):
         _tacc_p, _sin_p, _brk = _tipos_suc[_tp]
-        _pr = _prod_por_suc.get(_key, {}).get(_tp, {'tacc': [], 'sin': []})
-        _cbrk = _cm(max(_vmin, min(_vmax, _brk)))
-        _rows += (f'<tr>'
-                  f'<td style="border:1px solid #ddd;padding:3px;vertical-align:top;font-weight:600">{_tp}</td>'
-                  f'<td style="border:1px solid #ddd;padding:3px;vertical-align:top">{_fmt_prods(_pr["tacc"])}'
-                  f'<div style="color:#1F4E79;font-weight:600;margin-top:2px">mediana ${_tacc_p:,.0f}/100g</div></td>'
-                  f'<td style="border:1px solid #ddd;padding:3px;vertical-align:top">{_fmt_prods(_pr["sin"])}'
-                  f'<div style="color:#c0392b;font-weight:600;margin-top:2px">mediana ${_sin_p:,.0f}/100g</div></td>'
-                  f'<td style="border:1px solid #ddd;padding:3px;text-align:center;vertical-align:top;font-weight:700;color:{_cbrk}">+{_brk:.0f}%</td>'
-                  f'</tr>')
-    _html = (f'<div style="font-family:Arial;font-size:12px;min-width:340px;max-width:450px">'
+        _subs = _prod.get(_key, {}).get(_tp, {})
+        def _ord(_s):
+            _d = _subs[_s]; return (0 if (_d['tacc'] and _d['sin']) else 1, _s)
+        _rows = ''
+        for _sub in sorted(_subs, key=_ord):
+            _d = _subs[_sub]; _mt = _medp(_d['tacc']); _ms = _medp(_d['sin'])
+            if _mt == _mt and _ms == _ms and _mt > 0:
+                _g = (_ms/_mt - 1)*100; _gtxt = f'+{_g:.0f}%'; _gcol = _colb(_g)
+            else:
+                _gtxt = '—'; _gcol = '#999'
+            _rows += (f'<tr>'
+                      f'<td style="border:1px solid #ddd;padding:3px;vertical-align:top;font-weight:600">{_sub}</td>'
+                      f'<td style="border:1px solid #ddd;padding:3px;vertical-align:top">{_fmt_prods(_d["tacc"])}</td>'
+                      f'<td style="border:1px solid #ddd;padding:3px;vertical-align:top">{_fmt_prods(_d["sin"])}</td>'
+                      f'<td style="border:1px solid #ddd;padding:3px;text-align:center;vertical-align:top;font-weight:700;color:{_gcol}">{_gtxt}</td>'
+                      f'</tr>')
+        _secs += (f'<div style="margin-top:7px;font-weight:bold;color:#1F4E79">{_tp} '
+                  f'<span style="color:{_colb(_brk)}">· brecha del tipo +{_brk:.0f}%</span>'
+                  f'<span style="color:#888;font-weight:normal"> (mediana con-TACC ${_tacc_p:,.0f} vs sin ${_sin_p:,.0f}/100g)</span></div>'
+                  f'<table style="border-collapse:collapse;width:100%;font-size:11px">'
+                  f'<tr style="background:#1F4E79;color:#fff"><th style="padding:2px">Equivalente</th>'
+                  f'<th style="padding:2px">Con TACC</th><th style="padding:2px">Sin TACC</th><th style="padding:2px">Brecha</th></tr>'
+                  f'{_rows}</table>')
+    _html = (f'<div style="font-family:Arial;font-size:12px;min-width:360px;max-width:480px">'
              f'<div style="font-size:14px;font-weight:bold">{str(_r.sucursales_nombre)[:46]}</div>'
              f'<div style="color:#555;margin-bottom:5px">{_r.cadena} · {str(_r.localidad)}, {_r.PROVINCIA_NORM}</div>'
-             f'<div style="padding:6px;background:#f5f5f5;border-radius:4px;margin-bottom:6px">'
+             f'<div style="padding:6px;background:#f5f5f5;border-radius:4px;margin-bottom:4px">'
              f'Brecha de canasta celíaca: <b style="color:{_col};font-size:15px">+{_b:.0f}%</b><br>'
              f'Canasta convencional: <b>{_r.base:,.0f}</b> · celíaca: <b>{_r.celiaca:,.0f}</b> '
              f'<span style="color:#888">(índice $/100g ponderado por qty)</span><br>'
-             f'<span style="color:#888;font-size:11px">{int(_r.n_tipos)} tipo(s) comparado(s) · {NOMBRE_MES_TITLE}</span></div>'
-             f'<table style="border-collapse:collapse;width:100%;font-size:11px">'
-             f'<tr style="background:#1F4E79;color:#fff">'
-             f'<th style="padding:3px">Tipo</th><th style="padding:3px">Convencional (con TACC)</th>'
-             f'<th style="padding:3px">Sin TACC (celíaco)</th><th style="padding:3px">Brecha</th></tr>'
-             f'{_rows}</table>'
-             f'<div style="color:#999;font-size:10px;margin-top:4px">Precio del tipo = mediana $/100g de los productos presentes de cada lado (metodología §3).</div>'
-             f'</div>')
+             f'<span style="color:#888;font-size:11px">{int(_r.n_tipos)} tipo(s) · {NOMBRE_MES_TITLE}</span></div>'
+             f'{_secs}'
+             f'<div style="color:#999;font-size:10px;margin-top:5px">Filas = productos <b>equivalentes</b> (misma forma/variedad). '
+             f'La brecha del tipo usa la mediana $/100g de todos los presentes de cada lado (§3); la del subtipo, solo esa fila.</div></div>')
     folium.CircleMarker(
         location=[_r.sucursales_latitud, _r.sucursales_longitud],
-        radius=5, color=_col, weight=1, fill=True, fillColor=_col, fillOpacity=0.85,
+        radius=6, color='#333', weight=0.6, fill=True, fillColor=_col, fillOpacity=0.9,
         tooltip=f'<b>{_r.cadena}</b><br>{_r.PROVINCIA_NORM}<br>Brecha <b>+{_b:.0f}%</b>',
-        popup=folium.Popup(_html, max_width=470)
-    ).add_to(m)
+        popup=folium.Popup(_html, max_width=490)
+    ).add_to(_fg(_r.cadena))
+
+for _c in sorted(_fgs): _fgs[_c].add_to(m)
+folium.LayerControl(collapsed=True, position='topright').add_to(m)
 
 _med_nac = _bk['brecha_pct'].median()
-_info = (f'<div style="position:fixed;top:10px;left:50px;width:320px;background:white;border:2px solid #0055A4;'
+_info = (f'<div style="position:fixed;top:10px;left:50px;width:335px;background:white;border:2px solid #0055A4;'
          f'border-radius:8px;padding:12px 15px;font-family:Arial;z-index:9999;box-shadow:0 2px 8px rgba(0,0,0,.15)">'
          f'<div style="color:#0055A4;font-size:15px;font-weight:bold;margin-bottom:4px">Brecha celíaca por sucursal</div>'
-         f'<div style="font-size:11px;color:#555;line-height:1.5">{NOMBRE_MES_TITLE} · <b>{len(_bk):,}</b> sucursales<br>'
+         f'<div style="font-size:11px;color:#555;line-height:1.5">{NOMBRE_MES_TITLE} · <b>{len(_bk):,}</b> sucursales · <b>{len(_fgs)}</b> cadenas<br>'
          f'Brecha mediana nacional: <b>+{_med_nac:.0f}%</b><br>'
-         f'<span style="color:#1a9850">■</span> menor brecha &nbsp;&nbsp; <span style="color:#d73027">■</span> mayor brecha</div></div>')
+         f'<span style="color:#1a9850">■</span> menor &nbsp; <span style="color:#d73027">■</span> mayor brecha &nbsp;·&nbsp; '
+         f'filtrá cadenas con el control de capas (arriba der.)</div></div>')
 m.get_root().html.add_child(folium.Element(_info))
 
 _out_map = OUTPUT_DIR / f'mapa_sucursales_brecha_{MES}.html'
 m.save(str(_out_map))
 print(f'Mapa Folium por sucursal guardado: {_out_map}')
-print(f'  {len(_bk):,} sucursales · color verde→rojo por brecha · popup: canastas, productos (uno vs uno con presentación) y cadena')"""))
+print(f'  {len(_bk):,} sucursales · {len(_fgs)} cadenas (filtrables) · popup por equivalencia de productos (subtipo)')"""))
 
 # ── Write notebook ──────────────────────────────────────────────────────────────
 nb = {

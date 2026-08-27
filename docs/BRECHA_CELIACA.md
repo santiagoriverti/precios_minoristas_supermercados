@@ -340,7 +340,7 @@ Los EANs concretos están en la CELDA 1 de `notebooks/gen_nb06.py` (fuente) y de
 ### Mapa interactivo (`.html`) — CELDA 12
 | Archivo | Contenido |
 |---------|-----------|
-| `mapa_sucursales_brecha_MMAAAA.html` | **Mapa Folium por sucursal** (último mes): un punto por supermercado georreferenciado, color **verde→rojo** graduado por la brecha de canasta. Popup con: (1) valor de cada canasta (convencional/celíaca, índice $/100g ponderado) y **% de brecha**; (2) tabla de comparación **uno-vs-uno** de productos por tipo (convencional con TACC vs sin-TACC), con **presentación (gramos) y $/100g**; (3) cadena y localidad/provincia; (4) n° de tipos comparados. Leyenda + caja de resumen (n sucursales, brecha mediana nacional). |
+| `mapa_sucursales_brecha_MMAAAA.html` | **Mapa Folium por sucursal** (último mes): un punto por supermercado georreferenciado, color **verde→rojo** graduado por la brecha de canasta (tiles **OpenStreetMap**, sin API key). Popup con: (1) valor de cada canasta (convencional/celíaca) y **% de brecha**; (2) comparación **por EQUIVALENCIA de productos** — dentro de cada tipo, filas por **subtipo** (Spaghetti vs Spaghetti, Vainilla vs Vainilla, Pan rallado vs Pan rallado…), mostrando los productos **con TACC vs sin-TACC** con **presentación (gramos) y $/100g** y la **brecha del subtipo**; (3) cadena y localidad/provincia; (4) brecha del tipo. **Usabilidad**: filtro por **cadena** (LayerControl), **pantalla completa**, leyenda de color y caja de resumen (n sucursales, cadenas, brecha mediana nacional). El **subtipo/equivalencia** se deriva de la descripción (CELDA 4, `EAN_SUBTIPO`). |
 
 ### Excel — `brecha_celiaca_YYYY-MM.xlsx`
 | Hoja | Contenido |
@@ -353,6 +353,7 @@ Los EANs concretos están en la CELDA 1 de `notebooks/gen_nb06.py` (fuente) y de
 | `Brecha_cadena` | brecha pooled por cadena |
 | `Concentracion` | por localidad: nº de sucursales + brecha (base del scatter) |
 | `Brecha_sucursal` | **intra-sucursal** (best-effort, último mes): sucursales que ofrecen ambos lados — base, celíaca, brecha, nº tipos |
+| `Comparacion_productos` | **qué producto se compara con cuál** (último mes): por sucursal × tipo × **subtipo/equivalencia**, los productos **con TACC** vs **sin-TACC** (con presentación y $/100g), `equivalencia` (ambos / solo un lado), medianas por lado y **brecha del subtipo** |
 | `Detalle_producto` | **precio por sucursal × EAN** (último mes), con tipo, rol (tacc/sin) y descripción |
 
 ---
