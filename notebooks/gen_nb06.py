@@ -396,43 +396,31 @@ if _sin_gramos:
           f'(NO normalizado a $/100g): {_sin_gramos}')
 
 # ── Subtipo / EQUIVALENCIA dentro de cada tipo ───────────────────────────────
-# Para comparar producto-vs-producto equivalente (no solo por tipo): se extrae de la
-# descripción una CLAVE de forma/variedad. Un producto TACC y uno sin-TACC con la misma
-# clave son "equivalentes directos" (p.ej. Spaghetti con TACC vs Spaghetti sin TACC).
-_SUBTIPO_KW = {
+# Para comparar producto-vs-producto equivalente, la GRANULARIDAD depende del tipo, porque
+# solo en algunos tipos la sub-variedad alinea entre TACC y sin-TACC:
+#  · Fideos: por FORMA (Spaghetti↔Spaghetti, Tirabuzón↔Tirabuzón…), que sí es equivalencia real.
+#  · Pan rallado, Galletitas dulces, Galletitas saladas: los surtidos TACC y sin-TACC son
+#    variedades DISTINTAS (bizcocho agridulce vs vainilla; galleta de trigo vs de arroz), así
+#    que la equivalencia honesta es a NIVEL TIPO → un solo grupo (evita filas espurias/vacías).
+_SUBTIPO_KW = {   # solo tipos con equivalencia fina (por forma)
     'Fideos secos': [
-        ('Spaghetti', ['spaghetti','spagueti','spaghettini','cabello','vermicelli']),
-        ('Tallarín/Cintas', ['tallarin','tallarín','fettuccini','fetuccini','fettuccine','cintas','nido','fideos finos']),
+        ('Spaghetti', ['spaghetti','spagueti','spaghetti','spaguetti','spaghettini','cabello','vermicelli','fideo fino','fideos finos']),
+        ('Tallarín/Cintas', ['tallarin','tallarín','fettuccini','fetuccini','fettuccine','cintas','nido','canestri']),
         ('Mostachol', ['mostachol','rigati','rigato']),
         ('Tirabuzón/Fusilli', ['tirabuzon','tirabuzón','fusilli','fusili','caracol','spirali']),
-        ('Penne', ['penne','pluma','plumita']),
-        ('Codito/Corto', ['codito','dedalitos','tornillo','moñito','moñitos','farfalle','risoni','cornetti']),
+        ('Penne', ['penne','pluma','plumita','rigate']),
+        ('Codito/Corto', ['codito','dedalitos','tornillo','moñito','moñitos','farfalle','risoni','cornetti','coditos']),
         ('Ñoquis', ['ñoqui','noqui']),
     ],
-    'Galletitas dulces': [
-        ('Vainilla', ['vainilla']),
-        ('Chocolate/Chips', ['chocolate','chips','chocolinas','cacao']),
-        ('Coco', ['coco']),
-        ('Limón', ['limon','limón']),
-        ('Marmoladas', ['marmolad']),
-        ('Pepas/Membrillo', ['pepas','membrillo']),
-        ('Bizcocho/Agridulce', ['bizcoch','agridulce','scon']),
-        ('Rellenas/Obleas', ['rellena','oblea','rumba','opera','ópera','alfajor','sonrisa','nevadit']),
-        ('Biscuit/María', ['biscuit','maria','maría','naranja','quinoa','sésamo','sesamo']),
-    ],
-    'Galletitas saladas / crackers': [
-        ('Tostada/Galleta de arroz', ['arroz','tostada','tostadita','tortita','talita']),
-        ('Crackers', ['cracker','chalita','mediterran','pimenton','pimentón','carbon','carbón']),
-        ('Bizcochito salado', ['bizcochito','bizcocho','clásic','clasic']),
-        ('Con semillas', ['semilla']),
-        ('Snack/Sabor (queso/jamón)', ['queso','jamon','jamón','palito','snack','saladix','tosti']),
-    ],
-    'Pan rallado / rebozador': [
-        ('Pan rallado', ['pan rallado','rallado']),
-        ('Rebozador', ['rebozador','rebozar']),
-    ],
+}
+_SUBTIPO_FIJO = {   # tipos donde la equivalencia es a nivel tipo (un solo grupo)
+    'Pan rallado / rebozador': 'Pan rallado / rebozador',
+    'Galletitas dulces': 'Galletita dulce',
+    'Galletitas saladas / crackers': 'Galleta / cracker salado',
 }
 def _subtipo(_desc, _tipo):
+    if _tipo in _SUBTIPO_FIJO:
+        return _SUBTIPO_FIJO[_tipo]
     _d = str(_desc).lower()
     for _lab, _kws in _SUBTIPO_KW.get(_tipo, []):
         if any(_k in _d for _k in _kws):
@@ -1145,12 +1133,12 @@ def _fmt_prods(_lst):
         return '<span style="color:#bbb">—</span>'
     _lst = sorted(_lst, key=lambda x: (x[2] if x[2] == x[2] else 9e9))
     _out = []
-    for _desc, _g, _p in _lst[:6]:
+    for _desc, _g, _p in _lst[:4]:
         _gt = f'{int(_g)} g' if (_g == _g and _g > 0) else 's/pres'
         _pt = f'${_p:,.0f}/100g' if (_p == _p) else 's/precio'
-        _out.append(f'<div style="margin:1px 0">• {str(_desc)[:38]} <span style="color:#777">({_gt}, {_pt})</span></div>')
-    if len(_lst) > 6:
-        _out.append(f'<div style="color:#999">+{len(_lst)-6} más</div>')
+        _out.append(f'<div style="margin:1px 0">• {str(_desc)[:36]} <span style="color:#777">({_gt}, {_pt})</span></div>')
+    if len(_lst) > 4:
+        _out.append(f'<div style="color:#999">+{len(_lst)-4} más</div>')
     return ''.join(_out)
 
 # Colormap VERDE (baja brecha) → ROJO (alta), recortado a percentiles 5-95
@@ -1171,6 +1159,11 @@ def _fg(_cad):
     if _cad not in _fgs:
         _fgs[_cad] = folium.FeatureGroup(name=str(_cad), show=True)
     return _fgs[_cad]
+
+# LAZY-LOAD: el HTML de cada popup se guarda en un JSON (no en el DOM) y se inyecta al
+# hacer click → el mapa carga liviano aunque haya miles de sucursales.
+import json as _json
+_pd = {}
 
 for _r in _bk.itertuples(index=False):
     _key = (_r.id_comercio, _r.id_bandera, _r.id_sucursal)
@@ -1212,17 +1205,34 @@ for _r in _bk.itertuples(index=False):
              f'<span style="color:#888">(índice $/100g ponderado por qty)</span><br>'
              f'<span style="color:#888;font-size:11px">{int(_r.n_tipos)} tipo(s) · {NOMBRE_MES_TITLE}</span></div>'
              f'{_secs}'
-             f'<div style="color:#999;font-size:10px;margin-top:5px">Filas = productos <b>equivalentes</b> (misma forma/variedad). '
+             f'<div style="color:#999;font-size:10px;margin-top:5px">Filas = productos <b>equivalentes</b> (fideos por forma; otros tipos comparan el conjunto). '
              f'La brecha del tipo usa la mediana $/100g de todos los presentes de cada lado (§3); la del subtipo, solo esa fila.</div></div>')
+    _sk = f'{_r.id_comercio}_{_r.id_bandera}_{_r.id_sucursal}'
+    _pd[_sk] = _html
+    _ph = f'<div class="lz-pop" data-key="{_sk}" data-built="0" style="min-width:280px;text-align:center;padding:14px;color:#999;font-family:Arial;font-size:12px">Cargando detalle…</div>'
     folium.CircleMarker(
         location=[_r.sucursales_latitud, _r.sucursales_longitud],
         radius=6, color='#333', weight=0.6, fill=True, fillColor=_col, fillOpacity=0.9,
         tooltip=f'<b>{_r.cadena}</b><br>{_r.PROVINCIA_NORM}<br>Brecha <b>+{_b:.0f}%</b>',
-        popup=folium.Popup(_html, max_width=490)
+        popup=folium.Popup(_ph, max_width=490)
     ).add_to(_fg(_r.cadena))
 
 for _c in sorted(_fgs): _fgs[_c].add_to(m)
 folium.LayerControl(collapsed=True, position='topright').add_to(m)
+
+# JSON de popups (una sola vez) + JS que los inyecta al abrir (lazy)
+_pd_json = _json.dumps(_pd, ensure_ascii=False, separators=(',', ':'))
+m.get_root().html.add_child(folium.Element(
+    f'<script type="application/json" id="_pd_json">{_pd_json}</script>'))
+_map_var = m.get_name()
+m.get_root().html.add_child(folium.Element(
+    '<script>var _pd=null;'
+    'function _gPD(){if(!_pd){var el=document.getElementById("_pd_json");if(el)_pd=JSON.parse(el.textContent);}return _pd;}'
+    'function _initLZ(){var mp=window["' + _map_var + '"];if(!mp){setTimeout(_initLZ,300);return;}'
+    'mp.on("popupopen",function(e){var el=e.popup.getElement().querySelector(".lz-pop");'
+    'if(el&&el.getAttribute("data-built")!=="1"){var pd=_gPD();var k=el.getAttribute("data-key");'
+    'el.innerHTML=(pd&&pd[k])?pd[k]:"<div>Sin datos.</div>";el.setAttribute("data-built","1");e.popup.update();}});}'
+    'setTimeout(_initLZ,500);</script>'))
 
 _med_nac = _bk['brecha_pct'].median()
 _info = (f'<div style="position:fixed;top:10px;left:50px;width:335px;background:white;border:2px solid #0055A4;'
