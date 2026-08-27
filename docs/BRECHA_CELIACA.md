@@ -63,10 +63,11 @@ EANs entran es del investigador; la plantilla es un punto de partida, no la list
 ## 3. Definición formal de la brecha (estimador canónico)
 
 > **Estado [2026-08-27]**: esta es la **definición acordada** del estimador a nivel sucursal, que
-> rige el paper. **Brecha del lado = opción MÁS BARATA disponible (mínimo robusto), intra-sucursal,
-> por tipo, en $/100 g.** El notebook hoy agrega los candidatos por **mediana** (no por mínimo); la
-> migración del código al mínimo robusto está **pendiente** (implica un re-read ~70 min). La mediana
-> se conserva como **chequeo de robustez**. Ver §3.7.
+> rige el paper, y **ya está implementada** en `gen_nb06.py` (CELDA 7). **Brecha del lado = opción
+> MÁS BARATA disponible (mínimo robusto), intra-sucursal, por tipo, en $/100 g.** La **mediana** de
+> candidatos se calcula en paralelo como **chequeo de robustez** (columna `brecha_med_rob` en la
+> hoja `Brecha_tipo`). Ver §3.7. El cambio es **cache-preserving** (no toca la lista de EANs) → la
+> corrida reutiliza `brecha_dia_*_v2.parquet` y solo re-lee el mes en curso.
 
 ### 3.0. Notación
 
