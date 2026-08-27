@@ -407,23 +407,32 @@ CELDA 2 (setup/mount), CELDA 3 (maestros) y CELDA 5 (funciones ZIP) **verbatim**
 
 ---
 
-## 12. Resultados de referencia (run real, agosto 2026)
+## 12. Resultados de referencia (run real, agosto 2026 — versión limpia)
 
-Estimador **primario = mediana** (§3.3), listas sin-TACC ampliadas con el Maestro (§3.8),
-Maná excluido. 1.816.833 obs sucursal×EAN×mes · **2.532 de 2.742 sucursales con ≥1 par** ·
-32 meses (2024-01 → 2026-08).
+Estimador **primario = mediana** (§3.3), listas sin-TACC ampliadas con el Maestro, **filtro de
+plausibilidad inflación-robusto** (§3.8) y Maná **incluido** (no se saca a mano). 1.816.833 obs
+sucursal×EAN×mes · **2.532 de 2.742 sucursales con ≥1 par** · 32 meses (2024-01 → 2026-08).
 
 **Brecha por tipo (intra-super, $/100 g, mediana):**
 
 | Tipo | TACC | sin-TACC | Brecha (mediana) | "más barato" (ilustr.) | n suc. (ambos) |
 |---|--:|--:|--:|--:|--:|
-| Galletitas dulces | 667,9 | 1.300,0 | **+89,4 %** | +106,4 % | 797 |
-| Fideos secos | 276,5 | 790,0 | **+172,7 %** | +256,5 % | 1.291 |
+| Galletitas dulces | 773,7 | 1.300,0 | **+66,0 %** | +106,4 % | 802 |
+| Fideos secos | 276,5 | 795,0 | **+172,9 %** | +256,5 % | 1.291 |
 | Galletitas saladas | 502,1 | 1.538,0 | **+187,7 %** | +162,7 % | 1.332 |
 | Pan rallado | 313,8 | 949,8 | **+194,4 %** | +209,4 % | 727 |
 
-**Canasta acotada:** +178,4 % (ago-2026), desde +102,3 % (ene-2024) → +76 pp.
-Prov. menor: Entre Ríos (+116 %) · mayor: Misiones (+228 %). Correlación brecha–concentración −0,08.
+**Canasta acotada:** +173,8 % (ago-2026), desde +102,3 % (ene-2024) → +71 pp.
+Prov. menor: Entre Ríos (+116 %) · mayor: Misiones (+222 %). Correlación brecha–concentración −0,07.
+
+> **El filtro de plausibilidad descartó 3 EANs** (transparentes en la salida): Smams chocolate
+> ($184/100 g, error de carga) y **dos "sin TACC Matarazzo" (`7790070321800`, `7790070321855`)
+> con precio de fideo convencional (~$207/100 g)** — mal etiquetados en el Maestro; Matarazzo tiene
+> su verdadera línea GF con otros EANs (`7790070335xxx`, ~$970/100 g, alta cobertura), que sí se
+> usan. Es una **validación** de que la regla atrapa errores de etiquetado sin curación a mano.
+> Dulces cambió de +89 % (Maná fuera) a **+66 %** (Maná dentro): sensible a un producto porque el
+> TACC dulces tiene pocos candidatos; se conserva Maná (más conservador) y la **hedónica (§3.9)** con
+> control de gramaje es la cifra identificada.
 
 > **La ampliación del sin-TACC bajó las brechas** (Fideos +270→+173 %, Saladas +302→+188 %, Pan
 > rallado +362→+194 %) y **multiplicó la cobertura** (ambos lados: Fideos 963→2.458, Saladas
