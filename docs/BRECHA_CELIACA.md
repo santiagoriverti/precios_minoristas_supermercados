@@ -146,11 +146,19 @@ Para un grupo `G` (nacional, provincia, cadena, estrato de concentración) y tip
   concentración, geografía, cadena y tiempo se estiman *neteando* qué surtido stockea cada sucursal
   — así la heterogeneidad de composición (§3.2) no confunde el efecto de interés.
 
-### 3.8. Exclusiones
+### 3.8. Exclusiones y curación de listas
 
-- EANs **sin presentación en el Maestro** (no normalizables a $/100 g) — hoy `7790040133471` (Sonrisas, TACC dulces) y `7798079230062` (sin-TACC dulces).
+- EANs **sin presentación en el Maestro** (no normalizables a $/100 g) — hoy `7790040133471` (Sonrisas, TACC dulces) y `7798079230062` (sin-TACC dulces). Se filtran automáticamente por `grams`.
+- **Outliers de comparabilidad** (set `EANS_EXCLUIR` en CELDA 1, filtrado en CELDA 7 → cache-preserving): hoy `7790040137844` (Maná vainilla, dulces TACC) — envase premium de 131 g a $2607/100 g que desentona frente a las galletitas dulces mainstream (~$700–1500/100 g). Sacarlo baja la mediana TACC de dulces (de ~$1026 a ~$887) → sube algo la brecha de ese tipo (más honesto).
 - Precios fuera de la banda de plausibilidad por EAN (errores de carga SEPA).
-- Tipos con un lado en **muy pocas sucursales** (vetar con `Cobertura`/`n_sucursales`), y la harina/premezcla (sustitución, no like-for-like) — hoy comentada.
+- Tipos con un lado en **muy pocas sucursales** (vetar con `Cobertura`/`n_sucursales`): **Pan rallado** tiene sin-TACC en solo ~119 sucursales en el período (y ~0 algunos meses) → reportar con salvedad. La harina/premezcla (sustitución, no like-for-like) queda comentada.
+
+> **Criterio de curación de listas (Palanca 2)**: la comparabilidad *like-for-like* se controla en
+> QUÉ EANs son elegibles por tipo/lado, no en la regla de agregación. Regla: el lado **TACC** se
+> cura (tiene cobertura de sobra) sacando premium/snacks/outliers; el lado **sin-TACC NO se poda**
+> (su cobertura es escasa y **varía mes a mes** en el panel 2024–2026, así que un EAN con baja
+> cobertura en un mes puede aportar en otro). **Ampliar** el sin-TACC (más candidatos, sobre todo
+> pan rallado) requiere buscar en el `Maestro de Productos` — pendiente de tener el archivo a mano.
 
 > **Trazabilidad (versiones previas)**: el 1er run exigía ambos lados en la **misma sucursal el
 > mismo día** para ≥3 tipos → 0 obs por baja cobertura sin-TACC. Una versión intermedia usó

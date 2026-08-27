@@ -114,6 +114,15 @@ TIPOS = {
     # },
 }
 
+# EANs a EXCLUIR de las listas de arriba (curación de comparabilidad, §3.8). Se filtran
+# en la CELDA 7 DESPUÉS de leer → NO cambian el hash del caché (corrida rápida). Motivo
+# de cada exclusión documentado. Para dejar la config "canónica" se pueden borrar de las
+# listas de TIPOS en una corrida final (eso sí invalida el caché).
+EANS_EXCLUIR = {
+    '7790040137844',  # Maná vainilla (dulces TACC): envase premium 131 g, $2607/100g → outlier
+    # '7790040133471' (Sonrisas) ya se excluye solo por no tener presentación en el Maestro.
+}
+
 SEPA_SOURCE = 'mi_drive'   # 'mi_drive' | 'local'
 SEPA_DIR    = '/content/drive/MyDrive/carga'
 OUTPUT_DIR  = '/content/drive/MyDrive/carga/output_brecha'
@@ -529,6 +538,12 @@ cells.append(cell_code("""\
 datos_dia['tipo'] = datos_dia['ean_norm'].map(EAN_TIPO)
 datos_dia['rol']  = datos_dia['ean_norm'].map(EAN_ROL)
 datos_dia = datos_dia[~datos_dia['id_comercio'].isin(CADENAS_FILTRAR)].copy()
+# Exclusión de EANs por curación de comparabilidad (§3.8) — cache-preserving
+_ex = EANS_EXCLUIR if 'EANS_EXCLUIR' in dir() else set()
+if _ex:
+    _n0e = len(datos_dia)
+    datos_dia = datos_dia[~datos_dia['ean_norm'].isin(_ex)].copy()
+    print(f'  Excluidos {len(_ex)} EANs por curación (§3.8): {_n0e - len(datos_dia):,} obs')
 
 # Precio normalizado a $/100g. Los EANs SIN presentación en el maestro se EXCLUYEN
 # (definición §3.8 de docs/BRECHA_CELIACA.md: la brecha va siempre en $/100g; no se
