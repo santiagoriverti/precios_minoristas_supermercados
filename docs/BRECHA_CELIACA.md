@@ -169,13 +169,16 @@ igual a ambos lados.
    automáticamente por `grams` (los multipacks tipo "N Un" quedan sin gramos → fuera). Verificado
    que NO hay cálculo erróneo de multipacks (los "6 Un 500 Gr" se codifican como cantidad=6,
    unidad="Un" → `grams` NaN → excluidos, no mal computados).
-2. **Errores de carga (regla simétrica)** — `FILTRO DE PLAUSIBILIDAD`, CELDA 7: se descarta un EAN si
-   su precio $/100 g **mediano en todo el panel** cae fuera de un factor `FACTOR_PLAUS` (=4) respecto
-   de la **mediana de su (tipo, lado)**. Es simétrico (banda `[med/4, med×4]`) → no favorece ni sube
-   ni baja la brecha. Con los datos de ago-2026 marca **un solo EAN**: `7798181510441` (Smams
-   chocolate a $184/100 g, ~8× más barato que sus pares → error de carga). El caro Carrefour
-   ($6.300/100 g, real, 260 sucursales) y las galletitas premium **se conservan** (sacarlos sería
-   cherry-picking). `FACTOR_PLAUS` es un parámetro de robustez documentado.
+2. **Errores de carga (regla simétrica e inflación-robusta)** — `FILTRO DE PLAUSIBILIDAD`, CELDA 7:
+   cada EAN se mide **relativo a sus pares contemporáneos** — referencia = mediana de los precios-EAN
+   dentro de `(tipo, lado, MES)`, **ponderada por producto** (no por sucursal → la cobertura no sesga
+   la referencia). Se descarta un EAN si su **precio relativo mediano** en el panel cae fuera de
+   `[1/FACTOR_PLAUS, FACTOR_PLAUS]` (=4). Medir DENTRO del mes evita que la inflación 2024-2026
+   confunda la banda (una primera versión que usaba precios nominales agrupados en todo el panel
+   marcaba de más — 4 EANs — por ese sesgo; corregido). Es simétrico → no favorece ni sube ni baja la
+   brecha. Marca solo errores groseros (p.ej. `7798181510441`, Smams chocolate ~8× más barato que sus
+   pares); el caro Carrefour ($6.300/100 g, real, 260 sucursales) **se conserva** (sacarlo sería
+   cherry-picking). La corrida **imprime la lista** de EANs descartados. `FACTOR_PLAUS` = robustez.
 3. **No-comparabilidad documentada** (`EANS_EXCLUIR`, hoy **vacío**): escape hatch para casos que la
    regla no capture. *No se usa para outliers de precio.* La **harina/premezcla** (sustitución, no
    like-for-like) queda comentada por esta razón. **Nota**: NO se saca a mano el Maná (multipack

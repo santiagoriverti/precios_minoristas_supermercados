@@ -572,20 +572,27 @@ if _n_excl:
 datos_dia['precio_100'] = datos_dia['precio'] / datos_dia['grams'] * 100
 
 # ── Filtro de plausibilidad a nivel EAN (data-quality, §3.8) ──────────────────
-# Regla SIMÉTRICA y reproducible (no curación a mano): se descarta un EAN candidato si su
-# precio $/100g mediano en TODO el panel cae fuera de un factor FACTOR_PLAUS respecto de la
-# mediana de su (tipo, lado). Quita errores de carga groseros (p.ej. un valor varias veces
-# más barato/caro que sus pares) sin elegir productos a mano ni favorecer la dirección de la
-# brecha. FACTOR_PLAUS es un parámetro de robustez documentado (default 4).
+# Regla SIMÉTRICA, reproducible e INFLACIÓN-ROBUSTA (no curación a mano): cada EAN se mide
+# RELATIVO a sus pares CONTEMPORÁNEOS. Referencia = mediana de los precios-EAN dentro de
+# (tipo, lado, MES), ponderada POR PRODUCTO (no por sucursal → la cobertura no sesga la
+# referencia). Un EAN se descarta si su precio relativo mediano (en el panel) cae fuera de
+# [1/FACTOR_PLAUS, FACTOR_PLAUS]. Medir DENTRO del mes evita que la inflación 2024-2026
+# confunda la banda; así se quitan solo errores de carga groseros, sin elegir a mano ni
+# favorecer la dirección de la brecha. FACTOR_PLAUS = parámetro de robustez documentado.
 _fp = FACTOR_PLAUS if 'FACTOR_PLAUS' in dir() else 4
-_em = datos_dia.groupby(['tipo','rol','ean_norm'])['precio_100'].median().reset_index(name='_em')
-_em['_ts'] = _em.groupby(['tipo','rol'])['_em'].transform('median')
-_bad = set(_em.loc[(_em['_em'] < _em['_ts']/_fp) | (_em['_em'] > _em['_ts']*_fp), 'ean_norm'])
+_eanm = datos_dia.groupby(['tipo','rol','mes','ean_norm'])['precio_100'].median().reset_index(name='_p')
+_eanm['_ref'] = _eanm.groupby(['tipo','rol','mes'])['_p'].transform('median')
+_eanm['_rel'] = _eanm['_p'] / _eanm['_ref']
+_emr = _eanm.groupby('ean_norm')['_rel'].median()
+_bad = set(_emr[(_emr < 1/_fp) | (_emr > _fp)].index)
 if _bad:
     _n0p = len(datos_dia)
+    _desc = MP_META['descripcion'] if 'MP_META' in dir() else pd.Series(dtype=str)
     datos_dia = datos_dia[~datos_dia['ean_norm'].isin(_bad)].copy()
-    print(f'  Filtro plausibilidad (banda ×{_fp}): {len(_bad)} EAN(s) fuera de banda → '
-          f'{_n0p - len(datos_dia):,} obs quitadas (data-quality)')
+    print(f'  Filtro plausibilidad (banda ×{_fp}, inflación-robusta): {len(_bad)} EAN(s) fuera → '
+          f'{_n0p - len(datos_dia):,} obs quitadas (data-quality):')
+    for _e in sorted(_bad):
+        print(f'      - {_e}  rel={_emr[_e]:.2f}  {str(_desc.get(_e, "?"))[:50]}')
 
 # Precio del tipo por (sucursal, mes, lado) — definición §3.3: MEDIANA $/100g de los
 # candidatos presentes (estimador PRIMARIO: estable a la asimetría en el nº de candidatos
