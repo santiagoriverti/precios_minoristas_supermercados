@@ -1155,7 +1155,19 @@ if _vmin == _vmax: _vmin, _vmax = float(_bk['brecha_pct'].min()), float(_bk['bre
 _cm = LinearColormap(colors=['#1a9850','#66bd63','#a6d96a','#fee08b','#fdae61','#f46d43','#d73027'],
                      vmin=_vmin, vmax=_vmax, caption=f'Brecha de canasta celíaca (%) — {NOMBRE_MES_TITLE}')
 
-m = folium.Map(location=[-38.0, -63.5], zoom_start=5, tiles='OpenStreetMap', control_scale=True)
+m = folium.Map(location=[-38.0, -63.5], zoom_start=5, tiles='cartodbpositron', control_scale=True)
+# Límites PROVINCIALES desde el GeoJSON local (ar.json) → se ven SIEMPRE, aun si la red
+# bloquea los tiles externos (el fondo con nombres es un extra si los tiles cargan).
+try:
+    if 'GEOJSON_PATH' in dir() and Path(GEOJSON_PATH).exists():
+        with open(GEOJSON_PATH, 'r', encoding='utf-8') as _gf:
+            _geo_base = _json.load(_gf)
+        folium.GeoJson(_geo_base, name='Límites provinciales', control=False,
+                       style_function=lambda _f: {'color': '#8a8f98', 'weight': 1.0,
+                                                  'fillColor': '#eef0f2', 'fillOpacity': 0.35}
+                       ).add_to(m)
+except Exception as _e:
+    print(f'  (aviso: no se pudieron dibujar los límites provinciales: {_e})')
 _cm.add_to(m)
 Fullscreen(position='topright', title='Pantalla completa', title_cancel='Salir').add_to(m)
 
@@ -1222,7 +1234,7 @@ m.get_root().html.add_child(folium.Element(_JS))
 _out_map = OUTPUT_DIR / f'mapa_sucursales_brecha_{MES}.html'
 m.save(str(_out_map))
 print(f'Mapa Folium por sucursal guardado: {_out_map}')
-print(f'  {len(_bk):,} sucursales · {len(_fgs)} cadenas (filtrables) · popup lazy-load · JSON {len(_json_str)/1024/1024:.1f} MB')"""))
+print(f'  {len(_bk):,} sucursales · {len(_fgs)} cadenas (filtrables) · popup lazy-load · límites del GeoJSON local · JSON {len(_json_str)/1024/1024:.1f} MB')"""))
 
 # ── Write notebook ──────────────────────────────────────────────────────────────
 nb = {
