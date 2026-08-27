@@ -147,6 +147,14 @@ USE_CACHE = True
 # Mínimo de tipos (con ambos lados) para que una sucursal cuente en la brecha de CANASTA.
 # La brecha POR TIPO no lo usa (basta ese tipo presente en la sucursal). 1 = permisivo.
 MIN_TIPOS = 1
+# Mínimo de sucursales para reportar una desagregación (provincia/cadena/localidad) como
+# CONFIABLE. Las de menos quedan marcadas confiable=False y NO se usan en titulares ni plots
+# (evita brechas basadas en 3-10 sucursales).
+MIN_SUC_AGG = 30
+# Panel temporal BALANCEADO: una sucursal entra en la serie balanceada si aparece en al menos
+# esta fracción de los meses disponibles → trayectoria comparable (mitiga que la serie completa
+# se confunda con la composición cuando entran/salen sucursales).
+FRAC_MESES_PANEL = 0.7
 
 # Período mínimo de la serie histórica (semanal/mensual)
 MES_INICIO_HISTORICO = '2024-01'
@@ -766,12 +774,39 @@ if len(serie_mensual): serie_mensual = serie_mensual.sort_values('mes')
 serie_semanal = pd.DataFrame(columns=['semana','brecha_mediana','brecha_prom','n_sucursales'])
 serie_diaria  = pd.DataFrame(columns=['fecha','brecha_mediana','brecha_prom','n_sucursales'])
 
-# Desagregaciones (promedio entre supers, por zona)
-brecha_prov   = _agg_suc(brecha_suc_mes, ['PROVINCIA_NORM']).rename(columns={'PROVINCIA_NORM':'provincia'})
+# ── Cobertura temporal: PANEL BALANCEADO + diagnóstico de meses con baja cobertura ──
+# La serie completa mezcla sucursales que entran/salen (n_sucursales inestable) → la
+# comparación entre meses se confunde con la composición. La serie BALANCEADA usa solo
+# las sucursales presentes en ≥ FRAC_MESES_PANEL de los meses → trayectoria comparable.
+_sk3 = ['id_comercio','id_bandera','id_sucursal']
+if len(brecha_suc_mes):
+    _nmes  = brecha_suc_mes['mes'].nunique()
+    _minm  = max(1, int(round(FRAC_MESES_PANEL * _nmes)))
+    _pres  = brecha_suc_mes.groupby(_sk3)['mes'].nunique()
+    _panel = set(_pres[_pres >= _minm].index)
+    _bsm_bal = brecha_suc_mes[brecha_suc_mes.set_index(_sk3).index.isin(_panel)].copy()
+    serie_mensual_bal = _agg_suc(_bsm_bal, ['mes'])
+    if len(serie_mensual_bal): serie_mensual_bal = serie_mensual_bal.sort_values('mes')
+    if len(serie_mensual):
+        _nmed = serie_mensual['n_sucursales'].median()
+        _bajos = serie_mensual[serie_mensual['n_sucursales'] < 0.6 * _nmed]
+        if len(_bajos):
+            print(f'  ⚠️ Cobertura temporal BAJA en {len(_bajos)} mes(es) (n < 60% de la mediana {_nmed:.0f}): '
+                  + ', '.join(f'{_m}(n={int(_n)})' for _m, _n in zip(_bajos['mes'], _bajos['n_sucursales'])))
+    print(f'  Panel balanceado: {len(_panel):,} sucursales presentes en ≥{_minm}/{_nmes} meses '
+          f'→ serie_mensual_bal ({len(serie_mensual_bal)} meses, n≈{int(serie_mensual_bal["n_sucursales"].median()) if len(serie_mensual_bal) else 0})')
+else:
+    serie_mensual_bal = pd.DataFrame(columns=['mes','brecha_mediana','brecha_prom','n_sucursales'])
+
+# Desagregaciones (promedio entre supers, por zona). Se marca confiable = n >= MIN_SUC_AGG.
+def _marcar_conf(_df):
+    _df['confiable'] = (_df['n_sucursales'] >= MIN_SUC_AGG) if len(_df) else pd.Series(dtype=bool)
+    return _df
+brecha_prov   = _marcar_conf(_agg_suc(brecha_suc_mes, ['PROVINCIA_NORM']).rename(columns={'PROVINCIA_NORM':'provincia'}))
 if len(brecha_prov): brecha_prov = brecha_prov.sort_values('brecha_mediana')
-brecha_cadena = _agg_suc(brecha_suc_mes, ['cadena'])
+brecha_cadena = _marcar_conf(_agg_suc(brecha_suc_mes, ['cadena']))
 if len(brecha_cadena): brecha_cadena = brecha_cadena.sort_values('brecha_mediana')
-concentracion = _agg_suc(brecha_suc_mes, ['localidad'])
+concentracion = _marcar_conf(_agg_suc(brecha_suc_mes, ['localidad']))
 if len(concentracion):
     concentracion = concentracion[concentracion['localidad'] != 'N/D'].sort_values('n_sucursales', ascending=False)
 
@@ -790,22 +825,26 @@ if len(serie_mensual):
     print(serie_mensual.tail(6).round(1).to_string(index=False))
 else:
     print('  (sin datos)')
-if len(brecha_prov):
-    print(f'\\nProvincia MENOR brecha: {brecha_prov.iloc[0]["provincia"]} ({brecha_prov.iloc[0]["brecha_mediana"]:+.1f}%)')
-    print(f'Provincia MAYOR brecha: {brecha_prov.iloc[-1]["provincia"]} ({brecha_prov.iloc[-1]["brecha_mediana"]:+.1f}%)')
+_prov_conf = brecha_prov[brecha_prov['confiable']] if len(brecha_prov) else brecha_prov
+if len(_prov_conf):
+    print(f'\\nProvincia MENOR brecha (n≥{MIN_SUC_AGG}): {_prov_conf.iloc[0]["provincia"]} ({_prov_conf.iloc[0]["brecha_mediana"]:+.1f}%, n={int(_prov_conf.iloc[0]["n_sucursales"])})')
+    print(f'Provincia MAYOR brecha (n≥{MIN_SUC_AGG}): {_prov_conf.iloc[-1]["provincia"]} ({_prov_conf.iloc[-1]["brecha_mediana"]:+.1f}%, n={int(_prov_conf.iloc[-1]["n_sucursales"])})')
 
 # ── Resumen ──────────────────────────────────────────────────────────────────
-print('=== Brecha mensual (nacional, pooled) — últimos 6 ===')
+print('=== Brecha mensual (nacional) — últimos 6 ===')
 if len(serie_mensual):
     print(serie_mensual.tail(6)[['mes','brecha_mediana','brecha_prom','n_sucursales']].to_string(index=False))
     if len(serie_mensual) >= 2:
         _b0, _b1 = serie_mensual['brecha_mediana'].iloc[0], serie_mensual['brecha_mediana'].iloc[-1]
-        print(f'Brecha mediana: {_b0:+.2f}% ({serie_mensual["mes"].iloc[0]}) -> {_b1:+.2f}% ({serie_mensual["mes"].iloc[-1]}) | cambio {(_b1-_b0):+.2f} pp')
+        print(f'Serie COMPLETA (n variable): {_b0:+.1f}% ({serie_mensual["mes"].iloc[0]}) -> {_b1:+.1f}% ({serie_mensual["mes"].iloc[-1]}) | cambio {(_b1-_b0):+.1f} pp')
+    if len(serie_mensual_bal) >= 2:
+        _c0, _c1 = serie_mensual_bal['brecha_mediana'].iloc[0], serie_mensual_bal['brecha_mediana'].iloc[-1]
+        print(f'Panel BALANCEADO (n≈estable): {_c0:+.1f}% ({serie_mensual_bal["mes"].iloc[0]}) -> {_c1:+.1f}% ({serie_mensual_bal["mes"].iloc[-1]}) | cambio {(_c1-_c0):+.1f} pp  ← usar este para la tendencia temporal')
 else:
     print('  (sin datos — revisá la cobertura por tipo arriba y los EANs de TIPOS)')
-if len(brecha_prov):
-    print(f'Provincia MENOR brecha: {brecha_prov.iloc[0]["provincia"]} ({brecha_prov.iloc[0]["brecha_mediana"]:+.2f}%)')
-    print(f'Provincia MAYOR brecha: {brecha_prov.iloc[-1]["provincia"]} ({brecha_prov.iloc[-1]["brecha_mediana"]:+.2f}%)')"""))
+if len(_prov_conf):
+    print(f'Provincia MENOR brecha (n≥{MIN_SUC_AGG}): {_prov_conf.iloc[0]["provincia"]} ({_prov_conf.iloc[0]["brecha_mediana"]:+.2f}%)')
+    print(f'Provincia MAYOR brecha (n≥{MIN_SUC_AGG}): {_prov_conf.iloc[-1]["provincia"]} ({_prov_conf.iloc[-1]["brecha_mediana"]:+.2f}%)')"""))
 
 # ── CELL 9 — GRÁFICOS ──────────────────────────────────────────────────────────
 cells.append(cell_code("""\
@@ -815,15 +854,22 @@ cells.append(cell_code("""\
 MES = f'{ULTIMO_MES[5:7]}{ULTIMO_MES[:4]}'
 _C_MED, _C_PRO = '#0055A4', '#D62728'
 
-# 1) Serie temporal (mensual + semanal) con mediana y promedio
+# 1) Serie temporal mensual: serie COMPLETA (n variable) vs PANEL BALANCEADO (n≈estable),
+#    con la cobertura (n_sucursales) en un eje secundario para leer la (in)estabilidad.
 fig, ax = plt.subplots(figsize=(13, 6))
 _sm = serie_mensual.copy(); _sm['fecha'] = pd.to_datetime(_sm['mes'] + '-01')
-ax.plot(_sm['fecha'], _sm['brecha_mediana'], color=_C_MED, lw=2.5, marker='o', label='Brecha mensual (mediana)')
-ax.plot(_sm['fecha'], _sm['brecha_prom'],   color=_C_PRO, lw=2.0, ls='--', marker='s', label='Brecha mensual (promedio)')
-ax.axhline(_sm['brecha_mediana'].mean(), color='#888', ls=':', lw=1, label=f'Media período: {_sm["brecha_mediana"].mean():+.1f}%')
-ax.set_ylabel('Brecha celíaca (%)'); ax.set_title('Evolución de la brecha celíaca (canasta sin-TACC vs base)')
-ax.legend(); ax.grid(True, alpha=0.3)
-ax.yaxis.set_major_formatter(mticker.FuncFormatter(lambda x,_: f'{x:+.0f}%'))
+ax.plot(_sm['fecha'], _sm['brecha_mediana'], color=_C_MED, lw=2.5, marker='o', label='Serie completa (n variable)')
+if len(serie_mensual_bal):
+    _smb = serie_mensual_bal.copy(); _smb['fecha'] = pd.to_datetime(_smb['mes'] + '-01')
+    ax.plot(_smb['fecha'], _smb['brecha_mediana'], color='#2ca02c', lw=2.5, marker='D',
+            label=f'Panel balanceado (n≈{int(_smb["n_sucursales"].median())} estable)')
+ax.set_ylabel('Brecha celíaca (%)'); ax.set_title('Evolución de la brecha celíaca — serie completa vs panel balanceado')
+ax.grid(True, alpha=0.3); ax.yaxis.set_major_formatter(mticker.FuncFormatter(lambda x,_: f'{x:+.0f}%'))
+_ax2 = ax.twinx()
+_ax2.bar(_sm['fecha'], _sm['n_sucursales'], width=20, color='#cccccc', alpha=0.35, label='n sucursales (der.)')
+_ax2.set_ylabel('n sucursales', color='#999'); _ax2.set_ylim(0, _sm['n_sucursales'].max()*3)
+_l1,_lb1 = ax.get_legend_handles_labels(); _l2,_lb2 = _ax2.get_legend_handles_labels()
+ax.legend(_l1+_l2, _lb1+_lb2, loc='upper left', fontsize=9)
 plt.tight_layout(); _o = OUTPUT_DIR / f'brecha_mensual_{MES}.png'
 plt.savefig(_o, dpi=200, bbox_inches='tight', facecolor='white'); plt.show()
 print(f'Guardado: {_o.name}')
@@ -839,27 +885,28 @@ if len(serie_diaria) > 1:
     plt.savefig(_o, dpi=200, bbox_inches='tight', facecolor='white'); plt.show()
     print(f'Guardado: {_o.name}')
 
-# 3) Brecha por provincia (barras)
-fig, ax = plt.subplots(figsize=(11, max(5, len(brecha_prov)*0.35+2)))
-_cols = plt.cm.RdYlGn_r(np.linspace(0.15, 0.9, len(brecha_prov)))
-ax.barh(brecha_prov['provincia'], brecha_prov['brecha_mediana'], color=_cols, edgecolor='black', lw=0.4)
-for _i,(_,_r) in enumerate(brecha_prov.iterrows()):
-    ax.text(_r['brecha_mediana'], _i, f' {_r["brecha_mediana"]:+.1f}%', va='center', fontsize=8)
-ax.set_xlabel('Brecha mediana (%)'); ax.set_title('Brecha celíaca por provincia')
+# 3) Brecha por provincia (barras) — solo provincias CONFIABLES (n >= MIN_SUC_AGG)
+_bp = brecha_prov[brecha_prov['confiable']] if len(brecha_prov) else brecha_prov
+fig, ax = plt.subplots(figsize=(11, max(5, len(_bp)*0.35+2)))
+_cols = plt.cm.RdYlGn_r(np.linspace(0.15, 0.9, max(1, len(_bp))))
+ax.barh(_bp['provincia'], _bp['brecha_mediana'], color=_cols, edgecolor='black', lw=0.4)
+for _i,(_,_r) in enumerate(_bp.iterrows()):
+    ax.text(_r['brecha_mediana'], _i, f' {_r["brecha_mediana"]:+.1f}% (n={int(_r["n_sucursales"])})', va='center', fontsize=8)
+ax.set_xlabel('Brecha mediana (%)'); ax.set_title(f'Brecha celíaca por provincia (n≥{MIN_SUC_AGG} sucursales)')
 ax.grid(True, alpha=0.3, axis='x')
 plt.tight_layout(); _o = OUTPUT_DIR / f'brecha_provincia_{MES}.png'
 plt.savefig(_o, dpi=200, bbox_inches='tight', facecolor='white'); plt.show()
 print(f'Guardado: {_o.name}')
 
-# 4) Brecha por cadena (barras)
-_bc = brecha_cadena[brecha_cadena['n_sucursales'] >= 5]
+# 4) Brecha por cadena (barras) — solo cadenas CONFIABLES (n >= MIN_SUC_AGG)
+_bc = brecha_cadena[brecha_cadena['n_sucursales'] >= MIN_SUC_AGG]
 if len(_bc) > 0:
     fig, ax = plt.subplots(figsize=(11, max(4, len(_bc)*0.4+2)))
     _cols = plt.cm.RdYlGn_r(np.linspace(0.15, 0.9, len(_bc)))
     ax.barh(_bc['cadena'], _bc['brecha_mediana'], color=_cols, edgecolor='black', lw=0.4)
     for _i,(_,_r) in enumerate(_bc.iterrows()):
-        ax.text(_r['brecha_mediana'], _i, f' {_r["brecha_mediana"]:+.1f}%', va='center', fontsize=8)
-    ax.set_xlabel('Brecha mediana (%)'); ax.set_title('Brecha celíaca por cadena (≥5 sucursales)')
+        ax.text(_r['brecha_mediana'], _i, f' {_r["brecha_mediana"]:+.1f}% (n={int(_r["n_sucursales"])})', va='center', fontsize=8)
+    ax.set_xlabel('Brecha mediana (%)'); ax.set_title(f'Brecha celíaca por cadena (n≥{MIN_SUC_AGG} sucursales)')
     ax.grid(True, alpha=0.3, axis='x')
     plt.tight_layout(); _o = OUTPUT_DIR / f'brecha_cadena_{MES}.png'
     plt.savefig(_o, dpi=200, bbox_inches='tight', facecolor='white'); plt.show()
@@ -1070,9 +1117,11 @@ with pd.ExcelWriter(out_xls, engine='openpyxl') as writer:
     brecha_tipo.to_excel(writer, sheet_name='Brecha_tipo', index=False)
     brecha_tipo_mensual.to_excel(writer, sheet_name='Brecha_tipo_mes', index=False)
     brecha_tipo_prov.to_excel(writer, sheet_name='Brecha_tipo_prov', index=False)
-    serie_diaria.to_excel(writer, sheet_name='Serie_diaria', index=False)
-    serie_semanal.to_excel(writer, sheet_name='Serie_semanal', index=False)
     serie_mensual.to_excel(writer, sheet_name='Serie_mensual', index=False)
+    serie_mensual_bal.to_excel(writer, sheet_name='Serie_mensual_balanceada', index=False)
+    # Serie_diaria/Serie_semanal solo si tienen datos (el método es mensual → normalmente vacías)
+    if len(serie_diaria):  serie_diaria.to_excel(writer, sheet_name='Serie_diaria', index=False)
+    if len(serie_semanal): serie_semanal.to_excel(writer, sheet_name='Serie_semanal', index=False)
     brecha_prov.to_excel(writer, sheet_name='Brecha_provincia', index=False)
     brecha_cadena.to_excel(writer, sheet_name='Brecha_cadena', index=False)
     concentracion.to_excel(writer, sheet_name='Concentracion', index=False)
@@ -1082,7 +1131,10 @@ with pd.ExcelWriter(out_xls, engine='openpyxl') as writer:
     for sn in writer.sheets:
         ws = writer.sheets[sn]; fmt_ws(ws); auto_widths(ws)
 print(f'Excel guardado: {out_xls}')
-print(f'  Hojas: Cobertura · Brecha_tipo/_mes/_prov · Serie_diaria/semanal/mensual · Brecha_provincia/cadena · Concentracion · Brecha_sucursal · Detalle_producto')
+print(f'  Hojas: Cobertura · Brecha_tipo/_mes/_prov · Serie_mensual(+balanceada) · Brecha_provincia/cadena (col confiable) · Concentracion · Brecha_sucursal · Comparacion_productos · Detalle_producto')
+_np = int(brecha_prov['confiable'].sum()) if len(brecha_prov) else 0
+_nc = int(brecha_cadena['confiable'].sum()) if len(brecha_cadena) else 0
+print(f'  Confiables (n≥{MIN_SUC_AGG}): {_np}/{len(brecha_prov)} provincias · {_nc}/{len(brecha_cadena)} cadenas | Panel balanceado: {len(serie_mensual_bal)} meses')
 print(f'  Detalle_producto: {len(_det):,} filas · Comparacion_productos: {len(_comp):,} filas (sucursal×tipo×subtipo) · Brecha_sucursal: {len(_brecha_suc):,}')
 print(f'  ⚠️ El número clave está en Brecha_tipo (brecha por tipo en $/100g). La canasta pooled mezcla tipos de brecha muy distinta.')"""))
 

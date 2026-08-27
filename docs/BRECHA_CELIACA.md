@@ -348,10 +348,10 @@ Los EANs concretos están en la CELDA 1 de `notebooks/gen_nb06.py` (fuente) y de
 | `Cobertura` | **diagnóstico**: por tipo, nº de sucursales que ofrecen TACC, sin-TACC y **ambos** (todo el período) |
 | `Brecha_tipo` | **el número clave**: por tipo, precio TACC vs sin-TACC en `$/100g`, brecha (mediana + promedio), `n_tacc`/`n_sin` |
 | `Brecha_tipo_mes` / `Brecha_tipo_prov` | la brecha por tipo desagregada por mes (evolución) y por provincia |
-| `Serie_diaria` / `Serie_semanal` / `Serie_mensual` | brecha pooled nacional: mediana y promedio, base/celíaca medianas, nº sucursales |
-| `Brecha_provincia` | brecha pooled por provincia (mediana + promedio) |
-| `Brecha_cadena` | brecha pooled por cadena |
-| `Concentracion` | por localidad: nº de sucursales + brecha (base del scatter) |
+| `Serie_mensual` | brecha nacional por mes: mediana y promedio, nº sucursales. **⚠️ `n_sucursales` varía mes a mes** (composición inestable) → leer la tendencia con la balanceada |
+| `Serie_mensual_balanceada` | **serie temporal robusta**: solo sucursales presentes en ≥ `FRAC_MESES_PANEL` (=0,7) de los meses → `n` estable, trayectoria comparable. **Usar esta para la evolución temporal.** El notebook además imprime un aviso de meses con cobertura anómalamente baja |
+| `Brecha_provincia` / `Brecha_cadena` | brecha por provincia/cadena (mediana + promedio) + columna **`confiable`** (`n ≥ MIN_SUC_AGG`=30). Titulares y gráficos usan solo las confiables |
+| `Concentracion` | por localidad: nº de sucursales + brecha + `confiable` |
 | `Brecha_sucursal` | **intra-sucursal** (best-effort, último mes): sucursales que ofrecen ambos lados — base, celíaca, brecha, nº tipos |
 | `Comparacion_productos` | **qué producto se compara con cuál** (último mes): por sucursal × tipo × **subtipo/equivalencia**, los productos **con TACC** vs **sin-TACC** (con presentación y $/100g), `equivalencia` (ambos / solo un lado), medianas por lado y **brecha del subtipo** |
 | `Detalle_producto` | **precio por sucursal × EAN** (último mes), con tipo, rol (tacc/sin) y descripción |
