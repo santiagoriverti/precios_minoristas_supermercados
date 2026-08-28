@@ -413,23 +413,34 @@ CELDA 2 (setup/mount), CELDA 3 (maestros) y CELDA 5 (funciones ZIP) **verbatim**
 
 ---
 
-## 12. Resultados de referencia (run real, agosto 2026 — versión limpia)
+## 12. Resultados de referencia (run real, agosto 2026 — **selección por nombre + maestro completo**)
 
-Estimador **primario = mediana** (§3.3), listas sin-TACC ampliadas con el Maestro, **filtro de
-plausibilidad inflación-robusto** (§3.8) y Maná **incluido** (no se saca a mano). 1.816.833 obs
-sucursal×EAN×mes · **2.532 de 2.742 sucursales con ≥1 par** · 32 meses (2024-01 → 2026-08).
+Estimador **primario = mediana** (§3.3); candidatos sin-TACC seleccionados **por NOMBRE** (regla
+reproducible, §3.8bis) sobre el **maestro fusionado** (interno 176.702 + `maestro_sepa_completo`
+27.287 = **203.989 EANs**), con **gramos del campo o parseados de la descripción**. Filtro de
+plausibilidad (§3.8). **250 EANs de config** (TACC curado + sin-TACC por regla). 2.441.527 obs
+sucursal×EAN×mes · **2.543 de 2.742 sucursales con ≥1 par** · 32 meses (2024-01 → 2026-08).
 
 **Brecha por tipo (intra-super, $/100 g, mediana):**
 
 | Tipo | TACC | sin-TACC | Brecha (mediana) | "más barato" (ilustr.) | n suc. (ambos) |
 |---|--:|--:|--:|--:|--:|
-| Galletitas dulces | 773,7 | 1.300,0 | **+66,0 %** | +106,4 % | 802 |
-| Fideos secos | 276,5 | 795,0 | **+172,9 %** | +256,5 % | 1.291 |
-| Galletitas saladas | 502,1 | 1.538,0 | **+187,7 %** | +162,7 % | 1.332 |
-| Pan rallado | 313,8 | 949,8 | **+194,4 %** | +209,4 % | 727 |
+| Galletitas dulces | 692,4 | 1.658,3 | **+147,6 %** | +182,7 % | 1.343 |
+| Pan rallado | 314,3 | 947,1 | **+187,9 %** | +186,8 % | 727 |
+| Galletitas saladas | 501,3 | 1.549,0 | **+190,8 %** | +167,6 % | 1.335 |
+| Fideos secos | 272,8 | 940,0 | **+239,1 %** | +258,8 % | 1.291 |
 
-**Canasta acotada:** +173,8 % (ago-2026), desde +102,3 % (ene-2024) → +71 pp.
-Prov. menor: Entre Ríos (+116 %) · mayor: Misiones (+222 %). Correlación brecha–concentración −0,07.
+**Cobertura ambos lados (casi universal salvo pan rallado)**: Fideos 2.460 · **Dulces 2.525** ·
+Saladas 2.516 · Pan rallado 792. **Canasta acotada:** +176,2 % (ago-2026); serie +169,8 % (ene-2024)
+→ +176,2 % (ago-2026) = **+6,3 pp (prácticamente plana)**. Prov. menor: Santa Cruz (+131 %) · mayor:
+Córdoba (+206 %). El mapa incluye **19 cadenas** con **DIA (1.001 sucursales, la más grande)**.
+
+> **La selección por nombre (maestro SEPA completo) capturó el surtido celíaco real** — antes DIA
+> (hard-discount, 1.038 sucs) daba brecha nula porque sus EANs celíacos (Wakas 400 g, etc.) no
+> estaban en el Maestro interno curado. Ahora la cobertura de dulces saltó de ~1.000 a **2.525**
+> sucursales. **Falso positivo corregido**: la primera regla de dulces metía yerba/mermelada/
+> caramelos por matchear el sabor suelto ('naranja','frutilla'); se corrigió exigiendo un sustantivo
+> de galletita. Los `$/100 g` de sin-TACC subieron al incluir toda la góndola celíaca real.
 
 > **El filtro de plausibilidad descartó 3 EANs** (transparentes en la salida): Smams chocolate
 > ($184/100 g, error de carga) y **dos "sin TACC Matarazzo" (`7790070321800`, `7790070321855`)
