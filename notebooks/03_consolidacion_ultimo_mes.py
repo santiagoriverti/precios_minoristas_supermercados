@@ -105,8 +105,19 @@ LIMITE_COMERCIOS = None
 # DEBUG: limitar a los primeros N días (None = todos).
 LIMITE_DIAS = None
 
-# Columnas del archivo diario productos.csv que necesitamos
+# Columnas del archivo diario productos.csv que necesitamos para los PRECIOS
 _COLS_PROD = ["id_comercio", "id_bandera", "id_sucursal", "id_producto", "productos_precio_lista"]
+
+# Columnas de METADATA del producto (nombre/marca/presentación). Se extraen del propio
+# productos.csv para armar un MAESTRO DE PRODUCTOS COMPLETO — captura TODO lo que se vende
+# (incluidos EANs que no están en el Maestro interno curado, p.ej. celíacos de nicho). Se
+# leen las que existan (nombres robustos a variantes del formato SEPA).
+_COLS_META = [
+    "productos_descripcion", "productos_marca",
+    "productos_cantidad_presentacion", "productos_unidad_medida_presentacion",
+    "producto_unidad_medida_presentac",  # variante alternativa
+]
+_COLS_LEER = set(_COLS_PROD) | set(_COLS_META)  # productos.csv se lee con estas (las presentes)
 
 _RE_NESTED = re.compile(r"comercio-sepa-(\d+)_", re.IGNORECASE)
 _RE_DIA = re.compile(r"^(\d{4})-(\d{2})-(\d{2})$")
@@ -178,11 +189,11 @@ def leer_nested(zf: zipfile.ZipFile, nested_name: str):
     try:
         raw = zf.read(nested_name)
         if not raw:
-            return None, {}
+            return None, {}, None
         inner = zipfile.ZipFile(io.BytesIO(raw))
     except Exception as e:
         print(f"      ⚠️  {Path(nested_name).name}: no se pudo abrir ({e})")
-        return None, {}
+        return None, {}, None
 
     nombres = inner.namelist()
 
@@ -206,42 +217,58 @@ def leer_nested(zf: zipfile.ZipFile, nested_name: str):
         except Exception:
             prov = {}
 
-    # --- precios ---
+    # --- precios + metadata ---
     if "productos.csv" not in nombres:
-        return None, prov
+        return None, prov, None
     try:
         partes = []
         with inner.open("productos.csv") as f:
             tw = io.TextIOWrapper(f, encoding="utf-8-sig", errors="replace")
             for chunk in pd.read_csv(
-                tw, sep="|", dtype=str, usecols=_COLS_PROD,
+                tw, sep="|", dtype=str, usecols=lambda c: c in _COLS_LEER,
                 chunksize=500_000, on_bad_lines="skip",
             ):
                 partes.append(chunk)
         if not partes:
-            return None, prov
+            return None, prov, None
         dp = pd.concat(partes, ignore_index=True)
     except Exception as e:
         print(f"      ⚠️  {Path(nested_name).name}: productos.csv ilegible ({e})")
-        return None, prov
+        return None, prov, None
 
     dp["precio"] = pd.to_numeric(dp["productos_precio_lista"], errors="coerce")
     dp = dp[dp["precio"] > 0]
     dp["id_sucursal"] = _norm_suc(dp["id_sucursal"])
+
+    # metadata: 1 fila por EAN (nombre/marca/presentación) con nombres CANÓNICOS
+    meta = dp.drop_duplicates(subset=["id_producto"]).copy()
+    meta = meta.rename(columns={
+        "productos_descripcion": "descripcion", "productos_marca": "marca",
+        "productos_cantidad_presentacion": "cantidad",
+        "productos_unidad_medida_presentacion": "unidad",
+        "producto_unidad_medida_presentac": "unidad",
+    })
+    for _c in ["descripcion", "marca", "cantidad", "unidad"]:
+        if _c not in meta.columns:
+            meta[_c] = ""
+    meta = meta[["id_producto", "descripcion", "marca", "cantidad", "unidad"]]
+
     dp = dp[["id_bandera", "id_sucursal", "id_producto", "precio"]]
     # Si un producto aparece más de una vez en el día para la misma sucursal,
     # quedarnos con el último (igual criterio que el SEPA al consolidar).
     dp = dp.drop_duplicates(subset=["id_bandera", "id_sucursal", "id_producto"], keep="last")
-    return dp, prov
+    return dp, prov, meta
 
 
 # ============================================================================
 # Procesamiento por comercio (acota la RAM al comercio más grande)
 # ============================================================================
-def procesar_comercio(zf, cid, dias_nested, columnas_dia):
+def procesar_comercio(zf, cid, dias_nested, columnas_dia, maestro_acc=None):
     """
     Construye el frame wide de un comercio.
     columnas_dia: lista de ('YYYY-MM-DD', 'precio_YYYYMMDD') de TODO el mes.
+    maestro_acc: dict EAN -> (descripcion, marca, cantidad, unidad) que se va llenando
+        con los productos vistos (solo se agregan EANs nuevos) → maestro completo.
     Devuelve un DataFrame con columnas:
         id_comercio,id_bandera,id_sucursal,sucursales_provincia,id_producto,
         precio_YYYYMMDD...   (precio en pesos enteros, NaN donde falta)
@@ -254,9 +281,14 @@ def procesar_comercio(zf, cid, dias_nested, columnas_dia):
         nested = dias_nested.get(dia)
         if nested is None:
             continue
-        dp, prov = leer_nested(zf, nested)
+        dp, prov, meta = leer_nested(zf, nested)
         if prov:
             prov_global.update(prov)
+        if maestro_acc is not None and meta is not None and len(meta):
+            for _r in meta.itertuples(index=False):
+                _ean = _r.id_producto
+                if _ean and _ean not in maestro_acc:
+                    maestro_acc[_ean] = (_r.descripcion, _r.marca, _r.cantidad, _r.unidad)
         if dp is None or len(dp) == 0:
             continue
         s = dp.set_index(["id_bandera", "id_sucursal", "id_producto"])["precio"]
@@ -362,9 +394,10 @@ def main():
 
     tot_filas = 0
     eans = set()
+    maestro_acc = {}   # EAN -> (descripcion, marca, cantidad, unidad) → maestro completo
     for i, cid in enumerate(comercios, 1):
         tc = time.time()
-        df = procesar_comercio(zf, cid, mapa[cid], columnas_dia)
+        df = procesar_comercio(zf, cid, mapa[cid], columnas_dia, maestro_acc)
         if df is None or len(df) == 0:
             print(f"  [{i}/{len(comercios)}] comercio {cid}: sin datos")
             continue
@@ -383,9 +416,21 @@ def main():
         h2.close()
     zf.close()
 
+    # --- Maestro de productos COMPLETO (desde productos.csv, todo lo que se vende) ---
+    # Columnas con los MISMOS nombres que el Maestro interno → los notebooks lo cargan igual.
+    _mdf = pd.DataFrame(
+        [(k, v[0], v[1], v[2], v[3]) for k, v in maestro_acc.items()],
+        columns=["producto_sepa_id", "producto_descripcion", "producto_marca",
+                 "producto_cantidad_presentacion", "producto_unidad_medida_presentac"],
+    )
+    _mpath = OUTPUT_DIR / "maestro_sepa_completo.csv.gz"
+    _mdf.to_csv(_mpath, index=False, compression="gzip", encoding="utf-8")
+
     print("-" * 70)
     print(f"Filas totales (producto×sucursal): {tot_filas:,}")
     print(f"Productos (EAN) únicos:            {len(eans):,}")
+    print(f"Maestro SEPA completo:             {len(_mdf):,} EANs con nombre/marca/presentación")
+    print(f"  -> {_mpath.name}  ({_mpath.stat().st_size/1024**2:.1f} MB)  [subir a Drive: carga/]")
     print(f"  {f1.name}: {f1.stat().st_size/1024**2:.1f} MB  ({len(cols_p1)} días)")
     if h2 is not None:
         print(f"  {f2.name}: {f2.stat().st_size/1024**2:.1f} MB  ({len(cols_p2)} días)")
