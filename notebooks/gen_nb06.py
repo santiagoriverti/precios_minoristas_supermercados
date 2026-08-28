@@ -138,6 +138,26 @@ TIPOS = {
 EANS_EXCLUIR = set()
 FACTOR_PLAUS = 4   # factor de la banda de plausibilidad a nivel EAN (data-quality, §3.8)
 
+# ── Selección sin-TACC POR NOMBRE (regla reproducible) ─────────────────────────
+# Además de las listas curadas de arriba, se agregan como candidatos sin-TACC TODOS los
+# productos del maestro cuya descripción diga "sin tacc/gluten" y matcheen las keywords del
+# tipo (menos las exclusiones). Con el maestro SEPA COMPLETO esto captura los celíacos que
+# no están en el Maestro interno (p.ej. los que vende DIA). (kw_incluir, kw_excluir) por tipo.
+SIN_TACC_REGLA = {
+    'Fideos secos': (
+        r'fideo|spaghetti|spagueti|tallarin|mostachol|tirabuz|penne|fusilli|codito|cintas|caracol|rigat|letras|moñito|farfalle|dedalitos|cornetti|risoni|canestri|spirali',
+        r'premezcla|ñoqui|noqui|harina|frola|salsa|rallado|rebozador|tapa|tarta|sopa|salvado|arroz integral|yamani'),
+    'Galletitas dulces': (
+        r'vainilla|chocolate|coco|limon|pepas|marmolad|scon|maria|biscuit|dulce|bizcoch|oblea|alfajor|chips|rueditas|nevadit|frutilla|naranja',
+        r'salad|queso|jamon|cracker|tostada|arroz|pizza|premezcla|bizcochuelo|flan|postre|leche|grisin|palito|semilla|rallado|ensalada|hamburg|pochoclo|pan dulce|cereal|copitas|barrita|turron|budin'),
+    'Galletitas saladas / crackers': (
+        r'cracker|tostada|tortita|talita|chalita|grisin|bizcochito|tostadita|(?:galletit|galleta).*(?:salad|queso|jamon|de arroz|pizza)|snack.*queso|palito.*(?:maiz|queso)',
+        r'dulce|vainilla|chocolate|coco|limon|pepas|marmolad|premezcla|budin|oblea|alfajor|flan|leche|manteca|fideo|ensalada|hamburg|dambo|yamani|arroz integral|bizcochuelo|scon|rallado'),
+    'Pan rallado / rebozador': (
+        r'pan rallado|rebozador|rebozar|apanad',
+        r'premezcla|coco|queso rallado'),
+}
+
 SEPA_SOURCE = 'mi_drive'   # 'mi_drive' | 'local'
 SEPA_DIR    = '/content/drive/MyDrive/carga'
 OUTPUT_DIR  = '/content/drive/MyDrive/carga/output_brecha'
@@ -334,21 +354,56 @@ PESOS_POBLACION = {
 _mp_raw = leer_maestro('Maestro de Productos Interno.xlsx', dtype=str,
                        usecols=['producto_sepa_id','producto_descripcion','producto_marca','rubro',
                                 'producto_cantidad_presentacion','producto_unidad_medida_presentac'])
-MP_META = _mp_raw.rename(columns={'producto_descripcion':'descripcion','producto_marca':'marca'})
-MP_META['ean_norm'] = MP_META['producto_sepa_id'].map(normalizar_ean)
-# gramos/ml de la presentación → para normalizar el precio a $/100g (comparabilidad
-# entre presentaciones distintas: fideos 500g vs harina 1kg, etc.)
+# Maestro SEPA COMPLETO (opcional, del Drive carga/): trae TODOS los productos que se venden
+# con nombre/presentación → captura celíacos que NO están en el interno (p.ej. los de DIA).
+_msepa = None
+try:
+    _msp = Path(SEPA_DIR) / 'maestro_sepa_completo.csv.gz'
+    if _msp.exists():
+        _msepa = pd.read_csv(_msp, dtype=str)
+        print(f'  Maestro SEPA completo (Drive): {len(_msepa):,} EANs')
+except Exception as _e:
+    print(f'  (aviso: no se pudo leer maestro_sepa_completo.csv.gz: {_e})')
+
+def _prep_master(_df):
+    _df = _df.rename(columns={'producto_descripcion':'descripcion','producto_marca':'marca'})
+    if 'rubro' not in _df.columns: _df['rubro'] = ''
+    _df['ean_norm'] = _df['producto_sepa_id'].map(normalizar_ean)
+    return _df[['ean_norm','descripcion','marca','rubro',
+                'producto_cantidad_presentacion','producto_unidad_medida_presentac']]
+
+_base = _prep_master(_mp_raw)
+if _msepa is not None:
+    _extra = _prep_master(_msepa)
+    _extra = _extra[~_extra['ean_norm'].isin(set(_base['ean_norm']))]   # solo EANs que faltan
+    MP_META = pd.concat([_base, _extra], ignore_index=True)
+    print(f'  Fusión de maestros: interno {len(_base):,} + {len(_extra):,} nuevos del SEPA = {len(MP_META):,} EANs')
+else:
+    MP_META = _base
+
+# gramos/ml de la presentación → para normalizar el precio a $/100g. Se toma del CAMPO
+# presentación y, si no da (muchos productos —p.ej. de DIA— reportan '1 UNI' y los gramos van
+# en el TEXTO 'X 400 GR'), se PARSEA de la descripción.
 def _to_gramos(_q, _u):
     _q = pd.to_numeric(str(_q).replace(',', '.'), errors='coerce'); _u = str(_u).strip().lower()
     if pd.isna(_q) or _q <= 0: return np.nan
     if _u in ('kg','kgm','l','lt','litro','litros','kilogramo','kilogramos'): return _q * 1000
     if _u in ('gr','g','grs','gramo','gramos','ml','cc','mililitro'): return _q
     return np.nan
-MP_META['grams'] = [_to_gramos(a, b) for a, b in zip(MP_META['producto_cantidad_presentacion'],
-                                                     MP_META['producto_unidad_medida_presentac'])]
+_RE_GR = re.compile(r'(\\d+(?:[.,]\\d+)?)\\s*(kg|kgm|kilo|grs?|gramos?|ml|cc|lts?|litros?|g)\\b')
+def _gramos_desc(_s):
+    _m = _RE_GR.search(str(_s).lower())
+    if not _m: return np.nan
+    _v = float(_m.group(1).replace(',', '.')); _u = _m.group(2)
+    if _u.startswith('k') or _u in ('lt','l','lts','litro','litros'): return _v * 1000
+    return _v
+_g1 = [_to_gramos(a, b) for a, b in zip(MP_META['producto_cantidad_presentacion'],
+                                        MP_META['producto_unidad_medida_presentac'])]
+_g2 = [_gramos_desc(x) for x in MP_META['descripcion']]
+MP_META['grams'] = [(_a if (_a == _a) else _b) for _a, _b in zip(_g1, _g2)]
 MP_META = (MP_META.dropna(subset=['ean_norm']).drop_duplicates('ean_norm')
            .set_index('ean_norm')[['descripcion','marca','rubro','grams']])
-print(f'  Maestro de productos: {len(MP_META):,} EANs con metadata')
+print(f'  Maestro de productos (total): {len(MP_META):,} EANs con metadata')
 print('Maestros OK')"""))
 
 # ── CELL 4 — PARSEO DE TIPOS (config) ──────────────────────────────────────────
@@ -371,9 +426,21 @@ EAN_TIPO  = {}      # ean_norm -> tipo
 EAN_ROL   = {}      # ean_norm -> 'tacc' | 'sin'
 EAN_DESC  = {}      # ean_norm -> descripcion (del maestro o el propio EAN)
 
+# Expansión sin-TACC POR NOMBRE: candidatos = lista curada ∪ {EANs del maestro cuya
+# descripción diga "sin tacc/gluten" y matcheen las keywords del tipo (§ SIN_TACC_REGLA)}.
+_desc_all = MP_META['descripcion'].fillna('').astype(str).str.lower()
+_gf_all = _desc_all.str.contains(r'sin tacc|sin gluten|libre de gluten|s/tacc', regex=True)
+_REGLAS_SIN = globals().get('SIN_TACC_REGLA', {})
+def _sin_por_regla(_tp):
+    _r = _REGLAS_SIN.get(_tp)
+    if not _r: return set()
+    _kw, _ex = _r
+    _m = _gf_all & _desc_all.str.contains(_kw, regex=True) & ~_desc_all.str.contains(_ex, regex=True)
+    return set(MP_META.index[_m])
+
 for _tipo, _cfg in TIPOS.items():
     _tacc = set(_norm_lista(_cfg.get('tacc', [])))
-    _sin  = set(_norm_lista(_cfg.get('sin_tacc', [])))
+    _sin  = set(_norm_lista(_cfg.get('sin_tacc', []))) | _sin_por_regla(_tipo)
     if not _tacc or not _sin:
         print(f'AVISO: el tipo \"{_tipo}\" no tiene EANs en ambos lados — se ignora.')
         continue

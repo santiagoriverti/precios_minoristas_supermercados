@@ -12,7 +12,12 @@ Autor: Santiago Riverti — investigador independiente
 
 **✅ PASO 1 HECHO [2026-08-27]**: `03_consolidacion_ultimo_mes.py` ahora **también arma `maestro_sepa_completo.csv.gz`** (EAN→descripcion/marca/cantidad/unidad de TODO lo que se vende ese mes; columnas con los mismos nombres que el Maestro interno). Unit-test OK (captura el Wakas 400g). **OJO: el `.ipynb` de nb03 NO está sincronizado** (el usuario corre el `.py`; si usa el `.ipynb`, sincronizar celdas 3-4). El usuario baja el SEPA diario de datos.produccion.gob.ar y consolida el último mes; julio=oficial, agosto=propio.
 
-**➡️ PASO 2 PENDIENTE (nb06)**: (a) que CELDA 3 cargue `maestro_sepa_completo.csv.gz` y lo MERGEE con el interno (el completo gana / agrega EANs); (b) **selección sin-TACC POR NOMBRE** (regla: descripción con "sin tacc/gluten" + keywords del tipo − exclusiones) en vez de listas curadas → captura DIA y todo. Requiere que el usuario corra la consolidación nueva y suba el maestro a Drive (`carga/`). El lado TACC puede seguir curado o también pasar a regla por nombre.
+**✅ PASO 2 HECHO [2026-08-27] (nb06)** — validado contra los maestros reales:
+- **CELDA 3**: carga `maestro_sepa_completo.csv.gz` desde `Path(SEPA_DIR)` (Drive carga/) y lo **fusiona** con el interno (solo agrega EANs nuevos) → 176.702 + 27.287 = **203.989 EANs**. **Gramos robustos**: del campo presentación Y, si no da (DIA reporta "1 UNI" con los gramos en el TEXTO "400 GR"), **parseados de la descripción** con `_RE_GR`/`_gramos_desc`.
+- **CELDA 1**: nuevo `SIN_TACC_REGLA` = {tipo: (kw_incluir, kw_excluir)} (reglas afinadas contra datos reales: fideos por forma; dulces sabores dulces − salados; saladas cracker/tostada/arroz − quesos/ensaladas; pan rallado/rebozador − coco).
+- **CELDA 4**: sin-TACC = lista curada **∪** `_sin_por_regla` (EANs del maestro con "sin tacc/gluten" + kw del tipo). **OJO bug corregido**: `'X' in dir()` NO sirve dentro de una función (scope local) → usar `globals().get(...)`.
+- Resultado: sin-TACC 78→~290 (Fideos 69, Dulces 152, Saladas 46, Pan rallado 29); config 108→**319 EANs**; DIA capturado (SPAGHETTI/PENNE/FUSILLI SIN GLUTEN con gramos 400/300). Test sintético OK.
+- **⚠️ FALTA CORRERLO EN COLAB**: el usuario ya subió `maestro_sepa_completo.csv.gz` a Drive (`carga/`) + `2026B.zip` (jul+ago). Cambian los EANs → **invalida caché → re-read completo** (más EANs → algo más largo). Al correr: DIA debería aparecer con brecha, y sin-TACC coverage sube. Si no hay master en Drive, la regla corre igual sobre el interno (degradación elegante). El **lado TACC sigue curado** (cobertura de sobra).
 
 ---
 
