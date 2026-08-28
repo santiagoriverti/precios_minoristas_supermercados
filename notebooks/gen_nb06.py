@@ -147,9 +147,11 @@ SIN_TACC_REGLA = {
     'Fideos secos': (
         r'fideo|spaghetti|spagueti|tallarin|mostachol|tirabuz|penne|fusilli|codito|cintas|caracol|rigat|letras|moñito|farfalle|dedalitos|cornetti|risoni|canestri|spirali',
         r'premezcla|ñoqui|noqui|harina|frola|salsa|rallado|rebozador|tapa|tarta|sopa|salvado|arroz integral|yamani'),
+    # dulces: REQUIERE sustantivo de galletita/bizcocho (no solo el sabor) → evita que
+    # 'naranja'/'frutilla'/'chocolate' sueltos metan yerba, mermelada, caramelos, tabletas, etc.
     'Galletitas dulces': (
-        r'vainilla|chocolate|coco|limon|pepas|marmolad|scon|maria|biscuit|dulce|bizcoch|oblea|alfajor|chips|rueditas|nevadit|frutilla|naranja',
-        r'salad|queso|jamon|cracker|tostada|arroz|pizza|premezcla|bizcochuelo|flan|postre|leche|grisin|palito|semilla|rallado|ensalada|hamburg|pochoclo|pan dulce|cereal|copitas|barrita|turron|budin'),
+        r'galletit|galleta|biscuit|bizcoch|oblea|scon|pepa|magdalena|masita|vainilla|marmolad|nevadit|rueditas',
+        r'salad|queso|jamon|cracker|tostada|arroz|pizza|premezcla|bizcochuelo|flan|postre|leche|grisin|palito|semilla|rallado|ensalada|hamburg|pochoclo|pan dulce|cereal|copitas|barrita|turron|budin|budín|yerba|mate|mermelada|caramelo|tableta|bocadito|bombon|gomita|chupetin|jugo|bebida|agua|infusion|pimenton|cacao|dulce de leche|polvo|helado|alfajor'),
     'Galletitas saladas / crackers': (
         r'cracker|tostada|tortita|talita|chalita|grisin|bizcochito|tostadita|(?:galletit|galleta).*(?:salad|queso|jamon|de arroz|pizza)|snack.*queso|palito.*(?:maiz|queso)',
         r'dulce|vainilla|chocolate|coco|limon|pepas|marmolad|premezcla|budin|oblea|alfajor|flan|leche|manteca|fideo|ensalada|hamburg|dambo|yamani|arroz integral|bizcochuelo|scon|rallado'),
