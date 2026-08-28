@@ -279,7 +279,7 @@ NOMBRES_COMPUESTOS = {
 }
 NOMBRES_SIMPLES = {
     '2':'La Anonima','3':'Cadena 3','5':'Hipermercado Misiones',
-    '8':'Cadena 8 (Cordoba)','12':'Coto','13':'Cooperativa Obrera',
+    '8':'Mariano Max','12':'Coto','13':'Cooperativa Obrera',
     '15':'DIA','20':'LAR','21':'Toledo','23':'Cadena 23','47':'Pasamonte',
 }
 
@@ -1155,19 +1155,28 @@ from folium.plugins import Fullscreen
 from branca.colormap import LinearColormap
 import json as _json
 
-_um = ULTIMO_MES
-_bk = (brecha_suc_mes[brecha_suc_mes['mes'] == _um]
+# Snapshot = ÚLTIMA brecha disponible POR SUCURSAL dentro de una ventana de meses. Así el
+# mapa incluye cadenas que no reportaron el último mes (p.ej. DIA sin datos en agosto): cada
+# sucursal muestra su mes más reciente con dato (el popup indica de qué mes es).
+_sk3m = ['id_comercio','id_bandera','id_sucursal']
+VENTANA_MAPA_MESES = 6
+_meses_ord = sorted(brecha_suc_mes['mes'].unique())
+_meses_win = set(_meses_ord[-VENTANA_MAPA_MESES:]) if _meses_ord else set()
+_bsm_w = brecha_suc_mes[brecha_suc_mes['mes'].isin(_meses_win)]
+_bk = (_bsm_w.sort_values('mes').groupby(_sk3m, as_index=False).tail(1)   # última fila = mes más reciente por sucursal
        .merge(suc_geo[['id_comercio','id_bandera','id_sucursal','sucursales_nombre',
                        'sucursales_latitud','sucursales_longitud']],
-              on=['id_comercio','id_bandera','id_sucursal'], how='left')
+              on=_sk3m, how='left')
        .dropna(subset=['sucursales_latitud','sucursales_longitud']))
+_um = _meses_ord[-1] if _meses_ord else ULTIMO_MES
+_sel_mes = _bk[_sk3m + ['mes']]   # mes elegido por sucursal → alinea bt_sm y datos_dia a ESE mes
 
-_btm = bt_sm[bt_sm['mes'] == _um][['id_comercio','id_bandera','id_sucursal','tipo','tacc','sin','brecha_pct']]
+_btm = bt_sm.merge(_sel_mes, on=_sk3m + ['mes'], how='inner')[_sk3m + ['tipo','tacc','sin','brecha_pct']]
 _bt_por_suc = {}
 for _r in _btm.itertuples(index=False):
     _bt_por_suc.setdefault((_r.id_comercio, _r.id_bandera, _r.id_sucursal), {})[_r.tipo] = (_r.tacc, _r.sin, _r.brecha_pct)
 
-_pu = datos_dia[datos_dia['mes'] == _um].copy()
+_pu = datos_dia.merge(_sel_mes, on=_sk3m + ['mes'], how='inner').copy()
 _pu['descripcion'] = _pu['ean_norm'].map(EAN_DESC)
 _pu['subtipo'] = _pu['ean_norm'].map(EAN_SUBTIPO)
 _prod = {}
@@ -1198,7 +1207,7 @@ for _r in _bk.itertuples(index=False):
         _S = [{'s': _s, 'A': _p_arr(_subs[_s]['A']), 'B': _p_arr(_subs[_s]['B'])} for _s in sorted(_subs, key=_ord)]
         _T.append({'t': _tp, 'ta': _iround(_tacc_p), 'si': _iround(_sin_p), 'g': _iround(_brk), 'S': _S})
     _pd[_key] = {'c': str(_r.cadena), 'n': str(_r.sucursales_nombre)[:46], 'p': str(_r.PROVINCIA_NORM),
-                 'l': str(_r.localidad), 'b': _iround(_r.brecha_pct), 'bs': _iround(_r.base),
+                 'l': str(_r.localidad), 'm': str(_r.mes), 'b': _iround(_r.brecha_pct), 'bs': _iround(_r.base),
                  'cl': _iround(_r.celiaca), 'nt': int(_r.n_tipos), 'T': _T}
 _json_str = _json.dumps(_pd, ensure_ascii=False, separators=(',', ':'))
 
@@ -1248,8 +1257,9 @@ _med_nac = _bk['brecha_pct'].median()
 _info = (f'<div style="position:fixed;top:10px;left:50px;width:335px;background:white;border:2px solid #0055A4;'
          f'border-radius:8px;padding:12px 15px;font-family:Arial;z-index:9999;box-shadow:0 2px 8px rgba(0,0,0,.15)">'
          f'<div style="color:#0055A4;font-size:15px;font-weight:bold;margin-bottom:4px">Brecha celíaca por sucursal</div>'
-         f'<div style="font-size:11px;color:#555;line-height:1.5">{NOMBRE_MES_TITLE} · <b>{len(_bk):,}</b> sucursales · <b>{len(_fgs)}</b> cadenas<br>'
-         f'Brecha mediana nacional: <b>+{_med_nac:.0f}%</b><br>'
+         f'<div style="font-size:11px;color:#555;line-height:1.5">Última brecha disponible por sucursal '
+         f'(últimos {VENTANA_MAPA_MESES} meses) · <b>{len(_bk):,}</b> sucursales · <b>{len(_fgs)}</b> cadenas<br>'
+         f'Brecha mediana: <b>+{_med_nac:.0f}%</b> · el popup indica de qué mes es cada dato<br>'
          f'<span style="color:#1a9850">■</span> menor &nbsp; <span style="color:#d73027">■</span> mayor brecha &nbsp;·&nbsp; '
          f'filtrá cadenas con el control de capas (arriba der.)</div></div>')
 m.get_root().html.add_child(folium.Element(_info))
@@ -1265,7 +1275,7 @@ function _bpop(k){ var pd=_gpd(); if(!pd||!pd[k]) return "<div>Sin datos.</div>"
   var h='<div style="font-family:Arial;font-size:12px;min-width:360px;max-width:480px;max-height:520px;overflow-y:auto">';
   h+='<div style="font-size:14px;font-weight:bold">'+d.n+'</div>';
   h+='<div style="color:#555;margin-bottom:5px">'+d.c+" · "+d.l+", "+d.p+'</div>';
-  h+='<div style="padding:6px;background:#f5f5f5;border-radius:4px;margin-bottom:4px">Brecha de canasta celíaca: <b style="font-size:15px">+'+d.b+'%</b><br>Canasta convencional: <b>'+_fmt(d.bs)+'</b> · celíaca: <b>'+_fmt(d.cl)+'</b> <span style="color:#888">(índice $/100g ponderado)</span><br><span style="color:#888;font-size:11px">'+d.nt+" tipo(s) · "+_MES+'</span></div>';
+  h+='<div style="padding:6px;background:#f5f5f5;border-radius:4px;margin-bottom:4px">Brecha de canasta celíaca: <b style="font-size:15px">+'+d.b+'%</b><br>Canasta convencional: <b>'+_fmt(d.bs)+'</b> · celíaca: <b>'+_fmt(d.cl)+'</b> <span style="color:#888">(índice $/100g ponderado)</span><br><span style="color:#888;font-size:11px">'+d.nt+" tipo(s) · dato de "+d.m+'</span></div>';
   for(var i=0;i<d.T.length;i++){ var t=d.T[i];
     h+='<div style="margin-top:7px;font-weight:bold;color:#1F4E79">'+t.t+" · brecha del tipo +"+t.g+'% <span style="color:#888;font-weight:normal">(mediana con-TACC '+_fmt(t.ta)+" vs sin "+_fmt(t.si)+'/100g)</span></div>';
     h+='<table style="border-collapse:collapse;width:100%;font-size:11px"><tr style="background:#1F4E79;color:#fff"><th style="padding:2px">Equivalente</th><th style="padding:2px">Con TACC</th><th style="padding:2px">Sin TACC</th></tr>';
@@ -1286,7 +1296,10 @@ m.get_root().html.add_child(folium.Element(_JS))
 _out_map = OUTPUT_DIR / f'mapa_sucursales_brecha_{MES}.html'
 m.save(str(_out_map))
 print(f'Mapa Folium por sucursal guardado: {_out_map}')
-print(f'  {len(_bk):,} sucursales · {len(_fgs)} cadenas (filtrables) · popup lazy-load · límites del GeoJSON local · JSON {len(_json_str)/1024/1024:.1f} MB')"""))
+print(f'  {len(_bk):,} sucursales · {len(_fgs)} cadenas (últimos {VENTANA_MAPA_MESES} meses; incluye cadenas sin dato el último mes)'
+      f' · popup lazy-load · límites del GeoJSON local · JSON {len(_json_str)/1024/1024:.1f} MB')
+_mmix = _bk['mes'].value_counts().to_dict()
+print(f'  Meses del snapshot (sucursal→mes más reciente): ' + ', '.join(f'{_m}:{_n}' for _m,_n in sorted(_mmix.items(), reverse=True)))"""))
 
 # ── Write notebook ──────────────────────────────────────────────────────────────
 nb = {
