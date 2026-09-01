@@ -110,6 +110,21 @@ Mismo doble análisis mediana/promedio. Config: `EANS_INPUT` (lista de EANs) en 
 Solo tipos con dicotomía celíaca; 2–3 EANs representativos por lado, promediados; brecha
 intra-sucursal. Config: dict `TIPOS` en la CELDA 1. **Detalle completo: `docs/BRECHA_CELIACA.md`.**
 
+### 2f. `07_evolucion_canastas_alternativas` (notebook 07 — este repo) ← NUEVO (2026-09-01)
+**Propósito**: evolución **semanal** del costo de tres canastas socioeconómicas
+(**Popular / Media / Ejecutiva**) vs **IPC**, desagregada por **rubro** (con drill-down
+hasta producto; **Carne** es un rubro propio) y por provincia/cadena. Es el análisis de
+nb02 pero semanal y **sumando frescos**.
+**Composición híbrida**: (a) **empaquetados por EAN** desde la hoja `Productos unicos`
+del `canasta_representativa_*.xlsx` (`cantidad_01`=Popular, `cantidad_02`=Media,
+`cantidad_03`=Ejecutiva; mapeadas desde las canastas 2/3/4 del proyecto de índices);
+(b) **frescos por TIPO/nombre** (carne, frutas, verduras, huevos) — el EAN cambia por
+cadena (balanza), así que se seleccionan por regla de nombre sobre el maestro SEPA
+completo y se normalizan a **$/kg** o **$/docena**. Electrodomésticos/durables se
+**excluyen** (cobertura ~1 cadena → no representativos). Config: `CANASTA_COLS` y
+`TIPOS_FRESCOS` en la CELDA 1. Imprime diagnósticos de cobertura (CELDA 13) para refinar.
+Generador: `gen_nb07.py`. **Detalle en README (sección "Canastas alternativas").**
+
 ### 3. `analisis_SEPA_evolucion.ipynb`
 **Propósito**: evolución mensual de precios con canasta fija de 30 EANs.
 **Enfoque**: procesa múltiples semestres (2022A–2026A), autodetecta FACTOR_PRECIO, calcula serie diaria nacional.
@@ -406,6 +421,12 @@ Los 4 reemplazos (Swift XL, Lavandina Anti-splash, Plusbelle, Listerine) están 
 ---
 
 ## Historial de cambios
+
+### 2026-09-01 — Notebook 07: canastas alternativas (Popular/Media/Ejecutiva) semanales + frescos (nuevo, `gen_nb07.py`)
+
+Nueva herramienta pedida por el usuario: mismo análisis que nb02 pero (1) **3 canastas** socioeconómicas Popular/Media/Ejecutiva (= canastas 2/3/4 del proyecto de índices, respeta percentiles Q2/Q3-Q4/Q5), (2) granularidad **semanal** (ISO week) además de mensual para el vs-IPC, (3) desagregación **por rubro** con drill-down hasta producto (Carne como rubro propio), (4) **suma frescos** (carne, frutas, verduras, huevos), (5) vs IPC, (6) imprime diagnósticos de cobertura para refinar iterando.
+
+**Decisión de diseño — composición híbrida**: los empaquetados se leen por EAN de la hoja `Productos unicos` (columnas `cantidad_01/02/03`, que estaban vacías y se poblaron matcheando las 3 listas del proyecto de índices → 208/208 productos matchearon). Los **frescos NO se pueden seguir por EAN** (el código de balanza —prefijo GS1 `2…`— cambia por cadena; verificado: 51% de Carnicería y 20% de Frutas/Verduras son de 1 sola cadena), así que se seleccionan por **regla de nombre** (regex con `\b` para evitar falsos positivos tipo camPERA→pera) sobre el maestro SEPA completo, y el precio del tipo por sucursal/semana = mediana de las variantes presentes, normalizado a $/kg o $/docena. **Electrodomésticos/durables excluidos** (mediana de 1 cadena → romperían la representatividad geográfica y la serie temporal). Validado end-to-end con dataset SEPA sintético. Generador usa raw strings `r'''...'''` (evita el doble-escape de regex). **Pendiente**: el usuario sube a Drive el Excel poblado + `maestro_sepa_completo.csv.gz`, corre en Colab y pasa los diagnósticos para afinar reglas de frescos y cantidades.
 
 ### 2026-07-07 — Fix nb05: factor centavos/pesos mal detectado con pocos productos
 

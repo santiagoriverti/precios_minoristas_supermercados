@@ -10,6 +10,23 @@
 
 ---
 
+## 🟢 Cambios y fixes 2026-09
+
+### 🟢 Notebook 07 — Canastas alternativas (Popular/Media/Ejecutiva) semanales + frescos (nuevo, 2026-09-01)
+
+Herramienta nueva (`gen_nb07.py` → `07_evolucion_canastas_alternativas.ipynb`, 15 celdas). Análisis tipo nb02 pero **semanal**, con **3 canastas** socioeconómicas y **frescos** (carne/frutas/verduras/huevos), desagregado por rubro con drill-down y vs IPC. Ver README ("Canastas alternativas") y `METODOLOGIA.md` §8.
+
+**Validado** end-to-end con dataset SEPA sintético (las 15 celdas compilan; frescos por tipo capturados y normalizados a $/kg y $/docena; rubro Carne desagregado; vs IPC; Excel de 27 hojas). Se corrigió `matplotlib.cm.get_cmap` → `plt.get_cmap` (removido en mpl 3.9, rompería en Colab). Generador con **raw strings** `r'''...'''` (ver `SEPA_TECNICO.md`).
+
+**Mejoras/limitaciones abiertas (para afinar con datos reales)**:
+- **Cantidades de frescos**: default razonable (canasta-básica, escala por estrato) y **editable** en `TIPOS_FRESCOS` (CELDA 1). Alinear mejor a las ponderaciones del IPC con la hoja `Cobertura_frescos` del primer run.
+- **Reglas de frescos (`inc`/`exc`)**: curadas por nombre; pueden dejar entrar/salir variantes. La CELDA 13 imprime cobertura por tipo para refinar; revisar especialmente **Carne picada** (cobertura baja: los cortes al peso a veces no se publican con código).
+- **Requiere `maestro_sepa_completo.csv.gz` en Drive** (lo genera el Script 03). Sin él, los frescos de nicho por cadena quedan sub-representados (el notebook avisa).
+- **Mapas coropléticos/folium NO clonados** de nb02 (se pueden agregar después).
+- **Un solo ítem empaquetado de baja comparabilidad** detectado al poblar: Postre Serenito (2 cadenas, 5 provincias) — candidato a reemplazo.
+
+---
+
 ## 🟢 Cambios y fixes 2026-08
 
 ### ✅ Fix — Encabezado LaTeX de tablas de canasta con `\\` duplicado (2026-08-21)

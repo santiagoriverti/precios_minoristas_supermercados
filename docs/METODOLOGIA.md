@@ -392,3 +392,36 @@ Resumen metodológico (detalle completo en **`docs/BRECHA_CELIACA.md`**):
 Contraste con el **IPC del INDEC**: el IPC no usa mediana; es una canasta fija ponderada por gasto
 (ENGHo) con promedios de relativos de precio sobre una muestra relevada. La brecha celíaca es un
 indicador específico y complementario, no una réplica del IPC.
+
+---
+
+## 8. Notebook 07 — Canastas alternativas (semanal + frescos)
+
+`07_evolucion_canastas_alternativas` calcula la evolución **semanal** del costo de tres canastas socioeconómicas (**Popular / Media / Ejecutiva**) y la compara con el IPC, desagregando por rubro (con drill-down hasta producto) y por provincia/cadena. Es el análisis de nb02 con dos diferencias: granularidad semanal y una composición que suma frescos.
+
+### 8.1. Mapeo de canastas
+Popular = canasta 2 (Popular, Q2 · P25-55) · Media = canasta 3 (Medio, Q3-Q4 · P40-70) · Ejecutiva = canasta 4 (Medio-alto, Q5 · P55-85) del proyecto de índices. Se leen de la hoja `Productos unicos` del `canasta_representativa_*.xlsx` (`cantidad_01/02/03`).
+
+### 8.2. Composición híbrida (empaquetados por EAN + frescos por tipo)
+- **Empaquetados**: un EAN estable con buena cobertura multi-cadena (marcas mainstream). Precio por sucursal-semana = mediana de los días. Cada producto lleva su rubro.
+- **Frescos** (carne, frutas, verduras, huevos): el EAN de balanza (prefijo GS1 `2…`) **cambia por cadena** → no se puede seguir un EAN entre cadenas. Se seleccionan por **regla de nombre** (`inc`/`exc` regex con borde de palabra `\b`) sobre el maestro SEPA completo, que captura todas las variantes que cada cadena publica. El precio del **tipo** en una sucursal-semana = **mediana de las variantes presentes**, normalizado a la unidad del tipo:
+  - `$/kg` (frutas, verduras, carne): `precio / gramos_presentación × 1000`. Los códigos de balanza "1 Kg" ya vienen en $/kg.
+  - `$/docena` (huevos): `precio / unidades × 12`.
+
+### 8.3. Costo de canasta por sucursal-semana (con imputación)
+Para cada canasta, sucursal y semana:
+`costo = Σ_ítems_presentes(precio_sucursal × cantidad) + [Σ_todos(mediana_nacional × cantidad) − Σ_presentes(mediana_nacional × cantidad)]`
+es decir, cada ítem presente usa el precio de la sucursal y cada ítem faltante se imputa con la **mediana nacional de esa semana** (por EAN o por tipo). Se acumula por rubro para la desagregación. Una sucursal cuenta si tiene ≥ `FRAC_PRODUCTOS_MIN` (0.5) de los empaquetados de la canasta.
+
+La serie nacional semanal es la **mediana** y el **promedio (outliers fuera)** del costo entre sucursales. La serie mensual (para el vs-IPC) agrega primero por sucursal-mes (mediana de sus semanas) y luego entre sucursales.
+
+### 8.4. Desagregación por rubro (drill-down)
+- **Nivel 1**: costo por rubro × semana (mediana entre sucursales) y participación % del último mes.
+- **Nivel 2/3**: detalle por ítem (producto empaquetado o tipo fresco) del último mes con cantidad, precio unitario y costo.
+Rubros de frescos: **Carne, Frutas, Verduras, Huevos** (además de Almacén, Bebidas, Frescos-lácteos/fiambres, Limpieza, Perfumería, Congelados de los empaquetados).
+
+### 8.5. Qué NO se incluye y por qué
+**Electrodomésticos / durables** (Informática, Climatización, Cocinas, TV, Heladeras, Lavado, Pequeños electrodomésticos) se **excluyen**: mediana de cobertura ~1 cadena y pocas provincias (solo 29% son geográficamente comparables vs 41% de alimentos), lo que rompería la representatividad geográfica y la estabilidad de la serie temporal (catálogo que entra/sale).
+
+### 8.6. Diagnósticos para refinar
+La CELDA 13 imprime cobertura por EAN empaquetado (`n_cadenas`/`n_provincias`/`n_sucursales` del último mes) marcando ítems **sin datos** o de **baja comparabilidad** (n_cadenas<3 o n_provincias<15), y cobertura por tipo fresco (nº de variantes capturadas por la regla). Es la base para iterar: se afinan `inc`/`exc` y las cantidades, y se reemplazan EANs poco comparables.

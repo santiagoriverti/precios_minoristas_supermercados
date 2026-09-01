@@ -26,6 +26,7 @@ El proyecto responde tres preguntas:
 | `04_precios_seleccion` | Exporta un **Excel** con los precios diarios del último mes para todos los supermercados a menos de X km de un punto: una hoja por sucursal (productos × días) + una hoja general (producto × super, precio promedio). Ver [sección detallada](#precios-por-selección-geográfica--04_precios_seleccion). | [![Abrir en Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/santiagoriverti/precios_minoristas_supermercados/blob/main/notebooks/04_precios_seleccion.ipynb) |
 | `05_evolucion_productos_representativos` | Igual que el Notebook 02, pero para **productos individuales** en vez de canastas: evolución de precio, mapas provinciales, comparación con el IPC y rankings por cadena/barrio de cada EAN que se ingrese. Ver [sección detallada](#evolución-de-productos-individuales--05_evolucion_productos_representativos). | [![Abrir en Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/santiagoriverti/precios_minoristas_supermercados/blob/main/notebooks/05_evolucion_productos_representativos.ipynb) |
 | `06_evolucion_brecha_celiaca` | Mide la **brecha celíaca** (canasta sin-TACC vs. base con TACC) y su evolución **diaria, semanal y mensual**, usando solo tipos de producto con dicotomía celíaca (2–3 EANs representativos por lado, promediados). Brecha **intra-sucursal**, desagregada por provincia, cadena y concentración de comercios. Ver [sección detallada](#brecha-celíaca--06_evolucion_brecha_celiaca). | [![Abrir en Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/santiagoriverti/precios_minoristas_supermercados/blob/main/notebooks/06_evolucion_brecha_celiaca.ipynb) |
+| `07_evolucion_canastas_alternativas` | Evolución **semanal** del costo de tres canastas socioeconómicas (**Popular / Media / Ejecutiva**), comparada con el **IPC**, desagregada por **rubro** (incluye **Carne**, **Frutas**, **Verduras**, **Huevos**) con drill-down hasta producto, y por provincia/cadena. Composición **híbrida**: empaquetados por EAN (hoja `Productos unicos`, `cantidad_01/02/03`) + frescos **por tipo/nombre** (el EAN cambia por cadena). Imprime diagnósticos de cobertura para refinar. Ver [sección detallada](#canastas-alternativas--07_evolucion_canastas_alternativas). | [![Abrir en Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/santiagoriverti/precios_minoristas_supermercados/blob/main/notebooks/07_evolucion_canastas_alternativas.ipynb) |
 
 > **¿Ves una versión vieja en Colab?** El badge siempre apunta a la última versión en GitHub, pero Colab puede mostrar una copia cacheada de tu Drive. Para forzar la actualización: eliminá el notebook de `Mi unidad/Colab Notebooks/` en Google Drive y volvé a hacer clic en el badge.
 
@@ -518,6 +519,28 @@ El diccionario `TIPOS` — un tipo por entrada, con `qty`, `tacc: [EANs]`, `sin_
 
 ---
 
+## Canastas alternativas — `07_evolucion_canastas_alternativas`
+
+Evolución **semanal** del costo de tres canastas socioeconómicas (**Popular / Media / Ejecutiva**), comparada con el **IPC** del INDEC, desagregada por **rubro** (con drill-down hasta producto) y por provincia/cadena. Es el análisis del Notebook 02 pero con dos diferencias clave: granularidad **semanal** y una composición que **suma frescos** (carne, frutas, verduras, huevos).
+
+### Composición híbrida (dos fuentes)
+- **Empaquetados (por EAN)**: se leen de la hoja **`Productos unicos`** del Excel `canasta_representativa_*.xlsx` en `carga/output_canasta/`, usando las columnas `cantidad_01` (Popular), `cantidad_02` (Media) y `cantidad_03` (Ejecutiva). Cada producto trae su rubro/categoría.
+- **Frescos (por TIPO/nombre)**: carne, frutas, verduras y huevos **no** tienen un EAN estable entre cadenas (usan códigos de balanza que cada cadena inventa), así que se seleccionan **por regla de nombre** sobre el maestro SEPA completo. El precio del tipo en una sucursal/semana = **promedio de las variantes presentes**, normalizado a **$/kg** (verduras/frutas/carne) o **$/docena** (huevos). Así son comparables entre cadenas y provincias.
+
+### Config (CELDA 1)
+- `CANASTA_COLS` mapea `cantidad_01/02/03 → Popular/Media/Ejecutiva`; `HOJA_CANASTAS = 'Productos unicos'`.
+- `TIPOS_FRESCOS`: un tipo por entrada (`rubro`, `unidad` kg/doc, `inc`/`exc` regex por nombre, y `qty` por canasta). Editable; se afina con la hoja `Cobertura_frescos` del primer run.
+- Serie semanal por ISO week; `MES_INICIO_HISTORICO`, `FRAC_PRODUCTOS_MIN` (cobertura mínima de empaquetados por sucursal), `MIN_SUC_AGG`.
+
+### Qué genera
+- **Diagnósticos por pantalla** (para refinar la composición): cobertura por EAN (`n_cadenas`/`n_provincias`/`n_sucursales`), ítems **sin datos** o de **baja comparabilidad**, y cobertura por tipo fresco (nº de variantes capturadas por la regla).
+- Gráficos: índice **semanal** por canasta, canastas **vs IPC** (mensual), composición por rubro.
+- `canastas_alternativas_YYYY-Www.xlsx`: `Resumen`, `Sem_*`/`Mes_*` (series), `vsIPC_*`, `Rubro_sem_*`, `Comp_rubro_*`, **`Detalle_*`** (drill-down por producto/tipo), `Prov_*`, `Cadena_*`, `Cobertura_emp`, `Cobertura_frescos`.
+
+> Requiere en `carga/` los ZIPs SEPA, `IPC.xlsx`, `maestro_sepa_completo.csv.gz` (lo genera el Script 03; captura los frescos de nicho por cadena) y en `carga/output_canasta/` el Excel `canasta_representativa_*.xlsx` con la hoja `Productos unicos` poblada.
+
+---
+
 ## Estructura del repositorio
 
 ```
@@ -531,10 +554,12 @@ precios_minoristas_supermercados/
 │   ├── 04_precios_seleccion.ipynb                # Notebook 4 — precios diarios por sucursal cercana a un punto
 │   ├── 05_evolucion_productos_representativos.ipynb # Notebook 5 — análisis tipo Notebook 2 por producto individual (EAN)
 │   ├── 06_evolucion_brecha_celiaca.ipynb        # Notebook 6 — brecha celíaca (TACC vs sin-TACC), diaria/semanal/mensual
+│   ├── 07_evolucion_canastas_alternativas.ipynb # Notebook 7 — canastas Popular/Media/Ejecutiva semanales + frescos, vs IPC
 │   ├── gen_nb02.py                               # Script fuente que genera el Notebook 2
 │   ├── gen_nb04.py                               # Script fuente que genera el Notebook 4
 │   ├── gen_nb05.py                               # Script fuente que genera el Notebook 5
-│   └── gen_nb06.py                               # Script fuente que genera el Notebook 6
+│   ├── gen_nb06.py                               # Script fuente que genera el Notebook 6
+│   └── gen_nb07.py                               # Script fuente que genera el Notebook 7
 ├── data/                                # Maestros de referencia (se descargan automáticamente)
 │   ├── Maestro de Productos Interno.xlsx    # ~176K productos con rubro/categoría/subcategoría
 │   ├── maestro_sucursales_completo.xlsx     # 3.611 sucursales con cadena, provincia, región

@@ -251,6 +251,24 @@ Los productos vendidos por peso en góndola (frutas, verduras, fiambres a granel
 - El notebook lo detecta con `_serie_vacia = len(serie_nacional_valida) == 0` y salta las celdas 11/12 con un aviso
 - Los EANs GS1 estándar (prefijo 77... o 78...) SÍ tienen historia consistente
 
+### Frescos por peso (balanza) — seguimiento POR TIPO, no por EAN (patrón de nb07)
+
+Ampliación de lo anterior con datos reales (agosto 2026). Los frescos vendidos por peso usan **códigos de balanza internos** con **prefijo GS1 `2`** ("distribución restringida / in-store"), y **cada cadena inventa el suyo**:
+
+| Ejemplo (Frutas/Verduras) | EAN | Cadenas | Sucursales |
+|---|---|---|---|
+| Tomate Redondo Elegido 1 Kg | `2490127…` | 1 | 983 (solo DIA) |
+| Zanahoria Elegida 1 Kg | `2490122…` | 1 | 983 |
+| Asado al Vacío Catte 1 Kg | `2406951…` | 1 | 983 |
+
+Medición sobre `canasta_representativa_2026-08.xlsx`: **51% de Carnicería y 20% de Frutas/Verduras** son códigos de balanza, casi todos presentes en **1 sola cadena**. Conclusión: **no existe "el EAN del tomate"** rastreable entre cadenas → el modelo EAN-canasta de nb01/nb02 no sirve para frescos.
+
+**Solución (nb07)**: seguir el **TIPO de producto**, no el EAN. Se juntan por **regla de nombre** todas las variantes que cada cadena publica (`inc`/`exc` regex sobre la descripción, con borde de palabra `\b` para no colar `camPERA` en `pera`), usando el **maestro SEPA completo** (`maestro_sepa_completo.csv.gz`, que trae TODO lo que se vende, no solo el maestro interno curado). El precio del tipo por sucursal-semana = mediana de las variantes presentes, **normalizado a una unidad comparable**:
+- `$/kg`: `precio / gramos_presentación × 1000` (los "1 Kg" de balanza ya vienen en $/kg).
+- `$/docena` (huevos): `precio / unidades × 12`.
+
+Así el tipo es comparable entre cadenas y provincias aunque cada una use un EAN distinto. Los frescos **empaquetados con marca** (fiambres, huevos de marca) SÍ tienen EAN universal (prefijo 77…) y podrían ir por EAN, pero nb07 los trata igual por tipo para homogeneidad.
+
 ### Safeguard MIN_PRODUCTOS_PROPIOS vs N_CANASTA
 
 Cuando `MIN_PRODUCTOS_PROPIOS >= N_CANASTA` ninguna sucursal puede pasar el filtro. El notebook auto-corrige en CELDA 3:
@@ -276,6 +294,8 @@ Con 6 canastas × 2.370 sucursales = 14.220 CircleMarkers, el popup HTML inline 
 ### Regla crítica en gen_nb02.py: no usar triple-quote dentro de cell_code
 
 El código de cada celda está contenido en un string `"""\..."""`. Usar triple comillas dobles `"""..."""` dentro del código (como docstrings) cierra prematuramente el string externo. Siempre usar comentarios de línea `#` en lugar de docstrings dentro de `cell_code("""\...""")`.
+
+> **Alternativa usada en `gen_nb07.py` (2026-09-01)**: definir cada celda con **raw string** `cell_code(r'''...''')`. Preserva `\b`, `\d`, `\n` sin doble-escape (clave para las regex de selección de frescos por nombre) y evita el bug de escape mixto que apareció en las tablas LaTeX de nb02/nb05. Único cuidado: un raw string no puede terminar en `\` ni contener la secuencia `'''`.
 
 ### Regiones del maestro de sucursales
 

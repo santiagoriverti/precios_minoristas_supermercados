@@ -568,3 +568,25 @@ Herramienta nueva (`notebooks/gen_nb05.py` → `05_evolucion_productos_represent
 5. **Mapa GitHub Pages** (nb02 CELDA 17): descargar HTML → subir `index.html` al repo `mapa_precios_minoristas`.
 6. **Documento LaTeX (Overleaf)**: copiar `Valores_Documento` del `canasta_analisis`; completar Belgrano y Costa Atlántica desde `Sucs_Media`.
 7. **Seguridad**: rotar el PAT de GitHub (expuesto dos veces: 24-jun y 07-jul).
+
+## Notebook 07 — Canastas alternativas (Popular/Media/Ejecutiva) semanales + frescos [2026-09-01]
+
+`notebooks/gen_nb07.py` → `07_evolucion_canastas_alternativas.ipynb` (15 celdas). Pedido: mismo análisis que nb02 pero (1) 3 canastas socioeconómicas Popular/Media/Ejecutiva, (2) granularidad **semanal** (ISO week), (3) desagregación **por rubro** con drill-down (Carne es un rubro), (4) **suma frescos** (carne, frutas, verduras, huevos), (5) vs IPC, (6) imprime diagnósticos para refinar iterando.
+
+**Mapeo confirmado con el usuario:** Popular=CANASTA_2_POPULAR, Media=CANASTA_3_MEDIO, Ejecutiva=CANASTA_4_MEDIO_ALTO (respeta percentiles Q2 / Q3-Q4 / Q5). Se descartaron Vulnerable/Celíaca/Vegana para nb07.
+
+**Composición HÍBRIDA (decisión de diseño clave):**
+- **Empaquetados por EAN**: de la hoja `Productos unicos` del `canasta_representativa_*.xlsx`, columnas `cantidad_01/02/03`. OJO: esas columnas estaban VACÍAS; se poblaron desde las 3 listas hardcodeadas del usuario (matcheo por EAN → 208/208 productos matchearon, solo 1 con baja comparabilidad: Postre Serenito). Archivo entregado: `canasta_representativa_2026-08_poblada.xlsx` (el usuario lo sube a Drive).
+- **Frescos por TIPO/nombre**: el EAN de balanza (prefijo GS1 '2…') cambia por cadena → NO se puede seguir un EAN. Se seleccionan por **regex de nombre** (con `\b` borde de palabra para evitar camPERA→pera) sobre el maestro SEPA completo (motor de nb06). Precio del tipo por sucursal/semana = mediana de las variantes presentes, normalizado a **$/kg** (grams de presentación) o **$/docena** (unidades). Config en `TIPOS_FRESCOS` (CELDA 1): 20 tipos (6 frutas, 8 verduras, 5 carne, huevos), editable.
+
+**Metodología de costo (CELDA 8, vectorizada):** por sucursal-semana, ítem presente usa precio de la tienda, ítem faltante se imputa con la MEDIANA NACIONAL de esa semana (truco: `costo = Σ_presentes(precio_tienda×qty) + [Σ_todos(nac×qty) − Σ_presentes(nac×qty)]`, por rubro). Serie nacional = mediana Y promedio(sin outliers) entre sucursales. Filtro de cobertura: sucursal cuenta si tiene ≥ FRAC_PRODUCTOS_MIN (0.5) de los empaquetados.
+
+**Electrodomésticos/durables: EXCLUIDOS** (evidencia: Informática/Climatización/Cocinas/TV/Heladeras tienen mediana n_cadenas=1, pocas provincias → romperían representatividad geográfica y serie temporal). Solo 29% de durables son geográficamente comparables vs 41% de alimentos.
+
+**Diagnósticos (CELDA 13):** imprime cobertura por EAN (n_cadenas/n_provincias/n_sucursales último mes), flags SIN-datos y baja-comparabilidad, y cobertura por tipo fresco (nº variantes capturadas). El usuario copia esos bloques para refinar. Excel con 27 hojas (Resumen, Sem_*/Mes_*/vsIPC_* por canasta, Rubro_sem_*, Comp_rubro_*, Detalle_* drill-down por producto, Prov_*, Cadena_*, Cobertura_emp, Cobertura_frescos).
+
+**Validación:** las 15 celdas compilan; test end-to-end sintético (2 cadenas × 3 provincias × 3 meses, frescos con EAN distinto por cadena) corre completo — frescos por tipo capturados y normalizados OK ($/kg y $/docena), rubro Carne desagregado, vs IPC, Excel generado. Se corrigió `matplotlib.cm.get_cmap` → `plt.get_cmap` (removido en mpl 3.9). Reusa raw strings `r'''...'''` en el generador (evita el doble-escape de regex que rompió celdas en nb06).
+
+**Requiere en Drive:** `carga/` con ZIPs SEPA + `IPC.xlsx` + `maestro_sepa_completo.csv.gz` (del Script 03) + `carga/output_canasta/canasta_representativa_*.xlsx` con `Productos unicos` poblada.
+
+**Pendiente:** el usuario sube el Excel poblado + `maestro_sepa_completo.csv.gz` a Drive, corre nb07 en Colab con datos reales, y pasa los diagnósticos de cobertura para afinar reglas de frescos y cantidades (quantities alineadas a IPC son un default editable). Mapas coropléticos/folium NO se clonaron de nb02 (se pueden agregar después).
