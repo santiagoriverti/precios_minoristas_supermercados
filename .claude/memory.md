@@ -681,3 +681,31 @@ Morada 1 Kg, Cuarto Trasero Pollo 1 Kg, Carne Picada 1 Kg, Huevos 30 Un). Compil
 
 Requiere **re-correr nb07** (cambia EANS_FRESCOS → cambia el hash del caché → re-lee ~1h, pero el
 universo de frescos es más chico → más rápido y con precios correctos).
+
+## nb07 — canasta más completa: 5ª canasta Representativa + frescos ampliados + región [2026-09-03]
+
+Pedido del usuario: canasta más completa/representativa (más productos), frescos por sucursal
+(EAN cambia por cadena — ya funcionaba así), y desagregar por región. Respondió: **las tres**.
+
+Implementado en `gen_nb07.py`:
+- **5ª canasta `Representativa`** (`cantidad_05`): consumidor "promedio", marcas líderes, cantidades
+  típicas (deriva del producto de Media). `CANASTA_COLS` + `_FRESH_POS['Representativa']=3` + colores.
+  Las tuplas `qty` de `TIPOS_FRESCOS` pasaron a 4 elementos (Popular, Media, Ejecutiva, Representativa).
+- **Frescos ampliados de 20 a 33 tipos**: +Frutilla/Uva/Durazno/Ciruela, +Acelga/Espinaca/Choclo/
+  Brócoli/Ajo, +Matambre/Vacío/Osobuco/Roast beef. (Los nuevos pueden tener cobertura baja; el
+  diagnóstico los marca.)
+- **Región**: `REGION_PROV` (5 regiones: Centro/Pampeana, NOA, NEA, Cuyo, Patagonia). `region_dict`
+  (snapshot último mes) + `serie_region_dict` (semanal) + hojas `Region_*`/`RegionSem_*` + línea en el
+  REPORTE PARA CLAUDE.
+- **Empaquetados expandidos de 90 a 124** (117 alimentos/bebidas/limpieza/higiene + 7 durables),
+  todos cad≥4, resueltos contra el universo real (`scratchpad/build_real2.py`). Más variedad: 2 tipos
+  de fideos, harina leudante, polenta, avena, cacao, mate cocido, leche descremada, yogur bebible,
+  crema, postre, fiambre, hamburguesas, choclo, legumbres, gaseosa lima-limón, agua saborizada, jugo
+  listo, ketchup/mostaza, suavizante, rollo cocina, bolsas, cepillo, acondicionador, toallitas, etc.
+
+Entregables actualizados en `docs/canastas_alternativas/`: `cargar_en_productos_unicos.py` (loader v2,
+124 EANs, cantidad_01..05), `cantidades_productos_unicos.csv`, `cantidades_detalle.csv`, `cantidades_dict.py`.
+Compila (15 celdas). **La Representativa solo se activa si el usuario carga cantidad_05 en el Excel.**
+
+**PENDIENTE usuario**: re-cargar el Excel con el loader v2 (cantidad_01..05) y re-correr nb07 (cambia
+EANS_FRESCOS y empaquetados → re-lectura). Pasar el REPORTE (con región) + Cobertura_frescos.

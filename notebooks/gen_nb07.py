@@ -66,7 +66,8 @@ USE_CACHE   = True
 # Hoja del Excel de donde se leen las canastas empaquetadas y el mapeo de columnas.
 HOJA_CANASTAS = 'Productos unicos'
 CANASTA_COLS  = {'cantidad_01': 'Popular', 'cantidad_02': 'Media',
-                 'cantidad_03': 'Ejecutiva', 'cantidad_04': 'Tecnológica'}
+                 'cantidad_03': 'Ejecutiva', 'cantidad_04': 'Tecnológica',
+                 'cantidad_05': 'Representativa'}
 # Canastas que NO llevan frescos (comida). La Tecnológica es un bundle de durables:
 # se arma solo con empaquetados por EAN (cantidad_04) y no se le imputan frutas/verduras/carne.
 CANASTAS_SIN_FRESCOS = {'Tecnológica'}
@@ -82,64 +83,67 @@ MIN_SUC_AGG = 30
 # Estaciones de servicio / comercios no minoristas a excluir.
 CADENAS_FILTRAR = {'19', '2013', '3001', '4'}
 
+# Provincia -> REGIÓN (5 regiones estándar). Para la desagregación regional.
+REGION_PROV = {
+    'Buenos Aires':'Centro/Pampeana','CABA':'Centro/Pampeana','Córdoba':'Centro/Pampeana',
+    'Santa Fe':'Centro/Pampeana','Entre Ríos':'Centro/Pampeana','La Pampa':'Centro/Pampeana',
+    'Jujuy':'NOA','Salta':'NOA','Tucumán':'NOA','Catamarca':'NOA','La Rioja':'NOA','Santiago del Estero':'NOA',
+    'Chaco':'NEA','Corrientes':'NEA','Formosa':'NEA','Misiones':'NEA',
+    'Mendoza':'Cuyo','San Juan':'Cuyo','San Luis':'Cuyo',
+    'Neuquén':'Patagonia','Río Negro':'Patagonia','Chubut':'Patagonia',
+    'Santa Cruz':'Patagonia','Tierra del Fuego':'Patagonia',
+}
+
 # ── FRESCOS por TIPO (selección por nombre; el EAN cambia por cadena) ──────────
-# Cada tipo: rubro, unidad ('kg' o 'doc'), regex de inclusión y exclusión (sobre la
-# descripción en minúsculas, con \b = borde de palabra para no colar 'camPERA' en 'pera'),
-# y la cantidad por canasta (Popular, Media, Ejecutiva) en la unidad del tipo.
-# 'qty' = (kg o docenas)/mes. Ajustá con la hoja Cobertura_frescos del primer run.
+# Cada tipo: rubro, unidad ('kg' o 'doc'), regex inc/exc (sobre la descripción en minúsculas,
+# \b = borde de palabra), y 'qty' = (Popular, Media, Ejecutiva, Representativa) en kg o docenas/mes.
+# La selección además exige categoría de fresco real (ver CELDA 5). Ajustá con Cobertura_frescos.
 TIPOS_FRESCOS = {
     # ---- FRUTAS ($/kg) ----
-    'Banana':      {'rubro':'Frutas','unidad':'kg','qty':(3,3,3),
-                    'inc':r'\bbanana', 'exc':r'licuad|yogur|snack|deshidr|chip|pasas'},
-    'Manzana':     {'rubro':'Frutas','unidad':'kg','qty':(2,2,3),
-                    'inc':r'\bmanzana', 'exc':r'jugo|pur[eé]|vinagre|snack|licor|yogur|rall|deshidr|chip|desodor|t[eé] '},
-    'Naranja':     {'rubro':'Frutas','unidad':'kg','qty':(3,3,3),
-                    'inc':r'\bnaranja', 'exc':r'jugo|gaseosa|aceite|esen|yogur|fanta|desodor|aromatiz|jab[oó]n|amarg|licor'},
-    'Mandarina':   {'rubro':'Frutas','unidad':'kg','qty':(1,2,2),
-                    'inc':r'\bmandarina', 'exc':r'jugo|esen'},
-    'Limón':       {'rubro':'Frutas','unidad':'kg','qty':(0.5,0.5,1),
-                    'inc':r'\blim[oó]n|\blimones', 'exc':r'jugo|deterg|lavand|gaseosa|jab[oó]n|aceite|yogur|soda|amarg|aromatiz|desodor|hipoclor|limpiad|esen'},
-    'Pera':        {'rubro':'Frutas','unidad':'kg','qty':(1,1,2),
-                    'inc':r'\bpera\b|\bperas\b', 'exc':r'jugo|campera|frapera|heladera|esen'},
+    'Banana':      {'rubro':'Frutas','unidad':'kg','qty':(3,3,3,3), 'inc':r'\bbanana', 'exc':r'licuad|yogur|snack|deshidr|chip|pasas'},
+    'Manzana':     {'rubro':'Frutas','unidad':'kg','qty':(2,2,3,2), 'inc':r'\bmanzana', 'exc':r'jugo|pur[eé]|vinagre|snack|licor|yogur|rall|deshidr|chip|desodor|t[eé] '},
+    'Naranja':     {'rubro':'Frutas','unidad':'kg','qty':(3,3,3,3), 'inc':r'\bnaranja', 'exc':r'jugo|gaseosa|aceite|esen|yogur|fanta|desodor|aromatiz|jab[oó]n|amarg|licor'},
+    'Mandarina':   {'rubro':'Frutas','unidad':'kg','qty':(1,2,2,2), 'inc':r'\bmandarina', 'exc':r'jugo|esen'},
+    'Limón':       {'rubro':'Frutas','unidad':'kg','qty':(0.5,0.5,1,0.5), 'inc':r'\blim[oó]n|\blimones', 'exc':r'jugo|deterg|lavand|gaseosa|jab[oó]n|aceite|yogur|soda|amarg|aromatiz|desodor|hipoclor|limpiad|esen'},
+    'Pera':        {'rubro':'Frutas','unidad':'kg','qty':(1,1,2,1), 'inc':r'\bpera\b|\bperas\b', 'exc':r'jugo|campera|frapera|heladera|esen'},
+    'Frutilla':    {'rubro':'Frutas','unidad':'kg','qty':(0,0.5,1,0.5), 'inc':r'\bfrutilla', 'exc':r'yogur|mermelada|dulce|helad|licor|gelatina|jugo|leche|postre|bomb|alfajor|chicle|carame|flan'},
+    'Uva':         {'rubro':'Frutas','unidad':'kg','qty':(0,1,1,0.5), 'inc':r'\buva\b|\buvas\b', 'exc':r'jugo|vino|pasa|vinagre|mermelada|licor|aceite|semilla'},
+    'Durazno':     {'rubro':'Frutas','unidad':'kg','qty':(0,1,1,0.5), 'inc':r'\bdurazno', 'exc':r'lata|almibar|mermelada|jugo|conserva|yogur|dulce|licor'},
+    'Ciruela':     {'rubro':'Frutas','unidad':'kg','qty':(0,0.5,1,0.5), 'inc':r'\bciruela', 'exc':r'seca|desecad|pasa|mermelada|jugo|dulce|licor'},
     # ---- VERDURAS ($/kg) ----
-    'Papa':        {'rubro':'Verduras','unidad':'kg','qty':(4,4,4),
-                    'inc':r'\bpapa\b|\bpapas\b', 'exc':r'frita|snack|pur[eé]|congel|chip|bast[oó]n|noisett|prefrit|rall|española'},
-    'Tomate':      {'rubro':'Verduras','unidad':'kg','qty':(2,2,3),
-                    'inc':r'\btomate', 'exc':r'salsa|pur[eé]|tritur|extracto|lata|pelado|jugo|ketchup|seco|deshidr|conserva|cubo'},
-    'Cebolla':     {'rubro':'Verduras','unidad':'kg','qty':(2,2,2),
-                    'inc':r'\bcebolla', 'exc':r'sopa|deshidr|crema|anillo|snack|verdeo en|caldo'},
-    'Zanahoria':   {'rubro':'Verduras','unidad':'kg','qty':(1.5,1.5,1.5),
-                    'inc':r'\bzanahoria', 'exc':r'rall|congel|sopa|deshidr|bab[yi]'},
-    'Zapallo':     {'rubro':'Verduras','unidad':'kg','qty':(1.5,1.5,2),
-                    'inc':r'\bzapallo|\bcalabaza', 'exc':r'congel|sopa|semilla|deshidr|crema'},
-    'Lechuga':     {'rubro':'Verduras','unidad':'kg','qty':(1,1,1.5),
-                    'inc':r'\blechuga', 'exc':r'aderez|snack'},
-    'Morrón':      {'rubro':'Verduras','unidad':'kg','qty':(0.5,0.5,1),
-                    'inc':r'\bmorr[oó]n|\bmorrones|\bpimiento', 'exc':r'molid|deshidr|conserva|lata|seco|pimentón|pimenton|aji molido'},
-    'Batata':      {'rubro':'Verduras','unidad':'kg','qty':(1,1,1),
-                    'inc':r'\bbatata', 'exc':r'dulce|congel|snack|chip'},
+    'Papa':        {'rubro':'Verduras','unidad':'kg','qty':(4,4,4,4), 'inc':r'\bpapa\b|\bpapas\b', 'exc':r'frita|snack|pur[eé]|congel|chip|bast[oó]n|noisett|prefrit|rall|española'},
+    'Tomate':      {'rubro':'Verduras','unidad':'kg','qty':(2,2,3,2), 'inc':r'\btomate', 'exc':r'salsa|pur[eé]|tritur|extracto|lata|pelado|jugo|ketchup|seco|deshidr|conserva|cubo'},
+    'Cebolla':     {'rubro':'Verduras','unidad':'kg','qty':(2,2,2,2), 'inc':r'\bcebolla', 'exc':r'sopa|deshidr|crema|anillo|snack|verdeo en|caldo'},
+    'Zanahoria':   {'rubro':'Verduras','unidad':'kg','qty':(1.5,1.5,1.5,1.5), 'inc':r'\bzanahoria', 'exc':r'rall|congel|sopa|deshidr|bab[yi]'},
+    'Zapallo':     {'rubro':'Verduras','unidad':'kg','qty':(1.5,1.5,2,1.5), 'inc':r'\bzapallo|\bcalabaza', 'exc':r'congel|sopa|semilla|deshidr|crema'},
+    'Lechuga':     {'rubro':'Verduras','unidad':'kg','qty':(1,1,1.5,1), 'inc':r'\blechuga', 'exc':r'aderez|snack'},
+    'Morrón':      {'rubro':'Verduras','unidad':'kg','qty':(0.5,0.5,1,0.5), 'inc':r'\bmorr[oó]n|\bmorrones|\bpimiento', 'exc':r'molid|deshidr|conserva|lata|seco|pimentón|pimenton|aji molido'},
+    'Batata':      {'rubro':'Verduras','unidad':'kg','qty':(1,1,1,1), 'inc':r'\bbatata', 'exc':r'dulce|congel|snack|chip'},
+    'Acelga':      {'rubro':'Verduras','unidad':'kg','qty':(0,1,1,0.5), 'inc':r'\bacelga', 'exc':r'congel|tarta|empanada'},
+    'Espinaca':    {'rubro':'Verduras','unidad':'kg','qty':(0,0.5,1,0.5), 'inc':r'\bespinaca', 'exc':r'congel|tarta|empanada|nuez'},
+    'Choclo':      {'rubro':'Verduras','unidad':'kg','qty':(0.5,0.5,1,0.5), 'inc':r'\bchoclo', 'exc':r'lata|crema|congel|conserva|granos en|desgran|arcor|campagnola'},
+    'Brócoli':     {'rubro':'Verduras','unidad':'kg','qty':(0,0.5,1,0.5), 'inc':r'\bbrocoli|\bbrócoli', 'exc':r'congel'},
+    'Ajo':         {'rubro':'Verduras','unidad':'kg','qty':(0.2,0.2,0.3,0.2), 'inc':r'\bajo\b|\bajos\b', 'exc':r'aceite|\bsal\b|deshidr|polvo|molid|sazonad|condiment|\bpan\b|aderez|mayonesa|crema|conserva|\baji'},
     # ---- CARNE ($/kg) ----
-    'Asado':       {'rubro':'Carne','unidad':'kg','qty':(2,2,3),
-                    'inc':r'\basado', 'exc':r'salsa|adob|snack'},
-    'Carne picada':{'rubro':'Carne','unidad':'kg','qty':(2,2,2),
-                    'inc':r'\bpicada\b|carne molida|\bmolida\b', 'exc':r'salch|congel|caldo|pat[eé]|hamburg'},
-    'Nalga/Cuadril':{'rubro':'Carne','unidad':'kg','qty':(1,1.5,2),
-                    'inc':r'\bnalga|\bcuadril|bola de lomo|\bcuadrada\b|\bpeceto|colita de cuadril', 'exc':r''},
-    'Pollo':       {'rubro':'Carne','unidad':'kg','qty':(3,3,3),
-                    'inc':r'\bpollo\b|pata muslo|\bpechuga|\bsuprema', 'exc':r'caldo|sopa|saboriz|congel|nugget|pat[eé]|medall|hamburg|milanesa|pella|arroz|fideo|snack|cubito|aliment'},
-    'Milanesa carne':{'rubro':'Carne','unidad':'kg','qty':(1,1,1.5),
-                    'inc':r'milanesa', 'exc':r'soja|pollo|congel|merluza|pescado|napolitan|vegetal|pescado'},
+    'Asado':       {'rubro':'Carne','unidad':'kg','qty':(2,2,3,2), 'inc':r'\basado', 'exc':r'salsa|adob|snack|man[ií]|pollo|caf[eé]'},
+    'Carne picada':{'rubro':'Carne','unidad':'kg','qty':(2,2,2,2), 'inc':r'\bpicada\b|carne molida', 'exc':r'salch|congel|caldo|pat[eé]|hamburg|pollo|pescado|aceituna|verdura'},
+    'Nalga/Cuadril':{'rubro':'Carne','unidad':'kg','qty':(1,1.5,2,1.5), 'inc':r'\bnalga|\bcuadril|bola de lomo|\bcuadrada\b|\bpeceto|colita de cuadril', 'exc':r''},
+    'Pollo':       {'rubro':'Carne','unidad':'kg','qty':(3,3,3,3), 'inc':r'\bpollo\b|pata muslo|\bpechuga|\bsuprema', 'exc':r'caldo|sopa|saboriz|congel|nugget|pat[eé]|medall|hamburg|milanesa|pella|arroz|fideo|snack|cubito|aliment|merluza|pescado'},
+    'Milanesa carne':{'rubro':'Carne','unidad':'kg','qty':(1,1,1.5,1), 'inc':r'milanesa', 'exc':r'soja|pollo|congel|merluza|pescado|napolitan|vegetal'},
+    'Matambre':    {'rubro':'Carne','unidad':'kg','qty':(0,0.5,1,0.5), 'inc':r'\bmatambre', 'exc':r'arrollado|relleno|queso|pizza|a la|cocido'},
+    'Vacío':       {'rubro':'Carne','unidad':'kg','qty':(0,0.5,1,0.5), 'inc':r'\bvac[ií]o\b', 'exc':r'arrollado|relleno'},
+    'Osobuco':     {'rubro':'Carne','unidad':'kg','qty':(0.5,0.5,0.5,0.5), 'inc':r'\bosobuco|\bosso\s*buco', 'exc':r''},
+    'Roast beef':  {'rubro':'Carne','unidad':'kg','qty':(0,0.5,1,0.5), 'inc':r'roast\s*beef|tapa de nalga|tapa de cuadril', 'exc':r''},
     # ---- HUEVOS ($/docena) ----
-    'Huevos':      {'rubro':'Huevos','unidad':'doc','qty':(2,2,2),
-                    'inc':r'\bhuevo', 'exc':r'chocolate|kinder|pascua|sorpresa|codorniz|conejo|batidora'},
+    'Huevos':      {'rubro':'Huevos','unidad':'doc','qty':(2,2,2,2), 'inc':r'\bhuevo', 'exc':r'chocolate|kinder|pascua|sorpresa|codorniz|conejo|batidora'},
 }
 
 # EANs de referencia para autodetectar el factor centavos/pesos (robusto con pocos EANs).
 REF_EANS_FACTOR = {'7790072002080', '7790070320285', '7790132098459'}
 
 # Colores/estilos por canasta (para gráficos)
-CANASTA_COLORS = {'Popular':'#e74c3c','Media':'#27ae60','Ejecutiva':'#8e44ad','Tecnológica':'#2980b9'}
-CANASTA_MARKERS = {'Popular':'s','Media':'^','Ejecutiva':'D','Tecnológica':'o'}
+CANASTA_COLORS = {'Popular':'#e74c3c','Media':'#27ae60','Ejecutiva':'#8e44ad','Tecnológica':'#2980b9','Representativa':'#e67e22'}
+CANASTA_MARKERS = {'Popular':'s','Media':'^','Ejecutiva':'D','Tecnológica':'o','Representativa':'*'}
 ''' ))
 
 # ── CELL 2 — DRIVE + DEPS + IMPORTS ────────────────────────────────────────────
@@ -635,7 +639,7 @@ def _recipe(_name):
     # Frescos: la tupla 'qty' de TIPOS_FRESCOS es (Popular, Media, Ejecutiva). Se mapea por
     # NOMBRE (no por índice activo) para ser robusto al orden y a canastas extra. Las canastas
     # de CANASTAS_SIN_FRESCOS (ej. Tecnológica) no reciben frescos.
-    _FRESH_POS = {'Popular': 0, 'Media': 1, 'Ejecutiva': 2}
+    _FRESH_POS = {'Popular': 0, 'Media': 1, 'Ejecutiva': 2, 'Representativa': 3}
     _p = _FRESH_POS.get(_name)
     if _p is not None and _name not in CANASTAS_SIN_FRESCOS:
         for _tipo, _info in FRESCO_INFO.items():
@@ -847,7 +851,8 @@ plt.tight_layout(); plt.show()
 cells.append(cell_code(r'''# ============================================================
 # CELDA 12 — Desagregación por PROVINCIA y CADENA (último mes)
 # ============================================================
-prov_dict = {}; cadena_dict = {}
+prov_dict = {}; cadena_dict = {}; region_dict = {}
+costo_suc = costo_suc.assign(region=costo_suc['provincia'].map(REGION_PROV).fillna('Otras'))
 _cs_um = costo_suc[costo_suc['mes']==_ult_mes]
 for _name in CANASTAS_ACTIVAS:
     _cs = _cs_um[_cs_um['canasta']==_name]
@@ -859,10 +864,24 @@ for _name in CANASTAS_ACTIVAS:
                                     n_sucursales=('id_sucursal','nunique')).reset_index())
     _c['confiable'] = _c['n_sucursales'] >= MIN_SUC_AGG
     cadena_dict[_name] = _c.sort_values('costo_mediana')
+    _rg = (_cs.groupby('region').agg(costo_mediana=('costo','median'), costo_prom=('costo', _pmean),
+                                     n_sucursales=('id_sucursal','nunique')).reset_index())
+    _rg['confiable'] = _rg['n_sucursales'] >= MIN_SUC_AGG
+    region_dict[_name] = _rg.sort_values('costo_mediana')
+
+# Serie SEMANAL por REGIÓN (la región agrega suficientes sucursales para ser robusta semanal)
+serie_region_dict = {}
+for _name in CANASTAS_ACTIVAS:
+    _cr = costo_suc[costo_suc['canasta']==_name]
+    _sr = (_cr.groupby(['region','semana']).agg(costo_mediana=('costo','median'),
+            costo_prom=('costo', _pmean), n_sucursales=('id_sucursal','nunique')).reset_index())
+    _sr['mes'] = _sr['semana'].map(_mes_de_semana)
+    serie_region_dict[_name] = _sr.sort_values(['region','semana'])
 
 for _name in CANASTAS_ACTIVAS:
     _p = prov_dict[_name]; _pc = _p[_p['confiable']]
     _c = cadena_dict[_name]; _cc = _c[_c['confiable']]
+    _rg = region_dict[_name]
     print(f'=== [{_name}] {_ult_mes} — provincias confiables (n≥{MIN_SUC_AGG}): {len(_pc)} ===')
     if len(_pc):
         print(f'   más barata: {_pc.iloc[0]["provincia"]} ${_pc.iloc[0]["costo_mediana"]:,.0f} | '
@@ -870,6 +889,8 @@ for _name in CANASTAS_ACTIVAS:
     if len(_cc):
         print(f'   cadena más barata: {_cc.iloc[0]["cadena"]} ${_cc.iloc[0]["costo_mediana"]:,.0f} | '
               f'más cara: {_cc.iloc[-1]["cadena"]} ${_cc.iloc[-1]["costo_mediana"]:,.0f}')
+    print('   por región: ' + ' | '.join(f'{r["region"]} ${r["costo_mediana"]:,.0f}'
+          for _, r in _rg.sort_values('costo_mediana').iterrows()))
 ''' ))
 
 # ── CELL 13 — DIAGNÓSTICOS DE COBERTURA (para refinar) ─────────────────────────
@@ -968,6 +989,8 @@ with pd.ExcelWriter(_xlsx, engine='openpyxl') as _w:
         detalle_dict[_name].to_excel(_w, f'Detalle_{_sfx}'[:31], index=False)
         prov_dict[_name].to_excel(_w, f'Prov_{_sfx}'[:31], index=False)
         cadena_dict[_name].to_excel(_w, f'Cadena_{_sfx}'[:31], index=False)
+        region_dict[_name].to_excel(_w, f'Region_{_sfx}'[:31], index=False)
+        serie_region_dict[_name].to_excel(_w, f'RegionSem_{_sfx}'[:31], index=False)
     # Diagnósticos
     cobertura_emp.to_excel(_w, 'Cobertura_emp', index=False)
     cobertura_frescos.to_excel(_w, 'Cobertura_frescos', index=False)
@@ -1024,6 +1047,13 @@ for _name in CANASTAS_ACTIVAS:
             print(f'      {r["rubro"]:<26} ${r["costo_mensual"]:>10,.0f}   {r["participacion_%"]:>5.1f}%')
     except Exception as e:
         print('  (composición por rubro no disponible:', e, ')')
+    # por región (último mes)
+    try:
+        _rg = region_dict[_name].sort_values('costo_mediana')
+        print('  Por región (costo mensual mediana): ' + ' | '.join(
+            f'{r["region"]} ${r["costo_mediana"]:,.0f} (n={int(r["n_sucursales"])})' for _, r in _rg.iterrows()))
+    except Exception:
+        pass
 
 # Cobertura (resumen accionable)
 print('\n' + '-'*72)

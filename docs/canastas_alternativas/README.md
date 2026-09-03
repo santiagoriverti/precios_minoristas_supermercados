@@ -1,15 +1,21 @@
 # Canastas alternativas — cantidades para `Productos unicos` (nb07)
 
-Cuatro canastas para cargar en la hoja **`Productos unicos`** del Excel
+Cinco canastas para cargar en la hoja **`Productos unicos`** del Excel
 `canasta_representativa_YYYY-MM.xlsx`, que el notebook **07** lee para calcular la
-evolución semanal del costo.
+evolución **semanal** del costo (nacional / provincia / cadena / **región**).
 
 | Columna | Canasta | Criterio |
 |---|---|---|
 | `cantidad_01` | **Popular** | Segundas marcas / básicos (Cocinero, Molinos Ala, Schneider, Pepsi…) |
 | `cantidad_02` | **Media** | Marcas líderes (La Serenísima, Natura, Quilmes, Coca, Colgate…) |
-| `cantidad_03` | **Ejecutiva** | Premium + más variedad (Don Vicente, aceite de oliva, Stella, Dove…) |
+| `cantidad_03` | **Ejecutiva** | Premium + más variedad (Don Vicente, oliva, Stella, Fernet, Dove…) |
 | `cantidad_04` | **Tecnológica** | Bundle de durables (TV, notebook, celular, heladera, lavarropas, microondas, aire) — `qty=1` c/u |
+| `cantidad_05` | **Representativa** | Canasta única del consumidor "promedio" (marcas líderes, cantidades típicas) |
+
+**124 productos empaquetados** (117 alimentos/bebidas/limpieza/higiene + 7 durables), todos
+con cobertura **≥4 cadenas**. Además, nb07 suma **33 tipos de frescos** por nombre
+(frutas, verduras, carne, huevos), buscados **por sucursal** según las variantes disponibles
+(el EAN de balanza cambia por cadena).
 
 ## Archivos
 - **`cantidades_dict.py`** — diccionario Python `CANTIDADES = { ean: {cantidad_01..04} }`.
