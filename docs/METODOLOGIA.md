@@ -1,6 +1,6 @@
 # Metodología — ICR (Índice de Consumo Representativo)
 
-**Última actualización:** 2026-06-01 (Celíaca Media + Vegana Básica)
+**Última actualización:** 2026-09-03 (nb07: 5 canastas + 33 frescos por categoría + Representativa calibrada INDEC + región; nb02: `datos_econometria`)
 **Período de referencia:** enero 2024 – abril 2026
 
 ---
@@ -425,3 +425,43 @@ Rubros de frescos: **Carne, Frutas, Verduras, Huevos** (además de Almacén, Beb
 
 ### 8.6. Diagnósticos para refinar
 La CELDA 13 imprime cobertura por EAN empaquetado (`n_cadenas`/`n_provincias`/`n_sucursales` del último mes) marcando ítems **sin datos** o de **baja comparabilidad** (n_cadenas<3 o n_provincias<15), y cobertura por tipo fresco (nº de variantes capturadas por la regla). Es la base para iterar: se afinan `inc`/`exc` y las cantidades, y se reemplazan EANs poco comparables.
+
+---
+
+## 8.7. Actualización nb07 (2026-09-03) — estado vigente
+
+Reemplaza los detalles previos de §8 donde difieran. nb07 corre y fue **auditado end-to-end**
+(las 15 celdas contra un dataset SEPA sintético → sin errores).
+
+**Cinco canastas** (`cantidad_01..05` de la hoja `Productos unicos`):
+- **Popular / Media / Ejecutiva**: escalera de calidad (segundas marcas → líderes → premium) como índice comparable.
+- **Tecnológica** (`cantidad_04`): bundle de 7 durables (TV, notebook, celular, heladera, lavarropas, microondas, aire), `qty=1` c/u, **sin frescos**. Cobertura baja (informativa) — supera lo dicho en §8.5: los durables ahora se miden en su propia canasta, aislados del índice de alimentos.
+- **Representativa** (`cantidad_05`): canasta única del consumidor promedio, con **cantidades calibradas a consumo per cápita** de una familia de 4 (referencia CBA INDEC), tanto en empaquetados como en frescos (4º valor de las tuplas `qty` de `TIPOS_FRESCOS`).
+
+**Empaquetados**: 130 productos, todos con cobertura **≥4 cadenas** (resueltos contra el universo real de `Productos unicos`). Cubren 15 rubros incl. snacks, mascotas y cuidado del bebé.
+
+**Frescos (fix clave de precios)**: la selección por nombre colaba procesados que contienen el nombre de la fruta/verdura (jugo en polvo "banana", sazonador "cebolla", ñoquis de "papa", comida de perro sabor "pollo"), de pocos gramos → $/kg inflado 3-10x. **Solución**: los candidatos frescos ahora exigen **categoría de fresco real** del maestro (`Frutas y Verduras` / `Carnicería` / `Huevos`) **o** categoría desconocida (balanza SEPA-only), + piso de gramos ≥250. Son **33 tipos**. Precio del tipo por sucursal/semana = mediana de variantes, normalizado a $/kg o $/docena.
+
+**Región**: `REGION_PROV` agrupa las provincias en 5 regiones (Centro/Pampeana, NOA, NEA, Cuyo, Patagonia). Se agrega `Region_*` (snapshot) y `RegionSem_*` (serie semanal).
+
+**Salida**: `output_canasta_alternativa/` (Excel + caché). El Excel de canastas se lee de `output_canasta/`.
+
+---
+
+## 9b. Notebook 02 — Excel de econometría (`datos_econometria`)
+
+Insumo para análisis de series de tiempo (materia "Econometría avanzada"). El Notebook 02, además
+del análisis clásico, exporta `datos_econometria_{MES}.xlsx` en `output_canasta/`.
+
+- **Formato tidy/long**: una fila por (frecuencia, período, clave, nivel, grupo).
+- **Series**: costo de cada canasta activa (hoja `Selección`) + precio de los productos de
+  `PRODUCTOS_ECONOMETRIA` (config editable arriba de la CELDA 22).
+- **Frecuencia**: semanal (ISO) **y** mensual; historia completa.
+- **Niveles**: nacional (ponderado por población), provincia, cadena.
+- **Medidas**: `valor_mediana` (mediana entre sucursales, robusta, recomendada) y `valor_promedio`
+  (media recortada `_pmean`, outliers fuera). Se calculan en dos etapas: día→período por
+  (sucursal, EAN) con mediana/media, y luego entre sucursales.
+- **Imputación**: ítems faltantes en una sucursal se imputan con la referencia nacional del período.
+- **Semanas de borde**: cada semana ISO se asigna a su mes "dueño" (el del jueves ISO) para no
+  duplicar fragmentos entre archivos mensuales.
+- **Hojas**: `Diccionario`, `canastas_nacional/provincia/cadena`, `productos_nacional/provincia/cadena`.

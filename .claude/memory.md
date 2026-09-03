@@ -735,3 +735,38 @@ Prov,Cadena,Region,RegionSem} + Cobertura). Verificado: 5 canastas activas, IPC 
 Representativa toma bien sus cantidades, tipos sin datos no rompen. **nb07 corre sin errores.**
 
 PENDIENTE usuario: re-cargar Excel con loader v3 + re-correr nb07.
+
+## ═══ HANDOFF — estado para retomar (2026-09-03) ═══
+
+**Repo**: github.com/santiagoriverti/precios_minoristas_supermercados (rama main). Local del usuario:
+`C:\Users\sriverti\Desktop\INECO\Repositorios\precios_minoristas_supermercados`. NUNCA agregar
+atribución de Claude en commits (van solo con Santiago Riverti).
+
+**Notebooks (todos ejecutables en Colab desde badges del README; se editan vía `gen_nbXX.py` → `.ipynb`):**
+- nb01 exploración (arma `canasta_representativa_*.xlsx`: hojas Canasta/Candidatos/Selección/Productos unicos, con cantidad_01..06).
+- nb02 evolución canastas (lee hoja **Selección**) + **NUEVO Excel `datos_econometria`** (tidy/long,
+  semanal+mensual, nacional/provincia/cadena, `valor_mediana`+`valor_promedio`; config
+  `PRODUCTOS_ECONOMETRIA` = 23 EAN en CELDA 22). Salida en `output_canasta`.
+- nb03 consolidación · nb04 precios geo · nb05 productos individuales · nb06 brecha celíaca.
+- nb07 canastas alternativas (lee hoja **Productos unicos**): **5 canastas** (Popular/Media/Ejecutiva/
+  Tecnológica/Representativa, `cantidad_01..05`), 130 empaquetados (cad≥4) + 33 frescos por
+  categoría, desagregado nacional/provincia/cadena/**región**, vs IPC, salida a
+  **`output_canasta_alternativa`**, imprime "REPORTE PARA CLAUDE". Auditado E2E (15 celdas OK).
+
+**Cantidades de canastas nb07**: `docs/canastas_alternativas/` — `cargar_en_productos_unicos.py`
+(loader Colab, 130 EAN, cantidad_01..05, editable), `cantidades_*.csv`, `cantidades_dict.py`, README.
+Builders (scratchpad, no en repo): `build_real2.py` (empaquetados), lógica de frescos en gen_nb07 CELDA 1/5.
+
+**Insumos en Drive** (`/content/drive/MyDrive/carga/`): ZIPs SEPA `YYYYA/B.zip`, `IPC.xlsx`,
+`maestro_sepa_completo.csv.gz` (Script 03), `output_canasta/canasta_representativa_*.xlsx`.
+Maestros (`data/`) se bajan de GitHub automáticamente.
+
+**PENDIENTE inmediato**: el usuario (a) re-carga el Excel con el loader v3 (cantidad_01..05) y
+re-corre nb07 → pasar "REPORTE PARA CLAUDE" + `Cobertura_frescos` para afinar; (b) corre nb02 y
+revisa `datos_econometria`. Vigilar cobertura de los frescos nuevos (frutilla/uva/brócoli/roast
+beef pueden ser estacionales/bajos) y de la Tecnológica (rala por FRAC_PRODUCTOS_MIN).
+
+**Ideas futuras**: rollup a divisiones COICOP-IPC; ponderar mascotas/pañales por prevalencia;
+pan de panadería (hoy gap — balanza, casi sin cobertura en Productos unicos).
+
+**Seguridad**: rotar PAT de GitHub si se expuso.

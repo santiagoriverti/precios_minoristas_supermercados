@@ -1,6 +1,6 @@
 # SEPA — Referencia Técnica
 
-Última actualización: 2026-08-21 (precio por sucursal = mes completo; doble análisis mediana/promedio)
+Última actualización: 2026-09-03 (nb07: lectura semanal + colapso de frescos a tipo [fix RAM] + selección de frescos por categoría; nb02: motor `datos_econometria`)
 
 > **Cambio 2026-08-21 (nb02/nb05, CELDA 6/7)**: el precio por sucursal del mes reportado ahora se calcula sobre **todos los días del mes** —mediana de los días y media con outliers fuera— en vez de tomar solo el primer día (`drop_duplicates keep='first'`, eliminado). El promedio descarta valores fuera de `[mediana/4, mediana×4]` antes de promediar (helper `_pmean`, vectorizado en la CELDA 7). Esto DUPLICA los artefactos: análisis mediana (nombres base) y promedio (sufijo `_prom`). Detalle en `.claude/memory.md`.
 >
@@ -688,3 +688,39 @@ def get_ipc(serie_id, start_date='2022-01-01'):
 ```
 
 Datos disponibles hasta **marzo 2026**. Actualización mensual. El notebook 02 usa el archivo local (más confiable en Colab que una llamada a API).
+
+---
+
+## Patrones técnicos del notebook 07 (gen_nb07.py) — 2026-09-03
+
+### Lectura SEMANAL + colapso de frescos a TIPO (fix de RAM)
+La serie semanal relee todos los ZIPs conservando el **día** (`precio_YYYYMMDD` → fecha → ISO week).
+El universo de frescos por nombre puede ser de **~8.000 EANs de balanza**; arrastrarlos por
+(sucursal × EAN × semana) sobre 30+ meses agota la RAM (OOM). **Solución (CELDA 7)**: una función
+`_colapsar(_df)` mapea, **en la lectura mensual**, cada EAN fresco a su **TIPO** y normaliza a $/kg
+o $/docena (mediana de variantes por sucursal-semana). Así el panel pasa de ~8.500 items a ~110
+(**77× menos filas**). El esquema cacheado es `item/price` (`sem_{hash}_v2.parquet`); el crudo
+por-EAN del último mes se guarda aparte (`datos_ult_raw`) para los diagnósticos por variante.
+
+### Selección de frescos por CATEGORÍA (fix de precios inflados)
+La selección solo por regex de nombre colaba procesados con el nombre de la fruta/verdura
+(jugo en polvo "banana", sazonador "cebolla", ñoquis de "papa", comida de perro sabor "pollo"),
+de pocos gramos → `precio/grams×1000` disparaba el $/kg. **Solución (CELDA 4-5)**: se lee
+`categoria` al maestro y los candidatos frescos exigen **categoría de fresco real**
+(`Frutas y Verduras` / `Carnicería` / `Huevos`) **o** categoría vacía (balanza SEPA-only que no
+está en el maestro interno), más un piso `grams ≥ 250`. Mapa `rubro → categorías` en `_CAT_FRESCO`.
+
+### Semanas ISO de borde
+Una semana ISO que cruza dos meses se procesa en dos archivos mensuales. Para no duplicar: se asigna
+cada semana a su mes "dueño" (el del **jueves ISO**, `_mes_de_semana`) y se conserva ese fragmento.
+
+### Región
+`REGION_PROV` mapea provincia → una de 5 regiones (Centro/Pampeana, NOA, NEA, Cuyo, Patagonia).
+`costo_suc` gana la columna `region`; se agregan `region_dict` (snapshot) y `serie_region_dict` (semanal).
+
+## Patrón técnico del notebook 02 — motor `datos_econometria`
+Mismo enfoque de lectura conservando el día, pero **sin frescos** (solo empaquetados: EANs de las
+canastas de `Selección` + `PRODUCTOS_ECONOMETRIA`). Agrega por (sucursal, EAN, semana/mes) →
+mediana (`precio_med`) y media recortada (`precio_prom`) de los días; imputa faltantes con la
+referencia nacional del período; agrega a nacional (ponderado población) / provincia / cadena con
+`valor_mediana` y `valor_promedio`. Caché `econ_{hash}.parquet` por mes cerrado. Salida tidy/long.

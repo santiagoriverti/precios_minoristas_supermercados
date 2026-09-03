@@ -21,12 +21,12 @@ El proyecto responde tres preguntas:
 | Notebook | Descripción | Abrir |
 |----------|-------------|----------------|
 | `01_exploracion_productos` | Construye la canasta representativa. Detecta automáticamente el último mes disponible en los ZIPs del SEPA y genera `canasta_representativa_YYYY-MM.xlsx` con **cuatro hojas**, incluyendo la hoja `Selección` con **6 columnas de cantidad** para definir hasta 6 canastas distintas. | [![Abrir en Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/santiagoriverti/precios_minoristas_supermercados/blob/main/notebooks/01_exploracion_productos.ipynb) |
-| `02_evolucion_canasta_representativa` | Analiza la evolución del ICR para **hasta 6 canastas simultáneas**. Lee las columnas `cantidad_01`..`cantidad_06` de la hoja `Selección`, calcula el costo por sucursal y provincia para cada canasta activa, compara con el IPC INDEC, y genera gráficos, mapas y rankings independientes por canasta. | [![Abrir en Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/santiagoriverti/precios_minoristas_supermercados/blob/main/notebooks/02_evolucion_canasta_representativa.ipynb) |
+| `02_evolucion_canasta_representativa` | Analiza la evolución del ICR para **hasta 6 canastas simultáneas**. Lee las columnas `cantidad_01`..`cantidad_06` de la hoja `Selección`, calcula el costo por sucursal y provincia para cada canasta activa, compara con el IPC INDEC, y genera gráficos, mapas y rankings independientes por canasta. Además exporta **`datos_econometria_{MES}.xlsx`** (formato tidy/long para series de tiempo): costo de las canastas + precio de productos elegidos (`PRODUCTOS_ECONOMETRIA`), **semanal y mensual**, a nivel **nacional / provincia / cadena**, con `valor_mediana` y `valor_promedio`. Ver [sección detallada](#excel-de-econometría--datos_econometria). | [![Abrir en Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/santiagoriverti/precios_minoristas_supermercados/blob/main/notebooks/02_evolucion_canasta_representativa.ipynb) |
 | `03_consolidacion_ultimo_mes` | Convierte el SEPA **diario** al formato **semestral wide** para analizar el mes en curso sin esperar la consolidación oficial. Subís `ultimo_mes.zip` al entorno de Colab y te devuelve los dos `.csv.gz` para descargar. Ver [sección detallada](#adelantar-el-mes-en-curso--03_consolidacion_ultimo_mes). | [![Abrir en Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/santiagoriverti/precios_minoristas_supermercados/blob/main/notebooks/03_consolidacion_ultimo_mes.ipynb) |
 | `04_precios_seleccion` | Exporta un **Excel** con los precios diarios del último mes para todos los supermercados a menos de X km de un punto: una hoja por sucursal (productos × días) + una hoja general (producto × super, precio promedio). Ver [sección detallada](#precios-por-selección-geográfica--04_precios_seleccion). | [![Abrir en Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/santiagoriverti/precios_minoristas_supermercados/blob/main/notebooks/04_precios_seleccion.ipynb) |
 | `05_evolucion_productos_representativos` | Igual que el Notebook 02, pero para **productos individuales** en vez de canastas: evolución de precio, mapas provinciales, comparación con el IPC y rankings por cadena/barrio de cada EAN que se ingrese. Ver [sección detallada](#evolución-de-productos-individuales--05_evolucion_productos_representativos). | [![Abrir en Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/santiagoriverti/precios_minoristas_supermercados/blob/main/notebooks/05_evolucion_productos_representativos.ipynb) |
 | `06_evolucion_brecha_celiaca` | Mide la **brecha celíaca** (canasta sin-TACC vs. base con TACC) y su evolución **diaria, semanal y mensual**, usando solo tipos de producto con dicotomía celíaca (2–3 EANs representativos por lado, promediados). Brecha **intra-sucursal**, desagregada por provincia, cadena y concentración de comercios. Ver [sección detallada](#brecha-celíaca--06_evolucion_brecha_celiaca). | [![Abrir en Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/santiagoriverti/precios_minoristas_supermercados/blob/main/notebooks/06_evolucion_brecha_celiaca.ipynb) |
-| `07_evolucion_canastas_alternativas` | Evolución **semanal** del costo de tres canastas socioeconómicas (**Popular / Media / Ejecutiva**), comparada con el **IPC**, desagregada por **rubro** (incluye **Carne**, **Frutas**, **Verduras**, **Huevos**) con drill-down hasta producto, y por provincia/cadena. Composición **híbrida**: empaquetados por EAN (hoja `Productos unicos`, `cantidad_01/02/03`) + frescos **por tipo/nombre** (el EAN cambia por cadena). Imprime diagnósticos de cobertura para refinar. Ver [sección detallada](#canastas-alternativas--07_evolucion_canastas_alternativas). | [![Abrir en Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/santiagoriverti/precios_minoristas_supermercados/blob/main/notebooks/07_evolucion_canastas_alternativas.ipynb) |
+| `07_evolucion_canastas_alternativas` | Evolución **semanal** del costo de **5 canastas** (**Popular / Media / Ejecutiva / Tecnológica / Representativa**), comparada con el **IPC**, desagregada por **rubro** (con drill-down hasta producto) y por **provincia / cadena / región**. Composición **híbrida**: **130 empaquetados** por EAN (hoja `Productos unicos`, `cantidad_01..05`, todos con cobertura ≥4 cadenas) + **33 tipos de frescos** por nombre/sucursal (frutas, verduras, carne, huevos — el EAN de balanza cambia por cadena, se selecciona por categoría del maestro). Salida a `output_canasta_alternativa`. Imprime un bloque **"REPORTE PARA CLAUDE"** y diagnósticos de cobertura. Ver [sección detallada](#canastas-alternativas--07_evolucion_canastas_alternativas). | [![Abrir en Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/santiagoriverti/precios_minoristas_supermercados/blob/main/notebooks/07_evolucion_canastas_alternativas.ipynb) |
 
 > **¿Ves una versión vieja en Colab?** El badge siempre apunta a la última versión en GitHub, pero Colab puede mostrar una copia cacheada de tu Drive. Para forzar la actualización: eliminá el notebook de `Mi unidad/Colab Notebooks/` en Google Drive y volvé a hacer clic en el badge.
 
@@ -521,23 +521,46 @@ El diccionario `TIPOS` — un tipo por entrada, con `qty`, `tacc: [EANs]`, `sin_
 
 ## Canastas alternativas — `07_evolucion_canastas_alternativas`
 
-Evolución **semanal** del costo de tres canastas socioeconómicas (**Popular / Media / Ejecutiva**), comparada con el **IPC** del INDEC, desagregada por **rubro** (con drill-down hasta producto) y por provincia/cadena. Es el análisis del Notebook 02 pero con dos diferencias clave: granularidad **semanal** y una composición que **suma frescos** (carne, frutas, verduras, huevos).
+Evolución **semanal** del costo de **5 canastas** (**Popular / Media / Ejecutiva / Tecnológica / Representativa**), comparada con el **IPC** del INDEC, desagregada por **rubro** (con drill-down hasta producto) y por **provincia / cadena / región**. Es el análisis del Notebook 02 pero **semanal** y **sumando frescos** (carne, frutas, verduras, huevos).
+
+### Las 5 canastas
+- **Popular / Media / Ejecutiva**: escalera de calidad (segundas marcas → líderes → premium), como índice de precios comparable.
+- **Tecnológica** (`cantidad_04`): bundle de 7 durables (TV, notebook, celular, heladera, lavarropas, microondas, aire). Sin frescos. Cobertura baja (informativa).
+- **Representativa** (`cantidad_05`): canasta única del consumidor promedio, con **cantidades calibradas per cápita** (ref. CBA INDEC).
 
 ### Composición híbrida (dos fuentes)
-- **Empaquetados (por EAN)**: se leen de la hoja **`Productos unicos`** del Excel `canasta_representativa_*.xlsx` en `carga/output_canasta/`, usando las columnas `cantidad_01` (Popular), `cantidad_02` (Media) y `cantidad_03` (Ejecutiva). Cada producto trae su rubro/categoría.
-- **Frescos (por TIPO/nombre)**: carne, frutas, verduras y huevos **no** tienen un EAN estable entre cadenas (usan códigos de balanza que cada cadena inventa), así que se seleccionan **por regla de nombre** sobre el maestro SEPA completo. El precio del tipo en una sucursal/semana = **promedio de las variantes presentes**, normalizado a **$/kg** (verduras/frutas/carne) o **$/docena** (huevos). Así son comparables entre cadenas y provincias.
+- **Empaquetados (por EAN)**: **130 productos**, todos con cobertura **≥4 cadenas**. Se leen de la hoja **`Productos unicos`** del Excel `canasta_representativa_*.xlsx` (`carga/output_canasta/`), columnas `cantidad_01..05`. Las cantidades se cargan con el loader de `docs/canastas_alternativas/`.
+- **Frescos (por TIPO/nombre)**: **33 tipos** (frutas, verduras, carne, huevos). No tienen EAN estable entre cadenas (balanza), así que se seleccionan **por nombre + categoría del maestro** (`Frutas y Verduras` / `Carnicería` / `Huevos`, filtro clave que descarta procesados que contienen el nombre). Precio del tipo por sucursal/semana = **mediana de las variantes presentes**, normalizado a **$/kg** o **$/docena**. Resuelve la variación de EAN por cadena y la disponibilidad por sucursal.
 
 ### Config (CELDA 1)
-- `CANASTA_COLS` mapea `cantidad_01/02/03 → Popular/Media/Ejecutiva`; `HOJA_CANASTAS = 'Productos unicos'`.
-- `TIPOS_FRESCOS`: un tipo por entrada (`rubro`, `unidad` kg/doc, `inc`/`exc` regex por nombre, y `qty` por canasta). Editable; se afina con la hoja `Cobertura_frescos` del primer run.
-- Serie semanal por ISO week; `MES_INICIO_HISTORICO`, `FRAC_PRODUCTOS_MIN` (cobertura mínima de empaquetados por sucursal), `MIN_SUC_AGG`.
+- `CANASTA_COLS` mapea `cantidad_01..05 → Popular/Media/Ejecutiva/Tecnológica/Representativa`; `CANASTAS_SIN_FRESCOS = {'Tecnológica'}`.
+- `TIPOS_FRESCOS`: 33 tipos (`rubro`, `unidad` kg/doc, `inc`/`exc` regex, `qty=(Popular,Media,Ejecutiva,Representativa)`). Editable; se afina con `Cobertura_frescos`.
+- `REGION_PROV` (5 regiones), `MES_INICIO_HISTORICO`, `FRAC_PRODUCTOS_MIN`, `MIN_SUC_AGG`.
 
-### Qué genera
-- **Diagnósticos por pantalla** (para refinar la composición): cobertura por EAN (`n_cadenas`/`n_provincias`/`n_sucursales`), ítems **sin datos** o de **baja comparabilidad**, y cobertura por tipo fresco (nº de variantes capturadas por la regla).
+### Arquitectura (memoria)
+La lectura semanal **colapsa los frescos a su TIPO durante la lectura** (de ~8k EANs de balanza a ~30 tipos) para no reventar la RAM sobre toda la historia; cachea por mes cerrado (`sem_*_v2.parquet`), relee el mes en curso fresco.
+
+### Qué genera (en `output_canasta_alternativa/`)
+- Bloque **"REPORTE PARA CLAUDE"** (CELDA 15): costo/variación/vs-IPC/composición por rubro **y por región** + flags de cobertura, en texto para copiar.
 - Gráficos: índice **semanal** por canasta, canastas **vs IPC** (mensual), composición por rubro.
-- `canastas_alternativas_YYYY-Www.xlsx`: `Resumen`, `Sem_*`/`Mes_*` (series), `vsIPC_*`, `Rubro_sem_*`, `Comp_rubro_*`, **`Detalle_*`** (drill-down por producto/tipo), `Prov_*`, `Cadena_*`, `Cobertura_emp`, `Cobertura_frescos`.
+- `canastas_alternativas_YYYY-Www.xlsx`: `Resumen`, y por canasta `Sem_*`/`Mes_*`/`vsIPC_*`/`Rubro_sem_*`/`Comp_rubro_*`/**`Detalle_*`**/`Prov_*`/`Cadena_*`/**`Region_*`**/**`RegionSem_*`**, + `Cobertura_emp`, `Cobertura_frescos`.
 
-> Requiere en `carga/` los ZIPs SEPA, `IPC.xlsx`, `maestro_sepa_completo.csv.gz` (lo genera el Script 03; captura los frescos de nicho por cadena) y en `carga/output_canasta/` el Excel `canasta_representativa_*.xlsx` con la hoja `Productos unicos` poblada.
+> Requiere en `carga/` los ZIPs SEPA, `IPC.xlsx`, `maestro_sepa_completo.csv.gz` (Script 03; frescos de nicho), y en `carga/output_canasta/` el Excel `canasta_representativa_*.xlsx` con `Productos unicos` poblada (`cantidad_01..05`). **Cantidades y loader: `docs/canastas_alternativas/`.**
+
+---
+
+## Excel de econometría — `datos_econometria`
+
+El Notebook 02 exporta, además del análisis clásico, **`datos_econometria_{MES}.xlsx`** en `carga/output_canasta/`: un insumo **tidy/long** para análisis de series de tiempo (materia "Econometría avanzada").
+
+- **Contenido**: costo de cada canasta activa (hoja `Selección`) + precio de los productos de `PRODUCTOS_ECONOMETRIA` (config editable arriba de la CELDA 22).
+- **Frecuencia**: **semanal (ISO)** y **mensual**, historia completa.
+- **Niveles**: **nacional** (ponderado por población), **provincia**, **cadena**.
+- **Columnas**: `frecuencia, periodo, fecha, clave, grupo, n_sucursales, valor_mediana, valor_promedio, variacion_%`.
+  - `valor_mediana` = **mediana** entre sucursales (robusta, recomendada); `valor_promedio` = **media recortada** (`_pmean`, outliers fuera). Ambas surgen de: día→período por (sucursal, EAN) con mediana/media, y luego entre sucursales.
+- **Hojas**: `Diccionario`, `canastas_nacional/provincia/cadena`, `productos_nacional/provincia/cadena`.
+
+El motor relee los ZIPs conservando el día, agrega por (sucursal, ítem, semana/mes), imputa faltantes con la referencia nacional del período, y cachea por mes cerrado (`econ_*.parquet`).
 
 ---
 
