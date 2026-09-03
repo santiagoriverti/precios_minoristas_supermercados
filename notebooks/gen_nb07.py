@@ -99,43 +99,45 @@ REGION_PROV = {
 # \b = borde de palabra), y 'qty' = (Popular, Media, Ejecutiva, Representativa) en kg o docenas/mes.
 # La selección además exige categoría de fresco real (ver CELDA 5). Ajustá con Cobertura_frescos.
 TIPOS_FRESCOS = {
+    # qty = (Popular, Media, Ejecutiva, Representativa). El 4º valor (Representativa) está
+    # calibrado a consumo per cápita de una familia tipo de 4 (referencia CBA INDEC).
     # ---- FRUTAS ($/kg) ----
     'Banana':      {'rubro':'Frutas','unidad':'kg','qty':(3,3,3,3), 'inc':r'\bbanana', 'exc':r'licuad|yogur|snack|deshidr|chip|pasas'},
-    'Manzana':     {'rubro':'Frutas','unidad':'kg','qty':(2,2,3,2), 'inc':r'\bmanzana', 'exc':r'jugo|pur[eé]|vinagre|snack|licor|yogur|rall|deshidr|chip|desodor|t[eé] '},
+    'Manzana':     {'rubro':'Frutas','unidad':'kg','qty':(2,2,3,3), 'inc':r'\bmanzana', 'exc':r'jugo|pur[eé]|vinagre|snack|licor|yogur|rall|deshidr|chip|desodor|t[eé] '},
     'Naranja':     {'rubro':'Frutas','unidad':'kg','qty':(3,3,3,3), 'inc':r'\bnaranja', 'exc':r'jugo|gaseosa|aceite|esen|yogur|fanta|desodor|aromatiz|jab[oó]n|amarg|licor'},
-    'Mandarina':   {'rubro':'Frutas','unidad':'kg','qty':(1,2,2,2), 'inc':r'\bmandarina', 'exc':r'jugo|esen'},
+    'Mandarina':   {'rubro':'Frutas','unidad':'kg','qty':(1,2,2,1), 'inc':r'\bmandarina', 'exc':r'jugo|esen'},
     'Limón':       {'rubro':'Frutas','unidad':'kg','qty':(0.5,0.5,1,0.5), 'inc':r'\blim[oó]n|\blimones', 'exc':r'jugo|deterg|lavand|gaseosa|jab[oó]n|aceite|yogur|soda|amarg|aromatiz|desodor|hipoclor|limpiad|esen'},
     'Pera':        {'rubro':'Frutas','unidad':'kg','qty':(1,1,2,1), 'inc':r'\bpera\b|\bperas\b', 'exc':r'jugo|campera|frapera|heladera|esen'},
-    'Frutilla':    {'rubro':'Frutas','unidad':'kg','qty':(0,0.5,1,0.5), 'inc':r'\bfrutilla', 'exc':r'yogur|mermelada|dulce|helad|licor|gelatina|jugo|leche|postre|bomb|alfajor|chicle|carame|flan'},
+    'Frutilla':    {'rubro':'Frutas','unidad':'kg','qty':(0,0.5,1,0.3), 'inc':r'\bfrutilla', 'exc':r'yogur|mermelada|dulce|helad|licor|gelatina|jugo|leche|postre|bomb|alfajor|chicle|carame|flan'},
     'Uva':         {'rubro':'Frutas','unidad':'kg','qty':(0,1,1,0.5), 'inc':r'\buva\b|\buvas\b', 'exc':r'jugo|vino|pasa|vinagre|mermelada|licor|aceite|semilla'},
     'Durazno':     {'rubro':'Frutas','unidad':'kg','qty':(0,1,1,0.5), 'inc':r'\bdurazno', 'exc':r'lata|almibar|mermelada|jugo|conserva|yogur|dulce|licor'},
-    'Ciruela':     {'rubro':'Frutas','unidad':'kg','qty':(0,0.5,1,0.5), 'inc':r'\bciruela', 'exc':r'seca|desecad|pasa|mermelada|jugo|dulce|licor'},
+    'Ciruela':     {'rubro':'Frutas','unidad':'kg','qty':(0,0.5,1,0.3), 'inc':r'\bciruela', 'exc':r'seca|desecad|pasa|mermelada|jugo|dulce|licor'},
     # ---- VERDURAS ($/kg) ----
-    'Papa':        {'rubro':'Verduras','unidad':'kg','qty':(4,4,4,4), 'inc':r'\bpapa\b|\bpapas\b', 'exc':r'frita|snack|pur[eé]|congel|chip|bast[oó]n|noisett|prefrit|rall|española'},
-    'Tomate':      {'rubro':'Verduras','unidad':'kg','qty':(2,2,3,2), 'inc':r'\btomate', 'exc':r'salsa|pur[eé]|tritur|extracto|lata|pelado|jugo|ketchup|seco|deshidr|conserva|cubo'},
-    'Cebolla':     {'rubro':'Verduras','unidad':'kg','qty':(2,2,2,2), 'inc':r'\bcebolla', 'exc':r'sopa|deshidr|crema|anillo|snack|verdeo en|caldo'},
-    'Zanahoria':   {'rubro':'Verduras','unidad':'kg','qty':(1.5,1.5,1.5,1.5), 'inc':r'\bzanahoria', 'exc':r'rall|congel|sopa|deshidr|bab[yi]'},
-    'Zapallo':     {'rubro':'Verduras','unidad':'kg','qty':(1.5,1.5,2,1.5), 'inc':r'\bzapallo|\bcalabaza', 'exc':r'congel|sopa|semilla|deshidr|crema'},
+    'Papa':        {'rubro':'Verduras','unidad':'kg','qty':(4,4,4,8), 'inc':r'\bpapa\b|\bpapas\b', 'exc':r'frita|snack|pur[eé]|congel|chip|bast[oó]n|noisett|prefrit|rall|española'},
+    'Tomate':      {'rubro':'Verduras','unidad':'kg','qty':(2,2,3,3), 'inc':r'\btomate', 'exc':r'salsa|pur[eé]|tritur|extracto|lata|pelado|jugo|ketchup|seco|deshidr|conserva|cubo'},
+    'Cebolla':     {'rubro':'Verduras','unidad':'kg','qty':(2,2,2,3), 'inc':r'\bcebolla', 'exc':r'sopa|deshidr|crema|anillo|snack|verdeo en|caldo'},
+    'Zanahoria':   {'rubro':'Verduras','unidad':'kg','qty':(1.5,1.5,1.5,2), 'inc':r'\bzanahoria', 'exc':r'rall|congel|sopa|deshidr|bab[yi]'},
+    'Zapallo':     {'rubro':'Verduras','unidad':'kg','qty':(1.5,1.5,2,2), 'inc':r'\bzapallo|\bcalabaza', 'exc':r'congel|sopa|semilla|deshidr|crema'},
     'Lechuga':     {'rubro':'Verduras','unidad':'kg','qty':(1,1,1.5,1), 'inc':r'\blechuga', 'exc':r'aderez|snack'},
     'Morrón':      {'rubro':'Verduras','unidad':'kg','qty':(0.5,0.5,1,0.5), 'inc':r'\bmorr[oó]n|\bmorrones|\bpimiento', 'exc':r'molid|deshidr|conserva|lata|seco|pimentón|pimenton|aji molido'},
     'Batata':      {'rubro':'Verduras','unidad':'kg','qty':(1,1,1,1), 'inc':r'\bbatata', 'exc':r'dulce|congel|snack|chip'},
     'Acelga':      {'rubro':'Verduras','unidad':'kg','qty':(0,1,1,0.5), 'inc':r'\bacelga', 'exc':r'congel|tarta|empanada'},
     'Espinaca':    {'rubro':'Verduras','unidad':'kg','qty':(0,0.5,1,0.5), 'inc':r'\bespinaca', 'exc':r'congel|tarta|empanada|nuez'},
     'Choclo':      {'rubro':'Verduras','unidad':'kg','qty':(0.5,0.5,1,0.5), 'inc':r'\bchoclo', 'exc':r'lata|crema|congel|conserva|granos en|desgran|arcor|campagnola'},
-    'Brócoli':     {'rubro':'Verduras','unidad':'kg','qty':(0,0.5,1,0.5), 'inc':r'\bbrocoli|\bbrócoli', 'exc':r'congel'},
+    'Brócoli':     {'rubro':'Verduras','unidad':'kg','qty':(0,0.5,1,0.3), 'inc':r'\bbrocoli|\bbrócoli', 'exc':r'congel'},
     'Ajo':         {'rubro':'Verduras','unidad':'kg','qty':(0.2,0.2,0.3,0.2), 'inc':r'\bajo\b|\bajos\b', 'exc':r'aceite|\bsal\b|deshidr|polvo|molid|sazonad|condiment|\bpan\b|aderez|mayonesa|crema|conserva|\baji'},
     # ---- CARNE ($/kg) ----
-    'Asado':       {'rubro':'Carne','unidad':'kg','qty':(2,2,3,2), 'inc':r'\basado', 'exc':r'salsa|adob|snack|man[ií]|pollo|caf[eé]'},
-    'Carne picada':{'rubro':'Carne','unidad':'kg','qty':(2,2,2,2), 'inc':r'\bpicada\b|carne molida', 'exc':r'salch|congel|caldo|pat[eé]|hamburg|pollo|pescado|aceituna|verdura'},
-    'Nalga/Cuadril':{'rubro':'Carne','unidad':'kg','qty':(1,1.5,2,1.5), 'inc':r'\bnalga|\bcuadril|bola de lomo|\bcuadrada\b|\bpeceto|colita de cuadril', 'exc':r''},
-    'Pollo':       {'rubro':'Carne','unidad':'kg','qty':(3,3,3,3), 'inc':r'\bpollo\b|pata muslo|\bpechuga|\bsuprema', 'exc':r'caldo|sopa|saboriz|congel|nugget|pat[eé]|medall|hamburg|milanesa|pella|arroz|fideo|snack|cubito|aliment|merluza|pescado'},
+    'Asado':       {'rubro':'Carne','unidad':'kg','qty':(2,2,3,3), 'inc':r'\basado', 'exc':r'salsa|adob|snack|man[ií]|pollo|caf[eé]'},
+    'Carne picada':{'rubro':'Carne','unidad':'kg','qty':(2,2,2,3), 'inc':r'\bpicada\b|carne molida', 'exc':r'salch|congel|caldo|pat[eé]|hamburg|pollo|pescado|aceituna|verdura'},
+    'Nalga/Cuadril':{'rubro':'Carne','unidad':'kg','qty':(1,1.5,2,2), 'inc':r'\bnalga|\bcuadril|bola de lomo|\bcuadrada\b|\bpeceto|colita de cuadril', 'exc':r''},
+    'Pollo':       {'rubro':'Carne','unidad':'kg','qty':(3,3,3,4), 'inc':r'\bpollo\b|pata muslo|\bpechuga|\bsuprema', 'exc':r'caldo|sopa|saboriz|congel|nugget|pat[eé]|medall|hamburg|milanesa|pella|arroz|fideo|snack|cubito|aliment|merluza|pescado'},
     'Milanesa carne':{'rubro':'Carne','unidad':'kg','qty':(1,1,1.5,1), 'inc':r'milanesa', 'exc':r'soja|pollo|congel|merluza|pescado|napolitan|vegetal'},
     'Matambre':    {'rubro':'Carne','unidad':'kg','qty':(0,0.5,1,0.5), 'inc':r'\bmatambre', 'exc':r'arrollado|relleno|queso|pizza|a la|cocido'},
     'Vacío':       {'rubro':'Carne','unidad':'kg','qty':(0,0.5,1,0.5), 'inc':r'\bvac[ií]o\b', 'exc':r'arrollado|relleno'},
     'Osobuco':     {'rubro':'Carne','unidad':'kg','qty':(0.5,0.5,0.5,0.5), 'inc':r'\bosobuco|\bosso\s*buco', 'exc':r''},
     'Roast beef':  {'rubro':'Carne','unidad':'kg','qty':(0,0.5,1,0.5), 'inc':r'roast\s*beef|tapa de nalga|tapa de cuadril', 'exc':r''},
     # ---- HUEVOS ($/docena) ----
-    'Huevos':      {'rubro':'Huevos','unidad':'doc','qty':(2,2,2,2), 'inc':r'\bhuevo', 'exc':r'chocolate|kinder|pascua|sorpresa|codorniz|conejo|batidora'},
+    'Huevos':      {'rubro':'Huevos','unidad':'doc','qty':(2,2,2,3), 'inc':r'\bhuevo', 'exc':r'chocolate|kinder|pascua|sorpresa|codorniz|conejo|batidora'},
 }
 
 # EANs de referencia para autodetectar el factor centavos/pesos (robusto con pocos EANs).

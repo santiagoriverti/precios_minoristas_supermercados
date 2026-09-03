@@ -709,3 +709,29 @@ Compila (15 celdas). **La Representativa solo se activa si el usuario carga cant
 
 **PENDIENTE usuario**: re-cargar el Excel con el loader v2 (cantidad_01..05) y re-correr nb07 (cambia
 EANS_FRESCOS y empaquetados → re-lectura). Pasar el REPORTE (con región) + Cobertura_frescos.
+
+## nb07 — Representativa calibrada tipo INDEC + gaps + auditoría E2E [2026-09-03]
+
+Usuario pidió evaluar si la canasta está "bien". Diagnóstico honesto: técnicamente sólida
+(homogénea, cad≥4) pero NO representativa en sentido INDEC (no ponderada por consumo, faltaban
+rubros de alto consumo, cantidades sin calibrar). Decisión del usuario: **"Ambas"** — dejar
+Popular/Media/Ejecutiva/Tecnológica como índice comparable y hacer la **Representativa** calibrada.
+
+Hecho:
+- **Frescos Representativa (4º elemento de qty en TIPOS_FRESCOS) recalibrado a per cápita familia-4**
+  (ref CBA INDEC): papa 8, carne total ~12 kg (asado/picada 3, nalga 2, pollo 4), huevos 3 doc,
+  frutas/verduras subidas. P/M/E sin tocar.
+- **Gaps tapados** (verificados cad=5 en el universo real): Snacks (alfajor, chocolate/tableta),
+  Mascotas (alimento perro + gato), Cuidado del bebé (pañal). +3 rubros. Café ya estaba en Popular.
+  Pan de panadería (balanza) queda como gap documentado — casi no está en Productos unicos.
+- Empaquetados **123** (antes 117) + 7 durables = **130 EANs**. Rubros 12→15.
+- Loader v3 (`docs/canastas_alternativas/cargar_en_productos_unicos.py`, 130 EANs, cantidad_01..05)
+  regenerado sin el bug de \n; CSV/dict/detalle actualizados.
+
+**AUDITORÍA E2E**: se ejecutó el notebook 07 COMPLETO (las 15 celdas) contra un dataset SEPA
+sintético → todas OK, Excel de 54 hojas (5 canastas × {Sem,Mes,vsIPC,Rubro_sem,Comp_rubro,Detalle,
+Prov,Cadena,Region,RegionSem} + Cobertura). Verificado: 5 canastas activas, IPC consistente
+(idx canasta vs IPC gral/alim base 100), región (5 regiones), frescos normalizados $/kg y $/doc,
+Representativa toma bien sus cantidades, tipos sin datos no rompen. **nb07 corre sin errores.**
+
+PENDIENTE usuario: re-cargar Excel con loader v3 + re-correr nb07.

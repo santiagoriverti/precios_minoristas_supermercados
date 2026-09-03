@@ -37,6 +37,7 @@
 7794000006072,Mayonesa Regular Doypack Hellmanns 475 Gr,Condimentos y aderezos,0.0,0.0,2.0,0,0.0
 7790072001014,Sal Fina en Paquete Celusal 500 Gr,Condimentos y aderezos,1.0,1.0,1.0,0,1.0
 7790130000058,Vinagre de Alcohol Menoyo 1 Lt,Condimentos y aderezos,1.0,1.0,0.0,0,1.0
+7500435228763,Pañal Talle XG Baby-dry Hipoalergénico Pampers 36 Un,Cuidado del bebe,0.0,1.0,1.0,0,1.0
 7790580132392,Arvejas Secas Remojadas sin Conservantes Lata Arcor 300 Gr,Frutas y verduras,2.0,2.0,3.0,0,2.0
 7790580132422,Choclo Amarillo Desgranado Arcor 300 Gr,Frutas y verduras,0.0,2.0,2.0,0,2.0
 7793360132469,Garbanzos Secos Remojados Lata La Campagnola 300 Gr,Frutas y verduras,1.0,1.0,1.0,0,1.0
@@ -67,7 +68,7 @@
 7790787153664,Dulce de Leche Clásico Ilolay 400 Gr,Lacteos y derivados,1.0,0.0,0.0,0,0.0
 7790742625304,Dulce de Leche Clásico La Serenísima 400 Gr,Lacteos y derivados,0.0,1.0,0.0,0,1.0
 7790742067005,Dulce de Leche Repostero La Serenísima 400 Gr,Lacteos y derivados,0.0,0.0,2.0,0,0.0
-7790742335500,Leche Entera 3% Uat La Serenísima 1 Lt,Lacteos y derivados,0.0,24.0,24.0,0,24.0
+7790742335500,Leche Entera 3% Uat La Serenísima 1 Lt,Lacteos y derivados,0.0,24.0,24.0,0,28.0
 7798338290028,Leche Entera Larga Vida Tradición Tres Niñas 1 Lt,Lacteos y derivados,24.0,0.0,0.0,0,0.0
 7790742333605,Leche UAT Parcialmente Descremada Zero Lactos Serenísima 1 Lt,Lacteos y derivados,0.0,6.0,10.0,0,6.0
 7798060850026,Manteca Calidad Extra Tonadita 200 Gr,Lacteos y derivados,1.0,0.0,0.0,0,0.0
@@ -97,6 +98,9 @@
 7791070000696,Papel Higiénico Texturado Campanita Pack 4 Un 120 Mt,Limpieza del hogar,2.0,0.0,0.0,0,0.0
 7790250056881,Rollos de Cocina Clásico 50 Paños Sussex 3 Un,Limpieza del hogar,0.0,2.0,2.0,0,2.0
 7891150000971,Suavizante para Ropa Concentrado Cuidado Intesivo Comfor 500 Ml,Limpieza del hogar,0.0,1.0,2.0,0,1.0
+8445290057433,Alimento para Gatos Adultos Pescado y Pollo Cat Chow 1 Kg,Mascotas,0.0,1.0,1.0,0,0.5
+8445290944559,Alimento para Perro Cachorro Gran Comienzo Dog Chow 3 Kg,Mascotas,0.0,0.0,1.0,0,0.0
+7613287613431,Alimento para Perros Adultos Bolsa Dogui 3 Kg,Mascotas,0.0,1.0,0.0,0,1.0
 7791120031557,Arroz Largo Fino 00000 Molinos Ala 1 Kg,Pan y cereales,3.0,0.0,0.0,0,0.0
 7790070431417,Arroz Parboil Bolsa Gallo Oro 1 Kg,Pan y cereales,0.0,3.0,3.0,0,3.0
 7792170555420,Avena Integral Instantánea Quaker 500 Gr,Pan y cereales,0.0,1.0,1.0,0,1.0
@@ -116,6 +120,8 @@
 7793890258783,Pan con Salvado Lactal 560 Gr,Pan y cereales,0.0,0.0,4.0,0,0.0
 7793890258769,Pan de Mesa Blanco Chico Lactal 315 Gr,Pan y cereales,0.0,3.0,0.0,0,2.0
 7790580138721,Polenta Prestopronta 730 Gr,Pan y cereales,1.0,1.0,0.0,0,1.0
+7790040133587,Alfajor Minitorta Clásica Águila 69 Gr,Snacks y golosinas,0.0,4.0,6.0,0,4.0
+0000077953124,Chocolate con Maní Cofler Block 38 Gr,Snacks y golosinas,0.0,1.0,2.0,0,1.0
 7796962987321,[TEC] Aire Acondicionado Philco Split 3200W,Tecnologia,0.0,0.0,0.0,1,0.0
 6932554416638,[TEC] Celular Redmi 14C 4/128 Gb,Tecnologia,0.0,0.0,0.0,1,0.0
 7796885063874,[TEC] Heladera Brs400i1a 397l Bgh,Tecnologia,0.0,0.0,0.0,1,0.0

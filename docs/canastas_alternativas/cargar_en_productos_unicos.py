@@ -2,7 +2,7 @@
 # CARGAR LAS 5 CANASTAS EN "Productos unicos"  (script de Colab)
 # cantidad_01=Popular 02=Media 03=Ejecutiva 04=Tecnologica 05=Representativa
 # ------------------------------------------------------------
-# 124 productos (117 empaquetados + 7 durables). EDITABLE: podes cambiar cantidades abajo.
+# 130 productos (123 empaquetados + 7 durables). EDITABLE: cambia cantidades abajo.
 # Uso: pegar en Colab, ejecutar, subir el Excel canasta_representativa_*.xlsx.
 # ============================================================
 import openpyxl, os
@@ -51,6 +51,7 @@ CANTIDADES = {
     '7794000006072': {'cantidad_01': 0, 'cantidad_02': 0, 'cantidad_03': 2, 'cantidad_04': 0, 'cantidad_05': 0},  # Condimentos y aderezos | Mayonesa Regular Doypack Hellmanns 475 G
     '7790072001014': {'cantidad_01': 1, 'cantidad_02': 1, 'cantidad_03': 1, 'cantidad_04': 0, 'cantidad_05': 1},  # Condimentos y aderezos | Sal Fina en Paquete Celusal 500 Gr
     '7790130000058': {'cantidad_01': 1, 'cantidad_02': 1, 'cantidad_03': 0, 'cantidad_04': 0, 'cantidad_05': 1},  # Condimentos y aderezos | Vinagre de Alcohol Menoyo 1 Lt
+    '7500435228763': {'cantidad_01': 0, 'cantidad_02': 1, 'cantidad_03': 1, 'cantidad_04': 0, 'cantidad_05': 1},  # Cuidado del bebe | Pañal Talle XG Baby-dry Hipoalergénico P
     '7790580132392': {'cantidad_01': 2, 'cantidad_02': 2, 'cantidad_03': 3, 'cantidad_04': 0, 'cantidad_05': 2},  # Frutas y verduras | Arvejas Secas Remojadas sin Conservantes
     '7790580132422': {'cantidad_01': 0, 'cantidad_02': 2, 'cantidad_03': 2, 'cantidad_04': 0, 'cantidad_05': 2},  # Frutas y verduras | Choclo Amarillo Desgranado Arcor 300 Gr
     '7793360132469': {'cantidad_01': 1, 'cantidad_02': 1, 'cantidad_03': 1, 'cantidad_04': 0, 'cantidad_05': 1},  # Frutas y verduras | Garbanzos Secos Remojados Lata La Campag
@@ -81,7 +82,7 @@ CANTIDADES = {
     '7790787153664': {'cantidad_01': 1, 'cantidad_02': 0, 'cantidad_03': 0, 'cantidad_04': 0, 'cantidad_05': 0},  # Lacteos y derivados | Dulce de Leche Clásico Ilolay 400 Gr
     '7790742625304': {'cantidad_01': 0, 'cantidad_02': 1, 'cantidad_03': 0, 'cantidad_04': 0, 'cantidad_05': 1},  # Lacteos y derivados | Dulce de Leche Clásico La Serenísima 400
     '7790742067005': {'cantidad_01': 0, 'cantidad_02': 0, 'cantidad_03': 2, 'cantidad_04': 0, 'cantidad_05': 0},  # Lacteos y derivados | Dulce de Leche Repostero La Serenísima 4
-    '7790742335500': {'cantidad_01': 0, 'cantidad_02': 24, 'cantidad_03': 24, 'cantidad_04': 0, 'cantidad_05': 24},  # Lacteos y derivados | Leche Entera 3% Uat La Serenísima 1 Lt
+    '7790742335500': {'cantidad_01': 0, 'cantidad_02': 24, 'cantidad_03': 24, 'cantidad_04': 0, 'cantidad_05': 28},  # Lacteos y derivados | Leche Entera 3% Uat La Serenísima 1 Lt
     '7798338290028': {'cantidad_01': 24, 'cantidad_02': 0, 'cantidad_03': 0, 'cantidad_04': 0, 'cantidad_05': 0},  # Lacteos y derivados | Leche Entera Larga Vida Tradición Tres N
     '7790742333605': {'cantidad_01': 0, 'cantidad_02': 6, 'cantidad_03': 10, 'cantidad_04': 0, 'cantidad_05': 6},  # Lacteos y derivados | Leche UAT Parcialmente Descremada Zero L
     '7798060850026': {'cantidad_01': 1, 'cantidad_02': 0, 'cantidad_03': 0, 'cantidad_04': 0, 'cantidad_05': 0},  # Lacteos y derivados | Manteca Calidad Extra Tonadita 200 Gr
@@ -111,6 +112,9 @@ CANTIDADES = {
     '7791070000696': {'cantidad_01': 2, 'cantidad_02': 0, 'cantidad_03': 0, 'cantidad_04': 0, 'cantidad_05': 0},  # Limpieza del hogar | Papel Higiénico Texturado Campanita Pack
     '7790250056881': {'cantidad_01': 0, 'cantidad_02': 2, 'cantidad_03': 2, 'cantidad_04': 0, 'cantidad_05': 2},  # Limpieza del hogar | Rollos de Cocina Clásico 50 Paños Sussex
     '7891150000971': {'cantidad_01': 0, 'cantidad_02': 1, 'cantidad_03': 2, 'cantidad_04': 0, 'cantidad_05': 1},  # Limpieza del hogar | Suavizante para Ropa Concentrado Cuidado
+    '8445290057433': {'cantidad_01': 0, 'cantidad_02': 1, 'cantidad_03': 1, 'cantidad_04': 0, 'cantidad_05': 0.5},  # Mascotas | Alimento para Gatos Adultos Pescado y Po
+    '8445290944559': {'cantidad_01': 0, 'cantidad_02': 0, 'cantidad_03': 1, 'cantidad_04': 0, 'cantidad_05': 0},  # Mascotas | Alimento para Perro Cachorro Gran Comien
+    '7613287613431': {'cantidad_01': 0, 'cantidad_02': 1, 'cantidad_03': 0, 'cantidad_04': 0, 'cantidad_05': 1},  # Mascotas | Alimento para Perros Adultos Bolsa Dogui
     '7791120031557': {'cantidad_01': 3, 'cantidad_02': 0, 'cantidad_03': 0, 'cantidad_04': 0, 'cantidad_05': 0},  # Pan y cereales | Arroz Largo Fino 00000 Molinos Ala 1 Kg
     '7790070431417': {'cantidad_01': 0, 'cantidad_02': 3, 'cantidad_03': 3, 'cantidad_04': 0, 'cantidad_05': 3},  # Pan y cereales | Arroz Parboil Bolsa Gallo Oro 1 Kg
     '7792170555420': {'cantidad_01': 0, 'cantidad_02': 1, 'cantidad_03': 1, 'cantidad_04': 0, 'cantidad_05': 1},  # Pan y cereales | Avena Integral Instantánea Quaker 500 Gr
@@ -130,6 +134,8 @@ CANTIDADES = {
     '7793890258783': {'cantidad_01': 0, 'cantidad_02': 0, 'cantidad_03': 4, 'cantidad_04': 0, 'cantidad_05': 0},  # Pan y cereales | Pan con Salvado Lactal 560 Gr
     '7793890258769': {'cantidad_01': 0, 'cantidad_02': 3, 'cantidad_03': 0, 'cantidad_04': 0, 'cantidad_05': 2},  # Pan y cereales | Pan de Mesa Blanco Chico Lactal 315 Gr
     '7790580138721': {'cantidad_01': 1, 'cantidad_02': 1, 'cantidad_03': 0, 'cantidad_04': 0, 'cantidad_05': 1},  # Pan y cereales | Polenta Prestopronta 730 Gr
+    '7790040133587': {'cantidad_01': 0, 'cantidad_02': 4, 'cantidad_03': 6, 'cantidad_04': 0, 'cantidad_05': 4},  # Snacks y golosinas | Alfajor Minitorta Clásica Águila 69 Gr
+    '0000077953124': {'cantidad_01': 0, 'cantidad_02': 1, 'cantidad_03': 2, 'cantidad_04': 0, 'cantidad_05': 1},  # Snacks y golosinas | Chocolate con Maní Cofler Block 38 Gr
     '7796962987321': {'cantidad_01': 0, 'cantidad_02': 0, 'cantidad_03': 0, 'cantidad_04': 1, 'cantidad_05': 0},  # Tecnologia | [TEC] Aire Acondicionado Philco Split 32
     '6932554416638': {'cantidad_01': 0, 'cantidad_02': 0, 'cantidad_03': 0, 'cantidad_04': 1, 'cantidad_05': 0},  # Tecnologia | [TEC] Celular Redmi 14C 4/128 Gb
     '7796885063874': {'cantidad_01': 0, 'cantidad_02': 0, 'cantidad_03': 0, 'cantidad_04': 1, 'cantidad_05': 0},  # Tecnologia | [TEC] Heladera Brs400i1a 397l Bgh

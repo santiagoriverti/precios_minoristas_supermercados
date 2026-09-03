@@ -37,6 +37,7 @@ sepa_id,desc,marca,rubro,cad,prov,suc,Popular,Media,Ejecutiva,Tecnologica,Repres
 7794000006072,Mayonesa Regular Doypack Hellmanns 475 Gr,Hellmanns,Condimentos y aderezos,5,24,2479,0.0,0.0,2.0,0,0.0
 7790072001014,Sal Fina en Paquete Celusal 500 Gr,Celusal,Condimentos y aderezos,5,24,2503,1.0,1.0,1.0,0,1.0
 7790130000058,Vinagre de Alcohol Menoyo 1 Lt,Menoyo,Condimentos y aderezos,5,24,2306,1.0,1.0,0.0,0,1.0
+7500435228763,Pañal Talle XG Baby-dry Hipoalergénico Pampers 36 Un,Pampers,Cuidado del bebe,5,24,2069,0.0,1.0,1.0,0,1.0
 7790580132392,Arvejas Secas Remojadas sin Conservantes Lata Arcor 300 Gr,Arcor,Frutas y verduras,5,24,2155,2.0,2.0,3.0,0,2.0
 7790580132422,Choclo Amarillo Desgranado Arcor 300 Gr,Arcor,Frutas y verduras,5,24,1769,0.0,2.0,2.0,0,2.0
 7793360132469,Garbanzos Secos Remojados Lata La Campagnola 300 Gr,La Campagnola,Frutas y verduras,5,24,1167,1.0,1.0,1.0,0,1.0
@@ -67,7 +68,7 @@ sepa_id,desc,marca,rubro,cad,prov,suc,Popular,Media,Ejecutiva,Tecnologica,Repres
 7790787153664,Dulce de Leche Clásico Ilolay 400 Gr,Ilolay,Lacteos y derivados,5,24,2204,1.0,0.0,0.0,0,0.0
 7790742625304,Dulce de Leche Clásico La Serenísima 400 Gr,La Serenísima,Lacteos y derivados,5,24,2488,0.0,1.0,0.0,0,1.0
 7790742067005,Dulce de Leche Repostero La Serenísima 400 Gr,La Serenísima,Lacteos y derivados,5,24,2466,0.0,0.0,2.0,0,0.0
-7790742335500,Leche Entera 3% Uat La Serenísima 1 Lt,La Serenísima,Lacteos y derivados,5,24,2236,0.0,24.0,24.0,0,24.0
+7790742335500,Leche Entera 3% Uat La Serenísima 1 Lt,La Serenísima,Lacteos y derivados,5,24,2236,0.0,24.0,24.0,0,28.0
 7798338290028,Leche Entera Larga Vida Tradición Tres Niñas 1 Lt,Tres Niñas,Lacteos y derivados,5,24,2324,24.0,0.0,0.0,0,0.0
 7790742333605,Leche UAT Parcialmente Descremada Zero Lactos Serenísima 1 Lt,La Serenísima,Lacteos y derivados,5,24,2472,0.0,6.0,10.0,0,6.0
 7798060850026,Manteca Calidad Extra Tonadita 200 Gr,Tonadita,Lacteos y derivados,5,24,2478,1.0,0.0,0.0,0,0.0
@@ -97,6 +98,9 @@ sepa_id,desc,marca,rubro,cad,prov,suc,Popular,Media,Ejecutiva,Tecnologica,Repres
 7791070000696,Papel Higiénico Texturado Campanita Pack 4 Un 120 Mt,Campanita,Limpieza del hogar,5,24,476,2.0,0.0,0.0,0,0.0
 7790250056881,Rollos de Cocina Clásico 50 Paños Sussex 3 Un,Sussex,Limpieza del hogar,5,24,2422,0.0,2.0,2.0,0,2.0
 7891150000971,Suavizante para Ropa Concentrado Cuidado Intesivo Comfor 500 Ml,Comfort,Limpieza del hogar,5,24,2504,0.0,1.0,2.0,0,1.0
+8445290057433,Alimento para Gatos Adultos Pescado y Pollo Cat Chow 1 Kg,Cat Chow,Mascotas,5,24,2397,0.0,1.0,1.0,0,0.5
+8445290944559,Alimento para Perro Cachorro Gran Comienzo Dog Chow 3 Kg,Dog Chow,Mascotas,5,24,1627,0.0,0.0,1.0,0,0.0
+7613287613431,Alimento para Perros Adultos Bolsa Dogui 3 Kg,Dogui,Mascotas,5,24,1665,0.0,1.0,0.0,0,1.0
 7791120031557,Arroz Largo Fino 00000 Molinos Ala 1 Kg,Molinos Ala,Pan y cereales,5,24,2423,3.0,0.0,0.0,0,0.0
 7790070431417,Arroz Parboil Bolsa Gallo Oro 1 Kg,Gallo Oro,Pan y cereales,5,24,2310,0.0,3.0,3.0,0,3.0
 7792170555420,Avena Integral Instantánea Quaker 500 Gr,Quaker,Pan y cereales,5,22,97,0.0,1.0,1.0,0,1.0
@@ -116,3 +120,5 @@ sepa_id,desc,marca,rubro,cad,prov,suc,Popular,Media,Ejecutiva,Tecnologica,Repres
 7793890258783,Pan con Salvado Lactal 560 Gr,Lactal,Pan y cereales,4,23,2170,0.0,0.0,4.0,0,0.0
 7793890258769,Pan de Mesa Blanco Chico Lactal 315 Gr,Lactal,Pan y cereales,4,23,2177,0.0,3.0,0.0,0,2.0
 7790580138721,Polenta Prestopronta 730 Gr,Prestopronta,Pan y cereales,5,24,2375,1.0,1.0,0.0,0,1.0
+7790040133587,Alfajor Minitorta Clásica Águila 69 Gr,Águila,Snacks y golosinas,5,24,2408,0.0,4.0,6.0,0,4.0
+0000077953124,Chocolate con Maní Cofler Block 38 Gr,Cofler,Snacks y golosinas,5,24,2431,0.0,1.0,2.0,0,1.0
