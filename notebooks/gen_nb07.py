@@ -469,12 +469,15 @@ print(f'Meses disponibles: {len(_meses_disp)}  ({_meses_disp[0]} → {_meses_dis
 
 # ── CELL 7 — LECTURA SEMANAL ───────────────────────────────────────────────────
 cells.append(cell_code(r'''# ============================================================
-# CELDA 7 — Lectura SEMANAL de precios (una fila por sucursal×EAN×semana ISO)
+# CELDA 7 — Lectura SEMANAL de precios (colapsa frescos a TIPO para no reventar RAM)
 # ============================================================
-# Colapsa los días a la MEDIANA semanal por (sucursal, EAN, semana). Cachea meses
-# cerrados; el mes en curso se relee siempre fresco. Autodetecta centavos/pesos por mes.
+# Empaquetado: item = EAN. Fresco: item = TIPO (mediana de variantes, $/kg o $/docena),
+# COLAPSADO EN LA LECTURA (de ~8k EANs de frescos a 20 tipos) para no acumular un panel
+# gigante. Cachea meses cerrados; el mes en curso se relee siempre fresco. Autodetecta
+# centavos/pesos por mes.
+_SKR = ['id_comercio','id_bandera','id_sucursal']
 _cache_key  = hashlib.md5('|'.join(sorted(EANS_LECTURA)).encode()).hexdigest()[:8]
-_cache_path = CACHE_DIR / f'sem_{_cache_key}.parquet'
+_cache_path = CACHE_DIR / f'sem_{_cache_key}_v2.parquet'   # v2 = esquema colapsado item/price
 
 def _leer_mes(_lbl):
     _zip_path, _archs = _mapa_mes[_lbl]
@@ -519,44 +522,65 @@ def _leer_mes(_lbl):
                       as_index=False)['precio'].median()
     return _df
 
-# Meses cerrados: caché incremental
+_FR_MULT = {t: (1000.0 if FRESCO_INFO[t]['unidad'] == 'kg' else 12.0) for t in FRESCO_INFO}
+def _colapsar(_df):
+    # per-EAN -> per-ITEM. Empaquetado: item=EAN. Fresco: item=TIPO normalizado
+    # ($/kg o $/docena), mediana de variantes por sucursal-semana. Reduce ~8k EANs a 20 tipos.
+    if _df is None or len(_df) == 0: return None
+    _e = (_df[_df['ean_norm'].isin(EANS_EMP)][_SKR + ['semana','ean_norm','precio']]
+          .rename(columns={'ean_norm':'item','precio':'price'}))
+    _f = _df[_df['ean_norm'].isin(EANS_FRESCOS)]
+    if len(_f):
+        _f = _f.copy()
+        _f['item']  = _f['ean_norm'].map(EAN_TIPO)
+        _f['price'] = _f['precio'] / _f['ean_norm'].map(EAN_NORMFACTOR) * _f['item'].map(_FR_MULT)
+        _f = _f[_f['price'].notna() & (_f['price'] > 0)]
+        _fv = _f.groupby(_SKR + ['semana','item'], as_index=False)['price'].median()
+    else:
+        _fv = pd.DataFrame(columns=_SKR + ['semana','item','price'])
+    return pd.concat([_e[_SKR + ['semana','item','price']], _fv], ignore_index=True)
+
+# Meses cerrados: caché incremental (esquema COLAPSADO item/price)
 if USE_CACHE and _cache_path.exists():
     _cache = pd.read_parquet(_cache_path)
-    _cache['mes'] = _cache['semana'].map(_mes_de_semana)
-    _cache = _cache[_cache['mes'] < _mes_actual].drop(columns='mes').copy()
+    _cache = _cache[_cache['semana'].map(_mes_de_semana) < _mes_actual].copy()
 else:
-    _cache = pd.DataFrame(columns=['id_comercio','id_bandera','id_sucursal','ean_norm','semana','precio'])
-_cache['_mes'] = _cache['semana'].map(_mes_de_semana) if len(_cache) else pd.Series(dtype=str)
-_en_cache = set(_cache['_mes'].unique()) if len(_cache) else set()
+    _cache = pd.DataFrame(columns=_SKR + ['semana','item','price'])
+_en_cache = set(_cache['semana'].map(_mes_de_semana).unique()) if len(_cache) else set()
 _faltantes = [m for m in _meses_disp if m < _mes_actual and m not in _en_cache]
 _nuevos = []
 for _lbl in tqdm(_faltantes, desc='Meses cerrados'):
-    _d = _leer_mes(_lbl)
-    if _d is not None: _nuevos.append(_d)
+    _dc = _colapsar(_leer_mes(_lbl))
+    if _dc is not None: _nuevos.append(_dc)
+    gc.collect()
 if _nuevos:
-    _cache = pd.concat([_cache.drop(columns='_mes', errors='ignore')] + _nuevos, ignore_index=True)
+    _cache = pd.concat([_cache] + _nuevos, ignore_index=True)
     if USE_CACHE:
         _cache.to_parquet(_cache_path, compression='snappy', index=False)
         print(f'Caché actualizado: {_cache_path.name}')
-_cache = _cache.drop(columns='_mes', errors='ignore')
+del _nuevos; gc.collect()
 
-# Mes en curso: fresco
-_actual = _leer_mes(_mes_actual)
+# Mes en curso: fresco. Guardamos el crudo por-EAN (datos_ult_raw) para los diagnósticos.
+datos_ult_raw = _leer_mes(_mes_actual)
+if datos_ult_raw is not None:
+    datos_ult_raw = datos_ult_raw.copy(); datos_ult_raw['mes'] = _mes_actual
+_actual = _colapsar(datos_ult_raw)
 datos_sem = pd.concat([_cache] + ([_actual] if _actual is not None else []), ignore_index=True)
+del _cache, _actual; gc.collect()
 if len(datos_sem) == 0:
     raise RuntimeError('Sin datos para los EANs configurados. Revisá las canastas y los frescos (CELDA 1).')
 # Re-agregar semanas partidas entre meses/archivos
-datos_sem = datos_sem.groupby(['id_comercio','id_bandera','id_sucursal','ean_norm','semana'],
-                              as_index=False)['precio'].median()
+datos_sem = datos_sem.groupby(_SKR + ['item','semana'], as_index=False)['price'].median()
 datos_sem['mes'] = datos_sem['semana'].map(_mes_de_semana)
 datos_sem = datos_sem[datos_sem['mes'] >= MES_INICIO_HISTORICO].copy()
 _sems = sorted(datos_sem['semana'].unique())
 ULTIMA_SEMANA = _sems[-1]
-print(f'Observaciones (sucursal×EAN×semana): {len(datos_sem):,}')
+_TIPOS_FR = set(FRESCO_INFO)
+print(f'Observaciones (sucursal×item×semana): {len(datos_sem):,}')
 print(f'Semanas: {_sems[0]} → {_sems[-1]} ({len(_sems)} semanas) | Sucursales: '
-      f'{datos_sem.groupby(["id_comercio","id_bandera","id_sucursal"]).ngroups:,}')
-print(f'EANs con datos: empaquetados {datos_sem[datos_sem["ean_norm"].isin(EANS_EMP)]["ean_norm"].nunique()}/{len(EANS_EMP)} · '
-      f'frescos {datos_sem[datos_sem["ean_norm"].isin(EANS_FRESCOS)]["ean_norm"].nunique()}/{len(EANS_FRESCOS)}')
+      f'{datos_sem.groupby(_SKR).ngroups:,}')
+print(f'Items con datos: empaquetados {datos_sem[datos_sem["item"].isin(EANS_EMP)]["item"].nunique()}/{len(EANS_EMP)} · '
+      f'tipos frescos {datos_sem[datos_sem["item"].isin(_TIPOS_FR)]["item"].nunique()}/{len(_TIPOS_FR)}')
 ''' ))
 
 # ── CELL 8 — COSTO POR SUCURSAL×SEMANA (empaquetados + frescos, por rubro) ──────
@@ -571,22 +595,9 @@ cells.append(cell_code(r'''# ===================================================
 #    semana (para ese EAN o tipo). Costo de canasta = Σ (precio × cantidad), por rubro.
 #  - Serie nacional = MEDIANA y PROMEDIO(sin outliers) del costo ENTRE sucursales.
 _SK = ['id_comercio','id_bandera','id_sucursal']
-_dd = datos_sem[~datos_sem['id_comercio'].isin(CADENAS_FILTRAR)].copy()
-
-# ── Precio de ítem por sucursal-semana: empaquetados (item=ean) + frescos (item=tipo) ──
-_emp = _dd[_dd['ean_norm'].isin(EANS_EMP)][_SK + ['semana','ean_norm','precio']].rename(columns={'ean_norm':'item'})
-_emp['price'] = _emp['precio']
-_fr = _dd[_dd['ean_norm'].isin(EANS_FRESCOS)].copy()
-if len(_fr):
-    _fr['tipo'] = _fr['ean_norm'].map(EAN_TIPO)
-    _fac = _fr['ean_norm'].map(EAN_NORMFACTOR)
-    _mult = _fr['tipo'].map(lambda t: 1000.0 if FRESCO_INFO[t]['unidad']=='kg' else 12.0)
-    _fr['price'] = _fr['precio'] / _fac * _mult   # $/kg o $/docena
-    _frsv = (_fr.groupby(_SK + ['semana','tipo'], as_index=False)['price'].median()
-               .rename(columns={'tipo':'item'}))
-else:
-    _frsv = pd.DataFrame(columns=_SK + ['semana','item','price'])
-sval = pd.concat([_emp[_SK + ['semana','item','price']], _frsv[_SK + ['semana','item','price']]], ignore_index=True)
+# datos_sem ya viene COLAPSADO en CELDA 7: item = EAN (empaquetado) o TIPO fresco
+# (ya normalizado a $/kg o $/docena). No hace falta re-normalizar acá.
+sval = datos_sem[~datos_sem['id_comercio'].isin(CADENAS_FILTRAR)][_SK + ['semana','item','price']].copy()
 
 # Mediana nacional por (item, semana) — referencia de imputación
 nac_item = sval.groupby(['item','semana'])['price'].median().rename('nac').reset_index()
@@ -850,7 +861,12 @@ cells.append(cell_code(r'''# ===================================================
 # Cobertura geográfica por ítem en el ÚLTIMO MES (n_cadenas / n_provincias / n_sucursales).
 # Ítems con baja cobertura NO son comparables entre cadenas/provincias → candidatos a
 # reemplazar. Frescos: además nº de variantes (EANs) capturadas por la regla de nombre.
-_dm = datos_sem[datos_sem['mes']==_ult_mes].merge(suc_geo[_SK+['cadena','provincia']], on=_SK, how='left')
+# Se usa el crudo por-EAN del último mes (datos_ult_raw), porque datos_sem viene
+# colapsado a TIPOS para los frescos (así se preserva el nº de variantes por tipo).
+if datos_ult_raw is None or len(datos_ult_raw) == 0:
+    _dm = pd.DataFrame(columns=_SK + ['ean_norm','semana','precio','mes','cadena','provincia'])
+else:
+    _dm = datos_ult_raw.merge(suc_geo[_SK+['cadena','provincia']], on=_SK, how='left')
 
 # --- Empaquetados ---
 _emp_cov = (_dm[_dm['ean_norm'].isin(EANS_EMP)].groupby('ean_norm')

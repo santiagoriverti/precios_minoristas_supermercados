@@ -642,3 +642,21 @@ cerrado (`econ_{hash}.parquet`), mes en curso fresco. Salida **tidy/long** (6 ho
   cargadas ahí.
 
 **PENDIENTE**: usuario pasa los 10 EAN → los embebo y re-pusheo; después corre nb02 y revisa.
+
+## nb07 — FIX OOM: colapsar frescos a TIPO en la lectura [2026-09-03]
+
+Síntoma: el usuario corrió nb07, leyó los 31 meses cerrados (~2 hs) y **crasheó por RAM** al
+concatenar. Causa: `datos_sem` acumulaba sucursal×EAN×semana con **8.415 EANs de frescos**
+(variantes de balanza) × 3.600 sucursales × 31 meses → decenas de millones de filas.
+
+Fix (CELDA 7): nueva `_colapsar(_df)` que colapsa los frescos a su **TIPO** (20) ya en la lectura
+mensual — empaquetado item=EAN (90), fresco item=TIPO normalizado a $/kg o $/docena (mediana de
+variantes). `datos_sem` pasa de ~8.500 items a ~110 (**77x menos filas**). Caché bumped a
+`sem_{hash}_v2.parquet` (esquema item/price). CELDA 8 usa `sval` directo (sin re-normalizar).
+CELDA 13 usa `datos_ult_raw` (crudo por-EAN del último mes) para preservar los diagnósticos por
+variante. `gc.collect()`/`del` por mes. Validado: `_colapsar` sintético (Banana 2200 $/kg = median
+2000/2400), compila 15 celdas, sin refs viejas a datos_sem['ean_norm'].
+
+Nota: el fix arregla la RAM, NO el tiempo de lectura (~2 hs releyendo ZIPs es inherente); pero
+ahora completa y **guarda el caché v2** → reruns rápidos. El caché viejo (per-EAN) no se salvó
+(OOM antes del save), así que hay que rehacer la lectura una vez.
