@@ -2329,19 +2329,40 @@ cells.append(cell_code(r'''# ===================================================
 # por PROVINCIA y por CADENA. Historia completa (>= MES_INICIO_HISTORICO).
 # Cachea meses cerrados; relee el mes en curso fresco.
 
-# --- CONFIG: 10 productos representativos (EAN -> nombre). EDITAR con tus 10 EAN ---
+# ════════════════════════════════════════════════════════════════════════════════
+# CONFIG PRODUCTOS (EDITAR ACÁ) — EAN -> nombre. Precio de cada uno por semana/mes,
+# a nivel nacional / provincia / cadena. Todos verificados cad=5 / 24 provincias.
+# Para cambiar la lista, editá este diccionario antes de ejecutar.
+# ════════════════════════════════════════════════════════════════════════════════
 PRODUCTOS_ECONOMETRIA = {
-    '7790895000997': 'Coca Cola 2.25 L',
-    '7790742335500': 'Leche Entera La Serenisima 1 L',
-    '7790387013610': 'Yerba Mate Taragui 1 Kg',
+    # --- Bebidas ---
+    '7790290101602': 'Fernet Branca 750 Ml',
+    '7790895000232': 'Coca Cola Original Lata 354 Cc',
+    '7790895067587': 'Coca Cola sin Azucar Lata 354 Cc',
+    '7791250001345': 'Vodka Smirnoff 750 Cc',
+    '7790950133325': 'Aperitivo Amargo Terma Light 1.35 Lt',
+    '7790070760845': 'Espumante Brut Rose Nieto Senetiner 750 Ml',
+    # --- Almacén ---
     '7790070012050': 'Aceite Girasol Cocinero 900 Ml',
-    '7790070336385': 'Fideos Spaghetti Lucchetti 500 Gr',
-    '7791120031557': 'Arroz Molinos Ala 1 Kg',
-    '7792540250450': 'Azucar Ledesma 1 Kg',
-    '7790550000157': 'Cafe Molido Cabrales 250 Gr',
-    '7790132098459': 'Lavandina Ayudin 1 L',
-    '7791813888468': 'Gaseosa Cola Pepsi 2 L',
-}
+    '7790070265098': 'Aceite Oliva Puro sin TACC 500 Ml',
+    '7790387013610': 'Yerba Mate Taragui 4Flex 1 Kg',
+    '7791004000051': 'Sal Entrefina Celusal 1 Kg',
+    '7791866001364': 'Mayonesa Natura Doypack 500 Ml',
+    '7794000008557': 'Caldo de Verdura Knorr 12 Un',
+    '7790070318312': 'Fideos Fettucini Lucchetti 500 Gr',
+    '7790070336293': 'Fideos Tirabuzon Matarazzo 500 Gr',
+    '8445291121904': 'Cacao sin TACC Nesquik 800 Gr',
+    '7622201808860': 'Galletitas Boca de Dama Terrabusi 170 Gr',
+    # --- Frescos ---
+    '7790742625205': 'Dulce de Leche Colonial La Serenisima 400 Gr',
+    '7790742358509': 'Leche Parc Descremada La Serenisima 1 L',
+    '7791337061361': 'Queso Crema Casancrem 290 Gr',
+    # --- Limpieza / Perfumería ---
+    '7793253003753': 'Lavandina Glaciar Ayudin 2 Lt',
+    '7790740000264': 'Shampoo Plusbelle 1000 Cc',
+    '7791070000696': 'Papel Higienico Campanita 4 Un',
+    '7790010002714': 'Toallas Femeninas Siempre Libre 8 Un',
+}   # 23 productos
 ECON_MIN_SUC = 5          # mínimo de sucursales para reportar una celda provincia/cadena
 ECON_XLSX    = OUTPUT_DIR / f'datos_econometria_{ULTIMO_MES}.xlsx'   # se guarda en el Drive
 
