@@ -336,7 +336,7 @@ PESOS_POBLACION = {
 
 # Maestro de productos (interno + SEPA completo del Drive) -> descripcion/rubro/grams/unidades
 _mp_raw = leer_maestro('Maestro de Productos Interno.xlsx', dtype=str,
-                       usecols=['producto_sepa_id','producto_descripcion','producto_marca','rubro',
+                       usecols=['producto_sepa_id','producto_descripcion','producto_marca','rubro','categoria',
                                 'producto_cantidad_presentacion','producto_unidad_medida_presentac'])
 _msepa = None
 try:
@@ -353,8 +353,9 @@ except Exception as _e:
 def _prep_master(_df):
     _df = _df.rename(columns={'producto_descripcion':'descripcion','producto_marca':'marca'})
     if 'rubro' not in _df.columns: _df['rubro'] = ''
+    if 'categoria' not in _df.columns: _df['categoria'] = ''   # el maestro SEPA puede no traerla
     _df['ean_norm'] = _df['producto_sepa_id'].map(normalizar_ean)
-    return _df[['ean_norm','descripcion','marca','rubro',
+    return _df[['ean_norm','descripcion','marca','rubro','categoria',
                 'producto_cantidad_presentacion','producto_unidad_medida_presentac']]
 _base = _prep_master(_mp_raw)
 if _msepa is not None:
@@ -369,8 +370,9 @@ _g1 = [_to_gramos(a, b) for a, b in zip(MP_META['producto_cantidad_presentacion'
 _g2 = [_gramos_desc(x) for x in MP_META['descripcion']]
 MP_META['grams'] = [(_a if (_a == _a) else _b) for _a, _b in zip(_g1, _g2)]
 MP_META['unidades'] = [_unidades_desc(x) for x in MP_META['descripcion']]
+MP_META['categoria'] = MP_META['categoria'].fillna('').astype(str).str.strip()
 MP_META = (MP_META.dropna(subset=['ean_norm']).drop_duplicates('ean_norm')
-           .set_index('ean_norm')[['descripcion','marca','rubro','grams','unidades']])
+           .set_index('ean_norm')[['descripcion','marca','rubro','categoria','grams','unidades']])
 print(f'  Maestro de productos (total): {len(MP_META):,} EANs con metadata')
 print('Maestros OK')
 ''' ))
@@ -379,9 +381,19 @@ print('Maestros OK')
 cells.append(cell_code(r'''# ============================================================
 # CELDA 5 — Resolver EANs de FRESCOS por regla de nombre (el EAN cambia por cadena)
 # ============================================================
-# Para cada tipo fresco, candidatos = EANs del maestro cuya descripción matchea inc y no exc.
-# Se normaliza el precio a la unidad del tipo: kg (usa grams) o doc (usa unidades).
+# Para cada tipo fresco, candidatos = EANs del maestro cuya descripción matchea inc y no exc,
+# Y ADEMÁS pertenecen a la categoría correcta (Frutas y Verduras / Carnicería / Huevos). Ese
+# filtro por categoría es clave: descarta procesados que contienen el nombre (jugo en polvo
+# "banana", sazonador "cebolla", ñoquis de "papa", comida de perro sabor "pollo"...) que antes
+# inflaban el $/kg. Se normaliza a la unidad del tipo: kg (usa grams) o doc (usa unidades).
 _desc_all = MP_META['descripcion'].fillna('').astype(str).str.lower()
+_cat_all  = MP_META['categoria'].fillna('').astype(str)
+# rubro del tipo -> categorías del maestro que valen como fresco real
+_CAT_FRESCO = {'Frutas':   {'Frutas y Verduras'},
+               'Verduras': {'Frutas y Verduras'},
+               'Carne':    {'Carnicería','Carniceria'},
+               'Huevos':   {'Huevos'}}
+_GRAMS_MIN_KG = 250   # piso: descarta bandejas/condimentos chicos que inflan el $/kg
 
 EAN_TIPO = {}       # ean_norm -> tipo fresco
 FRESCO_INFO = {}    # tipo -> {rubro, unidad, qty:(pop,med,eje)}
@@ -391,10 +403,16 @@ for _tipo, _cfg in TIPOS_FRESCOS.items():
     _inc, _exc = _cfg['inc'], _cfg.get('exc', '')
     _m = _desc_all.str.contains(_inc, regex=True)
     if _exc: _m &= ~_desc_all.str.contains(_exc, regex=True)
+    _cats = _CAT_FRESCO.get(_cfg['rubro'])
+    if _cats:
+        # Categoría de fresco real, O categoría desconocida (EANs SEPA-only de balanza que
+        # cambian por cadena y no están en el maestro interno). Así se descarta el ruido
+        # categorizado (jugo/sazonador/ñoquis...) sin perder los balanza SEPA-only.
+        _m &= (_cat_all.isin(_cats) | (_cat_all == ''))
     _cand = MP_META[_m].copy()
     # normalizador de unidad segun tipo
     if _cfg['unidad'] == 'kg':
-        _cand = _cand[_cand['grams'].notna() & (_cand['grams'] > 0)]
+        _cand = _cand[_cand['grams'].notna() & (_cand['grams'] >= _GRAMS_MIN_KG)]
         _fac = _cand['grams']            # $/g -> luego *1000 = $/kg
     else:  # doc
         _u = _cand['unidades'].fillna(1).clip(lower=1)

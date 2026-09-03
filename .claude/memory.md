@@ -660,3 +660,24 @@ variante. `gc.collect()`/`del` por mes. Validado: `_colapsar` sintético (Banana
 Nota: el fix arregla la RAM, NO el tiempo de lectura (~2 hs releyendo ZIPs es inherente); pero
 ahora completa y **guarda el caché v2** → reruns rápidos. El caché viejo (per-EAN) no se salvó
 (OOM antes del save), así que hay que rehacer la lectura una vez.
+
+## nb07 — FIX precios de frescos inflados (selección por categoría) [2026-09-03]
+
+1ª corrida real OK (sin OOM, 1h08, 140 semanas, 3.065 suc, 0 items sin datos). PERO varios
+**precios de frescos salían inflados 3-10x**: Banana $16.055/kg, Cebolla $18.356, Papa $11.615,
+Zapallo $15.359, Pollo $17.925, Carne picada $29.990.
+
+Causa (diagnóstico con el maestro): la **selección por nombre era demasiado permisiva** — capturaba
+procesados con el nombre de la fruta/verdura (jugo en polvo "banana", sazonador "cebolla", ñoquis de
+"papa", comida de perro sabor "pollo", suplementos whey, jabón/pintura "manzana"...), todos de pocos
+gramos → $/kg altísimo que inflaba la mediana (60-63% de las "variantes" eran basura).
+
+Fix (CELDA 4-5): (a) se lee `categoria` al maestro; (b) los candidatos frescos ahora exigen
+**categoría de fresco real** (`Frutas y Verduras` / `Carnicería` / `Huevos`) **O categoría desconocida**
+(EANs SEPA-only de balanza que cambian por cadena y no están en el maestro interno); (c) **piso de
+gramos ≥250** para kg. Así se descarta el ruido categorizado sin perder los balanza SEPA-only.
+Simulado sobre el maestro: los 20 tipos quedan como fresco real a ~1 kg (Banana Ecuador 1 Kg, Cebolla
+Morada 1 Kg, Cuarto Trasero Pollo 1 Kg, Carne Picada 1 Kg, Huevos 30 Un). Compila 15 celdas.
+
+Requiere **re-correr nb07** (cambia EANS_FRESCOS → cambia el hash del caché → re-lee ~1h, pero el
+universo de frescos es más chico → más rápido y con precios correctos).
