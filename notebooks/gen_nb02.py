@@ -2318,6 +2318,309 @@ _out_traz = OUTPUT_DIR / f'trazabilidad_candidatos_{ULTIMO_MES}.xlsx'
 df_traz.to_excel(_out_traz, index=False)
 print(f'Tabla completa guardada: {_out_traz.name}')"""))
 
+# ── CELL 22 — DATOS ECONOMETRIA (motor semanal + mensual, histórico completo) ────
+cells.append(cell_code(r'''# ============================================================
+# CELDA 22 — DATOS ECONOMETRIA: series SEMANAL + MENSUAL por nivel (histórico completo)
+# ============================================================
+# Exporta un Excel tidy (formato largo) para análisis de series de tiempo:
+#   - Costo de CADA canasta activa (cantidad_01..06 de la hoja Selección)
+#   - Precio de 10 PRODUCTOS representativos (config abajo)
+# con frecuencia SEMANAL (ISO) y MENSUAL, a nivel NACIONAL (ponderado por población),
+# por PROVINCIA y por CADENA. Historia completa (>= MES_INICIO_HISTORICO).
+# Cachea meses cerrados; relee el mes en curso fresco.
+
+# --- CONFIG: 10 productos representativos (EAN -> nombre). EDITAR con tus 10 EAN ---
+PRODUCTOS_ECONOMETRIA = {
+    '7790895000997': 'Coca Cola 2.25 L',
+    '7790742335500': 'Leche Entera La Serenisima 1 L',
+    '7790387013610': 'Yerba Mate Taragui 1 Kg',
+    '7790070012050': 'Aceite Girasol Cocinero 900 Ml',
+    '7790070336385': 'Fideos Spaghetti Lucchetti 500 Gr',
+    '7791120031557': 'Arroz Molinos Ala 1 Kg',
+    '7792540250450': 'Azucar Ledesma 1 Kg',
+    '7790550000157': 'Cafe Molido Cabrales 250 Gr',
+    '7790132098459': 'Lavandina Ayudin 1 L',
+    '7791813888468': 'Gaseosa Cola Pepsi 2 L',
+}
+ECON_MIN_SUC = 5          # mínimo de sucursales para reportar una celda provincia/cadena
+ECON_XLSX    = OUTPUT_DIR / f'datos_econometria_{ULTIMO_MES}.xlsx'   # se guarda en el Drive
+
+import datetime as _dt
+PRODUCTOS_ECONOMETRIA = {normalizar_ean(k): v for k, v in PRODUCTOS_ECONOMETRIA.items()}
+PROD_ECON_EANS = set(PRODUCTOS_ECONOMETRIA)
+EANS_ECON = set(CANASTA_EANS_NORM) | PROD_ECON_EANS
+_PAT_P8 = re.compile(r'^precio_\d{8}$')
+
+def _fecha_de_periodo(_freq, _periodo):
+    if _freq == 'mensual':
+        _y, _m = _periodo.split('-'); return f'{_y}-{_m}-01'
+    _y, _w = _periodo.split('-W')
+    return _dt.date.fromisocalendar(int(_y), int(_w), 1).isoformat()
+
+def _leer_mes_dia_econ(_lbl):
+    # Devuelve [id_comercio,id_bandera,id_sucursal,ean_norm,fecha,precio] del mes _lbl
+    _zip_path, _archs = _mapa_mes[_lbl]
+    _rows = []
+    for _archivo in sorted(_archs):
+        _tmp = TMP_DIR / Path(_archivo).name
+        with zipfile.ZipFile(_zip_path) as _zf:
+            with _zf.open(_archivo) as _s, open(_tmp, 'wb') as _d:
+                shutil.copyfileobj(_s, _d, length=4*1024*1024)
+        with gzip.open(_tmp, 'rt', encoding='utf-8', errors='replace') as _g:
+            for _ch in pd.read_csv(_g, dtype=str, chunksize=300_000, low_memory=False):
+                _ch['ean_norm'] = _ch['id_producto'].apply(normalizar_ean)
+                _ch = _ch[_ch['ean_norm'].isin(EANS_ECON)]
+                if len(_ch) == 0: continue
+                for _c in ['id_comercio','id_bandera','id_sucursal']:
+                    _ch[_c] = _ch[_c].astype(str)
+                _ch['_k'] = list(zip(_ch['id_comercio'], _ch['id_bandera'], _ch['id_sucursal']))
+                _ch = _ch[_ch['_k'].isin(IDS_PAIS)].drop(columns='_k')
+                if len(_ch) == 0: continue
+                _cp = [c for c in _ch.columns if _PAT_P8.match(c)]
+                if not _cp: continue
+                _m = _ch.melt(id_vars=['id_comercio','id_bandera','id_sucursal','ean_norm'],
+                              value_vars=_cp, var_name='_c', value_name='precio_raw')
+                _m['precio'] = pd.to_numeric(_m['precio_raw'].replace('NA', np.nan), errors='coerce')
+                _m = _m[_m['precio'].notna() & (_m['precio'] > 0)]
+                if len(_m) == 0: continue
+                _m['fecha'] = pd.to_datetime(_m['_c'].str[-8:], format='%Y%m%d', errors='coerce')
+                _rows.append(_m[['id_comercio','id_bandera','id_sucursal','ean_norm','fecha','precio']])
+        _tmp.unlink(missing_ok=True)
+    if not _rows: return None
+    _dd = pd.concat(_rows, ignore_index=True)
+    _dd = _dd[_dd['fecha'].notna()].copy()
+    if len(_dd) and _dd['precio'].median() > 10_000:
+        _dd['precio'] /= 100
+    return _dd
+
+def _agg_desde_diario(_d):
+    # Toma el df diario y devuelve filas LARGAS (tidy) para canastas y productos,
+    # frecuencia semanal + mensual, niveles nacional/provincia/cadena.
+    if _d is None or len(_d) == 0: return None
+    _d = _d.copy()
+    _d['mensual'] = _d['fecha'].dt.strftime('%Y-%m')
+    _d['semanal'] = _d['fecha'].dt.strftime('%G-W%V')
+    _k3 = ['id_comercio','id_bandera','id_sucursal']
+    _out = []
+    for _freq in ['mensual','semanal']:
+        _key = _k3 + ['ean_norm', _freq]
+        _md = _d.groupby(_key)['precio'].transform('median')
+        _ok = (_d['precio'] >= _md/4) & (_d['precio'] <= _md*4)
+        _gm = _d.groupby(_key)['precio'].median().rename('precio_med')
+        _gp = _d[_ok].groupby(_key)['precio'].mean().rename('precio_prom')
+        _px = pd.concat([_gm, _gp], axis=1).reset_index()
+        _px['precio_prom'] = _px['precio_prom'].fillna(_px['precio_med'])
+        _px = _px[~_px['id_comercio'].isin(CADENAS_FILTRAR)]
+        _px = _px.merge(suc_geo_clean[_k3 + ['PROVINCIA_NORM','cadena']], on=_k3, how='inner')
+        if len(_px) == 0: continue
+        _nac = (_px.groupby(['ean_norm', _freq])
+                   .agg(nac_med=('precio_med','median'), nac_prom=('precio_prom', _pmean))
+                   .reset_index())
+        _px = _px.merge(_nac, on=['ean_norm', _freq], how='left')
+
+        # ---------------- CANASTAS ----------------
+        for _col_id, _canasta in CANASTAS.items():
+            _nm_can = CANASTA_NAMES[_col_id]
+            _rec = pd.DataFrame([(e, q) for e, (nm, q, ct) in _canasta.items()],
+                                columns=['ean_norm','qty'])
+            _min_p = min(MIN_PRODUCTOS_PROPIOS, len(_canasta))
+            _pr = _px.merge(_rec, on='ean_norm', how='inner')
+            if len(_pr) == 0: continue
+            _pr['store_m'] = _pr['precio_med']  * _pr['qty']
+            _pr['store_p'] = _pr['precio_prom'] * _pr['qty']
+            _pr['nacv_m']  = _pr['nac_med']  * _pr['qty']
+            _pr['nacv_p']  = _pr['nac_prom'] * _pr['qty']
+            _g = (_pr.groupby(_k3 + [_freq, 'PROVINCIA_NORM', 'cadena'])
+                     .agg(S_store_m=('store_m','sum'), S_store_p=('store_p','sum'),
+                          S_nac_m=('nacv_m','sum'),   S_nac_p=('nacv_p','sum'),
+                          n_prop=('qty','count')).reset_index())
+            _rn = _nac.merge(_rec, on='ean_norm', how='inner')
+            _rn['am'] = _rn['nac_med']  * _rn['qty']
+            _rn['ap'] = _rn['nac_prom'] * _rn['qty']
+            _allnac = _rn.groupby(_freq)[['am','ap']].sum().reset_index().rename(
+                columns={'am':'all_m','ap':'all_p'})
+            _g = _g.merge(_allnac, on=_freq, how='left')
+            _g['valor_med']  = _g['S_store_m'] + (_g['all_m'] - _g['S_nac_m'])
+            _g['valor_prom'] = _g['S_store_p'] + (_g['all_p'] - _g['S_nac_p'])
+            _g = _g[_g['n_prop'] >= _min_p]
+            if len(_g) == 0: continue
+
+            # provincia
+            _pv = (_g.groupby([_freq,'PROVINCIA_NORM'])
+                     .agg(valor_mediana=('valor_med','median'),
+                          valor_promedio=('valor_prom', _pmean),
+                          n_sucursales=('valor_med','size')).reset_index())
+            _pv = _pv[_pv['n_sucursales'] >= ECON_MIN_SUC]
+            for _, r in _pv.iterrows():
+                _out.append((_freq, r[_freq], 'canasta', _nm_can, 'provincia', r['PROVINCIA_NORM'],
+                             int(r['n_sucursales']), r['valor_mediana'], r['valor_promedio']))
+            # cadena
+            _cd = (_g.groupby([_freq,'cadena'])
+                     .agg(valor_mediana=('valor_med','median'),
+                          valor_promedio=('valor_prom', _pmean),
+                          n_sucursales=('valor_med','size')).reset_index())
+            _cd = _cd[_cd['n_sucursales'] >= ECON_MIN_SUC]
+            for _, r in _cd.iterrows():
+                _out.append((_freq, r[_freq], 'canasta', _nm_can, 'cadena', r['cadena'],
+                             int(r['n_sucursales']), r['valor_mediana'], r['valor_promedio']))
+            # nacional ponderado por población (mediana provincial -> peso poblacional)
+            _pvw = _pv.copy()
+            _pvw['peso'] = _pvw['PROVINCIA_NORM'].map(PESOS_POBLACION).fillna(0)
+            for _per, _sub in _pvw.groupby(_freq):
+                _w = _sub[_sub['peso'] > 0]['peso'].sum()
+                if _w > 0:
+                    _vm = (_sub['valor_mediana'] * _sub['peso']).sum() / _w
+                    _vp = (_sub['valor_promedio'] * _sub['peso']).sum() / _w
+                else:
+                    _vm = _sub['valor_mediana'].mean(); _vp = _sub['valor_promedio'].mean()
+                _nsu = int(_g[_g[_freq] == _per]['id_sucursal'].nunique())
+                _out.append((_freq, _per, 'canasta', _nm_can, 'nacional', 'Nacional',
+                             _nsu, _vm, _vp))
+
+        # ---------------- PRODUCTOS ----------------
+        _pp = _px[_px['ean_norm'].isin(PROD_ECON_EANS)].copy()
+        if len(_pp):
+            _pp['prod'] = _pp['ean_norm'].map(PRODUCTOS_ECONOMETRIA)
+            # provincia
+            _ppv = (_pp.groupby([_freq,'prod','PROVINCIA_NORM'])
+                      .agg(valor_mediana=('precio_med','median'),
+                           valor_promedio=('precio_prom', _pmean),
+                           n_sucursales=('precio_med','size')).reset_index())
+            _ppv = _ppv[_ppv['n_sucursales'] >= ECON_MIN_SUC]
+            for _, r in _ppv.iterrows():
+                _out.append((_freq, r[_freq], 'producto', r['prod'], 'provincia', r['PROVINCIA_NORM'],
+                             int(r['n_sucursales']), r['valor_mediana'], r['valor_promedio']))
+            # cadena
+            _pcd = (_pp.groupby([_freq,'prod','cadena'])
+                      .agg(valor_mediana=('precio_med','median'),
+                           valor_promedio=('precio_prom', _pmean),
+                           n_sucursales=('precio_med','size')).reset_index())
+            _pcd = _pcd[_pcd['n_sucursales'] >= ECON_MIN_SUC]
+            for _, r in _pcd.iterrows():
+                _out.append((_freq, r[_freq], 'producto', r['prod'], 'cadena', r['cadena'],
+                             int(r['n_sucursales']), r['valor_mediana'], r['valor_promedio']))
+            # nacional (mediana y promedio simples entre sucursales)
+            _pnc = (_pp.groupby([_freq,'prod'])
+                      .agg(valor_mediana=('precio_med','median'),
+                           valor_promedio=('precio_prom', _pmean),
+                           n_sucursales=('precio_med','size')).reset_index())
+            for _, r in _pnc.iterrows():
+                _out.append((_freq, r[_freq], 'producto', r['prod'], 'nacional', 'Nacional',
+                             int(r['n_sucursales']), r['valor_mediana'], r['valor_promedio']))
+    if not _out: return None
+    return pd.DataFrame(_out, columns=['frecuencia','periodo','tipo','clave','nivel','grupo',
+                                       'n_sucursales','valor_mediana','valor_promedio'])
+
+# ── Recorrer historia con caché (meses cerrados) + mes en curso fresco ──────────
+_econ_key = hashlib.md5(('|'.join(sorted(EANS_ECON)) + '|econv1').encode()).hexdigest()[:8]
+_econ_cache = CACHE_DIR / f'econ_{_econ_key}.parquet'
+_econ_mes_actual = _meses_disp[-1]
+
+if USE_CACHE and _econ_cache.exists():
+    _econ_df = pd.read_parquet(_econ_cache)
+    _econ_df = _econ_df[_econ_df['_mes_src'] < _econ_mes_actual].copy()
+else:
+    _econ_df = pd.DataFrame()
+
+_en_cache = set(_econ_df['_mes_src'].unique()) if len(_econ_df) else set()
+_falt = [m for m in _meses_disp if m < _econ_mes_actual and m not in _en_cache]
+print(f'Datos econometria: {len(_meses_disp)} meses | en cache: {len(_en_cache)} | a leer: {len(_falt)}')
+_nuevos_e = []
+for _lbl in _falt:
+    _r = _agg_desde_diario(_leer_mes_dia_econ(_lbl))
+    if _r is not None:
+        _r['_mes_src'] = _lbl
+        _nuevos_e.append(_r)
+        print(f'  {_lbl}: {len(_r)} filas')
+    gc.collect()
+if _nuevos_e:
+    _econ_df = pd.concat([_econ_df] + _nuevos_e, ignore_index=True)
+    if USE_CACHE:
+        _econ_df.to_parquet(_econ_cache, compression='snappy', index=False)
+        print(f'Cache econometria actualizado: {_econ_cache.name}')
+
+# Mes en curso: siempre fresco
+_r_act = _agg_desde_diario(_leer_mes_dia_econ(_econ_mes_actual))
+if _r_act is not None:
+    _r_act['_mes_src'] = _econ_mes_actual
+    print(f'  {_econ_mes_actual}: {len(_r_act)} filas (mes en curso — fresco)')
+econ_long = pd.concat([_econ_df] + ([_r_act] if _r_act is not None else []), ignore_index=True)
+econ_long = econ_long[econ_long['periodo'].notna()].copy()
+# Semanas ISO de BORDE: una misma semana partida entre 2 archivos mensuales genera
+# fragmentos duplicados. Se asigna cada semana a su mes "dueño" (el del jueves ISO)
+# y se conserva ese fragmento (el más completo). Los meses no tienen este problema.
+def _owner_mes(_p):
+    _y, _w = _p.split('-W')
+    return _dt.date.fromisocalendar(int(_y), int(_w), 4).strftime('%Y-%m')
+_wk = econ_long[econ_long['frecuencia'] == 'semanal'].copy()
+_ms = econ_long[econ_long['frecuencia'] == 'mensual'].copy()
+if len(_wk):
+    _wk['_own'] = _wk['periodo'].map(_owner_mes)
+    _wk['_is_own'] = (_wk['_own'] == _wk['_mes_src']).astype(int)
+    _wk = (_wk.sort_values('_is_own', ascending=False)
+             .drop_duplicates(['tipo','clave','nivel','grupo','periodo'], keep='first')
+             .drop(columns=['_own','_is_own']))
+econ_long = pd.concat([_ms, _wk], ignore_index=True)
+econ_long['fecha'] = [ _fecha_de_periodo(f, p) for f, p in zip(econ_long['frecuencia'], econ_long['periodo']) ]
+econ_long = econ_long.drop(columns=['_mes_src'])
+econ_long = econ_long.sort_values(['tipo','clave','nivel','grupo','frecuencia','fecha']).reset_index(drop=True)
+# variación % dentro de cada serie
+econ_long['variacion_%'] = (econ_long.groupby(['frecuencia','tipo','clave','nivel','grupo'])['valor_mediana']
+                            .pct_change() * 100)
+print(f'econ_long: {len(econ_long):,} filas | periodos {econ_long["periodo"].nunique()}')'''))
+
+# ── CELL 23 — DATOS ECONOMETRIA: exportar Excel tidy ────────────────────────────
+cells.append(cell_code(r'''# ============================================================
+# CELDA 23 — DATOS ECONOMETRIA: exportar Excel tidy (una hoja por tipo x nivel)
+# ============================================================
+_COLS = ['frecuencia','periodo','fecha','clave','grupo','n_sucursales',
+         'valor_mediana','valor_promedio','variacion_%']
+
+def _hoja(_tipo, _nivel):
+    _s = econ_long[(econ_long['tipo'] == _tipo) & (econ_long['nivel'] == _nivel)].copy()
+    if _nivel == 'nacional':
+        _cols = [c for c in _COLS if c != 'grupo']
+    else:
+        _cols = _COLS
+    return _s[_cols].sort_values(['clave','grupo','frecuencia','fecha'] if _nivel != 'nacional'
+                                 else ['clave','frecuencia','fecha']).reset_index(drop=True)
+
+_dicc = pd.DataFrame([
+    ('frecuencia',    'semanal (ISO) o mensual'),
+    ('periodo',       'etiqueta del período: YYYY-Www (semana ISO) o YYYY-MM (mes)'),
+    ('fecha',         'fecha real: lunes de la semana ISO, o primer día del mes (para series de tiempo)'),
+    ('clave',         'nombre de la canasta (cantidad_01..06) o del producto'),
+    ('nivel',         'nacional | provincia | cadena (en el nombre de la hoja)'),
+    ('grupo',         'provincia o cadena concreta (Nacional en las hojas nacionales)'),
+    ('n_sucursales',  'nº de sucursales que respaldan el valor'),
+    ('valor_mediana', 'costo de canasta / precio de producto — MEDIANA entre sucursales'),
+    ('valor_promedio','ídem — PROMEDIO con outliers fuera [mediana/4, mediana x4]'),
+    ('variacion_%',   'variación % del valor_mediana respecto del período anterior de esa serie'),
+    ('nacional (canasta)', 'ponderado por población provincial (mediana provincial -> peso poblacional)'),
+    ('nacional (producto)','mediana/promedio simple entre sucursales del país'),
+    ('imputación',    'items faltantes en una sucursal se imputan con la referencia nacional del período'),
+    ('umbral',        f'se reportan celdas provincia/cadena con n_sucursales >= {ECON_MIN_SUC}'),
+], columns=['campo','descripcion'])
+
+with pd.ExcelWriter(ECON_XLSX, engine='openpyxl') as _w:
+    _dicc.to_excel(_w, sheet_name='Diccionario', index=False)
+    _hoja('canasta','nacional').to_excel(_w, sheet_name='canastas_nacional', index=False)
+    _hoja('canasta','provincia').to_excel(_w, sheet_name='canastas_provincia', index=False)
+    _hoja('canasta','cadena').to_excel(_w, sheet_name='canastas_cadena', index=False)
+    _hoja('producto','nacional').to_excel(_w, sheet_name='productos_nacional', index=False)
+    _hoja('producto','provincia').to_excel(_w, sheet_name='productos_provincia', index=False)
+    _hoja('producto','cadena').to_excel(_w, sheet_name='productos_cadena', index=False)
+
+print(f'✅ Excel econometria guardado: {ECON_XLSX}')
+_res = (econ_long.groupby(['tipo','nivel','frecuencia'])
+        .agg(filas=('valor_mediana','size'), series=('clave','nunique'),
+             periodos=('periodo','nunique')).reset_index())
+print(_res.to_string(index=False))
+_prod_con = set(econ_long[econ_long['tipo']=='producto']['clave'])
+_prod_sin = [v for v in PRODUCTOS_ECONOMETRIA.values() if v not in _prod_con]
+if _prod_sin:
+    print(f'⚠️ Productos SIN datos (revisar EAN en PRODUCTOS_ECONOMETRIA): {_prod_sin}')'''))
+
 # ── Write notebook ──────────────────────────────────────────────────────────────
 nb = {
     'cells': cells,

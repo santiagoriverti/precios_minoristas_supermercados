@@ -616,3 +616,29 @@ Pedido: generar las canastas Popular/Media/Ejecutiva (+ una **Tecnológica** nue
 - **Docs actualizados** (2026-09-03): `CONTEXTO.md` §2f (4ª canasta + cobertura real + output_canasta_alternativa + CELDA 15), `BUGS_Y_MEJORAS.md` (entrada 2026-09-03), `canastas_alternativas/README.md` (loader + flujo).
 - **Estado**: nb07 commiteado y verificado (16 celdas, compila; RESULTS_DIR→output_canasta_alternativa; cantidad_04→Tecnológica; CELDA 15 "REPORTE PARA CLAUDE"). **Insumos en Drive**: ZIPs SEPA + Excel con cantidades en `carga/output_canasta/` (ENTRADA) + IPC.xlsx (opc) + maestro_sepa_completo.csv.gz (opc, mejora frescos).
 - **PENDIENTE**: el usuario corre nb07 en Colab y pasa el bloque "REPORTE PARA CLAUDE" + `Cobertura_emp`/`Cobertura_frescos` → analizar y ajustar cantidades/composición. Vigilar Tecnológica (puede quedar rala por `FRAC_PRODUCTOS_MIN=0.5`).
+
+## nb02 — Excel "datos_econometria" semanal+mensual por nivel [2026-09-03]
+
+Pedido: nuevo Excel `datos_econometria_{MES}.xlsx` (en `output_canasta` del Drive) con series
+para econometría avanzada: costo de las **6 canastas** + precio de **10 productos** elegidos,
+frecuencia **SEMANAL (ISO)** y **MENSUAL**, a nivel **nacional (ponderado población) / provincia /
+cadena**, historia completa.
+
+**Clave**: nb02 era 100% mensual y el detalle geográfico existía SOLO para el mes actual (CELDA 6
+descarta el día). Se agregó un **motor nuevo autónomo** (CELDA 22–23 de `gen_nb02.py`) que relee
+todos los ZIPs **conservando el día**, agrega por (sucursal, ean, semana/mes), imputa faltantes con
+la referencia nacional del período (truco nb07), y agrega a provincia/cadena/nacional. Caché por mes
+cerrado (`econ_{hash}.parquet`), mes en curso fresco. Salida **tidy/long** (6 hojas + Diccionario).
+
+- **Config** `PRODUCTOS_ECONOMETRIA` (EAN→nombre) editable arriba de CELDA 22; default de 10 EAN
+  verificados (Coca, leche, yerba, aceite, fideos, arroz, azúcar, café, lavandina, Pepsi). **El
+  usuario va a pasar sus 10 EAN reales (p.ej. Fernet Branca 750)** para reemplazar el default.
+- **Fix semanas de borde**: cada semana ISO se asigna a su mes "dueño" (jueves ISO) para no
+  duplicar fragmentos entre archivos mensuales.
+- **Validado** con dataset sintético: imputación, provincia (P1=310,P2=340), nacional ponderado
+  (320), producto nacional (110), serie semanal y variación %, export a Excel — todos los asserts OK.
+- Reusa: `CANASTAS`, `suc_geo_clean`, `PESOS_POBLACION`, `normalizar_ean`, `_pmean`, funciones de
+  lectura de ZIP. nb02 lee la hoja **Selección** (no Productos unicos) → las 6 canastas deben estar
+  cargadas ahí.
+
+**PENDIENTE**: usuario pasa los 10 EAN → los embebo y re-pusheo; después corre nb02 y revisa.

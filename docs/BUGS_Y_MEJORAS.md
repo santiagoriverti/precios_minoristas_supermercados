@@ -12,6 +12,27 @@
 
 ## 🟢 Cambios y fixes 2026-09
 
+### 🟢 Notebook 02 — Excel "datos_econometria" (series semanal+mensual por nivel) (2026-09-03)
+
+**Archivo**: `gen_nb02.py` → CELDA 22 (motor) + CELDA 23 (export). Nuevo Excel
+`datos_econometria_{MES}.xlsx` en `output_canasta` del Drive.
+
+**Qué hace**: insumo para econometría de series de tiempo. Exporta, en formato **tidy/long**,
+el costo de las 6 canastas (cantidad_01..06 de la hoja `Selección`) y el precio de **10 productos**
+representativos (`PRODUCTOS_ECONOMETRIA`, editable), con frecuencia **SEMANAL (ISO)** y **MENSUAL**,
+a nivel **nacional (ponderado por población) / provincia / cadena**, sobre la **historia completa**.
+Hojas: `Diccionario`, `canastas_nacional/provincia/cadena`, `productos_nacional/provincia/cadena`.
+
+**Cómo**: nb02 era mensual y solo tenía detalle geográfico del mes actual. El motor nuevo relee
+los ZIPs **conservando el día**, agrega por (sucursal, ean, semana/mes), imputa faltantes con la
+referencia nacional del período y agrega a los tres niveles. Caché por mes cerrado
+(`econ_{hash}.parquet`), mes en curso fresco. **Fix**: semanas ISO de borde se asignan al mes del
+jueves ISO (evita duplicar fragmentos entre archivos mensuales).
+
+**Validado** con dataset sintético (imputación, provincia, nacional ponderado, producto, serie
+semanal + variación %, export). **Pendiente**: el usuario reemplaza el default de 10 EAN por los
+suyos (p.ej. Fernet Branca 750).
+
 ### 🟢 Notebook 07 — 4ª canasta Tecnológica + canastas ancladas a cobertura real (2026-09-03)
 
 **Archivos**: `gen_nb07.py` → `07_evolucion_canastas_alternativas.ipynb` (regenerado, 16 celdas);
