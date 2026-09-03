@@ -15,13 +15,24 @@ evolución semanal del costo.
 - **`cantidades_dict.py`** — diccionario Python `CANTIDADES = { ean: {cantidad_01..04} }`.
 - **`cantidades_productos_unicos.csv`** — tabla lista para pegar (`id_producto` + `cantidad_01..04` + cobertura).
 - **`cantidades_detalle.csv`** — detalle completo (marca, rubro, cobertura, precio, cantidades).
+- **`cargar_en_productos_unicos.py`** — script autónomo de **Colab**: subís el Excel
+  `canasta_representativa_*.xlsx` y te lo devuelve con `cantidad_01..04` cargadas en la hoja
+  `Productos unicos` (limpia las columnas primero y reporta cobertura + EAN faltantes).
 
 ## Cómo cargarlas
+**Opción A (recomendada) — script de Colab**: pegá `cargar_en_productos_unicos.py` en una
+celda de Colab, ejecutá, subí el Excel; descargás `..._con_canastas.xlsx` con todo cargado.
+
+**Opción B — manual**:
 1. Abrí el Excel, hoja `Productos unicos`.
-2. Para cada `id_producto` del CSV, poné su `cantidad_01..04` en las columnas amarillas.
-   (Se pueden cruzar por `id_producto` con BUSCARV/`merge`.)
-3. Guardá el Excel en `output_canasta/` en tu Drive.
-4. Corré nb07 → los resultados quedan en **`output_canasta_alternativa/`**.
+2. Para cada `id_producto` del CSV, poné su `cantidad_01..04` en las columnas amarillas
+   (se pueden cruzar por `id_producto` con BUSCARV/`merge`).
+
+Después, en cualquier caso:
+3. Guardá el Excel en **`output_canasta/`** en tu Drive (carpeta de ENTRADA).
+4. Corré nb07 → los resultados quedan en **`output_canasta_alternativa/`** (carpeta de SALIDA).
+5. Copiá el bloque **"REPORTE PARA CLAUDE"** (CELDA 15) + las hojas `Cobertura_emp`/
+   `Cobertura_frescos` para afinar las cantidades.
 
 ## Metodología
 - **Empaquetados por EAN**: cada producto se eligió del universo real de `Productos unicos`

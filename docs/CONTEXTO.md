@@ -1,6 +1,6 @@
 # Contexto del Proyecto — Precios Minoristas SEPA
 
-Última actualización: 2026-08-25 (nb06 corrido y validado con EANs curados + fix de RAM; base para paper académico)
+Última actualización: 2026-09-03 (nb07: 4ª canasta Tecnológica + canastas ancladas a cobertura real + salida a `output_canasta_alternativa`)
 
 > **El proyecto tiene 6 herramientas (nb01–nb06).** Las descripciones detalladas por celda más
 > abajo en este archivo son **históricas** (describen la arquitectura previa de nb02); el estado
@@ -110,20 +110,29 @@ Mismo doble análisis mediana/promedio. Config: `EANS_INPUT` (lista de EANs) en 
 Solo tipos con dicotomía celíaca; 2–3 EANs representativos por lado, promediados; brecha
 intra-sucursal. Config: dict `TIPOS` en la CELDA 1. **Detalle completo: `docs/BRECHA_CELIACA.md`.**
 
-### 2f. `07_evolucion_canastas_alternativas` (notebook 07 — este repo) ← NUEVO (2026-09-01)
-**Propósito**: evolución **semanal** del costo de tres canastas socioeconómicas
-(**Popular / Media / Ejecutiva**) vs **IPC**, desagregada por **rubro** (con drill-down
-hasta producto; **Carne** es un rubro propio) y por provincia/cadena. Es el análisis de
-nb02 pero semanal y **sumando frescos**.
+### 2f. `07_evolucion_canastas_alternativas` (notebook 07 — este repo) ← NUEVO (2026-09-01, ampliado 2026-09-03)
+**Propósito**: evolución **semanal** del costo de **cuatro** canastas
+(**Popular / Media / Ejecutiva / Tecnológica**) vs **IPC**, desagregada por **rubro** (con
+drill-down hasta producto; **Carne** es un rubro propio) y por provincia/cadena. Es el
+análisis de nb02 pero semanal y **sumando frescos**.
 **Composición híbrida**: (a) **empaquetados por EAN** desde la hoja `Productos unicos`
 del `canasta_representativa_*.xlsx` (`cantidad_01`=Popular, `cantidad_02`=Media,
-`cantidad_03`=Ejecutiva; mapeadas desde las canastas 2/3/4 del proyecto de índices);
-(b) **frescos por TIPO/nombre** (carne, frutas, verduras, huevos) — el EAN cambia por
-cadena (balanza), así que se seleccionan por regla de nombre sobre el maestro SEPA
-completo y se normalizan a **$/kg** o **$/docena**. Electrodomésticos/durables se
-**excluyen** (cobertura ~1 cadena → no representativos). Config: `CANASTA_COLS` y
-`TIPOS_FRESCOS` en la CELDA 1. Imprime diagnósticos de cobertura (CELDA 13) para refinar.
-Generador: `gen_nb07.py`. **Detalle en README (sección "Canastas alternativas").**
+`cantidad_03`=Ejecutiva, `cantidad_04`=**Tecnológica**); (b) **frescos por TIPO/nombre**
+(carne, frutas, verduras, huevos) — el EAN cambia por cadena (balanza), así que se
+seleccionan por regla de nombre sobre el maestro SEPA completo y se normalizan a **$/kg**
+o **$/docena**. La **Tecnológica** es un bundle de durables (TV, notebook, celular,
+heladera, lavarropas, microondas, aire) **sin frescos** (`CANASTAS_SIN_FRESCOS`).
+**Cambios 2026-09-03**:
+- **4ª canasta Tecnológica** (`cantidad_04`); frescos mapeados por nombre (robusto a la 4ª
+  canasta).
+- **Canastas ancladas a cobertura real**: los 90 EAN empaquetados se eligieron del universo
+  real de `Productos unicos` exigiendo **≥4 cadenas** (casi todos cad=5 / 24 provincias).
+  Ver `docs/canastas_alternativas/` (dict + CSV + loader de Colab).
+- **Salida** a carpeta nueva **`output_canasta_alternativa`** (`RESULTS_DIR`); la entrada
+  (el Excel) sigue en `output_canasta`.
+- Nueva **CELDA 15 "REPORTE PARA CLAUDE"** (costo/variación/vs-IPC/rubros/cobertura en texto).
+Config: `CANASTA_COLS`, `CANASTAS_SIN_FRESCOS`, `TIPOS_FRESCOS`, `RESULTS_DIR` en la CELDA 1.
+Generador: `gen_nb07.py`. **Detalle en README y `docs/canastas_alternativas/README.md`.**
 
 ### 3. `analisis_SEPA_evolucion.ipynb`
 **Propósito**: evolución mensual de precios con canasta fija de 30 EANs.

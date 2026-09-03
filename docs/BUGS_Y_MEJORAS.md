@@ -1,6 +1,6 @@
 # Bugs Pendientes y Mejoras
 
-Última actualización: 2026-08-21 — doble análisis media/mediana, fix LaTeX, Notebook 06
+Última actualización: 2026-09-03 — nb07: 4ª canasta Tecnológica + canastas por cobertura real + salida a output_canasta_alternativa
 
 ---
 
@@ -11,6 +11,35 @@
 ---
 
 ## 🟢 Cambios y fixes 2026-09
+
+### 🟢 Notebook 07 — 4ª canasta Tecnológica + canastas ancladas a cobertura real (2026-09-03)
+
+**Archivos**: `gen_nb07.py` → `07_evolucion_canastas_alternativas.ipynb` (regenerado, 16 celdas);
+`docs/canastas_alternativas/` (dict + CSV paste-ready + detalle + loader de Colab + README).
+
+**Qué cambió**:
+- **4ª canasta `Tecnológica`** en `cantidad_04` (`CANASTA_COLS`). Es un bundle de durables
+  (TV/notebook/celular/heladera/lavarropas/microondas/aire), `qty=1` c/u, **sin frescos**
+  (`CANASTAS_SIN_FRESCOS`).
+- **Frescos mapeados por NOMBRE** (`_FRESH_POS`), no por índice activo → robusto a la 4ª
+  canasta. Fix del `Resumen` que usaba índice posicional (`IndexError` con 4 canastas).
+- **Canastas ancladas a cobertura real**: al cruzar las canastas curadas contra el universo
+  real de `Productos unicos`, la mayoría de los EAN estaban en **1 sola cadena** (no
+  comparables). Se reconstruyeron eligiendo por cobertura desde la propia hoja, exigiendo
+  **≥4 cadenas** → 90 EAN, casi todos cad=5 / 24 provincias / miles de sucursales.
+- **Salida a carpeta nueva `output_canasta_alternativa`** (`RESULTS_DIR`): Excel de resultados
+  + caché. La entrada (el Excel `canasta_representativa_*.xlsx`) sigue en `output_canasta`.
+- Nueva **CELDA 15 "REPORTE PARA CLAUDE"**: costo/variación/acumulado/vs-IPC/composición por
+  rubro + flags de cobertura, en texto plano para copiar y pasar.
+- **Loader de Colab** (`docs/canastas_alternativas/cargar_en_productos_unicos.py`): script
+  autónomo que carga `cantidad_01..04` en la hoja `Productos unicos` de un Excel subido.
+
+**Validado**: 16 celdas compilan; test aislado de `_recipe` (Tecnológica=0 frescos; Ejecutiva
+más carne). **Pendiente**: el usuario corre nb07 en Colab con datos reales y pasa el bloque
+"REPORTE PARA CLAUDE" + `Cobertura_emp`/`Cobertura_frescos` para afinar cantidades.
+
+**A vigilar**: la Tecnológica puede quedar rala si `FRAC_PRODUCTOS_MIN=0.5` deja pocas
+sucursales con ≥50% de los durables — en ese caso se baja el umbral para ese estrato.
 
 ### 🟢 Notebook 07 — Canastas alternativas (Popular/Media/Ejecutiva) semanales + frescos (nuevo, 2026-09-01)
 

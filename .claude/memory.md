@@ -608,3 +608,11 @@ Pedido: generar las canastas Popular/Media/Ejecutiva (+ una **Tecnológica** nue
 **Durables/tecnología**: en SEPA tienen baja cobertura (n_cadenas 4, pocas sucursales ~200-350). Se arma como bundle informativo (qty=1 c/u); vigilar en la 1ª corrida si `FRAC_PRODUCTOS_MIN=0.5` la deja rala.
 
 **Pendiente del usuario:** cargar cantidad_01..04 en `Productos unicos`, subir Excel a `output_canasta`, correr nb07 desde el badge de Colab del README, y pasar el bloque "REPORTE PARA CLAUDE" + `Cobertura_emp` para afinar.
+
+## nb07 — loader de Colab + docs actualizados; a la espera de la 1ª corrida real [2026-09-03]
+
+- **Canastas ancladas a cobertura real confirmadas** con la hoja `Productos unicos` real (2026-08, 59.123 productos con columnas de cobertura). Los 90 EAN elegidos: todos cad≥4 (casi todos cad=5 / 24 provincias). Entregables en `docs/canastas_alternativas/` (dict, CSV paste-ready, detalle, README).
+- **Loader de Colab** (`docs/canastas_alternativas/cargar_en_productos_unicos.py`): script autónomo (90 EAN embebidos) que carga `cantidad_01..04` en la hoja `Productos unicos` de un Excel subido, limpia las columnas primero y reporta cobertura + EAN faltantes. (El usuario probó primero un loader de 6 canastas ENGHo, pero se descartó: no coincidía con `CANASTA_COLS` de nb07 y dejaba afuera cantidad_05/06.)
+- **Docs actualizados** (2026-09-03): `CONTEXTO.md` §2f (4ª canasta + cobertura real + output_canasta_alternativa + CELDA 15), `BUGS_Y_MEJORAS.md` (entrada 2026-09-03), `canastas_alternativas/README.md` (loader + flujo).
+- **Estado**: nb07 commiteado y verificado (16 celdas, compila; RESULTS_DIR→output_canasta_alternativa; cantidad_04→Tecnológica; CELDA 15 "REPORTE PARA CLAUDE"). **Insumos en Drive**: ZIPs SEPA + Excel con cantidades en `carga/output_canasta/` (ENTRADA) + IPC.xlsx (opc) + maestro_sepa_completo.csv.gz (opc, mejora frescos).
+- **PENDIENTE**: el usuario corre nb07 en Colab y pasa el bloque "REPORTE PARA CLAUDE" + `Cobertura_emp`/`Cobertura_frescos` → analizar y ajustar cantidades/composición. Vigilar Tecnológica (puede quedar rala por `FRAC_PRODUCTOS_MIN=0.5`).
