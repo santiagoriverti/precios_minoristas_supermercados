@@ -1,0 +1,91 @@
+sepa_id,desc,marca,rubro,cad,prov,suc,precio,Popular,Media,Ejecutiva,Tecnologica
+7790070012050,Aceite de Girasol Cocinero 900 Ml,Cocinero,Aceites y grasas,5,24,2367,4339.46435546875,2.0,0.0,0.0,0.0
+7790272001029,Aceite de Girasol Natura 1.5 Lt,Natura,Aceites y grasas,5,24,2488,7224.66650390625,0.0,0.0,2.0,0.0
+7790272001005,Aceite de Girasol Natura 900 Ml,Natura,Aceites y grasas,5,24,2481,4637.5,0.0,2.0,0.0,0.0
+7790070231833,Aceite de Oliva Extra Virgen Lira 500 Ml,Lira,Aceites y grasas,5,24,1081,15368.5712890625,0.0,0.0,1.0,0.0
+7792540250450,Azúcar Molida Superior Ledesma 1 Kg,Ledesma,Azucar y dulces,5,24,2079,1565.0,3.0,3.0,2.0,0.0
+7790580132163,Mermelada Durazno Arcor 454 Gr,Arcor,Azucar y dulces,5,24,2467,3299.816650390625,1.0,1.0,0.0,0.0
+7793360131516,Mermelada de Durazno Bc La Campagnola 390 Gr,La Campagnola,Azucar y dulces,5,24,2463,4160.0,0.0,0.0,2.0,0.0
+7792798007387,Cerveza Rubia Cristal Quilmes 1 Lt,Quilmes,Bebidas alcoholicas,5,23,2328,4580.0,0.0,4.0,0.0,0.0
+7793147118860,Cerveza Rubia en Lata Schneider 473 Cc,Schneider,Bebidas alcoholicas,5,24,2320,2610.0,2.0,0.0,0.0,0.0
+7792798003716,Cerveza en Botella No Retornable Corona 710 Cc,Corona,Bebidas alcoholicas,5,24,2337,7482.5,0.0,0.0,6.0,0.0
+7791728248265,Vino Tinto Dulce Santa Julia 750 Ml,Santa Julia,Bebidas alcoholicas,5,24,2460,8749.5,0.0,0.0,3.0,0.0
+7798074864675,Vino Tinto Malbec Portillo 750 Ml,Portillo,Bebidas alcoholicas,5,24,2481,6836.3125,0.0,2.0,0.0,0.0
+7799155000197,Agua Mineral sin Gas Pet Villavicencio 2 Lt,Villavicencio,Bebidas no alcoholicas,5,24,2495,3090.0,0.0,6.0,8.0,0.0
+7792931000039,Agua Mineralizada sin Gas Glaciar 2 Lt,Glaciar,Bebidas no alcoholicas,5,24,2472,3239.4462890625,4.0,0.0,0.0,0.0
+7790895000997,Coca Cola Sabor Original 2.25 Lt,Coca Cola,Bebidas no alcoholicas,5,23,2219,5818.75,0.0,5.0,6.0,0.0
+7791813888468,Gaseosa Cola Pepsi 2 Lt,Pepsi,Bebidas no alcoholicas,5,24,2475,4550.0,4.0,0.0,0.0,0.0
+7622201735685,Jugo en Polvo Sabor Limón Dulce Tang 15 Gr,Tang,Bebidas no alcoholicas,5,24,2282,550.0,6.0,6.0,0.0,0.0
+7790580131364,Atún al Natural Libre de Gluten sin TACC La Campagnola 170 Gr,La Campagnola,Carnes y derivados,5,24,2448,5906.9091796875,0.0,2.0,3.0,0.0
+7790625001171,Jamón Cocido Feteado Lario 150 Gr,Lario,Carnes y derivados,5,24,1533,4622.95458984375,2.0,0.0,0.0,0.0
+7798013102875,Jamón Cocido Genuino Cagnoli 120 Gr,Cagnoli,Carnes y derivados,5,24,1988,5190.0,0.0,3.0,4.0,0.0
+7790670052388,Salchicha Clásica Flow Pack Patyviena 6 Un,Patyviena,Carnes y derivados,5,24,2466,2891.53857421875,2.0,0.0,0.0,0.0
+7790670052401,Salchichas Vienísima 6 Un,Vienísima,Carnes y derivados,5,24,2475,3279.0,0.0,2.0,0.0,0.0
+7794000008557,Caldo de Verdura Knorr 12 Un,Knorr,Condimentos y aderezos,5,24,2482,2637.30126953125,1.0,1.0,0.0,0.0
+7791866001203,Mayonesa Doypack Natura 237 Gr,Natura,Condimentos y aderezos,5,24,2503,1550.0,1.0,0.0,0.0,0.0
+7791866001364,Mayonesa Doypack Natura 500 Ml,Natura,Condimentos y aderezos,5,24,2503,3040.0,0.0,1.0,0.0,0.0
+7794000006072,Mayonesa Regular Doypack Hellmanns 475 Gr,Hellmanns,Condimentos y aderezos,5,24,2479,2999.0,0.0,0.0,2.0,0.0
+7790072001014,Sal Fina en Paquete Celusal 500 Gr,Celusal,Condimentos y aderezos,5,24,2503,1549.0,1.0,1.0,1.0,0.0
+7790130000058,Vinagre de Alcohol Menoyo 1 Lt,Menoyo,Condimentos y aderezos,5,24,2306,1965.0,1.0,1.0,0.0,0.0
+7790580132392,Arvejas Secas Remojadas sin Conservantes Lata Arcor 300 Gr,Arcor,Frutas y verduras,5,24,2155,1344.833251953125,2.0,0.0,0.0,0.0
+7790580132422,Choclo Amarillo Desgranado Arcor 300 Gr,Arcor,Frutas y verduras,5,24,1769,2299.5,0.0,2.0,3.0,0.0
+7790580567903,Tomate Pelado Perita en Lata Arcor 400 Gr,Arcor,Frutas y verduras,5,24,2403,1538.58935546875,3.0,3.0,4.0,0.0
+7509546687292,Crema Dental Doble Protección Odol 90 Gr,Odol,Higiene y cuidado personal,5,24,2305,2930.71435546875,1.0,0.0,0.0,0.0
+7509546702605,Crema Dental Total Original Mint Colgate 90 Gr,Colgate,Higiene y cuidado personal,5,24,2151,6540.0,0.0,0.0,2.0,0.0
+7793100111891,Crema Dental Ultra Blanco Colgate 90 Gr,Colgate,Higiene y cuidado personal,5,24,2490,3111.0,0.0,1.0,0.0,0.0
+7791293043791,Desodorante Aerosol Marine Axe 150 Cc,Axe,Higiene y cuidado personal,5,24,2773,4705.0,1.0,0.0,0.0,0.0
+7791293049557,Desodorante Aerosol Women Nutrivive Rexona 150 Ml,Rexona,Higiene y cuidado personal,5,24,2703,4969.0,0.0,2.0,3.0,0.0
+7791293051208,Jabón de Tocador Original Dove 90 Gr,Dove,Higiene y cuidado personal,5,24,2480,2611.0,0.0,3.0,4.0,0.0
+7891024034781,Jabón de Tocador con Karite Palmolive 85 Gr,Palmolive,Higiene y cuidado personal,5,24,2232,965.9642944335938,2.0,0.0,0.0,0.0
+7790250015536,Papel Higiénico Doble Hoja Manzanilla Higienol 4 Un 30 Mt,Higienol,Higiene y cuidado personal,5,24,2255,4069.58935546875,0.0,0.0,4.0,0.0
+7790250016182,Papel Higiénico Fresh Hoja Simple con Aloe Vera Higienol 4 Un 30 Mt,Higienol,Higiene y cuidado personal,5,24,2439,2400.5,0.0,3.0,0.0,0.0
+7791070000696,Papel Higiénico Texturado Campanita Pack 4 Un 120 Mt,Campanita,Higiene y cuidado personal,5,24,476,1789.0,2.0,0.0,0.0,0.0
+7791293045740,Shampoo Crema Balance Sedal 340 Ml,Sedal,Higiene y cuidado personal,5,24,2770,5870.0,1.0,0.0,0.0,0.0
+7791293047102,Shampoo Reconstrucción Completa Dove 400 Ml,Dove,Higiene y cuidado personal,5,24,2782,8717.5,0.0,1.0,2.0,0.0
+7790150079904,Café Clásico en Saquitos La Virginia 20 Un,La Virginia,Infusiones,5,24,2438,5950.0,1.0,0.0,0.0,0.0
+8445291082137,Café Instantáneo Suave Origen Dolca 170 Gr,Dolca,Infusiones,5,24,2454,10307.333984375,0.0,0.0,2.0,0.0
+7790550000157,Café Molido Torrado en Bolsa Cabrales 250 Gr,Cabrales,Infusiones,5,24,2482,7410.0,0.0,1.0,0.0,0.0
+7790150355084,Té Verde en Saquitos La Virginia 20 Un,La Virginia,Infusiones,5,24,2446,1744.0,0.0,0.0,1.0,0.0
+7790480008261,Té en Saquitos Green Hills 50 Un,Green Hills,Infusiones,5,24,2455,2827.0,0.0,1.0,0.0,0.0
+7792710000175,Yerba Mate Amanda 1 Kg,Amanda,Infusiones,5,24,2323,4989.0,2.0,0.0,0.0,0.0
+7790387013610,Yerba Mate con Palo 4Flex Taragui 1 Kg,Taragui,Infusiones,5,24,2298,5369.0,0.0,0.0,2.0,0.0
+7793704000928,Yerba Suave Playadito 1 Kg,Playadito,Infusiones,5,24,2426,5072.4716796875,0.0,2.0,0.0,0.0
+7790787153664,Dulce de Leche Clásico Ilolay 400 Gr,Ilolay,Lacteos y derivados,5,24,2204,3840.0,1.0,0.0,0.0,0.0
+7790742625304,Dulce de Leche Clásico La Serenísima 400 Gr,La Serenísima,Lacteos y derivados,5,24,2488,3860.0,0.0,1.0,0.0,0.0
+7790742067005,Dulce de Leche Repostero La Serenísima 400 Gr,La Serenísima,Lacteos y derivados,5,24,2466,4300.0,0.0,0.0,2.0,0.0
+7790742335500,Leche Entera 3% Uat La Serenísima 1 Lt,La Serenísima,Lacteos y derivados,5,24,2236,2997.33349609375,0.0,30.0,30.0,0.0
+7798338290028,Leche Entera Larga Vida Tradición Tres Niñas 1 Lt,Tres Niñas,Lacteos y derivados,5,24,2324,2620.0,24.0,0.0,0.0,0.0
+7798060850026,Manteca Calidad Extra Tonadita 200 Gr,Tonadita,Lacteos y derivados,5,24,2478,4180.0,1.0,0.0,0.0,0.0
+7793940054006,Manteca La Serenísima 200 Gr,La Serenísima,Lacteos y derivados,5,24,2483,4836.90625,0.0,2.0,2.0,0.0
+7790398100132,Queso Rallado La Paulina 150 Gr,La Paulina,Lacteos y derivados,5,24,2106,6159.0,0.0,1.0,0.0,0.0
+7790742222909,Queso Rallado La Serenisima 35 Gr,La Serenisima,Lacteos y derivados,5,24,2194,1832.75,0.0,0.0,2.0,0.0
+7790742373809,Queso Untable Cremón Light La Serenísima 280 Gr,La Serenísima,Lacteos y derivados,5,24,2294,4010.0,0.0,0.0,3.0,0.0
+7798060852990,Queso Untable Jamón Tonadita 180 Gr,Tonadita,Lacteos y derivados,5,24,2320,2699.0,2.0,0.0,0.0,0.0
+7791337061439,Queso Untable Light La Serenisima 290 Gr,La Serenisima,Lacteos y derivados,5,24,2325,4135.0,0.0,2.0,0.0,0.0
+7791337008694,Yogur Bebible Frutilla Danonino 185 Gr,Danonino,Lacteos y derivados,5,24,2428,3255.0,0.0,0.0,8.0,0.0
+7791337009387,Yogur Bebible Sabor Frutilla Yogurísimo 190 Gr,Yogurísimo,Lacteos y derivados,5,24,2409,3657.0,0.0,6.0,0.0,0.0
+7793913013535,Yogur Parcialmente Descremado Vainilla Tregar 125 Gr,Tregar,Lacteos y derivados,5,24,2432,1150.0,4.0,0.0,0.0,0.0
+7790990003039,Detergente Limón Magistral 20 Un 500 Ml,Magistral,Limpieza del hogar,5,24,2478,4424.580078125,0.0,2.0,0.0,0.0
+7791290794054,Detergente Líquido Bioactive Limón Cif 300 Ml,Cif,Limpieza del hogar,5,24,2656,2700.0,1.0,0.0,2.0,0.0
+7791290792814,Jabón Líquido para Ropa Bio Encimas Skip 800 Ml,Skip,Limpieza del hogar,5,24,2645,4745.0,0.0,1.0,2.0,0.0
+7791290792036,Jabón Líquido para Ropa Eco Lavado Doypack Ala Matic 3 Lt,Ala Matic,Limpieza del hogar,5,24,2282,14190.0,1.0,0.0,0.0,0.0
+7790132098459,Lavandina Concentrada Ayudín 1 Lt,Ayudín,Limpieza del hogar,5,24,2480,1307.5,2.0,2.0,2.0,0.0
+7791120031557,Arroz Largo Fino 00000 Molinos Ala 1 Kg,Molinos Ala,Pan y cereales,5,24,2423,1878.40185546875,3.0,0.0,3.0,0.0
+7790070431417,Arroz Parboil Bolsa Gallo Oro 1 Kg,Gallo Oro,Pan y cereales,5,24,2310,2725.0,0.0,3.0,0.0,0.0
+7790070336545,Fideos Fetuccini Don Vicente 500 Gr,Don Vicente,Pan y cereales,5,24,2480,3789.28564453125,0.0,0.0,8.0,0.0
+7790070336385,Fideos Spaghetti N7 Lucchetti 500 Gr,Lucchetti,Pan y cereales,5,24,2480,1744.642822265625,6.0,0.0,0.0,0.0
+7790070336293,Fideos Tirabuzón N28 Matarazzo 500 Gr,Matarazzo,Pan y cereales,5,24,2479,2010.022338867188,0.0,6.0,0.0,0.0
+7790040143524,Galletitas Rumba Bagley 330 Gr,Bagley,Pan y cereales,5,24,2459,4605.4072265625,0.0,0.0,5.0,0.0
+7622201735906,Galletitas con Chips Chocolate Pepitos 119 Gr,Pepitos,Pan y cereales,5,24,2482,2218.95849609375,3.0,4.0,0.0,0.0
+7792180139320,Harina 000 Fortificada con Calcio Cañuelas 1 Kg,Cañuelas,Pan y cereales,5,24,2408,995.0,3.0,0.0,0.0,0.0
+7790070562258,Harina 000 con Vitamina Zinc Favorita 1 Kg,Favorita,Pan y cereales,5,24,2464,1188.0,0.0,2.0,0.0,0.0
+7790070562265,Harina 0000 con Vitamina Zinc Favorita 1 Kg,Favorita,Pan y cereales,5,24,2425,1640.0,0.0,0.0,2.0,0.0
+7793890258783,Pan con Salvado Lactal 560 Gr,Lactal,Pan y cereales,4,23,2170,5841.0,0.0,0.0,4.0,0.0
+7793890258769,Pan de Mesa Blanco Chico Lactal 315 Gr,Lactal,Pan y cereales,4,23,2177,3600.0,0.0,3.0,0.0,0.0
+7796962987321,Aire Acondicionado Philco Split 3200W Frio Calor Cl. A Phs32Ha4Cn Philco,Philco,Tecnologia,5,24,296,799999.0,0.0,0.0,0.0,1.0
+6932554416638,Celular 14C 4Gb/128Gb Starry Blue Azul Redmi Xiaomi 1 Un,Xiaomi,Tecnologia,4,24,354,369000.0,0.0,0.0,0.0,1.0
+7796885063874,Heladera Brs400i1a 397l Bgh 1 Un,Bgh,Tecnologia,4,24,178,1712499.0,0.0,0.0,0.0,1.0
+7796885495194,Hornos Microondas 20Lt Blanco 700 W Bgh 1 Un,Bgh,Tecnologia,5,24,322,244999.0,0.0,0.0,0.0,1.0
+8806094365573,Lavarropas Frontal Inventer WW65A4000EEU Blanco 6.5 Kg Samsung 1 Un,Samsung,Tecnologia,4,24,254,865874.0,0.0,0.0,0.0,1.0
+0196802082679,Notebook 14 Celn4120 4/128 Gb 82V Lenovo 1 Un,Lenovo,Tecnologia,4,22,176,599999.0,0.0,0.0,0.0,1.0
+7790653062106,Televisión 43 Ur8750Psb Smart 4K Bt Hdr Usb Lg 1 Un,Lg,Tecnologia,4,24,285,599999.0,0.0,0.0,0.0,1.0

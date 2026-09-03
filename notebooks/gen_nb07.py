@@ -58,12 +58,18 @@ cells.append(cell_code(r'''# ===================================================
 # ============================================================
 SEPA_SOURCE = 'mi_drive'   # 'mi_drive' | 'local'
 SEPA_DIR    = '/content/drive/MyDrive/carga'
-OUTPUT_DIR  = '/content/drive/MyDrive/carga/output_canasta'   # donde está canasta_representativa_*.xlsx
+OUTPUT_DIR  = '/content/drive/MyDrive/carga/output_canasta'   # donde está canasta_representativa_*.xlsx (ENTRADA)
+# Carpeta de SALIDA de este notebook (Excel de resultados + caché). Se crea si no existe.
+RESULTS_DIR = '/content/drive/MyDrive/carga/output_canasta_alternativa'
 USE_CACHE   = True
 
 # Hoja del Excel de donde se leen las canastas empaquetadas y el mapeo de columnas.
 HOJA_CANASTAS = 'Productos unicos'
-CANASTA_COLS  = {'cantidad_01': 'Popular', 'cantidad_02': 'Media', 'cantidad_03': 'Ejecutiva'}
+CANASTA_COLS  = {'cantidad_01': 'Popular', 'cantidad_02': 'Media',
+                 'cantidad_03': 'Ejecutiva', 'cantidad_04': 'Tecnológica'}
+# Canastas que NO llevan frescos (comida). La Tecnológica es un bundle de durables:
+# se arma solo con empaquetados por EAN (cantidad_04) y no se le imputan frutas/verduras/carne.
+CANASTAS_SIN_FRESCOS = {'Tecnológica'}
 
 # Serie histórica y ventana
 MES_INICIO_HISTORICO = '2024-01'   # primer mes de la serie
@@ -132,8 +138,8 @@ TIPOS_FRESCOS = {
 REF_EANS_FACTOR = {'7790072002080', '7790070320285', '7790132098459'}
 
 # Colores/estilos por canasta (para gráficos)
-CANASTA_COLORS = {'Popular':'#e74c3c','Media':'#27ae60','Ejecutiva':'#8e44ad'}
-CANASTA_MARKERS = {'Popular':'s','Media':'^','Ejecutiva':'D'}
+CANASTA_COLORS = {'Popular':'#e74c3c','Media':'#27ae60','Ejecutiva':'#8e44ad','Tecnológica':'#2980b9'}
+CANASTA_MARKERS = {'Popular':'s','Media':'^','Ejecutiva':'D','Tecnológica':'o'}
 ''' ))
 
 # ── CELL 2 — DRIVE + DEPS + IMPORTS ────────────────────────────────────────────
@@ -162,11 +168,14 @@ import matplotlib.pyplot as plt
 import matplotlib.ticker as mticker
 plt.rcParams['figure.figsize'] = (13, 6); plt.rcParams['font.size'] = 11
 
-SEPA_DIR   = Path(SEPA_DIR)
-OUTPUT_DIR = Path(OUTPUT_DIR)
+SEPA_DIR    = Path(SEPA_DIR)
+OUTPUT_DIR  = Path(OUTPUT_DIR)
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
-CACHE_DIR  = OUTPUT_DIR / '_cache_nb07'
+RESULTS_DIR = Path(RESULTS_DIR)
+RESULTS_DIR.mkdir(parents=True, exist_ok=True)   # carpeta nueva de salida
+CACHE_DIR   = RESULTS_DIR / '_cache_nb07'
 CACHE_DIR.mkdir(parents=True, exist_ok=True)
+print(f'Entrada (canasta): {OUTPUT_DIR}\nSalida (resultados): {RESULTS_DIR}')
 TMP_DIR    = Path('/content/tmp_sepa07'); TMP_DIR.mkdir(exist_ok=True)
 
 def normalizar_ean(s):
@@ -594,11 +603,16 @@ def _recipe(_name):
     _rows = []
     for _ean,(_desc,_q,_rub,_cat) in CANASTAS_EMP[_name].items():
         _rows.append((_ean, float(_q), _rub, 'emp'))
-    _pos = CANASTAS_ACTIVAS.index(_name)   # 0=Popular,1=Media,2=Ejecutiva (según orden activo)
-    for _tipo,_info in FRESCO_INFO.items():
-        _q = _info['qty'][_pos] if _pos < len(_info['qty']) else _info['qty'][-1]
-        if _q and _q > 0:
-            _rows.append((_tipo, float(_q), _info['rubro'], 'fresh'))
+    # Frescos: la tupla 'qty' de TIPOS_FRESCOS es (Popular, Media, Ejecutiva). Se mapea por
+    # NOMBRE (no por índice activo) para ser robusto al orden y a canastas extra. Las canastas
+    # de CANASTAS_SIN_FRESCOS (ej. Tecnológica) no reciben frescos.
+    _FRESH_POS = {'Popular': 0, 'Media': 1, 'Ejecutiva': 2}
+    _p = _FRESH_POS.get(_name)
+    if _p is not None and _name not in CANASTAS_SIN_FRESCOS:
+        for _tipo, _info in FRESCO_INFO.items():
+            _q = _info['qty'][_p] if _p < len(_info['qty']) else _info['qty'][-1]
+            if _q and _q > 0:
+                _rows.append((_tipo, float(_q), _info['rubro'], 'fresh'))
     return pd.DataFrame(_rows, columns=['item','qty','rubro','kind'])
 
 def _costo_por_rubro(_name):
@@ -896,7 +910,7 @@ cells.append(cell_code(r'''# ===================================================
 # CELDA 14 — Exportación Excel (todas las tablas para revisar/refinar)
 # ============================================================
 from openpyxl.utils import get_column_letter
-_xlsx = OUTPUT_DIR / f'canastas_alternativas_{ULTIMA_SEMANA}.xlsx'
+_xlsx = RESULTS_DIR / f'canastas_alternativas_{ULTIMA_SEMANA}.xlsx'
 with pd.ExcelWriter(_xlsx, engine='openpyxl') as _w:
     # Resumen
     _res = []
@@ -907,7 +921,7 @@ with pd.ExcelWriter(_xlsx, engine='openpyxl') as _w:
                      'var_mensual_%': round(float(_sm['var_mensual_%'].iloc[-1]),1) if len(_sm)>1 else None,
                      'costo_semanal_ult': round(float(_ss['costo_mediana'].iloc[-1]),0) if len(_ss) else None,
                      'n_productos_emp': len(CANASTAS_EMP[_name]),
-                     'n_tipos_frescos': sum(1 for t in FRESCO_INFO if FRESCO_INFO[t]['qty'][CANASTAS_ACTIVAS.index(_name)]>0)})
+                     'n_tipos_frescos': int((_recipe(_name)['kind']=='fresh').sum())})
     pd.DataFrame(_res).to_excel(_w, 'Resumen', index=False)
     # Series
     for _name in CANASTAS_ACTIVAS:
@@ -924,8 +938,82 @@ with pd.ExcelWriter(_xlsx, engine='openpyxl') as _w:
     cobertura_emp.to_excel(_w, 'Cobertura_emp', index=False)
     cobertura_frescos.to_excel(_w, 'Cobertura_frescos', index=False)
 print(f'✅ Excel: {_xlsx.name}  ({_xlsx.stat().st_size/1024:.0f} KB)')
-print(f'   Subilo/compartilo para refinar. Hojas: Resumen, Sem_*, Mes_*, vsIPC_*, Rubro_sem_*, '
+print(f'   Guardado en: {_xlsx.parent}')
+print(f'   Hojas: Resumen, Sem_*, Mes_*, vsIPC_*, Rubro_sem_*, '
       f'Comp_rubro_*, Detalle_*, Prov_*, Cadena_*, Cobertura_emp, Cobertura_frescos')
+''' ))
+
+# ── CELL 15 — REPORTE PARA CLAUDE ──────────────────────────────────────────────
+cells.append(cell_code(r'''# ============================================================
+# CELDA 15 — REPORTE PARA CLAUDE (copiá y pegá TODO el bloque de abajo)
+# ============================================================
+# Consolida lo que necesito para evaluar si las canastas están bien: costo, variación,
+# vs IPC, composición por rubro (estilo IPC), y flags de cobertura. Todo en texto plano.
+print('='*72)
+print('REPORTE PARA CLAUDE — canastas alternativas nb07   (copiá TODO este bloque)')
+print('='*72)
+print(f'Última semana: {ULTIMA_SEMANA} | Último mes: {_ult_mes} | Meses de serie: '
+      f'{serie_mes_dict[CANASTAS_ACTIVAS[0]]["mes"].min()}→{serie_mes_dict[CANASTAS_ACTIVAS[0]]["mes"].max()}')
+print(f'Canastas activas: {CANASTAS_ACTIVAS}')
+
+for _name in CANASTAS_ACTIVAS:
+    print('\n' + '-'*72)
+    print(f'### CANASTA: {_name}')
+    _sm = serie_mes_dict[_name]
+    try:
+        _ini = float(_sm['canasta_mediana'].iloc[0]); _fin = float(_sm['canasta_mediana'].iloc[-1])
+        _acum = (_fin/_ini - 1)*100 if _ini else float('nan')
+        _vm = float(_sm['var_mensual_%'].iloc[-1]) if len(_sm)>1 else float('nan')
+        _nsuc = int(_sm['n_sucursales'].iloc[-1]) if len(_sm) else 0
+        print(f'  Costo mensual (mediana, {_ult_mes}): ${_fin:,.0f}  | var último mes: {_vm:+.1f}%  '
+              f'| acumulado {_sm["mes"].iloc[0]}→{_sm["mes"].iloc[-1]}: {_acum:+.1f}%  | n_suc: {_nsuc}')
+    except Exception as e:
+        print('  (serie mensual no disponible:', e, ')')
+    # vs IPC
+    try:
+        _c = comparativa_dict[_name]
+        if 'idx_canasta' in _c.columns and _c['idx_canasta'].notna().any():
+            _lc = float(_c['idx_canasta'].dropna().iloc[-1])
+            _msg = f'  vs IPC (base 100 en {_c["mes"].iloc[0]}): índice canasta = {_lc:.0f}'
+            if 'idx_ipc_gral' in _c.columns and _c['idx_ipc_gral'].notna().any():
+                _msg += f'  | IPC gral = {float(_c["idx_ipc_gral"].dropna().iloc[-1]):.0f}'
+            if 'idx_ipc_alim' in _c.columns and _c['idx_ipc_alim'].notna().any():
+                _msg += f'  | IPC alim = {float(_c["idx_ipc_alim"].dropna().iloc[-1]):.0f}'
+            print(_msg)
+    except Exception:
+        pass
+    # composición por rubro (estilo IPC)
+    try:
+        _sh = rubro_share_dict[_name]
+        print(f'  Composición por rubro (último mes, total ${_sh["costo_mensual"].sum():,.0f}):')
+        for _,r in _sh.iterrows():
+            print(f'      {r["rubro"]:<26} ${r["costo_mensual"]:>10,.0f}   {r["participacion_%"]:>5.1f}%')
+    except Exception as e:
+        print('  (composición por rubro no disponible:', e, ')')
+
+# Cobertura (resumen accionable)
+print('\n' + '-'*72)
+print('### COBERTURA')
+try:
+    _tot=len(cobertura_emp); _sd=int((cobertura_emp["n_sucursales"]==0).sum())
+    _bc=int(((cobertura_emp["n_sucursales"]>0) & (~cobertura_emp["comparable"])).sum())
+    print(f'  Empaquetados (ítems-canasta): {_tot} | SIN datos SEPA: {_sd} | baja comparabilidad: {_bc}')
+    _lst = cobertura_emp[cobertura_emp["n_sucursales"]==0][["canasta","ean","descripcion"]]
+    if len(_lst): print('  SIN datos (reemplazar EAN):\n' + _lst.to_string(index=False))
+    _lst2 = cobertura_emp[(cobertura_emp["n_sucursales"]>0)&(~cobertura_emp["comparable"])][["canasta","descripcion","n_cadenas","n_provincias","n_sucursales"]]
+    if len(_lst2): print('  BAJA comparabilidad (n_cadenas<3 o n_prov<15):\n' + _lst2.to_string(index=False))
+except Exception as e:
+    print('  (cobertura empaquetados no disponible:', e, ')')
+try:
+    _frp = cobertura_frescos[(cobertura_frescos["n_cadenas"]<3)|(cobertura_frescos["n_provincias"]<10)]
+    print(f'  Frescos con baja cobertura: {list(_frp["tipo"]) if len(_frp) else "ninguno"}')
+    _frsin = [t for t in FRESCO_INFO if t not in set(cobertura_frescos["tipo"])]
+    if _frsin: print(f'  Frescos SIN datos SEPA: {_frsin}')
+except Exception:
+    pass
+print('\n' + '='*72)
+print('FIN REPORTE — pegale este bloque a Claude junto con el Excel si podés.')
+print('='*72)
 ''' ))
 
 # ── GENERAR EL NOTEBOOK ────────────────────────────────────────────────────────

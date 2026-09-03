@@ -590,3 +590,21 @@ Herramienta nueva (`notebooks/gen_nb05.py` → `05_evolucion_productos_represent
 **Requiere en Drive:** `carga/` con ZIPs SEPA + `IPC.xlsx` + `maestro_sepa_completo.csv.gz` (del Script 03) + `carga/output_canasta/canasta_representativa_*.xlsx` con `Productos unicos` poblada.
 
 **Pendiente:** el usuario sube el Excel poblado + `maestro_sepa_completo.csv.gz` a Drive, corre nb07 en Colab con datos reales, y pasa los diagnósticos de cobertura para afinar reglas de frescos y cantidades (quantities alineadas a IPC son un default editable). Mapas coropléticos/folium NO se clonaron de nb02 (se pueden agregar después).
+
+## nb07 — 4ª canasta (Tecnológica) + canastas ancladas a cobertura real [2026-09-03]
+
+Pedido: generar las canastas Popular/Media/Ejecutiva (+ una **Tecnológica** nueva en `cantidad_04`) para cargar en la hoja `Productos unicos`, con **productos homogéneos** (EAN comparable entre cadenas), desagregado por rubro estilo IPC, y dejar nb07 listo para correr en Colab.
+
+**Hallazgo clave:** las canastas curadas desde el *Maestro de Productos Interno.xlsx* fallaban contra el universo real: de 104 EANs, 42 no existían en `Productos unicos` y la mayoría de los presentes tenían **n_cadenas=1** (no comparables). Un EAN específico suele estar en pocas cadenas. **Solución:** elegir por **cobertura real** desde la propia hoja `Productos unicos` (columnas n_cadenas/n_provincias/n_sucursales), exigiendo **cad≥4**. Resultado: **90 EANs, casi todos cad=5 / 24 provincias / miles de sucursales**.
+
+**Entregables** (en `docs/canastas_alternativas/`): `cantidades_dict.py` (dict `CANTIDADES` por sepa_id→cantidad_01..04), `cantidades_productos_unicos.csv` (paste-ready + cobertura), `cantidades_detalle.csv`. Escalera de calidad Popular=2ª marca / Media=líder / Ejecutiva=premium; cantidades mensuales familia-4 escalonadas (tabla `QTY` del builder `scratchpad/build_real.py`). Frescos (frutas/verduras/carne/huevos) siguen por `TIPOS_FRESCOS` (nombre), la Tecnológica no lleva frescos.
+
+**Cambios en `gen_nb07.py`** (regenerado, 16 celdas, compila):
+- `CANASTA_COLS` suma `cantidad_04→'Tecnológica'`; `CANASTAS_SIN_FRESCOS={'Tecnológica'}`; colores/markers.
+- Frescos mapeados por **nombre** (`_FRESH_POS`), no por índice activo (robusto a la 4ª canasta); Tecnológica=0 frescos. Fix del `Resumen` (usaba índice posicional → IndexError con 4 canastas).
+- **Salida a carpeta nueva `output_canasta_alternativa`** (`RESULTS_DIR`): Excel de resultados + caché. La ENTRADA (canasta_representativa_*.xlsx) sigue en `output_canasta`.
+- Nueva **CELDA 15 "REPORTE PARA CLAUDE"**: imprime costo/var/acumulado/vs-IPC/composición por rubro + flags de cobertura, en texto plano para copiar y pasar.
+
+**Durables/tecnología**: en SEPA tienen baja cobertura (n_cadenas 4, pocas sucursales ~200-350). Se arma como bundle informativo (qty=1 c/u); vigilar en la 1ª corrida si `FRAC_PRODUCTOS_MIN=0.5` la deja rala.
+
+**Pendiente del usuario:** cargar cantidad_01..04 en `Productos unicos`, subir Excel a `output_canasta`, correr nb07 desde el badge de Colab del README, y pasar el bloque "REPORTE PARA CLAUDE" + `Cobertura_emp` para afinar.
