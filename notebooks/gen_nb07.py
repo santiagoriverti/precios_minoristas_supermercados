@@ -90,6 +90,16 @@ MAX_SEMANAS_ARRASTRE = 8
 FRESCO_OUTLIER_K = 2.5
 # Agregado nacional: 'poblacion' (ponderado por poblacion provincial) | 'mediana' (mediana simple)
 AGG_NACIONAL = 'poblacion'
+# Minimo de sucursales que una provincia necesita para un item-semana para entrar en el promedio
+# nacional ponderado. Sin esto, provincias con 2-3 sucursales (Patagonia, NEA) meten su ruido de
+# muestreo en la serie nacional con TODO su peso poblacional.
+MIN_SUC_PROV_ITEM = 3
+# Winsorizacion de las medianas provinciales contra la mediana entre provincias, antes de
+# promediar. Descarta la provincia cuyo precio se va fuera de [med/K, med*K].
+PROV_OUTLIER_K = 2.5
+# Cobertura minima de items de la receta para que el indice de una canasta arranque. Evita
+# publicar indice de una canasta que en esas fechas tenia 4 de 14 productos (caso Tecnologica 2024).
+COBERTURA_MIN_INDICE = 0.80
 
 # Provincia -> REGION (5 regiones estandar).
 REGION_PROV = {
@@ -132,8 +142,8 @@ TIPOS_FRESCOS = {
     'Morrón':      {'rubro':'Verduras','unidad':'kg','qty':(0.5,0.5,1,0.5), 'inc':r'\bmorr[oó]n|\bmorrones|\bpimiento', 'exc':r'molid|deshidr|conserva|lata|\blat\b|seco|piment[oó]n|aji molido|frasco|relleno|jalape|salsa|encurt'},
     'Batata':      {'rubro':'Verduras','unidad':'kg','qty':(1,1,1,1), 'inc':r'\bbatata', 'exc':r'dulce|congel|snack|chip|pur[eé]|frita'},
     'Acelga':      {'rubro':'Verduras','unidad':'kg','qty':(0,1,1,0.5), 'inc':r'\bacelga', 'exc':r'congel|\bcong\b|tarta|empanada|ravio|canel|ñoqui|noqui|milanesa|ensalada'},
-    'Espinaca':    {'rubro':'Verduras','unidad':'kg','qty':(0,0.5,1,0.5), 'inc':r'\bespinaca', 'exc':r'congel|\bcong\b|tarta|empanada|nuez|ravio|canel|fideo|ñoqui|noqui|muslito|\bmix\b|mixta|milanesa|soja|vegan|queso|sorrent|pasta|medall|pollo|bandeja mixta'},
-    'Choclo':      {'rubro':'Verduras','unidad':'kg','qty':(0.5,0.5,1,0.5), 'inc':r'\bchoclo', 'exc':r'lata|\blat\b|crema|cremos|congel|conserva|granos|desgran|arcor|campagnola|humita|pochoclo|snack|grm|entero'},
+    'Espinaca':    {'rubro':'Verduras','unidad':'kg','qty':(0,0.5,1,0.5), 'inc':r'\bespinaca', 'exc':r'congel|\bcong\b|tarta|empanada|nuez|ravio|canel|fideo|ñoqui|noqui|muslito|\bmix\b|mixta|milanesa|soja|vegan|queso|sorrent|pasta|medall|pollo|bandeja mixta|ensalada|malfatti|baby|hidropon|rocky'},
+    'Choclo':      {'rubro':'Verduras','unidad':'kg','qty':(0.5,0.5,1,0.5), 'inc':r'\bchoclo', 'exc':r'lata|\blat\b|crema|cremos|congel|conserva|granos|desgran|arcor|campagnola|humita|pochoclo|snack|grm|entero|relleno|tarta|calab'},
     'Brócoli':     {'rubro':'Verduras','unidad':'kg','qty':(0,0.5,1,0.3), 'inc':r'\bbrocoli|\bbrócoli', 'exc':r'congel|tarta|medall|rebozad|merluza|milanesa|pasta'},
     'Ajo':         {'rubro':'Verduras','unidad':'kg','qty':(0.2,0.2,0.3,0.2), 'inc':r'\bajo\b|\bajos\b', 'exc':r'aceite|\bsal\b|deshidr|polvo|molid|sazonad|condiment|\bpan\b|aderez|mayonesa|crema|conserva|\baji|salsa|manteca|queso|pasta|encurt'},
     'Zapallito':   {'rubro':'Verduras','unidad':'kg','qty':(0.5,0.5,1,0.5), 'inc':r'\bzapallito|\bzucchini|\bzuc+hini', 'exc':r'congel|relleno|tarta|milanesa'},
@@ -159,7 +169,7 @@ TIPOS_FRESCOS = {
     'Pollo':       {'rubro':'Pollo','unidad':'kg','qty':(3,3,3,4), 'inc':r'\bpollo\b|pata muslo', 'exc':r'caldo|sopa|saboriz|congel|nugget|pat[eé]|medall|hamburg|milanesa|pella|arroz|fideo|snack|cubito|aliment|merluza|pescado|pechuga|suprema|\bfilet|fajita|deshuesad|campero|colonial|org[aá]nic|kosher|criado|sandwich|s[aá]ndwich|empanada|tarta|salch|picada|croqueta|bocadit|rebozad|\bmax\b|triangulo|relleno|arrollado|taco|wrap|ensalada|pizza|salsa|al vac[ií]o|ahumad|grill|listo|rostiz|precoc|\bmed\b|\bjam|patita|\bseco\b|cuarto|cocido|hervid'},
     'Suprema/Pechuga':{'rubro':'Pollo','unidad':'kg','qty':(0,1,2,1), 'inc':r'\bpechuga|\bsuprema', 'exc':r'congel|milanesa|rebozad|nugget|medall|hamburg|sandwich|s[aá]ndwich|pavo|cerdo|salsa|empanad|grill|listas|granja del sol|swift|paty|\bmax\b|merluza|pescado|verdeo|ahumad|fiambre|feteado|al vac[ií]o'},
     # ---- CERDO ($/kg) ----
-    'Bondiola':    {'rubro':'Cerdo','unidad':'kg','qty':(0,0.5,1,0.5), 'inc':r'\bbondiola', 'exc':r'ahumad|curad|fiambre|feteado|sandwich|s[aá]ndwich|costeletero|sin bondiola|congel'},
+    'Bondiola':    {'rubro':'Cerdo','unidad':'kg','qty':(0,0.5,1,0.5), 'inc':r'\bbondiola', 'exc':r'ahumad|curad|fiambre|feteado|sandwich|s[aá]ndwich|costeletero|sin bondiola|congel|finas hierbas|adobad|marinad|saboriz|al vac[ií]o|piamontesa|lario|cagnoli|paladini'},
     'Pechito/Costilla cerdo':{'rubro':'Cerdo','unidad':'kg','qty':(0.5,0.5,1,0.5), 'inc':r'pechito|costilla.*cerdo|cerdo.*costilla|costeleta.*cerdo|cerdo.*costeleta|\bribs\b', 'exc':r'ahumad|congel|cong\b|salsa|bbq|sandwich|kosher|aus\b'},
     'Carré de cerdo':{'rubro':'Cerdo','unidad':'kg','qty':(0,0.5,0.5,0.3), 'inc':r'carr[eé].*cerdo|cerdo.*carr[eé]|\bcarr[eé]\b', 'exc':r'ahumad|fiambre|feteado|curad|jam[oó]n|congel|cong\b|aus\b|milanesa'},
     # ---- PESCADO ($/kg) ----
@@ -172,7 +182,7 @@ TIPOS_FRESCOS = {
     'Salame/Salamín':{'rubro':'Fiambres y Quesos','unidad':'kg','qty':(0,0.3,0.5,0.3), 'gmin':500, 'inc':r'\bsalame|\bsalamin|\bsalam[ií]n', 'exc':r'feteado|fetas|sandwich|pizza|snack|palito|cabana|picada|tabla'},
     'Mortadela':   {'rubro':'Fiambres y Quesos','unidad':'kg','qty':(0.5,0.3,0,0.3), 'gmin':500, 'inc':r'\bmortadela', 'exc':r'feteado|fetas|sandwich|pizza|piccola|familiar'},
     # ---- PANADERIA ($/kg) ----
-    'Pan francés':{'rubro':'Panadería','unidad':'kg','qty':(6,6,5,8), 'inc':r'pan franc[eé]s|\bflauta|\bmignon|\bfelipe|pan.*(criollo|casero)|\bpan\b.*(tira|\bkg)', 'exc':r'lactal|mesa|dulce|integral|salvado|hamburg|pancho|pebete|hot dog|rallado|congel|tostad|arabe|pita|molde|viena|chip|budin|prepizza|pizza|galleta|semilla|centeno|negro|queso|chocolate|rosca|figaza|panettone|fideo|don felipe|naranja|an[ií]s|cuernito|manteca|grasa'},
+    'Pan francés':{'rubro':'Panadería','unidad':'kg','qty':(6,6,5,8), 'inc':r'pan franc[eé]s|\bflauta|\bmignon|\bfelipe|pan.*(criollo|casero)|\bpan\b.*(tira|\bkg)', 'exc':r'lactal|mesa|dulce|integral|salvado|hamburg|pancho|pebete|hot dog|rallado|congel|tostad|arabe|pita|molde|viena|chip|budin|prepizza|pizza|galleta|semilla|centeno|negro|queso|chocolate|rosca|figaza|panettone|fideo|don felipe|naranja|an[ií]s|cuernito|manteca|grasa|chicharr|salvado|semilla'},
     # ---- HUEVOS ($/docena) ----
     'Huevos':      {'rubro':'Huevos','unidad':'doc','qty':(2,2,2,3), 'inc':r'\bhuevo', 'exc':r'chocolate|kinder|pascua|sorpresa|codorniz|conejo|batidora|fideo|pasta|ravio|tallar|mayonesa|pintur|colorante|separador|huevera|salsa|tarta|galletit|ensalada|revuelt|omelet|budin|torta|liquido|l[ií]quido|polvo|clara|rainb|albu|\d+\s*cm|globo|pi[ñn]ata|decor|juguete|plastic'},
 }
@@ -562,6 +572,7 @@ cells.append(cell_code(r'''# ===================================================
 # sucursal-semana se descartan las variantes fuera de [mediana/K, mediana*K]. Eso protege
 # de EANs con gramaje mal cargado o precios por unidad en vez de por kilo.
 _SKR = ['id_comercio','id_bandera','id_sucursal']
+_FECHAS_MAX = []   # ultima fecha con precio leida (para detectar la semana incompleta del final)
 _cache_key  = hashlib.md5(('|'.join(sorted(EANS_LECTURA)) + f'|w{DIA_CIERRE_SEMANA}|k{FRESCO_OUTLIER_K}').encode()).hexdigest()[:8]
 _cache_path = CACHE_DIR / f'sem_{_cache_key}_v5.parquet'   # v5 = semana jueves + outlier filter
 
@@ -596,12 +607,18 @@ def _leer_mes(_lbl):
                 # semana que cierra el jueves (mapeo sobre fechas unicas, es rapido)
                 _uf = {_d: _semana_cierre(_d) for _d in _mlt['fecha'].dt.date.unique()}
                 _mlt['semana'] = _mlt['fecha'].dt.date.map(_uf)
+                _FECHAS_MAX.append(_mlt['fecha'].max())
                 _rows.append(_mlt.groupby(_SKR+['ean_norm','semana'], as_index=False)['precio'].median())
         _tmp_p.unlink(missing_ok=True)
     if not _rows: return None
     _df = pd.concat(_rows, ignore_index=True)
-    # Autodeteccion centavos/pesos por mes (pre-2025 vienen en centavos)
-    if _df['precio'].median() > 10_000: _df['precio'] /= 100
+    # Autodeteccion centavos/pesos por mes (pre-2025 vienen en centavos). Se mide SOLO sobre los
+    # EANs EMPAQUETADOS: su nivel de precio es estable y conocido (~$1.000-20.000). Usar todo el
+    # universo seria fragil, porque los ~10.500 frescos de balanza cotizan por kilo y arrastran
+    # la mediana cerca del umbral (un falso positivo divide el mes entero por 100).
+    _ref = _df.loc[_df['ean_norm'].isin(EANS_EMP), 'precio']
+    _med_ref = _ref.median() if len(_ref) >= 50 else _df['precio'].median()
+    if _med_ref > 10_000: _df['precio'] /= 100
     return _df.groupby(_SKR+['ean_norm','semana'], as_index=False)['precio'].median()
 
 _FR_MULT = {t: (1000.0 if FRESCO_INFO[t]['unidad'] == 'kg' else 12.0) for t in FRESCO_INFO}
@@ -655,9 +672,17 @@ datos_sem = datos_sem.groupby(_SKR + ['item','semana'], as_index=False)['price']
 datos_sem['mes'] = datos_sem['semana'].map(_mes_de_semana)
 datos_sem = datos_sem[datos_sem['mes'] >= MES_INICIO_HISTORICO].copy()
 
-# La ULTIMA semana solo se usa si esta COMPLETA (su jueves de cierre ya ocurrio en los datos).
-_maxf = max(_dt.date.fromisoformat(s) for s in datos_sem['semana'].unique())
+# La ULTIMA semana solo vale si esta COMPLETA: su jueves de cierre tiene que estar cubierto por
+# los datos. Si el SEPA llega, por ejemplo, hasta el 31/08 y la semana cierra el 03/09, esa semana
+# tiene 4 de 7 dias y no se puede publicar como si estuviera cerrada.
+FECHA_MAX_DATOS = max(_FECHAS_MAX).date() if _FECHAS_MAX else None
 _SEMANAS = sorted(datos_sem['semana'].unique())
+if FECHA_MAX_DATOS is not None:
+    _incompletas = [w for w in _SEMANAS if _dt.date.fromisoformat(w) > FECHA_MAX_DATOS]
+    if _incompletas:
+        print(f'Ultimo dato del SEPA: {FECHA_MAX_DATOS}. Semanas INCOMPLETAS descartadas: {_incompletas}')
+        datos_sem = datos_sem[~datos_sem['semana'].isin(_incompletas)].copy()
+        _SEMANAS = sorted(datos_sem['semana'].unique())
 ULTIMA_SEMANA = _SEMANAS[-1]
 _TIPOS_FR = set(FRESCO_INFO)
 print(f'Observaciones (sucursal x item x semana): {len(datos_sem):,}')
@@ -702,17 +727,34 @@ sval['provincia'] = sval['provincia'].fillna('Otras')
 sval['region']    = sval['region'].fillna('Otras')
 
 # ── 1. Precio nacional ponderado por poblacion ────────────────────────────────
-_pi = sval.groupby(['item','semana','provincia'], as_index=False)['price'].median()
+# Mediana simple entre sucursales: sirve de respaldo cuando ninguna provincia califica.
+_simple = sval.groupby(['item','semana'], as_index=False)['price'].median().rename(columns={'price':'nac_simple'})
 if AGG_NACIONAL == 'poblacion':
-    _pi['w'] = _pi['provincia'].map(PESOS_POBLACION).fillna(0.0)
+    _pi = sval.groupby(['item','semana','provincia'], as_index=False).agg(
+        price=('price','median'), n_suc=('suc_id','nunique'))
+    _n0 = len(_pi)
+    # (a) la provincia necesita un minimo de sucursales para ese item-semana. Sin este filtro,
+    #     una provincia con 2 sucursales entra al promedio con TODO su peso poblacional y su
+    #     ruido de muestreo se propaga al nacional.
+    _pi = _pi[_pi['n_suc'] >= MIN_SUC_PROV_ITEM]
+    # (b) winsorizacion: se descarta la provincia que se va fuera de [med/K, med*K] respecto de
+    #     la mediana entre provincias de ese item-semana.
+    _pi['_med'] = _pi.groupby(['item','semana'])['price'].transform('median')
+    _pi = _pi[(_pi['price'] >= _pi['_med'] / PROV_OUTLIER_K) & (_pi['price'] <= _pi['_med'] * PROV_OUTLIER_K)]
+    print(f'Nacional: mediana provincial ponderada por poblacion '
+          f'(>={MIN_SUC_PROV_ITEM} suc/provincia, winsor K={PROV_OUTLIER_K}) | '
+          f'celdas item-provincia-semana descartadas: {_n0-len(_pi):,} de {_n0:,} ({(_n0-len(_pi))/max(_n0,1)*100:.1f}%)')
+    _pi['w']  = _pi['provincia'].map(PESOS_POBLACION).fillna(0.0)
     _pi['wv'] = _pi['w'] * _pi['price']
     _g = _pi.groupby(['item','semana'], as_index=False).agg(
-        wv=('wv','sum'), w=('w','sum'), med=('price','median'))
-    _g['nac'] = np.where(_g['w'] > 0, _g['wv'] / _g['w'], _g['med'])
-    nac_item = _g[['item','semana','nac']].copy()
-    print('Nacional: mediana provincial ponderada por poblacion')
+        wv=('wv','sum'), w=('w','sum'), n_prov=('provincia','nunique'))
+    _g = _g.merge(_simple, on=['item','semana'], how='outer')
+    _g['nac'] = np.where(_g['w'].fillna(0) > 0, _g['wv'] / _g['w'], _g['nac_simple'])
+    _g['n_prov'] = _g['n_prov'].fillna(0).astype(int)
+    nac_item = _g[['item','semana','nac','n_prov']].copy()
 else:
-    nac_item = sval.groupby(['item','semana'], as_index=False)['price'].median().rename(columns={'price':'nac'})
+    nac_item = _simple.rename(columns={'nac_simple':'nac'})
+    nac_item['n_prov'] = np.nan
     print('Nacional: mediana simple entre sucursales')
 
 # ── 2. Arrastre (forward-fill acotado) ────────────────────────────────────────
@@ -752,7 +794,18 @@ for _name in CANASTAS_ACTIVAS:
         serie_sem_dict[_name] = pd.DataFrame(); continue
     _q = _rec.set_index('item')['qty']
     _V = nac_ff[_its].mul(_q.reindex(_its), axis=1)     # aporte $ de cada item por semana
+    # El indice arranca en la primera semana con cobertura suficiente: publicar un indice de una
+    # canasta que en esa fecha tenia 4 de 14 productos (caso Tecnologica en 2024) no es informativo.
+    _cov = _V.notna().sum(axis=1) / len(_its)
+    _ok_cov = _cov[_cov >= COBERTURA_MIN_INDICE].index
+    if not len(_ok_cov):
+        _ok_cov = _cov[_cov >= _cov.max() * 0.99].index
+    _desde = _ok_cov[0]
+    _V = _V.loc[_desde:]
+    _cov = _cov.loc[_desde:]
     aporte_dict[_name] = _V
+    if _desde != _V.index[0] or _desde != list(nac_ff.index)[0]:
+        print(f'      (indice desde {_desde}: antes la cobertura era < {COBERTURA_MIN_INDICE:.0%})')
     _sem = list(_V.index)
     _idx = [100.0]
     for _t in range(1, len(_sem)):
@@ -762,7 +815,6 @@ for _name in CANASTAS_ACTIVAS:
         _idx.append(_idx[-1] * ((_a[_m].sum()/_den) if (_m.any() and _den > 0) else 1.0))
     _idx = pd.Series(_idx, index=_sem)
     _directo = _V.sum(axis=1, min_count=1)
-    _cov = _V.notna().sum(axis=1) / len(_its)
     _ok = _cov[_cov >= 0.95].index
     _anchor = _ok[-1] if len(_ok) else _sem[-1]
     _nivel = _directo.loc[_anchor] * _idx / _idx.loc[_anchor]
@@ -771,7 +823,8 @@ for _name in CANASTAS_ACTIVAS:
                        'costo_directo': _directo.values,        # suma cruda (referencia)
                        'indice_100': (_idx/_idx.iloc[0]*100).values,
                        'items_con_precio': _V.notna().sum(axis=1).values,
-                       'items_receta': len(_its)})
+                       'items_receta': len(_its),
+                       'cobertura_%': (_cov.values * 100).round(0)})
     _s['mes'] = _s['semana'].map(_mes_de_semana)
     _s['var_sem_%'] = _s['costo_mediana'].pct_change(fill_method=None) * 100
     serie_sem_dict[_name] = _s
@@ -1159,6 +1212,11 @@ with pd.ExcelWriter(_xlsx, engine='openpyxl') as _w:
         if _name in cadena_dict: cadena_dict[_name].to_excel(_w, f'Cadena_{_sfx}'[:31], index=False)
         if _name in region_dict: region_dict[_name].to_excel(_w, f'Region_{_sfx}'[:31], index=False)
         if _name in serie_region_dict: serie_region_dict[_name].to_excel(_w, f'RegionSem_{_sfx}'[:31], index=False)
+    # Panel nacional por item x semana: es la materia prima de todas las series. Permite
+    # diagnosticar un salto yendo directo al item, sin tener que inferirlo desde los rubros.
+    _pn_out = nac_ff.T.copy()
+    _pn_out.insert(0, 'descripcion', [(_etiqueta(i) if i in _items_receta else i) for i in _pn_out.index])
+    _pn_out.round(1).to_excel(_w, 'Panel_nacional')
     cobertura_emp.to_excel(_w, 'Cobertura_emp', index=False)
     cobertura_frescos.to_excel(_w, 'Cobertura_frescos', index=False)
     presencia_items.to_excel(_w, 'Presencia_items')
@@ -1167,8 +1225,8 @@ with pd.ExcelWriter(_xlsx, engine='openpyxl') as _w:
 print(f'Excel: {_xlsx.name}  ({_xlsx.stat().st_size/1024:.0f} KB)')
 print(f'   Guardado en: {_xlsx.parent}')
 print('   Hojas: Metodologia, Resumen, Sem_*, Mes_*, vsIPC_*, Rubro_sem_*, Comp_rubro_*, '
-      'Detalle_*, Prov_*, Cadena_*, Region_*, RegionSem_*, Cobertura_emp, Cobertura_frescos, '
-      'Presencia_items, Alertas_reemplazo')
+      'Detalle_*, Prov_*, Cadena_*, Region_*, RegionSem_*, Panel_nacional, Cobertura_emp, '
+      'Cobertura_frescos, Presencia_items, Alertas_reemplazo')
 ''' ))
 
 # ── CELL 15 — REPORTE ─────────────────────────────────────────────────────────
@@ -1226,6 +1284,23 @@ for _name in CANASTAS_ACTIVAS:
         if len(_cc):
             print('  Cadenas: ' + ' | '.join(f'{r["cadena"]} ${r["costo_mediana"]:,.0f}' for _, r in _cc.iterrows()))
     except Exception: pass
+
+# Fiabilidad de la desagregacion: la volatilidad de una region escala con 1/sqrt(n_sucursales),
+# asi que una region con pocas sucursales puede mostrar saltos que son ruido de muestreo.
+print('')
+print('-'*72)
+print('### FIABILIDAD DE LA DESAGREGACION REGIONAL')
+try:
+    _refreg = serie_region_dict[CANASTAS_ACTIVAS[0]].sort_values(['region','semana'])
+    _vv = (_refreg.groupby('region')
+             .agg(n_suc=('n_sucursales','median'),
+                  sd=('costo_mediana', lambda x: x.pct_change(fill_method=None).std()*100)).reset_index())
+    print(f'  (canasta {CANASTAS_ACTIVAS[0]})  region | n_suc mediano | desvio de la variacion semanal')
+    for _, _r in _vv.sort_values('n_suc', ascending=False).iterrows():
+        _fl = '   <-- muestra chica: leer con cuidado' if _r['n_suc'] < 100 else ''
+        print(f'      {_r["region"]:<18} {int(_r["n_suc"]):>6}   {_r["sd"]:>5.1f}%{_fl}')
+except Exception as _e:
+    print('  (no disponible:', _e, ')')
 
 print('\n' + '-'*72)
 print('### COBERTURA Y TRAZABILIDAD')

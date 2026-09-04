@@ -1,6 +1,6 @@
 # Metodología — ICR (Índice de Consumo Representativo)
 
-**Última actualización:** 2026-09-04 (nb07 v5: motor del informe semanal — 6 canastas, semana que cierra el jueves, índice encadenado de muestra apareada, nacional ponderado por población, 196 empaquetados + 59 tipos de frescos)
+**Última actualización:** 2026-09-04 (nb07 v5.1: motor del informe semanal — 6 canastas, semana que cierra el jueves, índice encadenado de muestra apareada, nacional ponderado por población, 196 empaquetados + 59 tipos de frescos)
 **Período de referencia:** enero 2024 – abril 2026
 
 ---

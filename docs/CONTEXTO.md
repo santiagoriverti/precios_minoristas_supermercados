@@ -467,6 +467,23 @@ Los 4 reemplazos (Swift XL, Lavandina Anti-splash, Plusbelle, Listerine) están 
 
 ## Historial de cambios
 
+### 2026-09-04 — nb07 v5.1: robustez del nacional (primera corrida real de v5)
+
+Diagnóstico sobre `canastas_alternativas_2026-09-03`. El índice encadenado bajó los saltos de
+±24% a ±12%, pero quedaban cuatro. Causa: **el ruido de las provincias chicas entraba al nacional
+con todo su peso poblacional** (volatilidad 2,3% con 1.423 sucursales vs 12,0% con 38). En el
+salto del 2025-06-12, Centro/Pampeana subió 1,6% y Patagonia 113%, y volvió la semana siguiente.
+
+Correcciones (METODOLOGIA §10.8): `MIN_SUC_PROV_ITEM=3`, `PROV_OUTLIER_K=2.5`,
+`COBERTURA_MIN_INDICE=0.80` (la Tecnológica tenía 4 de 14 ítems en todo 2024), descarte de la
+semana incompleta del final (el SEPA llegaba al 31/08 y la semana cerraba el 03/09), y detección
+centavos/pesos medida solo sobre empaquetados. Frescos: Bondiola separada de la bondiola curada
+(144→101 EANs), Espinaca sin ensaladas listas, Choclo y Pan francés depurados.
+Nuevas salidas: hoja `Panel_nacional` y bloque de fiabilidad regional en el reporte.
+
+Los movimientos de Carne de 2026-03/06 se dejaron: aparecen también en Centro/Pampeana con 1.700
+sucursales, así que son repricings reales, no ruido.
+
 ### 2026-09-04 — nb07 v5: motor del informe semanal (6 canastas, índice encadenado)
 
 Reescritura del motor de nb07 para que la salida la pueda publicar semanalmente el equipo de

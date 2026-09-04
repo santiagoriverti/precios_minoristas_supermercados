@@ -70,12 +70,16 @@ de `data/` a `carga/` en el Drive, y autorizar Colab (`Abrir notebook → GitHub
 **A 2026-09-04 el repo está público.**
 
 ### Pendientes inmediatos
-1. **Corrida real de nb07 v5** (el usuario la estaba ejecutando el 2026-09-04). Al terminar hay
-   que revisar el bloque **"REPORTE PARA CLAUDE"**, la hoja **`Cobertura_frescos`** y
-   **`Alertas_reemplazo`**. Lo que falta validar contra datos reales son los **26 tipos frescos
-   nuevos** (Cerdo, Pescado, Fiambres y Quesos por kg, Panadería/pan francés, y los cortes
-   vacunos y verduras agregados): confirmar que los $/kg son plausibles y la cobertura sana.
-2. **Seguridad**: rotar el PAT de GitHub (expuesto en sesiones jun/jul; nunca hizo falta usarlo).
+1. **Corrida de nb07 v5.1**. La v5 ya corrió (2026-09-04) y se diagnosticaron sus saltos: el
+   ruido de provincias chicas entraba al nacional con todo su peso poblacional. v5.1 lo corrige
+   (`MIN_SUC_PROV_ITEM=3`, winsorización provincial, cobertura mínima del índice, descarte de la
+   semana incompleta). **Falta validar en datos reales que los saltos de 2025-06-12 (Frutas) y
+   2025-12-04 desaparecieron.** Usar la hoja nueva `Panel_nacional` para ir directo al ítem si
+   queda alguno.
+2. **Cobertura de frescos ya validada** contra datos reales (59/59 tipos con datos, 0 alertas de
+   reemplazo, 0 empaquetados sin datos). Se depuró Bondiola (mezclaba curada), Espinaca, Choclo
+   y Pan francés.
+3. **Seguridad**: rotar el PAT de GitHub (expuesto en sesiones jun/jul; nunca hizo falta usarlo).
 
 ### Validación hecha (2026-09-04)
 - nb07 corrido **end-to-end contra dataset SEPA sintético**: **16/16 celdas OK**. Verificado
