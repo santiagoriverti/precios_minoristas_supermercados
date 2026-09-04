@@ -1,6 +1,6 @@
 # Bugs Pendientes y Mejoras
 
-Última actualización: 2026-09-04 — nb07 v5: motor del informe semanal (6 canastas, índice encadenado, nacional ponderado, trazabilidad de altas/bajas)
+Última actualización: 2026-09-04 — nb07 v5.1: robustez del nacional (mínimo de sucursales por provincia, winsorización, cobertura mínima del índice, semana incompleta)
 
 ---
 
@@ -11,6 +11,39 @@
 ---
 
 ## 🟢 Cambios y fixes 2026-09
+
+### 🟢 Notebook 07 v5.1 — robustez del nacional (2026-09-04)
+
+Diagnóstico sobre la **primera corrida real de v5**. El índice encadenado bajó los saltos de
+±24% a ±12%, pero quedaban cuatro.
+
+| Síntoma reportado | Causa real encontrada |
+|---|---|
+| Salto +12% el 2025-06-12 (y −4,8% el 2025-12-04) | **Ruido de provincias chicas**: Centro/Pampeana (1.423 suc) subió 1,6% y **Patagonia (38 suc) 113%**, volviendo la semana siguiente. El promedio ponderado le daba a Patagonia su peso poblacional completo |
+| Tecnológica con trayectoria errática en 2024 | Tenía **4 de 14 ítems durante todo 2024** (el 14º entra en 2025-09). El índice existía pero no era informativo |
+| Última semana con variación rara | **Semana incompleta**: el SEPA llegaba al 31/08 y la semana cerraba el 03/09 → 4 de 7 días, publicada como cerrada |
+| Movimientos de Carne 2026-03/06 | **No es bug**: aparecen también en Centro/Pampeana con 1.700 sucursales → repricings reales |
+
+**Fixes**: `MIN_SUC_PROV_ITEM=3` (sucursales mínimas por provincia-ítem-semana),
+`PROV_OUTLIER_K=2.5` (winsorización de medianas provinciales), `COBERTURA_MIN_INDICE=0.80`
+(el índice arranca cuando la canasta tiene ≥80% de sus ítems), descarte de semanas incompletas
+vía `FECHA_MAX_DATOS`.
+
+**Bug latente corregido**: la detección centavos/pesos se medía sobre todo el universo. Con
+~10.500 frescos cotizando por kilo (hasta $39k), la mediana global quedaba pegada al umbral de
+10.000 y un falso positivo habría **dividido un mes entero por 100** de forma silenciosa. Ahora
+se mide solo sobre los EANs empaquetados.
+
+**Frescos depurados** (contaminación verificada contra el maestro): Bondiola mezclaba bondiola
+fresca con **curada** (fiambre, ~2× el precio) 144→101 EANs; Espinaca colaba ensaladas listas
+27→21; Choclo un relleno para tarta 25→24; Pan francés "pan con chicharrón" 170→167.
+
+**Nuevo diagnóstico**: hoja `Panel_nacional` (precio nacional de cada ítem por semana) y bloque
+de fiabilidad regional en el reporte (n_suc y volatilidad por región).
+
+**Validado**: 15/15 celdas end-to-end, con verificación explícita del descarte de la semana
+incompleta y del filtro provincial.
+
 
 ### 🟢 Notebook 07 v5 — motor del informe semanal (2026-09-04)
 

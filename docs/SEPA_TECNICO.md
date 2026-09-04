@@ -732,6 +732,27 @@ semana se asigna a su mes **"dueño"**: el del punto medio de la ventana (cierre
 
 > Ojo: nb02 y nb06 siguen usando **semana ISO** (`%G-S%V`). Solo nb07 usa el cierre en jueves.
 
+**Semana incompleta al final.** El SEPA se publica con rezago, así que la última ventana puede
+no estar cerrada: si el último `precio_YYYYMMDD` es el 31/08 y la semana cierra el 03/09, esa
+semana tiene 4 de 7 días. nb07 registra `FECHA_MAX_DATOS` durante la lectura y **descarta las
+semanas cuyo jueves de cierre es posterior**, avisando por pantalla. Sin esto, la última semana
+del informe se publicaría como cerrada con cobertura parcial.
+
+### Detección centavos/pesos: medirla sobre los empaquetados
+El SEPA trae los precios en **centavos** hasta 2025A y en **pesos** desde 2025B. nb07 lo detecta
+por mes con la regla `mediana > 10.000 → dividir por 100`, pero la mediana se calcula **solo
+sobre los EANs empaquetados**, cuyo nivel de precio es estable y conocido (~$1.000-20.000).
+Medirla sobre todo el universo sería frágil: los ~10.500 frescos de balanza cotizan **por kilo**
+(carnes $10-27k, quesos duros hasta $39k) y arrastran la mediana global cerca del umbral. Un
+falso positivo dividiría un mes entero por 100 y rompería la serie de forma silenciosa.
+
+### Ruido de muestreo por provincia
+El desvío de la variación semanal escala con 1/√n: **2,3%** en Centro/Pampeana (1.423 sucursales)
+contra **12,0%** en Patagonia (38). Como el nacional se pondera por población, una provincia con
+2-3 sucursales aportaba su ruido con todo su peso poblacional. Por eso el nacional exige
+`MIN_SUC_PROV_ITEM` sucursales por provincia-ítem-semana y winsoriza las medianas provinciales
+(`PROV_OUTLIER_K`). Ver METODOLOGIA §10.8.
+
 ### Región
 `REGION_PROV` mapea provincia → una de 5 regiones (Centro/Pampeana, NOA, NEA, Cuyo, Patagonia).
 `costo_suc` gana la columna `region`; se agregan `region_dict` (snapshot) y `serie_region_dict` (semanal).

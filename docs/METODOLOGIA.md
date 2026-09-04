@@ -557,6 +557,70 @@ La serie del IPC se ve casi recta en el gráfico porque son los índices INDEC r
 (4.261 → 12.076 entre 2024-01 y 2026-07): sube ~6,7 puntos/mes en 2024, ~4,7 en 2025 y ~6,6 en
 2026, y a esa escala la curva es visualmente lineal. No es un error de carga.
 
+---
+
+### 10.8. nb07 v5.1 (2026-09-04) — robustez del nacional y de la muestra
+
+Diagnóstico sobre la **primera corrida real de v5** (`canastas_alternativas_2026-09-03.xlsx`).
+El índice encadenado ya había bajado los saltos de ±24% a ±12%, pero quedaban cuatro.
+
+**Hallazgo central: el ruido de las provincias chicas entraba al nacional con todo su peso
+poblacional.** La volatilidad escala con 1/√n:
+
+| Región | n_suc mediano | Desvío de la variación semanal |
+|---|---:|---:|
+| Centro/Pampeana | 1.423 | 2,3% |
+| NEA | 31 | 4,1% |
+| Cuyo | 52 | 6,0% |
+| NOA | 69 | 7,4% |
+| Patagonia | 38 | **12,0%** |
+
+En el salto del 2025-06-12 (+12% nacional) Centro/Pampeana subió 1,6% y **Patagonia 113%**
+(443k → 942k, y volvió a 593k la semana siguiente). Es decir: la corrección de v5 (dejar de estar
+dominados por DIA) trajo este efecto lateral, porque el promedio ponderado le daba a cada
+provincia su peso poblacional completo aunque el dato viniera de dos sucursales.
+
+**Correcciones:**
+
+| Parámetro | Valor | Qué hace |
+|---|---|---|
+| `MIN_SUC_PROV_ITEM` | 3 | Una provincia entra al promedio nacional de un ítem-semana solo si tiene ≥3 sucursales con precio para ese ítem. Si no califica, su peso se redistribuye |
+| `PROV_OUTLIER_K` | 2.5 | Winsorización de las medianas provinciales contra la mediana entre provincias, antes de promediar |
+| `COBERTURA_MIN_INDICE` | 0.80 | El índice de una canasta arranca en la primera semana con ≥80% de los ítems de su receta |
+
+Además:
+
+- **Cobertura mínima del índice**: la Tecnológica tenía **4 de 14 ítems durante todo 2024** (el
+  14º recién aparece en 2025-09), así que su índice de 2024 no era informativo. Ahora arranca
+  cuando la canasta existe de verdad. Se agrega la columna `cobertura_%` a las series semanales.
+- **Semana incompleta**: se descartan las semanas cuyo jueves de cierre es posterior al último
+  dato del SEPA (`FECHA_MAX_DATOS`). En la corrida real el SEPA llegaba al 31/08 y la semana
+  2026-09-03 tenía 4 de 7 días, pero se publicaba como cerrada.
+- **Detección centavos/pesos**: se mide sobre los **EANs empaquetados**, no sobre todo el
+  universo. Con ~10.500 frescos de balanza cotizando por kilo, la mediana global quedaba cerca
+  del umbral de 10.000 y un falso positivo habría dividido un mes entero por 100.
+
+**Refinamiento de tipos frescos** (contaminación verificada contra el maestro real):
+
+| Tipo | EANs antes → después | Qué colaba |
+|---|---|---|
+| Bondiola | 144 → 101 | Bondiola **curada** (fiambre, ~2× el precio de la fresca) |
+| Espinaca | 27 → 21 | Ensaladas listas, baby hidropónica |
+| Choclo | 25 → 24 | Relleno para tarta |
+| Pan francés | 170 → 167 | "Pan con chicharrón" |
+
+**Nuevas salidas de diagnóstico:**
+- Hoja **`Panel_nacional`**: precio nacional de cada ítem por semana. Permite ir directo al ítem
+  que causó un salto, en vez de inferirlo desde los rubros.
+- Bloque de **fiabilidad regional** en el reporte: n_sucursales y desvío de la variación semanal
+  por región, con aviso cuando la muestra es chica (<100 sucursales).
+
+**Qué NO se cambió y por qué**: los movimientos de Carne del 2026-03-26 (+11%) y 2026-06-18
+(−8%) aparecen **también en Centro/Pampeana con 1.700 sucursales**, así que no son ruido de
+muestra chica: son repricings reales y anchos del panel de carne. Corregirlos sería borrar
+información verdadera.
+
+
 ## 11. Notebook 02 — Excel de econometría (`datos_econometria`)
 
 Insumo para análisis de series de tiempo (materia "Econometría avanzada"). El Notebook 02, además

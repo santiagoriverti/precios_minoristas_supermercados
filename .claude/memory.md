@@ -6,7 +6,7 @@ Autor: Santiago Riverti — investigador independiente
 
 ---
 
-## 🟢 ESTADO ACTUAL / HANDOFF [2026-09-04] — nb07 v5, motor del informe semanal
+## 🟢 ESTADO ACTUAL / HANDOFF [2026-09-04] — nb07 v5.1, motor del informe semanal
 
 **Foco actual del proyecto**: el **notebook 07** es el que alimenta el **informe semanal** que
 redacta el equipo de economistas. Todo lo demás (nb01–nb06) está estable y sin cambios.
@@ -38,7 +38,7 @@ Diagnóstico previo sobre el Excel de la corrida 2026-W36 (todo verificado en lo
 - El "nacional" **era el precio de DIA** (42% de las sucursales, precios uniformes).
 - El IPC "recto" del gráfico **no es un bug**: son los índices INDEC reales, lineales a esa escala.
 
-Soluciones (detalle en METODOLOGIA §10.7):
+Soluciones v5 (detalle en METODOLOGIA §10.7):
 1. **Índice encadenado de muestra apareada** (solo ítems presentes en ambas semanas) + **nivel**
    anclado en la semana con cobertura ≥95% y retropolado.
 2. **Nacional ponderado por población provincial** (`AGG_NACIONAL='poblacion'`).
@@ -47,6 +47,34 @@ Soluciones (detalle en METODOLOGIA §10.7):
    (`FRESCO_OUTLIER_K`). Defensa contra gramajes mal cargados.
 5. **Provincia/región controlando por cadena** (`idx_vs_nacional`, 100 = nacional).
 6. `FRAC_PRODUCTOS_MIN = 0.8` (antes 0.5, que sobre-imputaba).
+
+### v5.1 — lo que salió de la primera corrida real (METODOLOGIA §10.8)
+La v5 corrió el 2026-09-04 y bajó los saltos de ±24% a ±12%, pero quedaban cuatro. Causa:
+**el ruido de las provincias chicas entraba al nacional con todo su peso poblacional**. La
+volatilidad escala con 1/√n: **2,3%** en Centro/Pampeana (1.423 suc) contra **12,0%** en
+Patagonia (38). En el salto del 2025-06-12, Centro/Pampeana subió 1,6% y Patagonia **113%**,
+volviendo la semana siguiente. Es decir: el fix de v5 (dejar de estar dominados por DIA) trajo
+este efecto lateral.
+
+| Parámetro nuevo | Valor | Qué hace |
+|---|---|---|
+| `MIN_SUC_PROV_ITEM` | 3 | Sucursales mínimas para que una provincia entre al nacional de un ítem-semana |
+| `PROV_OUTLIER_K` | 2.5 | Winsoriza las medianas provinciales contra la mediana entre provincias |
+| `COBERTURA_MIN_INDICE` | 0.80 | El índice arranca cuando la canasta tiene ≥80% de sus ítems |
+
+Además: **descarte de la semana incompleta** (`FECHA_MAX_DATOS`; el SEPA llegaba al 31/08 y la
+semana cerraba el 03/09 con 4 de 7 días) y **detección centavos/pesos medida solo sobre
+empaquetados** (bug latente: con ~10.500 frescos cotizando por kilo la mediana global quedaba
+pegada al umbral de 10.000, y un falso positivo habría dividido un mes entero por 100).
+
+**Frescos depurados**: Bondiola mezclaba la fresca con la **curada** (fiambre, ~2× precio)
+144→101 EANs; Espinaca sin ensaladas listas 27→21; Choclo 25→24; Pan francés 170→167.
+
+**Nuevas hojas**: `Panel_nacional` (precio nacional de cada ítem por semana — para ir directo al
+ítem que causó un salto) y bloque de fiabilidad regional en el reporte.
+
+**Lo que NO se tocó**: los movimientos de Carne de 2026-03-26 (+11%) y 2026-06-18 (−8%) aparecen
+también en Centro/Pampeana con 1.700 sucursales → son repricings reales, no ruido.
 
 **Bugs corregidos**: normalización de provincia insensible a mayúsculas/acentos (`San juan`
 caía en región `Otras`); `n_sucursales` ahora cuenta la terna `id_comercio|id_bandera|id_sucursal`.

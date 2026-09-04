@@ -49,6 +49,8 @@ El notebook exporta dos hojas para controlar altas y bajas a lo largo del tiempo
   precio real en el SEPA. Sirve para ver cuándo entró o salió un producto.
 - **`Alertas_reemplazo`**: ítems de alguna canasta sin dato en las últimas 8 semanas. Son los
   candidatos a reemplazar (buscá un sustituto en `Productos unicos` y editá el loader).
+- **`Panel_nacional`**: precio nacional de cada ítem por semana. Es la materia prima de todas
+  las series: si una canasta muestra un salto raro, se busca acá qué ítem lo causó.
 
 Un ítem que falta pocas semanas **no rompe la serie**: el notebook arrastra su último precio
 nacional conocido (hasta 8 semanas) y, además, el índice es **encadenado de muestra apareada**,

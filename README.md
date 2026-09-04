@@ -572,9 +572,20 @@ Se cambia con `DIA_CIERRE_SEMANA` (3=jueves, 4=viernes).
 ### Config (CELDA 1)
 `CANASTA_COLS` (6 canastas), `CANASTAS_SIN_FRESCOS = {Tecnológica, Femenina}`,
 `RUBRO_DESDE_CATEGORIA` (usa `categoria` en vez de `rubro` para los bundles temáticos),
-`TIPOS_FRESCOS` (59 tipos con `inc`/`exc`/`gmin`/`qty`), `DIA_CIERRE_SEMANA`,
-`MAX_SEMANAS_ARRASTRE`, `FRESCO_OUTLIER_K`, `AGG_NACIONAL`, `FRAC_PRODUCTOS_MIN` (0.8),
-`MIN_SUC_AGG`, `REGION_PROV`.
+`TIPOS_FRESCOS` (59 tipos con `inc`/`exc`/`gmin`/`qty`), `REGION_PROV`.
+
+| Parámetro | Valor | Qué controla |
+|---|---|---|
+| `DIA_CIERRE_SEMANA` | 3 | Día de cierre de la semana (3=jueves, 4=viernes) |
+| `AGG_NACIONAL` | `poblacion` | Agregado nacional ponderado por población provincial |
+| `MIN_SUC_PROV_ITEM` | 3 | Sucursales mínimas para que una provincia entre al nacional de un ítem-semana |
+| `PROV_OUTLIER_K` | 2.5 | Winsorización de medianas provinciales contra la mediana entre provincias |
+| `FRESCO_OUTLIER_K` | 2.5 | Descarte de variantes de un tipo fuera de [med/K, med×K] por sucursal-semana |
+| `MAX_SEMANAS_ARRASTRE` | 8 | Semanas que se arrastra el último precio de un ítem ausente |
+| `COBERTURA_MIN_INDICE` | 0.80 | Cobertura mínima de la receta para que arranque el índice |
+| `FRAC_PRODUCTOS_MIN` | 0.8 | Fracción de empaquetados que una sucursal necesita para contar |
+| `MIN_SUC_AGG` | 30 | Sucursales mínimas para reportar una desagregación como confiable |
+
 
 ### Arquitectura (memoria)
 La lectura semanal **colapsa los frescos a su TIPO durante la lectura** (de ~10k EANs de balanza
@@ -587,8 +598,13 @@ a 59 tipos) para no reventar la RAM sobre toda la historia; cachea por mes cerra
 - `canastas_alternativas_YYYY-MM-DD.xlsx` (fecha de cierre de la semana): `Metodologia`,
   `Resumen`, y por canasta `Sem_*`/`Mes_*`/`vsIPC_*`/`Rubro_sem_*`/`Comp_rubro_*`/`Detalle_*`/
   `Prov_*`/`Cadena_*`/`Region_*`/`RegionSem_*`, + `Cobertura_emp`, `Cobertura_frescos`,
+  **`Panel_nacional`** (precio nacional de cada ítem por semana — la materia prima de todas las
+  series; sirve para ir directo al ítem que causó un salto),
   **`Presencia_items`** (matriz ítem × mes: % de semanas con dato real) y
   **`Alertas_reemplazo`** (ítems sin dato hace más de 8 semanas).
+
+> **Semana incompleta**: si el último dato del SEPA es anterior al jueves de cierre de la última
+> semana, esa semana se descarta automáticamente (no se publica una semana con 4 de 7 días).
 
 ### Repositorio privado — maestros en el Drive
 
