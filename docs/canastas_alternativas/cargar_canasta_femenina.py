@@ -2,8 +2,9 @@
 # CARGAR LA CANASTA FEMENINA EN "Productos unicos"  (cantidad_06)
 # ------------------------------------------------------------
 # Canasta de consumo femenino (gestion menstrual + depilacion + cuidado
-# personal). 12 productos, todos con cobertura >=4 cadenas en la hoja
-# "Productos unicos". Solo escribe la columna cantidad_06: NO toca
+# personal). 11 productos, todos con cobertura >=4 cadenas Y con historia de
+# precios desde 2024-01 en la hoja "Productos unicos" (clave para que el indice
+# vs-IPC no tenga saltos de base). Solo escribe la columna cantidad_06: NO toca
 # cantidad_01..05 (asi conservas las 5 canastas que ya cargaste).
 #
 # Uso en Colab:
@@ -38,9 +39,12 @@ CANTIDADES = {
     '7500435173100': 1,  # Crema de Afeitar Protectora Suave y Lisa Venus 150 Ml
     # --- Cuidado personal femenino ---
     '7790064001909': 1,  # Algodon Discos Redondos Estrella 80 Un (desmaquillante)
-    '4005808538553': 1,  # Jabon Intimo Cuidado Suave Nivea 250 Ml
     '7791293049557': 2,  # Desodorante Aerosol Women Nutrivive Rexona 150 Cc
     '7509552924121': 1,  # Tintura Coloracion Permanente Nutrisse (castano)
+    # NOTA: se saco el Jabon Intimo Nivea (4005808538553): recien aparece en el
+    # SEPA en 2024-07, sin dato en 2024-01, lo que inflaba artificialmente el
+    # indice vs-IPC de la canasta. Si queres re-incorporar higiene intima, elegi
+    # un producto con historia desde 2024-01.
 }
 
 def norm(e):
