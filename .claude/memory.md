@@ -6,6 +6,86 @@ Autor: Santiago Riverti — investigador independiente
 
 ---
 
+## 🟢 ESTADO ACTUAL / HANDOFF [2026-09-04] — nb07 v5, motor del informe semanal
+
+**Foco actual del proyecto**: el **notebook 07** es el que alimenta el **informe semanal** que
+redacta el equipo de economistas. Todo lo demás (nb01–nb06) está estable y sin cambios.
+
+### Qué es nb07 hoy
+Costo de **6 canastas** vs IPC, desagregado por rubro / provincia / región / cadena.
+- **Semana que cierra el JUEVES** (ventana viernes→jueves, etiquetada por fecha de cierre:
+  `2026-09-03`). Config: `DIA_CIERRE_SEMANA` (3=jueves, 4=viernes). *nb02/nb06 siguen en ISO.*
+- **6 canastas** en la hoja `Productos unicos` (**no** confundir con las de la hoja `Selección`,
+  que son las de nb02):
+
+| Col | Canasta | Emp. | Frescos | Total |
+|---|---|---:|---:|---:|
+| `cantidad_01` | Popular | 66 | 34 | 100 |
+| `cantidad_02` | Media | 100 | 58 | 158 |
+| `cantidad_03` | Ejecutiva | 104 | 56 | 160 |
+| `cantidad_04` | Tecnológica | 14 | — | 14 |
+| `cantidad_05` | Representativa | 108 | 59 | 167 |
+| `cantidad_06` | Femenina | 16 | — | 16 |
+
+**196 EANs empaquetados únicos** + **59 tipos de frescos**.
+
+### Metodología clave (por qué está así)
+Diagnóstico previo sobre el Excel de la corrida 2026-W36 (todo verificado en los datos):
+- Los saltos de la serie (2026-W07 +24%, W31 −21%) eran **el rubro Carne**: cambio del set de
+  variantes, no inflación.
+- El "despegue" inicial era **entrada tardía de ítems** (un ítem sin precio aportaba $0 y al
+  aparecer generaba un salto de nivel).
+- El "nacional" **era el precio de DIA** (42% de las sucursales, precios uniformes).
+- El IPC "recto" del gráfico **no es un bug**: son los índices INDEC reales, lineales a esa escala.
+
+Soluciones (detalle en METODOLOGIA §10.7):
+1. **Índice encadenado de muestra apareada** (solo ítems presentes en ambas semanas) + **nivel**
+   anclado en la semana con cobertura ≥95% y retropolado.
+2. **Nacional ponderado por población provincial** (`AGG_NACIONAL='poblacion'`).
+3. **Arrastre** del último precio hasta 8 semanas (`MAX_SEMANAS_ARRASTRE`); más allá → alerta.
+4. **Filtro de outliers intra-tipo** en frescos: `[med/2.5, med×2.5]` por sucursal-semana
+   (`FRESCO_OUTLIER_K`). Defensa contra gramajes mal cargados.
+5. **Provincia/región controlando por cadena** (`idx_vs_nacional`, 100 = nacional).
+6. `FRAC_PRODUCTOS_MIN = 0.8` (antes 0.5, que sobre-imputaba).
+
+**Bugs corregidos**: normalización de provincia insensible a mayúsculas/acentos (`San juan`
+caía en región `Otras`); `n_sucursales` ahora cuenta la terna `id_comercio|id_bandera|id_sucursal`.
+
+### Flujo de trabajo semanal
+1. Loader `docs/canastas_alternativas/cargar_canastas_v4.py` en Colab → subir el Excel →
+   descargar `*_con_canastas.xlsx` → subirlo a Drive `carga/output_canasta/` como
+   `canasta_representativa_<periodo>.xlsx`. **Dejar UN SOLO archivo** con ese patrón: nb07 toma
+   el de nombre más alto (`sorted(..., reverse=True)[0]`).
+2. Correr nb07. Caché `sem_*_v5.parquet` (la clave incluye EANs + día de cierre + `FRESCO_OUTLIER_K`;
+   cambiar cualquiera fuerza relectura completa, ~50-60 min).
+3. Revisar `Alertas_reemplazo` → si un ítem lleva >8 semanas sin dato, buscar sustituto en
+   `Productos unicos` y editar el diccionario `CANTIDADES` del loader.
+
+### ⚠️ Repositorio público vs privado
+Los notebooks bajan los maestros de `raw.githubusercontent.com`. **Con el repo privado eso da 404**
+y falla la carga en nb02/04/05/06/07 (además de romper los badges de Colab).
+`leer_maestro()` ahora busca: `./data` → **Drive (`SEPA_DIR`)** → caché → GitHub. Si se vuelve a
+poner privado, copiar `maestro_sucursales_completo.xlsx` y `Maestro de Productos Interno.xlsx`
+de `data/` a `carga/` en el Drive, y autorizar Colab (`Abrir notebook → GitHub → incluir repos privados`).
+**A 2026-09-04 el repo está público.**
+
+### Pendientes inmediatos
+1. **Corrida real de nb07 v5** (el usuario la estaba ejecutando el 2026-09-04). Al terminar hay
+   que revisar el bloque **"REPORTE PARA CLAUDE"**, la hoja **`Cobertura_frescos`** y
+   **`Alertas_reemplazo`**. Lo que falta validar contra datos reales son los **26 tipos frescos
+   nuevos** (Cerdo, Pescado, Fiambres y Quesos por kg, Panadería/pan francés, y los cortes
+   vacunos y verduras agregados): confirmar que los $/kg son plausibles y la cobertura sana.
+2. **Seguridad**: rotar el PAT de GitHub (expuesto en sesiones jun/jul; nunca hizo falta usarlo).
+
+### Validación hecha (2026-09-04)
+- nb07 corrido **end-to-end contra dataset SEPA sintético**: **16/16 celdas OK**. Verificado
+  explícitamente que el filtro de outliers descarta una variante plantada a 15× el precio, y que
+  `Presencia_items` detecta un producto que entra recién en el 3er mes.
+- Loader v4: **196/196 EANs matchean** contra la hoja real; cargado en el Excel del Drive con
+  **0 diferencias** en las 196×6 celdas.
+
+---
+
 ## 🔵 EN CURSO [2026-08-27]: MAESTRO COMPLETO desde SEPA crudo (para capturar TODOS los celíacos)
 
 **Problema detectado**: DIA (1038 sucursales, la más grande) daba brecha nula porque sus EANs celíacos (p.ej. "Spaghetti maíz sin TACC Wakas 400g") **no están en el Maestro interno** (176k, curado/incompleto), y nuestras listas sin-TACC son un **subconjunto** (~78 de ~299 GF del Maestro). El `productos.csv` crudo del SEPA SÍ trae `productos_descripcion/marca/presentacion` (verificado en el anexo oficial `anexo_6201340_2.pdf`), pero el consolidado `*_COMPLETO.csv.gz` (que arma el usuario con `03_consolidacion_ultimo_mes.py`, LOCAL en Windows) solo guardaba EAN+precios.
@@ -21,7 +101,7 @@ Autor: Santiago Riverti — investigador independiente
 
 ---
 
-## 🟢 ESTADO ACTUAL / HANDOFF [2026-08-22]
+## 🟡 HANDOFF ANTERIOR [2026-08-22]
 
 **Ahora hay 6 herramientas (nb01–nb06).** Se agregó **Notebook 06 — Brecha celíaca (TACC vs sin-TACC)**. Método VIGENTE (evolucionó en 4 runs reales, ver sección "Notebook 06"): **brecha INTRA-SUPERMERCADO por (sucursal, MES)** — en cada super, por tipo, mediana $/100g de los candidatos que tuvo ese mes; brecha del tipo dentro del super; se promedia entre supers (por provincia/cadena/zona). Output clave = **brecha POR TIPO** (`Brecha_tipo`), granularidad mensual. Hallazgo (real): la prima celíaca sobre productos TACC-sustituibles es **grande** ($/100g), muy por encima del ~9% de la canasta completa (que "maquilla" con productos naturalmente sin gluten). **✅ EANs TACC CURADOS [2026-08-25]**: se reemplazaron los EANs TACC de nicho por los de **alta cobertura** de `canasta_representativa_2026-07.xlsx` (hoja `Candidatos`, ~1900-2500 sucursales) — Fideos: Lucchetti/Matarazzo/Favorita 500g; Galletitas dulces: 9deOro/Don Satur/Chocolinas/Bagley/Sonrisas/Maná; Galletitas saladas: 9deOro/Don Satur/Traviata/Tosti/Hogareñas; Pan rallado: Preferido/Mamá Cocina/Lucchetti/Pureza/Favorita. Se excluyeron premium/snacks que inflan `tacc_100`. **✅ RUN REAL OK [2026-08-25, julio 2026]** (tras el fix de RAM, sin OOM): 1,426,879 obs suc×EAN×mes, 47/55 EANs con datos, 2,742 sucursales, 31 meses (2024-01→2026-07). **Brecha POR TIPO ($/100g, intra-super)**: Galletitas dulces +138.5% (tacc 923.8→sin 2129.8, n=767) · Fideos secos +269.8% (280→962, n=561) · Galletitas saladas +302.1% (568.8→2200, n=520) · Pan rallado +361.5% (307.9→1387.3, n=119). **Canasta acotada mensual**: +240.6% (jul-2026), subiendo desde +111.2% (ene-2024) → +129 pp. Prov MENOR: Formosa +169% / MAYOR: Misiones +270%. Cadena atípica: **Carrefour Express +21%** (efecto composición: mix de tipos con ambos lados). **Cobertura ambos lados**: Fideos 963 · Dulces 936 · Saladas 621 · Pan rallado **119 (bajo, limitante sin-TACC)**. **Ajuste fino pendiente (opcional, cuesta otro re-read)**: 2 EANs sin presentación en el Maestro entran sin normalizar ($/paquete): `7790040133471` (Sonrisas, TACC dulces) y `7798079230062` (sin-TACC dulces) → distorsionan Galletitas dulces; quitarlos subiría algo esa brecha. El lado sin-TACC sigue siendo el limitante intrínseco de cobertura. **🎓 ESTE PIPELINE ES LA BASE DE UN PAPER ACADÉMICO** sobre la brecha celíaca y sus determinantes (tiempo, concentración de mercado, geografía, cadena). El usuario pidió **dejarlo así por ahora** pero con **rigor científico**; la metodología se revisará más adelante. Agenda metodológica (amenazas a la validez: matching TACC↔sin-TACC, efecto tamaño de envase, sesgo de selección de sucursales, efecto composición entre cadenas, HHI, panel temporal) documentada en `docs/BRECHA_CELIACA.md` §13. **📐 DEFINICIÓN FORMAL DEL ESTIMADOR ACORDADA [2026-08-27]** en `docs/BRECHA_CELIACA.md` §3 (reescrito): brecha del lado = **opción MÁS BARATA disponible (mínimo robusto, banda [med/4, med×4])**, **intra-sucursal**, **por tipo**, en **$/100g**; matching **flexible a nivel de tipo** (cada sucursal usa los candidatos que stockea, NO el mismo EAN), con **efectos fijos de producto/marca** en la etapa econométrica para neutralizar la composición del surtido; **mediana como chequeo de robustez**; canasta ponderada = secundaria (pesos ilustrativos). **✅ ESTIMADOR DEFINIDO [2026-08-27]**: primario = **MEDIANA $/100g de los candidatos presentes**, intra-super por tipo. Se probó el **mínimo ("más barato")** y se DESCARTÓ como primario: sesga la brecha al alza porque el lado TACC tiene muchos más candidatos por sucursal que el sin-TACC (Fideos 7,7 vs 1,2; el mín de más tiros baja más → E[mín] decrece con n). Evidencia: la brecha con mín se dispara donde la asimetría es mayor (Fideos mín +426% vs mediana +270%). El mín queda como columna ilustrativa `brecha_min_ilustr`. También se **excluyen EANs sin gramos** (filtro por `grams`, cache-preserving) → corrigió dulces (mediana 140%→**79%**). Código: `gen_nb06.py` CELDA 7 (`_min_robusto` solo para la col ilustrativa). **Números defendibles (mediana limpia, ago-2026)**: **dulces +79% · fideos +270% · saladas +306% · pan rallado +362%**. **⚠️ Serie temporal RUIDOSA y NO monótona** (panel no balanceado). **🔧 EN CURSO: CURACIÓN DE LISTAS DE EANs** (el usuario quiere elegir bien los productos comparables). Hallazgos de la tabla de cobertura (Detalle_producto ago-2026): (1) **Pan rallado sin-TACC = 0 sucursales** en ago → tipo casi inusable, falta sin-TACC real o se cae; (2) **Galletitas dulces TACC heterogéneo**: Maná vainilla $2607/100g (131g, premium) desentona vs bizcochos ~$700 → sacar; sin-TACC tiene un EAN muerto (ns=4, `7798082000317`); (3) Fideos y saladas son los más limpios/like-for-like; (4) sin-TACC son envases chicos (44-120g) vs TACC 200-540g → **efecto tamaño de envase** (parte de la brecha es envase, no gluten). **✅ CURACIÓN APLICADA [2026-08-27], cache-preserving**: se agregó `EANS_EXCLUIR` en CELDA 1 (filtrado en CELDA 7 → NO cambia el hash) con `7790040137844` (Maná vainilla dulces TACC, envase premium $2607/100g outlier). Criterio: se cura solo el lado **TACC** (cobertura de sobra); el sin-TACC NO se poda (cobertura escasa que varía mes a mes). Fideos/saladas/pan rallado quedan como están. **✅ MAESTRO RECIBIDO Y sin-TACC AMPLIADO [2026-08-27]**: el usuario pasó `data/Maestro de Productos Interno.xlsx` (176.702 EANs). Se buscaron los "sin TACC/gluten" por tipo y se **ampliaron las 4 listas sin-TACC** con marcas mainstream + marca blanca de cadena: **Fideos 8→21** (Matarazzo/Gallo GF, Blue Patna, Grandiet, Yuka), **Dulces →23** (línea completa Santa María 200g, Natuzen, Smams, Arrozen), **Saladas 7→20** (Tía Maruca, Carrefour, Granix, Crisppino, Shiva), **Pan rallado 7→20** (Carrefour marca blanca, Preferido, Santa María, Natuzen — antes nicho ~0 cob.). El Maestro NO trae cobertura → cuáles pegan lo revela la corrida (la mediana usa solo los presentes). **✅ RUN CON LISTAS AMPLIADAS OK [2026-08-27, ago-2026]** (nuevo hash `brecha_dia_1dd7cf6c_v2.parquet`, 1.816.833 obs, 93/108 EANs con datos). **ÉXITO ROTUNDO en cobertura** (ambos lados): Fideos 963→**2.458** · Dulces 936→**1.001** · Saladas 621→**2.319** · **Pan rallado 119→792** (rescatado). Sucursales con ≥1 par: 1.337→**2.532 de 2.742**. **Brecha por tipo (mediana, limpia)**: **dulces +89% · fideos +173% · saladas +188% · pan rallado +194%**. **Las brechas BAJARON** respecto de antes (fideos 270→173, saladas 302→188, pan 362→194) porque al sumar sin-TACC mainstream/marca-blanca (más baratos) el precio sin-TACC representativo cae → la brecha anterior estaba **sesgada al alza por usar solo nicho caro**. min≈mediana ahora (robusto). Canasta ago-26 +178% (desde +102% ene-24). Pegaron: Fideos=Matarazzo GF; Dulces=Santa María 200g; Pan rallado=Preferido+Carrefour marca blanca 350g. **Efecto envase** sigue (saladas sin-TACC 50-130g). Números en `docs/BRECHA_CELIACA.md §12`. **➡️ BASE EMPÍRICA SÓLIDA.** **✅ REVISIÓN EXHAUSTIVA NIVEL-PAPER [2026-08-27]** de cómo se eligen los productos por sucursal: (1) **gramos validados** (multipacks "N Un" → NaN → excluidos, sin cálculo erróneo); (2) **filtro de plausibilidad por REGLA simétrica** en CELDA 7 (banda ×`FACTOR_PLAUS`=4 alrededor de la mediana tipo-lado → quita solo errores de carga como el Smams $184/100g; conserva el caro Carrefour $6300 real → NO cherry-picking); (3) **se revirtió la exclusión a mano de Maná** (`EANS_EXCLUIR` ahora VACÍO): es real y conservador (sube mediana TACC → baja brecha), la mediana robusta absorbe su formato; (4) **efecto envase** tratado en 2 niveles: $/100g = costo real (descriptivo, con salvedad) + `ln(gramos)` como control en la **hedónica §3.9**; (5) **sesgo de selección** documentado (cobertura subió a 2.532/2.742=92%). **Especificación econométrica definida en §3.9**: `ln(precio_100g) = β·SINTACC + θ·ln(gramos) + EF tipo + EF sucursal + EF mes`; β=prima neta de envase; determinantes por interacción SINTACC×(HHI/región/cadena/tiempo); panel = caché parquet + Maestro. Todo cache-preserving (filtro post-lectura) → próxima corrida rápida. **✅ FILTRO CORREGIDO Y VALIDADO [2026-08-27]**: la 1ª versión usaba precios nominales agrupados en todo el panel → la inflación 2024-26 lo confundía (marcaba 4 de más). Corregido a **inflación-robusto**: cada EAN vs sus pares CONTEMPORÁNEOS (mediana de precios-EAN dentro de (tipo,lado,MES), ponderada por producto); descarta si el precio relativo mediano cae fuera de [1/4, 4]. Ahora **imprime la lista**. Run limpio ago-2026: descartó **3 EANs** = Smams $184 (error) + **`7790070321800` y `7790070321855` ("sin TACC Matarazzo") con precio de fideo CONVENCIONAL ~$207/100g** (mal etiquetados en el Maestro; la línea GF real de Matarazzo es `7790070335xxx` ~$970, alta cobertura, sí se usa). Validación de que la regla atrapa errores de etiquetado solo. **NÚMEROS DEFINITIVOS LIMPIOS (ago-2026, mediana)**: **dulces +66% · fideos +173% · saladas +188% · pan rallado +194%** (n=802/1291/1332/727). Canasta +174% (desde +102% ene-24). Dulces bajó a 66% porque Maná volvió (sensible: TACC dulces tiene pocos candidatos); se conserva (conservador) y la hedónica con gramaje decide. **✅ MAPA FOLIUM POR SUCURSAL [2026-08-27]**: nueva **CELDA 12** en gen_nb06 → `mapa_sucursales_brecha_MMAAAA.html`. Un punto por supermercado (verde→rojo por brecha, LinearColormap percentiles 5-95). Popup: (1) valor de cada canasta + % brecha; (2) tabla uno-vs-uno de productos por tipo (convencional vs sin-TACC, con presentación en gramos y $/100g, + mediana por lado); (3) cadena y localidad/provincia; (4) n tipos. Usa brecha_suc_mes + bt_sm + datos_dia (último mes) + suc_geo. **✅ MEJORADO [2026-08-27]**: (1) **tiles OpenStreetMap** (antes cartodbpositron daba "API KEY REQUIRED"); (2) tabla del popup **por EQUIVALENCIA de productos** (subtipo), no por tipo — nuevo `EAN_SUBTIPO` en CELDA 4 (deriva forma/variedad de la descripción: Spaghetti/Tallarín/Mostachol/… para fideos, Vainilla/Chocolate/… dulces, Pan rallado/Rebozador, etc.); filas = subtipo con Con TACC vs Sin TACC + brecha del subtipo, ordenadas ambos-lados primero; (3) **filtro por cadena** (LayerControl con FeatureGroup por cadena) + **Fullscreen** + leyenda + caja info; (4) nueva hoja Excel **`Comparacion_productos`** (sucursal×tipo×subtipo: productos_tacc vs productos_sin con presentación y $/100g, equivalencia, brecha_subtipo_pct). Test sintético extendido (valida HTML OSM + equivalencia + hoja Excel). folium local 0.20.0. **✅ FIX MAPA [2026-08-27]: snapshot = última brecha disponible POR SUCURSAL** (ventana `VENTANA_MAPA_MESES`=6), no solo el último mes — porque **DIA (1038 sucursales, la más grande) no reportó en agosto 2026** y quedaba afuera del mapa (junto con Cadena 23, Hiper/Mini Libertad). Ahora cada sucursal muestra su mes más reciente con dato (el popup dice "dato de YYYY-MM"; el print lista la mezcla de meses). También: cadena **id_comercio '8' renombrada de "Cadena 8 (Cordoba)" a "Mariano Max"** (NOMBRES_SIMPLES, CELDA 3). El "API KEY REQUIRED" que ve el usuario es la red de INECO bloqueando tiles (no molesta para uso interno; los límites del GeoJSON local se ven igual). **✅ REVISIÓN + MEJORAS [2026-08-27]**: (a) revisión exhaustiva del Excel → el **estimador a nivel TIPO está correcto** (Brecha_tipo); la vista por subtipo tenía artefactos (dulces "Vainilla" emparejaba Maná premium vs Santa María → −40% falso; pan rallado sobre-dividido rallado/rebozador; saladas mezclaba tostada de trigo con arroz). (b) **Subtipo corregido (CELDA 4, `_SUBTIPO_FIJO`)**: **fideos por forma** (equivalencia real), **dulces/saladas/pan rallado = grupo único a nivel tipo** (surtidos genuinamente distintos → equivalencia honesta = tipo). Elimina los artefactos. (c) **Mapa liviano LAZY-LOAD**: antes 14,9 MB (1377 popups embebidos) no cargaba; ahora popups se arman al click desde JSON compacto (`_pd_json` + handler `popupopen` → `_bpop`), FeatureGroup/cadena + LayerControl + Fullscreen, tiles OSM. HTML ~1-2 MB. Hoja `Comparacion_productos` se mantiene (con el fix ya no es engañosa: dulces subtipo +65% en vez del falso -40%; pan rallado 152→734 emparejados). **✅ REVISIÓN EXCEL CONFIRMADA [2026-08-27]**: canastas bien conformadas (Brecha_tipo correcto; Brecha_sucursal 1377 filas sin NaN, rango 64-416%; sin precios ≤0). **✅ FIX MAPA (tiles) [2026-08-27]**: OSM no cargaba en la red del usuario (INECO) → volví a `cartodbpositron` (el que funciona en nb02/nb05) Y agregué **límites provinciales dibujados desde el GeoJSON local `ar.json`** (`folium.GeoJson`, control=False, bajo los markers) → los límites se ven SIEMPRE aunque los tiles externos estén bloqueados. El "no carga / API KEY REQUIRED" previo era el peso (14.9MB) + tiles OSM bloqueados; ahora lazy-load 2.3MB JSON + boundaries locales. **✅ MEJORAS DE ROBUSTEZ [2026-08-27]** tras revisión exhaustiva del Excel (estimador OK, pero desagregaciones/temporal con problemas de cobertura): (1) **`MIN_SUC_AGG`=30** (CELDA 1) → columna **`confiable`** en Brecha_provincia/cadena/Concentracion; titulares y gráficos usan solo n≥30 (antes "Misiones +221%" con n=10 salía como titular); (2) **PANEL TEMPORAL BALANCEADO**: `FRAC_MESES_PANEL`=0.7 → nueva `serie_mensual_bal`/hoja `Serie_mensual_balanceada` (solo sucursales presentes en ≥70% de los meses → n estable) + **diagnóstico que avisa meses con cobertura <60% de la mediana** (detectó el hueco 2025-03/04, n~660 vs ~1300). El gráfico mensual ahora muestra serie completa vs balanceada + n en eje 2ndario. **Usar la balanceada para la tendencia temporal.** (3) **Serie_diaria/semanal ya NO se exportan si están vacías** (el método es mensual). Hallazgos de la revisión: fideos/pan rallado estables; saladas con cobertura cayendo (836→596 en 2026) y brecha volátil (262-394%); Carrefour Express mediana +262% vs prom +360% (skew). Test sintético extendido OK. **✅ REVISIÓN [2026-08-27]** tras auditar la conformación: (a) **subtipo redefinido por tipo** — auditando los 108 EANs se vio que la equivalencia fina solo alinea en **fideos (por forma)**; en dulces/saladas/pan los surtidos TACC vs sin-TACC son variedades distintas (bizcocho agridulce vs vainilla; galleta de trigo vs de arroz) → cada uno queda en **UN grupo** (`_SUBTIPO_FIJO`), y solo fideos usa `_SUBTIPO_KW` (con fix de "Spaguetti" mal escrito). Antes forzaba filas espurias/vacías (Tosti-trigo matcheado con tostada-de-arroz, etc.). (b) **MAPA LAZY-LOAD**: el HTML pesaba 15,6 MB y no cargaba; ahora los popups van en un JSON (`_pd_json`) y se inyectan al click vía `popupopen` (patrón de nb05) → DOM liviano. Cap de 4 productos/celda. Las canastas a nivel TIPO (estimador) siempre estuvieron bien; lo que se arregló es la vista/host de equivalencia. **➡️ MEDICIÓN CERRADA A NIVEL PAPER. PRÓXIMO: implementar la HEDÓNICA §3.9** (ln(precio_100g)=β·SINTACC+θ·ln(gramos)+EF tipo/suc/mes; determinantes por interacción). Doc completo: `docs/BRECHA_CELIACA.md` §3.1-§3.9, §12.
 
@@ -242,7 +322,11 @@ El repo `mapa_precios_minoristas` tiene README y .gitignore propios. El mapa a s
 - ZIPs SEPA: 2024A.zip, 2024B.zip, 2025A.zip, 2025B.zip, 2026A.zip
 - `IPC.xlsx` (columna `date` = datetime64, columnas IPC = float64 con punto decimal)
 - `ar.json` (GeoJSON 24 provincias)
-- `output_canasta/canasta_representativa_YYYY-MM.xlsx` (del nb01, con cantidades completadas)
+- `output_canasta/canasta_representativa_YYYY-MM.xlsx` (del nb01, con cantidades completadas).
+  Para nb07: la hoja `Productos unicos` con `cantidad_01..06` cargadas por el loader v4.
+- `maestro_sepa_completo.csv.gz` (Script 03) — necesario para los frescos de balanza de nb07
+- Solo si el repo está PRIVADO: `maestro_sucursales_completo.xlsx` y
+  `Maestro de Productos Interno.xlsx` (copiados de `data/`)
 
 ## Outputs del nb02
 
@@ -737,6 +821,12 @@ Representativa toma bien sus cantidades, tipos sin datos no rompen. **nb07 corre
 PENDIENTE usuario: re-cargar Excel con loader v3 + re-correr nb07.
 
 ## ═══ HANDOFF — estado para retomar (2026-09-03) ═══
+
+> ⚠️ **SUPERADO por el HANDOFF [2026-09-04] al inicio de este archivo.** Se conserva como
+> historial. Lo que cambió: nb07 pasó a **6 canastas** (196 empaquetados + 59 frescos), semana
+> que cierra el jueves e índice encadenado; el loader `cargar_en_productos_unicos.py` fue
+> **reemplazado** por `cargar_canastas_v4.py`; el gap de "pan de panadería" quedó **resuelto**
+> (tipo fresco `Pan francés`).
 
 **Repo**: github.com/santiagoriverti/precios_minoristas_supermercados (rama main). Local del usuario:
 `C:\Users\sriverti\Desktop\INECO\Repositorios\precios_minoristas_supermercados`. NUNCA agregar

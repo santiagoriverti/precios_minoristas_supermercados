@@ -1,6 +1,6 @@
 # Bugs Pendientes y Mejoras
 
-Última actualización: 2026-09-03 — nb07: 4ª canasta Tecnológica + canastas por cobertura real + salida a output_canasta_alternativa
+Última actualización: 2026-09-04 — nb07 v5: motor del informe semanal (6 canastas, índice encadenado, nacional ponderado, trazabilidad de altas/bajas)
 
 ---
 
@@ -11,6 +11,46 @@
 ---
 
 ## 🟢 Cambios y fixes 2026-09
+
+### 🟢 Notebook 07 v5 — motor del informe semanal (2026-09-04)
+
+Reescritura del motor para que la salida sea publicable semanalmente. **Diagnóstico sobre datos
+reales** (Excel de la corrida 2026-W36), no sobre sospechas:
+
+| Síntoma reportado | Causa real encontrada |
+|---|---|
+| Saltos en 2026-W07 (+24%) y caída en W31 (−21%) | **Rubro Carne**: cambio del set de variantes dentro de cada tipo. Todo lo demás plano esas semanas |
+| Canastas "se despegan" al principio | **Entrada tardía de ítems**: sin precio aportaban $0 y al aparecer generaban un salto de nivel (Popular-Frescos +216% abr-2024; Heladera ago-2025) |
+| Provincias/cadenas con valores raros | El "nacional" **era el precio de DIA** (964 de ~2.300 sucursales, precios uniformes): nacional, CABA, Buenos Aires y Centro/Pampeana daban el mismo número exacto |
+| IPC se ve como una recta | **No es bug**: son los índices INDEC reales (4.261→12.076), lineales a esa escala |
+
+**Fixes metodológicos**: índice encadenado de muestra apareada + nivel anclado; nacional
+ponderado por población provincial; arrastre de 8 semanas; filtro de outliers intra-tipo en
+frescos (K=2.5); índice provincial/regional controlando por cadena; `FRAC_PRODUCTOS_MIN` 0.5→0.8;
+semana que cierra el jueves.
+
+**Bugs corregidos**: (1) normalización de provincia sensible a mayúsculas/acentos — `San juan`
+no matcheaba y caía en la región `Otras`; (2) `n_sucursales` contaba `id_sucursal` sin la terna
+comercio/bandera, subcontando y afectando el umbral "confiable".
+
+**Composición**: 196 EANs empaquetados (≥4 cadenas / ≥15 provincias / ≥800 sucursales) y 59 tipos
+de frescos, con rubros nuevos Pollo (separado de Carne), Cerdo, Pescado, Fiambres y Quesos por kg
+y Panadería. Loader unificado `docs/canastas_alternativas/cargar_canastas_v4.py` (`cantidad_01..06`),
+que **reemplaza** a `cargar_en_productos_unicos.py` y `cargar_canasta_femenina.py` (eliminados).
+
+**Trazabilidad nueva**: hojas `Presencia_items` (ítem × mes, % de semanas con dato real) y
+`Alertas_reemplazo` (ítems sin dato hace >8 semanas, con las canastas afectadas).
+
+**Validado**: 16/16 celdas end-to-end contra dataset SEPA sintético, verificando explícitamente
+el descarte de outliers y la detección de altas. Loader: 196/196 EANs matchean en la hoja real.
+
+### 🟢 `leer_maestro()` — fallback al Drive (2026-09-04)
+
+Al pasar el repo a privado, `raw.githubusercontent.com` devolvió 404 y **fallaba la carga de
+maestros en nb02/04/05/06/07** (además de romper los badges de Colab). `leer_maestro()` ahora
+busca `./data` → **Drive (`SEPA_DIR`)** → caché → GitHub, y si no encuentra nada lanza un error
+que dice exactamente qué archivo copiar y dónde.
+
 
 ### 🟢 Notebook 02 — Excel "datos_econometria" (series semanal+mensual por nivel) (2026-09-03)
 

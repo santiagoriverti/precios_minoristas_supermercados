@@ -1,6 +1,6 @@
 # Metodología — ICR (Índice de Consumo Representativo)
 
-**Última actualización:** 2026-09-03 (nb07: 5 canastas + 33 frescos por categoría + Representativa calibrada INDEC + región; nb02: `datos_econometria`)
+**Última actualización:** 2026-09-04 (nb07 v5: motor del informe semanal — 6 canastas, semana que cierra el jueves, índice encadenado de muestra apareada, nacional ponderado por población, 196 empaquetados + 59 tipos de frescos)
 **Período de referencia:** enero 2024 – abril 2026
 
 ---
@@ -395,40 +395,84 @@ indicador específico y complementario, no una réplica del IPC.
 
 ---
 
-## 8. Notebook 07 — Canastas alternativas (semanal + frescos)
+## 10. Notebook 07 — Canastas alternativas (motor del informe semanal)
 
-`07_evolucion_canastas_alternativas` calcula la evolución **semanal** del costo de tres canastas socioeconómicas (**Popular / Media / Ejecutiva**) y la compara con el IPC, desagregando por rubro (con drill-down hasta producto) y por provincia/cadena. Es el análisis de nb02 con dos diferencias: granularidad semanal y una composición que suma frescos.
+`07_evolucion_canastas_alternativas` calcula el costo **semanal** de **6 canastas** y lo compara
+con el IPC, desagregando por **rubro** (con drill-down hasta producto), **provincia**, **región**
+y **cadena**. Es el insumo del informe semanal del equipo de economistas.
+La metodología de índice, agregación y trazabilidad está en **§10.7** (estado vigente).
 
-### 8.1. Mapeo de canastas
-Popular = canasta 2 (Popular, Q2 · P25-55) · Media = canasta 3 (Medio, Q3-Q4 · P40-70) · Ejecutiva = canasta 4 (Medio-alto, Q5 · P55-85) del proyecto de índices. Se leen de la hoja `Productos unicos` del `canasta_representativa_*.xlsx` (`cantidad_01/02/03`).
+### 10.1. Mapeo de canastas
+| Columna | Canasta | Emp. | Frescos | Total | Origen |
+|---|---|---:|---:|---:|---|
+| `cantidad_01` | Popular | 66 | 34 | 100 | Q2 · P25-55 del proyecto de índices |
+| `cantidad_02` | Media | 100 | 58 | 158 | Q3-Q4 · P40-70 |
+| `cantidad_03` | Ejecutiva | 104 | 56 | 160 | Q5 · P55-85 |
+| `cantidad_04` | Tecnológica | 14 | — | 14 | Bundle de durables |
+| `cantidad_05` | Representativa | 108 | 59 | 167 | Familia tipo de 4 (ref. CBA INDEC) |
+| `cantidad_06` | Femenina | 16 | — | 16 | Higiene menstrual, depilación, cuidado personal |
 
-### 8.2. Composición híbrida (empaquetados por EAN + frescos por tipo)
-- **Empaquetados**: un EAN estable con buena cobertura multi-cadena (marcas mainstream). Precio por sucursal-semana = mediana de los días. Cada producto lleva su rubro.
-- **Frescos** (carne, frutas, verduras, huevos): el EAN de balanza (prefijo GS1 `2…`) **cambia por cadena** → no se puede seguir un EAN entre cadenas. Se seleccionan por **regla de nombre** (`inc`/`exc` regex con borde de palabra `\b`) sobre el maestro SEPA completo, que captura todas las variantes que cada cadena publica. El precio del **tipo** en una sucursal-semana = **mediana de las variantes presentes**, normalizado a la unidad del tipo:
-  - `$/kg` (frutas, verduras, carne): `precio / gramos_presentación × 1000`. Los códigos de balanza "1 Kg" ya vienen en $/kg.
+Se leen de la hoja `Productos unicos` del Excel `canasta_representativa_*.xlsx`.
+**196 EANs empaquetados únicos**; las cantidades se cargan con
+`docs/canastas_alternativas/cargar_canastas_v4.py`.
+
+Tecnológica y Femenina están en `CANASTAS_SIN_FRESCOS` (no reciben frescos) y en
+`RUBRO_DESDE_CATEGORIA` (su desglose usa `categoria` en vez de `rubro`, porque en la hoja todos
+sus productos caen en un único rubro y el desglose quedaría vacío de contenido).
+
+### 10.2. Composición híbrida (empaquetados por EAN + frescos por tipo)
+- **Empaquetados**: EAN estable con buena cobertura multi-cadena. Precio por sucursal-semana =
+  mediana de los días. Selección exigiendo **≥4 cadenas, ≥15 provincias y ≥800 sucursales**
+  (durables: ≥3 / ≥10 / ≥90, porque se publican mucho menos).
+- **Frescos** (**59 tipos**): el EAN de balanza (prefijo GS1 `2…`) **cambia por cadena**, así que
+  no se puede seguir un EAN. Se seleccionan por **regla de nombre** (`inc`/`exc` regex con borde
+  de palabra) **más categoría de fresco real** del maestro: `Frutas y Verduras`, `Carnicería`,
+  `Fiambrería`, `Panificados`, `Pescados y Mariscos`, `Huevos` — o categoría vacía (balanza
+  SEPA-only). Precio del tipo por sucursal-semana = **mediana de sus variantes**, normalizado:
+  - `$/kg`: `precio / gramos_presentación × 1000`. Cada tipo admite su piso `gmin` (default 250 g;
+    quesos y fiambres 500 g) para descartar bandejas chicas que inflan el $/kg.
   - `$/docena` (huevos): `precio / unidades × 12`.
+  - Antes de la mediana se aplica el **filtro de outliers intra-tipo** (§10.7).
 
-### 8.3. Costo de canasta por sucursal-semana (con imputación)
-Para cada canasta, sucursal y semana:
-`costo = Σ_ítems_presentes(precio_sucursal × cantidad) + [Σ_todos(mediana_nacional × cantidad) − Σ_presentes(mediana_nacional × cantidad)]`
-es decir, cada ítem presente usa el precio de la sucursal y cada ítem faltante se imputa con la **mediana nacional de esa semana** (por EAN o por tipo). Se acumula por rubro para la desagregación. Una sucursal cuenta si tiene ≥ `FRAC_PRODUCTOS_MIN` (0.5) de los empaquetados de la canasta.
+Rubros de frescos: **Frutas, Verduras, Carne, Pollo, Cerdo, Pescado, Fiambres y Quesos,
+Panadería, Huevos** (además de Almacén, Bebidas, Frescos-lácteos, Limpieza, Perfumería,
+Congelados, Mascotas y Bebés de los empaquetados).
 
-La serie nacional semanal es la **mediana** y el **promedio (outliers fuera)** del costo entre sucursales. La serie mensual (para el vs-IPC) agrega primero por sucursal-mes (mediana de sus semanas) y luego entre sucursales.
+### 10.3. Costo de canasta
+Hay dos cálculos, con propósitos distintos:
 
-### 8.4. Desagregación por rubro (drill-down)
-- **Nivel 1**: costo por rubro × semana (mediana entre sucursales) y participación % del último mes.
-- **Nivel 2/3**: detalle por ítem (producto empaquetado o tipo fresco) del último mes con cantidad, precio unitario y costo.
-Rubros de frescos: **Carne, Frutas, Verduras, Huevos** (además de Almacén, Bebidas, Frescos-lácteos/fiambres, Limpieza, Perfumería, Congelados de los empaquetados).
+- **Serie temporal (nacional)**: se arma sobre el panel de precios nacionales por ítem y semana,
+  con **índice encadenado de muestra apareada** y nivel anclado (§10.7). Es la serie que se publica.
+- **Corte transversal (por sucursal)**: para desagregar por provincia / cadena / región se calcula
+  el costo de cada sucursal:
+  `costo = Σ_presentes(precio_sucursal × cantidad) + [Σ_todos(nacional × cantidad) − Σ_presentes(nacional × cantidad)]`
+  es decir, cada ítem presente usa el precio de la sucursal y cada faltante se imputa con el
+  **precio nacional de esa semana**. Una sucursal solo cuenta si tiene al menos
+  `FRAC_PRODUCTOS_MIN` (**0.8**) de los empaquetados de la canasta.
 
-### 8.5. Qué NO se incluye y por qué
-**Electrodomésticos / durables** (Informática, Climatización, Cocinas, TV, Heladeras, Lavado, Pequeños electrodomésticos) se **excluyen**: mediana de cobertura ~1 cadena y pocas provincias (solo 29% son geográficamente comparables vs 41% de alimentos), lo que rompería la representatividad geográfica y la estabilidad de la serie temporal (catálogo que entra/sale).
+### 10.4. Desagregación por rubro (drill-down)
+- **Nivel 1**: costo por rubro × semana, calculado sobre el panel nacional (así los rubros suman
+  exactamente el costo de la canasta) y participación % del último mes.
+- **Nivel 2**: detalle por ítem (producto empaquetado o tipo fresco) del último mes con cantidad,
+  precio unitario y costo (`Detalle_*`).
 
-### 8.6. Diagnósticos para refinar
-La CELDA 13 imprime cobertura por EAN empaquetado (`n_cadenas`/`n_provincias`/`n_sucursales` del último mes) marcando ítems **sin datos** o de **baja comparabilidad** (n_cadenas<3 o n_provincias<15), y cobertura por tipo fresco (nº de variantes capturadas por la regla). Es la base para iterar: se afinan `inc`/`exc` y las cantidades, y se reemplazan EANs poco comparables.
+### 10.5. Durables: por qué están aparte
+Los electrodomésticos tienen cobertura estructuralmente baja (pocas cadenas, precios fijados a
+nivel nacional). No se mezclan con las canastas de consumo: van en la **Tecnológica**, con
+umbrales de cobertura propios y leídos como bundle informativo, no como índice de precios
+comparable entre provincias.
+
+### 10.6. Diagnósticos para refinar
+La CELDA 13 imprime y exporta:
+- `Cobertura_emp`: por EAN empaquetado, `n_cadenas`/`n_provincias`/`n_sucursales` del último mes,
+  marcando ítems **sin datos** o de **baja comparabilidad** (n_cadenas<3 o n_provincias<15).
+- `Cobertura_frescos`: por tipo, nº de variantes capturadas, cobertura y **$/kg o $/docena**
+  normalizado. Es la tabla para afinar `inc`/`exc`/`gmin`.
+- `Presencia_items` y `Alertas_reemplazo`: trazabilidad de altas y bajas (§10.7).
 
 ---
 
-## 8.7. nb07 v5 (2026-09-04) — motor del informe semanal, estado vigente
+### 10.7. nb07 v5 (2026-09-04) — motor del informe semanal, estado vigente
 
 Reescritura del motor para que la salida sea publicable semanalmente por el equipo de
 economistas. Cinco cambios metodológicos y tres correcciones.
@@ -513,7 +557,7 @@ La serie del IPC se ve casi recta en el gráfico porque son los índices INDEC r
 (4.261 → 12.076 entre 2024-01 y 2026-07): sube ~6,7 puntos/mes en 2024, ~4,7 en 2025 y ~6,6 en
 2026, y a esa escala la curva es visualmente lineal. No es un error de carga.
 
-## 9b. Notebook 02 — Excel de econometría (`datos_econometria`)
+## 11. Notebook 02 — Excel de econometría (`datos_econometria`)
 
 Insumo para análisis de series de tiempo (materia "Econometría avanzada"). El Notebook 02, además
 del análisis clásico, exporta `datos_econometria_{MES}.xlsx` en `output_canasta/`.

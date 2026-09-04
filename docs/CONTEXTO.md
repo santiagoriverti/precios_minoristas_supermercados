@@ -110,29 +110,64 @@ Mismo doble análisis mediana/promedio. Config: `EANS_INPUT` (lista de EANs) en 
 Solo tipos con dicotomía celíaca; 2–3 EANs representativos por lado, promediados; brecha
 intra-sucursal. Config: dict `TIPOS` en la CELDA 1. **Detalle completo: `docs/BRECHA_CELIACA.md`.**
 
-### 2f. `07_evolucion_canastas_alternativas` (notebook 07 — este repo) ← NUEVO (2026-09-01, ampliado 2026-09-03)
-**Propósito**: evolución **semanal** del costo de **CINCO** canastas
-(**Popular / Media / Ejecutiva / Tecnológica / Representativa**) vs **IPC**, desagregada por
-**rubro** (drill-down hasta producto) y por **provincia / cadena / región**. Es el análisis de
-nb02 pero semanal y **sumando frescos**.
-**Composición híbrida**: (a) **130 empaquetados por EAN** (cobertura ≥4 cadenas) desde la hoja
-`Productos unicos` (`cantidad_01..05`); (b) **33 tipos de frescos por TIPO/nombre** (frutas,
-verduras, carne, huevos) — el EAN de balanza cambia por cadena y por sucursal, así que se
-seleccionan por **nombre + categoría del maestro** (`Frutas y Verduras`/`Carnicería`/`Huevos`)
-y se normalizan a **$/kg** o **$/docena** (mediana de variantes presentes en la sucursal).
-La **Tecnológica** (`cantidad_04`) es un bundle de durables **sin frescos**. La **Representativa**
-(`cantidad_05`) es la canasta del consumidor promedio, con **cantidades calibradas per cápita** (CBA INDEC).
-**Estado 2026-09-03 (todos los fixes aplicados y auditado E2E):**
-- **5 canastas** (`cantidad_01..05` → Popular/Media/Ejecutiva/Tecnológica/Representativa).
-- **Frescos ampliados a 33 tipos** y seleccionados por **categoría** (fix de precios inflados:
-  antes la regex por nombre colaba procesados —jugo/sazonador/ñoquis— y disparaba el $/kg).
-- **Fix OOM**: la lectura semanal **colapsa los frescos a su TIPO** (de ~8k EANs a ~30) para no
-  reventar la RAM sobre toda la historia; caché `sem_*_v2.parquet`.
-- **Desagregación por REGIÓN** (`REGION_PROV`, 5 regiones): `Region_*` + `RegionSem_*` (semanal).
-- **Salida** a **`output_canasta_alternativa`** (`RESULTS_DIR`); entrada en `output_canasta`.
-- **CELDA 15 "REPORTE PARA CLAUDE"** (costo/variación/vs-IPC/rubros/región/cobertura en texto).
-- **130 empaquetados** (cantidades/loader en `docs/canastas_alternativas/`).
-Config en CELDA 1: `CANASTA_COLS`, `CANASTAS_SIN_FRESCOS`, `TIPOS_FRESCOS`, `REGION_PROV`, `RESULTS_DIR`.
+### 2f. `07_evolucion_canastas_alternativas` (notebook 07) — motor del informe semanal
+**Estado: v5, 2026-09-04.** Es el notebook que alimenta el **informe semanal** del equipo de
+economistas. Costo de **6 canastas** vs **IPC**, desagregado por **rubro** (drill-down hasta
+producto), **provincia**, **región** y **cadena**.
+
+**La semana**: ventana de 7 días que **cierra el jueves** (viernes→jueves), etiquetada por la
+fecha de cierre (`2026-09-03`). Corriendo el viernes, la última semana está completa.
+`DIA_CIERRE_SEMANA` (3=jueves, 4=viernes). *nb02 y nb06 siguen usando semana ISO.*
+
+**Las 6 canastas** (hoja `Productos unicos`, 196 EANs empaquetados únicos + 59 tipos frescos):
+
+| Col | Canasta | Emp. | Frescos | Total |
+|---|---|---:|---:|---:|
+| `cantidad_01` | Popular | 66 | 34 | 100 |
+| `cantidad_02` | Media | 100 | 58 | 158 |
+| `cantidad_03` | Ejecutiva | 104 | 56 | 160 |
+| `cantidad_04` | Tecnológica | 14 | — | 14 |
+| `cantidad_05` | Representativa | 108 | 59 | 167 |
+| `cantidad_06` | Femenina | 16 | — | 16 |
+
+> ⚠️ **No confundir**: `cantidad_01..06` en la hoja **`Productos unicos`** son estas 6 canastas
+> (nb07). Las columnas `cantidad_01..06` de la hoja **`Selección`** son otras canastas distintas
+> (nb02: ENGHo por quintil + Celíaca + Vegana, ver §6b de METODOLOGIA). Mismo nombre de columna,
+> hojas y notebooks distintos.
+
+**Composición híbrida**: (a) **empaquetados por EAN** con cobertura ≥4 cadenas, ≥15 provincias y
+≥800 sucursales (durables ≥3/≥10/≥90); (b) **59 tipos de frescos por nombre** — el EAN de balanza
+cambia por cadena y sucursal, así que se seleccionan por **nombre + categoría del maestro**
+(`Frutas y Verduras`, `Carnicería`, `Fiambrería`, `Panificados`, `Pescados y Mariscos`, `Huevos`)
+y se normalizan a **$/kg** o **$/docena**. Rubros de frescos: Frutas, Verduras, Carne, Pollo,
+Cerdo, Pescado, Fiambres y Quesos, Panadería, Huevos.
+Tecnológica y Femenina no llevan frescos y desglosan por `categoria` en vez de `rubro`.
+
+**Metodología (detalle en METODOLOGIA §10.7):**
+- **Índice encadenado de muestra apareada**: la variación entre semanas usa solo los ítems
+  presentes en ambas. Elimina los saltos espurios por altas/bajas de productos.
+- **Nivel en $**: canasta completa en la semana ancla (cobertura ≥95%), retropolada con el índice.
+- **Nacional ponderado por población provincial** (antes era mediana simple, dominada por DIA con
+  el 42% de las sucursales).
+- **Arrastre** del último precio conocido hasta 8 semanas; más allá, alerta de reemplazo.
+- **Filtro de outliers intra-tipo** en frescos: `[mediana/2.5, mediana×2.5]` por sucursal-semana.
+- **Provincia/región controlando por cadena** (`idx_vs_nacional`, 100 = nacional): cada cadena se
+  compara consigo misma entre la provincia y el país. Necesario porque las cadenas se distribuyen
+  asimétricamente (Coto en pocas provincias, La Anónima domina Patagonia).
+- `FRAC_PRODUCTOS_MIN = 0.8` (una sucursal cuenta si tiene ≥80% de los empaquetados).
+
+**Fix OOM**: la lectura colapsa los frescos a su TIPO (de ~10.600 EANs a 59) durante la lectura;
+caché `sem_*_v5.parquet`. La clave del caché incluye EANs + día de cierre + `FRESCO_OUTLIER_K`.
+
+**Salidas** (en `output_canasta_alternativa`; entrada en `output_canasta`):
+`canastas_alternativas_YYYY-MM-DD.xlsx` con `Metodologia`, `Resumen`, y por canasta
+`Sem_*`/`Mes_*`/`vsIPC_*`/`Rubro_sem_*`/`Comp_rubro_*`/`Detalle_*`/`Prov_*`/`Cadena_*`/`Region_*`/
+`RegionSem_*`, más `Cobertura_emp`, `Cobertura_frescos`, **`Presencia_items`** (ítem × mes, % de
+semanas con dato real) y **`Alertas_reemplazo`** (ítems sin dato hace >8 semanas).
+CELDA 15 imprime el bloque **"REPORTE PARA CLAUDE"** en texto plano.
+
+**Carga de cantidades**: `docs/canastas_alternativas/cargar_canastas_v4.py` (loader único,
+196 EANs, `cantidad_01..06`; limpia y reescribe las 6 columnas).
 Generador: `gen_nb07.py`. **Detalle en README y `docs/canastas_alternativas/README.md`.**
 
 ### 3. `analisis_SEPA_evolucion.ipynb`
@@ -448,7 +483,7 @@ economistas. Diagnóstico previo sobre el Excel `canastas_alternativas_2026-W36.
   `n_sucursales` contaba `id_sucursal` sin la terna comercio/bandera.
 - El IPC "recto" no era un error: son los índices INDEC reales, lineales a esa escala.
 
-Cambios (ver METODOLOGIA §8.7): semana que **cierra el jueves**; **índice encadenado de muestra
+Cambios (ver METODOLOGIA §10.7): semana que **cierra el jueves**; **índice encadenado de muestra
 apareada** + arrastre de 8 semanas; **nacional ponderado por población provincial**; **filtro de
 outliers intra-tipo** en frescos (K=2.5); **índice provincial/regional controlando por cadena**;
 `FRAC_PRODUCTOS_MIN` 0.5 → 0.8; composición a **196 empaquetados + 59 tipos de frescos**

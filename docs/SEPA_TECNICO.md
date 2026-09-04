@@ -694,25 +694,43 @@ Datos disponibles hasta **marzo 2026**. Actualización mensual. El notebook 02 u
 ## Patrones técnicos del notebook 07 (gen_nb07.py) — 2026-09-03
 
 ### Lectura SEMANAL + colapso de frescos a TIPO (fix de RAM)
-La serie semanal relee todos los ZIPs conservando el **día** (`precio_YYYYMMDD` → fecha → ISO week).
-El universo de frescos por nombre puede ser de **~8.000 EANs de balanza**; arrastrarlos por
-(sucursal × EAN × semana) sobre 30+ meses agota la RAM (OOM). **Solución (CELDA 7)**: una función
-`_colapsar(_df)` mapea, **en la lectura mensual**, cada EAN fresco a su **TIPO** y normaliza a $/kg
-o $/docena (mediana de variantes por sucursal-semana). Así el panel pasa de ~8.500 items a ~110
-(**77× menos filas**). El esquema cacheado es `item/price` (`sem_{hash}_v2.parquet`); el crudo
-por-EAN del último mes se guarda aparte (`datos_ult_raw`) para los diagnósticos por variante.
+La serie semanal relee todos los ZIPs conservando el **día** (`precio_YYYYMMDD` → fecha → semana).
+El universo de frescos por nombre es de **~10.600 EANs de balanza**; arrastrarlos por
+(sucursal × EAN × semana) sobre 30+ meses agota la RAM (OOM). **Solución (CELDA 7)**: la función
+`_colapsar(_df)` mapea, **en la lectura mensual**, cada EAN fresco a su **TIPO** y normaliza a
+$/kg o $/docena (mediana de variantes por sucursal-semana). Así el panel pasa de ~10.800 items a
+~255 (**~40× menos filas**). El esquema cacheado es `item/price` (`sem_{hash}_v5.parquet`); el
+crudo por-EAN del último mes se guarda aparte (`datos_ult_raw`) para los diagnósticos por variante.
+
+> La clave del caché incluye el universo de EANs, el día de cierre de semana y `FRESCO_OUTLIER_K`.
+> Cambiar cualquiera de los tres invalida el caché y fuerza una relectura completa (~50-60 min).
+
+### Filtro de outliers intra-tipo (frescos)
+Dentro de cada **sucursal-semana**, antes de tomar la mediana de las variantes de un tipo, se
+descartan las que caen fuera de `[mediana/K, mediana×K]` con `K = FRESCO_OUTLIER_K` (2.5).
+Es la defensa contra el problema real de normalizar $/kg sobre EANs de balanza: un EAN cargado
+como "1 kg" cuyo precio en realidad es por unidad o por media horma dispara el $/kg del tipo.
 
 ### Selección de frescos por CATEGORÍA (fix de precios inflados)
 La selección solo por regex de nombre colaba procesados con el nombre de la fruta/verdura
 (jugo en polvo "banana", sazonador "cebolla", ñoquis de "papa", comida de perro sabor "pollo"),
 de pocos gramos → `precio/grams×1000` disparaba el $/kg. **Solución (CELDA 4-5)**: se lee
-`categoria` al maestro y los candidatos frescos exigen **categoría de fresco real**
-(`Frutas y Verduras` / `Carnicería` / `Huevos`) **o** categoría vacía (balanza SEPA-only que no
-está en el maestro interno), más un piso `grams ≥ 250`. Mapa `rubro → categorías` en `_CAT_FRESCO`.
+`categoria` del maestro y los candidatos frescos exigen **categoría de fresco real**
+(`Frutas y Verduras`, `Carnicería`, `Fiambrería`, `Panificados`, `Pescados y Mariscos`, `Huevos`)
+**o** categoría vacía (balanza SEPA-only que no está en el maestro interno), más un piso de
+gramaje por tipo (`gmin`, default 250 g; quesos y fiambres 500 g). Mapa `rubro → categorías` en
+`_CAT_FRESCO_CFG`.
 
-### Semanas ISO de borde
-Una semana ISO que cruza dos meses se procesa en dos archivos mensuales. Para no duplicar: se asigna
-cada semana a su mes "dueño" (el del **jueves ISO**, `_mes_de_semana`) y se conserva ese fragmento.
+### Semana que cierra el jueves
+La semana **no** es ISO: es una ventana de 7 días que **cierra el jueves** (viernes→jueves),
+etiquetada por la **fecha de cierre** (`2026-09-03`). Así el informe que se arma el viernes usa
+la última semana completa. Se configura con `DIA_CIERRE_SEMANA` (3=jueves, 4=viernes).
+
+Una semana que cruza dos meses se procesa en dos archivos mensuales. Para no duplicar, cada
+semana se asigna a su mes **"dueño"**: el del punto medio de la ventana (cierre − 3 días,
+`_mes_de_semana`). Es el análogo al criterio del jueves ISO.
+
+> Ojo: nb02 y nb06 siguen usando **semana ISO** (`%G-S%V`). Solo nb07 usa el cierre en jueves.
 
 ### Región
 `REGION_PROV` mapea provincia → una de 5 regiones (Centro/Pampeana, NOA, NEA, Cuyo, Patagonia).
