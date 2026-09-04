@@ -1,6 +1,6 @@
 # Contexto del Proyecto — Precios Minoristas SEPA
 
-Última actualización: 2026-09-03 (nb07: 5 canastas [+Representativa calibrada INDEC] + 33 frescos + región + fix OOM/precios; nb02: Excel `datos_econometria` semanal+mensual)
+Última actualización: 2026-09-04 (nb07 v5: motor del informe semanal — 6 canastas, semana que cierra el jueves, índice encadenado de muestra apareada, nacional ponderado por población, 196 empaquetados + 59 tipos de frescos)
 
 > **El proyecto tiene 6 herramientas (nb01–nb06).** Las descripciones detalladas por celda más
 > abajo en este archivo son **históricas** (describen la arquitectura previa de nb02); el estado
@@ -431,6 +431,34 @@ Los 4 reemplazos (Swift XL, Lavandina Anti-splash, Plusbelle, Listerine) están 
 ---
 
 ## Historial de cambios
+
+### 2026-09-04 — nb07 v5: motor del informe semanal (6 canastas, índice encadenado)
+
+Reescritura del motor de nb07 para que la salida la pueda publicar semanalmente el equipo de
+economistas. Diagnóstico previo sobre el Excel `canastas_alternativas_2026-W36.xlsx`:
+
+- Los saltos de 2026-W07 (+24%) y la caída de W31 (−21%) eran **100% el rubro Carne**: cambios
+  en el set de variantes de cada tipo, no inflación.
+- El "despegue" inicial de varias canastas era **entrada tardía de ítems**: Popular-Frescos
+  +216% en abr-2024 (entra la leche), Tecnológica-Heladera entra en ago-2025, Femenina-jabón
+  íntimo en jul-2024. Un ítem sin precio aportaba $0 y al aparecer generaba un salto de nivel.
+- El "nacional" era **el precio de DIA** (42% de las sucursales, precios uniformes): nacional,
+  CABA, Buenos Aires y Centro/Pampeana daban el mismo número exacto.
+- Bugs: `San juan` no matcheaba la normalización de provincia y caía en región `Otras`;
+  `n_sucursales` contaba `id_sucursal` sin la terna comercio/bandera.
+- El IPC "recto" no era un error: son los índices INDEC reales, lineales a esa escala.
+
+Cambios (ver METODOLOGIA §8.7): semana que **cierra el jueves**; **índice encadenado de muestra
+apareada** + arrastre de 8 semanas; **nacional ponderado por población provincial**; **filtro de
+outliers intra-tipo** en frescos (K=2.5); **índice provincial/regional controlando por cadena**;
+`FRAC_PRODUCTOS_MIN` 0.5 → 0.8; composición a **196 empaquetados + 59 tipos de frescos**
+(nuevos rubros Pollo, Cerdo, Pescado, Fiambres y Quesos, Panadería); hojas nuevas
+`Presencia_items` y `Alertas_reemplazo` para trazabilidad de altas y bajas.
+
+Loader unificado **`docs/canastas_alternativas/cargar_canastas_v4.py`** (196 EANs,
+`cantidad_01..06`); reemplaza y elimina los loaders anteriores. Validado: 196/196 EANs
+matchean en la hoja real. Notebook validado end-to-end con dataset sintético (16/16 celdas OK,
+filtro de outliers y detección de altas verificados).
 
 ### 2026-09-01 — Notebook 07: canastas alternativas (Popular/Media/Ejecutiva) semanales + frescos (nuevo, `gen_nb07.py`)
 

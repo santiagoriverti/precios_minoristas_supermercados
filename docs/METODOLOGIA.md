@@ -428,25 +428,90 @@ La CELDA 13 imprime cobertura por EAN empaquetado (`n_cadenas`/`n_provincias`/`n
 
 ---
 
-## 8.7. Actualización nb07 (2026-09-03) — estado vigente
+## 8.7. nb07 v5 (2026-09-04) — motor del informe semanal, estado vigente
 
-Reemplaza los detalles previos de §8 donde difieran. nb07 corre y fue **auditado end-to-end**
-(las 15 celdas contra un dataset SEPA sintético → sin errores).
+Reescritura del motor para que la salida sea publicable semanalmente por el equipo de
+economistas. Cinco cambios metodológicos y tres correcciones.
 
-**Cinco canastas** (`cantidad_01..05` de la hoja `Productos unicos`):
-- **Popular / Media / Ejecutiva**: escalera de calidad (segundas marcas → líderes → premium) como índice comparable.
-- **Tecnológica** (`cantidad_04`): bundle de 7 durables (TV, notebook, celular, heladera, lavarropas, microondas, aire), `qty=1` c/u, **sin frescos**. Cobertura baja (informativa) — supera lo dicho en §8.5: los durables ahora se miden en su propia canasta, aislados del índice de alimentos.
-- **Representativa** (`cantidad_05`): canasta única del consumidor promedio, con **cantidades calibradas a consumo per cápita** de una familia de 4 (referencia CBA INDEC), tanto en empaquetados como en frescos (4º valor de las tuplas `qty` de `TIPOS_FRESCOS`).
+### La semana
+Ventana de 7 días que **cierra el jueves** (viernes→jueves), etiquetada por la **fecha de
+cierre** (`2026-09-03`). Antes se usaba semana ISO (lunes→domingo), que dejaba la última
+semana incompleta al correr el viernes. Configurable con `DIA_CIERRE_SEMANA`.
+El **mes dueño** de una semana es el del punto medio de la ventana (cierre − 3 días).
 
-**Empaquetados**: 130 productos, todos con cobertura **≥4 cadenas** (resueltos contra el universo real de `Productos unicos`). Cubren 15 rubros incl. snacks, mascotas y cuidado del bebé.
+### Índice encadenado de muestra apareada
+Problema que resuelve: cuando un producto entra o sale del SEPA, el costo total pegaba un
+salto que se leía como inflación. Los saltos de 2026-W07/W31 y el "despegue" inicial de la
+Femenina eran esto, no precios.
 
-**Frescos (fix clave de precios)**: la selección por nombre colaba procesados que contienen el nombre de la fruta/verdura (jugo en polvo "banana", sazonador "cebolla", ñoquis de "papa", comida de perro sabor "pollo"), de pocos gramos → $/kg inflado 3-10x. **Solución**: los candidatos frescos ahora exigen **categoría de fresco real** del maestro (`Frutas y Verduras` / `Carnicería` / `Huevos`) **o** categoría desconocida (balanza SEPA-only), + piso de gramos ≥250. Son **33 tipos**. Precio del tipo por sucursal/semana = mediana de variantes, normalizado a $/kg o $/docena.
+Para cada par de semanas consecutivas se calcula el ratio **solo con los ítems que tienen
+precio en ambas**, y se encadena:
 
-**Región**: `REGION_PROV` agrupa las provincias en 5 regiones (Centro/Pampeana, NOA, NEA, Cuyo, Patagonia). Se agrega `Region_*` (snapshot) y `RegionSem_*` (serie semanal).
+```
+idx_t = idx_{t-1} × ( Σ_{i∈S_t} p_i,t · q_i ) / ( Σ_{i∈S_t} p_i,t-1 · q_i )
+S_t = ítems con precio en t y en t-1
+```
 
-**Salida**: `output_canasta_alternativa/` (Excel + caché). El Excel de canastas se lee de `output_canasta/`.
+Es el tratamiento estándar de altas y bajas (mismo criterio que INDEC).
 
----
+**Nivel en $**: se toma el costo de la canasta *completa* en la semana ancla (la última con
+cobertura ≥95% de los ítems) y se retropola con el índice. Queda interpretable en pesos y sin
+saltos de composición. Se exporta también `costo_directo` (la suma cruda) como referencia.
+
+### Nacional ponderado por población
+Antes el nacional era la mediana simple entre sucursales; como DIA aporta ~42% de las
+sucursales con precios casi uniformes, el "nacional", CABA, Buenos Aires y Centro/Pampeana
+daban **exactamente el precio de DIA**. Ahora: mediana por provincia → promedio ponderado por
+**población provincial** (`PESOS_POBLACION`). Configurable con `AGG_NACIONAL`.
+
+### Arrastre y trazabilidad
+Si un ítem falta una semana se arrastra su último precio nacional conocido, hasta
+`MAX_SEMANAS_ARRASTRE` (8). Ausencias más largas quedan en NaN y entran en la hoja
+**`Alertas_reemplazo`** (ítem, canastas afectadas, última semana con dato). La hoja
+**`Presencia_items`** es la matriz ítem × mes con el % de semanas del mes con dato real:
+muestra exactamente cuándo entró o salió cada producto.
+
+### Filtro de outliers intra-tipo (frescos)
+Dentro de cada **sucursal-semana**, antes de tomar la mediana de las variantes de un tipo, se
+descartan las que caen fuera de `[mediana/K, mediana×K]` con `K = FRESCO_OUTLIER_K = 2.5`.
+Protege del caso "precio por unidad cargado como precio por kilo" y de gramajes mal cargados,
+que es el riesgo real de normalizar $/kg sobre EANs de balanza.
+
+### Provincia y región controlando por cadena
+Las cadenas se distribuyen asimétricamente (Coto opera en pocas provincias, La Anónima domina
+la Patagonia, DIA está en casi todas). Comparar el costo crudo entre provincias mezcla el
+efecto-precio con el efecto-mix-de-cadenas. Se agrega:
+
+```
+idx_vs_nacional(prov) = 100 × Σ_c w_c · [ precio_c,prov / precio_c,nacional ]   (w_c = sucursales)
+```
+
+Es decir: cada cadena se compara **consigo misma** entre la provincia y el país, y después se
+promedia. 100 = igual al nacional. El costo crudo se sigue reportando al lado.
+
+### Composición ampliada
+- **196 EANs empaquetados** únicos: Popular 66, Media 100, Ejecutiva 104, Tecnológica 14,
+  Representativa 108, Femenina 16. Todos con **≥4 cadenas, ≥15 provincias, ≥800 sucursales**
+  (durables ≥3/≥10/≥90). Se seleccionan por escalera de calidad por slot (pick P/M/E, la
+  Representativa usa el pick de Media con fallback a Popular).
+- **59 tipos de frescos** (antes 33), con rubros nuevos: **Pollo** separado de Carne,
+  **Cerdo**, **Pescado**, **Fiambres y Quesos** (por kg, de balanza) y **Panadería**
+  (pan francés por kg). Cada tipo admite `gmin` propio (los quesos y fiambres usan 500 g).
+
+### Correcciones
+1. **Provincia**: la normalización era sensible a mayúsculas y acentos, así que `San juan`
+   no matcheaba y caía en la región `Otras`. Ahora el lookup normaliza (sin acentos,
+   minúsculas) y `REGION_PROV`/`PESOS_POBLACION` se reindexan con el mismo criterio.
+2. **Conteo de sucursales**: se contaba `id_sucursal` solo, que no es único entre cadenas.
+   Ahora se cuenta la terna `id_comercio|id_bandera|id_sucursal` (`suc_id`).
+3. **Cobertura mínima por sucursal**: `FRAC_PRODUCTOS_MIN` pasa de 0.5 a **0.8**. Con 0.5 una
+   sucursal con la mitad de los ítems quedaba casi enteramente imputada al precio nacional,
+   lo que comprimía artificialmente las diferencias entre cadenas.
+
+### Nota sobre el IPC
+La serie del IPC se ve casi recta en el gráfico porque son los índices INDEC reales
+(4.261 → 12.076 entre 2024-01 y 2026-07): sube ~6,7 puntos/mes en 2024, ~4,7 en 2025 y ~6,6 en
+2026, y a esa escala la curva es visualmente lineal. No es un error de carga.
 
 ## 9b. Notebook 02 — Excel de econometría (`datos_econometria`)
 

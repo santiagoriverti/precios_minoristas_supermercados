@@ -1,58 +1,55 @@
-# Canastas alternativas — cantidades para `Productos unicos` (nb07)
+# Canastas alternativas — composición y carga (v4)
 
-Cinco canastas para cargar en la hoja **`Productos unicos`** del Excel
-`canasta_representativa_YYYY-MM.xlsx`, que el notebook **07** lee para calcular la
-evolución **semanal** del costo (nacional / provincia / cadena / **región**).
+Insumo del notebook **`07_evolucion_canastas_alternativas`**, que produce el informe semanal.
 
-| Columna | Canasta | Criterio |
-|---|---|---|
-| `cantidad_01` | **Popular** | Segundas marcas / básicos (Cocinero, Molinos Ala, Schneider, Pepsi…) |
-| `cantidad_02` | **Media** | Marcas líderes (La Serenísima, Natura, Quilmes, Coca, Colgate…) |
-| `cantidad_03` | **Ejecutiva** | Premium + más variedad (Don Vicente, oliva, Stella, Fernet, Dove…) |
-| `cantidad_04` | **Tecnológica** | Bundle de durables (TV, notebook, celular, heladera, lavarropas, microondas, aire) — `qty=1` c/u |
-| `cantidad_05` | **Representativa** | Canasta única del consumidor "promedio" (marcas líderes, cantidades típicas) |
+## Las 6 canastas
 
-**124 productos empaquetados** (117 alimentos/bebidas/limpieza/higiene + 7 durables), todos
-con cobertura **≥4 cadenas**. Además, nb07 suma **33 tipos de frescos** por nombre
-(frutas, verduras, carne, huevos), buscados **por sucursal** según las variantes disponibles
-(el EAN de balanza cambia por cadena).
+| Columna | Canasta | Productos empaquetados | Frescos | Idea |
+|---|---|---:|---:|---|
+| `cantidad_01` | **Popular** | 66 | 34 tipos | Primeras marcas económicas, presentaciones chicas |
+| `cantidad_02` | **Media** | 100 | 58 tipos | Marcas líderes, canasta de hogar tipo |
+| `cantidad_03` | **Ejecutiva** | 104 | 56 tipos | Premium, más variedad y volumen |
+| `cantidad_04` | **Tecnológica** | 14 | — | Bundle de durables (heladera, lavarropas, TV, notebook…) |
+| `cantidad_05` | **Representativa** | 108 | 59 tipos | Calibrada a consumo de familia tipo de 4 (referencia CBA INDEC) |
+| `cantidad_06` | **Femenina** | 16 | — | Gestión menstrual, depilación y cuidado personal femenino |
 
-## Archivos
-- **`cantidades_dict.py`** — diccionario Python `CANTIDADES = { ean: {cantidad_01..04} }`.
-- **`cantidades_productos_unicos.csv`** — tabla lista para pegar (`id_producto` + `cantidad_01..04` + cobertura).
-- **`cantidades_detalle.csv`** — detalle completo (marca, rubro, cobertura, precio, cantidades).
-- **`cargar_en_productos_unicos.py`** — script autónomo de **Colab**: subís el Excel
-  `canasta_representativa_*.xlsx` y te lo devuelve con `cantidad_01..04` cargadas en la hoja
-  `Productos unicos` (limpia las columnas primero y reporta cobertura + EAN faltantes).
+**196 EANs únicos** en total. Todos seleccionados de la hoja real `Productos unicos` exigiendo
+cobertura: **≥4 cadenas, ≥15 provincias y ≥800 sucursales** (los durables de la Tecnológica,
+que son inherentemente menos publicados: ≥3 cadenas, ≥10 provincias, ≥90 sucursales).
 
-## Cómo cargarlas
-**Opción A (recomendada) — script de Colab**: pegá `cargar_en_productos_unicos.py` en una
-celda de Colab, ejecutá, subí el Excel; descargás `..._con_canastas.xlsx` con todo cargado.
+Los **frescos NO se cargan acá**: van por regla de nombre en la CELDA 1 del notebook
+(`TIPOS_FRESCOS`, 59 tipos), porque el EAN de balanza cambia entre cadenas.
 
-**Opción B — manual**:
-1. Abrí el Excel, hoja `Productos unicos`.
-2. Para cada `id_producto` del CSV, poné su `cantidad_01..04` en las columnas amarillas
-   (se pueden cruzar por `id_producto` con BUSCARV/`merge`).
+## Cómo cargar las cantidades
 
-Después, en cualquier caso:
-3. Guardá el Excel en **`output_canasta/`** en tu Drive (carpeta de ENTRADA).
-4. Corré nb07 → los resultados quedan en **`output_canasta_alternativa/`** (carpeta de SALIDA).
-5. Copiá el bloque **"REPORTE PARA CLAUDE"** (CELDA 15) + las hojas `Cobertura_emp`/
-   `Cobertura_frescos` para afinar las cantidades.
+1. Abrí `cargar_canastas_v4.py`, copiá **todo** el contenido y pegalo en una celda de Colab.
+2. Ejecutá. Cuando te pida el archivo, subí el Excel `canasta_representativa_*.xlsx`
+   (sirve cualquier versión: el script **limpia y reescribe** `cantidad_01..06` completo).
+3. Descargá el `*_con_canastas.xlsx` que genera.
+4. Subilo a Drive en `carga/output_canasta/`, reemplazando `canasta_representativa_<periodo>.xlsx`.
+5. Corré el notebook 07.
 
-## Metodología
-- **Empaquetados por EAN**: cada producto se eligió del universo real de `Productos unicos`
-  exigiendo **cobertura ≥4 cadenas** (casi todos son cad=5 / 24 provincias / miles de sucursales),
-  para garantizar comparabilidad entre cadenas y provincias.
-- **Frescos (frutas, verduras, carne, huevos)**: NO van en el Excel — nb07 los toma por
-  **nombre** (`TIPOS_FRESCOS`, CELDA 1), normalizados a $/kg o $/docena, porque el EAN de balanza
-  cambia por cadena. La canasta **Tecnológica no lleva frescos**.
-- **Escalera de calidad**: los estratos difieren en **marca** y en **cantidad** (ver `TIPOS_FRESCOS`
-  y la tabla `QTY` del generador de canastas).
-- **Cantidades**: canasta mensual para familia tipo de 4, escalonadas por estrato. Ajustables.
+> El script crea las columnas `cantidad_0X` que falten, y avisa si algún EAN no está en la hoja.
 
-## Validación / iteración
-El notebook imprime una celda **"REPORTE PARA CLAUDE"** y las hojas `Cobertura_emp` /
-`Cobertura_frescos`. Si algún EAN queda **SIN datos** o con **baja comparabilidad**, se reemplaza.
-La canasta Tecnológica puede quedar rala si pocas sucursales tienen ≥50% de los durables
-(`FRAC_PRODUCTOS_MIN`): en ese caso se baja el umbral para ese estrato.
+## Editar la composición
+
+El diccionario `CANTIDADES` del loader es editable: cada fila es
+`'<EAN>': {'cantidad_01': q1, ..., 'cantidad_06': q6},  # rubro | descripción`.
+Poné `0` para sacar un producto de una canasta.
+
+`canastas_v4_detalle.csv` tiene el detalle de cada pick (EAN, descripción, marca, rubro,
+categoría, slot, cobertura y precio mediano del período de referencia) por si querés auditar
+o reemplazar productos.
+
+## Trazabilidad
+
+El notebook exporta dos hojas para controlar altas y bajas a lo largo del tiempo:
+
+- **`Presencia_items`**: matriz ítem × mes con el % de semanas del mes en que el ítem tuvo
+  precio real en el SEPA. Sirve para ver cuándo entró o salió un producto.
+- **`Alertas_reemplazo`**: ítems de alguna canasta sin dato en las últimas 8 semanas. Son los
+  candidatos a reemplazar (buscá un sustituto en `Productos unicos` y editá el loader).
+
+Un ítem que falta pocas semanas **no rompe la serie**: el notebook arrastra su último precio
+nacional conocido (hasta 8 semanas) y, además, el índice es **encadenado de muestra apareada**,
+así que las altas y bajas no generan saltos artificiales en el nivel.

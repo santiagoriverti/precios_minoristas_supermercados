@@ -26,7 +26,7 @@ El proyecto responde tres preguntas:
 | `04_precios_seleccion` | Exporta un **Excel** con los precios diarios del último mes para todos los supermercados a menos de X km de un punto: una hoja por sucursal (productos × días) + una hoja general (producto × super, precio promedio). Ver [sección detallada](#precios-por-selección-geográfica--04_precios_seleccion). | [![Abrir en Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/santiagoriverti/precios_minoristas_supermercados/blob/main/notebooks/04_precios_seleccion.ipynb) |
 | `05_evolucion_productos_representativos` | Igual que el Notebook 02, pero para **productos individuales** en vez de canastas: evolución de precio, mapas provinciales, comparación con el IPC y rankings por cadena/barrio de cada EAN que se ingrese. Ver [sección detallada](#evolución-de-productos-individuales--05_evolucion_productos_representativos). | [![Abrir en Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/santiagoriverti/precios_minoristas_supermercados/blob/main/notebooks/05_evolucion_productos_representativos.ipynb) |
 | `06_evolucion_brecha_celiaca` | Mide la **brecha celíaca** (canasta sin-TACC vs. base con TACC) y su evolución **diaria, semanal y mensual**, usando solo tipos de producto con dicotomía celíaca (2–3 EANs representativos por lado, promediados). Brecha **intra-sucursal**, desagregada por provincia, cadena y concentración de comercios. Ver [sección detallada](#brecha-celíaca--06_evolucion_brecha_celiaca). | [![Abrir en Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/santiagoriverti/precios_minoristas_supermercados/blob/main/notebooks/06_evolucion_brecha_celiaca.ipynb) |
-| `07_evolucion_canastas_alternativas` | Evolución **semanal** del costo de **5 canastas** (**Popular / Media / Ejecutiva / Tecnológica / Representativa**), comparada con el **IPC**, desagregada por **rubro** (con drill-down hasta producto) y por **provincia / cadena / región**. Composición **híbrida**: **130 empaquetados** por EAN (hoja `Productos unicos`, `cantidad_01..05`, todos con cobertura ≥4 cadenas) + **33 tipos de frescos** por nombre/sucursal (frutas, verduras, carne, huevos — el EAN de balanza cambia por cadena, se selecciona por categoría del maestro). Salida a `output_canasta_alternativa`. Imprime un bloque **"REPORTE PARA CLAUDE"** y diagnósticos de cobertura. Ver [sección detallada](#canastas-alternativas--07_evolucion_canastas_alternativas). | [![Abrir en Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/santiagoriverti/precios_minoristas_supermercados/blob/main/notebooks/07_evolucion_canastas_alternativas.ipynb) |
+| `07_evolucion_canastas_alternativas` | **Motor del informe semanal.** Costo de **6 canastas** (**Popular / Media / Ejecutiva / Tecnológica / Representativa / Femenina**) con **semana que cierra el jueves**, comparado con el **IPC**, desagregado por **rubro**, **provincia**, **región** y **cadena**. **Índice encadenado de muestra apareada** (sin saltos por altas/bajas), **nacional ponderado por población** y **provincia controlando por cadena**. Composición: **196 empaquetados** por EAN (`cantidad_01..06`) + **59 tipos de frescos** por nombre. Exporta `Presencia_items` y `Alertas_reemplazo` para trazabilidad. Ver [sección detallada](#canastas-alternativas--07_evolucion_canastas_alternativas). | [![Abrir en Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/santiagoriverti/precios_minoristas_supermercados/blob/main/notebooks/07_evolucion_canastas_alternativas.ipynb) |
 
 > **¿Ves una versión vieja en Colab?** El badge siempre apunta a la última versión en GitHub, pero Colab puede mostrar una copia cacheada de tu Drive. Para forzar la actualización: eliminá el notebook de `Mi unidad/Colab Notebooks/` en Google Drive y volvé a hacer clic en el badge.
 
@@ -521,31 +521,78 @@ El diccionario `TIPOS` — un tipo por entrada, con `qty`, `tacc: [EANs]`, `sin_
 
 ## Canastas alternativas — `07_evolucion_canastas_alternativas`
 
-Evolución **semanal** del costo de **5 canastas** (**Popular / Media / Ejecutiva / Tecnológica / Representativa**), comparada con el **IPC** del INDEC, desagregada por **rubro** (con drill-down hasta producto) y por **provincia / cadena / región**. Es el análisis del Notebook 02 pero **semanal** y **sumando frescos** (carne, frutas, verduras, huevos).
+Motor del **informe semanal**. Costo de **6 canastas** comparado con el **IPC** del INDEC,
+desagregado por **rubro** (con drill-down hasta producto), **provincia**, **región** y **cadena**.
+Es el análisis del Notebook 02 pero **semanal** y **sumando frescos** (carne, pollo, cerdo,
+pescado, frutas, verduras, fiambres/quesos, panadería, huevos).
 
-### Las 5 canastas
-- **Popular / Media / Ejecutiva**: escalera de calidad (segundas marcas → líderes → premium), como índice de precios comparable.
-- **Tecnológica** (`cantidad_04`): bundle de 7 durables (TV, notebook, celular, heladera, lavarropas, microondas, aire). Sin frescos. Cobertura baja (informativa).
-- **Representativa** (`cantidad_05`): canasta única del consumidor promedio, con **cantidades calibradas per cápita** (ref. CBA INDEC).
+### La semana
+Ventana de 7 días que **cierra el jueves** (viernes→jueves), etiquetada por la fecha de cierre
+(ej. `2026-09-03`). Así, corriendo el viernes, la última semana está completa.
+Se cambia con `DIA_CIERRE_SEMANA` (3=jueves, 4=viernes).
+
+### Las 6 canastas
+| Col | Canasta | Emp. | Frescos | Idea |
+|---|---|---:|---:|---|
+| `cantidad_01` | **Popular** | 66 | 34 | Marcas económicas, presentaciones chicas |
+| `cantidad_02` | **Media** | 100 | 58 | Marcas líderes, hogar tipo |
+| `cantidad_03` | **Ejecutiva** | 104 | 56 | Premium, más variedad y volumen |
+| `cantidad_04` | **Tecnológica** | 14 | — | Durables (heladera, lavarropas, TV, notebook…) |
+| `cantidad_05` | **Representativa** | 108 | 59 | Familia tipo de 4 (ref. CBA INDEC) |
+| `cantidad_06` | **Femenina** | 16 | — | Gestión menstrual, depilación, cuidado personal |
 
 ### Composición híbrida (dos fuentes)
-- **Empaquetados (por EAN)**: **130 productos**, todos con cobertura **≥4 cadenas**. Se leen de la hoja **`Productos unicos`** del Excel `canasta_representativa_*.xlsx` (`carga/output_canasta/`), columnas `cantidad_01..05`. Las cantidades se cargan con el loader de `docs/canastas_alternativas/`.
-- **Frescos (por TIPO/nombre)**: **33 tipos** (frutas, verduras, carne, huevos). No tienen EAN estable entre cadenas (balanza), así que se seleccionan **por nombre + categoría del maestro** (`Frutas y Verduras` / `Carnicería` / `Huevos`, filtro clave que descarta procesados que contienen el nombre). Precio del tipo por sucursal/semana = **mediana de las variantes presentes**, normalizado a **$/kg** o **$/docena**. Resuelve la variación de EAN por cadena y la disponibilidad por sucursal.
+- **Empaquetados (por EAN)**: **196 EANs únicos**, todos con **≥4 cadenas, ≥15 provincias y
+  ≥800 sucursales** (durables: ≥3/≥10/≥90). Se leen de la hoja **`Productos unicos`**
+  (`carga/output_canasta/canasta_representativa_*.xlsx`), columnas `cantidad_01..06`.
+  Se cargan con **`docs/canastas_alternativas/cargar_canastas_v4.py`**.
+- **Frescos (por TIPO/nombre)**: **59 tipos**. No tienen EAN estable entre cadenas (balanza),
+  así que se seleccionan **por nombre + categoría del maestro** (`Frutas y Verduras`,
+  `Carnicería`, `Fiambrería`, `Panificados`, `Pescados y Mariscos`, `Huevos`), filtro que
+  descarta procesados que contienen el nombre. Precio del tipo por sucursal-semana = **mediana
+  de las variantes presentes**, normalizado a **$/kg** o **$/docena**.
+
+### Metodología del índice (clave para el informe)
+- **Índice encadenado de muestra apareada**: la variación entre dos semanas se calcula **solo
+  con los ítems presentes en ambas**, y el nivel se encadena. Es lo que hace INDEC ante altas y
+  bajas, y evita los saltos artificiales cuando un producto entra o sale del SEPA.
+- **Nivel en $**: costo de la canasta completa en la semana ancla (cobertura ≥95%),
+  retropolado con el índice. Queda interpretable y sin saltos de composición.
+- **Nacional ponderado por población**: mediana por provincia y después promedio ponderado por
+  población provincial. Evita que DIA (≈42% de las sucursales) defina el número nacional.
+- **Arrastre**: si un ítem falta, se arrastra su último precio nacional hasta 8 semanas
+  (`MAX_SEMANAS_ARRASTRE`); si falta más, entra en `Alertas_reemplazo`.
+- **Outliers intra-tipo (frescos)**: dentro de cada sucursal-semana se descartan las variantes
+  fuera de `[mediana/2.5, mediana×2.5]`. Protege de gramajes mal cargados o precios por unidad.
+- **Provincia/región controlando por cadena**: además del costo crudo se reporta
+  `idx_vs_nacional` = precio de cada cadena en la provincia ÷ precio nacional de esa misma
+  cadena, promediado por sucursales (100 = nacional). Responde "¿qué tan cara es la provincia?"
+  sin que el resultado dependa del mix de cadenas que opera ahí.
 
 ### Config (CELDA 1)
-- `CANASTA_COLS` mapea `cantidad_01..05 → Popular/Media/Ejecutiva/Tecnológica/Representativa`; `CANASTAS_SIN_FRESCOS = {'Tecnológica'}`.
-- `TIPOS_FRESCOS`: 33 tipos (`rubro`, `unidad` kg/doc, `inc`/`exc` regex, `qty=(Popular,Media,Ejecutiva,Representativa)`). Editable; se afina con `Cobertura_frescos`.
-- `REGION_PROV` (5 regiones), `MES_INICIO_HISTORICO`, `FRAC_PRODUCTOS_MIN`, `MIN_SUC_AGG`.
+`CANASTA_COLS` (6 canastas), `CANASTAS_SIN_FRESCOS = {Tecnológica, Femenina}`,
+`RUBRO_DESDE_CATEGORIA` (usa `categoria` en vez de `rubro` para los bundles temáticos),
+`TIPOS_FRESCOS` (59 tipos con `inc`/`exc`/`gmin`/`qty`), `DIA_CIERRE_SEMANA`,
+`MAX_SEMANAS_ARRASTRE`, `FRESCO_OUTLIER_K`, `AGG_NACIONAL`, `FRAC_PRODUCTOS_MIN` (0.8),
+`MIN_SUC_AGG`, `REGION_PROV`.
 
 ### Arquitectura (memoria)
-La lectura semanal **colapsa los frescos a su TIPO durante la lectura** (de ~8k EANs de balanza a ~30 tipos) para no reventar la RAM sobre toda la historia; cachea por mes cerrado (`sem_*_v2.parquet`), relee el mes en curso fresco.
+La lectura semanal **colapsa los frescos a su TIPO durante la lectura** (de ~10k EANs de balanza
+a 59 tipos) para no reventar la RAM sobre toda la historia; cachea por mes cerrado
+(`sem_*_v5.parquet`) y relee el mes en curso fresco.
 
 ### Qué genera (en `output_canasta_alternativa/`)
-- Bloque **"REPORTE PARA CLAUDE"** (CELDA 15): costo/variación/vs-IPC/composición por rubro **y por región** + flags de cobertura, en texto para copiar.
-- Gráficos: índice **semanal** por canasta, canastas **vs IPC** (mensual), composición por rubro.
-- `canastas_alternativas_YYYY-Www.xlsx`: `Resumen`, y por canasta `Sem_*`/`Mes_*`/`vsIPC_*`/`Rubro_sem_*`/`Comp_rubro_*`/**`Detalle_*`**/`Prov_*`/`Cadena_*`/**`Region_*`**/**`RegionSem_*`**, + `Cobertura_emp`, `Cobertura_frescos`.
+- Bloque **"REPORTE PARA CLAUDE"** (CELDA 15) en texto plano para copiar.
+- Gráficos: índice **semanal encadenado**, canastas **vs IPC** (mensual), composición por rubro.
+- `canastas_alternativas_YYYY-MM-DD.xlsx` (fecha de cierre de la semana): `Metodologia`,
+  `Resumen`, y por canasta `Sem_*`/`Mes_*`/`vsIPC_*`/`Rubro_sem_*`/`Comp_rubro_*`/`Detalle_*`/
+  `Prov_*`/`Cadena_*`/`Region_*`/`RegionSem_*`, + `Cobertura_emp`, `Cobertura_frescos`,
+  **`Presencia_items`** (matriz ítem × mes: % de semanas con dato real) y
+  **`Alertas_reemplazo`** (ítems sin dato hace más de 8 semanas).
 
-> Requiere en `carga/` los ZIPs SEPA, `IPC.xlsx`, `maestro_sepa_completo.csv.gz` (Script 03; frescos de nicho), y en `carga/output_canasta/` el Excel `canasta_representativa_*.xlsx` con `Productos unicos` poblada (`cantidad_01..05`). **Cantidades y loader: `docs/canastas_alternativas/`.**
+> Requiere en `carga/` los ZIPs SEPA, `IPC.xlsx`, `maestro_sepa_completo.csv.gz` (Script 03), y
+> en `carga/output_canasta/` el Excel con `Productos unicos` poblada (`cantidad_01..06`).
+> **Composición y loader: `docs/canastas_alternativas/`.**
 
 ---
 
