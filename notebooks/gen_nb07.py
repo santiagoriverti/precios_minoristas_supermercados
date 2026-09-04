@@ -340,15 +340,30 @@ cells.append(cell_code(r'''# ===================================================
 # ============================================================
 DATA_URL = 'https://raw.githubusercontent.com/santiagoriverti/precios_minoristas_supermercados/main/data'
 def leer_maestro(nombre, **kwargs):
-    local = Path('data') / nombre
-    if local.exists():
-        return pd.read_excel(local, **kwargs)
+    # Busqueda: ./data (local) -> Drive (SEPA_DIR y SEPA_DIR/data) -> cache -> GitHub raw.
+    # El fallback a GitHub SOLO funciona si el repositorio es PUBLICO. Con el repo privado
+    # raw.githubusercontent devuelve 404, asi que hay que dejar los maestros en el Drive,
+    # junto a los ZIPs del SEPA.
+    _cands = [Path('data') / nombre]
+    try:
+        _cands += [Path(SEPA_DIR) / nombre, Path(SEPA_DIR) / 'data' / nombre]
+    except Exception:
+        pass
+    _cands.append(Path('/content/data') / nombre)
+    for _p in _cands:
+        if _p.exists():
+            return pd.read_excel(_p, **kwargs)
     import urllib.request, urllib.parse
     dl = Path('/content/data') / nombre
-    Path('/content/data').mkdir(exist_ok=True)
-    if not dl.exists():
-        print(f'  Descargando {nombre}...')
+    Path('/content/data').mkdir(parents=True, exist_ok=True)
+    try:
+        print(f'  Descargando {nombre} desde GitHub...')
         urllib.request.urlretrieve(f'{DATA_URL}/{urllib.parse.quote(nombre)}', dl)
+    except Exception as _e:
+        raise FileNotFoundError(
+            f"No se pudo obtener '{nombre}'. Se busco en ./data, el Drive y GitHub ({_e}). "
+            f"Si el repositorio es PRIVADO, GitHub responde 404: copia '{nombre}' a la carpeta "
+            f"del Drive donde estan los ZIPs del SEPA.")
     return pd.read_excel(dl, **kwargs)
 
 print('Cargando maestros...')

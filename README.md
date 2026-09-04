@@ -590,6 +590,20 @@ a 59 tipos) para no reventar la RAM sobre toda la historia; cachea por mes cerra
   **`Presencia_items`** (matriz ítem × mes: % de semanas con dato real) y
   **`Alertas_reemplazo`** (ítems sin dato hace más de 8 semanas).
 
+### Repositorio privado — maestros en el Drive
+
+Los notebooks bajan `maestro_sucursales_completo.xlsx` y `Maestro de Productos Interno.xlsx`
+desde `raw.githubusercontent.com`. **Eso solo funciona con el repositorio público**: si está en
+privado, GitHub responde 404 y la carga de maestros falla.
+
+`leer_maestro()` busca en este orden: `./data` → **carpeta del Drive (`SEPA_DIR`)** → caché →
+GitHub. Así que con el repo privado alcanza con **copiar esos dos archivos de `data/` a la
+carpeta del Drive donde están los ZIPs del SEPA** (`carga/`), junto a `maestro_sepa_completo.csv.gz`.
+Si falta alguno, el notebook corta con un mensaje que dice exactamente qué copiar y dónde.
+
+Para abrir los notebooks desde los badges con el repo privado hay que autorizar Colab:
+`Archivo → Abrir notebook → GitHub → tildar "Incluir repositorios privados"`.
+
 > Requiere en `carga/` los ZIPs SEPA, `IPC.xlsx`, `maestro_sepa_completo.csv.gz` (Script 03), y
 > en `carga/output_canasta/` el Excel con `Productos unicos` poblada (`cantidad_01..06`).
 > **Composición y loader: `docs/canastas_alternativas/`.**
