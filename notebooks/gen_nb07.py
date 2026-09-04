@@ -12,7 +12,7 @@ Dos fuentes de composicion (hibrido):
 - FRESCOS (por TIPO/nombre): carne, frutas, verduras y huevos NO tienen EAN estable
   entre cadenas (usan codigos de balanza que cada cadena inventa), asi que se
   seleccionan por REGLA DE NOMBRE sobre el maestro SEPA completo (motor de nb06). El
-  precio de un tipo en una sucursal/semana = PROMEDIO de las variantes presentes,
+  precio de un tipo en una sucursal/semana = MEDIANA de las variantes presentes,
   normalizado a la unidad del tipo ($/kg o $/docena). Asi son comparables entre
   cadenas y provincias.
 
@@ -47,7 +47,7 @@ provincia y cadena.
 - **Empaquetados** → hoja `Productos unicos` del Excel `canasta_representativa_*.xlsx`
   (`cantidad_01`=Popular, `cantidad_02`=Media, `cantidad_03`=Ejecutiva).
 - **Frescos** → por **tipo/nombre** (carne, frutas, verduras, huevos), porque el EAN
-  cambia por cadena. El precio del tipo = promedio de las variantes presentes en la
+  cambia por cadena. El precio del tipo = mediana de las variantes presentes en la
   sucursal, normalizado a $/kg o $/docena.
 
 El notebook **imprime todos los diagnósticos** para refinar la composición."""))
@@ -114,7 +114,7 @@ TIPOS_FRESCOS = {
     'Ciruela':     {'rubro':'Frutas','unidad':'kg','qty':(0,0.5,1,0.3), 'inc':r'\bciruela', 'exc':r'seca|desecad|pasa|mermelada|jugo|dulce|licor'},
     # ---- VERDURAS ($/kg) ----
     'Papa':        {'rubro':'Verduras','unidad':'kg','qty':(4,4,4,8), 'inc':r'\bpapa\b|\bpapas\b', 'exc':r'frita|snack|pur[eé]|congel|chip|bast[oó]n|noisett|prefrit|rall|española'},
-    'Tomate':      {'rubro':'Verduras','unidad':'kg','qty':(2,2,3,3), 'inc':r'\btomate', 'exc':r'salsa|pur[eé]|tritur|extracto|lata|pelado|jugo|ketchup|seco|deshidr|conserva|cubo'},
+    'Tomate':      {'rubro':'Verduras','unidad':'kg','qty':(2,2,3,3), 'inc':r'\btomate', 'exc':r'salsa|pur[eé]|tritur|extracto|lata|pelado|jugo|ketchup|seco|deshidr|conserva|cubo|cherry|cereza'},
     'Cebolla':     {'rubro':'Verduras','unidad':'kg','qty':(2,2,2,3), 'inc':r'\bcebolla', 'exc':r'sopa|deshidr|crema|anillo|snack|verdeo en|caldo'},
     'Zanahoria':   {'rubro':'Verduras','unidad':'kg','qty':(1.5,1.5,1.5,2), 'inc':r'\bzanahoria', 'exc':r'rall|congel|sopa|deshidr|bab[yi]'},
     'Zapallo':     {'rubro':'Verduras','unidad':'kg','qty':(1.5,1.5,2,2), 'inc':r'\bzapallo|\bcalabaza', 'exc':r'congel|sopa|semilla|deshidr|crema'},
@@ -128,7 +128,7 @@ TIPOS_FRESCOS = {
     'Ajo':         {'rubro':'Verduras','unidad':'kg','qty':(0.2,0.2,0.3,0.2), 'inc':r'\bajo\b|\bajos\b', 'exc':r'aceite|\bsal\b|deshidr|polvo|molid|sazonad|condiment|\bpan\b|aderez|mayonesa|crema|conserva|\baji'},
     # ---- CARNE ($/kg) ----
     'Asado':       {'rubro':'Carne','unidad':'kg','qty':(2,2,3,3), 'inc':r'\basado', 'exc':r'salsa|adob|snack|man[ií]|pollo|caf[eé]'},
-    'Carne picada':{'rubro':'Carne','unidad':'kg','qty':(2,2,2,3), 'inc':r'\bpicada\b|carne molida', 'exc':r'salch|congel|caldo|pat[eé]|hamburg|pollo|pescado|aceituna|verdura'},
+    'Carne picada':{'rubro':'Carne','unidad':'kg','qty':(2,2,2,3), 'inc':r'\bpicada\b|carne molida', 'exc':r'salch|congel|caldo|pat[eé]|hamburg|pollo|pescado|aceituna|verdura|angus|wagyu|kobe|premium'},
     'Nalga/Cuadril':{'rubro':'Carne','unidad':'kg','qty':(1,1.5,2,2), 'inc':r'\bnalga|\bcuadril|bola de lomo|\bcuadrada\b|\bpeceto|colita de cuadril', 'exc':r''},
     'Pollo':       {'rubro':'Carne','unidad':'kg','qty':(3,3,3,4), 'inc':r'\bpollo\b|pata muslo', 'exc':r'caldo|sopa|saboriz|congel|nugget|pat[eé]|medall|hamburg|milanesa|pella|arroz|fideo|snack|cubito|aliment|merluza|pescado|pechuga|suprema|\bfilet|fajita|deshuesad'},
     'Milanesa carne':{'rubro':'Carne','unidad':'kg','qty':(1,1,1.5,1), 'inc':r'milanesa', 'exc':r'soja|pollo|congel|merluza|pescado|napolitan|vegetal'},
