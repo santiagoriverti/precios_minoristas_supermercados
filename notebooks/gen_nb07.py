@@ -67,10 +67,16 @@ USE_CACHE   = True
 HOJA_CANASTAS = 'Productos unicos'
 CANASTA_COLS  = {'cantidad_01': 'Popular', 'cantidad_02': 'Media',
                  'cantidad_03': 'Ejecutiva', 'cantidad_04': 'Tecnológica',
-                 'cantidad_05': 'Representativa'}
-# Canastas que NO llevan frescos (comida). La Tecnológica es un bundle de durables:
-# se arma solo con empaquetados por EAN (cantidad_04) y no se le imputan frutas/verduras/carne.
-CANASTAS_SIN_FRESCOS = {'Tecnológica'}
+                 'cantidad_05': 'Representativa', 'cantidad_06': 'Femenina'}
+# Canastas que NO llevan frescos (comida). La Tecnológica es un bundle de durables y
+# la Femenina un bundle de cuidado personal (higiene menstrual, depilación, etc.): se
+# arman solo con empaquetados por EAN y no se les imputan frutas/verduras/carne.
+CANASTAS_SIN_FRESCOS = {'Tecnológica', 'Femenina'}
+# Canastas cuyo desglose por RUBRO usa la 'categoria' del maestro (más fina) en vez del
+# 'rubro'. Útil para bundles temáticos como la Femenina: en la hoja todos los productos
+# caen en 'Perfumería', pero la categoria distingue Protección Femenina / Cuidado
+# Corporal (depilación) / Cuidado del Cabello / etc. Así el desglose por rubro es útil.
+RUBRO_DESDE_CATEGORIA = {'Femenina'}
 
 # Serie histórica y ventana
 MES_INICIO_HISTORICO = '2024-01'   # primer mes de la serie
@@ -144,8 +150,8 @@ TIPOS_FRESCOS = {
 REF_EANS_FACTOR = {'7790072002080', '7790070320285', '7790132098459'}
 
 # Colores/estilos por canasta (para gráficos)
-CANASTA_COLORS = {'Popular':'#e74c3c','Media':'#27ae60','Ejecutiva':'#8e44ad','Tecnológica':'#2980b9','Representativa':'#e67e22'}
-CANASTA_MARKERS = {'Popular':'s','Media':'^','Ejecutiva':'D','Tecnológica':'o','Representativa':'*'}
+CANASTA_COLORS = {'Popular':'#e74c3c','Media':'#27ae60','Ejecutiva':'#8e44ad','Tecnológica':'#2980b9','Representativa':'#e67e22','Femenina':'#e84393'}
+CANASTA_MARKERS = {'Popular':'s','Media':'^','Ejecutiva':'D','Tecnológica':'o','Representativa':'*','Femenina':'v'}
 ''' ))
 
 # ── CELL 2 — DRIVE + DEPS + IMPORTS ────────────────────────────────────────────
@@ -636,8 +642,10 @@ suc_geo = _sg.drop_duplicates(_SK)
 def _recipe(_name):
     # DataFrame item->(qty,rubro) para una canasta (empaquetados + frescos)
     _rows = []
+    _usar_cat = _name in RUBRO_DESDE_CATEGORIA
     for _ean,(_desc,_q,_rub,_cat) in CANASTAS_EMP[_name].items():
-        _rows.append((_ean, float(_q), _rub, 'emp'))
+        _r = (str(_cat).strip().title() if (_usar_cat and str(_cat).strip()) else _rub)
+        _rows.append((_ean, float(_q), _r, 'emp'))
     # Frescos: la tupla 'qty' de TIPOS_FRESCOS es (Popular, Media, Ejecutiva). Se mapea por
     # NOMBRE (no por índice activo) para ser robusto al orden y a canastas extra. Las canastas
     # de CANASTAS_SIN_FRESCOS (ej. Tecnológica) no reciben frescos.
