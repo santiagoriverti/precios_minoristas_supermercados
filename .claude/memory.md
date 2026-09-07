@@ -6,7 +6,99 @@ Autor: Santiago Riverti — investigador independiente
 
 ---
 
-## 🟢 ESTADO ACTUAL / HANDOFF [2026-09-04] — nb07 v5.1, motor del informe semanal
+## 🟢 ESTADO ACTUAL / HANDOFF [2026-09-07] — nb07 v5.2 + canastas v5
+
+**Lo que se hizo en esta sesión** (a partir de la corrida real 2026-08-27 que trajo el usuario,
+más `trazabilidad_candidatos_2026-08.xlsx` y `canasta_representativa_2026-08.xlsx`).
+
+### 1. BUG-24 — los saltos de la serie NO eran inflación
+El usuario reportó saltos después del 2026-04-30 y del 2026-07-16. Descomponiendo por rubro:
+casi todo era **Verduras**, y dentro de Verduras un solo ítem, **Papa**, oscilando entre dos
+regímenes: `2.318 → 14.714 → 2.561 → 14.855` (×6,8). El nivel de agosto lo delataba solo:
+Papa $15.015/kg contra Cebolla $2.688/kg. Igual en Espinaca (×7,6), Ananá (×6,4), Pepino (×5,9).
+
+**Causa (tres capas)**: (a) el "tipo" fresco mezcla bienes distintos — espinaca suelta
+$2.171/kg contra espinaca lavada en bolsa de 300 gr $21.633/kg, diferencia real pero
+promediada; (b) **el filtro intra-sucursal `[med/2,5, med×2,5]` se queda con el régimen CARO**
+sobre una distribución bimodal: con `{2.100, 15.000}` la mediana da 8.550, la banda queda
+`[3.420, 21.375]` y descarta el correcto — con empate gana siempre el caro, sesgo sistemático
+al alza; (c) errores de carga que sobreviven (`Papa Negra Sc 1 Kg` a **$95 en 983 sucursales**)
+y los 27.287 EANs del maestro SEPA que entran con `categoria=''` y **saltean el filtro de
+categoría por completo**.
+
+**Fix**: `FRESCO_REGIMEN_K = 3.0` — referencia nacional del tipo por MES, aplicada ANTES del
+filtro intra-sucursal. Más `gmin=1000` en Papa/Lechuga/Acelga/Espinaca (NO en Frutilla ni
+Choclo: se venden en bandeja). Validado con panel sintético de 1.900 sucursales:
+**+538,4% sin el fix → −1,5% con el fix**; el +538 sintético reproduce el +535 real.
+**⚠️ Cambia la clave del caché → la próxima corrida relee todo el histórico (~57 min).**
+
+### 2. Tripwire `Alertas_precio_item` (hoja nueva)
+`ALERTA_SALTO_ITEM = 0.35`: todo salto semanal >35% del precio nacional de un ítem, con precio
+antes/después y en qué canastas está. Sale también en el REPORTE PARA CLAUDE. Probado con
+panel sintético. **Revisarla antes de publicar el informe.**
+
+### 3. Canastas v5 — eran la misma canasta a distinta escala
+El usuario reportó que las canastas se movían casi idénticas. Era literal: medido en **gasto**,
+Media compartía el **100,0%** con Representativa (estaba contenida), 82,6% con Ejecutiva, y el
+**91%** de los tipos frescos de Popular eran los de Ejecutiva. Las correlaciones de 0,96 no
+eran un hallazgo sino una identidad contable.
+
+**Decisiones del usuario** (vía AskUserQuestion): escalonar por **marca + composición**; hogar
+de referencia **tipo 2 INDEC** (3,09 adultos equivalentes). Me dejó elegir las otras dos:
+umbral de cobertura **por canasta con bandera de fiabilidad** (Popular ≥2 cadenas/≥10 prov/≥600
+suc) y pesos por **estructura ENGHo publicada + ancla CBA** para las cantidades físicas.
+
+**Nuevo constructor reproducible**: `docs/canastas_alternativas/construir_canastas_v5.py`.
+Se corre LOCAL: `python construir_canastas_v5.py --excel ruta/canasta_representativa_YYYY-MM.xlsx`.
+Escribe `cargar_canastas_v5.py` (loader de Colab), `canastas_v5_detalle.csv` (auditoría: por qué
+se eligió cada producto) y `frescos_v5_qty.txt` (tuplas para `TIPOS_FRESCOS`).
+
+Tres ideas: (a) **necesidades, no productos** — cada estrato elige su versión, tier por
+percentil del precio **por unidad comparable**; (b) **cantidades físicas, no unidades** — v4
+contaba igual 900 ml que 1,5 L; (c) **ancla CBA INDEC hogar tipo 2** — reveló que pan estaba en
+8 kg/mes contra **20,9** de la CBA y papa en 8 contra **20,1**.
+
+Resultados: solapamiento de EANs entre estratos **≤6,4%** (era 32-100% del gasto);
+escalonamiento Ejecutiva/Popular **2,27×** en precio unitario (mediana); **0 violaciones** de
+monotonicidad en 78 necesidades; 4 de 322 picks marcados `confiable=False`; 5 necesidades sin
+escalón real en el mercado (Agua mineral, Algodón, Salchichas, Tapas de empanada, Té).
+
+**Fuente CBA**: INDEC, *Canasta básica alimentaria y canasta básica total. Preguntas
+frecuentes*, Notas al pie N.º 3, junio 2020 — cuadro de composición para el adulto equivalente
+(p. 13) y hogar de 4 integrantes = 3,09 AE (p. 9). La tabla está transcripta en `CBA_AE` dentro
+del constructor.
+
+### ⚠️ Expectativa que hay que sostener con el usuario
+El escalonamiento por marca separa los **niveles**, no las **tasas de inflación**: dentro de
+una necesidad las marcas se mueven casi en paralelo (aceite girasol 900 ml ago-2026: Día
+$3.645 · Cañuelas $4.115 · Cocinero $4.339 · Natura $4.637). La diferencia de inflación entre
+estratos viene de la **composición entre rubros** (Engel), que v5 acentúa. Ya se veía en v4:
+Popular +186,5% contra Media +171,8% (2024-01→2026-08), porque pesa más Carne y Verduras.
+
+### 🟡 Defecto abierto: Tecnológica
+Las 5 regiones informan el MISMO valor ($5.853.138): 97 sucursales de una sola cadena
+(ChangoMas/Mi ChangoMas). **No publicar su apertura regional/provincial.**
+
+### Pendientes inmediatos
+1. **El usuario tiene que**: (a) correr `construir_canastas_v5.py` no hace falta — ya está
+   generado contra 2026-08; (b) pegar `cargar_canastas_v5.py` en Colab, subir el Excel, bajar
+   el `*_con_canastas.xlsx` y dejarlo en Drive `carga/output_canasta/`; (c) correr nb07
+   (~57 min de relectura por el cambio de clave de caché).
+2. **Al volver**: pedir el REPORTE PARA CLAUDE y la hoja **`Alertas_precio_item`**. Verificar
+   que Papa quedó estable (~$2.100-3.000/kg, no $15.000) y que los saltos de mayo y julio
+   desaparecieron. Verificar también `Cobertura_emp` y `Cobertura_frescos` (el `gmin=1000` puede
+   haber bajado cobertura en Lechuga/Acelga/Espinaca).
+3. **Si algún tipo fresco pierde cobertura**, bajarle el `gmin` y afinar el `exc` en vez de
+   subir `FRESCO_REGIMEN_K`.
+4. **Seguridad**: rotar el PAT de GitHub (expuesto en sesiones jun/jul, nunca hizo falta usarlo).
+
+---
+
+## 🟡 HANDOFF ANTERIOR [2026-09-04] — nb07 v5.1, motor del informe semanal
+
+> ⚠️ **SUPERADO por el handoff [2026-09-07] de arriba.** Sigue vigente todo lo metodológico
+> (índice encadenado, nacional ponderado por población, robustez provincial); lo que cambió es
+> el filtro de frescos y la composición de las canastas.
 
 **Foco actual del proyecto**: el **notebook 07** es el que alimenta el **informe semanal** que
 redacta el equipo de economistas. Todo lo demás (nb01–nb06) está estable y sin cambios.

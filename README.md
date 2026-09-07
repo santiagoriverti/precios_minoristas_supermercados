@@ -535,17 +535,27 @@ Se cambia con `DIA_CIERRE_SEMANA` (3=jueves, 4=viernes).
 | Col | Canasta | Emp. | Frescos | Idea |
 |---|---|---:|---:|---|
 | `cantidad_01` | **Popular** | 66 | 34 | Marcas económicas, presentaciones chicas |
-| `cantidad_02` | **Media** | 100 | 58 | Marcas líderes, hogar tipo |
-| `cantidad_03` | **Ejecutiva** | 104 | 56 | Premium, más variedad y volumen |
+| `cantidad_02` | **Media** | 78 | 57 | Marca líder |
+| `cantidad_03` | **Ejecutiva** | 78 | 59 | Premium |
 | `cantidad_04` | **Tecnológica** | 14 | — | Durables (heladera, lavarropas, TV, notebook…) |
-| `cantidad_05` | **Representativa** | 108 | 59 | Familia tipo de 4 (ref. CBA INDEC) |
-| `cantidad_06` | **Femenina** | 16 | — | Gestión menstrual, depilación, cuidado personal |
+| `cantidad_05` | **Representativa** | 78 | 59 | Producto modal — comparable con INDEC |
+| `cantidad_06` | **Femenina** | 14 | — | Gestión menstrual, depilación, cuidado personal |
+
+> **v5 (2026-09-07)**: cada estrato usa **su propia versión** de cada necesidad (Popular primer
+> precio, Media marca líder, Ejecutiva premium). Hasta v4 las canastas compartían los mismos
+> EANs — Media estaba contenida en Representativa al 100% del gasto — y por eso se movían casi
+> idénticas. Las cantidades están ancladas a la **CBA del INDEC, hogar tipo 2** (3,09 adultos
+> equivalentes). Ver `docs/canastas_alternativas/README.md`.
 
 ### Composición híbrida (dos fuentes)
-- **Empaquetados (por EAN)**: **196 EANs únicos**, todos con **≥4 cadenas, ≥15 provincias y
-  ≥800 sucursales** (durables: ≥3/≥10/≥90). Se leen de la hoja **`Productos unicos`**
+- **Empaquetados (por EAN)**: **303 EANs únicos**. El umbral de cobertura es **por canasta**
+  (Popular ≥2 cadenas/≥10 provincias/≥600 sucursales, Media y Representativa ≥4/≥15/≥800,
+  Ejecutiva y Femenina ≥3/≥12/≥500, durables ≥3/≥10/≥90): Popular baja el umbral a propósito
+  porque el primer precio y la marca propia no existen en 4 cadenas. Los picks que no llegan
+  quedan marcados en `canastas_v5_detalle.csv`. Se leen de la hoja **`Productos unicos`**
   (`carga/output_canasta/canasta_representativa_*.xlsx`), columnas `cantidad_01..06`.
-  Se cargan con **`docs/canastas_alternativas/cargar_canastas_v4.py`**.
+  Se cargan con **`docs/canastas_alternativas/cargar_canastas_v5.py`**, que genera
+  **`construir_canastas_v5.py`**.
 - **Frescos (por TIPO/nombre)**: **59 tipos**. No tienen EAN estable entre cadenas (balanza),
   así que se seleccionan **por nombre + categoría del maestro** (`Frutas y Verduras`,
   `Carnicería`, `Fiambrería`, `Panificados`, `Pescados y Mariscos`, `Huevos`), filtro que

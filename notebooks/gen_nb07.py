@@ -88,6 +88,23 @@ MAX_SEMANAS_ARRASTRE = 8
 # Filtro de outliers intra-tipo (frescos): dentro de cada sucursal-semana se descartan las
 # variantes fuera de [mediana/K, mediana*K]. Protege de gramajes mal cargados / precios por unidad.
 FRESCO_OUTLIER_K = 2.5
+# Filtro de REGIMEN (frescos), previo al anterior y mucho mas importante. Un "tipo" fresco junta
+# variantes que en realidad son bienes distintos: papa suelta ($2.100/kg) contra papa precocida al
+# vacio; espinaca a granel ($2.171/kg) contra espinaca lavada y sanitizada en bolsa de 300 gr
+# ($21.633/kg). Con dos regimenes de precio conviviendo, el filtro intra-sucursal FALLA de la peor
+# forma: si la sucursal tiene {2.100, 15.000} la mediana da 8.550, la banda queda [3.420, 21.375] y
+# descarta el precio CORRECTO conservando el caro. Que entre o salga una variante da vuelta la
+# sucursal entera, y agregado sobre 1.900 sucursales sale una onda cuadrada (Papa: 2.318 -> 14.714
+# -> 2.561 -> 14.855 entre mayo y julio de 2026, x6,8, que no es inflacion).
+# Solucion: ANTES de tocar la sucursal, se calcula la referencia nacional del tipo para el MES
+# completo (mediana sobre todas las observaciones del pais) y se descarta lo que quede fuera de
+# [ref/K, ref*K]. La referencia se recalcula cada mes, asi que acompaña a la inflacion sola; y como
+# se estima sobre millones de observaciones no se da vuelta porque una sucursal cambie el surtido.
+# Tambien elimina errores de carga groseros (habia "Papa Negra Sc 1 Kg" a $95 en 983 sucursales).
+FRESCO_REGIMEN_K = 3.0
+# Salto semanal del precio nacional de un item a partir del cual se lo reporta en la hoja
+# Alertas_precio_item. Es el tripwire: ningun cambio de regimen deberia volver a pasar inadvertido.
+ALERTA_SALTO_ITEM = 0.35
 # Agregado nacional: 'poblacion' (ponderado por poblacion provincial) | 'mediana' (mediana simple)
 AGG_NACIONAL = 'poblacion'
 # Minimo de sucursales que una provincia necesita para un item-semana para entrar en el promedio
@@ -118,73 +135,73 @@ REGION_PROV = {
 # chicas o condimentos inflen el $/kg. La seleccion ademas exige categoria de fresco real.
 TIPOS_FRESCOS = {
     # ---- FRUTAS ($/kg) ----
-    'Banana':      {'rubro':'Frutas','unidad':'kg','qty':(3,3,3,3), 'inc':r'\bbanana', 'exc':r'licuad|yogur|snack|deshidr|chip|pasas|jugo|budin|helad|leche|postre'},
-    'Manzana':     {'rubro':'Frutas','unidad':'kg','qty':(2,2,3,3), 'inc':r'\bmanzana', 'exc':r'jugo|pur[eé]|vinagre|snack|licor|yogur|rall|deshidr|chip|desodor|t[eé] |gaseosa|sidra|gatorade|levite|aromat|torta|budin'},
-    'Naranja':     {'rubro':'Frutas','unidad':'kg','qty':(3,3,3,3), 'inc':r'\bnaranja', 'exc':r'jugo|gaseosa|aceite|esen|yogur|fanta|desodor|aromatiz|jab[oó]n|amarg|licor|tang|clight|pan de|\bpan\b|budin|torta|mermelada|dulce'},
-    'Mandarina':   {'rubro':'Frutas','unidad':'kg','qty':(1,2,2,1), 'inc':r'\bmandarina', 'exc':r'jugo|esen|gaseosa|licor'},
-    'Limón':       {'rubro':'Frutas','unidad':'kg','qty':(0.5,0.5,1,0.5), 'inc':r'\blim[oó]n|\blimones', 'exc':r'jugo|deterg|lavand|lavavaj|gaseosa|jab[oó]n|aceite|yogur|soda|amarg|aromatiz|desodor|hipoclor|limpiad|esen|tang|clight|t[eé]\b|pastilla|carame|crema|cera|pisos|helad|torta|budin|licor|vodka|\bpez\b|piedra|arena|gato|wondercat|pastel'},
-    'Pera':        {'rubro':'Frutas','unidad':'kg','qty':(1,1,2,1), 'inc':r'\bpera\b|\bperas\b', 'exc':r'jugo|campera|frapera|heladera|esen|almibar|lata|mitades|light'},
-    'Frutilla':    {'rubro':'Frutas','unidad':'kg','qty':(0,0.5,1,0.3), 'inc':r'\bfrutilla', 'exc':r'yogur|mermelada|dulce|helad|licor|gelatina|jugo|leche|postre|bomb|alfajor|chicle|carame|flan|congel|pulpa'},
-    'Uva':         {'rubro':'Frutas','unidad':'kg','qty':(0,1,1,0.5), 'inc':r'\buva\b|\buvas\b', 'exc':r'jugo|vino|pasa|vinagre|mermelada|licor|aceite|semilla|sidra|espum'},
-    'Durazno':     {'rubro':'Frutas','unidad':'kg','qty':(0,1,1,0.5), 'inc':r'\bdurazno', 'exc':r'lata|\blat\b|almibar|mermelada|jugo|conserva|yogur|dulce|licor|gaseosa|vodka|seco|desecad|mitades|light|calor|pulpa|helad'},
-    'Ciruela':     {'rubro':'Frutas','unidad':'kg','qty':(0,0.5,1,0.3), 'inc':r'\bciruela', 'exc':r'seca|desecad|descaroz|sin carozo|pasa|mermelada|jugo|dulce|licor|nature food|tiernizad'},
-    'Kiwi':        {'rubro':'Frutas','unidad':'kg','qty':(0,0.5,1,0.3), 'inc':r'\bkiwi', 'exc':r'jugo|yogur|licuad|helad|gelatina|pulpa'},
-    'Palta':       {'rubro':'Frutas','unidad':'kg','qty':(0,0.5,1,0.3), 'inc':r'\bpalta', 'exc':r'aceite|guacamole|crema|jab[oó]n|shampoo|acondic|pulpa|congel|mascar'},
-    'Pomelo':      {'rubro':'Frutas','unidad':'kg','qty':(0,0.5,0.5,0.3), 'inc':r'\bpomelo', 'exc':r'jugo|gaseosa|agua|amarg|licor|esen|clight|tang|difusor|repuesto|spirit|aromat|desodor'},
-    'Ananá':       {'rubro':'Frutas','unidad':'kg','qty':(0,0.5,1,0.3), 'inc':r'\banan[aá]|\bpi[ñn]a\b', 'exc':r'jugo|lata|\blat\b|almibar|rodaja|yogur|helad|colada|licor|gaseosa|fizz|clight|tang|pulpa|mitades'},
+    'Banana':      {'rubro':'Frutas','unidad':'kg','qty':(3.44, 3.1, 2.4, 3.14), 'inc':r'\bbanana', 'exc':r'licuad|yogur|snack|deshidr|chip|pasas|jugo|budin|helad|leche|postre'},
+    'Manzana':     {'rubro':'Frutas','unidad':'kg','qty':(1.72, 2.58, 3, 2.62), 'inc':r'\bmanzana', 'exc':r'jugo|pur[eé]|vinagre|snack|licor|yogur|rall|deshidr|chip|desodor|t[eé] |gaseosa|sidra|gatorade|levite|aromat|torta|budin'},
+    'Naranja':     {'rubro':'Frutas','unidad':'kg','qty':(2.58, 2.58, 2.4, 2.62), 'inc':r'\bnaranja', 'exc':r'jugo|gaseosa|aceite|esen|yogur|fanta|desodor|aromatiz|jab[oó]n|amarg|licor|tang|clight|pan de|\bpan\b|budin|torta|mermelada|dulce'},
+    'Mandarina':   {'rubro':'Frutas','unidad':'kg','qty':(1.72, 1.55, 1.2, 1.57), 'inc':r'\bmandarina', 'exc':r'jugo|esen|gaseosa|licor'},
+    'Limón':       {'rubro':'Frutas','unidad':'kg','qty':(0.43, 0.52, 0.84, 0.52), 'inc':r'\blim[oó]n|\blimones', 'exc':r'jugo|deterg|lavand|lavavaj|gaseosa|jab[oó]n|aceite|yogur|soda|amarg|aromatiz|desodor|hipoclor|limpiad|esen|tang|clight|t[eé]\b|pastilla|carame|crema|cera|pisos|helad|torta|budin|licor|vodka|\bpez\b|piedra|arena|gato|wondercat|pastel'},
+    'Pera':        {'rubro':'Frutas','unidad':'kg','qty':(0.86, 1.55, 1.8, 1.57), 'inc':r'\bpera\b|\bperas\b', 'exc':r'jugo|campera|frapera|heladera|esen|almibar|lata|mitades|light'},
+    'Frutilla':    {'rubro':'Frutas','unidad':'kg','qty':(0, 0.52, 1.44, 0.42), 'inc':r'\bfrutilla', 'exc':r'yogur|mermelada|dulce|helad|licor|gelatina|jugo|leche|postre|bomb|alfajor|chicle|carame|flan|congel|pulpa'},
+    'Uva':         {'rubro':'Frutas','unidad':'kg','qty':(0, 0.72, 1.56, 0.52), 'inc':r'\buva\b|\buvas\b', 'exc':r'jugo|vino|pasa|vinagre|mermelada|licor|aceite|semilla|sidra|espum'},
+    'Durazno':     {'rubro':'Frutas','unidad':'kg','qty':(0.26, 0.83, 1.2, 0.73), 'inc':r'\bdurazno', 'exc':r'lata|\blat\b|almibar|mermelada|jugo|conserva|yogur|dulce|licor|gaseosa|vodka|seco|desecad|mitades|light|calor|pulpa|helad'},
+    'Ciruela':     {'rubro':'Frutas','unidad':'kg','qty':(0, 0.52, 0.96, 0.42), 'inc':r'\bciruela', 'exc':r'seca|desecad|descaroz|sin carozo|pasa|mermelada|jugo|dulce|licor|nature food|tiernizad'},
+    'Kiwi':        {'rubro':'Frutas','unidad':'kg','qty':(0, 0.31, 0.96, 0.21), 'inc':r'\bkiwi', 'exc':r'jugo|yogur|licuad|helad|gelatina|pulpa'},
+    'Palta':       {'rubro':'Frutas','unidad':'kg','qty':(0, 0.41, 1.44, 0.31), 'inc':r'\bpalta', 'exc':r'aceite|guacamole|crema|jab[oó]n|shampoo|acondic|pulpa|congel|mascar'},
+    'Pomelo':      {'rubro':'Frutas','unidad':'kg','qty':(0, 0.41, 0.72, 0.31), 'inc':r'\bpomelo', 'exc':r'jugo|gaseosa|agua|amarg|licor|esen|clight|tang|difusor|repuesto|spirit|aromat|desodor'},
+    'Ananá':       {'rubro':'Frutas','unidad':'kg','qty':(0, 0.41, 1.08, 0.31), 'inc':r'\banan[aá]|\bpi[ñn]a\b', 'exc':r'jugo|lata|\blat\b|almibar|rodaja|yogur|helad|colada|licor|gaseosa|fizz|clight|tang|pulpa|mitades'},
     # ---- VERDURAS ($/kg) ----
-    'Papa':        {'rubro':'Verduras','unidad':'kg','qty':(4,4,4,8), 'inc':r'\bpapa\b|\bpapas\b', 'exc':r'frita|snack|pur[eé]|congel|chip|bast[oó]n|noisett|prefrit|rall|española|jarro|espatul|mugg|taza|tortilla'},
-    'Tomate':      {'rubro':'Verduras','unidad':'kg','qty':(2,2,3,3), 'inc':r'\btomate', 'exc':r'salsa|pur[eé]|\btrit|extracto|lata|\blat\b|pelado|jugo|ketchup|seco|deshidr|conserva|cubo|cherry|cereza|at[uú]n|sardina|caballa|sabores del|entero|perita lat|prepizza|pizza|tarta|sandwich'},
-    'Cebolla':     {'rubro':'Verduras','unidad':'kg','qty':(2,2,2,3), 'inc':r'\bcebolla', 'exc':r'sopa|deshidr|crema|anillo|snack|verdeo|caldo|ciriola|cintita|queso|frita|\bpan\b|salsa|encurt|vinagre|pretzel|picada|rocky|galleta|snack'},
-    'Zanahoria':   {'rubro':'Verduras','unidad':'kg','qty':(1.5,1.5,1.5,2), 'inc':r'\bzanahoria', 'exc':r'rall|congel|sopa|deshidr|bab[yi]|jugo|torta|budin|beb[eé]'},
-    'Zapallo':     {'rubro':'Verduras','unidad':'kg','qty':(1.5,1.5,2,2), 'inc':r'\bzapallo\b|\bcalabaza', 'exc':r'congel|sopa|semilla|deshidr|crema|zapallito|dulce|cayote|pur[eé]|precocid'},
-    'Lechuga':     {'rubro':'Verduras','unidad':'kg','qty':(1,1,1.5,1), 'inc':r'\blechuga', 'exc':r'aderez|snack|\bmix\b|ensalada'},
-    'Morrón':      {'rubro':'Verduras','unidad':'kg','qty':(0.5,0.5,1,0.5), 'inc':r'\bmorr[oó]n|\bmorrones|\bpimiento', 'exc':r'molid|deshidr|conserva|lata|\blat\b|seco|piment[oó]n|aji molido|frasco|relleno|jalape|salsa|encurt'},
-    'Batata':      {'rubro':'Verduras','unidad':'kg','qty':(1,1,1,1), 'inc':r'\bbatata', 'exc':r'dulce|congel|snack|chip|pur[eé]|frita'},
-    'Acelga':      {'rubro':'Verduras','unidad':'kg','qty':(0,1,1,0.5), 'inc':r'\bacelga', 'exc':r'congel|\bcong\b|tarta|empanada|ravio|canel|ñoqui|noqui|milanesa|ensalada'},
-    'Espinaca':    {'rubro':'Verduras','unidad':'kg','qty':(0,0.5,1,0.5), 'inc':r'\bespinaca', 'exc':r'congel|\bcong\b|tarta|empanada|nuez|ravio|canel|fideo|ñoqui|noqui|muslito|\bmix\b|mixta|milanesa|soja|vegan|queso|sorrent|pasta|medall|pollo|bandeja mixta|ensalada|malfatti|baby|hidropon|rocky'},
-    'Choclo':      {'rubro':'Verduras','unidad':'kg','qty':(0.5,0.5,1,0.5), 'inc':r'\bchoclo', 'exc':r'lata|\blat\b|crema|cremos|congel|conserva|granos|desgran|arcor|campagnola|humita|pochoclo|snack|grm|entero|relleno|tarta|calab'},
-    'Brócoli':     {'rubro':'Verduras','unidad':'kg','qty':(0,0.5,1,0.3), 'inc':r'\bbrocoli|\bbrócoli', 'exc':r'congel|tarta|medall|rebozad|merluza|milanesa|pasta'},
-    'Ajo':         {'rubro':'Verduras','unidad':'kg','qty':(0.2,0.2,0.3,0.2), 'inc':r'\bajo\b|\bajos\b', 'exc':r'aceite|\bsal\b|deshidr|polvo|molid|sazonad|condiment|\bpan\b|aderez|mayonesa|crema|conserva|\baji|salsa|manteca|queso|pasta|encurt'},
-    'Zapallito':   {'rubro':'Verduras','unidad':'kg','qty':(0.5,0.5,1,0.5), 'inc':r'\bzapallito|\bzucchini|\bzuc+hini', 'exc':r'congel|relleno|tarta|milanesa'},
-    'Berenjena':   {'rubro':'Verduras','unidad':'kg','qty':(0,0.5,1,0.3), 'inc':r'\bberenjena', 'exc':r'escabeche|conserva|frasco|lata|milanesa|congel|encurt'},
-    'Repollo':     {'rubro':'Verduras','unidad':'kg','qty':(0.5,0.5,0.5,0.5), 'inc':r'\brepollo', 'exc':r'congel|chucrut|conserva|bruselas|encurt'},
-    'Chaucha':     {'rubro':'Verduras','unidad':'kg','qty':(0,0.5,0.5,0.3), 'inc':r'\bchaucha', 'exc':r'congel|lata|\blat\b|conserva'},
-    'Remolacha':   {'rubro':'Verduras','unidad':'kg','qty':(0,0.5,0.5,0.3), 'inc':r'\bremolacha', 'exc':r'lata|\blat\b|conserva|jugo|congel|ensalada|precocid|cortada'},
-    'Pepino':      {'rubro':'Verduras','unidad':'kg','qty':(0,0.5,0.5,0.3), 'inc':r'\bpepino', 'exc':r'encurt|pickle|conserva|frasco|vinagre|jab[oó]n|crema|mascar|gel'},
+    'Papa':        {'rubro':'Verduras','unidad':'kg','qty':(22, 18, 14, 20.12), 'gmin':1000, 'inc':r'\bpapa\b|\bpapas\b', 'exc':r'frita|snack|pur[eé]|congel|chip|bast[oó]n|noisett|prefrit|rall|española|jarro|espatul|mugg|taza|tortilla'},
+    'Tomate':      {'rubro':'Verduras','unidad':'kg','qty':(2.47, 3.18, 3.41, 3.24), 'inc':r'\btomate', 'exc':r'salsa|pur[eé]|\btrit|extracto|lata|\blat\b|pelado|jugo|ketchup|seco|deshidr|conserva|cubo|cherry|cereza|at[uú]n|sardina|caballa|sabores del|entero|perita lat|prepizza|pizza|tarta|sandwich'},
+    'Cebolla':     {'rubro':'Verduras','unidad':'kg','qty':(2.96, 2.65, 2.27, 2.7), 'inc':r'\bcebolla', 'exc':r'sopa|deshidr|crema|anillo|snack|verdeo|caldo|ciriola|cintita|queso|frita|\bpan\b|salsa|encurt|vinagre|pretzel|picada|rocky|galleta|snack'},
+    'Zanahoria':   {'rubro':'Verduras','unidad':'kg','qty':(1.97, 2.12, 2.04, 2.16), 'inc':r'\bzanahoria', 'exc':r'rall|congel|sopa|deshidr|bab[yi]|jugo|torta|budin|beb[eé]'},
+    'Zapallo':     {'rubro':'Verduras','unidad':'kg','qty':(2.47, 2.12, 1.7, 2.16), 'inc':r'\bzapallo\b|\bcalabaza', 'exc':r'congel|sopa|semilla|deshidr|crema|zapallito|dulce|cayote|pur[eé]|precocid'},
+    'Lechuga':     {'rubro':'Verduras','unidad':'kg','qty':(0.99, 1.38, 1.82, 1.4), 'gmin':1000, 'inc':r'\blechuga', 'exc':r'aderez|snack|\bmix\b|ensalada'},
+    'Morrón':      {'rubro':'Verduras','unidad':'kg','qty':(0.39, 0.85, 1.48, 0.76), 'inc':r'\bmorr[oó]n|\bmorrones|\bpimiento', 'exc':r'molid|deshidr|conserva|lata|\blat\b|seco|piment[oó]n|aji molido|frasco|relleno|jalape|salsa|encurt'},
+    'Batata':      {'rubro':'Verduras','unidad':'kg','qty':(1.5, 1.5, 1.5, 1.58), 'inc':r'\bbatata', 'exc':r'dulce|congel|snack|chip|pur[eé]|frita'},
+    'Acelga':      {'rubro':'Verduras','unidad':'kg','qty':(0.79, 0.85, 0.68, 0.86), 'gmin':1000, 'inc':r'\bacelga', 'exc':r'congel|\bcong\b|tarta|empanada|ravio|canel|ñoqui|noqui|milanesa|ensalada'},
+    'Espinaca':    {'rubro':'Verduras','unidad':'kg','qty':(0.2, 0.53, 1.02, 0.43), 'gmin':1000, 'inc':r'\bespinaca', 'exc':r'congel|\bcong\b|tarta|empanada|nuez|ravio|canel|fideo|ñoqui|noqui|muslito|\bmix\b|mixta|milanesa|soja|vegan|queso|sorrent|pasta|medall|pollo|bandeja mixta|ensalada|malfatti|baby|hidropon|rocky'},
+    'Choclo':      {'rubro':'Verduras','unidad':'kg','qty':(0.49, 0.64, 0.79, 0.65), 'inc':r'\bchoclo', 'exc':r'lata|\blat\b|crema|cremos|congel|conserva|granos|desgran|arcor|campagnola|humita|pochoclo|snack|grm|entero|relleno|tarta|calab'},
+    'Brócoli':     {'rubro':'Verduras','unidad':'kg','qty':(0, 0.42, 1.14, 0.32), 'inc':r'\bbrocoli|\bbrócoli', 'exc':r'congel|tarta|medall|rebozad|merluza|milanesa|pasta'},
+    'Ajo':         {'rubro':'Verduras','unidad':'kg','qty':(0.2, 0.21, 0.34, 0.22), 'inc':r'\bajo\b|\bajos\b', 'exc':r'aceite|\bsal\b|deshidr|polvo|molid|sazonad|condiment|\bpan\b|aderez|mayonesa|crema|conserva|\baji|salsa|manteca|queso|pasta|encurt'},
+    'Zapallito':   {'rubro':'Verduras','unidad':'kg','qty':(0.79, 0.85, 0.91, 0.86), 'inc':r'\bzapallito|\bzucchini|\bzuc+hini', 'exc':r'congel|relleno|tarta|milanesa'},
+    'Berenjena':   {'rubro':'Verduras','unidad':'kg','qty':(0, 0.53, 1.02, 0.43), 'inc':r'\bberenjena', 'exc':r'escabeche|conserva|frasco|lata|milanesa|congel|encurt'},
+    'Repollo':     {'rubro':'Verduras','unidad':'kg','qty':(0.79, 0.53, 0.45, 0.54), 'inc':r'\brepollo', 'exc':r'congel|chucrut|conserva|bruselas|encurt'},
+    'Chaucha':     {'rubro':'Verduras','unidad':'kg','qty':(0.2, 0.42, 0.68, 0.32), 'inc':r'\bchaucha', 'exc':r'congel|lata|\blat\b|conserva'},
+    'Remolacha':   {'rubro':'Verduras','unidad':'kg','qty':(0.3, 0.42, 0.57, 0.43), 'inc':r'\bremolacha', 'exc':r'lata|\blat\b|conserva|jugo|congel|ensalada|precocid|cortada'},
+    'Pepino':      {'rubro':'Verduras','unidad':'kg','qty':(0, 0.32, 0.68, 0.22), 'inc':r'\bpepino', 'exc':r'encurt|pickle|conserva|frasco|vinagre|jab[oó]n|crema|mascar|gel'},
     # ---- CARNE VACUNA ($/kg) ----
-    'Asado':       {'rubro':'Carne','unidad':'kg','qty':(2,2,3,3), 'inc':r'\basado\b|\bcostillar|tira de asado', 'exc':r'salsa|adob|aderez|sabor asado|hellmann|snack|man[ií]|pollo|caf[eé]|cuchill|\bset\b|carbon|carb[oó]n|palit|asador|pizza|cerdo|chancho|cordero|congel'},
-    'Carne picada':{'rubro':'Carne','unidad':'kg','qty':(2,2,2,3), 'inc':r'\bpicada\b|carne molida', 'exc':r'salch|congel|caldo|pat[eé]|hamburg|pollo|pescado|aceituna|verdura|angus|wagyu|kobe|premium|cerdo|mixta|frutos|mani|man[ií]'},
-    'Nalga/Cuadril':{'rubro':'Carne','unidad':'kg','qty':(1,1.5,2,2), 'inc':r'\bnalga|\bcuadril|bola de lomo|\bcuadrada\b|\bpeceto|colita de cuadril', 'exc':r'mantel|cuadrill|cerdo|pollo|milanesa|congel|cordero'},
-    'Milanesa carne':{'rubro':'Carne','unidad':'kg','qty':(1,1,1.5,1), 'inc':r'milanesa', 'exc':r'soja|pollo|congel|merluza|pescado|napolitan|vegetal|cerdo|berenjena|rebozad|granja|swift|paty|listas|carr[eé]|calabaza|zapallo|espinaca|acelga|arroz|quinoa|lenteja|garbanzo'},
-    'Matambre':    {'rubro':'Carne','unidad':'kg','qty':(0,0.5,1,0.5), 'inc':r'\bmatambre', 'exc':r'arrollado|relleno|queso|pizza|a la|cocido|cerdo|congel'},
-    'Vacío':       {'rubro':'Carne','unidad':'kg','qty':(0,0.5,1,0.5), 'inc':r'\bvac[ií]o\b', 'exc':r'al vac[ií]o|\(vac|envasad|arrollado|relleno|envase|frasco|cerdo|pollo|medialuna|queso|jam[oó]n|fiambre|salame|bondiola|congel|cordero|pescado|merluza|salm[oó]n|chistorra|chorizo|morcilla|salchich|guanaco'},
-    'Osobuco':     {'rubro':'Carne','unidad':'kg','qty':(0.5,0.5,0.5,0.5), 'inc':r'\bosobuco|\bosso\s*buco', 'exc':r'congel'},
-    'Roast beef':  {'rubro':'Carne','unidad':'kg','qty':(0,0.5,1,0.5), 'inc':r'roast\s*beef|tapa de nalga|tapa de cuadril', 'exc':r'congel|fiambre|feteado'},
-    'Bife de chorizo':{'rubro':'Carne','unidad':'kg','qty':(0,0.5,1,0.5), 'inc':r'bife de chorizo|bife ancho|bife angosto|\bbife\b', 'exc':r'chorizo parril|cerdo|pollo|milanesa|snack|palit|t-bone|tbone|ojo de bife|tomahawk|congel|cordero|wagyu|kobe|angus'},
-    'Lomo':        {'rubro':'Carne','unidad':'kg','qty':(0,0,1,0.3), 'inc':r'\blomo\b', 'exc':r'bola de lomo|cerdo|atun|at[uú]n|pollo|lomito|jam[oó]n|ahumad|pizza|s[aá]ndwich|sandwich|congel|cabecero|medall|wagyu|kobe|angus|praga|feteado|cinta|costilla|guanaco'},
-    'Paleta':      {'rubro':'Carne','unidad':'kg','qty':(1,0.5,0,1), 'inc':r'\bpaleta\b', 'exc':r'cerdo|cocida|jam[oó]n|fiambre|helad|paletita|pintur|rodillo|ping|pong|tenis|playa|espatula|cordero|congel|guanaco'},
-    'Falda/Puchero':{'rubro':'Carne','unidad':'kg','qty':(1,0.5,0,1), 'inc':r'\bfalda\b|\bpuchero|\bcaracu|\bazotillo', 'exc':r'cerdo|pollo|congel|mixto|cordero'},
+    'Asado':       {'rubro':'Carne','unidad':'kg','qty':(2.05, 2.22, 2.34, 2.13), 'inc':r'\basado\b|\bcostillar|tira de asado', 'exc':r'salsa|adob|aderez|sabor asado|hellmann|snack|man[ií]|pollo|caf[eé]|cuchill|\bset\b|carbon|carb[oó]n|palit|asador|pizza|cerdo|chancho|cordero|congel'},
+    'Carne picada':{'rubro':'Carne','unidad':'kg','qty':(3.07, 2.44, 1.6, 2.66), 'inc':r'\bpicada\b|carne molida', 'exc':r'salch|congel|caldo|pat[eé]|hamburg|pollo|pescado|aceituna|verdura|angus|wagyu|kobe|premium|cerdo|mixta|frutos|mani|man[ií]'},
+    'Nalga/Cuadril':{'rubro':'Carne','unidad':'kg','qty':(0.82, 1.67, 2.34, 1.6), 'inc':r'\bnalga|\bcuadril|bola de lomo|\bcuadrada\b|\bpeceto|colita de cuadril', 'exc':r'mantel|cuadrill|cerdo|pollo|milanesa|congel|cordero'},
+    'Milanesa carne':{'rubro':'Carne','unidad':'kg','qty':(1.02, 1.33, 1.28, 1.28), 'inc':r'milanesa', 'exc':r'soja|pollo|congel|merluza|pescado|napolitan|vegetal|cerdo|berenjena|rebozad|granja|swift|paty|listas|carr[eé]|calabaza|zapallo|espinaca|acelga|arroz|quinoa|lenteja|garbanzo'},
+    'Matambre':    {'rubro':'Carne','unidad':'kg','qty':(0.2, 0.56, 0.96, 0.43), 'inc':r'\bmatambre', 'exc':r'arrollado|relleno|queso|pizza|a la|cocido|cerdo|congel'},
+    'Vacío':       {'rubro':'Carne','unidad':'kg','qty':(0.2, 0.67, 1.17, 0.53), 'inc':r'\bvac[ií]o\b', 'exc':r'al vac[ií]o|\(vac|envasad|arrollado|relleno|envase|frasco|cerdo|pollo|medialuna|queso|jam[oó]n|fiambre|salame|bondiola|congel|cordero|pescado|merluza|salm[oó]n|chistorra|chorizo|morcilla|salchich|guanaco'},
+    'Osobuco':     {'rubro':'Carne','unidad':'kg','qty':(1.02, 0.56, 0.21, 0.64), 'inc':r'\bosobuco|\bosso\s*buco', 'exc':r'congel'},
+    'Roast beef':  {'rubro':'Carne','unidad':'kg','qty':(0.31, 0.67, 0.96, 0.53), 'inc':r'roast\s*beef|tapa de nalga|tapa de cuadril', 'exc':r'congel|fiambre|feteado'},
+    'Bife de chorizo':{'rubro':'Carne','unidad':'kg','qty':(0, 0.67, 1.7, 0.53), 'inc':r'bife de chorizo|bife ancho|bife angosto|\bbife\b', 'exc':r'chorizo parril|cerdo|pollo|milanesa|snack|palit|t-bone|tbone|ojo de bife|tomahawk|congel|cordero|wagyu|kobe|angus'},
+    'Lomo':        {'rubro':'Carne','unidad':'kg','qty':(0, 0.22, 1.28, 0.21), 'inc':r'\blomo\b', 'exc':r'bola de lomo|cerdo|atun|at[uú]n|pollo|lomito|jam[oó]n|ahumad|pizza|s[aá]ndwich|sandwich|congel|cabecero|medall|wagyu|kobe|angus|praga|feteado|cinta|costilla|guanaco'},
+    'Paleta':      {'rubro':'Carne','unidad':'kg','qty':(1.53, 0.89, 0.43, 1.06), 'inc':r'\bpaleta\b', 'exc':r'cerdo|cocida|jam[oó]n|fiambre|helad|paletita|pintur|rodillo|ping|pong|tenis|playa|espatula|cordero|congel|guanaco'},
+    'Falda/Puchero':{'rubro':'Carne','unidad':'kg','qty':(1.84, 0.89, 0.32, 1.06), 'inc':r'\bfalda\b|\bpuchero|\bcaracu|\bazotillo', 'exc':r'cerdo|pollo|congel|mixto|cordero'},
     # ---- POLLO ($/kg) ----
-    'Pollo':       {'rubro':'Pollo','unidad':'kg','qty':(3,3,3,4), 'inc':r'\bpollo\b|pata muslo', 'exc':r'caldo|sopa|saboriz|congel|nugget|pat[eé]|medall|hamburg|milanesa|pella|arroz|fideo|snack|cubito|aliment|merluza|pescado|pechuga|suprema|\bfilet|fajita|deshuesad|campero|colonial|org[aá]nic|kosher|criado|sandwich|s[aá]ndwich|empanada|tarta|salch|picada|croqueta|bocadit|rebozad|\bmax\b|triangulo|relleno|arrollado|taco|wrap|ensalada|pizza|salsa|al vac[ií]o|ahumad|grill|listo|rostiz|precoc|\bmed\b|\bjam|patita|\bseco\b|cuarto|cocido|hervid'},
-    'Suprema/Pechuga':{'rubro':'Pollo','unidad':'kg','qty':(0,1,2,1), 'inc':r'\bpechuga|\bsuprema', 'exc':r'congel|milanesa|rebozad|nugget|medall|hamburg|sandwich|s[aá]ndwich|pavo|cerdo|salsa|empanad|grill|listas|granja del sol|swift|paty|\bmax\b|merluza|pescado|verdeo|ahumad|fiambre|feteado|al vac[ií]o'},
+    'Pollo':       {'rubro':'Pollo','unidad':'kg','qty':(4.09, 3.56, 2.66, 3.73), 'inc':r'\bpollo\b|pata muslo', 'exc':r'caldo|sopa|saboriz|congel|nugget|pat[eé]|medall|hamburg|milanesa|pella|arroz|fideo|snack|cubito|aliment|merluza|pescado|pechuga|suprema|\bfilet|fajita|deshuesad|campero|colonial|org[aá]nic|kosher|criado|sandwich|s[aá]ndwich|empanada|tarta|salch|picada|croqueta|bocadit|rebozad|\bmax\b|triangulo|relleno|arrollado|taco|wrap|ensalada|pizza|salsa|al vac[ií]o|ahumad|grill|listo|rostiz|precoc|\bmed\b|\bjam|patita|\bseco\b|cuarto|cocido|hervid'},
+    'Suprema/Pechuga':{'rubro':'Pollo','unidad':'kg','qty':(0.51, 1.33, 2.13, 1.06), 'inc':r'\bpechuga|\bsuprema', 'exc':r'congel|milanesa|rebozad|nugget|medall|hamburg|sandwich|s[aá]ndwich|pavo|cerdo|salsa|empanad|grill|listas|granja del sol|swift|paty|\bmax\b|merluza|pescado|verdeo|ahumad|fiambre|feteado|al vac[ií]o'},
     # ---- CERDO ($/kg) ----
-    'Bondiola':    {'rubro':'Cerdo','unidad':'kg','qty':(0,0.5,1,0.5), 'inc':r'\bbondiola', 'exc':r'ahumad|curad|fiambre|feteado|sandwich|s[aá]ndwich|costeletero|sin bondiola|congel|finas hierbas|adobad|marinad|saboriz|al vac[ií]o|piamontesa|lario|cagnoli|paladini'},
-    'Pechito/Costilla cerdo':{'rubro':'Cerdo','unidad':'kg','qty':(0.5,0.5,1,0.5), 'inc':r'pechito|costilla.*cerdo|cerdo.*costilla|costeleta.*cerdo|cerdo.*costeleta|\bribs\b', 'exc':r'ahumad|congel|cong\b|salsa|bbq|sandwich|kosher|aus\b'},
-    'Carré de cerdo':{'rubro':'Cerdo','unidad':'kg','qty':(0,0.5,0.5,0.3), 'inc':r'carr[eé].*cerdo|cerdo.*carr[eé]|\bcarr[eé]\b', 'exc':r'ahumad|fiambre|feteado|curad|jam[oó]n|congel|cong\b|aus\b|milanesa'},
+    'Bondiola':    {'rubro':'Cerdo','unidad':'kg','qty':(0.2, 0.56, 1.06, 0.43), 'inc':r'\bbondiola', 'exc':r'ahumad|curad|fiambre|feteado|sandwich|s[aá]ndwich|costeletero|sin bondiola|congel|finas hierbas|adobad|marinad|saboriz|al vac[ií]o|piamontesa|lario|cagnoli|paladini'},
+    'Pechito/Costilla cerdo':{'rubro':'Cerdo','unidad':'kg','qty':(0.51, 0.67, 0.85, 0.64), 'inc':r'pechito|costilla.*cerdo|cerdo.*costilla|costeleta.*cerdo|cerdo.*costeleta|\bribs\b', 'exc':r'ahumad|congel|cong\b|salsa|bbq|sandwich|kosher|aus\b'},
+    'Carré de cerdo':{'rubro':'Cerdo','unidad':'kg','qty':(0.2, 0.44, 0.64, 0.32), 'inc':r'carr[eé].*cerdo|cerdo.*carr[eé]|\bcarr[eé]\b', 'exc':r'ahumad|fiambre|feteado|curad|jam[oó]n|congel|cong\b|aus\b|milanesa'},
     # ---- PESCADO ($/kg) ----
-    'Merluza':     {'rubro':'Pescado','unidad':'kg','qty':(0.5,0.5,1,0.5), 'inc':r'\bmerluza', 'exc':r'bast[oó]n|reboz|medall|milanesa|congel|aceite|lata|conserva|croqueta|nugget|granja del sol|swift|hamburg|empanad|romana|formita|queso|negra|relleno|ahumad|pat[eé]'},
+    'Merluza':     {'rubro':'Pescado','unidad':'kg','qty':(0.41, 0.67, 1.06, 0.53), 'inc':r'\bmerluza', 'exc':r'bast[oó]n|reboz|medall|milanesa|congel|aceite|lata|conserva|croqueta|nugget|granja del sol|swift|hamburg|empanad|romana|formita|queso|negra|relleno|ahumad|pat[eé]'},
     # ---- FIAMBRES Y QUESOS por kg (balanza) ----
-    'Queso cremoso':{'rubro':'Fiambres y Quesos','unidad':'kg','qty':(0.5,1,1,1), 'gmin':500, 'inc':r'queso.*cremoso|cremoso.*queso|\bcremon\b', 'exc':r'untable|rallad|feta|light|sandwich|s[aá]ndwich|pizza|congel|barra|vegan|descremad'},
-    'Queso barra/Dambo':{'rubro':'Fiambres y Quesos','unidad':'kg','qty':(0.5,0.5,1,0.5), 'gmin':500, 'inc':r'queso.*(barra|dambo|tybo|pategr[aá]s|holanda|fymbo)|\bdambo\b|\btybo\b', 'exc':r'untable|rallad|feta|sandwich|s[aá]ndwich|pizza|congel|light|vegan'},
-    'Queso rallar (sardo/reggianito)':{'rubro':'Fiambres y Quesos','unidad':'kg','qty':(0,0.3,0.5,0.3), 'gmin':500, 'inc':r'queso.*(sardo|reggian|parmes|romano)|\bsardo\b|\breggianito', 'exc':r'rallado|feta|untable|sandwich|pizza|congel|provolet|provol|vegan'},
-    'Jamón cocido (kg)':{'rubro':'Fiambres y Quesos','unidad':'kg','qty':(0.5,0.5,1,0.5), 'gmin':500, 'inc':r'jam[oó]n cocido|jamon cocido', 'exc':r'feteado|fetas|sandwich|s[aá]ndwich|pizza|empanad|tarta|light|caja|blister|pavita|pavo'},
-    'Salame/Salamín':{'rubro':'Fiambres y Quesos','unidad':'kg','qty':(0,0.3,0.5,0.3), 'gmin':500, 'inc':r'\bsalame|\bsalamin|\bsalam[ií]n', 'exc':r'feteado|fetas|sandwich|pizza|snack|palito|cabana|picada|tabla'},
-    'Mortadela':   {'rubro':'Fiambres y Quesos','unidad':'kg','qty':(0.5,0.3,0,0.3), 'gmin':500, 'inc':r'\bmortadela', 'exc':r'feteado|fetas|sandwich|pizza|piccola|familiar'},
+    'Queso cremoso':{'rubro':'Fiambres y Quesos','unidad':'kg','qty':(0.49, 0.69, 0.72, 0.33), 'gmin':500, 'inc':r'queso.*cremoso|cremoso.*queso|\bcremon\b', 'exc':r'untable|rallad|feta|light|sandwich|s[aá]ndwich|pizza|congel|barra|vegan|descremad'},
+    'Queso barra/Dambo':{'rubro':'Fiambres y Quesos','unidad':'kg','qty':(0.21, 0.46, 0.72, 0.22), 'gmin':500, 'inc':r'queso.*(barra|dambo|tybo|pategr[aá]s|holanda|fymbo)|\bdambo\b|\btybo\b', 'exc':r'untable|rallad|feta|sandwich|s[aá]ndwich|pizza|congel|light|vegan'},
+    'Queso rallar (sardo/reggianito)':{'rubro':'Fiambres y Quesos','unidad':'kg','qty':(0.08, 0.29, 0.65, 0.11), 'gmin':500, 'inc':r'queso.*(sardo|reggian|parmes|romano)|\bsardo\b|\breggianito', 'exc':r'rallado|feta|untable|sandwich|pizza|congel|provolet|provol|vegan'},
+    'Jamón cocido (kg)':{'rubro':'Fiambres y Quesos','unidad':'kg','qty':(0.33, 0.58, 0.86, 0.27), 'gmin':500, 'inc':r'jam[oó]n cocido|jamon cocido', 'exc':r'feteado|fetas|sandwich|s[aá]ndwich|pizza|empanad|tarta|light|caja|blister|pavita|pavo'},
+    'Salame/Salamín':{'rubro':'Fiambres y Quesos','unidad':'kg','qty':(0.08, 0.29, 0.72, 0.11), 'gmin':500, 'inc':r'\bsalame|\bsalamin|\bsalam[ií]n', 'exc':r'feteado|fetas|sandwich|pizza|snack|palito|cabana|picada|tabla'},
+    'Mortadela':   {'rubro':'Fiambres y Quesos','unidad':'kg','qty':(0.41, 0.29, 0.14, 0.16), 'gmin':500, 'inc':r'\bmortadela', 'exc':r'feteado|fetas|sandwich|pizza|piccola|familiar'},
     # ---- PANADERIA ($/kg) ----
-    'Pan francés':{'rubro':'Panadería','unidad':'kg','qty':(6,6,5,8), 'inc':r'pan franc[eé]s|\bflauta|\bmignon|\bfelipe|pan.*(criollo|casero)|\bpan\b.*(tira|\bkg)', 'exc':r'lactal|mesa|dulce|integral|salvado|hamburg|pancho|pebete|hot dog|rallado|congel|tostad|arabe|pita|molde|viena|chip|budin|prepizza|pizza|galleta|semilla|centeno|negro|queso|chocolate|rosca|figaza|panettone|fideo|don felipe|naranja|an[ií]s|cuernito|manteca|grasa|chicharr|salvado|semilla'},
+    'Pan francés':{'rubro':'Panadería','unidad':'kg','qty':(18, 15, 11, 17.73), 'inc':r'pan franc[eé]s|\bflauta|\bmignon|\bfelipe|pan.*(criollo|casero)|\bpan\b.*(tira|\bkg)', 'exc':r'lactal|mesa|dulce|integral|salvado|hamburg|pancho|pebete|hot dog|rallado|congel|tostad|arabe|pita|molde|viena|chip|budin|prepizza|pizza|galleta|semilla|centeno|negro|queso|chocolate|rosca|figaza|panettone|fideo|don felipe|naranja|an[ií]s|cuernito|manteca|grasa|chicharr|salvado|semilla'},
     # ---- HUEVOS ($/docena) ----
-    'Huevos':      {'rubro':'Huevos','unidad':'doc','qty':(2,2,2,3), 'inc':r'\bhuevo', 'exc':r'chocolate|kinder|pascua|sorpresa|codorniz|conejo|batidora|fideo|pasta|ravio|tallar|mayonesa|pintur|colorante|separador|huevera|salsa|tarta|galletit|ensalada|revuelt|omelet|budin|torta|liquido|l[ií]quido|polvo|clara|rainb|albu|\d+\s*cm|globo|pi[ñn]ata|decor|juguete|plastic'},
+    'Huevos':      {'rubro':'Huevos','unidad':'doc','qty':(3, 3, 3, 2.58), 'inc':r'\bhuevo', 'exc':r'chocolate|kinder|pascua|sorpresa|codorniz|conejo|batidora|fideo|pasta|ravio|tallar|mayonesa|pintur|colorante|separador|huevera|salsa|tarta|galletit|ensalada|revuelt|omelet|budin|torta|liquido|l[ií]quido|polvo|clara|rainb|albu|\d+\s*cm|globo|pi[ñn]ata|decor|juguete|plastic'},
 }
 
 # rubro del tipo -> categorias del maestro que valen como fresco real ('' = SEPA-only sin categoria)
@@ -573,7 +590,8 @@ cells.append(cell_code(r'''# ===================================================
 # de EANs con gramaje mal cargado o precios por unidad en vez de por kilo.
 _SKR = ['id_comercio','id_bandera','id_sucursal']
 _FECHAS_MAX = []   # ultima fecha con precio leida (para detectar la semana incompleta del final)
-_cache_key  = hashlib.md5(('|'.join(sorted(EANS_LECTURA)) + f'|w{DIA_CIERRE_SEMANA}|k{FRESCO_OUTLIER_K}').encode()).hexdigest()[:8]
+_cache_key  = hashlib.md5(('|'.join(sorted(EANS_LECTURA)) + f'|w{DIA_CIERRE_SEMANA}|k{FRESCO_OUTLIER_K}'
+                           f'|r{FRESCO_REGIMEN_K}').encode()).hexdigest()[:8]
 _cache_path = CACHE_DIR / f'sem_{_cache_key}_v5.parquet'   # v5 = semana jueves + outlier filter
 
 def _leer_mes(_lbl):
@@ -632,7 +650,11 @@ def _colapsar(_df):
         _f['item']  = _f['ean_norm'].map(EAN_TIPO)
         _f['price'] = _f['precio'] / _f['ean_norm'].map(EAN_NORMFACTOR) * _f['item'].map(_FR_MULT)
         _f = _f[_f['price'].notna() & (_f['price'] > 0)]
-        # filtro de outliers intra-tipo dentro de cada sucursal-semana
+        # (1) filtro de REGIMEN: referencia nacional del tipo para el mes entero. Va PRIMERO, para
+        #     que la mediana de la sucursal no se calcule sobre una mezcla de bienes distintos.
+        _ref = _f.groupby('item')['price'].transform('median')
+        _f = _f[(_f['price'] >= _ref / FRESCO_REGIMEN_K) & (_f['price'] <= _ref * FRESCO_REGIMEN_K)]
+        # (2) filtro de outliers intra-tipo dentro de cada sucursal-semana (segunda linea)
         _med = _f.groupby(_SKR + ['semana','item'])['price'].transform('median')
         _f = _f[(_f['price'] >= _med / FRESCO_OUTLIER_K) & (_f['price'] <= _med * FRESCO_OUTLIER_K)]
         _fv = _f.groupby(_SKR + ['semana','item'], as_index=False)['price'].median()
@@ -1162,11 +1184,40 @@ for _i in _items_receta:
         _alertas.append({'item':_i,'descripcion':_etiqueta(_i),'canastas':', '.join(_en),
                          'estado':f'sin dato hace >{MAX_SEMANAS_ARRASTRE} semanas','ult_semana_con_dato':_ult})
 alertas_reemplazo = pd.DataFrame(_alertas)
+
+# ── TRIPWIRE: saltos del precio nacional de un item ──────────────────────────
+# Un salto grande de un item casi nunca es inflacion: es un cambio en el SET de variantes que
+# cotizan (un "tipo" fresco que se va a otro regimen de precio) o un error de carga. Antes esto
+# solo se descubria mirando el grafico de la canasta y volviendo hacia atras. Ahora sale listado.
+_lr = np.log(nac_wide[[c for c in nac_wide.columns if c in set(_items_receta)]].replace(0, np.nan))
+_d  = _lr.diff()
+_sal = []
+for _i in _d.columns:
+    _s = _d[_i].dropna()
+    for _sem, _v in _s[_s.abs() > np.log(1 + ALERTA_SALTO_ITEM)].items():
+        _prev = _sem_anterior(_sem)
+        _sal.append({'item':_i, 'descripcion':_etiqueta(_i), 'semana':_sem,
+                     'var_%':round((np.exp(_v)-1)*100, 1),
+                     'precio_antes':round(float(nac_wide.at[_prev,_i]), 1) if _prev in nac_wide.index else None,
+                     'precio_despues':round(float(nac_wide.at[_sem,_i]), 1),
+                     'canastas':', '.join(n for n in CANASTAS_ACTIVAS if _i in set(RECETAS[n]['item']))})
+alertas_precio_item = (pd.DataFrame(_sal).sort_values(['semana','var_%'], ascending=[False, False])
+                       if _sal else pd.DataFrame(columns=['item','descripcion','semana','var_%',
+                                                          'precio_antes','precio_despues','canastas']))
+_corte_trim = _SEMANAS[max(0, len(_SEMANAS)-13)]
+_sal_ult = (alertas_precio_item[alertas_precio_item['semana'] >= _corte_trim]
+            if len(alertas_precio_item) else alertas_precio_item)
+
 print(f'\n=== TRAZABILIDAD ===')
 print(f'  Items en recetas: {len(_items_receta)} | con panel nacional: {len(presencia_items)}')
 print(f'  Candidatos a REEMPLAZO (sin dato en las ultimas {MAX_SEMANAS_ARRASTRE} semanas): {len(alertas_reemplazo)}')
 if len(alertas_reemplazo):
     print(alertas_reemplazo[['descripcion','canastas','estado','ult_semana_con_dato']].to_string(index=False))
+print(f'  Saltos de precio de un item >{ALERTA_SALTO_ITEM*100:.0f}% en una semana: '
+      f'{len(alertas_precio_item)} en toda la serie, {len(_sal_ult)} en el ultimo trimestre')
+if len(_sal_ult):
+    print('  (ultimo trimestre - revisar en la hoja Panel_nacional antes de publicar)')
+    print(_sal_ult[['semana','descripcion','var_%','precio_antes','precio_despues']].head(15).to_string(index=False))
 print('\n>>> Copia los bloques AVISO y las tablas de cobertura para refinar la composicion.')
 ''' ))
 
@@ -1184,7 +1235,9 @@ with pd.ExcelWriter(_xlsx, engine='openpyxl') as _w:
         {'parametro':'Nivel ($)','valor':'canasta completa en la semana ancla, retropolada con el indice'},
         {'parametro':'Nacional','valor':('mediana provincial ponderada por poblacion' if AGG_NACIONAL=='poblacion' else 'mediana simple')},
         {'parametro':'Arrastre','valor':f'ultimo precio conocido hasta {MAX_SEMANAS_ARRASTRE} semanas'},
-        {'parametro':'Frescos','valor':f'precio del tipo = mediana de variantes por sucursal-semana, outliers fuera de [med/{FRESCO_OUTLIER_K}, med*{FRESCO_OUTLIER_K}] descartados'},
+        {'parametro':'Frescos - regimen','valor':f'referencia nacional del tipo por MES; se descartan las variantes fuera de [ref/{FRESCO_REGIMEN_K}, ref*{FRESCO_REGIMEN_K}] antes de agregar por sucursal'},
+        {'parametro':'Frescos - outliers','valor':f'precio del tipo = mediana de variantes por sucursal-semana, outliers fuera de [med/{FRESCO_OUTLIER_K}, med*{FRESCO_OUTLIER_K}] descartados'},
+        {'parametro':'Tripwire','valor':f'hoja Alertas_precio_item: todo salto semanal del precio nacional de un item mayor a {ALERTA_SALTO_ITEM:.0%}'},
         {'parametro':'Cobertura minima sucursal','valor':f'{FRAC_PRODUCTOS_MIN:.0%} de los empaquetados de la canasta'},
     ]).to_excel(_w, 'Metodologia', index=False)
     _res = []
@@ -1222,11 +1275,13 @@ with pd.ExcelWriter(_xlsx, engine='openpyxl') as _w:
     presencia_items.to_excel(_w, 'Presencia_items')
     (alertas_reemplazo if len(alertas_reemplazo) else pd.DataFrame({'sin_alertas':['ok']})
      ).to_excel(_w, 'Alertas_reemplazo', index=False)
+    (alertas_precio_item if len(alertas_precio_item) else pd.DataFrame({'sin_alertas':['ok']})
+     ).to_excel(_w, 'Alertas_precio_item', index=False)
 print(f'Excel: {_xlsx.name}  ({_xlsx.stat().st_size/1024:.0f} KB)')
 print(f'   Guardado en: {_xlsx.parent}')
 print('   Hojas: Metodologia, Resumen, Sem_*, Mes_*, vsIPC_*, Rubro_sem_*, Comp_rubro_*, '
       'Detalle_*, Prov_*, Cadena_*, Region_*, RegionSem_*, Panel_nacional, Cobertura_emp, '
-      'Cobertura_frescos, Presencia_items, Alertas_reemplazo')
+      'Cobertura_frescos, Presencia_items, Alertas_reemplazo, Alertas_precio_item')
 ''' ))
 
 # ── CELL 15 — REPORTE ─────────────────────────────────────────────────────────
@@ -1238,7 +1293,7 @@ print('REPORTE PARA CLAUDE - canastas alternativas nb07 v5')
 print('='*72)
 print(f'Ultima semana (cierra jueves): {ULTIMA_SEMANA} | Ultimo mes: {_ult_mes}')
 print(f'Canastas activas: {CANASTAS_ACTIVAS}')
-print(f'Nacional: {AGG_NACIONAL} | arrastre: {MAX_SEMANAS_ARRASTRE} sem | outlier K: {FRESCO_OUTLIER_K} | frac min: {FRAC_PRODUCTOS_MIN}')
+print(f'Nacional: {AGG_NACIONAL} | arrastre: {MAX_SEMANAS_ARRASTRE} sem | regimen K: {FRESCO_REGIMEN_K} | outlier K: {FRESCO_OUTLIER_K} | frac min: {FRAC_PRODUCTOS_MIN}')
 
 for _name in CANASTAS_ACTIVAS:
     _ss = serie_sem_dict.get(_name)
@@ -1312,6 +1367,10 @@ try:
     print(f'  Candidatos a REEMPLAZO: {len(alertas_reemplazo)}')
     if len(alertas_reemplazo):
         print(alertas_reemplazo[['descripcion','canastas','estado']].to_string(index=False))
+    print(f'  Saltos de item >{ALERTA_SALTO_ITEM:.0%} en una semana: {len(alertas_precio_item)} en la serie '
+          f'| {len(_sal_ult)} en el ultimo trimestre  (hoja Alertas_precio_item)')
+    if len(_sal_ult):
+        print(_sal_ult[['semana','descripcion','var_%','precio_antes','precio_despues']].head(10).to_string(index=False))
 except Exception as e:
     print('  (diagnostico no disponible:', e, ')')
 print('\n' + '='*72)

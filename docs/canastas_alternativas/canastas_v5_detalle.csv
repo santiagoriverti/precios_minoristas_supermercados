@@ -1,0 +1,323 @@
+﻿necesidad,canasta,ean,desc,marca,rubro,categoria,subcategoria,unidad_fisica,qty_fisica,presentacion,cantidad,precio_unitario,precio_envase,cadenas,provincias,sucursales,cba,confiable
+Arroz,Popular,7790070412126,Arroz Largo Fino sin TACC Máximo 1 kG,Máximo,Almacén,Arroz y Legumbres,Arroz Largo,kg,4.0,1.0,4.0,1730.0,1730.0,3,23,1312,Arroz,True
+Arroz,Media,7791120031564,Arroz Largo Fino 00000 Molinos Ala 500 Gr,Molinos Ala,Almacén,Arroz y Legumbres,Arroz Largo,kg,3.5,0.5,7.0,2123.7,1061.9,5,24,1785,Arroz,True
+Arroz,Ejecutiva,7791120021565,Arroz Doble Carolina Molinos Ala 500 Gr,Molinos Ala,Almacén,Arroz y Legumbres,Arroz Largo,kg,3.0,0.5,6.0,3900.0,1950.0,4,24,619,Arroz,True
+Arroz,Representativa,7791120031557,Arroz Largo Fino 00000 Molinos Ala 1 Kg,Molinos Ala,Almacén,Arroz y Legumbres,Arroz Largo,kg,3.708,1.0,4.0,1878.4,1878.4,5,24,2423,Arroz,True
+Fideos secos,Popular,7791720026311,Fideos Cinta Tallarin Carrefour Classic 500 Gr,Carrefour,Almacén,Pastas Secas,Pastas Secas,kg,6.0,0.5,12.0,2580.0,1290.0,4,21,679,Fideos,True
+Fideos secos,Media,7790070335937,Fideos Tirabuzón 3 Vegetales Matarazzo 500 Gr,Matarazzo,Almacén,Pastas Secas,Pastas Secas,kg,5.0,0.5,10.0,4220.8,2110.4,4,24,2385,Fideos,True
+Fideos secos,Ejecutiva,7790070336675,Fideos Spaghetti con Espinaca Rina Matarazzo 500 Gr,Rina Matarazzo,Almacén,Pastas Secas,Pastas Secas,kg,4.0,0.5,8.0,7600.0,3800.0,5,24,870,Fideos,True
+Fideos secos,Representativa,7790070336118,Fideos Tallarín N5 Lucchetti 500 Gr,Luchetti,Almacén,Pastas Secas,Pastas Secas,kg,5.3766,0.5,11.0,3489.3,1744.6,5,24,2481,Fideos,True
+Harina de trigo,Popular,7792180139320,Harina 000 Fortificada con Calcio Cañuelas 1 Kg,Cañuelas,Almacén,Harinas,Harina de Trigo,kg,4.0,1.0,4.0,995.0,995.0,5,24,2408,Harina de trigo,True
+Harina de trigo,Media,7792590000227,Harina de Trigo 0000 Caserita 1 Kg,Caserita,Almacén,Harinas,Harina de Trigo,kg,3.0,1.0,3.0,1354.2,1354.2,4,24,2011,Harina de trigo,True
+Harina de trigo,Ejecutiva,7799037060325,Harina Especial para Masa Madre Chacabuco 1 Kh,Chacabuco,Almacén,Harinas,Harina de Trigo,kg,2.0,1.0,2.0,1999.0,1999.0,5,24,1523,Harina de trigo,True
+Harina de trigo,Representativa,7790070562258,Harina 000 con Vitamina Zinc Favorita 1 Kg,Favorita,Almacén,Harinas,Harina de Trigo,kg,3.3371999999999997,1.0,3.0,1188.0,1188.0,5,24,2464,Harina de trigo,True
+Harina de maiz / polenta,Popular,7798033339572,Polenta Instantanea Carrefour 500 Gr,Carrefour,Almacén,Harinas,Harina de Maíz,kg,0.9,0.5,2.0,1618.0,809.0,4,21,679,Otras harinas (maiz),True
+Harina de maiz / polenta,Media,7790580138738,Harina de Maíz Paquete Prestopronta 500 Gr,Prestopronta,Almacén,Harinas,Harina de Maíz,kg,0.6,0.5,1.0,3536.0,1768.0,5,24,2459,Otras harinas (maiz),True
+Harina de maiz / polenta,Ejecutiva,7790199603368,Harina de Maíz Blanco para Arepas Morixe 20 Un 1 Kg,Morixe,Almacén,Harinas,Harina de Maíz,kg,0.4,1.0,0.5,3650.0,3650.0,5,24,2132,Otras harinas (maiz),True
+Harina de maiz / polenta,Representativa,7790580138721,Polenta Prestopronta 730 Gr,Prestopronta,Almacén,Harinas,Harina de Maíz,kg,0.6489,0.73,1.0,3397.3,2480.0,5,24,2375,Otras harinas (maiz),True
+Azucar,Popular,7799086000389,Azúcar Domino 1 Kg,Domino,Almacén,Azúcar y Edulcorantes,Azúcar,kg,4.0,1.0,4.0,1455.0,1455.0,4,19,1311,Azucar,True
+Azucar,Media,7798174970016,Azúcar Común Azucel 1 Kg,Azucel,Almacén,Azúcar y Edulcorantes,Azúcar,kg,3.5,1.0,4.0,1509.0,1509.0,5,24,1181,Azucar,True
+Azucar,Ejecutiva,7792540250450,Azúcar Molida Superior Ledesma 1 Kg,Ledesma,Almacén,Azúcar y Edulcorantes,Azúcar,kg,2.5,1.0,2.5,1565.0,1565.0,5,24,2079,Azucar,True
+Azucar,Representativa,7792540250450,Azúcar Molida Superior Ledesma 1 Kg,Ledesma,Almacén,Azúcar y Edulcorantes,Azúcar,kg,3.8007,1.0,4.0,1565.0,1565.0,5,24,2079,Azucar,True
+Aceite de girasol,Popular,7792180001641,Aceite de Girasol Cañuelas 900 Ml,Cañuelas,Almacén,Aceites,Aceite de Girasol,kg,3.7,0.9,4.0,4572.2,4115.0,4,24,2247,Aceite,True
+Aceite de girasol,Media,7790070012050,Aceite de Girasol Cocinero 900 Ml,Cocinero,Almacén,Aceites,Aceite de Girasol,kg,3.2,0.9,4.0,4821.6,4339.5,5,24,2367,Aceite,True
+Aceite de girasol,Ejecutiva,7790272001005,Aceite de Girasol Natura 900 Ml,Natura,Almacén,Aceites,Aceite de Girasol,kg,2.6,0.9,3.0,5152.8,4637.5,5,24,2481,Aceite,True
+Aceite de girasol,Representativa,7798316700808,Aceite de Girasol Legítimo 900 Ml,Legítimo,Almacén,Aceites,Aceite de Girasol,kg,3.708,0.9,4.0,4656.5,4190.9,5,24,2146,Aceite,True
+Aceite de oliva,Media,7790272008394,Aceite de Oliva Extra Vírgen Suave Natura 500 Ml,Natura,Almacén,Aceites,Aceite de Oliva,kg,0.3,0.5,0.5,29820.0,14910.0,4,24,2315,,True
+Aceite de oliva,Ejecutiva,7798061190183,Aceite de Oliva Oliovita 500 Ml,Oliovita,Almacén,Aceites,Aceite de Oliva,kg,0.7,0.5,1.5,38803.1,19401.6,5,24,867,,True
+Aceite de oliva,Representativa,7790070231864,Aceite de Oliva Cocinero 500 Cc,Cocinero,Almacén,Aceites,Aceite de Oliva,kg,0.25,0.5,0.5,28120.0,14060.0,4,24,2227,,True
+Legumbres secas,Popular,2611341000000,Arvejas Partidas 500 Gr,Sin Marca,Almacén,Arroz y Legumbres,Legumbres,kg,0.9,0.5,2.0,3780.0,1890.0,4,21,674,Legumbres secas,True
+Legumbres secas,Media,7791720036501,Porotos Alubia Bolsa Carrefour Classic 400 Gr,Carrefour Classic,Almacén,Arroz y Legumbres,Legumbres,kg,0.7,0.4,1.5,4975.0,1990.0,4,21,679,Legumbres secas,False
+Legumbres secas,Ejecutiva,7791476034011,Lentejas Secas Egran 400 Gr,Egran,Almacén,Arroz y Legumbres,Legumbres,kg,0.5,0.4,1.0,6625.0,2650.0,5,24,559,Legumbres secas,True
+Legumbres secas,Representativa,7791720036495,Arvejas Partidas Bolsa Carrefour Classic 400 Gr,Carrefour Classic,Almacén,Arroz y Legumbres,Legumbres,kg,0.7415999999999999,0.4,2.0,2825.0,1130.0,4,21,678,Legumbres secas,False
+Tomate envasado,Popular,7790088001497,Puré de Tomate en Tetrabrik Alco 520 Gr,Alco,Almacén,Conservas,Tomates y Salsas,kg,2.4,0.52,5.0,2067.3,1075.0,4,22,1060,Hortalizas,True
+Tomate envasado,Media,7793360000157,Puré de Tomate Tetrabrik Salsati La Campagnola 520 Gr,La Campagnola,Almacén,Conservas,Tomates y Salsas,kg,2.2,0.52,4.0,2967.3,1543.0,5,24,2363,Hortalizas,True
+Tomate envasado,Ejecutiva,7790580567101,Tomate Perita Cubeteado en Lata Arcor 400 Gr,Arcor,Almacén,Conservas,Tomates y Salsas,kg,2.0,0.4,5.0,4540.4,1816.1,5,24,1782,Hortalizas,True
+Tomate envasado,Representativa,7790580138868,Puré de Tomate La Campagnola 530 Gr,La Campagnola,Almacén,Conservas,Tomates y Salsas,kg,2.2,0.53,4.0,2492.6,1321.1,5,24,2476,Hortalizas,True
+Arvejas en lata,Popular,7791720033487,Arvejas Secas Remojadas sin Sal Lata Carrefour Classic 300 Gr,Carrefour Classic,Almacén,Conservas,Conservas de Verdura y Legumbres,kg,0.9,0.3,3.0,2513.3,754.0,4,21,678,Hortalizas,True
+Arvejas en lata,Media,7797470007426,Arvejas Secas Remojadas Marolio 200 Gr,Marolio,Almacén,Conservas,Conservas de Verdura y Legumbres,kg,0.9,0.2,4.0,4495.0,899.0,4,22,1075,Hortalizas,True
+Arvejas en lata,Ejecutiva,7793360132384,Arvejas Secas Remojadas La Campagnola 300 Gr,La Campagnola,Almacén,Conservas,Conservas de Verdura y Legumbres,kg,0.9,0.3,3.0,5076.7,1523.0,4,23,1547,Hortalizas,True
+Arvejas en lata,Representativa,7790580132392,Arvejas Secas Remojadas sin Conservantes Lata Arcor 300 Gr,Arcor,Almacén,Conservas,Conservas de Verdura y Legumbres,kg,0.9,0.3,3.0,4482.8,1344.8,5,24,2155,Hortalizas,True
+Sal fina,Popular,7792900000428,Sal Fina en Paquete Trilaminado Dos Anclas 500 Gr,Dos Anclas,Almacén,Aderezos,Sal y Pimienta,kg,0.4,0.5,1.0,3020.0,1510.0,5,24,1044,Sal fina,True
+Sal fina,Media,7790072002080,Sal Fina en Estuche Celusal 500 Gr,Celusal,Almacén,Aderezos,Sal y Pimienta,kg,0.35,0.5,0.5,3605.6,1802.8,5,24,2498,Sal fina,True
+Sal fina,Ejecutiva,77956262,Sal Fina en Salero Celusal 250 Gr,Celusal,Almacén,Aderezos,Sal y Pimienta,kg,0.3,0.25,1.0,12688.0,3172.0,4,24,1778,Sal fina,True
+Sal fina,Representativa,7790072001014,Sal Fina en Paquete Celusal 500 Gr,Celusal,Almacén,Aderezos,Sal y Pimienta,kg,0.37079999999999996,0.5,0.5,3098.0,1549.0,5,24,2503,Sal fina,True
+Condimentos secos,Popular,7790150406953,Ají Molido Sobre Alicante 50 Gr,Alicante,Almacén,Aderezos,Otros Condimentos,kg,0.06,0.05,1.0,40965.7,2048.3,4,23,906,Condimentos,True
+Condimentos secos,Media,7790150570180,Provenzal Alicante 25 Gr,Alicante,Almacén,Aderezos,Otros Condimentos,kg,0.08,0.025,3.0,55920.0,1398.0,5,24,1961,Condimentos,True
+Condimentos secos,Ejecutiva,7790580136550,Orégano La Campagnola 23 Gr,La Campagnola,Almacén,Aderezos,Otros Condimentos,kg,0.1,0.023,4.0,68763.6,1581.6,5,24,607,Condimentos,True
+Condimentos secos,Representativa,7790150540183,Orégano sin TACC Alicante 25 Gr,Alicante,Almacén,Aderezos,Otros Condimentos,kg,0.07,0.025,3.0,63320.0,1583.0,5,24,2434,Condimentos,True
+Caldo concentrado,Popular,7798159719128,Caldo de Verduras Carrefour 12 Un 108 Gr,Carrefour,Almacén,Sopas Caldos y Puré,Caldos,kg,0.12,0.108,1.0,16574.1,1790.0,4,21,674,Condimentos,True
+Caldo concentrado,Media,7891000345528,Caldo de Verdura Maggi 114 Gr,Maggi,Almacén,Sopas Caldos y Puré,Caldos,kg,0.12,0.114,1.0,16798.2,1915.0,4,24,2336,Condimentos,True
+Caldo concentrado,Ejecutiva,7891000345399,Caldo de Verduras Maggi 6 Un 57 Gr,Maggi,Almacén,Sopas Caldos y Puré,Caldos,kg,0.1,0.057,2.0,20333.3,1159.0,4,24,584,Condimentos,True
+Caldo concentrado,Representativa,7891000345481,Caldo de Gallina Maggi 12Un 114 Gr,Maggi,Almacén,Sopas Caldos y Puré,Caldos,kg,0.12,0.114,1.0,16719.3,1906.0,5,24,2246,Condimentos,True
+Mayonesa,Popular,7791620187723,Mayonesa D'Fiesta 250 Gr,Fiesta,Almacén,Aderezos,Mayonesas,kg,0.3,0.25,1.0,4116.0,1029.0,5,24,858,Condimentos,True
+Mayonesa,Media,7794000006058,Mayonesa Clásica Doypack Hellmanns 950 Gr,Hellmanns,Almacén,Aderezos,Mayonesas,kg,0.45,0.95,0.5,6209.5,5899.0,4,24,2285,Condimentos,True
+Mayonesa,Ejecutiva,7794000005150,Mayonesa Receta Casera Hellmanns 232 Gr,Hellmanns,Almacén,Aderezos,Mayonesas,kg,0.6,0.232,2.5,11836.2,2746.0,3,19,1303,Condimentos,True
+Mayonesa,Representativa,7791866001364,Mayonesa Doypack Natura 500 Ml,Natura,Almacén,Aderezos,Mayonesas,kg,0.35,0.5,0.5,6080.0,3040.0,5,24,2503,Condimentos,True
+Vinagre,Popular,7790139101138,Vinagre de Alcohol sin TACC Favinco 1 Lt,Favinco,Almacén,Aderezos,Vinagre,kg,0.2,1.0,0.5,1610.0,1610.0,5,24,1399,Vinagre,True
+Vinagre,Media,7790139003173,Vinagre de Alcohol Clásico Casalta 1 Lt,Casalta,Almacén,Aderezos,Vinagre,kg,0.2,0.5,0.5,3643.8,1821.9,5,24,999,Vinagre,True
+Vinagre,Ejecutiva,7790130000027,Vinagre de Manzana Menoyo 500 Cc,Menoyo,Almacén,Aderezos,Vinagre,kg,0.2,0.5,0.5,5050.0,2525.0,5,24,2129,Vinagre,True
+Vinagre,Representativa,7790130000058,Vinagre de Alcohol Menoyo 1 Lt,Menoyo,Almacén,Aderezos,Vinagre,kg,0.18539999999999998,1.0,0.5,1965.0,1965.0,5,24,2306,Vinagre,True
+Yerba mate,Popular,7792198006621,Yerba Mate Tradicional Natura 500 Gr,Natura,Almacén,Infusiones,Yerbas,kg,2.0,0.5,4.0,4083.8,2041.9,4,23,1202,Yerba,True
+Yerba mate,Media,7792280005693,Yerba Mate Rosa Cachamate 500 Gr,Cachamate,Almacén,Infusiones,Yerbas,kg,1.7,0.5,3.0,5100.0,2550.0,5,24,2048,Yerba,True
+Yerba mate,Ejecutiva,7793704000881,Yerba Mate Elaborada sin Palo Playadito 500 Gr,Playadito,Almacén,Infusiones,Yerbas,kg,1.3,0.5,2.5,6761.2,3380.6,5,24,1641,Yerba,True
+Yerba mate,Representativa,7792710000182,Yerba Mate sin TACC Amanda 500 Gr,Amanda,Almacén,Infusiones,Yerbas,kg,1.5758999999999999,0.5,3.0,4920.0,2460.0,5,24,2434,Yerba,True
+Cafe,Popular,7792360002062,Café Molido Torrado Intenso Bonafide 500 Gr,Bonafide,Almacén,Infusiones,Café,kg,0.06,0.5,0.5,24301.9,12150.9,4,24,2232,Cafe,True
+Cafe,Media,7790070933638,Café Instantáneo Suave Extra Aroma Arlistán 170 Gr,Arlistán,Almacén,Infusiones,Café,kg,0.16,0.17,1.0,52140.3,8863.8,5,24,2278,Cafe,True
+Cafe,Ejecutiva,8445291082113,Café Instantáneo Suave Origen Frasco Dolca 100 Gr,Dolca,Almacén,Infusiones,Café,kg,0.35,0.1,3.0,95000.0,9500.0,5,24,979,Cafe,True
+Cafe,Representativa,7790550000157,Café Molido Torrado en Bolsa Cabrales 250 Gr,Cabrales,Almacén,Infusiones,Café,kg,0.09269999999999999,0.25,0.5,29640.0,7410.0,5,24,2482,Cafe,True
+Te,Popular,7798104300012,Té Verde en Saquitos Chai Inti Zen 30 Gr,Inti Zen,Almacén,Infusiones,Té,kg,0.03,0.03,1.0,183333.3,5500.0,5,24,669,,True
+Te,Media,7798104300012,Té Verde en Saquitos Chai Inti Zen 30 Gr,Inti Zen,Almacén,Infusiones,Té,kg,0.05,0.03,1.5,183333.3,5500.0,5,24,669,,False
+Te,Ejecutiva,7798104300012,Té Verde en Saquitos Chai Inti Zen 30 Gr,Inti Zen,Almacén,Infusiones,Té,kg,0.07,0.03,2.5,183333.3,5500.0,5,24,669,,True
+Te,Representativa,7798104307707,Té Chaman Chai Inti Zen 30 Gr,Inti Zen,Almacén,Infusiones,Té,kg,0.04,0.03,1.5,178333.3,5350.0,5,24,501,,False
+Galletitas de agua,Popular,7798152224049,Galletitas Salvado Carrefour Pack 3 Un 360 Gr,Carrefour,Almacén,Galletitas,Galletitas Saladas,kg,1.4,0.36,4.0,6916.7,2490.0,4,21,678,Galletitas de agua,True
+Galletitas de agua,Media,7622201736033,Galletitas Clásicas Cerealitas 212 Gr,Cerealitas,Almacén,Galletitas,Galletitas Saladas,kg,1.3,0.212,6.0,9279.0,1967.1,4,24,2389,Galletitas de agua,True
+Galletitas de agua,Ejecutiva,7798181510212,Galletitas Crackers Smams 150 Gr,Smams,Almacén,Galletitas,Galletitas Saladas,kg,1.1,0.15,7.0,22433.3,3365.0,4,24,2047,Galletitas de agua,True
+Galletitas de agua,Representativa,7790040144095,Galletitas Traviata 540 Gr,Traviata,Almacén,Galletitas,Galletitas Saladas,kg,1.2978,0.54,2.5,6110.9,3299.9,5,24,2449,Galletitas de agua,True
+Galletitas dulces,Popular,7791720034279,Galletitas Mini Pepa Carrefour Classic 300 Gr,Carrefour Classic,Almacén,Galletitas,Galletitas Dulces,kg,0.8,0.3,2.5,7916.7,2375.0,4,21,679,Galletitas dulces,True
+Galletitas dulces,Media,7790045001188,Galletitas con Avena y Pasas Frutigran Granix 250 Gr,Granix,Almacén,Galletitas,Galletitas Dulces,kg,1.0,0.25,4.0,11872.0,2968.0,5,24,1474,Galletitas dulces,True
+Galletitas dulces,Ejecutiva,7791720044407,Galletitas Avena y Chips Carrefour Extra  120 Gr,Carrefour Extra,Almacén,Galletitas,Galletitas Dulces,kg,1.2,0.12,10.0,21125.0,2535.0,4,21,627,Galletitas dulces,True
+Galletitas dulces,Representativa,7622201735906,Galletitas con Chips Chocolate Pepitos 119 Gr,Pepitos,Almacén,Galletitas,Galletitas Dulces,kg,0.6489,0.119,5.0,18646.7,2219.0,5,24,2482,Galletitas dulces,True
+Pan de molde,Popular,7798185030600,Pan  Salvado Grande 600 Gr,Sin Marca,Almacén,Panificados,Pan de Molde,kg,0.6,0.6,1.0,7716.7,4630.0,2,10,977,Pan,True
+Pan de molde,Media,7793890258769,Pan de Mesa Blanco Chico Lactal 315 Gr,Lactal,Almacén,Panificados,Pan de Molde,kg,1.0,0.315,3.0,11428.6,3600.0,4,23,2177,Pan,True
+Pan de molde,Ejecutiva,7798185030419,Pan con Semillas La Panerita 340 Gr,La Panerita,Almacén,Panificados,Pan de Molde,kg,1.4,0.34,4.0,12941.2,4400.0,4,13,1011,Pan,True
+Pan de molde,Representativa,7793890258752,Pan de Mesa Blanco en Rodajas Finas Lactal 460 Gr,Lactal,Almacén,Panificados,Pan de Molde,kg,3.128625,0.46,7.0,9754.1,4486.9,4,23,2177,Pan,True
+Pan rallado,Popular,7792180004741,Pan Rallado Fortificado Mamá Cocina 500 Gr,Mamá Cocina,Almacén,Panificados,Pan Rallado y Rebozadores,kg,0.5,0.5,1.0,2883.8,1441.9,5,24,2131,,True
+Pan rallado,Media,7790070433169,Pan Rallado Fortificado Preferido 500 Gr,Preferido,Almacén,Panificados,Pan Rallado y Rebozadores,kg,0.5,0.5,1.0,3944.3,1972.2,5,24,2141,,True
+Pan rallado,Ejecutiva,7790070433251,Rebozador Crunch Fortificado Preferido 450 Gr,Preferido,Almacén,Panificados,Pan Rallado y Rebozadores,kg,0.5,0.45,1.0,6888.9,3100.0,4,23,1545,,True
+Pan rallado,Representativa,7790070433176,Pan Rallado Fortificado Preferido 1 Kg,Preferido,Almacén,Panificados,Pan Rallado y Rebozadores,kg,0.5,1.0,0.5,3800.0,3800.0,5,24,2118,,True
+Dulce de leche,Popular,7794820000885,Dulce de Leche en Pote Milkaut 1 Kg,Milkaut,Frescos,Lácteos,Dulce de Leche,kg,0.45,1.0,0.5,8899.5,8899.5,5,24,642,Dulces,True
+Dulce de leche,Media,7790742625403,Dulce de Leche Colonial La Serenísima 1 Kg,La Serenísima,Frescos,Lácteos,Dulce de Leche,kg,0.5,1.0,0.5,10065.0,10065.0,5,24,1894,Dulces,True
+Dulce de leche,Ejecutiva,7794820902943,Dulce de Leche Repostero Milkaut 400 Gr,Milkaut,Frescos,Lácteos,Dulce de Leche,kg,0.55,0.4,1.5,12375.0,4950.0,5,24,874,Dulces,True
+Dulce de leche,Representativa,7790742625304,Dulce de Leche Clásico La Serenísima 400 Gr,La Serenísima,Frescos,Lácteos,Dulce de Leche,kg,0.45,0.4,1.0,9650.0,3860.0,5,24,2488,Dulces,True
+Mermelada,Popular,7791113003783,Mermelada de Frutilla Emeth 420 Gr,Emeth,Almacén,Mermeladas y Dulces,Mermeladas,kg,0.35,0.42,1.0,5000.0,2100.0,4,24,1242,Dulces,True
+Mermelada,Media,7790580132262,Mermelada Naranja Light Arcor 390 Gr,Arcor,Almacén,Mermeladas y Dulces,Mermeladas,kg,0.4,0.39,1.0,9359.0,3650.0,4,24,2162,Dulces,True
+Mermelada,Ejecutiva,7798088960042,Mermelada de Durazno El Brocal 420 Gr,El Brocal,Almacén,Mermeladas y Dulces,Mermeladas,kg,0.45,0.42,1.0,15853.4,6658.4,4,21,588,Dulces,True
+Mermelada,Representativa,7790580132163,Mermelada Durazno Arcor 454 Gr,Arcor,Almacén,Mermeladas y Dulces,Mermeladas,kg,0.35,0.454,1.0,7268.3,3299.8,5,24,2467,Dulces,True
+Cacao / chocolatada en polvo,Popular,7790380023418,Polvo de Cacao Toddy 360 Gr,Toddy,Almacén,Infusiones,Cacao,kg,0.4,0.36,1.0,12563.9,4523.0,4,23,1681,,True
+Cacao / chocolatada en polvo,Media,8445290274243,Cacao en Polvo Nescao 150 Gr,Nescao,Almacén,Infusiones,Cacao,kg,0.5,0.15,3.0,15866.7,2380.0,5,24,2289,,True
+Cacao / chocolatada en polvo,Ejecutiva,8445290559975,Cacao Menos Azúcar Nesquik 300 Gr,Nesquik,Almacén,Infusiones,Cacao,kg,0.6,0.3,2.0,30316.7,9095.0,4,24,1325,,True
+Cacao / chocolatada en polvo,Representativa,8445291121843,Polvo Chocolatado Nesquik 150 Gr,Nesquik,Almacén,Infusiones,Cacao,kg,0.4,0.15,2.5,17933.3,2690.0,5,24,2451,,True
+Cereal de desayuno,Media,7896004004921,Copos de Maíz Azucarados Zucaritas 240 Gr,Zucaritas,Almacén,Cereales,Cereales,kg,0.4,0.24,1.5,13632.0,3271.7,4,24,2017,,True
+Cereal de desayuno,Ejecutiva,7891000288801,Cereal Tradicional sin Azúcar Nesfit Nestlé 220 Gr,Nesfit,Almacén,Cereales,Cereales,kg,0.8,0.22,4.0,24439.4,5376.7,4,24,911,,True
+Cereal de desayuno,Representativa,7790199604587,Avena Tradicional Morixe 400 Gr,Morixe,Almacén,Cereales,Cereales,kg,0.3,0.4,0.5,4849.0,1939.6,5,24,2327,,True
+Alfajor,Popular,77902320,Alfajor Marroc Fulbito 25 Gr,Fulbito,Almacén,Golosinas,Alfajores,kg,0.35,0.025,14.0,16200.0,405.0,4,22,1176,,True
+Alfajor,Media,7790380023630,Alfajor Mousse Blanco Toddy 24 Un 50 Gr,Toddy,Almacén,Golosinas,Alfajores,kg,0.4,0.05,8.0,30900.0,1545.0,5,24,860,,True
+Alfajor,Ejecutiva,7790070418241,Alfajor Arroz Limón Chocoarroz 22 Gr,Chocoarroz,Almacén,Golosinas,Alfajores,kg,0.45,0.022,20.0,77272.7,1700.0,4,24,866,,True
+Alfajor,Representativa,7790040133587,Alfajor Minitorta Clásica Águila 69 Gr,Águila,Almacén,Golosinas,Alfajores,kg,0.35,0.069,5.0,34492.8,2380.0,5,24,2408,,True
+Chocolate en tableta,Media,80052760,Tableta de Chocolate Kinder Bueno 43 Gr,Kinder,Almacén,Golosinas,Chocolates,kg,0.15,0.043,3.0,74627.9,3209.0,5,24,2460,,True
+Chocolate en tableta,Ejecutiva,7790580103361,Chocolate Aireado con Leche Cofler 27 Gr,Cofler,Almacén,Golosinas,Chocolates,kg,0.3,0.027,11.0,105555.6,2850.0,3,24,737,,True
+Chocolate en tableta,Representativa,7790580607210,Chocolate Leche Arcor 25 Gr,Arcor,Almacén,Golosinas,Chocolates,kg,0.1,0.025,4.0,66000.0,1650.0,4,24,2673,,True
+Snack salado,Popular,7790310985373,Papas Fritas Clásicas Pehuamar 230 Gr,Pehuamar,Almacén,Snacks,Papas Fritas,kg,0.15,0.23,0.5,27530.4,6332.0,5,24,1755,,True
+Snack salado,Media,7794520869287,Papas Fritas Tradicional Krachitos 50 Gr,Krachitos,Almacén,Snacks,Papas Fritas,kg,0.25,0.05,5.0,38900.0,1945.0,4,21,938,,True
+Snack salado,Ejecutiva,7896004009179,Papas Fritas sabor Queso Pringles 109 Gr,Pringles,Almacén,Snacks,Papas Fritas,kg,0.35,0.109,3.0,53440.4,5825.0,4,24,676,,True
+Snack salado,Representativa,7790310985465,Papas Fritas Clásicas Lays 134 Gr,Lays,Almacén,Snacks,Papas Fritas,kg,0.18,0.134,1.5,39143.7,5245.2,5,24,2454,,True
+Atun / conserva de pescado,Media,7790580131357,Atún en Aceite Libre de Gluten sin TACC La Campagnola 170 Gr,La Campagnola,Almacén,Conservas,Conservas de Pescado,kg,0.35,0.17,2.0,34520.8,5868.5,5,24,2402,,True
+Atun / conserva de pescado,Ejecutiva,7790580131364,Atún al Natural Libre de Gluten sin TACC La Campagnola 170 Gr,La Campagnola,Almacén,Conservas,Conservas de Pescado,kg,0.5,0.17,3.0,34746.5,5906.9,5,24,2448,,True
+Atun / conserva de pescado,Representativa,7790580131364,Atún al Natural Libre de Gluten sin TACC La Campagnola 170 Gr,La Campagnola,Almacén,Conservas,Conservas de Pescado,kg,0.3,0.17,2.0,34746.5,5906.9,5,24,2448,,True
+Leche,Popular,7790742192103,Leche Descremada Sachet 1Casanto 1 Lt,Casanto,Frescos,Lácteos,Leches,kg,22.0,1.0,22.0,1865.0,1865.0,5,24,2238,Leche,True
+Leche,Media,7798338291469,Leche Liviana Las Tres Niñas 1 Lt,Las Tres Niñas,Frescos,Lácteos,Leches,kg,27.0,1.0,27.0,2699.0,2699.0,5,24,1075,Leche,True
+Leche,Ejecutiva,7790742358608,Leche Descremada Protein Larga Vida Uat La Serenisima 1 Lt,La Serenísima,Frescos,Lácteos,Leches,kg,31.0,1.0,31.0,3010.2,3010.2,5,24,2455,Leche,True
+Leche,Representativa,7790742333605,Leche UAT Parcialmente Descremada Zero Lactos Serenísima 1 Lt,La Serenísima,Frescos,Lácteos,Leches,kg,28.644299999999998,1.0,29.0,2999.0,2999.0,5,24,2472,Leche,True
+Yogur,Popular,7793913013535,Yogur Parcialmente Descremado Vainilla Tregar 125 Gr,Tregar,Frescos,Lácteos,Yogures,kg,1.0,0.125,8.0,9200.0,1150.0,5,24,2432,Yogur,True
+Yogur,Media,7791337010000,Yogur Griego Natural con Endulzado Yogurísimo 300 Gr,Yogurisimo,Frescos,Lácteos,Yogures,kg,2.5,0.3,8.0,16383.3,4915.0,5,24,2224,Yogur,True
+Yogur,Ejecutiva,7791337009356,Yogur Bebible Sabor Vainilla Yogurísimo 190 Gr,Yogurísimo,Frescos,Lácteos,Yogures,kg,4.0,0.19,21.0,19526.3,3710.0,5,24,1412,Yogur,True
+Yogur,Representativa,7791337007246,Yogur Firme Descremado con Colágeno Vainilla Pote Ser 190 Gr,Ser,Frescos,Lácteos,Yogures,kg,1.7612999999999999,0.19,9.0,15000.0,2850.0,5,24,2456,Yogur,True
+Manteca / margarina,Popular,7791620187808,Margarina en Pan Clásica Dánica 200 Gr,Dánica,Frescos,Lácteos,Mantecas y Margarinas,kg,0.15,0.2,0.5,11930.0,2386.0,5,24,980,Manteca,True
+Manteca / margarina,Media,7798060853300,Manteca Baja Lactosa Tonadita 200 Gr,Tonadita,Frescos,Lácteos,Mantecas y Margarinas,kg,0.25,0.2,1.0,22450.0,4490.0,5,24,1181,Manteca,True
+Manteca / margarina,Ejecutiva,7794820903292,Manteca Calidad Extra Milkaut 100 Gr,Milkaut,Frescos,Lácteos,Mantecas y Margarinas,kg,0.4,0.1,4.0,26350.0,2635.0,5,24,1449,Manteca,True
+Manteca / margarina,Representativa,7793940054006,Manteca La Serenísima 200 Gr,La Serenísima,Frescos,Lácteos,Mantecas y Margarinas,kg,0.18539999999999998,0.2,1.0,24184.5,4836.9,5,24,2483,Manteca,True
+Queso untable,Popular,7798060854475,Queso Untable Patagonia Original Tonadita 290 Gr,Tonadita,Frescos,Fiambrería,Quesos Untables,kg,0.3,0.29,1.0,12820.0,3717.8,5,24,1604,Queso,True
+Queso untable,Media,7798060853119,Queso Untable Cheddar Dip 180 Gr,Tonadita,Frescos,Fiambrería,Quesos Untables,kg,0.45,0.18,2.5,15314.4,2756.6,5,24,1599,Queso,True
+Queso untable,Ejecutiva,7791564012488,Queso Untable Jamón Adler 100 Gr,Adler,Frescos,Fiambrería,Quesos Untables,kg,0.6,0.1,6.0,32055.0,3205.5,5,24,1647,Queso,True
+Queso untable,Representativa,7791337061439,Queso Untable Light La Serenisima 290 Gr,La Serenisima,Frescos,Fiambrería,Quesos Untables,kg,0.35,0.29,1.0,14258.6,4135.0,5,24,2325,Queso,True
+Crema de leche,Media,7790742141903,Crema Uat Liviana La Serenisima Tetrabrik 200 Cc,La Serenísima,Frescos,Lácteos,Crema de Leche,kg,0.25,0.2,1.0,14345.0,2869.0,5,24,2336,,True
+Crema de leche,Ejecutiva,7794820902967,Crema de Leche Pote Milkaut 330 Cc,Milkaut,Frescos,Lácteos,Crema de Leche,kg,0.45,0.33,1.5,17530.3,5785.0,5,24,902,,True
+Crema de leche,Representativa,7798338291070,Crema de Leche Clásica para Cocinar Las Tres Niñas 200 Ml,Las Tres Niñas,Frescos,Lácteos,Crema de Leche,kg,0.2,0.2,1.0,14100.0,2820.0,5,24,2445,,True
+Salchichas,Popular,7791720037836,Salchichas Clásicas Carrefour Classic 6 Un 225 Gr,Carrefour Classic,Frescos,Fiambrería,Salchichas,kg,0.45,0.225,2.0,9555.6,2150.0,4,21,653,Fiambres,True
+Salchichas,Media,7790360970053,Salchichas Kids Swift Flowpack 190 Gr,Swift,Frescos,Fiambrería,Salchichas,kg,0.45,0.19,2.5,13052.6,2480.0,5,24,1998,Fiambres,True
+Salchichas,Ejecutiva,7790360970053,Salchichas Kids Swift Flowpack 190 Gr,Swift,Frescos,Fiambrería,Salchichas,kg,0.4,0.19,2.0,13052.6,2480.0,5,24,1998,Fiambres,True
+Salchichas,Representativa,7790625010401,Salchicha Viena 66 190 Gr,66,Frescos,Fiambrería,Salchichas,kg,0.45,0.19,2.5,9605.3,1825.0,5,24,1598,Fiambres,True
+Pasta fresca,Media,7790070621863,Ravioles Ricota Mozzarella Danbo Parmesano La Salteña 450 Gr,La Salteña,Frescos,Pastas y Tapas,Pastas Rellenas,kg,0.5,0.45,1.0,9555.6,4300.0,5,24,2186,,True
+Pasta fresca,Ejecutiva,7791720044650,Capellettis 4 Quesos Carrefour Classic 250 Gr,Carrefour Classic,Frescos,Pastas y Tapas,Pastas Rellenas,kg,0.9,0.25,4.0,11110.0,2777.5,3,18,542,,True
+Pasta fresca,Representativa,7790070621870,Ravioles Jamón y Mozzarella La Salteña 450 Gr,La Salteña,Frescos,Pastas y Tapas,Pastas Rellenas,kg,0.4,0.45,1.0,9555.6,4300.0,5,24,2182,,True
+Tapas de empanada,Popular,7791720027738,Tapa para Empanadas Rotiseras Carrefour 450 Gr,Carrefour,Frescos,Pastas y Tapas,Tapas,kg,0.4,0.45,1.0,4711.1,2120.0,4,21,679,,True
+Tapas de empanada,Media,7790070622037,Tapa para Pascualina Criolla La Salteña 400 Gr,La Salteña,Frescos,Pastas y Tapas,Tapas,kg,0.4,0.4,1.0,7000.0,2800.0,5,24,2472,,True
+Tapas de empanada,Ejecutiva,7790070622037,Tapa para Pascualina Criolla La Salteña 400 Gr,La Salteña,Frescos,Pastas y Tapas,Tapas,kg,0.4,0.4,1.0,7000.0,2800.0,5,24,2472,,True
+Tapas de empanada,Representativa,7790070622044,Tapa para Pascualina Hojaldradas La Salteña 400 Gr,La Salteña,Frescos,Pastas y Tapas,Tapas,kg,0.4,0.4,1.0,7000.0,2800.0,5,24,2465,,True
+Postre / flan,Media,7791337008663,Postre Frutilla Pote Danonino 80.5 Gr,Danonino,Frescos,Lácteos,Postres y Flanes,kg,0.4,0.0805,5.0,16149.1,1300.0,5,24,2408,,True
+Postre / flan,Ejecutiva,7791337008106,Postre de Dulce de Leche con Crema Pote Danette 100 Gr,Danette,Frescos,Lácteos,Postres y Flanes,kg,0.7,0.1,7.0,27150.0,2715.0,5,24,2434,,True
+Postre / flan,Representativa,7791337008656,Postre Vainilla Pote Danonino 80.5 Gr,Danonino,Frescos,Lácteos,Postres y Flanes,kg,0.3,0.0805,4.0,16149.1,1300.0,5,24,2391,,True
+Hamburguesas congeladas,Popular,7790360967411,Hamburguesas Clásicas XL Swift 250 Gr,Swift,Congelados,Hamburguesas,Hamburguesas,kg,0.4,0.25,1.5,29036.0,7259.0,5,24,889,,True
+Hamburguesas congeladas,Media,7790670050674,Hamburguesas de Carne Clásicas Paty 2 Un 160 Gr,Paty,Congelados,Hamburguesas,Hamburguesas,kg,0.6,0.11,5.0,42727.3,4700.0,5,24,916,,True
+Hamburguesas congeladas,Ejecutiva,7793281493472,Hamburguesas Clásicas Unión Ganadera 4 Un 83 Gr,Unión Ganadera,Congelados,Hamburguesas,Hamburguesas,kg,0.8,0.083,10.0,125783.1,10440.0,5,24,1671,,True
+Hamburguesas congeladas,Representativa,7790670050650,Hamburguesas de Carne Clásicas sin TACC Paty 4 Un 320 Gr,Paty,Congelados,Hamburguesas,Hamburguesas,kg,0.5,0.32,1.5,28593.8,9150.0,5,24,2495,,True
+Milanesas / nuggets de pollo,Popular,7790070036636,Formitas de Pollo Rebozadas Lucchetti 350 Gr,Lucchetti,Congelados,Prefritos,Prefritos,kg,0.4,0.35,1.0,16791.1,5876.9,5,24,872,,True
+Milanesas / nuggets de pollo,Media,7790070035950,Bocaditos de Pollo Rebozados +100 Gr Gratis Patitas 1.1 Kg,Patitas,Congelados,Prefritos,Prefritos,kg,0.6,1.1,0.5,23318.2,25650.0,5,24,1790,,True
+Milanesas / nuggets de pollo,Ejecutiva,7790070034410,Nuggets de Pollo Bolsa Granja Del Sol 400 Gr,Granja Del Sol,Congelados,Prefritos,Prefritos,kg,0.8,0.4,2.0,27161.0,10864.4,5,24,2360,,True
+Milanesas / nuggets de pollo,Representativa,7790070035936,Bocaditos de Pollo Rebozados Patitas 400 Gr,Patitas,Congelados,Prefritos,Prefritos,kg,0.5,0.4,1.0,23377.5,9351.0,5,24,2416,,True
+Vegetales congelados,Media,7790070036278,Espinaca Congelada Granja Del Sol 500 Gr,Granja Del Sol,Congelados,Vegetales,Vegetales,kg,0.4,0.5,1.0,11198.0,5599.0,5,24,2341,,True
+Vegetales congelados,Ejecutiva,7790070036322,Brocoli Congelado Lucchetti 300 Gr,Lucchetti,Congelados,Vegetales,Vegetales,kg,0.7,0.3,2.5,14333.3,4300.0,5,24,592,,True
+Vegetales congelados,Representativa,7790670052586,Brocoli Congelado Green Life 450 Gr,Green Life,Congelados,Vegetales,Vegetales,kg,0.3,0.45,0.5,13144.4,5915.0,5,24,1518,,True
+Gaseosa cola,Popular,7790895005794,Coca Cola 2.5 Lt,Coca Cola,Bebidas,Gaseosas,Gaseosa Cola,kg,6.0,2.5,2.5,998.4,2496.0,4,13,1276,Bebidas no alcoholicas,True
+Gaseosa cola,Media,7790895000218,Coca Cola Retornable 2 Lt,Coca Cola,Bebidas,Gaseosas,Gaseosa Cola,kg,7.0,2.0,4.0,2014.1,4028.1,4,15,1996,Bebidas no alcoholicas,True
+Gaseosa cola,Ejecutiva,7790895000997,Coca Cola Sabor Original 2.25 Lt,Coca Cola,Bebidas,Gaseosas,Gaseosa Cola,kg,8.0,2.25,4.0,2586.1,5818.8,5,23,2219,Bebidas no alcoholicas,True
+Gaseosa cola,Representativa,7791813888468,Gaseosa Cola Pepsi 2 Lt,Pepsi,Bebidas,Gaseosas,Gaseosa Cola,kg,5.863275000000001,2.0,3.0,2275.0,4550.0,5,24,2475,Bebidas no alcoholicas,True
+Gaseosa lima-limon,Popular,7790895007385,Gaseosa Lima Limón Crush 2.25 Lt,Crush,Bebidas,Gaseosas,Gaseosa Lima Limón,kg,2.5,2.25,1.0,973.2,2189.8,4,17,2109,Bebidas no alcoholicas,True
+Gaseosa lima-limon,Media,7790895000447,Gaseosa Sprite 1.5 Lt,Sprite,Bebidas,Gaseosas,Gaseosa Lima Limón,kg,3.0,1.5,2.0,2593.3,3890.0,4,24,1745,Bebidas no alcoholicas,True
+Gaseosa lima-limon,Ejecutiva,7790895000829,Gaseosa Sprite 500 Cc,Sprite,Bebidas,Gaseosas,Gaseosa Lima Limón,kg,3.5,0.5,7.0,3802.0,1901.0,4,24,1723,Bebidas no alcoholicas,True
+Gaseosa lima-limon,Representativa,7790895001000,Gaseosa Sprite 2.25 Lt,Sprite,Bebidas,Gaseosas,Gaseosa Lima Limón,kg,2.665125,2.25,1.0,2586.1,5818.8,5,24,2508,Bebidas no alcoholicas,True
+Jugo en polvo,Popular,7790580143237,Jugo en Polvo Sabor Naranja Arcor 15 Gr,Arcor,Bebidas,Jugos,En Polvo,kg,0.2,0.015,13.0,25066.7,376.0,5,24,1006,Bebidas no alcoholicas,True
+Jugo en polvo,Media,7790580129972,Jugo en Polvo Sabor Manzana Sobre Bc 8.5 Gr,La Campagnola,Bebidas,Jugos,En Polvo,kg,0.15,0.0085,18.0,43852.9,372.8,5,24,1212,Bebidas no alcoholicas,True
+Jugo en polvo,Ejecutiva,7622201703080,Jugo en Polvo Sabor Manzana Deliciosa Clight 7 Gr,Clight,Bebidas,Jugos,En Polvo,kg,0.1,0.007,14.0,82857.1,580.0,5,24,2273,Bebidas no alcoholicas,True
+Jugo en polvo,Representativa,7622201735685,Jugo en Polvo Sabor Limón Dulce Tang 15 Gr,Tang,Bebidas,Jugos,En Polvo,kg,0.15,0.015,10.0,36666.7,550.0,5,24,2282,Bebidas no alcoholicas,True
+Agua mineral,Popular,7795930000543,Agua Mineral Neste Purez Vital 2.25 Lt,Nestlé,Bebidas,Aguas,Agua sin Gas,kg,6.0,2.25,2.5,813.2,1829.6,4,24,1859,Bebidas no alcoholicas,True
+Agua mineral,Media,7795930000543,Agua Mineral Neste Purez Vital 2.25 Lt,Nestlé,Bebidas,Aguas,Agua sin Gas,kg,10.0,2.25,4.0,813.2,1829.6,4,24,1859,Bebidas no alcoholicas,True
+Agua mineral,Ejecutiva,7795930000543,Agua Mineral Neste Purez Vital 2.25 Lt,Nestlé,Bebidas,Aguas,Agua sin Gas,kg,14.0,2.25,6.0,813.2,1829.6,4,24,1859,Bebidas no alcoholicas,True
+Agua mineral,Representativa,7795930000543,Agua Mineral Neste Purez Vital 2.25 Lt,Nestlé,Bebidas,Aguas,Agua sin Gas,kg,2.1321000000000003,2.25,1.0,813.2,1829.6,4,24,1859,Bebidas no alcoholicas,True
+Agua saborizada,Media,7798062548679,Agua Saborizada Pomelo Sin Gas Levité 1.5 Lt,Levité,Bebidas,Aguas,Agua Saborizada,kg,4.0,1.5,2.5,1891.7,2837.5,4,24,2448,,True
+Agua saborizada,Ejecutiva,7798062540260,Agua Saborizada sin Gas Pera Levité Villa Sur 500 Cc,Levité,Bebidas,Aguas,Agua Saborizada,kg,8.0,0.5,16.0,4100.0,2050.0,5,24,2165,,True
+Agua saborizada,Representativa,7790895640483,Agua Saborizada Manzana sin Gas Aquarius 1.5 Lt,Aquarius,Bebidas,Aguas,Agua Saborizada,kg,3.0,1.5,2.0,2075.9,3113.9,5,24,2577,,True
+Cerveza,Popular,7792798014835,Cerveza Quilmes 710 Ml,Quilmes,Bebidas,Cerveza,Rubias,kg,2.0,0.71,3.0,5218.3,3705.0,5,24,2061,Bebidas alcoholicas,True
+Cerveza,Media,7792798999866,Cerveza Blanca Lata Andes 473 Cc,Andes,Bebidas,Cerveza,Rubias,kg,3.5,0.473,7.0,6955.6,3290.0,4,23,1023,Bebidas alcoholicas,True
+Cerveza,Ejecutiva,7793147009137,Cerveza Rubia Heineken 330 Cc,Heineken,Bebidas,Cerveza,Rubias,kg,6.0,0.33,18.0,12712.1,4195.0,5,24,2248,Bebidas alcoholicas,True
+Cerveza,Representativa,7792798014873,Cerveza Corona 330 Ml,Corona,Bebidas,Cerveza,Rubias,kg,2.0023199999999997,0.33,6.0,10909.1,3600.0,4,24,2348,Bebidas alcoholicas,True
+Vino,Popular,7790314080128,Vino Tinto Malbec Pato Criollo 750 Ml,Pato Criollo,Bebidas,Vinos y Espumantes,Tintos,kg,1.0,0.75,1.5,6400.0,4800.0,2,16,1279,Bebidas alcoholicas,True
+Vino,Media,7791540044502,Vino Tinto Vainilla 1 Dada 750 Cc,Dada,Bebidas,Vinos y Espumantes,Tintos,kg,1.5,0.75,2.0,10318.7,7739.0,5,24,1213,Bebidas alcoholicas,True
+Vino,Ejecutiva,7791203001231,Vino Tinto Malbec Luigi Bosca 750 Cc,Luigi Bosca,Bebidas,Vinos y Espumantes,Tintos,kg,3.0,0.75,4.0,24137.5,18103.1,5,24,2346,Bebidas alcoholicas,True
+Vino,Representativa,7798074864675,Vino Tinto Malbec Portillo 750 Ml,Portillo,Bebidas,Vinos y Espumantes,Tintos,kg,1.33488,0.75,2.0,9115.1,6836.3,5,24,2481,Bebidas alcoholicas,True
+Aperitivo / fernet,Media,7791250801563,Aperitivo Pomelo y Lima Lata Smirnoff 473 Ml,Smirnoff,Bebidas,Aperitivos,Aperitivos,kg,0.75,0.473,1.5,8822.4,4173.0,4,22,1173,,True
+Aperitivo / fernet,Ejecutiva,7791200000619,Aperitivo Cynar 750 Cc,Cynar,Bebidas,Aperitivos,Aperitivos,kg,1.5,0.75,2.0,19998.7,14999.0,5,24,844,,True
+Aperitivo / fernet,Representativa,7791200000626,Aperitivo Cynar 750 Ml,Cynar,Bebidas,Aperitivos,Aperitivos,kg,0.5,0.75,0.5,17855.1,13391.3,5,24,2491,,True
+Detergente de vajilla,Popular,7791290794269,Detergente Líquido Ultra Limón Doyoack Ala 450 Ml,Ala,Limpieza,Limpieza de Cocina,Detergentes,kg,1.5,0.45,3.0,7200.0,3240.0,5,24,1666,,True
+Detergente de vajilla,Media,7791290794078,Detergente Líquido Bioactive Limón Cif 750 Ml,Cif,Limpieza,Limpieza de Cocina,Detergentes,kg,1.8,0.75,2.5,8733.3,6550.0,4,24,1752,,True
+Detergente de vajilla,Ejecutiva,7790990003121,Detergente Ultra Marina Magistral 300 Ml,Magistral,Limpieza,Limpieza de Cocina,Detergentes,kg,2.2,0.3,7.0,10433.3,3130.0,5,24,814,,True
+Detergente de vajilla,Representativa,7791290794054,Detergente Líquido Bioactive Limón Cif 300 Ml,Cif,Limpieza,Limpieza de Cocina,Detergentes,kg,1.6,0.3,5.0,9000.0,2700.0,5,24,2656,,True
+Jabon liquido para ropa,Popular,7791720027622,Jabón Líquido para Ropa Carrefour Expert 1.5 Lt,Carrefour Expert,Limpieza,Limpieza de Ropa,Jabones liquidos,kg,2.0,1.5,1.5,3193.3,4790.0,4,21,663,,True
+Jabon liquido para ropa,Media,7791290796430,Jabón Liquido Limpieza Activo Doypack Skip 800 Ml,Skip,Limpieza,Limpieza de Ropa,Jabones liquidos,kg,3.0,0.8,4.0,14062.5,11250.0,5,24,1912,,True
+Jabon liquido para ropa,Ejecutiva,7790990002834,Jabón Líquido Concentrado para Diluir Platinum Ariel 500 Ml,Ariel,Limpieza,Limpieza de Ropa,Jabones liquidos,kg,4.0,0.5,8.0,25644.9,12822.5,5,24,2195,,True
+Jabon liquido para ropa,Representativa,7791290792838,Jabón Líquido para Diluir Bioenzimas Skip 500 Ml,Skip,Limpieza,Limpieza de Ropa,Jabones liquidos,kg,2.5,0.5,5.0,28380.0,14190.0,5,24,2776,,True
+Jabon en polvo,Popular,7790990002230,Jabón en Polvo para Ropa Regular Plus Duo Zorro 800 Gr,Zorro,Limpieza,Limpieza de Ropa,Jabón en Polvo,kg,1.5,0.8,2.0,3750.0,3000.0,4,24,686,,True
+Jabon en polvo,Media,7791290792050,Jabón en Polvo Lavado a Mano Ala 800 Gr,Ala,Limpieza,Limpieza de Ropa,Jabón en Polvo,kg,1.0,0.8,1.0,4862.5,3890.0,5,24,2110,,True
+Jabon en polvo,Ejecutiva,7791290796577,Jabón en Polvo mas Blancos Ala 600 Gr,Ala,Limpieza ,Limpieza de Ropa,Jabón en Polvo,kg,0.5,0.6,1.0,6483.3,3890.0,4,24,1438,,True
+Jabon en polvo,Representativa,7791290792142,Jabón en Polvo Matic Mañana de Sol Ala 800 Gr,Ala,Limpieza,Limpieza de Ropa,Jabón en Polvo,kg,1.2,0.8,1.5,4812.5,3850.0,5,24,2248,,True
+Jabon en pan,Popular,7794218106328,Jabón en Pan con Glicerina Argentino 200 Gr,Argentino,Limpieza,Limpieza de Ropa,Jabón en Pan,kg,0.6,0.2,3.0,5807.1,1161.4,5,22,1143,,True
+Jabon en pan,Media,7794218106854,Jabón Blanco Argentino 150 Gr,Argentino,Limpieza,Limpieza de Ropa,Jabón en Pan,kg,0.4,0.15,2.5,6666.7,1000.0,4,24,1151,,True
+Jabon en pan,Ejecutiva,7790990001813,Jabón para Ropa Pan Blanqueador Gran Federal 150 Gr,Gran Federal,Limpieza,Limpieza de Ropa,Jabón en Pan,kg,0.2,0.15,1.5,9666.7,1450.0,5,24,687,,True
+Jabon en pan,Representativa,7794218106854,Jabón Blanco Argentino 150 Gr,Argentino,Limpieza,Limpieza de Ropa,Jabón en Pan,kg,0.5,0.15,3.0,6666.7,1000.0,4,24,1151,,True
+Suavizante,Media,7791290793613,Suavizante para Ropa ConcentradoFiber Protect Doypack Comfort 1 Lt,Comfort,Limpieza,Limpieza de Ropa,Suavizante,kg,1.5,1.0,1.5,13920.0,13920.0,5,24,1702,,True
+Suavizante,Ejecutiva,7891150000971,Suavizante para Ropa Concentrado Cuidado Intesivo Comfor 500 Ml,Comfort,Limpieza,Limpieza de Ropa,Suavizante,kg,2.5,0.5,5.0,18126.0,9063.0,5,24,2504,,True
+Suavizante,Representativa,7791290793682,Suavizante para Ropa Clásuci Doypack Comfort 900 Ml,Comfort,Limpieza,Limpieza de Ropa,Suavizante,kg,1.2,0.9,1.5,5116.1,4604.5,5,24,2478,,True
+Lavandina,Popular,7798131250380,Lavandina Aditivada Naranja Héroe 1 Lt,Héroe,Limpieza,Lavandina,Lavandina Líquida,kg,3.0,1.0,3.0,1100.0,1100.0,5,22,1420,,True
+Lavandina,Media,7793253003722,Lavandina Lavanda Triple Poder Ayudín 2 Lt,Ayudín,Limpieza,Lavandina,Lavandina Líquida,kg,3.0,2.0,1.5,1820.0,3640.0,5,24,2380,,True
+Lavandina,Ejecutiva,7793253003784,Lavandina Anti-splash Tradicional Ayudín 2 Lt,Ayudín,Limpieza,Lavandina,Lavandina Líquida,kg,2.5,2.0,1.0,2156.0,4312.0,5,24,877,,True
+Lavandina,Representativa,7790132098459,Lavandina Concentrada Ayudín 1 Lt,Ayudín,Limpieza,Lavandina,Lavandina Líquida,kg,3.0,1.0,3.0,1307.5,1307.5,5,24,2480,,True
+Limpiador de pisos,Popular,7791130683777,Limpiador Líquido Pisos Flores Jardin Procenex 1.8 Lt,Procenex,Limpieza,Limpieza Piso y Muebles,Limpiadores Piso,kg,1.5,1.8,1.0,2383.3,4290.0,5,24,839,,True
+Limpiador de pisos,Media,7793253003548,Limpiador Líquido Primavera Poett 900 Ml,Poett,Limpieza,Limpieza Piso y Muebles,Limpiadores Piso,kg,2.0,0.9,2.0,2877.8,2590.0,5,24,2490,,True
+Limpiador de pisos,Ejecutiva,7791290793361,Limpiador de Piso Plastificado Recarga Doypack Cif 450 Ml,Cif,Limpieza,Limpieza Piso y Muebles,Limpiadores Piso,kg,2.5,0.45,6.0,7666.7,3450.0,4,21,1294,,True
+Limpiador de pisos,Representativa,7791130683661,Limpiador Líquido Marina Procenex 900 Cc,Procenex,Limpieza,Limpieza Piso y Muebles,Limpiadores Piso,kg,1.8,0.9,2.0,2900.0,2610.0,5,24,2467,,True
+Desinfectante de bano,Media,7791130963299,Limpiador Líquido Baño Doypack Harpic 420 Ml,Harpic,Limpieza,Limpieza de Baño,Desinfectantes de Baño,kg,0.7,0.42,1.5,7119.0,2990.0,4,24,1811,,True
+Desinfectante de bano,Ejecutiva,7791130681421,Limpiador para Inodoros Fragancia Citrus en Botella Harpic 500 Ml,Harpic,Limpieza,Limpieza de Baño,Desinfectantes de Baño,kg,1.0,0.5,2.0,12470.0,6235.0,4,24,810,,True
+Desinfectante de bano,Representativa,7791130681384,Quita Sarro Desinfectante en Gel Harpic 500 Ml,Harpic,Limpieza,Limpieza de Baño,Desinfectantes de Baño,kg,0.6,0.5,1.0,13180.0,6590.0,4,24,2371,,True
+Papel higienico,Popular,7790250016182,Papel Higiénico Fresh Hoja Simple con Aloe Vera Higienol 4 Un 30 Mt,Higienol,Limpieza,Papeles,Papel Higiénico,un,16.0,4.0,4.0,600.1,2400.5,5,24,2439,,True
+Papel higienico,Media,7790250015536,Papel Higiénico Doble Hoja Manzanilla Higienol 4 Un 30 Mt,Higienol,Limpieza,Papeles,Papel Higiénico,un,20.0,4.0,5.0,1017.4,4069.6,5,24,2255,,True
+Papel higienico,Ejecutiva,7790250015857,Papel Higiénico Hoja Simple Max Higienol 4 Un 80 Mt,Higienol,Limpieza,Papeles,Papel Higiénico,un,24.0,4.0,6.0,1567.1,6268.5,5,24,2261,,True
+Papel higienico,Representativa,7790250015840,Papel Higiénico Hoja Simple Max Higienol 4 Un 100 Mt,Higienol,Limpieza,Papeles,Papel Higiénico,un,18.0,4.0,4.0,1920.0,7680.0,5,24,2409,,True
+Rollo de cocina,Media,7793344009206,Rollo de Cocina 200 Paños Gigante Elegante 1 Un,Elegante,Limpieza,Papeles,Rollo de Cocina,un,3.0,1.0,3.0,2916.7,2916.7,5,24,841,,True
+Rollo de cocina,Ejecutiva,7790250057086,Rollo de Cocina Familiar 200 Paños Sussex 1 Un,Sussex,Limpieza,Papeles,Rollo de Cocina,un,5.0,1.0,5.0,3349.0,3349.0,5,24,2010,,True
+Rollo de cocina,Representativa,7790250056881,Rollos de Cocina Clásico 50 Paños Sussex 3 Un,Sussex,Limpieza,Papeles,Rollo de Cocina,un,2.0,3.0,0.5,977.0,2931.0,5,24,2422,,True
+Servilletas,Popular,7791828900018,Servilletas 32x30 Cm Blancas Carrefour 70 Un,Carrefour,Limpieza,Papeles,Servilletas,un,140.0,70.0,2.0,21.2,1485.0,4,21,678,,True
+Servilletas,Media,7790250057765,Servilletas Papel Hoja Simple Clásica 30X30 Sussex 80 Un,Sussex,Limpieza,Papeles,Servilletas,un,210.0,80.0,2.5,26.3,2105.0,5,24,2440,,True
+Servilletas,Ejecutiva,7791828000428,Servilletas Blancas Felpita 70 Un,Felpita,Limpieza,Papeles,Servilletas,un,280.0,70.0,4.0,29.8,2089.0,4,24,602,,True
+Servilletas,Representativa,7790250057765,Servilletas Papel Hoja Simple Clásica 30X30 Sussex 80 Un,Sussex,Limpieza,Papeles,Servilletas,un,175.0,80.0,2.0,26.3,2105.0,5,24,2440,,True
+Bolsas de residuo,Popular,7793253007102,Bolsas de Residuos 45X55 Cm de 15 Un Mortimer 1 Un,Sin Marca,Limpieza ,Limpieza de Cocina,Bolsas y Films,un,30.0,15.0,2.0,176.2,2643.4,4,24,1332,,True
+Bolsas de residuo,Media,7790117061836,Bolsas de Residuos Cierra Fácil Rollo 45x55 Cm Asurín 20 Un,Asurín,Limpieza,Limpieza de Cocina,Bolsas y Films,un,40.0,20.0,2.0,257.9,5157.0,5,24,848,,True
+Bolsas de residuo,Ejecutiva,7790117061843,Bolsas de Residuos Cierra Fácil Rollo 50x65 Cm Asurín 20 Un,Asurín,Limpieza,Limpieza de Cocina,Bolsas y Films,un,50.0,20.0,2.5,399.4,7988.0,5,24,864,,True
+Bolsas de residuo,Representativa,7790117000200,Bolsas de Residuos de 45 Cm 60 Cm en Rollo Asurin 30 Un,Asurín,Limpieza,Limpieza de Cocina,Bolsas y Films,un,35.0,30.0,1.0,186.7,5600.0,5,24,1489,,True
+Esponja / trapo,Popular,7794440003303,Esponja con Cuadraditos y Cuida Uñas Virulana 1 Un,Virulana,Limpieza,Accesorios de Limpieza,Esponjas y Guantes,un,2.0,1.0,2.0,817.9,817.9,5,24,2104,,True
+Esponja / trapo,Media,7794440000098,Esponja con Fibra Siempre Limpia Virulana 1 Un,Virulana,Limpieza,Accesorios de Limpieza,Esponjas y Guantes,un,3.0,1.0,3.0,1260.0,1260.0,4,24,1577,,True
+Esponja / trapo,Ejecutiva,7891040142712,Esponja con Fibra Naranja Cocina Cero Rayas Scotchbrite 1 Un,Scotch Brite,Limpieza,Accesorios de Limpieza,Esponjas y Guantes,un,4.0,1.0,4.0,2570.0,2570.0,4,21,1221,,True
+Esponja / trapo,Representativa,7794440003310,Esponja Pintada Lisa Virulana 1 Un,Virulana,Limpieza,Accesorios de Limpieza,Esponjas y Guantes,un,2.5,1.0,2.5,718.5,718.5,5,24,2119,,True
+Insecticida,Media,7790520997623,Mata Moscas y Mosquitos Aerosol Raid 370 Ml,Raid,Limpieza,Insecticidas,Moscas y Mosquitos,kg,0.36,0.37,1.0,19054.1,7050.0,5,23,2264,,True
+Insecticida,Ejecutiva,7790520025739,Mata Moscas Y Mosquitos 10 Horas Protección Raid Max 360 Ml,Raid,Limpieza,Insecticidas,Moscas y Mosquitos,kg,0.5,0.36,1.5,30805.6,11090.0,4,20,532,,True
+Insecticida,Representativa,7790520025869,Mata Mosca Mosquito Acuosa Aerosol Fuyi 360 Cc,Fuyi,Limpieza,Insecticidas,Moscas y Mosquitos,kg,0.3,0.36,1.0,14302.8,5149.0,5,24,2254,,True
+Shampoo,Popular,7791293045733,Shampoo Ceramidas Sedal 340 Ml,Sedal,Perfumería,Cuidado del Cabello,Shampoo,kg,0.8,0.34,2.5,17220.6,5855.0,5,24,2302,,True
+Shampoo,Media,7501056342999,Shampoo Dual Effect 2 en 1 Clear 400 Ml,Clear,Perfumería,Cuidado del Cabello,Shampoo,kg,1.0,0.4,2.5,27572.5,11029.0,4,24,863,,True
+Shampoo,Ejecutiva,7509552874136,Shampoo Hair Food Coco Fructis 300 Ml,Fructis,Perfumería,Cuidado del Cabello,Shampoo,kg,1.3,0.3,4.0,39050.0,11715.0,4,24,850,,True
+Shampoo,Representativa,7791293047102,Shampoo Reconstrucción Completa Dove 400 Ml,Dove,Perfumería,Cuidado del Cabello,Shampoo,kg,0.9,0.4,2.0,21793.8,8717.5,5,24,2782,,True
+Acondicionador,Popular,7790740001810,Acondicionador Óleo Coco Nutrición Intensa Esencia Plusbelle 700 Ml,Plusbelle,Perfumería,Cuidado del Cabello,Acondicionador,kg,0.4,0.7,0.5,7941.4,5559.0,5,24,613,,True
+Acondicionador,Media,7791293047492,Acondicionador Ritual de Reparación Dove 400 Cc,Dove,Perfumería,Cuidado del Cabello,Acondicionador,kg,0.8,0.4,2.0,25410.0,10164.0,5,24,1328,,True
+Acondicionador,Ejecutiva,7509552874129,Acondicionador Hair Food Coco Fructis 300 Ml,Fructis,Perfumería,Cuidado del Cabello,Acondicionador,kg,1.2,0.3,4.0,39050.0,11715.0,4,24,750,,True
+Acondicionador,Representativa,7791293047515,Acondicionador Oleo Nutrición Dove 400 Cc,Dove,Perfumería,Cuidado del Cabello,Acondicionador,kg,0.6,0.4,1.5,21793.8,8717.5,5,24,2785,,True
+Jabon de tocador,Popular,7891024034781,Jabón de Tocador con Karite Palmolive 85 Gr,Palmolive,Perfumería,Cuidado Corporal,Jabones,kg,0.5,0.085,6.0,11364.3,966.0,5,24,2232,,True
+Jabon de tocador,Media,7891150095700,Jabón de Tocador Piel Sensible x 3 Un Dove 270 Gr,Dove,Perfumería,Cuidado Corporal,Jabones,kg,0.6,0.27,2.0,27370.4,7390.0,5,24,832,,True
+Jabon de tocador,Ejecutiva,7791293046891,Jabón de Tocador Antibacterial Original Rexona 3 Un 90 Gr,Rexona,Perfumería,Cuidado Corporal,Jabones,kg,0.8,0.09,9.0,50555.6,4550.0,4,24,718,,True
+Jabon de tocador,Representativa,7791293051208,Jabón de Tocador Original Dove 90 Gr,Dove,Perfumería,Cuidado Corporal,Jabones,kg,0.55,0.09,6.0,29011.1,2611.0,5,24,2480,,True
+Pasta dental,Popular,7509546687292,Crema Dental Doble Protección Odol 90 Gr,Odol,Perfumería,Cuidado Oral,Crema Dental,kg,0.25,0.09,3.0,32563.5,2930.7,5,24,2305,,True
+Pasta dental,Media,7891024134429,Crema Dental Sensitive Blanqueador Colgate 100 Gr,Colgate,Perfumería,Cuidado Oral,Crema Dental,kg,0.3,0.1,3.0,58914.3,5891.4,4,24,2345,,True
+Pasta dental,Ejecutiva,7891024123027,Crema Dental Luminous White Colgate 90 Gr,Colgate,Perfumería,Cuidado Oral,Crema Dental,kg,0.36,0.09,4.0,83674.6,7530.7,5,24,2062,,True
+Pasta dental,Representativa,7793100111891,Crema Dental Ultra Blanco Colgate 90 Gr,Colgate,Perfumería,Cuidado Oral,Crema Dental,kg,0.28,0.09,3.0,34566.7,3111.0,5,24,2490,,True
+Cepillo dental,Popular,7702010631405,Cepillo Dental Mediano Twister Colgate 3 Un,Colgate,Perfumería,Cuidado Oral,Cepillos Dentales,un,1.0,3.0,0.5,2683.3,8050.0,4,23,1624,,True
+Cepillo dental,Media,7891024078174,Cepillo Dental Bamboo Colgate 2 Un,Colgate,Perfumería,Cuidado Oral,Cepillos Dentales,un,1.5,2.0,1.0,3475.0,6950.0,5,24,1384,,True
+Cepillo dental,Ejecutiva,7891024116128,Cepillo Dental Colgate 1 Un,Colgate,Perfumería,Cuidado Oral,Cepillos Dentales,un,2.0,1.0,2.0,7012.9,7012.9,5,24,846,,True
+Cepillo dental,Representativa,5900273001566,Cepillo Dental Colgate Extra Clean 1 Un,Colgate,Perfumería,Cuidado Oral,Cepillos Dentales,un,1.2,1.0,1.0,2882.9,2882.9,5,24,2333,,True
+Desodorante,Popular,7791293050607,Desodorante Hombre Musk en Aerosol Axe 230 Ml,Axe,Perfumería,Cuidado Corporal,Desodorante Hombre,kg,0.3,0.23,1.5,24473.9,5629.0,5,24,2077,,True
+Desodorante,Media,4005808979677,Desodorante Antitranspirante Hombre Nivea Dry Impact 150 Ml,Nivea,Perfumería,Cuidado Corporal,Desodorante Hombre,kg,0.4,0.15,2.5,32753.3,4913.0,5,24,2492,,True
+Desodorante,Ejecutiva,4005900036759,Desodorante Antitranspirante Hombre Roll On Nivea Power Invisible Black & White 50 Cc,Nivea,Perfumería,Cuidado Corporal,Desodorante Hombre,kg,0.5,0.05,10.0,62180.0,3109.0,4,24,2702,,True
+Desodorante,Representativa,7791293043791,Desodorante Aerosol Marine Axe 150 Cc,Axe,Perfumería,Cuidado Corporal,Desodorante Hombre,kg,0.35,0.15,2.5,31366.7,4705.0,5,24,2773,,True
+Afeitado,Popular,7500435169646,Máquina de Afeitar Ultra Grip 2 Blister 3 Un Gillette 1 Un,Gillette,Perfumería,Cuidado Facial,Afeitado,un,2.0,3.0,0.5,1800.0,5400.0,4,21,1575,,True
+Afeitado,Media,7702018983872,Rasuradora Desechable Men Prestobarba3 Ice Gillette 2 Un,Gillette,Perfumería,Cuidado Facial,Afeitado,un,3.0,2.0,1.5,4315.0,8630.0,5,24,1674,,True
+Afeitado,Ejecutiva,7500435225366,Repuesto Máquina Afeitar Carbono Gillette Mach 3 2 Un,Gillette,Perfumería,Cuidado Facial,Afeitado,un,4.0,2.0,2.0,6145.0,12290.0,5,24,2057,,True
+Afeitado,Representativa,7702018037865,Repuesto Rasuradora Prestobarba Mach3 Sensitive 2 Un,Gillette,Perfumería,Cuidado Facial,Afeitado,un,2.5,2.0,1.0,6150.0,12300.0,4,24,2151,,True
+Crema corporal,Media,7794640173066,Crema Corporal Rosa Plus Hinds 125 Ml,Hinds,Perfumería,Cuidado Corporal,Cremas Corporales,kg,0.4,0.125,3.0,27120.0,3390.0,4,24,1156,,True
+Crema corporal,Ejecutiva,7501056326142,Crema Humectante Pond's Pote 100 Gr,Pond's,Perfumería,Cuidado Corporal,Cremas Corporales,kg,0.8,0.1,8.0,50500.0,5050.0,5,24,643,,True
+Crema corporal,Representativa,4005808319695,Crema Corporal Milk Nutritiva Piel Extra Seca Nivea Body 400 Ml,Nivea,Perfumería,Cuidado Corporal,Cremas Corporales,kg,0.3,0.4,0.5,30482.5,12193.0,5,24,2360,,True
+Algodon / hisopos,Popular,7790064002029,Algodón Pompones Estrella 50 Un,Estrella,Perfumería,Cuidado Corporal,Algodones e Hisopos,un,50.0,50.0,1.0,71.2,3560.0,5,24,1977,,True
+Algodon / hisopos,Media,7790064002029,Algodón Pompones Estrella 50 Un,Estrella,Perfumería,Cuidado Corporal,Algodones e Hisopos,un,75.0,50.0,1.5,71.2,3560.0,5,24,1977,,True
+Algodon / hisopos,Ejecutiva,7790064002029,Algodón Pompones Estrella 50 Un,Estrella,Perfumería,Cuidado Corporal,Algodones e Hisopos,un,100.0,50.0,2.0,71.2,3560.0,5,24,1977,,True
+Algodon / hisopos,Representativa,7790064002029,Algodón Pompones Estrella 50 Un,Estrella,Perfumería,Cuidado Corporal,Algodones e Hisopos,un,60.0,50.0,1.0,71.2,3560.0,5,24,1977,,True
+Toallitas femeninas,Popular,7790770602070,Toallas Femeninas con Alas Normal Nuevo Centro Líquido Calipso 8 Un,Calipso,Perfumería,Protección Femenina,Toallitas Higiénicas,un,16.0,8.0,2.0,162.5,1300.0,5,24,642,,True
+Toallitas femeninas,Media,7790010002639,Toallas Femeninas con Alas Adapt Plus Siempre Libre 8 Un,Siempre Libre,Perfumería,Protección Femenina,Toallitas Higiénicas,un,20.0,8.0,2.5,410.5,3284.0,5,24,854,,True
+Toallitas femeninas,Ejecutiva,7500435229487,Toallas Femeninas con Alas Noches Tranquilas Seca Always 8 Un,Always,Perfumería,Protección Femenina,Toallitas Higiénicas,un,24.0,8.0,3.0,725.8,5806.0,5,24,1025,,True
+Toallitas femeninas,Representativa,7790010002769,Toallas Femeninas con Alas Ultrafina Suave Siempre Libre 8 Un,Siempre Libre,Perfumería,Protección Femenina,Toallitas Higiénicas,un,18.0,8.0,2.0,311.1,2489.0,5,24,2760,,True
+Panales,Media,7798311610355,Panales Talle Xg Deluxe de 30 Un Toddler 1 Un,Toddler,Bebés y mamás,Cuidado del Bebé,Cambio de Pañales,un,90.0,30.0,3.0,701.0,21030.0,4,24,1236,,True
+Panales,Ejecutiva,7500435237598,Pañal G Deluxe Protection Pampers 44 Un,Pampers,Bebés y mamás,Cuidado del Bebé,Cambio de Pañales,un,120.0,44.0,2.5,1053.9,46370.0,5,24,1806,,True
+Panales,Representativa,7500435228763,Pañal Talle XG Baby-dry Hipoalergénico Pampers 36 Un,Pampers,Bebés y mamás,Cuidado del Bebé,Cambio de Pañales,un,80.0,36.0,2.0,986.1,35500.0,5,24,2069,,True
+Toallitas humedas,Media,7798311610317,Toallas Húmedas con Aloe Vera Toddler 48 Un,Toddler,Bebés y mamás,Cuidado del Bebé,Cambio de Pañales,un,240.0,48.0,5.0,97.1,4660.0,4,24,1474,,True
+Toallitas humedas,Ejecutiva,7891010251024,Toallitas Húmedas Johnsons 44 Un,Johnson's,Bebés y mamás,Cuidado del Bebé,Cambio de Pañales,un,320.0,44.0,7.0,159.8,7030.0,4,24,1818,,True
+Toallitas humedas,Representativa,7794626011023,Toallitas Húmedas Clásico y Cotidiano Huggies 48 Un,Huggies,Bebés y mamás,Cuidado del Bebé,Cambio de Pañales,un,200.0,48.0,4.0,103.5,4969.0,5,24,2475,,True
+Alimento para perro,Popular,7791416001240,Alimento para Perros Adultos Carne Raza 1.5 Kg,Raza,Mascotas,Alimentos para Perros,Alimentos para Perros,kg,3.0,1.5,2.0,2746.0,4119.0,5,24,1228,,True
+Alimento para perro,Media,7797453001519,Alimento para Perros Cachorros Pedigree 3 Kg,Pedigree,Mascotas,Alimentos para Perros,Alimentos para Perros,kg,6.0,3.0,2.0,4516.7,13550.0,4,24,815,,True
+Alimento para perro,Ejecutiva,8445290944184,Alimentos Animales Cachorro Mediano Grande Dog Chow 1.5 Kg,Dog Chow,Mascotas,Alimentos para Perros,Alimentos para Perros,kg,9.0,1.5,6.0,5546.7,8320.0,4,23,1691,,True
+Alimento para perro,Representativa,8445290977373,Alimento para Perros Adultos Medianos a Grandes Bolsa Dog Chow 1.5 Kg,Dog Chow,Mascotas,Alimentos para Perros,Alimentos para Perros,kg,4.0,1.5,2.5,3866.7,5800.0,4,24,2339,,True
+Alimento para gato,Media,7797453972345,Alimento para Gatos Carne Whiskas 1 Kg,Whiskas,Mascotas,Alimentos para Gatos,Alimentos para Gatos,kg,3.0,1.0,3.0,7490.0,7490.0,4,24,861,,True
+Alimento para gato,Ejecutiva,8445290069313,Alimento para Gatitos Carne Pescado y Carne Cat Chow 1 Kg,Cat Chow,Mascotas,Alimentos para Gatos,Alimentos para Gatos,kg,4.5,1.0,4.0,9290.0,9290.0,4,24,2127,,True
+Alimento para gato,Representativa,8445290057433,Alimento para Gatos Adultos Pescado y Pollo Cat Chow 1 Kg,Cat Chow,Mascotas,Alimentos para Gatos,Alimentos para Gatos,kg,2.0,1.0,2.0,8440.0,8440.0,5,24,2397,,True
+Toallas higienicas,Femenina,7790010002769,Toallas Femeninas con Alas Ultrafina Suave Siempre Libre 8 Un,Siempre Libre,Perfumería,Protección Femenina,Toallitas Higiénicas,un,32.0,8.0,4.0,311.1,2489.0,5,24,2760,,True
+Protectores diarios,Femenina,7790010002806,Protectores Diarios Protección Largos Carefree 60 Un,Carefree,Perfumería,Protección Femenina,Protectores Diarios,un,60.0,60.0,1.0,182.0,10920.0,5,24,2777,,True
+Tampones,Femenina,7891010254773,Tampones Medio O.B. 8 Un,O.B.,Perfumería,Protección Femenina,Tampones,un,16.0,8.0,2.0,516.2,4130.0,4,24,2382,,True
+Depilacion,Femenina,8002990292139,Crema Depilatoria Piel Sensible Silck & Fresh Veet Caja 100 Ml,Veet,Perfumería,Cuidado Corporal,Depilación,un,1.0,1.0,1.0,10150.0,10150.0,5,24,1938,,True
+Rasuradora femenina,Femenina,7702018072392,Rasuradora Desechable Simply Venus Gillette 2 Un,Gillette,Perfumería,Cuidado Facial,Afeitado,un,2.0,2.0,1.0,3656.5,7313.0,5,24,2512,,True
+Shampoo,Femenina,7791293047102,Shampoo Reconstrucción Completa Dove 400 Ml,Dove,Perfumería,Cuidado del Cabello,Shampoo,kg,0.6,0.4,1.5,21793.8,8717.5,5,24,2782,,True
+Acondicionador,Femenina,7791293047515,Acondicionador Oleo Nutrición Dove 400 Cc,Dove,Perfumería,Cuidado del Cabello,Acondicionador,kg,0.6,0.4,1.5,21793.8,8717.5,5,24,2785,,True
+Coloracion,Femenina,7509552924121,Tintura Coloración Permanente 50 Castaño Nutrisse 1 Un,Nutrisse,Perfumería,Cuidado del Cabello,Coloración,un,1.0,1.0,1.0,17293.6,17293.6,5,24,1817,,True
+Crema corporal,Femenina,4005808319695,Crema Corporal Milk Nutritiva Piel Extra Seca Nivea Body 400 Ml,Nivea,Perfumería,Cuidado Corporal,Cremas Corporales,kg,0.4,0.4,1.0,30482.5,12193.0,5,24,2360,,True
+Desodorante mujer,Femenina,7791293049557,Desodorante Aerosol Women Nutrivive Rexona 150 Ml,Rexona,Perfumería,Cuidado Corporal,Desodorante Mujer,kg,0.35,0.15,2.5,33126.7,4969.0,5,24,2703,,True
+Limpieza facial,Femenina,7509552455557,Desmaquillante Agua Micelar Todo en 1 Botella Garnier 400 Ml,Garnier,Perfumería,Cuidado Facial,Limpieza Facial,un,1.0,1.0,1.0,21990.0,21990.0,5,24,1670,,True
+Hidratante facial,Femenina,7798140257554,Crema Facial Humectante Teatrical 100 Gr,Teatrical,Perfumería,Cuidado Facial,Hidratantes,un,1.0,1.0,1.0,4257.5,4257.5,5,24,1811,,True
+Algodon / discos,Femenina,7790064000261,Algodón Estrella Clásico 75 Gr,Estrella,Perfumería,Cuidado Corporal,Algodones e Hisopos,un,80.0,1.0,80.0,1420.0,1420.0,5,24,2762,,True
+Jabon de tocador,Femenina,7791293051208,Jabón de Tocador Original Dove 90 Gr,Dove,Perfumería,Cuidado Corporal,Jabones,kg,0.4,0.09,4.0,29011.1,2611.0,5,24,2480,,True
+Heladera,Tecnologica,7797102526875,Heladera con Freezer Cíclica 2 Fríos Modelo HDR280F50B Drean 1 Un,Drean,Heladeras y Freezers,Heladeras,Heladeras con freezer,un,1.0,1.0,1.0,749000.0,749000.0,4,24,312,,True
+Lavarropas,Tecnologica,8806094365573,Lavarropas Frontal Inventer WW65A4000EEU Blanco 6.5 Kg Samsung 1 Un,Samsung,Lavado,Lavarropas,Lavarropas carga frontal,un,1.0,1.0,1.0,865874.0,865874.0,4,24,254,,True
+Cocina,Tecnologica,7502271278278,Cocina Multigas Cd5602Ab0 Drean 1 Un,Drean,Cocinas y Hornos,Cocinas,Cocinas a Gas,un,1.0,1.0,1.0,699999.0,699999.0,4,24,247,,True
+Aire acondicionado,Tecnologica,7796962987321,Aire Acondicionado Philco Split 3200W Frio Calor Cl. A Phs32Ha4Cn Philco,Philco,CLIMATIZACIÓN,Aires Acondicionados,AA Split,un,1.0,1.0,1.0,799999.0,799999.0,5,24,296,,True
+Televisor,Tecnologica,8718863045688,"Smart Tv 43"" Full Hd 43Pfd6910/77 Philips 1 Un",Philips,Tv Audio y Video,Tv,TV,un,1.0,1.0,1.0,484774.9,484774.9,4,24,410,,True
+Notebook,Tecnologica,198990785363,"Pc/Notebook Hp Note 15-Fc0235La R3-7320U Amd 15""""""""8/512Gb",Hp,Informática,Computadoras,Notebooks,un,1.0,1.0,1.0,1049999.0,1049999.0,3,19,237,,True
+Celular,Tecnologica,6932554416638,Celular 14C 4Gb/128Gb Starry Blue Azul Redmi Xiaomi 1 Un,Xiaomi,Informática,Celulares,Celulares,un,1.0,1.0,1.0,369000.0,369000.0,4,24,354,,True
+Microondas,Tecnologica,7796885495194,Hornos Microondas 20Lt Blanco 700 W Bgh 1 Un,Bgh,Cocinas y Hornos,Microondas,Microondas,un,1.0,1.0,1.0,244999.0,244999.0,5,24,322,,True
+Licuadora,Tecnologica,34264476455,Licuadora De Mano Oster 800W Fpsthb2802 354 Negro,S/D,Pequeños Electrodomésticos,Licuadoras,Licuadora de Mano / Mixer,un,1.0,1.0,1.0,145999.0,145999.0,4,23,128,,True
+Pava electrica,Tecnologica,7798081287429,Jarra Electrica Smart Life Mod Slek1714Wpn Blanca,S/D,Pequeños Electrodomésticos,Electrodomésticos de Cocina,Pava,un,1.0,1.0,1.0,54999.0,54999.0,4,24,151,,True
+Plancha,Tecnologica,53891142960,Plancha A Vapor Oster Gcstbs5905,S/D,Pequeños Electrodomésticos,Electrodomésticos de Hogar,Planchas,un,1.0,1.0,1.0,87427.6,87427.6,4,24,173,,True
+Parlante bluetooth,Tecnologica,7797026970037,Parlante Bt Stromberg Boombox Force,Stromberg,Informática,Parlantes,Parlantes,un,1.0,1.0,1.0,199999.0,199999.0,5,24,152,,True
+Auriculares,Tecnologica,7798137725820,Auricular Ear Btwins 49 Noganet 1 Un,Noganet,Informática,Auriculares,Auriculares,un,1.0,1.0,1.0,24999.0,24999.0,4,24,163,,True
+Calefactor,Tecnologica,7793862008910,Convector Liliana Convectory Plus Mod Cfb17 1 Un,Liliana,Climatización,Calefacción,Calefacción eléctrica,un,1.0,1.0,1.0,129999.0,129999.0,4,22,215,,True

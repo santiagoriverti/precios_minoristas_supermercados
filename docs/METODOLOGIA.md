@@ -1,6 +1,6 @@
 # Metodología — ICR (Índice de Consumo Representativo)
 
-**Última actualización:** 2026-09-04 (nb07 v5.1: motor del informe semanal — 6 canastas, semana que cierra el jueves, índice encadenado de muestra apareada, nacional ponderado por población, 196 empaquetados + 59 tipos de frescos)
+**Última actualización:** 2026-09-07 (nb07 v5.2: filtro de régimen en frescos [BUG-24], tripwire Alertas_precio_item; canastas v5: escalonamiento por marca, cantidades físicas, ancla CBA INDEC hogar tipo 2 — 303 empaquetados + 59 tipos de frescos)
 **Período de referencia:** enero 2024 – abril 2026
 
 ---
@@ -403,18 +403,24 @@ y **cadena**. Es el insumo del informe semanal del equipo de economistas.
 La metodología de índice, agregación y trazabilidad está en **§10.7** (estado vigente).
 
 ### 10.1. Mapeo de canastas
-| Columna | Canasta | Emp. | Frescos | Total | Origen |
-|---|---|---:|---:|---:|---|
-| `cantidad_01` | Popular | 66 | 34 | 100 | Q2 · P25-55 del proyecto de índices |
-| `cantidad_02` | Media | 100 | 58 | 158 | Q3-Q4 · P40-70 |
-| `cantidad_03` | Ejecutiva | 104 | 56 | 160 | Q5 · P55-85 |
-| `cantidad_04` | Tecnológica | 14 | — | 14 | Bundle de durables |
-| `cantidad_05` | Representativa | 108 | 59 | 167 | Familia tipo de 4 (ref. CBA INDEC) |
-| `cantidad_06` | Femenina | 16 | — | 16 | Higiene menstrual, depilación, cuidado personal |
+Vigente desde **v5 (2026-09-07)**, ver §10.9:
+
+| Columna | Canasta | Emp. | Frescos | Tier de producto | Percentil de precio unitario |
+|---|---|---:|---:|---|---|
+| `cantidad_01` | Popular | 60 | 32 | primer precio / segunda marca | P10 |
+| `cantidad_02` | Media | 78 | 57 | marca líder | P45 |
+| `cantidad_03` | Ejecutiva | 78 | 59 | premium | P80 |
+| `cantidad_04` | Tecnológica | 14 | — | producto modal | — |
+| `cantidad_05` | Representativa | 78 | 59 | producto modal (mayor cobertura) | — |
+| `cantidad_06` | Femenina | 14 | — | marca líder | — |
 
 Se leen de la hoja `Productos unicos` del Excel `canasta_representativa_*.xlsx`.
-**196 EANs empaquetados únicos**; las cantidades se cargan con
-`docs/canastas_alternativas/cargar_canastas_v4.py`.
+**303 EANs empaquetados únicos**; las cantidades las genera
+`docs/canastas_alternativas/construir_canastas_v5.py` y las carga `cargar_canastas_v5.py`.
+
+La Representativa **no escalona a propósito**: usa el producto modal (el de mayor cobertura
+real), que es la definición que la hace comparable con la referencia del INDEC. Las otras tres
+sí escalonan, con monotonicidad exigida Popular ≤ Media ≤ Ejecutiva en precio unitario.
 
 Tecnológica y Femenina están en `CANASTAS_SIN_FRESCOS` (no reciben frescos) y en
 `RUBRO_DESDE_CATEGORIA` (su desglose usa `categoria` en vez de `rubro`, porque en la hoja todos
@@ -619,6 +625,143 @@ Además:
 (−8%) aparecen **también en Centro/Pampeana con 1.700 sucursales**, así que no son ruido de
 muestra chica: son repricings reales y anchos del panel de carne. Corregirlos sería borrar
 información verdadera.
+
+### 10.9. nb07 v5.2 (2026-09-07) — régimen de precio en frescos y rediseño de canastas
+
+Dos problemas independientes, diagnosticados sobre la corrida 2026-08-27.
+
+#### A. Los saltos de la serie eran cambios de régimen de precio, no inflación
+
+Descomponiendo las cuatro semanas con saltos, casi todo venía del rubro **Verduras**, y dentro
+de él de un solo ítem, **Papa**:
+
+| Semana | Contribución de Verduras | Resto |
+|---|---:|---:|
+| 2026-05-21 | **+7,27 pp** | +1,01 pp |
+| 2026-07-02 | **−7,22 pp** | +2,07 pp |
+| 2026-07-23 | +1,30 pp | +1,96 pp |
+| 2026-07-30 | **+5,02 pp** | −0,49 pp |
+
+El precio nacional de Papa era una **onda cuadrada entre dos regímenes**:
+`2.318 → 14.714 → 2.561 → 14.855`, un factor de 6,8. El nivel de agosto ($15.015/kg) delataba
+el problema por sí solo: la papa no vale 7 veces la cebolla ($2.688/kg).
+
+**Causa raíz, en tres capas encadenadas.**
+
+1. **El "tipo" mezcla bienes distintos.** Verificado sobre los precios por EAN de la hoja
+   `Productos unicos`: espinaca suelta $2.171/kg contra espinaca lavada y sanitizada en bolsa
+   de 300 gr $21.633/kg. La diferencia de 10× es *real* — son productos distintos —, pero el
+   pipeline los promediaba como si fueran el mismo bien.
+
+2. **El filtro de outliers se quedaba con el régimen caro.** La banda
+   `[mediana/2,5 , mediana×2,5]` calculada *dentro de cada sucursal* falla de la peor forma
+   sobre una distribución bimodal:
+
+   ```
+   sucursal con {2.100 , 15.000}  -> mediana 8.550 -> banda [3.420 , 21.375]
+                                  -> DESCARTA el 2.100 correcto y CONSERVA el 15.000
+
+   sucursal con {2.100 , 2.100 , 15.000} -> mediana 2.100 -> banda [840 , 5.250] -> correcto
+   ```
+
+   El resultado lo decide qué régimen tenga mayoría en esa sucursal, y **cuando hay empate gana
+   el caro**: sesgo sistemático al alza, no ruido simétrico. Que entre o salga una variante da
+   vuelta la sucursal entera; agregado sobre 1.900 sucursales, sale la onda cuadrada.
+
+3. **Errores de carga que sobrevivían.** `Papa Negra Sc 1 Kg` cotizaba **$95,00** en **983
+   sucursales**. Dentro del tipo Papa el rango iba de $95 a $7.990: factor 84.
+
+   Hueco adicional: el maestro SEPA (27.287 EANs) entra sin columna `categoria`, y el filtro es
+   `categoria in {...} OR categoria == ''`. Es decir, esos 27k EANs **salteaban el filtro de
+   categoría por completo** — alcanzaba con pegar en el regex.
+
+**Solución — `FRESCO_REGIMEN_K = 3.0`.** Antes de tocar la sucursal se calcula la **referencia
+nacional del tipo para el mes completo** (mediana sobre todas las observaciones del país) y se
+descarta lo que quede fuera de `[ref/K, ref×K]`. Recién después corre el filtro intra-sucursal,
+que queda como segunda línea.
+
+Por qué funciona: la referencia se estima sobre millones de observaciones, así que no se da
+vuelta porque una sucursal cambie el surtido; y se recalcula cada mes, así que acompaña a la
+inflación sola sin necesidad de umbrales absolutos que envejecen.
+
+Validación con un panel sintético de 1.900 sucursales que reproduce el modo de falla:
+
+| | S1 | S2 | salto |
+|---|---:|---:|---:|
+| Código anterior | 2.352 | 15.016 | **+538,4%** |
+| Con filtro de régimen | 2.352 | 2.318 | **−1,5%** |
+
+El +538% sintético reproduce el +535% real observado en Papa el 2026-05-21.
+
+Complementos:
+
+- **`gmin` por tipo** = 1000 g en Papa, Lechuga, Acelga y Espinaca, donde hay evidencia directa
+  de una presentación sub-kilo procesada contaminando el tipo. **No** se subió en Frutilla ni
+  Choclo: se venden en bandeja, y un mínimo global de 1 kg los borraría del panel.
+- **Hoja nueva `Alertas_precio_item`** (`ALERTA_SALTO_ITEM = 0.35`): todo salto semanal del
+  precio nacional de un ítem mayor a 35% queda listado con precio antes y después. Es el
+  tripwire — se arregló la causa y además se puso el detector, para que esta clase de bug no
+  vuelva a pasar inadvertida. Sale también impresa en el "REPORTE PARA CLAUDE".
+
+El cambio de `FRESCO_REGIMEN_K` entra en la clave del caché, así que la primera corrida vuelve
+a leer todo el histórico (~57 min).
+
+#### B. Las canastas eran la misma canasta a distinta escala
+
+Medido en **gasto** sobre la corrida 2026-08-27: Media compartía el **100,0%** de su gasto con
+Representativa (estaba contenida), el 82,6% con Ejecutiva, y el **91%** de los tipos frescos de
+Popular eran los mismos que los de Ejecutiva. Las correlaciones de variaciones semanales
+(Media-Ejecutiva 0,962; Media-Representativa 0,951) no eran un hallazgo: eran una identidad
+contable. Un índice construido sobre los mismos EANs no puede mostrar inflación distinta por
+nivel socioeconómico.
+
+**Rediseño v5** — tres decisiones, implementadas en
+`docs/canastas_alternativas/construir_canastas_v5.py` (constructor reproducible y auditable):
+
+1. **Necesidades, no productos.** Las canastas cubren el mismo conjunto de necesidades, pero
+   cada estrato elige su versión: Popular primer precio, Media marca líder, Ejecutiva premium.
+   El tier se decide por percentil del precio **por unidad comparable** ($/kg, $/L, $/unidad de
+   uso), nunca por el precio del envase. Solapamiento de EANs entre estratos: **≤6,4%**.
+   Escalonamiento logrado: Ejecutiva = **2,27×** Popular en precio unitario (mediana).
+
+2. **Cantidades físicas, no unidades.** v4 declaraba unidades/mes sin mirar el envase, así que
+   900 ml y 1,5 L contaban igual. Ahora se declara la cantidad física y el loader calcula
+   `cantidad = cantidad_física / presentación`.
+
+3. **Ancladas a la CBA del INDEC**, hogar tipo 2 (2 adultos + 2 niños = 3,09 adultos
+   equivalentes). Fuente: INDEC, *Canasta básica alimentaria y canasta básica total. Preguntas
+   frecuentes*, Notas al pie N.º 3, junio 2020, cuadro de composición para el adulto
+   equivalente (p. 13) y ejemplo de hogar de 4 integrantes (p. 9). Corrigió dos faltantes
+   grandes: **pan 8 kg/mes contra 20,9 de la CBA, y papa 8 contra 20,1** — los dos
+   carbohidratos base estaban a un tercio de la referencia oficial.
+
+En frescos el escalonamiento no puede ser por marca (se cotizan por tipo de balanza), así que
+es **por corte**: Popular carga en los cortes de olla (falda, puchero, osobuco, paleta,
+picada), Ejecutiva en los caros (lomo, bife de chorizo, nalga).
+
+**Dos controles que la auditoría del constructor obligó a agregar**, porque la primera versión
+fallaba en silencio: (a) **monotonicidad** Popular ≤ Media ≤ Ejecutiva en precio unitario
+—sin ella, como cada canasta tiene su propio pool de cobertura, el percentil devolvía un
+Ejecutiva más barato que el Media (atún, bolsas de residuo); hoy 0 violaciones en 78
+necesidades—; (b) **cobertura declarada**: un producto que no cumple el piso de su canasta
+queda marcado `confiable=False` en vez de pasar callado (la primera versión metió un té con 98
+sucursales en Media, cuyo piso son 800); hoy 4 de 322.
+
+**Advertencia sobre lo que esto puede y no puede lograr.** El escalonamiento por marca separa
+bien los *niveles* de precio, pero no va a producir tasas de inflación muy distintas entre
+estratos: dentro de una misma necesidad las marcas se mueven casi en paralelo. Aceite de
+girasol 900 ml en agosto de 2026: Día $3.645 · Cañuelas $4.115 · Cocinero $4.339 · Natura
+$4.637 — 27% de rango en nivel, trayectorias parecidas. La diferencia real de **inflación**
+entre estratos viene de la **composición entre rubros** (efecto Engel). Eso ya se veía en v4
+pese al anidamiento: Popular acumulaba +186,5% contra Media +171,8% entre 2024-01 y 2026-08,
+porque pesa más Carne (17,8% contra 12,3%) y Verduras (12,7% contra 9,5%). v5 conserva y
+acentúa esa diferencia, que es la que tiene contenido económico.
+
+#### C. Defecto abierto: la desagregación regional de la Tecnológica es degenerada
+
+En la corrida 2026-08-27 las cinco regiones informan **el mismo valor** ($5.853.138). Son 97
+sucursales de una sola cadena (ChangoMas / Mi ChangoMas). Es un índice de una cadena, no
+nacional, y la apertura por región no debería publicarse tal como está.
 
 
 ## 11. Notebook 02 — Excel de econometría (`datos_econometria`)

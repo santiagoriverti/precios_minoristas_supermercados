@@ -1,6 +1,6 @@
 # Bugs Pendientes y Mejoras
 
-Última actualización: 2026-09-04 — nb07 v5.1: robustez del nacional (mínimo de sucursales por provincia, winsorización, cobertura mínima del índice, semana incompleta)
+Última actualización: 2026-09-07 — nb07 v5.2: filtro de régimen en frescos (BUG-24), tripwire de saltos y rediseño de canastas v5
 
 ---
 
@@ -10,7 +10,111 @@
 
 ---
 
+## 🟡 Defectos abiertos
+
+### La desagregación regional de la Tecnológica es degenerada
+
+En la corrida 2026-08-27 las **cinco regiones informan el mismo valor**, $5.853.138. La canasta
+tiene 97 sucursales de **una sola cadena** (ChangoMas / Mi ChangoMas), así que el "índice
+provincial controlando por cadena" no tiene sobre qué controlar y devuelve 100 en todas partes.
+
+Es un índice de una cadena, no nacional. **No publicar la apertura por región ni por provincia
+de la Tecnológica** hasta que haya al menos dos cadenas con cobertura de durables. Opciones:
+(a) suprimir esas hojas para esa canasta; (b) reportarla solo a nivel nacional con una nota;
+(c) buscar durables en otras cadenas bajando `COBERTURA['Tecnologica']`.
+
+---
+
 ## 🟢 Cambios y fixes 2026-09
+
+### 🔴 BUG-24 — El precio de los frescos saltaba entre dos regímenes (2026-09-07) ✅ Resuelto
+
+**Síntoma reportado**: las canastas Popular/Media/Ejecutiva/Representativa daban un salto
+grande después del 2026-04-30, caían abruptamente y volvían a saltar después del 2026-07-16.
+
+**Qué era**: no era inflación. Descomponiendo por rubro, casi todo venía de **Verduras**
+(+7,27 pp el 2026-05-21, −7,22 pp el 2026-07-02, +5,02 pp el 2026-07-30) y dentro de él de un
+solo ítem, **Papa**, cuyo precio nacional era una onda cuadrada:
+
+```
+2026-04-30    2.193        2026-07-02     2.561
+2026-05-14    2.318        2026-07-16     3.049
+2026-05-21   14.714  x6,8  2026-07-23     5.448
+2026-06-25   16.266        2026-07-30    14.855  x2,7
+```
+
+El nivel de agosto ($15.015/kg) ya lo delataba: la papa no vale 7 veces la cebolla ($2.688/kg).
+Mismo patrón en Espinaca (×7,6), Ananá (×6,4), Pepino (×5,9), Choclo, Palta, Acelga.
+
+**Causa raíz — tres capas encadenadas:**
+
+1. **El "tipo" mezclaba bienes distintos.** Verificado sobre `Productos unicos`: espinaca
+   suelta $2.171/kg contra espinaca lavada y sanitizada en bolsa de 300 gr $21.633/kg. La
+   diferencia es real (son productos distintos), pero el pipeline los promediaba.
+
+2. **El filtro de outliers se quedaba con el régimen caro.** La banda `[med/2,5 , med×2,5]`
+   *dentro de la sucursal* sobre una distribución bimodal:
+   con `{2.100, 15.000}` la mediana da 8.550, la banda queda `[3.420, 21.375]` y **descarta el
+   precio correcto conservando el caro**. Con `{2.100, 2.100, 15.000}` funciona bien. Lo decide
+   qué régimen tenga mayoría, y **con empate gana el caro** → sesgo sistemático al alza. Una
+   variante que entra o sale da vuelta la sucursal entera.
+
+3. **Errores de carga que sobrevivían.** `Papa Negra Sc 1 Kg` a **$95,00 en 983 sucursales**.
+   Dentro del tipo Papa el rango iba de $95 a $7.990 (factor 84).
+   Hueco adicional: los 27.287 EANs del maestro SEPA entran con `categoria = ''` y el filtro es
+   `categoria in {...} OR categoria == ''` → **salteaban el filtro de categoría por completo**.
+
+**Fix — `FRESCO_REGIMEN_K = 3.0`** (CELDA 1 + `_colapsar` en CELDA 7): antes del filtro
+intra-sucursal se calcula la **referencia nacional del tipo para el mes completo** y se
+descarta lo que quede fuera de `[ref/K, ref×K]`. Se estima sobre millones de observaciones (no
+se da vuelta por una sucursal) y se recalcula cada mes (acompaña a la inflación sin umbrales
+absolutos). Complementos: `gmin = 1000` en Papa, Lechuga, Acelga y Espinaca (no en Frutilla ni
+Choclo, que se venden en bandeja y un mínimo global los borraría).
+
+**Validación** con panel sintético de 1.900 sucursales que reproduce el modo de falla:
+
+| | S1 | S2 | salto |
+|---|---:|---:|---:|
+| Código anterior | 2.352 | 15.016 | **+538,4%** |
+| Con filtro de régimen | 2.352 | 2.318 | **−1,5%** |
+
+El +538% sintético reproduce el +535% real observado. **Cambia la clave del caché: la primera
+corrida vuelve a leer todo el histórico (~57 min).**
+
+### 🟣 MEJORA — Tripwire `Alertas_precio_item` (2026-09-07)
+
+Hoja nueva (`ALERTA_SALTO_ITEM = 0.35`): todo salto semanal del precio nacional de un ítem
+mayor a 35%, con precio antes y después y en qué canastas está. Sale también en el "REPORTE
+PARA CLAUDE". Se arregló la causa **y** se puso el detector: un cambio de régimen no debería
+volver a descubrirse mirando el gráfico de la canasta y yendo hacia atrás. Probado con un panel
+sintético que contiene el salto real de Papa.
+
+### 🔴 Las canastas eran la misma canasta a distinta escala (2026-09-07) ✅ Resuelto en v5
+
+**Síntoma reportado**: las canastas se movían "casi perfectamente correlacionadas como si
+fueran la misma canasta".
+
+**Qué era**: exactamente eso. Medido en **gasto** sobre la corrida 2026-08-27, Media compartía
+el **100,0%** de su gasto con Representativa (estaba contenida), el 82,6% con Ejecutiva, y el
+**91%** de los tipos frescos de Popular eran los mismos que los de Ejecutiva. Solo 21 de los 66
+empaquetados de Popular no estaban también en Ejecutiva. Las correlaciones de 0,96 no eran un
+hallazgo: eran una identidad contable.
+
+**Fix**: rediseño completo en `docs/canastas_alternativas/construir_canastas_v5.py`
+(necesidades con tier por marca, cantidades físicas, ancla CBA hogar tipo 2). Solapamiento de
+EANs entre estratos: **≤6,4%**. Detalle en `METODOLOGIA.md` §10.9 y en el README de
+`docs/canastas_alternativas/`.
+
+**Faltantes de cantidad que salieron al anclar contra la CBA del INDEC**: pan 8 kg/mes contra
+**20,9** de la CBA para hogar tipo 2, y papa 8 contra **20,1**. Los dos carbohidratos base
+estaban a un tercio de la referencia oficial.
+
+**Bugs del propio constructor, encontrados auditando su primera corrida** (los tres corregidos):
+(a) caía en candidatos que no cumplían la cobertura sin avisar → metió un té con 98 sucursales
+en la canasta Media, cuyo piso son 800; (b) el percentil, aplicado sobre pools distintos por
+canasta, devolvía un Ejecutiva **más barato** que el Media (atún $26.292 contra $34.521, bolsas
+de residuo) → se agregó monotonicidad explícita; (c) las cantidades de servilletas y algodón
+estaban declaradas en paquetes pero el motor divide por unidades del pack.
 
 ### 🟢 Notebook 07 v5.1 — robustez del nacional (2026-09-04)
 
