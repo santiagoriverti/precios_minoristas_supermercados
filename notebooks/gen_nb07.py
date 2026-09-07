@@ -102,6 +102,24 @@ FRESCO_OUTLIER_K = 2.5
 # se estima sobre millones de observaciones no se da vuelta porque una sucursal cambie el surtido.
 # Tambien elimina errores de carga groseros (habia "Papa Negra Sc 1 Kg" a $95 en 983 sucursales).
 FRESCO_REGIMEN_K = 3.0
+# Banda de PLAUSIBILIDAD, previa a todo lo demas. El filtro de regimen elige la moda
+# MAYORITARIA de cada tipo, y eso falla cuando la moda mayoritaria es basura. Caso real
+# (corrida 2026-08-27): una cadena de ~980 sucursales publica pan a $5, $40 y $70 el KILO;
+# como son ~4.000 registros sucursal-EAN, el tipo "Pan frances" se fue a $550/kg contra
+# $4.981 de la corrida anterior. Lo mismo con "Papa Negra Sc 1 Kg" a $95 en 983 sucursales.
+# Ningun alimento fresco cuesta $40 el kilo: es un precio de relleno, no un precio.
+#
+# El umbral NO puede ser un numero absoluto (envejece con la inflacion), asi que se expresa
+# relativo a un ANCLA calculada en la propia corrida: la mediana del precio por kilo de un
+# conjunto de tipos bien medidos, abundantes y sin ambiguedad de presentacion. Todo lo que
+# quede fuera de [ancla*PISO, ancla*TECHO] se descarta.
+# Calibracion sobre 2026-08: ancla = $3.165/kg -> piso $633, techo $63.309. Se verifico que
+# NINGUNA mediana de tipo legitimo cae fuera de esa banda (la mas barata es Mandarina a
+# $1.327 y la mas cara Queso rallar a $39.735), y que adentro caen los 10 unicos EANs
+# basura del universo de frescos.
+ANCLA_FRESCOS = ['Papa', 'Cebolla', 'Zapallo', 'Zanahoria', 'Tomate', 'Banana', 'Manzana', 'Naranja']
+FRESCO_PISO_ANCLA  = 0.2
+FRESCO_TECHO_ANCLA = 20.0
 # Salto semanal del precio nacional de un item a partir del cual se lo reporta en la hoja
 # Alertas_precio_item. Es el tripwire: ningun cambio de regimen deberia volver a pasar inadvertido.
 ALERTA_SALTO_ITEM = 0.35
@@ -158,8 +176,8 @@ TIPOS_FRESCOS = {
     'Lechuga':     {'rubro':'Verduras','unidad':'kg','qty':(0.99, 1.38, 1.82, 1.4), 'gmin':1000, 'inc':r'\blechuga', 'exc':r'aderez|snack|\bmix\b|ensalada'},
     'Morrón':      {'rubro':'Verduras','unidad':'kg','qty':(0.39, 0.85, 1.48, 0.76), 'inc':r'\bmorr[oó]n|\bmorrones|\bpimiento', 'exc':r'molid|deshidr|conserva|lata|\blat\b|seco|piment[oó]n|aji molido|frasco|relleno|jalape|salsa|encurt'},
     'Batata':      {'rubro':'Verduras','unidad':'kg','qty':(1.5, 1.5, 1.5, 1.58), 'inc':r'\bbatata', 'exc':r'dulce|congel|snack|chip|pur[eé]|frita'},
-    'Acelga':      {'rubro':'Verduras','unidad':'kg','qty':(0.79, 0.85, 0.68, 0.86), 'gmin':1000, 'inc':r'\bacelga', 'exc':r'congel|\bcong\b|tarta|empanada|ravio|canel|ñoqui|noqui|milanesa|ensalada'},
-    'Espinaca':    {'rubro':'Verduras','unidad':'kg','qty':(0.2, 0.53, 1.02, 0.43), 'gmin':1000, 'inc':r'\bespinaca', 'exc':r'congel|\bcong\b|tarta|empanada|nuez|ravio|canel|fideo|ñoqui|noqui|muslito|\bmix\b|mixta|milanesa|soja|vegan|queso|sorrent|pasta|medall|pollo|bandeja mixta|ensalada|malfatti|baby|hidropon|rocky'},
+    'Acelga':      {'rubro':'Verduras','unidad':'kg','qty':(0.79, 0.85, 0.68, 0.86), 'inc':r'\bacelga', 'exc':r'congel|\bcong\b|tarta|empanada|ravio|canel|ñoqui|noqui|milanesa|ensalada|lavad|sanitiz|listo para|buy y eat|taeq|huella natural|sue[ñn]o verde|green life|quinta onda|hidropon|bandeja'},
+    'Espinaca':    {'rubro':'Verduras','unidad':'kg','qty':(0.2, 0.53, 1.02, 0.43), 'inc':r'\bespinaca', 'exc':r'congel|\bcong\b|tarta|empanada|nuez|ravio|canel|fideo|ñoqui|noqui|muslito|\bmix\b|mixta|milanesa|soja|vegan|queso|sorrent|pasta|medall|pollo|bandeja mixta|ensalada|malfatti|baby|hidropon|rocky|lavad|sanitiz|listo para|buy y eat|taeq|huella natural|sue[ñn]o verde|green life|quinta onda|bandeja'},
     'Choclo':      {'rubro':'Verduras','unidad':'kg','qty':(0.49, 0.64, 0.79, 0.65), 'inc':r'\bchoclo', 'exc':r'lata|\blat\b|crema|cremos|congel|conserva|granos|desgran|arcor|campagnola|humita|pochoclo|snack|grm|entero|relleno|tarta|calab'},
     'Brócoli':     {'rubro':'Verduras','unidad':'kg','qty':(0, 0.42, 1.14, 0.32), 'inc':r'\bbrocoli|\bbrócoli', 'exc':r'congel|tarta|medall|rebozad|merluza|milanesa|pasta'},
     'Ajo':         {'rubro':'Verduras','unidad':'kg','qty':(0.2, 0.21, 0.34, 0.22), 'inc':r'\bajo\b|\bajos\b', 'exc':r'aceite|\bsal\b|deshidr|polvo|molid|sazonad|condiment|\bpan\b|aderez|mayonesa|crema|conserva|\baji|salsa|manteca|queso|pasta|encurt'},
@@ -171,7 +189,7 @@ TIPOS_FRESCOS = {
     'Pepino':      {'rubro':'Verduras','unidad':'kg','qty':(0, 0.32, 0.68, 0.22), 'inc':r'\bpepino', 'exc':r'encurt|pickle|conserva|frasco|vinagre|jab[oó]n|crema|mascar|gel'},
     # ---- CARNE VACUNA ($/kg) ----
     'Asado':       {'rubro':'Carne','unidad':'kg','qty':(2.05, 2.22, 2.34, 2.13), 'inc':r'\basado\b|\bcostillar|tira de asado', 'exc':r'salsa|adob|aderez|sabor asado|hellmann|snack|man[ií]|pollo|caf[eé]|cuchill|\bset\b|carbon|carb[oó]n|palit|asador|pizza|cerdo|chancho|cordero|congel'},
-    'Carne picada':{'rubro':'Carne','unidad':'kg','qty':(3.07, 2.44, 1.6, 2.66), 'inc':r'\bpicada\b|carne molida', 'exc':r'salch|congel|caldo|pat[eé]|hamburg|pollo|pescado|aceituna|verdura|angus|wagyu|kobe|premium|cerdo|mixta|frutos|mani|man[ií]'},
+    'Carne picada':{'rubro':'Carne','unidad':'kg','qty':(3.07, 2.44, 1.6, 2.66), 'inc':r'\bpicada\b|carne molida', 'exc':r'salch|congel|caldo|pat[eé]|hamburg|pollo|pescado|aceituna|verdura|angus|wagyu|kobe|premium|cerdo|mixta|frutos|mani|man[ií]|tartare|tartar'},
     'Nalga/Cuadril':{'rubro':'Carne','unidad':'kg','qty':(0.82, 1.67, 2.34, 1.6), 'inc':r'\bnalga|\bcuadril|bola de lomo|\bcuadrada\b|\bpeceto|colita de cuadril', 'exc':r'mantel|cuadrill|cerdo|pollo|milanesa|congel|cordero'},
     'Milanesa carne':{'rubro':'Carne','unidad':'kg','qty':(1.02, 1.33, 1.28, 1.28), 'inc':r'milanesa', 'exc':r'soja|pollo|congel|merluza|pescado|napolitan|vegetal|cerdo|berenjena|rebozad|granja|swift|paty|listas|carr[eé]|calabaza|zapallo|espinaca|acelga|arroz|quinoa|lenteja|garbanzo'},
     'Matambre':    {'rubro':'Carne','unidad':'kg','qty':(0.2, 0.56, 0.96, 0.43), 'inc':r'\bmatambre', 'exc':r'arrollado|relleno|queso|pizza|a la|cocido|cerdo|congel'},
@@ -199,7 +217,7 @@ TIPOS_FRESCOS = {
     'Salame/Salamín':{'rubro':'Fiambres y Quesos','unidad':'kg','qty':(0.08, 0.29, 0.72, 0.11), 'gmin':500, 'inc':r'\bsalame|\bsalamin|\bsalam[ií]n', 'exc':r'feteado|fetas|sandwich|pizza|snack|palito|cabana|picada|tabla'},
     'Mortadela':   {'rubro':'Fiambres y Quesos','unidad':'kg','qty':(0.41, 0.29, 0.14, 0.16), 'gmin':500, 'inc':r'\bmortadela', 'exc':r'feteado|fetas|sandwich|pizza|piccola|familiar'},
     # ---- PANADERIA ($/kg) ----
-    'Pan francés':{'rubro':'Panadería','unidad':'kg','qty':(18, 15, 11, 17.73), 'inc':r'pan franc[eé]s|\bflauta|\bmignon|\bfelipe|pan.*(criollo|casero)|\bpan\b.*(tira|\bkg)', 'exc':r'lactal|mesa|dulce|integral|salvado|hamburg|pancho|pebete|hot dog|rallado|congel|tostad|arabe|pita|molde|viena|chip|budin|prepizza|pizza|galleta|semilla|centeno|negro|queso|chocolate|rosca|figaza|panettone|fideo|don felipe|naranja|an[ií]s|cuernito|manteca|grasa|chicharr|salvado|semilla'},
+    'Pan francés':{'rubro':'Panadería','unidad':'kg','qty':(18, 15, 11, 17.73), 'inc':r'pan franc[eé]s|\bflauta|\bmignon|\bfelipe|pan.*(criollo|casero)|\bpan\b.*(tira|\bkg)', 'exc':r'lactal|mesa|dulce|integral|salvado|hamburg|pancho|pebete|hot dog|rallado|congel|tostad|arabe|pita|molde|viena|chip|budin|prepizza|pizza|galleta|semilla|centeno|negro|queso|chocolate|rosca|figaza|panettone|fideo|don felipe|naranja|an[ií]s|cuernito|manteca|grasa|chicharr|salvado|semilla|sin tacc|libre de gluten|campero|precocid'},
     # ---- HUEVOS ($/docena) ----
     'Huevos':      {'rubro':'Huevos','unidad':'doc','qty':(3, 3, 3, 2.58), 'inc':r'\bhuevo', 'exc':r'chocolate|kinder|pascua|sorpresa|codorniz|conejo|batidora|fideo|pasta|ravio|tallar|mayonesa|pintur|colorante|separador|huevera|salsa|tarta|galletit|ensalada|revuelt|omelet|budin|torta|liquido|l[ií]quido|polvo|clara|rainb|albu|\d+\s*cm|globo|pi[ñn]ata|decor|juguete|plastic'},
 }
@@ -591,7 +609,8 @@ cells.append(cell_code(r'''# ===================================================
 _SKR = ['id_comercio','id_bandera','id_sucursal']
 _FECHAS_MAX = []   # ultima fecha con precio leida (para detectar la semana incompleta del final)
 _cache_key  = hashlib.md5(('|'.join(sorted(EANS_LECTURA)) + f'|w{DIA_CIERRE_SEMANA}|k{FRESCO_OUTLIER_K}'
-                           f'|r{FRESCO_REGIMEN_K}').encode()).hexdigest()[:8]
+                           f'|r{FRESCO_REGIMEN_K}|p{FRESCO_PISO_ANCLA}|t{FRESCO_TECHO_ANCLA}'
+                           ).encode()).hexdigest()[:8]
 _cache_path = CACHE_DIR / f'sem_{_cache_key}_v5.parquet'   # v5 = semana jueves + outlier filter
 
 def _leer_mes(_lbl):
@@ -640,7 +659,8 @@ def _leer_mes(_lbl):
     return _df.groupby(_SKR+['ean_norm','semana'], as_index=False)['precio'].median()
 
 _FR_MULT = {t: (1000.0 if FRESCO_INFO[t]['unidad'] == 'kg' else 12.0) for t in FRESCO_INFO}
-def _colapsar(_df):
+_FR_DESCARTES = []   # (mes, observaciones fuera de la banda de plausibilidad, ancla $/kg)
+def _colapsar(_df, _lbl_mes=''):
     if _df is None or len(_df) == 0: return None
     _e = (_df[_df['ean_norm'].isin(EANS_EMP)][_SKR + ['semana','ean_norm','precio']]
           .rename(columns={'ean_norm':'item','precio':'price'}))
@@ -650,6 +670,15 @@ def _colapsar(_df):
         _f['item']  = _f['ean_norm'].map(EAN_TIPO)
         _f['price'] = _f['precio'] / _f['ean_norm'].map(EAN_NORMFACTOR) * _f['item'].map(_FR_MULT)
         _f = _f[_f['price'].notna() & (_f['price'] > 0)]
+        # (0) banda de PLAUSIBILIDAD anclada. Va antes que todo: si la moda mayoritaria de un
+        #     tipo es basura (pan a $40 el kilo en 980 sucursales), el filtro de regimen la
+        #     elegiria como referencia. El ancla se recalcula cada mes, asi que la banda
+        #     acompana a la inflacion sin umbrales absolutos.
+        _anc = _f.loc[_f['item'].isin(ANCLA_FRESCOS), 'price'].median()
+        if _anc == _anc and _anc > 0:
+            _n0 = len(_f)
+            _f = _f[(_f['price'] >= _anc * FRESCO_PISO_ANCLA) & (_f['price'] <= _anc * FRESCO_TECHO_ANCLA)]
+            _FR_DESCARTES.append((_lbl_mes, _n0 - len(_f), round(float(_anc), 1)))
         # (1) filtro de REGIMEN: referencia nacional del tipo para el mes entero. Va PRIMERO, para
         #     que la mediana de la sucursal no se calcule sobre una mezcla de bienes distintos.
         _ref = _f.groupby('item')['price'].transform('median')
@@ -671,7 +700,7 @@ _en_cache = set(_cache['semana'].map(_mes_de_semana).unique()) if len(_cache) el
 _faltantes = [m for m in _meses_disp if m < _mes_actual and m not in _en_cache]
 _nuevos = []
 for _lbl in tqdm(_faltantes, desc='Meses cerrados'):
-    _dc = _colapsar(_leer_mes(_lbl))
+    _dc = _colapsar(_leer_mes(_lbl), _lbl)
     if _dc is not None: _nuevos.append(_dc)
     gc.collect()
 if _nuevos:
@@ -1294,6 +1323,14 @@ print('='*72)
 print(f'Ultima semana (cierra jueves): {ULTIMA_SEMANA} | Ultimo mes: {_ult_mes}')
 print(f'Canastas activas: {CANASTAS_ACTIVAS}')
 print(f'Nacional: {AGG_NACIONAL} | arrastre: {MAX_SEMANAS_ARRASTRE} sem | regimen K: {FRESCO_REGIMEN_K} | outlier K: {FRESCO_OUTLIER_K} | frac min: {FRAC_PRODUCTOS_MIN}')
+try:
+    if _FR_DESCARTES:
+        _nd = sum(x[1] for x in _FR_DESCARTES)
+        _aa = np.median([x[2] for x in _FR_DESCARTES])
+        print(f'Plausibilidad frescos: {_nd:,} observaciones fuera de la banda '
+              f'[ancla*{FRESCO_PISO_ANCLA}, ancla*{FRESCO_TECHO_ANCLA}] | ancla mediana ${_aa:,.0f}/kg')
+except Exception:
+    pass
 
 for _name in CANASTAS_ACTIVAS:
     _ss = serie_sem_dict.get(_name)

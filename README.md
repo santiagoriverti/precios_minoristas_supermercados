@@ -534,11 +534,11 @@ Se cambia con `DIA_CIERRE_SEMANA` (3=jueves, 4=viernes).
 ### Las 6 canastas
 | Col | Canasta | Emp. | Frescos | Idea |
 |---|---|---:|---:|---|
-| `cantidad_01` | **Popular** | 66 | 34 | Marcas económicas, presentaciones chicas |
-| `cantidad_02` | **Media** | 78 | 57 | Marca líder |
-| `cantidad_03` | **Ejecutiva** | 78 | 59 | Premium |
+| `cantidad_01` | **Popular** | 58 | 32 | Marca más barata con presencia nacional |
+| `cantidad_02` | **Media** | 76 | 57 | Marca líder |
+| `cantidad_03` | **Ejecutiva** | 76 | 59 | Premium |
 | `cantidad_04` | **Tecnológica** | 14 | — | Durables (heladera, lavarropas, TV, notebook…) |
-| `cantidad_05` | **Representativa** | 78 | 59 | Producto modal — comparable con INDEC |
+| `cantidad_05` | **Representativa** | 76 | 59 | Producto modal — comparable con INDEC |
 | `cantidad_06` | **Femenina** | 14 | — | Gestión menstrual, depilación, cuidado personal |
 
 > **v5 (2026-09-07)**: cada estrato usa **su propia versión** de cada necesidad (Popular primer
@@ -548,7 +548,7 @@ Se cambia con `DIA_CIERRE_SEMANA` (3=jueves, 4=viernes).
 > equivalentes). Ver `docs/canastas_alternativas/README.md`.
 
 ### Composición híbrida (dos fuentes)
-- **Empaquetados (por EAN)**: **303 EANs únicos**. El umbral de cobertura es **por canasta**
+- **Empaquetados (por EAN)**: **287 EANs únicos**. El umbral de cobertura es **por canasta**
   (Popular ≥2 cadenas/≥10 provincias/≥600 sucursales, Media y Representativa ≥4/≥15/≥800,
   Ejecutiva y Femenina ≥3/≥12/≥500, durables ≥3/≥10/≥90): Popular baja el umbral a propósito
   porque el primer precio y la marca propia no existen en 4 cadenas. Los picks que no llegan

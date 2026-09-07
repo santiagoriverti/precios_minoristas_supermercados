@@ -1,6 +1,6 @@
 # Metodología — ICR (Índice de Consumo Representativo)
 
-**Última actualización:** 2026-09-07 (nb07 v5.2: filtro de régimen en frescos [BUG-24], tripwire Alertas_precio_item; canastas v5: escalonamiento por marca, cantidades físicas, ancla CBA INDEC hogar tipo 2 — 303 empaquetados + 59 tipos de frescos)
+**Última actualización:** 2026-09-07 (nb07 v5.3: banda de plausibilidad anclada en frescos + cobertura nacional obligatoria en las canastas; v5.2: filtro de régimen [BUG-24] y tripwire Alertas_precio_item — 287 empaquetados + 59 tipos de frescos)
 **Período de referencia:** enero 2024 – abril 2026
 
 ---
@@ -407,15 +407,15 @@ Vigente desde **v5 (2026-09-07)**, ver §10.9:
 
 | Columna | Canasta | Emp. | Frescos | Tier de producto | Percentil de precio unitario |
 |---|---|---:|---:|---|---|
-| `cantidad_01` | Popular | 60 | 32 | primer precio / segunda marca | P10 |
-| `cantidad_02` | Media | 78 | 57 | marca líder | P45 |
-| `cantidad_03` | Ejecutiva | 78 | 59 | premium | P80 |
+| `cantidad_01` | Popular | 58 | 32 | marca más barata con presencia nacional | P10 |
+| `cantidad_02` | Media | 76 | 57 | marca líder | P45 |
+| `cantidad_03` | Ejecutiva | 76 | 59 | premium | P80 |
 | `cantidad_04` | Tecnológica | 14 | — | producto modal | — |
-| `cantidad_05` | Representativa | 78 | 59 | producto modal (mayor cobertura) | — |
+| `cantidad_05` | Representativa | 76 | 59 | producto modal (mayor cobertura) | — |
 | `cantidad_06` | Femenina | 14 | — | marca líder | — |
 
 Se leen de la hoja `Productos unicos` del Excel `canasta_representativa_*.xlsx`.
-**303 EANs empaquetados únicos**; las cantidades las genera
+**287 EANs empaquetados únicos**; las cantidades las genera
 `docs/canastas_alternativas/construir_canastas_v5.py` y las carga `cargar_canastas_v5.py`.
 
 La Representativa **no escalona a propósito**: usa el producto modal (el de mayor cobertura
@@ -762,6 +762,119 @@ acentúa esa diferencia, que es la que tiene contenido económico.
 En la corrida 2026-08-27 las cinco regiones informan **el mismo valor** ($5.853.138). Son 97
 sucursales de una sola cadena (ChangoMas / Mi ChangoMas). Es un índice de una cadena, no
 nacional, y la apertura por región no debería publicarse tal como está.
+
+
+### 10.10. nb07 v5.3 (2026-09-07) — plausibilidad anclada y cobertura nacional de las canastas
+
+Diagnostico sobre la **primera corrida de v5.2** (2026-08-27, 62,7 millones de observaciones).
+El filtro de regimen funciono donde se esperaba —Papa paso de $15.015/kg a **$3.338**, Anana de
+$11.213 a $3.805, Pepino de $18.590 a $3.265, Durazno de $10.905 a $4.055, Ajo de $10.119 a
+$3.146— pero destapo dos problemas nuevos.
+
+#### A. El filtro de regimen elige la moda mayoritaria, y a veces la moda mayoritaria es basura
+
+**Pan frances cayo a $550/kg** (venia de $4.981). No es un error de calculo: es que el tipo
+esta dominado por registros invalidos. Una cadena de ~980 sucursales publica:
+
+| Descripcion | Cadenas | Sucursales | Precio | $/kg |
+|---|---:|---:|---:|---:|
+| Pan Casero Blanco 1 Kg | 1 | 977 | $5,00 | **$5** |
+| Pan Mignon 1 Kg | 1 | 977 | $40,00 | **$40** |
+| Pan Frances Tira 1 Kg | 1 | 977 | $70,00 | **$70** |
+| Mignones 300 Gr | 1 | 983 | $150,83 | **$503** |
+| Pan Mignon 1 Kg | 1 | 983 | $10.000 | $10.000 |
+
+Son ~4.000 registros sucursal-EAN de precio invalido contra unos pocos cientos de precio real,
+asi que la mediana nacional del tipo —que es justamente la referencia del filtro de regimen—
+aterriza en el regimen equivocado. **Ningun alimento fresco cuesta $40 el kilo**: eso es un
+precio de relleno, no un precio.
+
+**Solucion: banda de PLAUSIBILIDAD anclada**, aplicada antes que todo lo demas. El umbral no
+puede ser absoluto (envejeceria con la inflacion), asi que se expresa relativo a un ancla
+calculada en la propia corrida:
+
+```
+ANCLA_FRESCOS = ['Papa','Cebolla','Zapallo','Zanahoria','Tomate','Banana','Manzana','Naranja']
+ancla = mediana del $/kg de esos tipos en el mes
+se descarta todo lo que quede fuera de [ancla * 0.2 , ancla * 20]
+```
+
+Calibracion sobre 2026-08: ancla = **$3.165/kg** → piso $633, techo $63.309. Se verifico en los
+datos que **ninguna mediana de tipo legitimo cae fuera de esa banda** (la mas barata es
+Mandarina a $1.327 y la mas cara Queso rallar a $39.735) y que **los 10 unicos EANs del universo
+de frescos por debajo de $600/kg quedan adentro del descarte** — todos manifiestamente erroneos
+($5, $40, $70, $95, $129, $148 el kilo). El ancla se recalcula cada mes, asi que la banda
+acompana a la inflacion sola.
+
+Validacion con un test end-to-end del pipeline completo (banda + regimen + intra-sucursal)
+sobre un panel sintetico que reproduce los dos casos reales: los 10 tipos recuperan su precio
+verdadero con **menos de 2% de error**, incluido Pan frances ($4.983 contra $5.000 real) pese a
+que la basura era la moda mayoritaria, y Papa ($2.338 contra $2.300) pese a convivir con el
+regimen alto y con el EAN a $95.
+
+Ajustes complementarios de la misma corrida:
+
+- **Espinaca y Acelga**: el `gmin=1000` de v5.2 las dejo en 13 y 10 EANs usables (172 y 1.086
+  sucursales) y las convirtio en las series mas ruidosas del panel (Espinaca: +146%, −62%,
+  +75%, −28% en semanas consecutivas). Se vuelve al minimo por defecto y se excluye la hoja
+  lavada en bolsa **por nombre**, que es lo que realmente contaminaba el tipo.
+- **Pan frances**: se excluye ademas el sin-TACC premium (Pan Criollo Campero, $10.517/kg).
+- **Carne picada**: daba $20.514/kg, mas cara que el asado ($13.532). Se excluyen las variantes
+  tartare, que empujaban la mediana.
+
+#### B. El umbral relajado de Popular destruyo el indice
+
+La decision de bajar el piso de cobertura de Popular a ≥2 cadenas / ≥600 sucursales —para poder
+incluir marca propia y primer precio— parecia razonable en abstracto y **fallo en la practica**.
+
+El percentil 10 aterriza sistematicamente en la marca propia, y la marca propia vive en una sola
+cadena. Resultado: 11 de los 60 productos de Popular quedaron con ~550 sucursales y 3 cadenas,
+todos Carrefour. Como nb07 solo cotiza una sucursal que tenga ≥80% de los items de la canasta
+(`FRAC_PRODUCTOS_MIN`):
+
+| Canasta | Items <800 sucursales | Sucursales que cotizan |
+|---|---:|---:|
+| Popular | 18 de 60 | **85** (contra 1.969 en v4) |
+| Media | 8 de 78 | 234 |
+| Ejecutiva | 23 de 78 | 163 |
+| Representativa | 2 de 78 | 2.209 |
+
+La canasta Popular quedo cotizando en 85 sucursales **de una sola cadena**. Un indice calculado
+sobre 85 sucursales de Carrefour no es un indice nacional, por representativo que sea el surtido.
+
+**Correccion**: todas las canastas de consumo vuelven a ≥4 cadenas / ≥15 provincias / ≥800
+sucursales, con un piso absoluto de ≥3 cadenas / ≥12 provincias / ≥700 sucursales por debajo del
+cual la necesidad **se descarta** para esa canasta en vez de incluir un item que solo cotiza en
+400 sucursales. El estrato Popular sale ahora de la marca **mas barata con presencia nacional**
+(Canuelas, Casanto, Marolio, Dogui, Brahma, Tregar, Sedal), no de la marca propia.
+
+**El costo en escalonamiento fue casi nulo**: el ratio de precio unitario Ejecutiva/Popular paso
+de 2,27× a **2,21×** (mediana entre necesidades), mientras la cobertura minima de un item subio
+de 546 a **802 sucursales** y no queda ningun pick por debajo del umbral de su canasta.
+
+#### C. Dos bugs de unidades en el constructor
+
+- **`Algodon Estrella Clasico 75 Gr` × 80 = $111.470**, el 43% de la canasta Femenina. La
+  cantidad estaba declarada en discos (80), pero ese producto se mide en gramos y no declara
+  unidades, asi que el motor lo tomo como 80 **paquetes**. Se agrego una tercera unidad,
+  `u='pack'` (la cantidad esta en paquetes y el conteo del envase se ignora), para los productos
+  donde "un paquete" es la unidad natural de compra: algodon, tintura, esponja, crema
+  depilatoria, rollo de cocina. Y `u='un'` ahora **exige** que el envase declare cuantas
+  unidades trae, en vez de asumir 1.
+- **`Hamburguesas 4 Un 83 Gr` × 10 = $104.124** en la Ejecutiva. El gramaje se leyo como 83 g
+  cuando el paquete son 4×83 = 332 g. El formato "N Un M Gr" no distingue si M es el total o el
+  peso por unidad, asi que no se adivina: **el candidato se descarta** (mismo criterio que ya
+  usaba nb06 para los multipacks).
+
+Ademas se excluyeron los concentrados "para diluir" del jabon liquido para ropa (no son
+comparables por volumen con el producto comun: Ariel 500 ml × 8 = $93.143) y se modero el
+alcohol de la Ejecutiva (de 18 latas y 4 botellas por mes a 14 y 3).
+
+**Femenina volvio de $260.865 a $139.737.**
+
+> El cambio de la banda de plausibilidad entra en la clave del cache, asi que la corrida
+> siguiente vuelve a leer el historico completo (~58 min). Es inevitable: el filtro tiene que
+> correr antes de colapsar los frescos a tipo.
 
 
 ## 11. Notebook 02 — Excel de econometría (`datos_econometria`)

@@ -12,14 +12,14 @@ Insumo del notebook **`07_evolucion_canastas_alternativas`**, que produce el inf
 
 | Columna | Canasta | Necesidades | Criterio de producto | Idea |
 |---|---|---:|---|---|
-| `cantidad_01` | **Popular** | 60 | primer precio / segunda marca | Hogar de ingreso bajo |
-| `cantidad_02` | **Media** | 78 | marca líder | Hogar de ingreso medio |
-| `cantidad_03` | **Ejecutiva** | 78 | premium | Hogar de ingreso alto |
+| `cantidad_01` | **Popular** | 58 | marca más barata con presencia nacional | Hogar de ingreso bajo |
+| `cantidad_02` | **Media** | 76 | marca líder | Hogar de ingreso medio |
+| `cantidad_03` | **Ejecutiva** | 76 | premium | Hogar de ingreso alto |
 | `cantidad_04` | **Tecnológica** | 14 | producto modal | Bundle de durables (no es consumo mensual) |
-| `cantidad_05` | **Representativa** | 78 | producto **modal** (mayor cobertura) | Familia tipo, comparable con INDEC |
+| `cantidad_05` | **Representativa** | 76 | producto **modal** (mayor cobertura) | Familia tipo, comparable con INDEC |
 | `cantidad_06` | **Femenina** | 14 | marca líder | Gestión menstrual, depilación, cuidado personal |
 
-**303 EANs únicos** + **59 tipos de frescos** (los frescos van por regla de nombre en la
+**287 EANs únicos** + **59 tipos de frescos** (los frescos van por regla de nombre en la
 CELDA 1 del notebook, `TIPOS_FRESCOS`, porque el EAN de balanza cambia entre cadenas).
 
 **Hogar de referencia: hogar tipo 2 del INDEC** — 2 adultos + 2 niños = **3,09 adultos
@@ -43,7 +43,9 @@ estaban en la otra. Y el 91% de los tipos frescos de Popular eran los mismos que
 Ejecutiva. Eran la misma canasta a distinta escala, así que las correlaciones de 0,96 entre
 las variaciones semanales no eran un hallazgo: eran una identidad contable.
 
-**En v5 el solapamiento de EANs entre estratos quedó en 6,4% o menos.**
+**En v5 el solapamiento de EANs entre estratos quedó en 11,8% o menos** (Popular↔Ejecutiva:
+5,3%). Donde dos estratos comparten un EAN es porque el mercado no ofrece un escalón superior
+con cobertura nacional en esa necesidad, y queda registrado en el detalle.
 
 ---
 
@@ -52,23 +54,22 @@ las variaciones semanales no eran un hallazgo: eran una identidad contable.
 ### 1. Necesidades, no productos
 
 Cada canasta cubre el mismo conjunto de **necesidades** (`NEEDS` en el constructor), pero cada
-estrato elige **su** versión: Popular el primer precio, Media la marca líder, Ejecutiva la
-premium. El tier se decide por **percentil del precio por unidad comparable** ($/kg, $/L o
-$/unidad de uso) dentro de la necesidad — nunca por el precio del envase, porque eso haría que
-"el más barato" fuera siempre el paquete más chico.
+estrato elige **su** versión: Popular la marca más barata con presencia nacional, Media la
+líder, Ejecutiva la premium. El tier se decide por **percentil del precio por unidad
+comparable** ($/kg, $/L o $/unidad de uso) dentro de la necesidad — nunca por el precio del
+envase, porque eso haría que "el más barato" fuera siempre el paquete más chico.
 
-Escalonamiento logrado: el precio unitario de Ejecutiva es **2,27× el de Popular** (mediana
-entre necesidades; p25 1,67× — p75 3,15×).
+Escalonamiento logrado: el precio unitario de Ejecutiva es **2,21× el de Popular** (mediana
+entre necesidades; p25 1,51× — p75 2,57×).
 
-Dos reglas de control, ambas nacidas de auditar la primera corrida del constructor:
+Dos reglas de control, ambas nacidas de auditar las corridas del constructor:
 
 - **Monotonicidad**: se exige Popular ≤ Media ≤ Ejecutiva en precio unitario. Sin esto, como
-  cada canasta tiene su propia regla de cobertura y por lo tanto su propio pool, el percentil
-  devolvía un Ejecutiva más barato que el Media (pasó con atún y con bolsas de residuo).
-  Hoy: **0 violaciones en 78 necesidades**.
+  cada canasta tiene su propio pool, el percentil devolvía un Ejecutiva más barato que el Media
+  (pasó con atún y con bolsas de residuo). Hoy: **0 violaciones en 76 necesidades**.
 - **Cobertura declarada**: si el producto elegido no cumple el piso de su canasta, queda
-  marcado `confiable=False` en el detalle en vez de pasar en silencio (la primera versión
-  metió un té con 98 sucursales en la canasta Media, cuyo piso son 800). Hoy: **4 de 322**.
+  marcado `confiable=False` en el detalle en vez de pasar en silencio (una versión intermedia
+  metió un té con 98 sucursales en la canasta Media, cuyo piso son 800). Hoy: **0 de 314**.
 
 ### 2. Cantidades físicas, no unidades
 
@@ -99,6 +100,18 @@ En **frescos** el escalonamiento no puede ser por marca (se cotizan por tipo de 
 que es por **corte y variedad**: Popular carga el gasto en los cortes de olla (falda, puchero,
 osobuco, paleta, picada) y Ejecutiva en los caros (lomo, bife de chorizo, peceto, nalga).
 
+### Unidades en que se declara la cantidad
+
+| `u` | Significado | Cuándo usarla |
+|---|---|---|
+| `'kg'` | qty en kg o litros; se divide por el gramaje del envase | Alimentos, líquidos, cualquier cosa con peso o volumen |
+| `'un'` | qty en unidades de uso; el envase **debe** declarar cuántas trae | Rollos de papel, pañales, toallas, bolsas, cepillos |
+| `'pack'` | qty en paquetes; se ignora el conteo del envase | Cuando "un paquete" es la unidad natural de compra: algodón, tintura, esponja, crema depilatoria |
+
+La distinción no es cosmética. En una corrida intermedia el algodón estaba declarado como 80
+unidades, pero el producto elegido se mide en gramos y no declara unidades, así que el motor lo
+tomó como **80 paquetes**: $111.470, el 43% de la canasta Femenina.
+
 ---
 
 ## Qué esperar — y qué no
@@ -123,15 +136,27 @@ composición, que es la que tiene contenido económico.
 
 | Canasta | Cadenas | Provincias | Sucursales |
 |---|---:|---:|---:|
-| Popular | ≥2 | ≥10 | ≥600 |
-| Media / Representativa | ≥4 | ≥15 | ≥800 |
-| Ejecutiva / Femenina | ≥3 | ≥12 | ≥500 |
+| Popular / Media / Ejecutiva / Representativa | ≥4 | ≥15 | ≥800 |
+| Femenina | ≥4 | ≥15 | ≥700 |
 | Tecnológica | ≥3 | ≥10 | ≥90 |
+| **Piso absoluto** (si no, la necesidad se descarta) | ≥3 | ≥12 | ≥700 |
 
-Popular baja el umbral **a propósito**: el primer precio y la marca propia no existen en 4
-cadenas — por definición, la marca propia vive en una. Sin bajarlo no hay estrato Popular
-real, solo "la marca líder en envase chico". El costo se declara ítem por ítem en la columna
-`cadenas` de `canastas_v5_detalle.csv` y en la hoja `Cobertura_emp` del notebook.
+> **Corregido tras la corrida 2026-08-27.** La primera versión bajaba el umbral de Popular a
+> ≥2 cadenas / ≥600 sucursales para poder incluir marca propia. Parecía razonable y **falló**:
+> el percentil 10 aterriza sistemáticamente en la marca propia, y la marca propia vive en una
+> sola cadena. Once de los 60 productos de Popular quedaron con ~550 sucursales, todos
+> Carrefour, y como nb07 solo cotiza una sucursal que tenga ≥80% de los ítems de la canasta,
+> **Popular pasó a cotizar en 85 sucursales de 3.070, todas de una cadena**. Un índice
+> calculado sobre 85 sucursales de Carrefour no es un índice nacional.
+>
+> El estrato Popular sale ahora de la marca **más barata con presencia nacional** (Cañuelas,
+> Casanto, Marolio, Dogui, Brahma, Tregar, Sedal). **El costo fue casi nulo**: el escalonamiento
+> Ejecutiva/Popular pasó de 2,27× a 2,21×, y la cobertura mínima de un ítem subió de 546 a
+> **802 sucursales**.
+
+Ningún pick queda por debajo del umbral de su canasta (`confiable=False`: 0 de 314). Si una
+necesidad no tiene candidato que llegue al piso absoluto, **se descarta para esa canasta** en
+vez de incluir un ítem que solo cotiza en 400 sucursales.
 
 ---
 
@@ -177,6 +202,7 @@ constructor elige sobre la cobertura del período de referencia que le pases.
 | Quiero cambiar… | Editar en `construir_canastas_v5.py` |
 |---|---|
 | Qué productos entran en una necesidad | `NEEDS` → `inc` / `exc` de esa necesidad |
+| La unidad en que se declara la cantidad | `NEEDS` → `u`: `'kg'` (gramos/ml del envase), `'un'` (unidades de uso, el envase debe declararlas) o `'pack'` (paquetes, se ignora el conteo) |
 | Cuánto se consume por mes | `NEEDS` → `qty` (tupla Popular, Media, Ejecutiva, Representativa) |
 | Qué tan separados están los tiers | `TIER_PCT` |
 | Los umbrales de cobertura | `COBERTURA` |
@@ -207,10 +233,10 @@ altas y bajas no generan saltos artificiales de nivel.
 
 ## Necesidades sin escalón real
 
-En 5 necesidades el mercado no ofrece un tier superior con cobertura suficiente, y dos
-estratos terminan compartiendo producto: **Agua mineral, Algodón/hisopos, Salchichas, Tapas de
-empanada, Té**. Es preferible a inventar un escalón que no existe; queda visible en
-`canastas_v5_detalle.csv`.
+En algunas necesidades el mercado no ofrece un tier superior con cobertura nacional suficiente
+y dos estratos terminan compartiendo producto, o la necesidad se descarta para una canasta. Es
+preferible a inventar un escalón que no existe; queda visible en `canastas_v5_detalle.csv` y en
+la salida del constructor, que lista las necesidades que quedaron fuera de cada canasta.
 
 ---
 

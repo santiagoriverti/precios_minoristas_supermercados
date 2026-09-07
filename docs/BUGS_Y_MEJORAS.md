@@ -1,6 +1,6 @@
 # Bugs Pendientes y Mejoras
 
-Última actualización: 2026-09-07 — nb07 v5.2: filtro de régimen en frescos (BUG-24), tripwire de saltos y rediseño de canastas v5
+Última actualización: 2026-09-07 — nb07 v5.3: banda de plausibilidad anclada (BUG-25) y cobertura nacional obligatoria en las canastas
 
 ---
 
@@ -26,6 +26,86 @@ de la Tecnológica** hasta que haya al menos dos cadenas con cobertura de durabl
 ---
 
 ## 🟢 Cambios y fixes 2026-09
+
+### 🔴 BUG-25 — El filtro de régimen eligió la moda mayoritaria, y era basura (2026-09-07) ✅ Resuelto
+
+Detectado en la **corrida de verificación de v5.2**. El fix de BUG-24 funcionó donde se
+esperaba (Papa $15.015 → **$3.338**, Ananá $11.213 → $3.805, Pepino $18.590 → $3.265, Durazno
+$10.905 → $4.055, Ajo $10.119 → $3.146), pero **pan francés se fue a $550/kg** desde $4.981.
+
+**Qué era**: el tipo está dominado por registros inválidos. Una cadena de ~980 sucursales
+publica pan a **$5, $40 y $70 el kilo**:
+
+| Descripción | Cadenas | Sucursales | Precio | $/kg |
+|---|---:|---:|---:|---:|
+| Pan Casero Blanco 1 Kg | 1 | 977 | $5,00 | **$5** |
+| Pan Mignon 1 Kg | 1 | 977 | $40,00 | **$40** |
+| Pan Francés Tira 1 Kg | 1 | 977 | $70,00 | **$70** |
+| Mignones 300 Gr | 1 | 983 | $150,83 | **$503** |
+| Pan Mignon 1 Kg | 1 | 983 | $10.000 | $10.000 |
+
+Son ~4.000 registros sucursal-EAN inválidos contra unos cientos de precio real, así que la
+mediana nacional del tipo —la referencia misma del filtro de régimen— aterriza en el régimen
+equivocado. El filtro de régimen elige la moda **mayoritaria**, y acá la mayoría es basura.
+
+**Fix — banda de plausibilidad anclada**, aplicada antes que todo lo demás. El umbral no puede
+ser absoluto (envejecería con la inflación), así que se ancla en la propia corrida:
+
+```
+ANCLA_FRESCOS = ['Papa','Cebolla','Zapallo','Zanahoria','Tomate','Banana','Manzana','Naranja']
+ancla = mediana del $/kg de esos tipos en el mes
+se descarta lo que quede fuera de [ancla * 0.2 , ancla * 20]
+```
+
+Calibrado sobre 2026-08: ancla $3.165/kg → piso $633, techo $63.309. Verificado en los datos:
+**ninguna mediana de tipo legítimo cae fuera** (la más barata Mandarina $1.327, la más cara
+Queso rallar $39.735) y **los 10 únicos EANs del universo de frescos por debajo de $600/kg
+quedan descartados** — todos erróneos ($5, $40, $70, $95, $129, $148 el kilo).
+
+**Validación**: test end-to-end del pipeline completo sobre panel sintético con los dos casos
+reales. Los 10 tipos recuperan su precio verdadero con **<2% de error**, incluido pan francés
+($4.983 contra $5.000) pese a que la basura era mayoría, y Papa ($2.338 contra $2.300).
+
+Complementos: se revirtió `gmin=1000` en Espinaca y Acelga (había dejado 13 y 10 EANs usables y
+las volvió las series más ruidosas del panel: Espinaca +146%, −62%, +75% en semanas seguidas);
+se excluye la hoja lavada en bolsa por nombre; pan francés excluye el sin-TACC premium; carne
+picada excluye tartare (daba $20.514/kg, más cara que el asado).
+
+### 🔴 El umbral relajado de Popular destruyó el índice (2026-09-07) ✅ Resuelto
+
+Bajar el piso de Popular a ≥2 cadenas / ≥600 sucursales —para poder incluir marca propia—
+parecía razonable en abstracto y **falló en la práctica**. El percentil 10 aterriza
+sistemáticamente en la marca propia, y la marca propia vive en una sola cadena: 11 de los 60
+productos de Popular quedaron con ~550 sucursales, todos Carrefour. Con `FRAC_PRODUCTOS_MIN`
+exigiendo 80% de los ítems:
+
+| Canasta | Ítems <800 sucursales | Sucursales que cotizan |
+|---|---:|---:|
+| Popular | 18 de 60 | **85** (contra 1.969 en v4) |
+| Media | 8 de 78 | 234 |
+| Ejecutiva | 23 de 78 | 163 |
+| Representativa | 2 de 78 | 2.209 |
+
+**Fix**: todas las canastas de consumo vuelven a ≥4 cadenas / ≥15 provincias / ≥800 sucursales,
+con piso absoluto ≥3/≥12/≥700 por debajo del cual la necesidad **se descarta** en vez de meter
+un ítem que cotiza en 400 sucursales. Popular sale ahora de la marca más barata con presencia
+nacional (Cañuelas, Casanto, Marolio, Dogui, Brahma, Tregar, Sedal).
+
+**El costo fue casi nulo**: el escalonamiento Ejecutiva/Popular pasó de 2,27× a **2,21×**,
+mientras la cobertura mínima de un ítem subió de 546 a **802 sucursales** y no queda ningún pick
+por debajo del umbral de su canasta.
+
+### 🔴 Dos bugs de unidades en el constructor (2026-09-07) ✅ Resueltos
+
+- **`Algodón Estrella Clásico 75 Gr` × 80 = $111.470**, el 43% de la canasta Femenina. La
+  cantidad estaba en discos (80) pero el producto se mide en gramos y no declara unidades, así
+  que el motor lo tomó como 80 **paquetes**. Se agregó la unidad `u='pack'` (cantidad en
+  paquetes, se ignora el conteo del envase) para algodón, tintura, esponja, crema depilatoria y
+  rollo de cocina; y `u='un'` ahora **exige** que el envase declare cuántas unidades trae.
+  Femenina volvió de $260.865 a **$139.737**.
+- **`Hamburguesas 4 Un 83 Gr` × 10 = $104.124** en Ejecutiva: el gramaje se leyó como 83 g
+  cuando el paquete son 4×83 = 332. El formato "N Un M Gr" es ambiguo, así que el candidato se
+  descarta (mismo criterio que nb06).
 
 ### 🔴 BUG-24 — El precio de los frescos saltaba entre dos regímenes (2026-09-07) ✅ Resuelto
 

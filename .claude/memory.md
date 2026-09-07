@@ -6,7 +6,86 @@ Autor: Santiago Riverti — investigador independiente
 
 ---
 
-## 🟢 ESTADO ACTUAL / HANDOFF [2026-09-07] — nb07 v5.2 + canastas v5
+## 🟢 ESTADO ACTUAL / HANDOFF [2026-09-07 · tarde] — nb07 v5.3 + canastas v5.2
+
+**El usuario corrió v5.2 y trajo el Excel. El fix de frescos funcionó pero destapó dos
+problemas nuevos, ya corregidos. FALTA LA CORRIDA DE VERIFICACIÓN DE v5.3.**
+
+### Lo que confirmó la corrida de v5.2 (2026-08-27, 62,7 M de observaciones)
+El filtro de régimen hizo lo suyo: **Papa $15.015 → $3.338/kg**, Ananá 11.213 → 3.805, Pepino
+18.590 → 3.265, Durazno 10.905 → 4.055, Ajo 10.119 → 3.146, Mortadela 17.195 → 9.025.
+
+### BUG-25 — el filtro de régimen elige la moda MAYORITARIA, y a veces la mayoría es basura
+**Pan francés se fue a $550/kg** (venía de $4.981). Causa: una cadena de ~980 sucursales publica
+`Pan Casero Blanco 1 Kg = $5,00`, `Pan Mignon 1 Kg = $40,00`, `Pan Francés Tira 1 Kg = $70,00`,
+`Mignones 300 Gr = $150,83`. Son ~4.000 registros sucursal-EAN inválidos contra unos cientos de
+precio real → la mediana nacional del tipo (la referencia del filtro) aterriza en el régimen
+equivocado.
+
+**Fix — banda de plausibilidad ANCLADA**, antes que todo lo demás:
+`ANCLA_FRESCOS` = [Papa, Cebolla, Zapallo, Zanahoria, Tomate, Banana, Manzana, Naranja];
+ancla = mediana de su $/kg en el mes; se descarta fuera de `[ancla*0.2, ancla*20]`.
+Calibrado sobre 2026-08: ancla $3.165 → piso $633, techo $63.309. **Verificado en los datos**:
+ninguna mediana de tipo legítimo cae fuera (más barata Mandarina $1.327, más cara Queso rallar
+$39.735) y los 10 únicos EANs del universo por debajo de $600/kg quedan descartados (todos
+erróneos: $5, $40, $70, $95, $129, $148 el kilo). El ancla se recalcula cada mes → sin umbrales
+absolutos que envejezcan.
+**Test end-to-end sintético con los dos casos reales: los 10 tipos recuperan su precio con <2%
+de error**, incluido pan francés ($4.983 vs $5.000) pese a que la basura era mayoría.
+
+También: se **revirtió `gmin=1000` en Espinaca y Acelga** (había dejado 13 y 10 EANs usables,
+172 y 1.086 sucursales, y las volvió las series más ruidosas: Espinaca +146%, −62%, +75%
+seguidas); se excluye la hoja lavada en bolsa por nombre. Pan francés excluye el sin-TACC
+premium. Carne picada excluye tartare (daba $20.514/kg, más cara que el asado).
+
+### El umbral relajado de Popular DESTRUYÓ el índice — corregido
+Bajar Popular a ≥2 cadenas/≥600 suc para incluir marca propia **falló**: el percentil 10
+aterriza siempre en la marca propia y la marca propia vive en UNA cadena. 11 de 60 productos de
+Popular quedaron con ~550 sucursales, todos Carrefour. Con `FRAC_PRODUCTOS_MIN=0.8`:
+
+| Canasta | Ítems <800 suc | Sucursales que cotizan |
+|---|---:|---:|
+| Popular | 18 de 60 | **85** (contra 1.969 en v4) |
+| Media | 8 de 78 | 234 |
+| Ejecutiva | 23 de 78 | 163 |
+| Representativa | 2 de 78 | 2.209 |
+
+**Fix**: todas las canastas de consumo a ≥4 cadenas/≥15 prov/≥800 suc, con piso absoluto
+≥3/≥12/≥700 por debajo del cual la necesidad **se descarta**. Popular sale ahora de la marca más
+barata con presencia nacional (Cañuelas, Casanto, Marolio, Dogui, Brahma, Tregar, Sedal).
+**Costo casi nulo**: escalonamiento 2,27× → **2,21×**; cobertura mínima de un ítem 546 → **802
+sucursales**; `confiable=False` 0 de 314.
+
+### Dos bugs de unidades en el constructor
+- `Algodón Estrella Clásico 75 Gr` × **80** = $111.470, el 43% de Femenina. La cantidad estaba
+  en discos pero el producto se mide en gramos y no declara unidades → el motor tomó 80
+  **paquetes**. Se agregó `u='pack'` (cantidad en paquetes, se ignora el conteo) y `u='un'`
+  ahora **exige** que el envase declare unidades. Femenina volvió de $260.865 a **$139.737**.
+- `Hamburguesas 4 Un 83 Gr` × 10 = $104.124 en Ejecutiva: gramaje leído como 83 g cuando son
+  4×83 = 332. "N Un M Gr" es ambiguo → el candidato se descarta (criterio de nb06).
+
+### ⚠️ PENDIENTE: la corrida de verificación de v5.3
+1. Regenerar el Excel con `cargar_canastas_v5.py` (287 EANs) y correr nb07.
+   **Vuelve a releer el histórico (~58 min)**: la banda de plausibilidad cambia la clave del
+   caché. Es inevitable, el filtro corre antes de colapsar los frescos a tipo.
+2. **Verificar en el reporte**: (a) `Pan francés` en `Cobertura_frescos` — tiene que dar del
+   orden de $4.000-7.000/kg, NO $550 ni $10.000; (b) la línea nueva "Plausibilidad frescos:
+   N observaciones fuera de la banda"; (c) `n_suc` de Popular/Media/Ejecutiva — tienen que
+   volver al orden de 1.500-2.200, no 85/234/163; (d) `Alertas_precio_item` — venían 27 saltos
+   en el último trimestre, deberían bajar bastante.
+3. Si Espinaca sigue saltando, el problema es de cobertura (172 sucursales), no de régimen:
+   conviene bajarle el peso en `PESOS_FRESCOS` o sacarla.
+
+### 🟡 Defecto abierto: Tecnológica
+Las 5 regiones informan el MISMO valor: una sola cadena (ChangoMas/Mi ChangoMas), 97-102
+sucursales. **No publicar su apertura regional/provincial.**
+
+---
+
+## 🟡 HANDOFF ANTERIOR [2026-09-07 · mañana] — nb07 v5.2 + canastas v5
+
+> ⚠️ **SUPERADO por el handoff de arriba.** Sigue vigente todo el diagnóstico de BUG-24 y del
+> rediseño de canastas; lo que cambió es la banda de plausibilidad y los umbrales de cobertura.
 
 **Lo que se hizo en esta sesión** (a partir de la corrida real 2026-08-27 que trajo el usuario,
 más `trazabilidad_candidatos_2026-08.xlsx` y `canasta_representativa_2026-08.xlsx`).

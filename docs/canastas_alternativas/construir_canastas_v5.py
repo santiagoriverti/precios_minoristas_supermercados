@@ -147,14 +147,31 @@ def cba_hogar(componente):
 # 4 cadenas (por definicion, la marca propia vive en una). Sin bajarlo no hay estrato
 # Popular real, solo "la marca lider en envase chico". El costo de bajarlo se declara
 # item por item en la columna `cadenas` del detalle y en la hoja Cobertura_emp de nb07.
+# CORREGIDO EN LA CORRIDA 2026-08-27: el umbral relajado de Popular (>=2 cadenas / >=600
+# sucursales) parecia razonable en abstracto y DESTRUYO el indice en la practica. Lo que pasa
+# es que el percentil 10 aterriza sistematicamente en la marca propia, y la marca propia vive
+# en una sola cadena: 11 de los 60 productos de Popular quedaron con ~550 sucursales y 3
+# cadenas, todos Carrefour. Como nb07 solo cotiza una sucursal si tiene >=80% de los items de
+# la canasta (FRAC_PRODUCTOS_MIN), la canasta Popular paso a cotizar en 85 sucursales de 3.070
+# (contra 1.969 en v4) y su unica cadena era Carrefour. Un indice que se calcula en 85
+# sucursales de una cadena no es un indice nacional, por representativo que sea el surtido.
+#
+# Conclusion: el estrato Popular tiene que salir de la marca MAS BARATA CON PRESENCIA
+# NACIONAL (Canuelas, Legitimo, Maximo, Vanguardia, Plusbelle, Manaos, Marolio...), no de la
+# marca propia. Se pierde algo de amplitud entre tiers y se gana un indice medible.
 COBERTURA = {
-    'Popular':        dict(cadenas=2, provincias=10, sucursales=600),
+    'Popular':        dict(cadenas=4, provincias=15, sucursales=800),
     'Media':          dict(cadenas=4, provincias=15, sucursales=800),
-    'Ejecutiva':      dict(cadenas=3, provincias=12, sucursales=500),
+    'Ejecutiva':      dict(cadenas=4, provincias=15, sucursales=800),
     'Representativa': dict(cadenas=4, provincias=15, sucursales=800),
-    'Femenina':       dict(cadenas=3, provincias=12, sucursales=500),
+    'Femenina':       dict(cadenas=4, provincias=15, sucursales=700),
     'Tecnologica':    dict(cadenas=3, provincias=10, sucursales=90),
 }
+# Piso ABSOLUTO: por debajo de esto no se acepta ningun producto, y la necesidad se descarta
+# para esa canasta en vez de meter un item que solo cotiza en 400 sucursales. La escalera de
+# relajacion anterior ([1.0, 0.6, 0.35]) llegaba hasta 250 sucursales y ahi se colaron los
+# items que hundieron la cobertura de Ejecutiva (23 de 78 por debajo de 800).
+PISO_ABSOLUTO = dict(cadenas=3, provincias=12, sucursales=700)
 # Percentil del precio unitario (dentro de la necesidad) que define cada tier.
 TIER_PCT = {'Popular': 0.10, 'Media': 0.45, 'Ejecutiva': 0.80}
 
@@ -304,7 +321,11 @@ def repartir_frescos():
 # si (sin esto el escalonamiento por percentil elige productos distintos en vez de
 # versiones distintas del mismo producto: probado, en "Leche entera" el percentil 80
 # devolvia leche EN POLVO, y en "Pasta dental" devolvia pasta dental infantil).
-# `u`   : unidad fisica de `qty` -> 'kg' (usa gramos/ml del envase) o 'un' (unidades).
+# `u`   : unidad fisica de `qty`:
+#           'kg'   -> usa los gramos/ml del envase; qty en kg o litros
+#           'un'   -> qty en unidades de uso; el envase TIENE que declarar cuantas trae
+#           'pack' -> qty en paquetes; el conteo del envase se ignora (para productos donde
+#                     "un paquete" es la unidad natural de compra: algodon, tintura, esponja)
 # `qty` : cantidad fisica mensual del hogar de referencia (Popular, Media, Ejecutiva,
 #         Representativa). None en una posicion = la necesidad no entra en esa canasta.
 # `cba` : componente de la CBA que ancla la cantidad (documental; '' = fuera de CBA).
@@ -413,16 +434,17 @@ NEEDS = {
     'Agua saborizada': dict(sub='Agua Saborizada', inc=r'agua', exc=r'',
                             u='kg', qty=(N, 4.0, 8.0, 3.0), cba=''),
     'Cerveza': dict(sub='Rubias', inc=r'cerveza', exc=r'sin alcohol|artesanal.*growler',
-                    u='kg', qty=(2.0, 3.5, 6.0, cba_hogar('Bebidas alcoholicas') * 0.6), cba='Bebidas alcoholicas'),
+                    u='kg', qty=(2.0, 3.0, 4.5, cba_hogar('Bebidas alcoholicas') * 0.6), cba='Bebidas alcoholicas'),
     'Vino': dict(sub='Tintos', inc=r'vino', exc=r'espumant|champ|cocina|vinagre',
-                 u='kg', qty=(1.0, 1.5, 3.0, cba_hogar('Bebidas alcoholicas') * 0.4), cba='Bebidas alcoholicas'),
+                 u='kg', qty=(1.0, 1.5, 2.25, cba_hogar('Bebidas alcoholicas') * 0.4), cba='Bebidas alcoholicas'),
     'Aperitivo / fernet': dict(sub='Aperitivos', inc=r'', exc=r'',
                                u='kg', qty=(N, 0.75, 1.5, 0.5), cba=''),
     # ─────────────────────────── LIMPIEZA ──────────────────────────────────────
     'Detergente de vajilla': dict(sub='Detergentes', inc=r'detergente', exc=r'ropa|lavarropas|maquina',
                                   u='kg', qty=(1.5, 1.8, 2.2, 1.6), cba=''),
     'Jabon liquido para ropa': dict(sub='Jabones liquidos', inc=r'jab[oó]n l[ií]quido|l[ií]quido para ropa|ropa',
-                                    exc=r'manos|tocador|[ií]ntim', u='kg', qty=(2.0, 3.0, 4.0, 2.5), cba=''),
+                                    exc=r'manos|tocador|[ií]ntim|diluir|concentrad|super concentrad',
+                                    u='kg', qty=(2.0, 3.0, 4.0, 2.5), cba=''),
     'Jabon en polvo': dict(sub='Jabón en Polvo', inc=r'jab[oó]n|polvo', exc=r'',
                            u='kg', qty=(1.5, 1.0, 0.5, 1.2), cba=''),
     'Jabon en pan': dict(sub='Jabón en Pan', inc=r'jab[oó]n', exc=r'tocador|glicerina.*facial',
@@ -438,13 +460,13 @@ NEEDS = {
     'Papel higienico': dict(sub='Papel Higiénico', inc=r'papel higi[eé]nico', exc=r'humed',
                             u='un', qty=(16.0, 20.0, 24.0, 18.0), cba=''),
     'Rollo de cocina': dict(sub='Rollo de Cocina', inc=r'rollo|cocina', exc=r'',
-                            u='un', qty=(N, 3.0, 5.0, 2.0), cba=''),
+                            u='pack', qty=(N, 3.0, 5.0, 2.0), cba=''),
     'Servilletas': dict(sub='Servilletas', inc=r'servilleta', exc=r'',
                         u='un', qty=(140.0, 210.0, 280.0, 175.0), cba=''),
     'Bolsas de residuo': dict(sub='Bolsas y Films', inc=r'bolsa.*residuo|residuo|consorcio', exc=r'film|aluminio',
                               u='un', qty=(30.0, 40.0, 50.0, 35.0), cba=''),
     'Esponja / trapo': dict(sub='Esponjas y Guantes', inc=r'esponja|virul|fibra', exc=r'guante',
-                            u='un', qty=(2.0, 3.0, 4.0, 2.5), cba=''),
+                            u='pack', qty=(2.0, 3.0, 4.0, 2.5), cba=''),
     'Insecticida': dict(sub='Moscas y Mosquitos', inc=r'', exc=r'',
                         u='kg', qty=(N, 0.36, 0.50, 0.30), cba=''),
     # ─────────────────────────── PERFUMERIA ────────────────────────────────────
@@ -467,7 +489,7 @@ NEEDS = {
     'Crema corporal': dict(sub='Cremas Corporales', inc=r'crema|loci[oó]n|humectante', exc=r'facial|antiarrug|solar|pa[ñn]al',
                            u='kg', qty=(N, 0.4, 0.8, 0.3), cba=''),
     'Algodon / hisopos': dict(sub='Algodones e Hisopos', inc=r'', exc=r'',
-                              u='un', qty=(50.0, 75.0, 100.0, 60.0), cba=''),
+                              u='pack', qty=(1.0, 1.5, 2.0, 1.2), cba=''),
     'Toallitas femeninas': dict(sub='Toallitas Higiénicas', inc=r'toallit|toalla', exc=r'humed|beb[eé]|adulto|nocturn.*pack 6',
                                 u='un', qty=(16.0, 20.0, 24.0, 18.0), cba=''),
     # ─────────────────────────── BEBES Y MASCOTAS ──────────────────────────────
@@ -488,16 +510,16 @@ NEEDS_FEMENINA = {
     'Toallas higienicas': dict(sub='Toallitas Higiénicas', inc=r'toallit|toalla', exc=r'humed|beb[eé]|adulto', u='un', qty=32.0),
     'Protectores diarios': dict(sub='Protectores Diarios', inc=r'protector', exc=r'adulto', u='un', qty=60.0),
     'Tampones': dict(sub='Tampones', inc=r'tamp[oó]n', exc=r'', u='un', qty=16.0),
-    'Depilacion': dict(sub='Depilación', inc=r'', exc=r'', u='un', qty=1.0),
-    'Rasuradora femenina': dict(sub='Afeitado', inc=r'venus|femenin|mujer|depilad', exc=r'hombre|barba', u='un', qty=2.0),
+    'Depilacion': dict(sub='Depilación', inc=r'', exc=r'', u='pack', qty=1.0),
+    'Rasuradora femenina': dict(sub='Afeitado', inc=r'venus|femenin|mujer|soleil|women', exc=r'hombre|barba|espuma|gel', u='pack', qty=1.0),
     'Shampoo': dict(sub='Shampoo', inc=r'shampoo|sh[aá]mpoo', exc=r'seco|beb[eé]|perro|gato', u='kg', qty=0.6),
     'Acondicionador': dict(sub='Acondicionador', inc=r'acondicionador', exc=r'beb[eé]|aire|ropa', u='kg', qty=0.6),
-    'Coloracion': dict(sub='Coloración', inc=r'', exc=r'', u='un', qty=1.0),
+    'Coloracion': dict(sub='Coloración', inc=r'', exc=r'', u='pack', qty=1.0),
     'Crema corporal': dict(sub='Cremas Corporales', inc=r'crema|loci[oó]n', exc=r'facial|solar', u='kg', qty=0.4),
     'Desodorante mujer': dict(sub='Desodorante Mujer', inc=r'desodorante|antitranspir', exc=r'ambiente|pie', u='kg', qty=0.35),
-    'Limpieza facial': dict(sub='Limpieza Facial', inc=r'', exc=r'', u='un', qty=1.0),
-    'Hidratante facial': dict(sub='Hidratantes', inc=r'', exc=r'', u='un', qty=1.0),
-    'Algodon / discos': dict(sub='Algodones e Hisopos', inc=r'algod[oó]n|disco', exc=r'', u='un', qty=80.0),
+    'Limpieza facial': dict(sub='Limpieza Facial', inc=r'', exc=r'', u='pack', qty=1.0),
+    'Hidratante facial': dict(sub='Hidratantes', inc=r'', exc=r'', u='pack', qty=1.0),
+    'Algodon / discos': dict(sub='Algodones e Hisopos', inc=r'algod[oó]n|disco', exc=r'', u='pack', qty=1.5),
     'Jabon de tocador': dict(sub='Jabones', inc=r'jab[oó]n', exc=r'ropa|polvo|lavarropas', u='kg', qty=0.4),
 }
 
@@ -595,10 +617,25 @@ def candidatos(pu, cfg):
         c = c[~c['dlow'].str.contains(_nogroup(cfg['exc']), regex=True, na=False)]
     if cfg['u'] == 'kg':
         c = c[c['grams'].notna() & (c['grams'] > 0)]
+        # Multipacks AMBIGUOS fuera. "Hamburguesas 4 Un 83 Gr" se leia como 83 gramos cuando el
+        # paquete son 4x83 = 332, y eso metio 10 paquetes ($104.124) en la canasta Ejecutiva.
+        # El formato "N Un M Gr" no distingue si M es el total o el peso por unidad, asi que no
+        # se adivina: se descarta el candidato (mismo criterio que ya usa nb06).
+        c = c[~(c['unidades'].notna() & (c['unidades'] >= 2))]
         c['tam'] = c['grams']
         c['pu'] = c['precio_mediano'] / c['grams'] * 1000.0     # $/kg o $/L
+    elif cfg['u'] == 'pack':
+        # La cantidad esta en PAQUETES: el conteo de unidades del envase es irrelevante.
+        # Necesario porque "Algodon Estrella Clasico 75 Gr" no declara unidades, y con u='un'
+        # el motor lo tomo como 1 unidad -> 80 paquetes de algodon por mes = $111.470, el 43%
+        # de la canasta Femenina.
+        c['tam'] = 1.0
+        c['pu'] = c['precio_mediano']                            # $/paquete
     else:
-        c['tam'] = c['unidades'].fillna(1.0).clip(lower=1.0)
+        # u='un': la cantidad esta en unidades de uso, asi que el envase TIENE que declarar
+        # cuantas trae. Si no lo declara, no se puede convertir y el candidato no sirve.
+        c = c[c['unidades'].notna() & (c['unidades'] > 0)]
+        c['tam'] = c['unidades']
         c['pu'] = c['precio_mediano'] / c['tam']                 # $/unidad de uso
     c = c[c['pu'].notna() & (c['pu'] > 0)]
     if len(c) >= 8:
@@ -636,11 +673,17 @@ def elegir(c, canasta, usados, min_pu=None):
     if not len(c):
         return None, False
     reglas = COBERTURA[canasta]
-    escalas = [1.0, 0.6, 0.35]      # relajacion progresiva de la exigencia de cobertura
+    if canasta == 'Tecnologica':
+        piso = reglas
+    else:
+        piso = PISO_ABSOLUTO
+    escalas = [1.0, 0.0]            # exigencia plena; si no hay, el piso absoluto; si no, nada
     for k, esc in enumerate(escalas):
-        m = ((c['n_cadenas'] >= max(2, int(reglas['cadenas'] * esc)))
-             & (c['n_provincias'] >= max(6, int(reglas['provincias'] * esc)))
-             & (c['n_sucursales'] >= max(250, int(reglas['sucursales'] * esc))))
+        if esc == 1.0:
+            _cad, _prov, _suc = reglas['cadenas'], reglas['provincias'], reglas['sucursales']
+        else:
+            _cad, _prov, _suc = piso['cadenas'], piso['provincias'], piso['sucursales']
+        m = ((c['n_cadenas'] >= _cad) & (c['n_provincias'] >= _prov) & (c['n_sucursales'] >= _suc))
         pool = c[m]
         if not len(pool):
             continue

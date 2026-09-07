@@ -1,6 +1,6 @@
 # Contexto del Proyecto — Precios Minoristas SEPA
 
-Última actualización: 2026-09-07 (nb07 v5.2: filtro de régimen en frescos [BUG-24], tripwire Alertas_precio_item; canastas v5: escalonamiento por marca, cantidades físicas, ancla CBA INDEC hogar tipo 2 — 303 empaquetados + 59 tipos de frescos)
+Última actualización: 2026-09-07 (nb07 v5.3: banda de plausibilidad anclada en frescos + cobertura nacional obligatoria en las canastas; v5.2: filtro de régimen [BUG-24] y tripwire Alertas_precio_item — 287 empaquetados + 59 tipos de frescos)
 
 > **El proyecto tiene 6 herramientas (nb01–nb06).** Las descripciones detalladas por celda más
 > abajo en este archivo son **históricas** (describen la arquitectura previa de nb02); el estado
@@ -119,17 +119,17 @@ producto), **provincia**, **región** y **cadena**.
 fecha de cierre (`2026-09-03`). Corriendo el viernes, la última semana está completa.
 `DIA_CIERRE_SEMANA` (3=jueves, 4=viernes). *nb02 y nb06 siguen usando semana ISO.*
 
-**Las 6 canastas** (hoja `Productos unicos`, 303 EANs empaquetados únicos + 59 tipos frescos).
+**Las 6 canastas** (hoja `Productos unicos`, 287 EANs empaquetados únicos + 59 tipos frescos).
 Desde **v5 (2026-09-07)** cada estrato usa su propia versión de cada necesidad, con cantidades
 físicas ancladas a la **CBA del INDEC para hogar tipo 2** (3,09 adultos equivalentes):
 
 | Col | Canasta | Empaquetados | Frescos | Criterio de producto |
 |---|---|---:|---:|---|
-| `cantidad_01` | Popular | 60 | 32 | primer precio / segunda marca |
-| `cantidad_02` | Media | 78 | 57 | marca líder |
-| `cantidad_03` | Ejecutiva | 78 | 59 | premium |
+| `cantidad_01` | Popular | 58 | 32 | marca más barata con presencia nacional |
+| `cantidad_02` | Media | 76 | 57 | marca líder |
+| `cantidad_03` | Ejecutiva | 76 | 59 | premium |
 | `cantidad_04` | Tecnológica | 14 | — | producto modal (bundle de durables) |
-| `cantidad_05` | Representativa | 78 | 59 | producto modal — comparable con INDEC |
+| `cantidad_05` | Representativa | 76 | 59 | producto modal — comparable con INDEC |
 | `cantidad_06` | Femenina | 14 | — | marca líder |
 
 > ⚠️ **No confundir**: `cantidad_01..06` en la hoja **`Productos unicos`** son estas 6 canastas
@@ -169,7 +169,7 @@ semanas con dato real) y **`Alertas_reemplazo`** (ítems sin dato hace >8 semana
 CELDA 15 imprime el bloque **"REPORTE PARA CLAUDE"** en texto plano.
 
 **Carga de cantidades**: `docs/canastas_alternativas/cargar_canastas_v5.py` (loader de Colab,
-303 EANs, `cantidad_01..06`; limpia y reescribe las 6 columnas). Lo **genera**
+287 EANs, `cantidad_01..06`; limpia y reescribe las 6 columnas). Lo **genera**
 `construir_canastas_v5.py`, que se corre local y deja además `canastas_v5_detalle.csv` con el
 porqué de cada elección y `frescos_v5_qty.txt` con las tuplas para `TIPOS_FRESCOS`.
 Generador: `gen_nb07.py`. **Detalle en README y `docs/canastas_alternativas/README.md`.**
