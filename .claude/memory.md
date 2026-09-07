@@ -137,7 +137,55 @@ el nombre y vaya después.
 **Cosmético corregido**: el rubro `'Limpieza '` con espacio al final aparecía como rubro aparte
 en todas las tablas de composición.
 
-### ⚠️ PENDIENTE tras v5.5
+### v5.6 [2026-09-07 · noche] — auditoría de la corrida de v5.5
+v5.5 funcionó: 88 semanas-tipo descartadas, saltos de ítem 256→243, **desvío semanal del índice
+1,28%** (Representativa) y los saltos que quedan son casi todos de principios de 2024, que son
+inflación genuina (20% mensual en ene-abr 2024, o sea ~4,6% semanal). Aparece además el
+ordenamiento de Engel esperado: **Popular 290 > Media 276 > Representativa 264 > Ejecutiva 250**
+contra IPC 283.
+
+Quedaba UN salto anómalo: **2026-05-07 (+5,4%)**. Diagnóstico:
+
+**Es el rubro Carne, y es un cambio de régimen que dura 6 semanas y vuelve.** Seis cortes a la
+vez: Bife de chorizo +153,9%, Carré de cerdo +118,1%, Nalga/Cuadril +68,5%, Vacío +51,8%,
+Asado +50,3%, Suprema +39,8%. Se quedan en el nivel alto hasta el 2026-06-18 y bajan. El ancla
+de verduras estaba plana. Carré oscila entre $15.951 y $30.848 en semanas consecutivas: **factor
+1,93**, la firma clásica de dos regímenes. Y **110 de los 243 saltos >35% tienen factor entre
+1,5× y 2,5×** — el `FRESCO_REGIMEN_K = 3.0` abre una ventana de 9× y no los separa.
+
+**Causa material**: cada tipo de carne tiene un EAN barato de una cadena grande conviviendo con
+un grupo caro de baja cobertura. Ejemplo Vacío: `Vacio 1 Kg` a **$8.490 en 983 sucursales**
+contra `Vacío Novillito` $18.999, `Great Value` $26.565 y `Vacio Abc` $30.000, todos con ~91
+sucursales. La mediana nacional salta según cuál domine.
+
+**BUG de regex encontrado**: en Carré de cerdo el patrón era `cerdo.*carr[eé]`, que matchea
+"Chorizo Puro Cerdo Bombón **CARRE**four" — el fragmento de Carrefour no tenía límite de
+palabra. Entraban 4 productos con 418 sucursales-EAN, **incluido un snack para perros de orejas
+de cerdo**. Como Carré tiene solo 4 candidatos legítimos, esos chorizos lo dominaban.
+
+**Fixes v5.6**: (a) regex de Carré corregido con `carr[eé]` en las tres alternativas + exc
+`chorizo|carrefour|snack|perro|mascota`; (b) **`rk` por tipo** (campo nuevo en TIPOS_FRESCOS):
+K=2,0 en los 17 cortes de Carne/Cerdo/Pollo, porque dentro de UN MES el mismo corte no varía 2×.
+**⚠️ Estos dos SÍ invalidan el caché** (tocan el universo de EANs y el filtro de lectura).
+
+**Descartado tras medirlo**: probé una banda de plausibilidad para EMPAQUETADOS (mediana móvil
+centrada ±8 semanas). Hay contaminación real —Desodorante Rexona va de $450 a $4.948 (11×) con
+9 saltos, Arroz Doble Carolina 7×, Raid 10,7×; **102 de las 243 alertas son empaquetados en 64
+EANs**— pero el filtro corta solo **17 celdas de 37.017 (0,05%)** y **no mueve el índice**
+(desvío 2,32% → 2,32%): los bloques contaminados son largos y la mediana móvil los sigue.
+Se deja documentado y visible en `Alertas_precio_item`, sin filtro que no cambia nada.
+
+### ⚠️ PENDIENTE tras v5.6
+1. **Una corrida completa más (~1-2 h de relectura)**: el regex de Carré y los `rk` son
+   filtros de lectura. Verificar que el salto de 2026-05-07 desaparece y que los cortes de carne
+   dejan de oscilar (mirar Carré de cerdo y Vacío en `Panel_nacional`).
+2. **Cobertura de Media (~264 sucursales)** y de Popular en 2026-03/04 (4 y 19). Solución
+   propuesta y NO implementada: que `elegir()` en el constructor tome, dentro de una ventana
+   alrededor del percentil objetivo, el producto con MAYOR cobertura en vez del más cercano al
+   percentil. Sube la cobertura sin mover casi el escalonamiento.
+3. No publicar la apertura regional/provincial de Popular, Media ni Tecnológica.
+
+### ⚠️ PENDIENTE ANTERIOR tras v5.5
 1. **Correr nb07** (reusa el caché, son minutos). Verificar: desvío semanal del índice, la línea
    nueva "Plausibilidad por tipo: N semanas-tipo descartadas", y `Alertas_precio_item`.
 2. **El salto de 2026-05-07 (+12,1%) NO está resuelto**: es el rubro **Carne** entero. Ese día

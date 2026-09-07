@@ -102,6 +102,16 @@ FRESCO_OUTLIER_K = 2.5
 # se estima sobre millones de observaciones no se da vuelta porque una sucursal cambie el surtido.
 # Tambien elimina errores de carga groseros (habia "Papa Negra Sc 1 Kg" a $95 en 983 sucursales).
 FRESCO_REGIMEN_K = 3.0
+# K de regimen POR TIPO (campo 'rk' en TIPOS_FRESCOS). El K global de 3,0 abre una ventana de 9x
+# y no separa dos regimenes que difieren en ~2x. En la corrida 2026-08-27, 110 de los 243 saltos
+# de item mayores a 35% tenian factor entre 1,5x y 2,5x: esa es la firma. El caso mas visible fue
+# la semana 2026-05-07 (+5,4% en la canasta), donde SEIS cortes vacunos se movieron a la vez
+# -Bife de chorizo +153,9%, Carre de cerdo +118,1%, Nalga/Cuadril +68,5%, Vacio +51,8%, Asado
+# +50,3%, Suprema +39,8%- con el ancla de verduras plana, se quedaron seis semanas en el nivel
+# alto y volvieron el 2026-06-18. No es un repricing: es que el tipo tiene un EAN barato de una
+# cadena grande (Vacio 1 Kg a $8.490 en 983 sucursales) conviviendo con un grupo caro de ~91
+# sucursales cada uno ($19.000-30.000), y la mediana nacional salta segun cual domine.
+# Dentro de UN MES el mismo corte de carne no varia 2x, asi que ahi se puede exigir mas.
 # Banda de PLAUSIBILIDAD, previa a todo lo demas. El filtro de regimen elige la moda
 # MAYORITARIA de cada tipo, y eso falla cuando la moda mayoritaria es basura. Caso real
 # (corrida 2026-08-27): una cadena de ~980 sucursales publica pan a $5, $40 y $70 el KILO;
@@ -289,25 +299,32 @@ TIPOS_FRESCOS = {
     'Remolacha':   {'rubro':'Verduras','unidad':'kg','qty':(0.3, 0.42, 0.57, 0.43), 'inc':r'\bremolacha', 'exc':r'lata|\blat\b|conserva|jugo|congel|ensalada|precocid|cortada'},
     'Pepino':      {'rubro':'Verduras','unidad':'kg','qty':(0, 0.32, 0.68, 0.22), 'inc':r'\bpepino', 'exc':r'encurt|pickle|conserva|frasco|vinagre|jab[oó]n|crema|mascar|gel'},
     # ---- CARNE VACUNA ($/kg) ----
-    'Asado':       {'rubro':'Carne','unidad':'kg','qty':(2.05, 2.22, 2.34, 2.13), 'inc':r'\basado\b|\bcostillar|tira de asado', 'exc':r'salsa|adob|aderez|sabor asado|hellmann|snack|man[ií]|pollo|caf[eé]|cuchill|\bset\b|carbon|carb[oó]n|palit|asador|pizza|cerdo|chancho|cordero|congel'},
-    'Carne picada':{'rubro':'Carne','unidad':'kg','qty':(3.07, 2.44, 1.6, 2.66), 'inc':r'\bpicada\b|carne molida', 'exc':r'salch|congel|caldo|pat[eé]|hamburg|pollo|pescado|aceituna|verdura|angus|wagyu|kobe|premium|cerdo|mixta|frutos|mani|man[ií]|tartare|tartar'},
-    'Nalga/Cuadril':{'rubro':'Carne','unidad':'kg','qty':(0.82, 1.67, 2.34, 1.6), 'inc':r'\bnalga|\bcuadril|bola de lomo|\bcuadrada\b|\bpeceto|colita de cuadril', 'exc':r'mantel|cuadrill|cerdo|pollo|milanesa|congel|cordero'},
-    'Milanesa carne':{'rubro':'Carne','unidad':'kg','qty':(1.02, 1.33, 1.28, 1.28), 'inc':r'milanesa', 'exc':r'soja|pollo|congel|merluza|pescado|napolitan|vegetal|cerdo|berenjena|rebozad|granja|swift|paty|listas|carr[eé]|calabaza|zapallo|espinaca|acelga|arroz|quinoa|lenteja|garbanzo'},
-    'Matambre':    {'rubro':'Carne','unidad':'kg','qty':(0.2, 0.56, 0.96, 0.43), 'inc':r'\bmatambre', 'exc':r'arrollado|relleno|queso|pizza|a la|cocido|cerdo|congel'},
-    'Vacío':       {'rubro':'Carne','unidad':'kg','qty':(0.2, 0.67, 1.17, 0.53), 'inc':r'\bvac[ií]o\b', 'exc':r'al vac[ií]o|\(vac|envasad|arrollado|relleno|envase|frasco|cerdo|pollo|medialuna|queso|jam[oó]n|fiambre|salame|bondiola|congel|cordero|pescado|merluza|salm[oó]n|chistorra|chorizo|morcilla|salchich|guanaco'},
-    'Osobuco':     {'rubro':'Carne','unidad':'kg','qty':(1.02, 0.56, 0.21, 0.64), 'inc':r'\bosobuco|\bosso\s*buco', 'exc':r'congel'},
-    'Roast beef':  {'rubro':'Carne','unidad':'kg','qty':(0.31, 0.67, 0.96, 0.53), 'inc':r'roast\s*beef|tapa de nalga|tapa de cuadril', 'exc':r'congel|fiambre|feteado'},
-    'Bife de chorizo':{'rubro':'Carne','unidad':'kg','qty':(0, 0.67, 1.7, 0.53), 'inc':r'bife de chorizo|bife ancho|bife angosto|\bbife\b', 'exc':r'chorizo parril|cerdo|pollo|milanesa|snack|palit|t-bone|tbone|ojo de bife|tomahawk|congel|cordero|wagyu|kobe|angus'},
-    'Lomo':        {'rubro':'Carne','unidad':'kg','qty':(0, 0.22, 1.28, 0.21), 'inc':r'\blomo\b', 'exc':r'bola de lomo|cerdo|atun|at[uú]n|pollo|lomito|jam[oó]n|ahumad|pizza|s[aá]ndwich|sandwich|congel|cabecero|medall|wagyu|kobe|angus|praga|feteado|cinta|costilla|guanaco'},
-    'Paleta':      {'rubro':'Carne','unidad':'kg','qty':(1.53, 0.89, 0.43, 1.06), 'inc':r'\bpaleta\b', 'exc':r'cerdo|cocida|jam[oó]n|fiambre|helad|paletita|pintur|rodillo|ping|pong|tenis|playa|espatula|cordero|congel|guanaco'},
-    'Falda/Puchero':{'rubro':'Carne','unidad':'kg','qty':(1.84, 0.89, 0.32, 1.06), 'inc':r'\bfalda\b|\bpuchero|\bcaracu|\bazotillo', 'exc':r'cerdo|pollo|congel|mixto|cordero'},
+    'Asado':       {'rubro':'Carne','unidad':'kg','qty':(2.05, 2.22, 2.34, 2.13), 'rk':2.0, 'inc':r'\basado\b|\bcostillar|tira de asado', 'exc':r'salsa|adob|aderez|sabor asado|hellmann|snack|man[ií]|pollo|caf[eé]|cuchill|\bset\b|carbon|carb[oó]n|palit|asador|pizza|cerdo|chancho|cordero|congel'},
+    'Carne picada':{'rubro':'Carne','unidad':'kg','qty':(3.07, 2.44, 1.6, 2.66), 'rk':2.0, 'inc':r'\bpicada\b|carne molida', 'exc':r'salch|congel|caldo|pat[eé]|hamburg|pollo|pescado|aceituna|verdura|angus|wagyu|kobe|premium|cerdo|mixta|frutos|mani|man[ií]|tartare|tartar'},
+    'Nalga/Cuadril':{'rubro':'Carne','unidad':'kg','qty':(0.82, 1.67, 2.34, 1.6), 'rk':2.0, 'inc':r'\bnalga|\bcuadril|bola de lomo|\bcuadrada\b|\bpeceto|colita de cuadril', 'exc':r'mantel|cuadrill|cerdo|pollo|milanesa|congel|cordero'},
+    'Milanesa carne':{'rubro':'Carne','unidad':'kg','qty':(1.02, 1.33, 1.28, 1.28), 'rk':2.0, 'inc':r'milanesa', 'exc':r'soja|pollo|congel|merluza|pescado|napolitan|vegetal|cerdo|berenjena|rebozad|granja|swift|paty|listas|carr[eé]|calabaza|zapallo|espinaca|acelga|arroz|quinoa|lenteja|garbanzo'},
+    'Matambre':    {'rubro':'Carne','unidad':'kg','qty':(0.2, 0.56, 0.96, 0.43), 'rk':2.0, 'inc':r'\bmatambre', 'exc':r'arrollado|relleno|queso|pizza|a la|cocido|cerdo|congel'},
+    'Vacío':       {'rubro':'Carne','unidad':'kg','qty':(0.2, 0.67, 1.17, 0.53), 'rk':2.0, 'inc':r'\bvac[ií]o\b', 'exc':r'al vac[ií]o|\(vac|envasad|arrollado|relleno|envase|frasco|cerdo|pollo|medialuna|queso|jam[oó]n|fiambre|salame|bondiola|congel|cordero|pescado|merluza|salm[oó]n|chistorra|chorizo|morcilla|salchich|guanaco'},
+    'Osobuco':     {'rubro':'Carne','unidad':'kg','qty':(1.02, 0.56, 0.21, 0.64), 'rk':2.0, 'inc':r'\bosobuco|\bosso\s*buco', 'exc':r'congel'},
+    'Roast beef':  {'rubro':'Carne','unidad':'kg','qty':(0.31, 0.67, 0.96, 0.53), 'rk':2.0, 'inc':r'roast\s*beef|tapa de nalga|tapa de cuadril', 'exc':r'congel|fiambre|feteado'},
+    'Bife de chorizo':{'rubro':'Carne','unidad':'kg','qty':(0, 0.67, 1.7, 0.53), 'rk':2.0, 'inc':r'bife de chorizo|bife ancho|bife angosto|\bbife\b', 'exc':r'chorizo parril|cerdo|pollo|milanesa|snack|palit|t-bone|tbone|ojo de bife|tomahawk|congel|cordero|wagyu|kobe|angus'},
+    'Lomo':        {'rubro':'Carne','unidad':'kg','qty':(0, 0.22, 1.28, 0.21), 'rk':2.0, 'inc':r'\blomo\b', 'exc':r'bola de lomo|cerdo|atun|at[uú]n|pollo|lomito|jam[oó]n|ahumad|pizza|s[aá]ndwich|sandwich|congel|cabecero|medall|wagyu|kobe|angus|praga|feteado|cinta|costilla|guanaco'},
+    'Paleta':      {'rubro':'Carne','unidad':'kg','qty':(1.53, 0.89, 0.43, 1.06), 'rk':2.0, 'inc':r'\bpaleta\b', 'exc':r'cerdo|cocida|jam[oó]n|fiambre|helad|paletita|pintur|rodillo|ping|pong|tenis|playa|espatula|cordero|congel|guanaco'},
+    'Falda/Puchero':{'rubro':'Carne','unidad':'kg','qty':(1.84, 0.89, 0.32, 1.06), 'rk':2.0, 'inc':r'\bfalda\b|\bpuchero|\bcaracu|\bazotillo', 'exc':r'cerdo|pollo|congel|mixto|cordero'},
     # ---- POLLO ($/kg) ----
-    'Pollo':       {'rubro':'Pollo','unidad':'kg','qty':(4.09, 3.56, 2.66, 3.73), 'inc':r'\bpollo\b|pata muslo', 'exc':r'caldo|sopa|saboriz|congel|nugget|pat[eé]|medall|hamburg|milanesa|pella|arroz|fideo|snack|cubito|aliment|merluza|pescado|pechuga|suprema|\bfilet|fajita|deshuesad|campero|colonial|org[aá]nic|kosher|criado|sandwich|s[aá]ndwich|empanada|tarta|salch|picada|croqueta|bocadit|rebozad|\bmax\b|triangulo|relleno|arrollado|taco|wrap|ensalada|pizza|salsa|al vac[ií]o|ahumad|grill|listo|rostiz|precoc|\bmed\b|\bjam|patita|\bseco\b|cuarto|cocido|hervid'},
-    'Suprema/Pechuga':{'rubro':'Pollo','unidad':'kg','qty':(0.51, 1.33, 2.13, 1.06), 'inc':r'\bpechuga|\bsuprema', 'exc':r'congel|milanesa|rebozad|nugget|medall|hamburg|sandwich|s[aá]ndwich|pavo|cerdo|salsa|empanad|grill|listas|granja del sol|swift|paty|\bmax\b|merluza|pescado|verdeo|ahumad|fiambre|feteado|al vac[ií]o'},
+    'Pollo':       {'rubro':'Pollo','unidad':'kg','qty':(4.09, 3.56, 2.66, 3.73), 'rk':2.0, 'inc':r'\bpollo\b|pata muslo', 'exc':r'caldo|sopa|saboriz|congel|nugget|pat[eé]|medall|hamburg|milanesa|pella|arroz|fideo|snack|cubito|aliment|merluza|pescado|pechuga|suprema|\bfilet|fajita|deshuesad|campero|colonial|org[aá]nic|kosher|criado|sandwich|s[aá]ndwich|empanada|tarta|salch|picada|croqueta|bocadit|rebozad|\bmax\b|triangulo|relleno|arrollado|taco|wrap|ensalada|pizza|salsa|al vac[ií]o|ahumad|grill|listo|rostiz|precoc|\bmed\b|\bjam|patita|\bseco\b|cuarto|cocido|hervid'},
+    'Suprema/Pechuga':{'rubro':'Pollo','unidad':'kg','qty':(0.51, 1.33, 2.13, 1.06), 'rk':2.0, 'inc':r'\bpechuga|\bsuprema', 'exc':r'congel|milanesa|rebozad|nugget|medall|hamburg|sandwich|s[aá]ndwich|pavo|cerdo|salsa|empanad|grill|listas|granja del sol|swift|paty|\bmax\b|merluza|pescado|verdeo|ahumad|fiambre|feteado|al vac[ií]o'},
     # ---- CERDO ($/kg) ----
-    'Bondiola':    {'rubro':'Cerdo','unidad':'kg','qty':(0.2, 0.56, 1.06, 0.43), 'inc':r'\bbondiola', 'exc':r'ahumad|curad|fiambre|feteado|sandwich|s[aá]ndwich|costeletero|sin bondiola|congel|finas hierbas|adobad|marinad|saboriz|al vac[ií]o|piamontesa|lario|cagnoli|paladini'},
-    'Pechito/Costilla cerdo':{'rubro':'Cerdo','unidad':'kg','qty':(0.51, 0.67, 0.85, 0.64), 'inc':r'pechito|costilla.*cerdo|cerdo.*costilla|costeleta.*cerdo|cerdo.*costeleta|\bribs\b', 'exc':r'ahumad|congel|cong\b|salsa|bbq|sandwich|kosher|aus\b'},
-    'Carré de cerdo':{'rubro':'Cerdo','unidad':'kg','qty':(0.2, 0.44, 0.64, 0.32), 'inc':r'carr[eé].*cerdo|cerdo.*carr[eé]|\bcarr[eé]\b', 'exc':r'ahumad|fiambre|feteado|curad|jam[oó]n|congel|cong\b|aus\b|milanesa'},
+    'Bondiola':    {'rubro':'Cerdo','unidad':'kg','qty':(0.2, 0.56, 1.06, 0.43), 'rk':2.0, 'inc':r'\bbondiola', 'exc':r'ahumad|curad|fiambre|feteado|sandwich|s[aá]ndwich|costeletero|sin bondiola|congel|finas hierbas|adobad|marinad|saboriz|al vac[ií]o|piamontesa|lario|cagnoli|paladini'},
+    'Pechito/Costilla cerdo':{'rubro':'Cerdo','unidad':'kg','qty':(0.51, 0.67, 0.85, 0.64), 'rk':2.0, 'inc':r'pechito|costilla.*cerdo|cerdo.*costilla|costeleta.*cerdo|cerdo.*costeleta|\bribs\b', 'exc':r'ahumad|congel|cong\b|salsa|bbq|sandwich|kosher|aus\b'},
+    # BUG CORREGIDO (corrida 2026-08-27): el patron anterior era
+    #   carr[eé].*cerdo|cerdo.*carr[eé]|\bcarr[eé]\b
+    # y 'cerdo.*carr[eé]' matchea "Chorizo Puro Cerdo Bombon CARREfour": el fragmento 'carre' de
+    # Carrefour no tenia limite de palabra. Entraban 4 productos con 418 sucursales-EAN, entre
+    # ellos un snack para perros de orejas de cerdo. Como Carre de cerdo solo tiene 4 candidatos
+    # legitimos, esos chorizos lo dominaban y el tipo oscilaba entre $15.951 y $30.848 en semanas
+    # consecutivas (factor 1,93). Ahora 'carre' exige limite de palabra en las tres alternativas.
+    'Carré de cerdo':{'rubro':'Cerdo','unidad':'kg','qty':(0.2, 0.44, 0.64, 0.32), 'rk':2.0, 'inc':r'\bcarr[eé]\b.*cerdo|cerdo.*\bcarr[eé]\b|\bcarr[eé]\b', 'exc':r'ahumad|fiambre|feteado|curad|jam[oó]n|congel|cong\b|aus\b|milanesa|chorizo|carrefour|snack|perro|mascota'},
     # ---- PESCADO ($/kg) ----
     'Merluza':     {'rubro':'Pescado','unidad':'kg','qty':(0.41, 0.67, 1.06, 0.53), 'inc':r'\bmerluza', 'exc':r'bast[oó]n|reboz|medall|milanesa|congel|aceite|lata|conserva|croqueta|nugget|granja del sol|swift|hamburg|empanad|romana|formita|queso|negra|relleno|ahumad|pat[eé]'},
     # ---- FIAMBRES Y QUESOS por kg (balanza) ----
@@ -760,6 +777,7 @@ def _leer_mes(_lbl):
     return _df.groupby(_SKR+['ean_norm','semana'], as_index=False)['precio'].median()
 
 _FR_MULT = {t: (1000.0 if FRESCO_INFO[t]['unidad'] == 'kg' else 12.0) for t in FRESCO_INFO}
+_RK_TIPO = {t: float(TIPOS_FRESCOS[t]['rk']) for t in FRESCO_INFO if 'rk' in TIPOS_FRESCOS.get(t, {})}
 _FR_DESCARTES = []   # (mes, observaciones fuera de la banda de plausibilidad, ancla $/kg)
 def _colapsar(_df, _lbl_mes=''):
     if _df is None or len(_df) == 0: return None
@@ -796,7 +814,8 @@ def _colapsar(_df, _lbl_mes=''):
         #     `map` sobre las ~59 medianas por tipo en vez de `transform`: mismo resultado, sin
         #     la maquinaria de groupby sobre el panel completo.
         _ref = _f['item'].map(_f.groupby('item')['price'].median())
-        _f = _f[(_f['price'] >= _ref / FRESCO_REGIMEN_K) & (_f['price'] <= _ref * FRESCO_REGIMEN_K)]
+        _kreg = _f['item'].map(_RK_TIPO).fillna(FRESCO_REGIMEN_K)
+        _f = _f[(_f['price'] >= _ref / _kreg) & (_f['price'] <= _ref * _kreg)]
         del _ref
         # (2) filtro de outliers intra-tipo dentro de cada sucursal-semana (segunda linea)
         _med = _f.groupby(_SKR + ['semana','item'])['price'].transform('median')
