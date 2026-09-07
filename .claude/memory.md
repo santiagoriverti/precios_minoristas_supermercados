@@ -86,7 +86,72 @@ Fixes (v5.4, todos **result-identical**, el caché sigue valiendo):
 DataFrame fila por fila sobre un panel sintético de 83k filas. Por eso el caché de 2 horas del
 usuario sigue siendo válido y **no hay que rehacer la lectura**.
 
-### ⚠️ PENDIENTE: la corrida de verificación de v5.3/v5.4
+### v5.5 [2026-09-07 · noche] — auditoría de la corrida buena
+La corrida de v5.4 salió completa (caché reusado, sin OOM). Chequeos pedidos: **pan francés
+$3.457/kg** (era $550), banda global descartó **44.737 obs** con ancla $2.990, Popular pasó de
+85 a **1.035 sucursales**. Pero el usuario reportó saltos y la auditoría encontró tres cosas.
+
+**1. Las semanas que el usuario marca NO son las de los saltos.** Marcó 2026-04-30, 2025-04-10
+y 2024-08-22; ahí las variaciones son +0,8%, −0,1% y +0,3%. Los saltos están en las semanas
+SIGUIENTES (lee las etiquetas del eje x, que están espaciadas): 2026-05-07, 2025-05-08,
+2024-09-12, 2026-06-04.
+
+**2. Pan francés explicaba el 43% de toda la volatilidad del índice** (contrib_vol 5,05 de
+11,66; desvío semanal propio 69,7%; 12 saltos >35%). Pesa 17,7 kg — la cantidad más grande de
+la canasta, anclada a los 6.750 g/AE de la CBA. Su serie es **bimodal**: un cluster plano de
+~55 de 139 semanas entre $500 y $650 que NUNCA inflaciona, y una serie legítima que sí (×2,66
+entre 2024-01 y 2026-08, contra ×2,86 del ancla). La banda global no lo agarraba porque la
+basura está a ratio 0,20-0,59 y el piso global quedaba en 0,38 — **sobrevivía por un 4%**, y el
+tipo cambiaba de régimen EN EL CAMBIO DE MES (ratio clavado en 0,21 y de golpe 2,07).
+
+**Fix v5.5 — banda de plausibilidad POR TIPO**, aplicada sobre el precio nacional **después del
+caché** (a propósito: cambiar estos números NO obliga a releer el histórico). Cada tipo declara
+su ratio esperado contra el ancla (`RATIO_FRESCO`, calibrado en el **q75** del ratio y no en la
+mediana, porque en un tipo contaminado la mediana cae ENTRE los dos regímenes). Banda
+asimétrica `[ratio/4, ratio*5]` — estricta abajo (relleno) y laxa arriba (estacionalidad
+genuina de durazno/ciruela/uva). Más `PISO_RATIO_OVERRIDE = {'Pan francés': 0.65}`, que cae en
+el hueco entre los dos modos. Descarta **88 de 8.201 semanas-tipo (1,1%)**: pan 63, espinaca 12,
+limón 12, osobuco 1. Sin colateral.
+
+Además: **el arrastre no puentea una celda rechazada**. Si lo hiciera, al reaparecer un precio
+válido el índice compararía contra uno viejo arrastrado y publicaría de golpe toda la inflación
+del hueco.
+
+**Efecto medido sobre el panel real**: desvío de la variación semanal **3,17% → 2,17%**;
+semanas con |var|>4% de 13 a 7; >8% de 7 a 3; máximo 16,9% → 12,1%.
+2025-05-08 pasó de **−16,9% a +0,4%**; 2026-06-04 de **+12,5% a −0,9%**.
+
+**3. Cobertura de sucursales por canasta (por mes)**: Popular tuvo **4 sucursales en 2026-03**
+y 19 en 2026-04, saltando a ~1.000 en mayo. Media está clavada en **~270**. Ejecutiva ~1.210,
+Representativa ~2.255. El índice NACIONAL no está contaminado (`sval` es el panel completo y el
+precio nacional de cada ítem usa todas las sucursales que lo tienen), pero **las aperturas por
+provincia/cadena/región de Popular y Media descansan en muy pocas sucursales** — el bloque de
+fiabilidad regional ya lo delata (n_suc mediano 12 en Centro/Pampeana). Causa: con 58-76 EANs
+específicos y `FRAC_PRODUCTOS_MIN=0.8`, pocas cadenas tienen el surtido completo. Es el costo
+estructural del escalonamiento por marca.
+
+**Falsa alarma aclarada**: el mensaje "(índice desde 2025-06-12)" pertenecía a **Tecnológica**,
+no a Ejecutiva — se imprimía antes de la línea de su propia canasta. Corregido para que lleve
+el nombre y vaya después.
+
+**Cosmético corregido**: el rubro `'Limpieza '` con espacio al final aparecía como rubro aparte
+en todas las tablas de composición.
+
+### ⚠️ PENDIENTE tras v5.5
+1. **Correr nb07** (reusa el caché, son minutos). Verificar: desvío semanal del índice, la línea
+   nueva "Plausibilidad por tipo: N semanas-tipo descartadas", y `Alertas_precio_item`.
+2. **El salto de 2026-05-07 (+12,1%) NO está resuelto**: es el rubro **Carne** entero. Ese día
+   Nalga/Cuadril +68,5%, Bife de chorizo +153,9%, Carré de cerdo +118,1%, Vacío +51,8%, Asado
+   +50,3%, Suprema +39,8% — seis tipos a la vez, con el ancla de verduras plana (2.444 → 2.425).
+   Eso no es repricing: es un evento de composición en Carnicería, y cae en un cambio de mes,
+   lo que apunta al filtro de régimen mensual eligiendo otro conjunto de variantes. **Es lo
+   próximo a investigar.**
+3. **Cobertura de Media (~270 sucursales)**: conviene que el constructor prefiera, dentro de una
+   ventana alrededor del percentil objetivo, el producto con MAYOR cobertura, en vez de el más
+   cercano al percentil. Sube la cobertura sin mover casi el escalonamiento.
+4. Espinaca (273 sucursales) y Palta (191) siguen por debajo de cualquier umbral razonable.
+
+### ⚠️ PENDIENTE ANTERIOR: la corrida de verificación de v5.3/v5.4
 1. Regenerar el Excel con `cargar_canastas_v5.py` (287 EANs) y correr nb07.
    **Vuelve a releer el histórico (~58 min)**: la banda de plausibilidad cambia la clave del
    caché. Es inevitable, el filtro corre antes de colapsar los frescos a tipo.

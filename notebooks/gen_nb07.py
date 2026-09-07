@@ -120,6 +120,107 @@ FRESCO_REGIMEN_K = 3.0
 ANCLA_FRESCOS = ['Papa', 'Cebolla', 'Zapallo', 'Zanahoria', 'Tomate', 'Banana', 'Manzana', 'Naranja']
 FRESCO_PISO_ANCLA  = 0.2
 FRESCO_TECHO_ANCLA = 20.0
+
+# Banda de plausibilidad POR TIPO, sobre el precio nacional ya agregado.
+# La banda global del read (FRESCO_PISO_ANCLA) usa un piso comun para todos los tipos y no
+# alcanza cuando la basura de un tipo cae justo por ENCIMA de ese piso. Caso real de la corrida
+# 2026-08-27: los registros invalidos de pan cotizan a $500-520 el kilo y el piso global quedaba
+# en $480, asi que sobrevivian por un 4%. Cada vez que el ancla se movia un poco, el tipo entero
+# cambiaba de regimen EN EL CAMBIO DE MES: el ratio pan/ancla quedaba clavado en 0,21 durante
+# meses y saltaba a 2,07 de golpe. Como pan frances pesa 17,7 kg en la canasta, ese solo item
+# explicaba el 43% de toda la volatilidad del indice (desvio semanal propio 69,7%).
+#
+# Solucion: cada tipo declara su precio ESPERADO relativo al ancla, y la semana cuyo precio
+# nacional se sale de [ratio/K_BAJO, ratio*K_ALTO] se marca como FALTANTE. No se inventa un
+# valor: el arrastre y el indice de muestra apareada ya saben tratar un item ausente.
+# Se aplica DESPUES del cache (sobre el panel nacional), asi que tocar estos numeros NO obliga
+# a releer el historico.
+#
+# La banda es ASIMETRICA a proposito: por abajo la contaminacion es de precios de relleno y hay
+# que ser estricto; por arriba estan los picos estacionales genuinos (durazno, ciruela, uva) y
+# el filtro de regimen ya controla la composicion dentro del mes. Con [/3, *5] se descartan
+# 53 de 8.201 semanas-tipo (0,6%): 33 de pan frances, 11 de espinaca, 8 de limon, 1 de osobuco.
+#
+# CALIBRACION: percentil 75 de precio_tipo/ancla sobre las 139 semanas de la corrida
+# 2026-08-27. Se usa q75 y no la mediana porque en un tipo contaminado la mediana cae ENTRE
+# los dos regimenes (pan frances: mediana 1,14 con la basura en 0,2-0,6 y lo bueno en 1,8-2,8),
+# y entonces el piso derivado de ella no separa nada. El q75 se apoya en el modo alto.
+# Recalibrar cuando cambie la composicion de TIPOS_FRESCOS (ver METODOLOGIA 10.11).
+FRESCO_RATIO_K_BAJO = 4.0
+FRESCO_RATIO_K_ALTO = 5.0
+RATIO_FRESCO = {
+    'Acelga': 2.08,
+    'Ajo': 1.39,
+    'Ananá': 1.95,
+    'Asado': 5.12,
+    'Banana': 1.51,
+    'Batata': 1.17,
+    'Berenjena': 2.18,
+    'Bife de chorizo': 6.95,
+    'Bondiola': 8.08,
+    'Brócoli': 3.87,
+    'Carne picada': 5.63,
+    'Carré de cerdo': 6.94,
+    'Cebolla': 1.05,
+    'Chaucha': 3.31,
+    'Choclo': 2.87,
+    'Ciruela': 3.45,
+    'Durazno': 3.73,
+    'Espinaca': 4.38,
+    'Falda/Puchero': 3.95,
+    'Frutilla': 6.92,
+    'Huevos': 2.40,
+    'Jamón cocido (kg)': 8.47,
+    'Kiwi': 4.70,
+    'Lechuga': 2.82,
+    'Limón': 2.15,
+    'Lomo': 9.25,
+    'Mandarina': 1.07,
+    'Manzana': 2.02,
+    'Matambre': 5.07,
+    'Merluza': 10.02,
+    'Milanesa carne': 9.18,
+    'Morrón': 3.44,
+    'Mortadela': 5.72,
+    'Nalga/Cuadril': 7.39,
+    'Naranja': 1.33,
+    'Osobuco': 4.77,
+    'Paleta': 7.12,
+    'Palta': 3.87,
+    'Pan francés': 1.53,
+    'Papa': 1.00,
+    'Pechito/Costilla cerdo': 5.83,
+    'Pepino': 1.77,
+    'Pera': 1.61,
+    'Pollo': 3.89,
+    'Pomelo': 1.62,
+    'Queso barra/Dambo': 13.20,
+    'Queso cremoso': 7.73,
+    'Queso rallar (sardo/reggianito)': 16.31,
+    'Remolacha': 2.06,
+    'Repollo': 1.72,
+    'Roast beef': 5.04,
+    'Salame/Salamín': 10.36,
+    'Suprema/Pechuga': 9.53,
+    'Tomate': 2.44,
+    'Uva': 3.62,
+    'Vacío': 7.46,
+    'Zanahoria': 0.88,
+    'Zapallito': 1.94,
+    'Zapallo': 0.70,
+}
+# Piso PROPIO para los tipos donde la contaminacion no se separa con la regla general.
+# Pan frances es el unico caso hasta ahora, y es flagrante: la serie es BIMODAL. Un cluster
+# plano de ~55 de las 139 semanas entre $500 y $650 que NUNCA inflaciona (500, 510, 520, 608,
+# 625... repetidos durante meses), y una serie legitima que si inflaciona: x2,66 entre 2024-01
+# y 2026-08, en linea con el x2,86 del ancla. En ratio contra el ancla, la basura ocupa
+# 0,20-0,59 y lo legitimo arranca en 0,73. El piso general (q75/4 = 0,38) dejaba pasar 28
+# semanas de basura; 0,65 cae en el hueco entre los dos modos.
+# Esto importa porque pan frances pesa 17,7 kg -la cantidad mas grande de la canasta, anclada
+# a los 6.750 g/adulto equivalente de la CBA- y explicaba el 43% de la volatilidad del indice.
+PISO_RATIO_OVERRIDE = {
+    'Pan francés': 0.65,
+}
 # Salto semanal del precio nacional de un item a partir del cual se lo reporta en la hoja
 # Alertas_precio_item. Es el tripwire: ningun cambio de regimen deberia volver a pasar inadvertido.
 ALERTA_SALTO_ITEM = 0.35
@@ -837,8 +938,41 @@ else:
 
 # ── 2. Arrastre (forward-fill acotado) ────────────────────────────────────────
 nac_wide = nac_item.pivot(index='semana', columns='item', values='nac').sort_index()
+
+# ── Banda de plausibilidad POR TIPO (ver RATIO_FRESCO en la CELDA 1) ─────────
+# El precio nacional de un tipo fresco tiene que guardar una relacion estable con el ancla.
+# La semana que se sale de esa relacion no es inflacion: es que cambio el conjunto de EANs que
+# cotizan. Se marca como FALTANTE en vez de inventar un valor.
+_anc_sem = nac_wide[[c for c in ANCLA_FRESCOS if c in nac_wide.columns]].median(axis=1)
+_ratio_fuera = []
+_ratio_bad = pd.DataFrame(False, index=nac_wide.index, columns=nac_wide.columns)
+for _t, _r in RATIO_FRESCO.items():
+    if _t not in nac_wide.columns:
+        continue
+    _piso_r = PISO_RATIO_OVERRIDE.get(_t, _r / FRESCO_RATIO_K_BAJO)
+    _mal = ((nac_wide[_t] < _anc_sem * _piso_r)
+            | (nac_wide[_t] > _anc_sem * _r * FRESCO_RATIO_K_ALTO)).fillna(False)
+    _n = int(_mal.sum())
+    if _n:
+        _ratio_fuera.append((_t, _n))
+        _ratio_bad[_t] = _mal
+        nac_wide.loc[_mal, _t] = np.nan
+_n_ratio = sum(n for _, n in _ratio_fuera)
+if _n_ratio:
+    print(f'Plausibilidad por tipo: {_n_ratio} semanas-tipo descartadas de '
+          f'{int(nac_wide.notna().sum().sum()) + _n_ratio} '
+          f'({_n_ratio / max(int(nac_wide.notna().sum().sum()) + _n_ratio, 1) * 100:.1f}%) | '
+          + ', '.join(f'{t} {n}' for t, n in sorted(_ratio_fuera, key=lambda x: -x[1])))
+
 nac_obs  = nac_wide.notna()                                   # presencia REAL (diagnostico)
 nac_ff   = nac_wide.ffill(limit=MAX_SEMANAS_ARRASTRE)         # con arrastre
+# El arrastre NO puede puentear una semana RECHAZADA por la banda de plausibilidad. Si lo
+# hiciera, al reaparecer un precio valido el indice compararia el precio nuevo contra uno viejo
+# arrastrado y publicaria de golpe toda la inflacion acumulada del hueco. Un item rechazado
+# tiene que quedar FUERA de la muestra apareada mientras dure el rechazo, y volver a entrar sin
+# generar salto. (Medido sobre el panel real: baja el desvio de la variacion semanal de 2,32%
+# a 2,17% y saca un salto de mas de 8%.)
+nac_ff   = nac_ff.mask(_ratio_bad)
 _n_arr = int((nac_ff.notna() & ~nac_obs).sum().sum())
 print(f'Panel nacional: {nac_wide.shape[1]} items x {nac_wide.shape[0]} semanas | '
       f'celdas arrastradas: {_n_arr:,} ({_n_arr/max(nac_ff.notna().sum().sum(),1)*100:.1f}%)')
@@ -850,7 +984,9 @@ def _recipe(_name):
     _rows = []
     _usar_cat = _name in RUBRO_DESDE_CATEGORIA
     for _ean,(_desc,_q,_rub,_cat) in CANASTAS_EMP[_name].items():
-        _r = (str(_cat).strip().title() if (_usar_cat and str(_cat).strip()) else _rub)
+        # .strip() en el rubro: en la hoja hay 'Limpieza ' con espacio al final, que aparecia
+        # como un rubro aparte en todas las tablas de composicion.
+        _r = (str(_cat).strip().title() if (_usar_cat and str(_cat).strip()) else str(_rub).strip())
         _rows.append((_ean, float(_q), _r, 'emp'))
     _FRESH_POS = {'Popular': 0, 'Media': 1, 'Ejecutiva': 2, 'Representativa': 3}
     _p = _FRESH_POS.get(_name)
@@ -882,8 +1018,9 @@ for _name in CANASTAS_ACTIVAS:
     _V = _V.loc[_desde:]
     _cov = _cov.loc[_desde:]
     aporte_dict[_name] = _V
-    if _desde != _V.index[0] or _desde != list(nac_ff.index)[0]:
-        print(f'      (indice desde {_desde}: antes la cobertura era < {COBERTURA_MIN_INDICE:.0%})')
+    _aviso_desde = (f'      [{_name}] el indice arranca en {_desde}: antes la canasta tenia '
+                    f'menos del {COBERTURA_MIN_INDICE:.0%} de sus items'
+                    if _desde != list(nac_ff.index)[0] else '')
     _sem = list(_V.index)
     _idx = [100.0]
     for _t in range(1, len(_sem)):
@@ -908,6 +1045,8 @@ for _name in CANASTAS_ACTIVAS:
     serie_sem_dict[_name] = _s
     print(f'  [{_name}] {len(_s)} semanas | items {len(_its)} | ancla {_anchor} | '
           f'ultimo costo ${_s["costo_mediana"].iloc[-1]:,.0f} ({_s["var_sem_%"].iloc[-1]:+.1f}% sem)')
+    if _aviso_desde:
+        print(_aviso_desde)
 
 # ── Costo por SUCURSAL (para desagregar por provincia/cadena/region) ──────────
 # Item faltante en una sucursal-semana -> se imputa con el precio nacional (ya arrastrado).

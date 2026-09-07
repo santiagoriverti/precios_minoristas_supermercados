@@ -1,6 +1,6 @@
 # Bugs Pendientes y Mejoras
 
-Última actualización: 2026-09-07 — nb07 v5.3: banda de plausibilidad anclada (BUG-25) y cobertura nacional obligatoria en las canastas
+Última actualización: 2026-09-07 — nb07 v5.5: banda de plausibilidad POR TIPO (BUG-26, pan francés) y el arrastre deja de puentear celdas rechazadas
 
 ---
 
@@ -26,6 +26,69 @@ de la Tecnológica** hasta que haya al menos dos cadenas con cobertura de durabl
 ---
 
 ## 🟢 Cambios y fixes 2026-09
+
+### 🔴 BUG-26 — Pan francés explicaba el 43% de la volatilidad del índice (2026-09-07) ✅ Resuelto
+
+Detectado auditando la corrida buena de v5.4. La banda global de plausibilidad (BUG-25) arregló
+pan francés en agosto ($550 → $3.457/kg) pero **no la serie**.
+
+**Qué era**: la serie de pan francés es **bimodal**. Un cluster plano de ~55 de las 139 semanas
+entre $500 y $650 que **nunca inflaciona** (500, 510, 520, 608, 625 repetidos durante meses), y
+una serie legítima que sí: ×2,66 entre 2024-01 y 2026-08, en línea con el ×2,86 del ancla.
+
+La banda global no lo agarraba porque usa un piso común para todos los tipos: la basura de pan
+está a ratio 0,20-0,59 contra el ancla y el piso quedaba en 0,38. **Sobrevivía por un 4%**, y
+cada vez que el ancla se movía un poco el tipo entero cambiaba de régimen **en el cambio de
+mes**:
+
+```
+2026-04-30  pan=  520  ancla=2.444  ratio=0.21
+2026-05-28  pan=  520  ancla=2.292  ratio=0.23
+2026-06-04  pan=4.576  ancla=2.208  ratio=2.07  <-- CAMBIO DE MES
+```
+
+Con 17,7 kg —la cantidad más grande de la canasta, anclada a los 6.750 g/AE de la CBA— ese solo
+ítem tenía desvío semanal propio de **69,7%** y aportaba **5,05 de los 11,66 puntos** de
+volatilidad del índice (43%). Los tres saltos que reportó el usuario eran suyos: −87,2% el
+2025-05-08 (−17,3 pp en la canasta), +780% el 2026-06-04 (+13,4 pp), +87,3% el 2024-09-12.
+
+**Fix — banda de plausibilidad POR TIPO** (`RATIO_FRESCO`), sobre el precio nacional y
+**después del caché**, a propósito: cambiar la calibración no obliga a releer el histórico.
+Cada tipo declara su precio esperado relativo al ancla, calibrado en el **percentil 75** del
+ratio y no en la mediana —en un tipo contaminado la mediana cae *entre* los dos regímenes (pan:
+mediana 1,14 con la basura en 0,2-0,6 y lo bueno en 1,8-2,8), así que el piso derivado de ella
+no separa nada—. Banda **asimétrica** `[ratio/4, ratio*5]`: estricta abajo, donde está el
+relleno; laxa arriba, donde están los picos estacionales genuinos de durazno, ciruela y uva.
+Más `PISO_RATIO_OVERRIDE = {'Pan francés': 0.65}`, que cae en el hueco entre los dos modos.
+
+Descarta **88 de 8.201 semanas-tipo (1,1%)**: pan francés 63, espinaca 12, limón 12, osobuco 1.
+Sin daño colateral en los otros 55 tipos.
+
+**Además: el arrastre ya no puentea una celda rechazada.** Si lo hiciera, al reaparecer un
+precio válido el índice compararía contra uno viejo arrastrado y publicaría de golpe toda la
+inflación acumulada del hueco. Un ítem rechazado queda fuera de la muestra apareada mientras
+dure el rechazo y vuelve a entrar sin generar salto.
+
+**Efecto medido sobre el panel real de la corrida**:
+
+| | antes | después |
+|---|---:|---:|
+| desvío de la variación semanal | 3,17% | **2,17%** |
+| semanas con \|var\|>4% | 13 | **7** |
+| semanas con \|var\|>8% | 7 | **3** |
+| salto máximo | 16,9% | **12,1%** |
+
+2025-05-08 pasó de **−16,9% a +0,4%**; 2026-06-04 de **+12,5% a −0,9%**.
+
+### 🟡 Corregidos de presentación (2026-09-07)
+
+- El aviso "(índice desde AAAA-MM-DD: antes la cobertura era < 80%)" se imprimía **antes** de la
+  línea de su propia canasta, así que se leía como si fuera de la canasta anterior. En la
+  corrida 2026-08-27 el aviso era de **Tecnológica** y parecía de Ejecutiva. Ahora lleva el
+  nombre de la canasta y va después.
+- El rubro `'Limpieza '` (con espacio al final) aparecía como un rubro aparte en todas las
+  tablas de composición. Se hace `.strip()`.
+
 
 ### 🔴 BUG-25 — El filtro de régimen eligió la moda mayoritaria, y era basura (2026-09-07) ✅ Resuelto
 
