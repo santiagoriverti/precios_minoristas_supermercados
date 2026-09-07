@@ -64,7 +64,29 @@ sucursales**; `confiable=False` 0 de 314.
 - `Hamburguesas 4 Un 83 Gr` × 10 = $104.124 en Ejecutiva: gramaje leído como 83 g cuando son
   4×83 = 332. "N Un M Gr" es ambiguo → el candidato se descarta (criterio de nb06).
 
-### ⚠️ PENDIENTE: la corrida de verificación de v5.3
+### v5.4 [2026-09-07 · noche] — OOM en Colab, corregido
+El usuario corrió v5.3: el caché **se escribió bien** (`sem_80a9534a_v5.parquet`, 2h03m) y la
+sesión murió por RAM **justo después**. La instancia era peor que las anteriores (292 s/it
+contra 136 s/it, 2,15× más lenta).
+
+Pico real, en el bloque posterior a la escritura del caché: se sostenían a la vez el panel
+completo (~60 M filas, todas las columnas en dtype object), el mes en curso crudo, **una copia
+innecesaria de ese mes** (`datos_ult_raw.copy()` — `_leer_mes` ya devuelve un frame nuevo) y
+**una segunda copia entera del panel** dentro de `pd.concat([_cache] + [_actual])`.
+
+Fixes (v5.4, todos **result-identical**, el caché sigue valiendo):
+- `_colapsar`: se pasó de 5 copias encadenadas del panel de frescos a las imprescindibles; se
+  descartan `ean_norm`/`precio` apenas se derivan `item`/`price`; la banda de plausibilidad se
+  acumula sobre la MISMA máscara que el notna; `map` sobre las 59 medianas por tipo en vez de
+  `transform`; `del` de temporales + `gc.collect()`. Pico medido −20%.
+- Se eliminó el `.copy()` de `datos_ult_raw`.
+- Se sueltan `_cache` y `_actual` ANTES del `concat`.
+
+**Verificado con un test de identidad** (`test_identidad.py`): viejo y nuevo devuelven el mismo
+DataFrame fila por fila sobre un panel sintético de 83k filas. Por eso el caché de 2 horas del
+usuario sigue siendo válido y **no hay que rehacer la lectura**.
+
+### ⚠️ PENDIENTE: la corrida de verificación de v5.3/v5.4
 1. Regenerar el Excel con `cargar_canastas_v5.py` (287 EANs) y correr nb07.
    **Vuelve a releer el histórico (~58 min)**: la banda de plausibilidad cambia la clave del
    caché. Es inevitable, el filtro corre antes de colapsar los frescos a tipo.

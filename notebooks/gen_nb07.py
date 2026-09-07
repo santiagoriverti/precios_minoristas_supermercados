@@ -664,36 +664,57 @@ def _colapsar(_df, _lbl_mes=''):
     if _df is None or len(_df) == 0: return None
     _e = (_df[_df['ean_norm'].isin(EANS_EMP)][_SKR + ['semana','ean_norm','precio']]
           .rename(columns={'ean_norm':'item','precio':'price'}))
-    _f = _df[_df['ean_norm'].isin(EANS_FRESCOS)]
-    if len(_f):
-        _f = _f.copy()
+    # OJO CON LA RAM: cada `_f = _f[mascara]` copia el panel ENTERO de frescos del mes, que
+    # son decenas de millones de filas con varias columnas de texto. La version anterior hacia
+    # cinco copias encadenadas y reventaba la sesion de Colab en instancias chicas. Aca se
+    # reduce a las imprescindibles y se sueltan los temporales enseguida. El RESULTADO es
+    # identico (verificado con un test de identidad), asi que el cache sigue siendo valido.
+    _msk = _df['ean_norm'].isin(EANS_FRESCOS)
+    if bool(_msk.any()):
+        _f = _df.loc[_msk, _SKR + ['semana','ean_norm','precio']].copy()
         _f['item']  = _f['ean_norm'].map(EAN_TIPO)
         _f['price'] = _f['precio'] / _f['ean_norm'].map(EAN_NORMFACTOR) * _f['item'].map(_FR_MULT)
-        _f = _f[_f['price'].notna() & (_f['price'] > 0)]
-        # (0) banda de PLAUSIBILIDAD anclada. Va antes que todo: si la moda mayoritaria de un
-        #     tipo es basura (pan a $40 el kilo en 980 sucursales), el filtro de regimen la
+        # ean_norm y precio ya no se usan: sacarlos ahora evita arrastrar una columna de texto
+        # en cada copia posterior.
+        _f = _f.drop(columns=['ean_norm','precio'])
+        _ok = _f['price'].notna() & (_f['price'] > 0)
+        # (0) banda de PLAUSIBILIDAD anclada, acumulada sobre la MISMA mascara que el notna para
+        #     no materializar una copia intermedia. Va antes que todo: si la moda mayoritaria de
+        #     un tipo es basura (pan a $40 el kilo en 980 sucursales), el filtro de regimen la
         #     elegiria como referencia. El ancla se recalcula cada mes, asi que la banda
         #     acompana a la inflacion sin umbrales absolutos.
-        _anc = _f.loc[_f['item'].isin(ANCLA_FRESCOS), 'price'].median()
+        _anc = _f.loc[_ok & _f['item'].isin(ANCLA_FRESCOS), 'price'].median()
         if _anc == _anc and _anc > 0:
-            _n0 = len(_f)
-            _f = _f[(_f['price'] >= _anc * FRESCO_PISO_ANCLA) & (_f['price'] <= _anc * FRESCO_TECHO_ANCLA)]
-            _FR_DESCARTES.append((_lbl_mes, _n0 - len(_f), round(float(_anc), 1)))
+            _n0 = int(_ok.sum())
+            _ok &= (_f['price'] >= _anc * FRESCO_PISO_ANCLA) & (_f['price'] <= _anc * FRESCO_TECHO_ANCLA)
+            _FR_DESCARTES.append((_lbl_mes, _n0 - int(_ok.sum()), round(float(_anc), 1)))
+        _f = _f[_ok]
+        del _ok
         # (1) filtro de REGIMEN: referencia nacional del tipo para el mes entero. Va PRIMERO, para
         #     que la mediana de la sucursal no se calcule sobre una mezcla de bienes distintos.
-        _ref = _f.groupby('item')['price'].transform('median')
+        #     `map` sobre las ~59 medianas por tipo en vez de `transform`: mismo resultado, sin
+        #     la maquinaria de groupby sobre el panel completo.
+        _ref = _f['item'].map(_f.groupby('item')['price'].median())
         _f = _f[(_f['price'] >= _ref / FRESCO_REGIMEN_K) & (_f['price'] <= _ref * FRESCO_REGIMEN_K)]
+        del _ref
         # (2) filtro de outliers intra-tipo dentro de cada sucursal-semana (segunda linea)
         _med = _f.groupby(_SKR + ['semana','item'])['price'].transform('median')
         _f = _f[(_f['price'] >= _med / FRESCO_OUTLIER_K) & (_f['price'] <= _med * FRESCO_OUTLIER_K)]
+        del _med
         _fv = _f.groupby(_SKR + ['semana','item'], as_index=False)['price'].median()
+        del _f
     else:
         _fv = pd.DataFrame(columns=_SKR + ['semana','item','price'])
-    return pd.concat([_e[_SKR + ['semana','item','price']], _fv], ignore_index=True)
+    del _msk
+    _out = pd.concat([_e[_SKR + ['semana','item','price']], _fv], ignore_index=True)
+    del _e, _fv
+    gc.collect()
+    return _out
 
 if USE_CACHE and _cache_path.exists():
     _cache = pd.read_parquet(_cache_path)
     _cache = _cache[_cache['semana'].map(_mes_de_semana) < _mes_actual].copy()
+    gc.collect()
 else:
     _cache = pd.DataFrame(columns=_SKR + ['semana','item','price'])
 _en_cache = set(_cache['semana'].map(_mes_de_semana).unique()) if len(_cache) else set()
@@ -711,12 +732,18 @@ if _nuevos:
 del _nuevos; gc.collect()
 
 # Mes en curso: siempre fresco. Guardamos el crudo por-EAN para los diagnosticos.
+# `_leer_mes` ya devuelve un frame nuevo (sale de un groupby), asi que el .copy() que habia aca
+# duplicaba el mes entero sin motivo. En una instancia chica de Colab eso era la gota.
 datos_ult_raw = _leer_mes(_mes_actual)
 if datos_ult_raw is not None:
-    datos_ult_raw = datos_ult_raw.copy(); datos_ult_raw['mes'] = _mes_actual
+    datos_ult_raw['mes'] = _mes_actual
 _actual = _colapsar(datos_ult_raw)
-datos_sem = pd.concat([_cache] + ([_actual] if _actual is not None else []), ignore_index=True)
+# El concat sostiene entrada y salida a la vez: soltar los nombres ANTES deja que pandas libere
+# cada parte apenas la copia, en vez de mantener dos paneles completos hasta el final.
+_partes = [_cache] + ([_actual] if _actual is not None else [])
 del _cache, _actual; gc.collect()
+datos_sem = pd.concat(_partes, ignore_index=True)
+_partes.clear(); del _partes; gc.collect()
 if len(datos_sem) == 0:
     raise RuntimeError('Sin datos para los EANs configurados. Revisa las canastas y los frescos.')
 datos_sem = datos_sem.groupby(_SKR + ['item','semana'], as_index=False)['price'].median()
