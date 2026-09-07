@@ -35,6 +35,12 @@ QUE HACE ESTA VERSION DISTINTO
    precio, Media la marca lider, Ejecutiva la premium. Popular y Ejecutiva ya no
    comparten EANs salvo donde el mercado no ofrece alternativa.
 
+1.b COBERTURA DENTRO DEL TIER. El tier es una ventana de percentil, no un punto. Entre los
+   productos de la ventana se elige el de MAYOR COBERTURA, porque nb07 solo cotiza una sucursal
+   que tenga >=80% de los items de la canasta: elegir por cercania al percentil sin mirar
+   cobertura dejaba a la canasta Media cotizando en 264 sucursales de 3.092, y a la Popular en
+   4 en marzo de 2026.
+
 2. CANTIDADES FISICAS, no unidades. v4 declaraba "2 unidades/mes" sin mirar el
    envase, asi que una botella de 900 ml y una de 1,5 L contaban igual. Ahora se
    declara la cantidad FISICA (kg / litros / unidades) y el loader calcula
@@ -174,6 +180,18 @@ COBERTURA = {
 PISO_ABSOLUTO = dict(cadenas=3, provincias=12, sucursales=700)
 # Percentil del precio unitario (dentro de la necesidad) que define cada tier.
 TIER_PCT = {'Popular': 0.10, 'Media': 0.45, 'Ejecutiva': 0.80}
+# Ancho de la VENTANA alrededor de ese percentil. El tier no es un punto: cualquier producto
+# dentro de la ventana representa igual de bien al estrato, asi que entre ellos conviene quedarse
+# con el de MAYOR COBERTURA.
+#
+# Por que importa: nb07 solo cotiza una sucursal que tenga >=80% de los items de la canasta
+# (FRAC_PRODUCTOS_MIN). Elegir el producto mas CERCANO al percentil, sin mirar cobertura, llenaba
+# las canastas de items que existen en pocas cadenas, y el resultado medido en la corrida
+# 2026-08-27 fue: la canasta Media cotizaba en 264 sucursales de 3.092 y la Popular en 4 (cuatro)
+# en marzo de 2026 y 19 en abril. El indice nacional no se contamina -el precio nacional de cada
+# item usa todas las sucursales que lo tienen-, pero las aperturas por provincia, cadena y region
+# quedan sostenidas por un puñado de sucursales y no se pueden publicar.
+TIER_VENTANA = 0.12
 
 CANASTAS = ['Popular', 'Media', 'Ejecutiva', 'Tecnologica', 'Representativa', 'Femenina']
 SLOTS_COL = {'Popular': 'cantidad_01', 'Media': 'cantidad_02', 'Ejecutiva': 'cantidad_03',
@@ -703,9 +721,20 @@ def elegir(c, canasta, usados, min_pu=None):
             # definicion distinta a proposito — la Representativa es la comparable con INDEC.
             cand = pool.sort_values('n_sucursales', ascending=False)
         else:
-            obj = pool['pu'].quantile(TIER_PCT[canasta])
-            cand = pool.assign(_d=(pool['pu'] - obj).abs()).sort_values(
-                ['_d', 'n_sucursales'], ascending=[True, False])
+            # El tier se define por una VENTANA de percentil, no por un punto: dentro de la
+            # ventana todos los productos representan igual de bien al estrato, asi que se
+            # elige el de mayor cobertura. Si la ventana queda vacia (necesidades con muy
+            # pocos candidatos), se cae al comportamiento anterior: el mas cercano al objetivo.
+            _p = TIER_PCT[canasta]
+            obj = pool['pu'].quantile(_p)
+            _lo = pool['pu'].quantile(max(0.0, _p - TIER_VENTANA))
+            _hi = pool['pu'].quantile(min(1.0, _p + TIER_VENTANA))
+            ven = pool[(pool['pu'] >= _lo) & (pool['pu'] <= _hi)]
+            if len(ven) >= 2:
+                cand = ven.sort_values(['n_sucursales', 'n_cadenas'], ascending=[False, False])
+            else:
+                cand = pool.assign(_d=(pool['pu'] - obj).abs()).sort_values(
+                    ['_d', 'n_sucursales'], ascending=[True, False])
         # Regla general: cada estrato usa un EAN distinto. Excepcion: cuando ya estamos en
         # el techo del mercado (`tope`), preferir un EAN distinto obligaria a BAJAR el precio
         # y romperia la monotonicidad. Ahi manda la monotonicidad y se repite el producto:

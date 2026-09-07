@@ -175,7 +175,32 @@ EANs**— pero el filtro corta solo **17 celdas de 37.017 (0,05%)** y **no mueve
 (desvío 2,32% → 2,32%): los bloques contaminados son largos y la mediana móvil los sigue.
 Se deja documentado y visible en `Alertas_precio_item`, sin filtro que no cambia nada.
 
-### ⚠️ PENDIENTE tras v5.6
+### Constructor v5.3 [2026-09-07 · noche] — cobertura dentro del tier
+Implementado el punto 2 de los pendientes. `elegir()` ahora trata el tier como una **ventana de
+percentil** (`TIER_VENTANA = 0.12`) y dentro de ella elige el producto de **mayor cobertura**,
+en vez del más cercano al percentil. Motivo: nb07 solo cotiza una sucursal que tenga ≥80% de los
+ítems, así que un pick de baja cobertura arrastra a toda la canasta.
+
+Medido contra la selección anterior (mismo universo 2026-08):
+
+| Canasta | Sucursales (mediana) | Ítems con <1.200 suc |
+|---|---:|---:|
+| Popular | 1.676 → **2.265** | 10 → 4 |
+| Media | 1.835 → **2.320** | 17 → 6 |
+| Ejecutiva | 1.884 → **2.054** | 13 → 8 |
+
+Cobertura total 593.642 → **644.627** sucursales-ítem (+8,6%). **Escalonamiento 2,21× → 2,18×**
+(costo casi nulo), 0 violaciones de monotonicidad, 0 picks fuera de cobertura. Cambiaron 107 de
+314 ítems, con sustituciones sensatas dentro del mismo tier: Cynar → Fernet Branca, Krachitos →
+Lays, Cada Día → Hellmann's, Dada Art → Portillo.
+
+**El loader `cargar_canastas_v5.py` fue regenerado** (siguen siendo 287 EANs, pero 107 cambiaron).
+
+> Nota operativa: el Excel `canasta_representativa_2026-08.xlsx` ya no estaba en Downloads, así
+> que se reconstruyó la hoja `Productos unicos` desde el parquet cacheado en el scratchpad. Para
+> recalibrar en el futuro hace falta el Excel real de nb01.
+
+### ⚠️ PENDIENTE tras v5.6 + constructor v5.3
 1. **Una corrida completa más (~1-2 h de relectura)**: el regex de Carré y los `rk` son
    filtros de lectura. Verificar que el salto de 2026-05-07 desaparece y que los cortes de carne
    dejan de oscilar (mirar Carré de cerdo y Vacío en `Panel_nacional`).

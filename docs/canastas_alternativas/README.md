@@ -59,8 +59,23 @@ líder, Ejecutiva la premium. El tier se decide por **percentil del precio por u
 comparable** ($/kg, $/L o $/unidad de uso) dentro de la necesidad — nunca por el precio del
 envase, porque eso haría que "el más barato" fuera siempre el paquete más chico.
 
-Escalonamiento logrado: el precio unitario de Ejecutiva es **2,21× el de Popular** (mediana
-entre necesidades; p25 1,51× — p75 2,57×).
+Escalonamiento logrado: el precio unitario de Ejecutiva es **2,18× el de Popular** (mediana
+entre necesidades).
+
+**El tier es una ventana, no un punto.** Dentro de la ventana de percentil (`TIER_VENTANA`,
+±12 puntos) todos los productos representan igual de bien al estrato, así que se elige el de
+**mayor cobertura**. Sin esta regla, elegir por cercanía al percentil llenaba las canastas de
+productos que existen en pocas cadenas y —como nb07 solo cotiza una sucursal que tenga ≥80% de
+los ítems— la canasta Media terminaba cotizando en 264 sucursales de 3.092 y la Popular en 4 en
+marzo de 2026. Con la ventana:
+
+| Canasta | Sucursales (mediana) | Ítems con <1.200 sucursales |
+|---|---:|---:|
+| Popular | 1.676 → **2.265** | 10 → 4 |
+| Media | 1.835 → **2.320** | 17 → 6 |
+| Ejecutiva | 1.884 → **2.054** | 13 → 8 |
+
+y el escalonamiento apenas se movió (2,21× → 2,18×).
 
 Dos reglas de control, ambas nacidas de auditar las corridas del constructor:
 
