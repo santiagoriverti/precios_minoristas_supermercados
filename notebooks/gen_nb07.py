@@ -249,6 +249,25 @@ FRESCO_EAN_MIN_SUC    = 10   # sucursales minimas de un EAN-semana para entrar e
 FRESCO_MIN_EANS_PAR   = 2    # EANs apareados minimos entre dos semanas para aceptar el eslabon
 FRESCO_MAX_HUECO_PAR  = 8    # semanas maximas que puede saltear un eslabon para reenganchar
 FRESCO_ESLABON_K      = 2.5  # tope de variacion de un EAN en un eslabon (clip, no descarte)
+# ── Anclaje de NIVEL con referencia de mercado externa ($/kg de la ULTIMA semana) ────────────
+# El indice de frescos separa FORMA (la cadena de EANs apareados) de NIVEL (el estimador interno
+# en una semana de anclaje). Cuando el universo de EANs de un tipo esta dominado por codigos de
+# balanza con valores implausibles, el NIVEL sale mal aunque la forma este bien; una referencia
+# de mercado verificada es mejor ancla, y cambiarla NO altera la inflacion medida -solo desplaza
+# la serie entera por un factor-.
+# Caso medido (panel 2026-08): `Pan frances` publica $7.732/kg contra ~$6.200 de mercado. Su
+# universo tiene DOS regimenes de alta cobertura -un EAN de balanza a $10.000 EXACTOS en 981
+# sucursales y un par a $4.300 en 339- y la referencia real cae entre los dos. Se probo calibrar
+# con RATIO_FRESCO y con el K de regimen: el estimador salta entre $3.190, $4.300, $6.760 y
+# $10.000 con cambios minimos de parametro (se pega al polo que quede dentro de la banda), y el
+# mejor ajuste dejaba 15 EANs y era de filo de cuchillo. La media geometrica ponderada da $1.938,
+# peor. Por eso el nivel se fija por referencia y no por parametro.
+# Pan frances pesa 18 kg/mes y el 13,7% de la canasta Popular: el error de nivel se traducia en
+# una sobreestimacion del 2,7% de esa canasta.
+# Cargar solo precios VERIFICADOS contra el mercado, con la fecha de la referencia.
+NIVEL_REFERENCIA_FRESCO = {
+    'Pan francés': 6200.0,   # $/kg, referencia de mercado 2026-09-08
+}
 # Salto semanal del precio nacional de un item a partir del cual se lo reporta en la hoja
 # Alertas_precio_item. Es el tripwire: ningun cambio de regimen deberia volver a pasar inadvertido.
 ALERTA_SALTO_ITEM = 0.35
@@ -1172,6 +1191,25 @@ if _n_ratio:
           f'{int(nac_wide.notna().sum().sum()) + _n_ratio} '
           f'({_n_ratio / max(int(nac_wide.notna().sum().sum()) + _n_ratio, 1) * 100:.1f}%) | '
           + ', '.join(f'{t} {n}' for t, n in sorted(_ratio_fuera, key=lambda x: -x[1])))
+
+# ── Anclaje de nivel por referencia de mercado (ver NIVEL_REFERENCIA_FRESCO en la CELDA 1) ──
+# Va DESPUES de la banda de plausibilidad a proposito: la banda compara contra el ancla de
+# verduras y esta pensada para el estimador interno, no para un precio verificado a mano.
+_niv = []
+for _t, _ref in NIVEL_REFERENCIA_FRESCO.items():
+    if _t not in nac_wide.columns or not (_ref == _ref and _ref > 0):
+        continue
+    _v = nac_wide[_t].dropna()
+    if not len(_v):
+        continue
+    _antes = float(_v.iloc[-1])
+    if _antes <= 0:
+        continue
+    nac_wide[_t] = nac_wide[_t] * (_ref / _antes)
+    _niv.append((_t, _antes, float(_ref), _ref / _antes))
+if _niv:
+    print('Nivel por referencia de mercado (la FORMA de la serie no cambia): '
+          + ', '.join(f'{t} ${a:,.0f} -> ${b:,.0f} (x{k:.2f})' for t, a, b, k in _niv))
 
 nac_obs  = nac_wide.notna()                                   # presencia REAL (diagnostico)
 nac_ff   = nac_wide.ffill(limit=MAX_SEMANAS_ARRASTRE)         # con arrastre

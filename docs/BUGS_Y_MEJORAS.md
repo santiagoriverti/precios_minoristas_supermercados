@@ -27,6 +27,42 @@ de la Tecnológica** hasta que haya al menos dos cadenas con cobertura de durabl
 
 ## 🟢 Cambios y fixes 2026-09
 
+### 🟣 Femenina — reemplazo de los tres ítems sin trazabilidad (2026-09-08)
+
+| Sale | Trazab. | Entra | Trazab. | qty |
+|---|---:|---|---:|---|
+| Crema Nivea Body 400 Ml | 50,0% | Crema Piel Extra Seca Villeneuve 250 Ml | 100% | 1,0 → **1,6** (mantiene 400 Ml/mes) |
+| Rasuradora Simply Venus 2 Un | 78,1% | Rasuradora Femenina Prestobarba3 Gillette 2 Un | 100% | 1,0 |
+| Jabón Tocador Original Dove 90 Gr | 84,4% | Jabón Tocador Antibacterial Dove 90 Gr | 100% | 4,0 |
+
+Criterio: misma categoría y subcategoría, ≥95% de trazabilidad, ≥800 sucursales, y el precio más
+cercano al del saliente. Se conservó marca y formato donde se pudo (Dove 90 Gr y Gillette 2 Un son
+reemplazos directos) y se ajustó la cantidad donde cambió el tamaño, para que el consumo físico
+mensual no se altere.
+
+**Resultado**: los 14 ítems quedan al 100% de trazabilidad y el costo mensual pasa de **$137.597 a
+$137.622 (+0,02%)** — la sustitución no mueve el nivel de la canasta.
+
+Se aplica sobre `cantidad_06` de la hoja `Productos unicos` del Excel de canasta.
+
+### 🟣 Anclaje de nivel de un fresco por referencia de mercado (2026-09-08)
+
+`Pan francés` publicaba **$7.732/kg** contra **~$6.200** de mercado. Pesa 18 kg/mes y el **13,7% de
+la canasta Popular**, así que el error de nivel la sobreestimaba **2,7%**.
+
+**No se puede corregir con parámetros.** Su universo tiene dos regímenes de alta cobertura —un EAN
+de balanza a **$10.000 exactos en 981 sucursales** y un par a $4.300 en 339— y la referencia real
+cae entre los dos. Barriendo `RATIO_FRESCO` × K de régimen, el estimador salta entre $3.190,
+$4.300, $6.760 y $10.000 con cambios mínimos: se pega al polo que quede dentro de la banda. El
+mejor ajuste dejaba 15 EANs y era de filo de cuchillo. La media geométrica ponderada da $1.938,
+peor todavía.
+
+**Solución**: `NIVEL_REFERENCIA_FRESCO`, que fija el nivel de la última semana con un precio de
+mercado verificado. El índice ya separa **forma** (la cadena de EANs apareados) de **nivel** (el
+anclaje de una semana), así que esto **no altera la inflación medida** — sólo desplaza la serie por
+un factor. Se aplica después de la banda de plausibilidad, que está pensada para el estimador
+interno y no para un precio verificado a mano.
+
 ### 🟡 Femenina — un ítem con 16 meses de hueco explicaba casi toda su volatilidad (2026-09-08)
 
 El usuario reportó que Femenina salta mucho más que el resto. Es cierto (desvío semanal 2,31%
