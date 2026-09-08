@@ -8,6 +8,44 @@ Autor: Santiago Riverti — investigador independiente
 
 ## 🟢 ESTADO ACTUAL / HANDOFF [2026-09-08 · tarde] — v5.7.1, BUG-28 corregido
 
+### ✅ v5.7.1 VALIDADA contra el panel real por EAN (sin releer el SEPA)
+Se corrio el bloque de encadenado de gen_nb07.py FUERA del notebook, sobre `ean_1ad1b4b5_v5.parquet`
+(385.991 filas, 4.229 EANs, 136 semanas). Primer uso del cache por EAN para lo que fue disenado.
+
+| Ventana | Frescos (mediana) | IPC alim | IPC gral |
+|---|---:|---:|---:|
+| ene-24 → ago-26 (31 m) | **+174,3%** | +156,9% | +183,4% |
+| ago-24 → ago-26 (24 m, misma estacion) | **+59,5%** | +69,6% | +75,4% |
+
+Celdas con variacion 0,000%: 87,8% → **10,3%** (empaquetados 13,0%). **Sin chain drift
+sistematico**: drift mediano 0 pp contra un indice directo de base fija. La dispersion por tipo no
+tiene direccion sistematica → es diferencia de MUESTRA (el directo usa solo EANs supervivientes).
+Encadenar en mensual baja el |drift| mediano de 44 a 32 pp: NO justifica perder el indice semanal.
+
+⚠️ **El acumulado por tipo NO se lee como inflacion**: lo domina la estacionalidad de los extremos.
+Naranja +1% (ene→ago) contra +12% (ago→ago); Palta +2% contra +56%.
+
+Cadena partida en mas de un tramo: Acelga (2), Espinaca (2), Durazno (3, dato en 83 de 136 semanas).
+
+### Agregado en esta sesion
+- Hojas mensuales `Mes_rubro` / `Mes_region` / `Mes_provincia` / `Mes_cadena` (formato largo, todas
+  las canastas) + `Panel_nacional_mes` — commit `e771f06`.
+- Screen de trazabilidad sobre TODAS las canastas + hoja `Alertas_trazabilidad` — commit `602a870`.
+
+### 🔴 Femenina: es COMPOSICION, no metodologia
+`Crema Corporal Nivea Body 400` pesa 8,5% de la canasta y tiene dato en 73 de 139 semanas. Estaba a
+$1.680 en 2024-01, desaparecio 16 meses, reaparecio a **$1.083** -por debajo de su precio de 2024
+tras 180% de inflacion, un precio viejo que la cadena siguio publicando- y salto a $9.969 (+820%).
+Ese salto ES el +9,3% del indice en 2025-10-16. Desvio propio 97,4% contra 7,7% del segundo peor.
+Tambien Gillette Simply Venus (9 meses sin dato) y Jabon Dove 90 Gr (6 meses).
+**Hay que reemplazar los tres en el constructor.** El constructor SI filtra por trazabilidad lo que
+elige (Representativa: 99,7% de media, minimo 84,4%); Femenina y Tecnologica se cargan a mano.
+
+### PENDIENTE
+1. Re-correr nb07 (minutos: reusa `sem_1ad1b4b5` y `ean_1ad1b4b5`, la clave no cambio) y auditar.
+2. Reemplazar los 3 items sin trazabilidad de Femenina.
+3. Calibrar pan frances: pesa 13,7% de Popular y paso de $3.457 a $7.732/kg entre corridas.
+
 **⚠️ La corrida de v5.7 salió MAL y NO es publicable. El fix ya está aplicado. La nueva corrida
 cuesta MINUTOS, no 1h45m: la clave del caché NO cambia (el encadenado es post-caché).**
 
