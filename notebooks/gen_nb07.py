@@ -954,10 +954,17 @@ datos_sem['mes'] = datos_sem['semana'].map(_mes_de_semana)
 # Panel nacional por EAN = meses cerrados (cache) + mes en curso (recien leido).
 ean_nac = pd.concat([_ean_cerrados] + _EAN_NAC, ignore_index=True) if len(_EAN_NAC) else _ean_cerrados
 del _ean_cerrados; _EAN_NAC.clear(); gc.collect()
-ean_nac = ean_nac.groupby(['item','ean_norm','semana'], as_index=False).agg(
-    p=('p','median'), n_suc=('n_suc','sum'))
-print(f'Panel por EAN (frescos): {ean_nac["ean_norm"].nunique():,} EANs x '
-      f'{ean_nac["semana"].nunique()} semanas | {len(ean_nac):,} filas')
+if len(ean_nac):
+    ean_nac = ean_nac.astype({'p': 'float64', 'n_suc': 'int64'})
+    ean_nac = ean_nac.groupby(['item','ean_norm','semana'], as_index=False).agg(
+        p=('p','median'), n_suc=('n_suc','sum'))
+    print(f'Panel por EAN (frescos): {ean_nac["ean_norm"].nunique():,} EANs x '
+          f'{ean_nac["semana"].nunique()} semanas | {len(ean_nac):,} filas')
+else:
+    # No deberia pasar en una corrida normal. Si pasa, el encadenado se saltea solo (esta
+    # guardado por `len(ean_nac)`) y el nacional queda con el estimador anterior, en vez de
+    # que reviente un groupby sobre un frame vacio a la hora y media de lectura.
+    print('AVISO: panel por EAN vacio -> los frescos quedan con el estimador anterior')
 datos_sem = datos_sem[datos_sem['mes'] >= MES_INICIO_HISTORICO].copy()
 
 # La ULTIMA semana solo vale si esta COMPLETA: su jueves de cierre tiene que estar cubierto por
