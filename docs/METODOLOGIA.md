@@ -954,6 +954,39 @@ frecuencia a la que se compara contra el IPC.
 
 ---
 
+### 10.13. Validación del encadenado de frescos contra datos reales (2026-09-08)
+
+El caché por EAN (`ean_<key>_v5.parquet`) permitió correr el bloque de encadenado de `gen_nb07.py`
+**fuera del notebook**, sobre el panel real de 385.991 filas (4.229 EANs, 136 semanas), sin releer
+el SEPA. Resultados:
+
+| Ventana | Frescos (mediana) | IPC alimentos | IPC general |
+|---|---:|---:|---:|
+| ene-24 → ago-26 (31 meses) | **+174,3%** | +156,9% | +183,4% |
+| ago-24 → ago-26 (24 m, misma estación) | **+59,5%** | +69,6% | +75,4% |
+
+Las dos ventanas quedan en rango. Celdas con variación exactamente 0,000%: **10,3%**, en línea con
+el 13,0% de los empaquetados (con la mediana daba 87,8% — ver BUG-28).
+
+**No hay chain drift sistemático.** Contra un índice directo de base fija (mismos EANs punta a
+punta, Jevons), el drift mediano es **0 pp**. Hay dispersión por tipo (|drift| mediano 30 pp) pero
+**sin dirección sistemática** —Cebolla +280% encadenado contra +152% directo, Asado +157% contra
++277%—, lo que apunta a diferencia de MUESTRA y no a drift: el índice directo sólo usa los EANs
+que sobreviven los 31 meses, que es una muestra de supervivientes. Encadenar en frecuencia mensual
+reduce el |drift| mediano de 44 a 32 pp en el subconjunto con muestra directa sólida (≥15 EANs),
+una mejora que **no justifica** perder el índice semanal que necesita el informe.
+
+**⚠️ Cómo NO leer el acumulado por tipo.** Está dominado por la estacionalidad de los extremos, no
+por inflación. Naranja da **+1%** de ene-24 a ago-26 y **+12%** de ago-24 a ago-26; Palta, +2% y
++56%. Son frutas de invierno comparadas contra un extremo de verano. El acumulado de un tipo
+individual sólo tiene sentido entre extremos de la MISMA estación.
+
+**Tipos con la cadena partida en más de un tramo**: Acelga (2), Espinaca (2) y Durazno (3, con dato
+en sólo 83 de 136 semanas). En esos tres el nivel entre tramos lo fija el estimador anterior, no la
+cadena.
+
+---
+
 ## 11. Notebook 02 — Excel de econometría (`datos_econometria`)
 
 Insumo para análisis de series de tiempo (materia "Econometría avanzada"). El Notebook 02, además
