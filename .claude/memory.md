@@ -41,10 +41,27 @@ Tambien Gillette Simply Venus (9 meses sin dato) y Jabon Dove 90 Gr (6 meses).
 **Hay que reemplazar los tres en el constructor.** El constructor SI filtra por trazabilidad lo que
 elige (Representativa: 99,7% de media, minimo 84,4%); Femenina y Tecnologica se cargan a mano.
 
+### ✅ Femenina reemplazada y pan frances anclado (commit df92222)
+- **Femenina**: salen Nivea Body 400 (traz. 50%), Simply Venus (78%) y Jabon Dove Original (84%);
+  entran Villeneuve Piel Extra Seca 250 Ml **qty 1,6** (mantiene 400 Ml/mes), Prestobarba3 Femenina
+  qty 1,0 y Jabon Dove Antibacterial 90 Gr qty 4,0. Los 14 items al 100% de trazabilidad y el costo
+  pasa de $137.597 a $137.622 (+0,02%): la sustitucion NO mueve el nivel.
+  **Se aplica en `cantidad_06` del Excel de canasta** (se le entrego el archivo editado al usuario
+  para que reemplace el de MyDrive/carga/output_canasta).
+- **Pan frances**: publicaba $7.732/kg contra ~$6.200 de mercado (referencia del usuario). 18 kg/mes
+  y 13,7% de Popular -> 2,7% de sobreestimacion. NO se corrige con parametros: dos regimenes de alta
+  cobertura (un EAN de balanza a $10.000 EXACTOS en 981 sucursales y un par a $4.300 en 339) con la
+  referencia en el medio; barriendo RATIO x K el estimador salta entre $3.190/$4.300/$6.760/$10.000.
+  Media geometrica ponderada: $1.938, peor. Solucion: `NIVEL_REFERENCIA_FRESCO` fija el nivel de la
+  ultima semana con un precio verificado; NO altera la inflacion (el indice separa forma de nivel).
+
 ### PENDIENTE
-1. Re-correr nb07 (minutos: reusa `sem_1ad1b4b5` y `ean_1ad1b4b5`, la clave no cambio) y auditar.
-2. Reemplazar los 3 items sin trazabilidad de Femenina.
-3. Calibrar pan frances: pesa 13,7% de Popular y paso de $3.457 a $7.732/kg entre corridas.
+1. **Re-correr nb07** con el Excel de canasta nuevo (minutos: reusa `sem_1ad1b4b5` y `ean_1ad1b4b5`,
+   la clave del cache no cambio) y auditar el Excel resultante.
+2. Verificar que `Alertas_trazabilidad` salga vacia y que pan frances quede en $6.200/kg.
+3. Si consiguen referencias de mercado de otros frescos, cargarlas en `NIVEL_REFERENCIA_FRESCO`.
+4. Sigue abierto: cadena partida en Acelga (2 tramos), Espinaca (2) y Durazno (3, dato en 83 de 136
+   semanas). Y no publicar la apertura regional/provincial de Popular, Media ni Tecnologica.
 
 **⚠️ La corrida de v5.7 salió MAL y NO es publicable. El fix ya está aplicado. La nueva corrida
 cuesta MINUTOS, no 1h45m: la clave del caché NO cambia (el encadenado es post-caché).**
