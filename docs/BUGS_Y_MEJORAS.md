@@ -1,6 +1,6 @@
 # Bugs Pendientes y Mejoras
 
-Última actualización: 2026-09-07 — nb07 v5.5: banda de plausibilidad POR TIPO (BUG-26, pan francés) y el arrastre deja de puentear celdas rechazadas
+Última actualización: 2026-09-08 — nb07 v5.7: BUG-27, el precio nacional de un fresco pasa a ser un índice encadenado de muestra apareada POR EAN
 
 ---
 
@@ -26,6 +26,63 @@ de la Tecnológica** hasta que haya al menos dos cadenas con cobertura de durabl
 ---
 
 ## 🟢 Cambios y fixes 2026-09
+
+### 🔴 BUG-27 — El precio de un fresco seguía a la mezcla de EANs, no a la inflación (2026-09-08) ✅ Resuelto
+
+**Síntoma.** Tras v5.6 el salto de la semana **2026-05-07** bajó de +5,4% a +4,07% pero **no
+desapareció**: seguía siendo el 5º más grande de la serie y el único fuera de ene-abr 2024
+(donde la inflación real era ~4,6% semanal). Aportes: Carne +14,3% (2,04 pp), Cerdo +52,5%
+(0,75 pp), Pollo +15,0% (0,64 pp).
+
+**Causa.** El precio nacional de un tipo fresco era la **mediana sobre los EANs que casualmente
+cotizaban ese mes**. Cuando cambia la mezcla, el tipo salta sin que haya inflación — y la
+muestra apareada del índice **no lo ve**, porque la etiqueta del ítem (`Lomo`) es la misma en
+las dos semanas. `Presencia_items` da 100% para los nueve tipos que saltan, en todos los meses:
+el tipo nunca falta, lo que cambia es qué hay adentro.
+
+**El `rk=2.0` de v5.6 empeoró la cola.** Los tres tipos más volátiles de 2026 fueron los tres con
+`rk=2.0` (desvío medio 10,3% contra 8,5% de los tipos sin `rk`), porque estrechar la ventana
+alrededor de una referencia contaminada **compromete más con el régimen equivocado**: Carré de
+cerdo pasó de oscilar 15.951↔30.848 a quedar clavado en **$40.000 redondos y planos cuatro
+semanas seguidas** — un EAN único dominando la mediana.
+
+**Por qué ninguna banda alcanza.** Los dos regímenes de Lomo ($13.211 vs $36.378) y de Bife de
+chorizo ($12.355 vs $31.349) distan ~2,5×, y una ventana tiene que ser ≥2× para tolerar
+dispersión legítima: los dos caen adentro.
+
+**Fix (v5.7), en tres partes:**
+
+1. **Índice encadenado de muestra apareada POR EAN** para el precio nacional de cada tipo fresco
+   — el mismo criterio que el notebook ya aplicaba un nivel más arriba, para la canasta. Cada EAN
+   se compara **consigo mismo**, así que un cambio de mezcla no puede mover el índice. Se conserva
+   el **nivel** del estimador anterior (mediana provincial ponderada por población) en la última
+   semana válida y se reconstruye la historia hacia atrás. Anclaje **por tramo**: si un hueco
+   supera `FRESCO_MAX_HUECO_PAR` no se encadena a través de él (publicaría de golpe toda la
+   inflación del hueco) y el tramo nuevo se ancla por separado.
+2. **Referencia estable en el filtro de régimen**: `ancla del mes × RATIO_FRESCO[tipo]` en vez de
+   la mediana del mes, que es justamente la que se contamina. `RATIO_FRESCO` ya estaba calibrado.
+3. **Segundo caché por EAN** (`ean_<key>_v5.parquet`, ~10k EANs × 139 semanas). Toda la
+   metodología de frescos pasa a calcularse **después del caché**: de acá en más, iterarla cuesta
+   minutos en vez de 1h42m de relectura del SEPA.
+
+**Validación.** `notebooks/test_encadenado_frescos.py` ejecuta el **código real** extraído de
+`gen_nb07.py` contra un panel sintético que reproduce el patrón medido (régimen barato de alta
+cobertura que desaparece 10 semanas). Saltos de composición de +170% (Lomo), +149% (Bife) y
++235% (Carré) → **desaparecen**; el encadenado recupera el 1,00%/semana sintético con 0,0% de
+error y el 1,47× acumulado exacto. Incluye un tipo escaso (Palta, 2 EANs) que destapó dos bugs
+de la implementación: un tramo de una sola semana anclado al valor contaminado, y el reseteo de
+nivel que rebaseaba el tramo anterior.
+
+**Efecto colateral esperado y deseado:** los tipos con series congeladas — **Ajo, 82 semanas
+consecutivas con el mismo valor**; **Matambre, +12% acumulado en 32 meses contra IPC +183%** —
+deberían empezar a moverse, porque dejan de depender de qué EAN domina.
+
+### ⚠️ Trampa corregida: la clave del caché no cubría todo lo que filtra en la lectura
+`_cache_key` incluía `FRESCO_REGIMEN_K` pero **no** los `rk` por tipo (que filtran en la lectura
+desde v5.6) ni `RATIO_FRESCO` (que desde v5.7 es la referencia del filtro). Tocar un `rk` o un
+ratio no movía la clave y el notebook **reusaba en silencio un caché construido con los valores
+viejos**: resultado incorrecto y sin aviso. Quedaba tapado porque el universo de EANs cambiaba
+igual, pero era una trampa para la próxima sesión. Ahora ambos entran al hash.
 
 ### 🔴 BUG-26 — Pan francés explicaba el 43% de la volatilidad del índice (2026-09-07) ✅ Resuelto
 

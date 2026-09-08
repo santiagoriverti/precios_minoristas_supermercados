@@ -6,7 +6,80 @@ Autor: Santiago Riverti — investigador independiente
 
 ---
 
-## 🟢 ESTADO ACTUAL / HANDOFF [2026-09-07 · tarde] — nb07 v5.3 + canastas v5.2
+## 🟢 ESTADO ACTUAL / HANDOFF [2026-09-08] — nb07 v5.7, encadenado de frescos por EAN
+
+**Implementado y testeado, PENDIENTE LA CORRIDA DE VERIFICACIÓN (~1h45m, relee el SEPA).**
+
+### Qué dijo la corrida de v5.6 + constructor v5.3 (auditada sobre el Excel real)
+
+**Funcionó:** cobertura resuelta — Media pasó de ~264 sucursales a **1.615**, Popular a 1.352,
+Representativa 2.212; desaparecieron los meses degenerados de Popular (tenía 4 sucursales en
+2026-03). Provincias confiables 10 y 9. Desvío semanal de Representativa 1,28% → **1,15%**,
+ninguna semana >8% (antes 3), máximo 12,1% → 4,9%. El regex de Carré limpió los chorizos. Pan
+francés estable en $3.457/kg. Se sostiene el ordenamiento de Engel: Popular 288 > Media 270 >
+Representativa 260 > Ejecutiva 254 contra IPC 283.
+
+**No funcionó:** el salto de **2026-05-07** bajó de +5,4% a **+4,07%** y sigue siendo el 5º más
+grande de la serie, único fuera de ene-abr 2024. Aportes: Carne +14,3% (2,04 pp), Cerdo +52,5%,
+Pollo +15,0%.
+
+### BUG-27 — diagnóstico (ver docs/BUGS_Y_MEJORAS.md y METODOLOGIA §10.11)
+
+El precio nacional de un fresco era la **mediana sobre los EANs que casualmente cotizaban ese
+mes**. Cambia la mezcla → salta el tipo, y la muestra apareada no lo ve porque el ítem se llama
+igual. **`Presencia_items` da 100% para los nueve tipos que saltan, en todos los meses.**
+
+**El `rk=2.0` de v5.6 empeoró la cola**: los tres tipos más volátiles de 2026 fueron los tres con
+`rk=2.0` (desvío medio 10,3% vs 8,5% sin `rk`). Carré quedó clavado en **$40.000 redondos, planos
+4 semanas**. Estrechar la ventana alrededor de una referencia contaminada compromete MÁS con el
+régimen equivocado. Y ninguna banda sirve: los regímenes distan ~2,5× (Lomo $13.211 vs $36.378) y
+la ventana tiene que ser ≥2×.
+
+⚠️ **Error mío que conviene no repetir**: primero recomendé "elegir por cobertura en vez de por
+mediana". Es incorrecto — la mediana se calcula sobre filas sucursal-EAN, así que **ya está
+ponderada por cobertura**. No habría cambiado nada.
+
+### Fix v5.7 (implementado)
+
+1. **Índice encadenado de muestra apareada POR EAN** para el nacional de cada fresco. Cada EAN se
+   compara consigo mismo → la mezcla no puede mover el índice. Nivel conservado del estimador
+   anterior en la última semana válida; **anclaje por tramo** cuando el hueco supera 8 semanas.
+2. **Referencia del filtro de régimen** = `ancla del mes × RATIO_FRESCO[tipo]` (estable) en vez de
+   la mediana del mes.
+3. **Segundo caché por EAN** `ean_<key>_v5.parquet`. Desde ahora **la metodología de frescos se
+   itera post-caché: minutos, no 1h45m**. Ésta es la última relectura obligatoria.
+4. **Clave del caché arreglada**: no cubría los `rk` ni `RATIO_FRESCO`, ambos filtros de lectura.
+   Un ajuste de esos valores reusaba el caché viejo en silencio.
+
+**Test**: `notebooks/test_encadenado_frescos.py` (ejecuta el código REAL extraído de gen_nb07.py).
+Saltos sintéticos +170%/+149%/+235% → desaparecen; recupera 1,00%/semana con 0,0% de error. El
+caso escaso (Palta, 2 EANs) destapó dos bugs propios ya corregidos: tramo de una sola semana
+anclado al valor contaminado, y reseteo de nivel que rebaseaba el tramo anterior.
+
+### ⚠️ QUÉ VERIFICAR EN LA PRÓXIMA CORRIDA
+1. **Que el salto de 2026-05-07 desaparezca** (venía +4,07%). Mirar `Sem_Representativa`.
+2. Líneas nuevas por pantalla: `Frescos encadenados por EAN: N de 59 tipos`, `mayor revisión de la
+   serie`, `eslabones incompletos`, y `Cache por EAN actualizado`.
+3. **Carré de cerdo y Lomo en `Panel_nacional`**: no puede volver a aparecer $40.000 plano.
+4. **Ajo y Matambre**: Ajo venía con **82 semanas consecutivas con el mismo valor**; Matambre
+   **+12% acumulado en 32 meses contra IPC +183%**. Con el encadenado deberían moverse. Si siguen
+   congelados, el problema es de cobertura del tipo, no de régimen.
+5. Los tipos que queden en la lista `sin encadenar` conservan el estimador viejo — revisar si
+   alguno de ésos es de los que saltan.
+
+### Pendientes que NO se tocaron
+- **Fiambres y Quesos** (Mortadela ratio 1,94, Salame 1,98, Jamón 1,77) tenían la misma firma
+  bimodal. **No** se les puso `rk` a propósito: el encadenado debería resolverlos solo. Verificar.
+- Cosmético vivo: el rubro `'Limpieza '` con espacio final sigue en `cargar_canastas_v5.py`
+  (aparece como rubro aparte en el print del loader de Popular/Media/Ejecutiva, no en las tablas).
+- No publicar la apertura regional/provincial de Popular, Media ni Tecnológica.
+- Espinaca (273 sucursales) y Palta (191) siguen por debajo de cualquier umbral razonable.
+
+### Dato para no confundir
+`Cobertura_frescos.precio_norm_med` es la mediana **entre variantes**, no el precio nacional del
+tipo. No son comparables con `Panel_nacional`.
+
+## 🟡 HANDOFF ANTERIOR [2026-09-07 · tarde] — nb07 v5.3 + canastas v5.2
 
 **El usuario corrió v5.2 y trajo el Excel. El fix de frescos funcionó pero destapó dos
 problemas nuevos, ya corregidos. FALTA LA CORRIDA DE VERIFICACIÓN DE v5.3.**

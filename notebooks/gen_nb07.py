@@ -231,6 +231,23 @@ RATIO_FRESCO = {
 PISO_RATIO_OVERRIDE = {
     'Pan francés': 0.65,
 }
+# ── Frescos: indice NACIONAL encadenado por EAN (v5.7) ────────────────────────
+# El precio nacional de un tipo fresco venia siendo la mediana sobre los EANs que casualmente
+# cotizaban ese mes. Como la mezcla de EANs cambia, el tipo saltaba sin que hubiera inflacion, y
+# la muestra apareada del indice no lo veia porque la etiqueta del item (`Lomo`) es la misma en
+# ambas semanas. Medido en la corrida 2026-08-27: Presencia_items da 100% para los nueve tipos
+# que saltan, en todos los meses -el tipo nunca falta, lo que cambia es que hay adentro-.
+# Ninguna banda separa los dos regimenes de Lomo ($13.211 vs $36.378) ni de Bife de chorizo
+# ($12.355 vs $31.349): distan ~2,5x y una ventana tiene que ser >=2x para tolerar dispersion
+# legitima, asi que los dos caen adentro.
+# Solucion: encadenar la MUESTRA APAREADA a nivel EAN, que es lo mismo que el notebook ya hace
+# un nivel mas arriba para la canasta. Cada EAN se compara CONSIGO MISMO, asi que un cambio en la
+# mezcla no puede mover el indice. El NIVEL se conserva del estimador actual (mediana provincial
+# ponderada por poblacion) en la ultima semana valida, y la historia se reconstruye hacia atras.
+FRESCO_NAC_ENCADENADO = True
+FRESCO_EAN_MIN_SUC    = 10   # sucursales minimas de un EAN-semana para entrar en el encadenado
+FRESCO_MIN_EANS_PAR   = 2    # EANs apareados minimos entre dos semanas para aceptar el eslabon
+FRESCO_MAX_HUECO_PAR  = 8    # semanas maximas que puede saltear un eslabon para reenganchar
 # Salto semanal del precio nacional de un item a partir del cual se lo reporta en la hoja
 # Alertas_precio_item. Es el tripwire: ningun cambio de regimen deberia volver a pasar inadvertido.
 ALERTA_SALTO_ITEM = 0.35
@@ -726,8 +743,17 @@ cells.append(cell_code(r'''# ===================================================
 # de EANs con gramaje mal cargado o precios por unidad en vez de por kilo.
 _SKR = ['id_comercio','id_bandera','id_sucursal']
 _FECHAS_MAX = []   # ultima fecha con precio leida (para detectar la semana incompleta del final)
+# La clave tiene que cubrir TODO lo que cambia el resultado de la lectura. Faltaban dos cosas:
+# (a) los `rk` por tipo, que filtran en la lectura desde v5.6; y (b) RATIO_FRESCO, que desde v5.7
+# dejo de ser solo una banda post-cache y es la REFERENCIA del filtro de regimen. Sin esto, tocar
+# un rk o un ratio no movia la clave y el notebook reusaba en silencio un cache construido con los
+# valores viejos: resultado incorrecto y sin aviso. (Esta vez quedaba tapado porque el universo de
+# EANs cambiaba igual, pero es una trampa para la proxima sesion.)
+_rk_sig    = '|'.join(f'{t}:{TIPOS_FRESCOS[t]["rk"]}' for t in sorted(TIPOS_FRESCOS) if 'rk' in TIPOS_FRESCOS[t])
+_ratio_sig = '|'.join(f'{t}:{RATIO_FRESCO[t]}' for t in sorted(RATIO_FRESCO))
 _cache_key  = hashlib.md5(('|'.join(sorted(EANS_LECTURA)) + f'|w{DIA_CIERRE_SEMANA}|k{FRESCO_OUTLIER_K}'
                            f'|r{FRESCO_REGIMEN_K}|p{FRESCO_PISO_ANCLA}|t{FRESCO_TECHO_ANCLA}'
+                           f'|refmode=ancla_x_ratio|rk={_rk_sig}|ratio={_ratio_sig}'
                            ).encode()).hexdigest()[:8]
 _cache_path = CACHE_DIR / f'sem_{_cache_key}_v5.parquet'   # v5 = semana jueves + outlier filter
 
@@ -779,6 +805,7 @@ def _leer_mes(_lbl):
 _FR_MULT = {t: (1000.0 if FRESCO_INFO[t]['unidad'] == 'kg' else 12.0) for t in FRESCO_INFO}
 _RK_TIPO = {t: float(TIPOS_FRESCOS[t]['rk']) for t in FRESCO_INFO if 'rk' in TIPOS_FRESCOS.get(t, {})}
 _FR_DESCARTES = []   # (mes, observaciones fuera de la banda de plausibilidad, ancla $/kg)
+_EAN_NAC = []        # agregado nacional por (tipo, EAN, semana): insumo del encadenado de frescos
 def _colapsar(_df, _lbl_mes=''):
     if _df is None or len(_df) == 0: return None
     _e = (_df[_df['ean_norm'].isin(EANS_EMP)][_SKR + ['semana','ean_norm','precio']]
@@ -795,7 +822,7 @@ def _colapsar(_df, _lbl_mes=''):
         _f['price'] = _f['precio'] / _f['ean_norm'].map(EAN_NORMFACTOR) * _f['item'].map(_FR_MULT)
         # ean_norm y precio ya no se usan: sacarlos ahora evita arrastrar una columna de texto
         # en cada copia posterior.
-        _f = _f.drop(columns=['ean_norm','precio'])
+        _f = _f.drop(columns=['precio'])
         _ok = _f['price'].notna() & (_f['price'] > 0)
         # (0) banda de PLAUSIBILIDAD anclada, acumulada sobre la MISMA mascara que el notna para
         #     no materializar una copia intermedia. Va antes que todo: si la moda mayoritaria de
@@ -809,11 +836,50 @@ def _colapsar(_df, _lbl_mes=''):
             _FR_DESCARTES.append((_lbl_mes, _n0 - int(_ok.sum()), round(float(_anc), 1)))
         _f = _f[_ok]
         del _ok
-        # (1) filtro de REGIMEN: referencia nacional del tipo para el mes entero. Va PRIMERO, para
-        #     que la mediana de la sucursal no se calcule sobre una mezcla de bienes distintos.
-        #     `map` sobre las ~59 medianas por tipo en vez de `transform`: mismo resultado, sin
-        #     la maquinaria de groupby sobre el panel completo.
-        _ref = _f['item'].map(_f.groupby('item')['price'].median())
+        # (0b) AGREGADO NACIONAL POR EAN, insumo del indice encadenado de frescos (v5.7).
+        #      Se toma ACA, antes del filtro de regimen, porque el encadenado no necesita que
+        #      se elija un regimen: compara cada EAN CONSIGO MISMO, asi que un cambio en la
+        #      mezcla de EANs no puede mover el indice. Es la unica forma de arreglar Lomo y
+        #      Bife de chorizo, cuyos dos regimenes distan ~2,5x y caen los dos dentro de
+        #      cualquier ventana lo bastante ancha como para tolerar dispersion legitima.
+        #      Barato: el groupby es POR MES (~2 M de filas), no sobre el panel completo, y el
+        #      resultado son ~10k EANs x 4-5 semanas. El OOM de v5.4 fue por sostener el panel
+        #      entero mas copias, no por una agregacion mensual.
+        #      `size()` = cantidad de sucursales porque `_leer_mes` ya devuelve una fila por
+        #      (sucursal, ean, semana).
+        try:
+            _en = _f.groupby(['item','ean_norm','semana'], as_index=False).agg(
+                p=('price','median'), n_suc=('price','size'))
+            _EAN_NAC.append(_en)
+            del _en
+        except Exception as _e:
+            print(f'AVISO: no se pudo agregar el panel por EAN en {_lbl_mes}: {_e}')
+        _f = _f.drop(columns=['ean_norm'])
+        # (1) filtro de REGIMEN. La referencia NO puede ser la mediana del mes: esa mediana la
+        #     fija la mezcla de EANs que casualmente cotiza ese mes, y cuando la mezcla cambia
+        #     en el corte de mes la referencia aterriza en el otro regimen y el filtro descarta
+        #     el regimen anterior ENTERO. Es autoreforzante. Caso medido (corrida 2026-08-27):
+        #     Carre de cerdo paso de $11.725 a $40.000 REDONDOS y plano cuatro semanas seguidas
+        #     -un EAN unico dominando- y volvio a $15.080 recien en junio; Lomo x2,75; Bife de
+        #     chorizo x2,54; Suprema +40%. Los seis a la vez, con el ancla de verduras plana:
+        #     eso es el salto de la semana 2026-05-07 (+4,07% en la canasta).
+        #     Bajar el K de 3,0 a 2,0 lo EMPEORO, porque estrechar la ventana alrededor de una
+        #     referencia contaminada compromete mas con el regimen equivocado: los tres tipos
+        #     mas volatiles de 2026 fueron los tres con rk=2,0 (desvio medio 10,3% contra 8,5%
+        #     de los tipos sin rk).
+        #     Referencia estable: `ancla del mes x RATIO_FRESCO[tipo]`. RATIO_FRESCO ya esta
+        #     calibrado (q75 del ratio contra el ancla) y el ancla se recalcula cada mes, asi
+        #     que la referencia acompana a la inflacion sin depender de la composicion. Con eso
+        #     el conjunto aceptado deja de darse vuelta mes a mes, que es lo que genera el
+        #     salto: la volatilidad viene de ALTERNAR entre regimenes, no de mezclarlos.
+        #     Fallback a la mediana del mes para un tipo sin ratio calibrado o si no hay ancla.
+        _ref_med = _f['item'].map(_f.groupby('item')['price'].median())
+        if _anc == _anc and _anc > 0:
+            _ref = _f['item'].map(RATIO_FRESCO) * float(_anc)
+            _ref = _ref.where(_ref.notna() & (_ref > 0), _ref_med)
+        else:
+            _ref = _ref_med
+        del _ref_med
         _kreg = _f['item'].map(_RK_TIPO).fillna(FRESCO_REGIMEN_K)
         _f = _f[(_f['price'] >= _ref / _kreg) & (_f['price'] <= _ref * _kreg)]
         del _ref
@@ -851,6 +917,22 @@ if _nuevos:
         print(f'Cache actualizado: {_cache_path.name}')
 del _nuevos; gc.collect()
 
+# Cache PARALELO por EAN (mismo key: describe la misma lectura). Es chico -del orden de 10k EANs
+# x 139 semanas- y es lo que permite iterar la metodologia de frescos SIN releer el SEPA: todo el
+# encadenado se calcula despues del cache.
+_ean_cache_path = CACHE_DIR / f'ean_{_cache_key}_v5.parquet'
+if USE_CACHE and _ean_cache_path.exists():
+    _ean_cerrados = pd.read_parquet(_ean_cache_path)
+    _ean_cerrados = _ean_cerrados[_ean_cerrados['semana'].map(_mes_de_semana) < _mes_actual].copy()
+else:
+    _ean_cerrados = pd.DataFrame(columns=['item','ean_norm','semana','p','n_suc'])
+if _EAN_NAC:   # meses cerrados que se acaban de leer
+    _ean_cerrados = pd.concat([_ean_cerrados] + _EAN_NAC, ignore_index=True)
+    if USE_CACHE:
+        _ean_cerrados.to_parquet(_ean_cache_path, compression='snappy', index=False)
+        print(f'Cache por EAN actualizado: {_ean_cache_path.name} ({len(_ean_cerrados):,} filas)')
+_EAN_NAC.clear(); gc.collect()
+
 # Mes en curso: siempre fresco. Guardamos el crudo por-EAN para los diagnosticos.
 # `_leer_mes` ya devuelve un frame nuevo (sale de un groupby), asi que el .copy() que habia aca
 # duplicaba el mes entero sin motivo. En una instancia chica de Colab eso era la gota.
@@ -868,6 +950,14 @@ if len(datos_sem) == 0:
     raise RuntimeError('Sin datos para los EANs configurados. Revisa las canastas y los frescos.')
 datos_sem = datos_sem.groupby(_SKR + ['item','semana'], as_index=False)['price'].median()
 datos_sem['mes'] = datos_sem['semana'].map(_mes_de_semana)
+
+# Panel nacional por EAN = meses cerrados (cache) + mes en curso (recien leido).
+ean_nac = pd.concat([_ean_cerrados] + _EAN_NAC, ignore_index=True) if len(_EAN_NAC) else _ean_cerrados
+del _ean_cerrados; _EAN_NAC.clear(); gc.collect()
+ean_nac = ean_nac.groupby(['item','ean_norm','semana'], as_index=False).agg(
+    p=('p','median'), n_suc=('n_suc','sum'))
+print(f'Panel por EAN (frescos): {ean_nac["ean_norm"].nunique():,} EANs x '
+      f'{ean_nac["semana"].nunique()} semanas | {len(ean_nac):,} filas')
 datos_sem = datos_sem[datos_sem['mes'] >= MES_INICIO_HISTORICO].copy()
 
 # La ULTIMA semana solo vale si esta COMPLETA: su jueves de cierre tiene que estar cubierto por
@@ -957,6 +1047,80 @@ else:
 
 # ── 2. Arrastre (forward-fill acotado) ────────────────────────────────────────
 nac_wide = nac_item.pivot(index='semana', columns='item', values='nac').sort_index()
+
+# ── 2b. Frescos: reemplazo de la FORMA de la serie por un encadenado por EAN ──
+# Ver FRESCO_NAC_ENCADENADO en la CELDA 1. Se conserva el NIVEL del estimador ponderado por
+# poblacion en la ultima semana valida y se reconstruye la historia encadenando ratios de EANs
+# apareados. Un eslabon puede saltear hasta FRESCO_MAX_HUECO_PAR semanas para reenganchar; si no
+# reengancha, la celda queda NaN y el resto de la maquinaria (muestra apareada, arrastre acotado)
+# la trata como faltante, que es el comportamiento correcto.
+if FRESCO_NAC_ENCADENADO and len(ean_nac):
+    _tipos_fr = [c for c in nac_wide.columns if c in FRESCO_INFO]
+    _en = ean_nac[ean_nac['n_suc'] >= FRESCO_EAN_MIN_SUC]
+    _rep, _sin = [], []
+    for _t in _tipos_fr:
+        _sub = _en[_en['item'] == _t]
+        if len(_sub) < FRESCO_MIN_EANS_PAR:
+            _sin.append(_t); continue
+        _w = _sub.pivot_table(index='semana', columns='ean_norm', values='p', aggfunc='median')
+        _w = _w.reindex(nac_wide.index)
+        _idx = pd.Series(np.nan, index=nac_wide.index, dtype=float)
+        _seg = pd.Series(np.nan, index=nac_wide.index, dtype=float)   # id de tramo encadenado
+        _prev, _lvl, _sid = None, 1.0, 0
+        for _sem in nac_wide.index:
+            _fila = _w.loc[_sem]
+            if _fila.notna().sum() == 0:
+                continue
+            if _prev is None or (nac_wide.index.get_loc(_sem)
+                                 - nac_wide.index.get_loc(_prev)) > FRESCO_MAX_HUECO_PAR:
+                # Un tramo solo puede ABRIR en una semana que tenga con que encadenar hacia
+                # adelante. Sin esta condicion se abria un tramo en una semana de un solo EAN,
+                # quedaba un tramo de UNA semana y se lo anclaba al estimador viejo -es decir,
+                # justo al valor contaminado que estamos tratando de no publicar-.
+                if int(_fila.notna().sum()) < FRESCO_MIN_EANS_PAR:
+                    continue
+                # Arranque, o hueco tan largo que no hay muestra apareada para cruzarlo. Se abre
+                # un TRAMO nuevo. Cada tramo se ancla por separado contra el estimador anterior:
+                # encadenar a traves del hueco publicaria de golpe toda la inflacion acumulada, y
+                # reanclar todo con una sola semana base rebasea los tramos viejos (lo detecto el
+                # test sintetico: Palta quedaba con un salto de 17% en la costura).
+                _sid += 1; _lvl = 1.0
+                _idx.loc[_sem] = _lvl; _seg.loc[_sem] = _sid; _prev = _sem; continue
+            _a, _b = _w.loc[_prev], _fila
+            _par = _a.notna() & _b.notna() & (_a > 0) & (_b > 0)
+            if int(_par.sum()) < FRESCO_MIN_EANS_PAR:
+                continue
+            _lvl = _lvl * float(np.exp(np.log((_b[_par] / _a[_par]).astype(float)).median()))
+            _idx.loc[_sem] = _lvl; _seg.loc[_sem] = _sid; _prev = _sem
+        _ok_idx = _idx.notna() & nac_wide[_t].notna()
+        if int(_ok_idx.sum()) == 0:
+            _sin.append(_t); continue
+        _nuevo = pd.Series(np.nan, index=nac_wide.index, dtype=float)
+        for _sd in sorted(_seg.dropna().unique()):
+            _m = (_seg == _sd)
+            if int(_m.sum()) < 2:
+                continue          # tramo de una sola semana: no tiene ningun eslabon, no informa
+            _mb = _m & _ok_idx
+            if not bool(_mb.any()):
+                continue          # tramo sin referencia de nivel: se deja faltante
+            _base = _idx.index[_mb][-1]
+            _nuevo[_m] = _idx[_m] / _idx.loc[_base] * float(nac_wide.at[_base, _t])
+        if not bool(_nuevo.notna().any()):
+            _sin.append(_t); continue
+        _dif = float(np.nanmax(np.abs(_nuevo / nac_wide[_t] - 1))) * 100
+        _rep.append((_t, int(_nuevo.notna().sum()), round(_dif, 1)))
+        nac_wide[_t] = _nuevo
+    print(f'Frescos encadenados por EAN: {len(_rep)} de {len(_tipos_fr)} tipos '
+          f'(min {FRESCO_EAN_MIN_SUC} suc/EAN, {FRESCO_MIN_EANS_PAR} EANs apareados)')
+    if _sin:
+        print(f'  sin encadenar (se deja el estimador anterior): {", ".join(_sin)}')
+    _rr = sorted(_rep, key=lambda x: -x[2])[:8]
+    print('  mayor revision de la serie (max |nuevo/viejo-1|): '
+          + ', '.join(f'{t} {d:.0f}%' for t, _, d in _rr))
+    _pocos = [(t, n) for t, n, _ in _rep if n < len(nac_wide) * 0.8]
+    if _pocos:
+        print('  eslabones incompletos (<80% de las semanas): '
+              + ', '.join(f'{t} {n}/{len(nac_wide)}' for t, n in sorted(_pocos, key=lambda x: x[1])[:8]))
 
 # ── Banda de plausibilidad POR TIPO (ver RATIO_FRESCO en la CELDA 1) ─────────
 # El precio nacional de un tipo fresco tiene que guardar una relacion estable con el ancla.

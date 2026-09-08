@@ -877,6 +877,57 @@ alcohol de la Ejecutiva (de 18 latas y 4 botellas por mes a 14 y 3).
 > correr antes de colapsar los frescos a tipo.
 
 
+### 10.11. nb07 v5.7 (2026-09-08) — el precio nacional de un fresco es un índice encadenado por EAN
+
+**El problema que cierra.** Hasta v5.6 el precio nacional de un tipo fresco era la mediana sobre
+las observaciones sucursal-EAN del mes. Esa mediana la fija **la mezcla de EANs que casualmente
+cotiza**, no el precio de mercado: cuando la mezcla cambia en el corte de mes, el tipo salta. La
+muestra apareada del índice no lo detecta porque el ítem se llama igual (`Lomo`) en ambas semanas.
+
+Medido en la corrida 2026-08-27: `Presencia_items` da **100% para los nueve tipos que saltan, en
+todos los meses** — el tipo nunca falta. Y los dos regímenes de cada tipo distan ~2,5× (Lomo
+$13.211 vs $36.378), mientras que una banda tiene que ser ≥2× para tolerar dispersión legítima:
+**ninguna banda los separa**.
+
+**El estimador nuevo.** Para cada tipo fresco:
+
+1. Del caché por EAN se toma, por semana, el precio nacional de cada EAN y su cobertura.
+   Entran los EAN-semana con al menos `FRESCO_EAN_MIN_SUC` sucursales.
+2. Entre dos semanas consecutivas se calcula el **ratio de muestra apareada**: la mediana de
+   `p_ean(t) / p_ean(t-1)` sobre los EANs presentes en **ambas** (mínimo `FRESCO_MIN_EANS_PAR`).
+   Cada EAN se compara consigo mismo, así que un alta o baja de EANs **no puede mover el índice**.
+3. Los ratios se encadenan. Un eslabón puede saltear hasta `FRESCO_MAX_HUECO_PAR` semanas para
+   reenganchar; más que eso **corta la cadena** y abre un tramo nuevo, porque encadenar a través
+   de un hueco largo publicaría de golpe toda la inflación acumulada.
+4. **Nivel**: cada tramo se ancla por separado al estimador anterior (mediana provincial
+   ponderada por población) en su última semana válida. Anclar todo con una sola semana base
+   rebasea los tramos viejos. Un tramo de una sola semana no tiene ningún eslabón y se descarta:
+   publicarlo sería publicar el valor contaminado que estamos evitando.
+
+Los tipos que no llegan a encadenar conservan el estimador anterior y se listan por pantalla.
+
+**Referencia del filtro de régimen.** Pasa a ser `ancla del mes × RATIO_FRESCO[tipo]` en vez de
+la mediana del mes. `RATIO_FRESCO` ya venía calibrado en el q75 del ratio contra el ancla, y el
+ancla se recalcula todos los meses, así que la referencia acompaña a la inflación sin depender de
+la composición. Esto también hizo evidente que **bajar el K de régimen empeora las cosas** cuando
+la referencia está contaminada: estrechar la ventana compromete más con el régimen equivocado
+(los tres tipos más volátiles de 2026 fueron los tres con `rk=2.0`).
+
+**Caché por EAN.** Se escribe `ean_<key>_v5.parquet` junto al panel semanal, con la misma clave.
+Son ~10.400 EANs × 139 semanas: nada al lado de los 71 M de filas del panel. El `groupby` que lo
+produce corre **por mes** (~2 M de filas), no sobre el panel completo, así que no reintroduce el
+OOM de v5.4. Su razón de ser es operativa: **toda la metodología de frescos se calcula después del
+caché**, de modo que iterarla cuesta minutos en lugar de 1h42m de relectura del SEPA.
+
+**Parámetros** (CELDA 1): `FRESCO_NAC_ENCADENADO`, `FRESCO_EAN_MIN_SUC` (10),
+`FRESCO_MIN_EANS_PAR` (2), `FRESCO_MAX_HUECO_PAR` (8).
+
+**Test**: `notebooks/test_encadenado_frescos.py` — ejecuta el código real extraído de
+`gen_nb07.py` contra un panel sintético con el patrón medido. Saltos de +170%/+149%/+235%
+desaparecen; recupera el 1,00%/semana con 0,0% de error.
+
+---
+
 ## 11. Notebook 02 — Excel de econometría (`datos_econometria`)
 
 Insumo para análisis de series de tiempo (materia "Econometría avanzada"). El Notebook 02, además
