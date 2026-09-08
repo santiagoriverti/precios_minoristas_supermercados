@@ -6,7 +6,45 @@ Autor: Santiago Riverti — investigador independiente
 
 ---
 
-## 🟢 ESTADO ACTUAL / HANDOFF [2026-09-08] — nb07 v5.7, encadenado de frescos por EAN
+## 🟢 ESTADO ACTUAL / HANDOFF [2026-09-08 · tarde] — v5.7.1, BUG-28 corregido
+
+**⚠️ La corrida de v5.7 salió MAL y NO es publicable. El fix ya está aplicado. La nueva corrida
+cuesta MINUTOS, no 1h45m: la clave del caché NO cambia (el encadenado es post-caché).**
+
+### Qué pasó
+El encadenado por EAN de v5.7 dejó la inflación acumulada en **+54,2% Popular / +71,5%
+Representativa** contra IPC 283. Control que lo aisló: los **empaquetados no se encadenan** y
+dieron **+161%** (IPC alimentos +157%); los frescos encadenados, **+58%**.
+
+**BUG-28**: el eslabón usaba la **mediana** de los log-ratios. Con precios pegajosos —solo una
+minoría de EANs repricea cada semana— la mediana da **exactamente 1,0** y la cadena no acumula.
+Evidencia: 93-100% de semanas con variación cero en 14 tipos y **Pan francés con UN valor distinto
+en 139 semanas**.
+
+**Fix**: media geométrica (Jevons) con **clip absoluto** a `FRESCO_ESLABON_K = 2.5`, no recorte de
+cuantiles (la distribución tiene masa en cero más cola; el recorte borra la señal). Test de
+regresión nuevo en `test_encadenado_frescos.py` con precios pegajosos: 0,00% de error.
+
+### Lo que SÍ funcionó en esa corrida y se conserva
+La **referencia estable del filtro de régimen** (`ancla × RATIO_FRESCO`): saltos de ítem >35% de
+221 a **106 en la serie y 0 en el último trimestre** (venían 27); **Matambre $6.490 → $16.737**
+(estaba congelado, +12% acumulado en 32 meses); Roast beef $8.953 → $15.073. El caché por EAN se
+escribió bien: `ean_1ad1b4b5_v5.parquet`, 5.588 EANs × 140 semanas.
+
+### PRÓXIMO PASO
+Correr nb07 de nuevo. **Reusa `sem_1ad1b4b5_v5.parquet` y `ean_1ad1b4b5_v5.parquet`** — son
+minutos. Verificar, en este orden:
+1. **Acumulado de las canastas**: tiene que volver al orden de 250-290 contra IPC 283. Si no,
+   parar de nuevo.
+2. Que `Panel_nacional` no tenga series constantes (Pan francés tenía 1 valor distinto en 139).
+3. Recién ahí: el salto de **2026-05-07**, Carré/Lomo, y si Fiambres se acomodó sin `rk`.
+
+### Leccion metodologica
+Los empaquetados son un **grupo de control gratis** para cualquier cambio que toque solo frescos:
+si su acumulado se mueve, el cambio se filtró donde no debía; si no se mueve y el de frescos sí,
+el sesgo está en el tratamiento de frescos. Usarlo siempre.
+
+## 🟡 HANDOFF ANTERIOR [2026-09-08 · mañana] — nb07 v5.7, encadenado de frescos por EAN
 
 **Implementado y testeado, PENDIENTE LA CORRIDA DE VERIFICACIÓN (~1h45m, relee el SEPA).**
 

@@ -1,6 +1,6 @@
 # Bugs Pendientes y Mejoras
 
-Última actualización: 2026-09-08 — nb07 v5.7: BUG-27, el precio nacional de un fresco pasa a ser un índice encadenado de muestra apareada POR EAN
+Última actualización: 2026-09-08 — nb07 v5.7.1: BUG-28, el eslabón del encadenado usaba la MEDIANA y con precios pegajosos daba exactamente cero
 
 ---
 
@@ -26,6 +26,42 @@ de la Tecnológica** hasta que haya al menos dos cadenas con cobertura de durabl
 ---
 
 ## 🟢 Cambios y fixes 2026-09
+
+### 🔴 BUG-28 — El encadenado se quedaba plano: la mediana es un estimador degenerado con precios pegajosos (2026-09-08) ✅ Resuelto
+
+**Síntoma.** La primera corrida de v5.7 devolvió una inflación acumulada imposible: Popular
++54,2% (índice 154) y Representativa +71,5% (172) para 2024-01 → 2026-08, contra un IPC de 283.
+La caída era proporcional al peso de frescos de cada canasta — Popular, la de más frescos, de 288
+a 154; Ejecutiva, la de menos, de 254 a 194.
+
+**Control que lo aisló.** Los empaquetados **no se encadenan por EAN**, así que sirven de grupo de
+control: acumulado mediano **+161%**, en línea con el IPC alimentos (+157%). Los frescos
+encadenados: **+58%**. El sesgo estaba entero en el encadenado.
+
+**Causa.** El eslabón usaba la **mediana** de los log-ratios de los EANs apareados. Los precios de
+supermercado son pegajosos: en una semana dada solo una **minoría** de los EANs cambia de precio.
+Si repricea menos de la mitad, la mediana del ratio es **exactamente 1,0** y la cadena no acumula
+nada. Evidencia en el panel: 93-100% de las semanas con variación exactamente cero en 14 tipos,
+tramos de hasta 139 semanas idénticas, y **Pan francés con UN solo valor distinto en 139 semanas**
+($7.732 constante). Variación semanal mediana de los frescos: +0,000%, contra +0,047% de los
+empaquetados y los ~0,76%/semana que hacen falta para acumular +183%.
+
+**Fix.** El eslabón pasa a ser la **media geométrica** de los log-ratios — el estimador de Jevons,
+que captura el cambio promedio aunque solo se mueva una parte del panel. La robustez se conserva
+por **clip absoluto** a `FRESCO_ESLABON_K` (2,5×) en vez de por recorte de cuantiles: la
+distribución de log-ratios tiene una masa grande en cero más una cola de los que sí reprecian, y
+un recorte por cuantiles puede borrar justamente la señal.
+
+**Test de regresión** (`test_encadenado_frescos.py`, segundo bloque): 20 EANs donde solo 1 de cada
+5 repricea por semana. Con la mediana la cadena queda plana; con la media geométrica recupera el
+acumulado del panel con **0,00% de error**. El patrón de referencia es la media geométrica del
+propio panel (Jevons), no `INFL**(n-1)`: por el escalonamiento hay un desfasaje real que el
+índice debe reproducir.
+
+**Lo que sí funcionó en esa corrida** (la referencia estable del filtro de régimen, de v5.7):
+saltos de ítem >35% de 221 a **106 en toda la serie y 0 en el último trimestre** (venían 27);
+**Matambre de $6.490 a $16.737** (venía congelado, con +12% acumulado en 32 meses); Roast beef de
+$8.953 a $15.073. Esa parte se conserva.
 
 ### 🔴 BUG-27 — El precio de un fresco seguía a la mezcla de EANs, no a la inflación (2026-09-08) ✅ Resuelto
 

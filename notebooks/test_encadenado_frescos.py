@@ -61,6 +61,7 @@ FRESCO_NAC_ENCADENADO = True
 FRESCO_EAN_MIN_SUC    = 10
 FRESCO_MIN_EANS_PAR   = 2
 FRESCO_MAX_HUECO_PAR  = 8
+FRESCO_ESLABON_K      = 2.5
 
 print('=== ANTES (estimador actual): salto por cambio de mezcla ===')
 for t in casos:
@@ -87,3 +88,42 @@ for t in casos:
           f'max {salto:.2%} | max/min {v.max()/v.min():.2f}x (verdad {INFL**39:.2f}x)')
     if salto > 0.03 or err > 5: ok = False
 print('\nRESULTADO:', 'OK - el salto de composicion desaparecio' if ok else 'FALLA')
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# REGRESION: precios PEGAJOSOS (el bug de la corrida 2026-09-08)
+# Los precios de supermercado no cambian todas las semanas: en una semana dada solo una
+# MINORIA de los EANs repricea. Con la MEDIANA de los ratios eso da exactamente 1,0 y la
+# cadena no acumula NADA -Pan frances termino con UN solo valor distinto en 139 semanas y
+# los frescos acumularon +58% contra +161% de los empaquetados-.
+# ─────────────────────────────────────────────────────────────────────────────
+print()
+print('=== REGRESION: precios pegajosos (solo 1 de cada 5 EANs repricea por semana) ===')
+N_EAN, CADA = 20, 5
+filas = []
+for k in range(N_EAN):
+    for t, sm in enumerate(SEM):
+        ult = max([w for w in range(t + 1) if w % CADA == k % CADA], default=0)
+        filas.append({'item': 'Asado', 'ean_norm': f'A{k}', 'semana': sm,
+                      'p': 10000 * (1 + 0.02 * k) * INFL ** ult, 'n_suc': 200})
+ean_nac = pd.DataFrame(filas)
+nac_wide = pd.DataFrame({'Asado': [10000 * INFL ** t for t in range(len(SEM))]}, index=SEM)
+nac_wide.index.name = 'semana'
+FRESCO_INFO = {'Asado': {}}
+exec(BLOQUE, globals())
+v = nac_wide['Asado'].dropna()
+# La verdad es la media geometrica del PROPIO panel (indice de Jevons), no INFL**(n-1): por el
+# escalonamiento, en la semana 0 ningun EAN reprecio todavia y en la ultima el repricio mas
+# reciente fue algunas semanas antes. Ese desfasaje es real y el indice debe reproducirlo.
+gm = ean_nac.pivot_table(index='semana', columns='ean_norm', values='p').apply(
+    lambda r: np.exp(np.log(r.dropna()).mean()), axis=1)
+verdad_ac = gm.iloc[-1] / gm.iloc[0] - 1
+distintos = v.nunique()
+ac = v.iloc[-1] / v.iloc[0] - 1
+err = abs(ac - verdad_ac) / verdad_ac * 100
+print(f'  acumulado {ac:+.2%} (verdad Jevons del panel {verdad_ac:+.2%}, error {err:.2f}%) | '
+      f'valores distintos {distintos}/{len(v)}')
+ok2 = err < 1 and distintos > len(v) * 0.5
+print()
+print('RESULTADO REGRESION:', 'OK - la cadena acumula la inflacion' if ok2 else
+      'FALLA - la cadena se queda plana con precios pegajosos')

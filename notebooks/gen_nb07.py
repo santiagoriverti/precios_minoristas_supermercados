@@ -248,6 +248,7 @@ FRESCO_NAC_ENCADENADO = True
 FRESCO_EAN_MIN_SUC    = 10   # sucursales minimas de un EAN-semana para entrar en el encadenado
 FRESCO_MIN_EANS_PAR   = 2    # EANs apareados minimos entre dos semanas para aceptar el eslabon
 FRESCO_MAX_HUECO_PAR  = 8    # semanas maximas que puede saltear un eslabon para reenganchar
+FRESCO_ESLABON_K      = 2.5  # tope de variacion de un EAN en un eslabon (clip, no descarte)
 # Salto semanal del precio nacional de un item a partir del cual se lo reporta en la hoja
 # Alertas_precio_item. Es el tripwire: ningun cambio de regimen deberia volver a pasar inadvertido.
 ALERTA_SALTO_ITEM = 0.35
@@ -1097,7 +1098,25 @@ if FRESCO_NAC_ENCADENADO and len(ean_nac):
             _par = _a.notna() & _b.notna() & (_a > 0) & (_b > 0)
             if int(_par.sum()) < FRESCO_MIN_EANS_PAR:
                 continue
-            _lvl = _lvl * float(np.exp(np.log((_b[_par] / _a[_par]).astype(float)).median()))
+            # MEDIA geometrica recortada, NO mediana. Los precios de supermercado son pegajosos:
+            # en una semana dada solo una MINORIA de los EANs cambia de precio. Si repricea menos
+            # de la mitad, la mediana del ratio da exactamente 1,0 y la cadena no acumula NADA.
+            # Medido en la corrida 2026-09-08 con mediana: 93-100% de las semanas con variacion
+            # cero, Pan frances con UN solo valor distinto en 139 semanas, y el acumulado de los
+            # frescos en +58% contra +161% de los empaquetados (que no se encadenan) y +157% del
+            # IPC alimentos. La media geometrica es el estimador de Jevons y captura el cambio
+            # promedio aunque solo se mueva una parte del panel; el recorte de colas conserva la
+            # robustez que motivaba la mediana.
+            _lr = np.log((_b[_par] / _a[_par]).astype(float)).to_numpy()
+            _lr = _lr[np.isfinite(_lr)]
+            if _lr.size < FRESCO_MIN_EANS_PAR:
+                continue
+            # Robustez por CLIP absoluto, no por recorte de cuantiles: la distribucion de los
+            # log-ratios tiene una masa grande en cero (los que no reprecian) mas una cola de los
+            # que si, y un recorte por cuantiles puede borrar justamente la senal. El clip acota
+            # la influencia de un EAN disparatado sin sacarlo del promedio.
+            _lim = np.log(FRESCO_ESLABON_K)
+            _lvl = _lvl * float(np.exp(np.clip(_lr, -_lim, _lim).mean()))
             _idx.loc[_sem] = _lvl; _seg.loc[_sem] = _sid; _prev = _sem
         _ok_idx = _idx.notna() & nac_wide[_t].notna()
         if int(_ok_idx.sum()) == 0:
