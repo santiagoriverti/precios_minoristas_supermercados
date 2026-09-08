@@ -1452,8 +1452,31 @@ cells.append(cell_code(r'''# ===================================================
 #   despues se promedia entre cadenas ponderando por sucursales.
 # Responde "que tan cara es la provincia" SIN que el resultado dependa de que mix de cadenas
 # opera ahi (Coto esta en pocas provincias, DIA en muchas, La Anonima domina la Patagonia...).
+# ── Series MENSUALES en formato LARGO (todas las canastas juntas) ────────────
+# El Excel tenia mensual solo a nivel canasta (`Mes_*`, `vsIPC_*`): rubro, region, provincia y
+# cadena eran semanales o foto del ultimo mes. Se agregan las cuatro dimensiones en mensual.
+# Formato largo y consolidado -no una hoja por canasta y dimension, que serian 24 hojas nuevas-
+# porque es lo que sirve para tablas dinamicas y para econometria.
+# Convencion: el costo mensual es el PROMEDIO de los costos semanales del mes, igual que en
+# `serie_mes_dict`. Para las aperturas geograficas se toma primero la mediana entre sucursales
+# de cada semana y despues el promedio de esas semanas, de modo que una semana con mas
+# sucursales no pese mas que las otras.
 prov_dict = {}; cadena_dict = {}; region_dict = {}; serie_region_dict = {}
+_MES_RUBRO = []; _MES_REGION = []; _MES_PROV = []; _MES_CADENA = []
 _cs_um = costo_suc[costo_suc['mes'] == _ult_mes]
+
+def _mensualizar_geo(_cr, _geo):
+    """Serie mensual de una apertura geografica: mediana entre sucursales por semana y
+    despues promedio de las semanas del mes (ver nota de convencion arriba)."""
+    _sw = (_cr.groupby([_geo, 'semana'], as_index=False)
+              .agg(costo=('costo', 'median'), n_suc=('suc_id', 'nunique')))
+    _sw['mes'] = _sw['semana'].map(_mes_de_semana)
+    _t = (_sw.groupby([_geo, 'mes'], as_index=False)
+             .agg(costo_mediana=('costo', 'mean'), n_sucursales=('n_suc', 'max'),
+                  n_semanas=('semana', 'nunique')))
+    _t = _t.sort_values([_geo, 'mes'])
+    _t['var_mensual_%'] = (_t.groupby(_geo)['costo_mediana'].pct_change(fill_method=None) * 100).round(2)
+    return _t
 
 def _idx_controlado(_cs, _geo):
     _cp = _cs.groupby(['cadena', _geo]).agg(costo=('costo','median'), n=('suc_id','nunique')).reset_index()
@@ -1484,6 +1507,20 @@ for _name in CANASTAS_ACTIVAS:
             costo_prom=('costo', _pmean), n_sucursales=('suc_id','nunique')).reset_index())
     _sr['mes'] = _sr['semana'].map(_mes_de_semana)
     serie_region_dict[_name] = _sr.sort_values(['region','semana'])
+    for _geo, _acc in (('region', _MES_REGION), ('provincia', _MES_PROV), ('cadena', _MES_CADENA)):
+        _t = _mensualizar_geo(_cr, _geo)
+        _t.insert(0, 'canasta', _name)
+        _acc.append(_t)
+    _rs = rubro_sem_dict.get(_name)
+    if _rs is not None and len(_rs):
+        _t = (_rs.groupby(['mes','rubro'], as_index=False)
+                 .agg(costo=('costo','mean'), n_semanas=('semana','nunique')))
+        _t = _t.sort_values(['rubro','mes'])
+        _t['var_mensual_%'] = (_t.groupby('rubro')['costo'].pct_change(fill_method=None) * 100).round(2)
+        _tot = _t.groupby('mes')['costo'].transform('sum')
+        _t['participacion_%'] = (_t['costo'] / _tot * 100).round(2)
+        _t.insert(0, 'canasta', _name)
+        _MES_RUBRO.append(_t)
 
 for _name in CANASTAS_ACTIVAS:
     if _name not in prov_dict: continue
@@ -1674,6 +1711,18 @@ with pd.ExcelWriter(_xlsx, engine='openpyxl') as _w:
     _pn_out = nac_ff.T.copy()
     _pn_out.insert(0, 'descripcion', [(_etiqueta(i) if i in _items_receta else i) for i in _pn_out.index])
     _pn_out.round(1).to_excel(_w, 'Panel_nacional')
+    # Mismo panel en frecuencia MENSUAL (promedio de las semanas del mes), que es la frecuencia
+    # a la que se compara contra el IPC.
+    _pnm = nac_ff.copy()
+    _pnm.index = pd.Index([_mes_de_semana(_x) for _x in _pnm.index], name='mes')
+    _pnm = _pnm.groupby(level='mes').mean().T
+    _pnm.insert(0, 'descripcion', [(_etiqueta(i) if i in _items_receta else i) for i in _pnm.index])
+    _pnm.round(1).to_excel(_w, 'Panel_nacional_mes')
+    # Series mensuales en formato largo (todas las canastas).
+    for _df_m, _hoja in ((_MES_RUBRO, 'Mes_rubro'), (_MES_REGION, 'Mes_region'),
+                         (_MES_PROV, 'Mes_provincia'), (_MES_CADENA, 'Mes_cadena')):
+        if _df_m:
+            pd.concat(_df_m, ignore_index=True).to_excel(_w, _hoja, index=False)
     cobertura_emp.to_excel(_w, 'Cobertura_emp', index=False)
     cobertura_frescos.to_excel(_w, 'Cobertura_frescos', index=False)
     presencia_items.to_excel(_w, 'Presencia_items')
@@ -1684,8 +1733,9 @@ with pd.ExcelWriter(_xlsx, engine='openpyxl') as _w:
 print(f'Excel: {_xlsx.name}  ({_xlsx.stat().st_size/1024:.0f} KB)')
 print(f'   Guardado en: {_xlsx.parent}')
 print('   Hojas: Metodologia, Resumen, Sem_*, Mes_*, vsIPC_*, Rubro_sem_*, Comp_rubro_*, '
-      'Detalle_*, Prov_*, Cadena_*, Region_*, RegionSem_*, Panel_nacional, Cobertura_emp, '
-      'Cobertura_frescos, Presencia_items, Alertas_reemplazo, Alertas_precio_item')
+      'Detalle_*, Prov_*, Cadena_*, Region_*, RegionSem_*, Panel_nacional, '
+      'Panel_nacional_mes, Mes_rubro, Mes_region, Mes_provincia, Mes_cadena, '
+      'Cobertura_emp, Cobertura_frescos, Presencia_items, Alertas_reemplazo, Alertas_precio_item')
 ''' ))
 
 # ── CELL 15 — REPORTE ─────────────────────────────────────────────────────────

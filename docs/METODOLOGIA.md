@@ -928,6 +928,32 @@ desaparecen; recupera el 1,00%/semana con 0,0% de error.
 
 ---
 
+### 10.12. nb07 — series MENSUALES por rubro, región, provincia y cadena (2026-09-08)
+
+El Excel tenía frecuencia mensual sólo a nivel canasta (`Mes_*`, `vsIPC_*`). Rubro y región eran
+semanales; provincia y cadena, una foto del último mes. Se agregan cinco hojas:
+
+| Hoja | Contenido | Formato |
+|---|---|---|
+| `Mes_rubro` | costo, participación % y var. mensual por rubro | largo (canasta, mes, rubro) |
+| `Mes_region` | costo, sucursales y var. mensual por región | largo (canasta, mes, región) |
+| `Mes_provincia` | ídem por provincia | largo |
+| `Mes_cadena` | ídem por cadena | largo |
+| `Panel_nacional_mes` | precio nacional de cada ítem, mensual | ancho (ítem × mes) |
+
+**Por qué formato largo y consolidado** (todas las canastas en una hoja) y no una hoja por canasta
+y dimensión: eso serían 24 hojas nuevas sobre las 68 existentes. El formato largo es además el
+que sirve para tablas dinámicas y para econometría, en línea con `datos_econometria` de nb02.
+
+**Convención de mensualización.** El costo mensual de la canasta ya era el **promedio de los
+costos semanales** del mes. Las aperturas geográficas siguen el mismo criterio en dos pasos:
+primero la **mediana entre sucursales** de cada semana, después el **promedio de las semanas** del
+mes. El orden importa: promediar directamente sobre sucursal-semana haría que una semana con más
+sucursales pesara más que las otras. `Panel_nacional_mes` promedia las semanas del mes, que es la
+frecuencia a la que se compara contra el IPC.
+
+---
+
 ## 11. Notebook 02 — Excel de econometría (`datos_econometria`)
 
 Insumo para análisis de series de tiempo (materia "Econometría avanzada"). El Notebook 02, además
