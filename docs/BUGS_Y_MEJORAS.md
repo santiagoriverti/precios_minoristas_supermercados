@@ -27,6 +27,30 @@ de la Tecnológica** hasta que haya al menos dos cadenas con cobertura de durabl
 
 ## 🟢 Cambios y fixes 2026-09
 
+### 🟡 Femenina — un ítem con 16 meses de hueco explicaba casi toda su volatilidad (2026-09-08)
+
+El usuario reportó que Femenina salta mucho más que el resto. Es cierto (desvío semanal 2,31%
+contra 1,15% de Representativa) y **es un problema de composición, no de metodología**.
+
+`Crema Corporal Milk Nutritiva Piel Extra Seca Nivea Body 400` pesa el **8,5%** de la canasta y
+tiene dato en **73 de 139 semanas**. Estaba a **$1.680 en 2024-01**, desapareció **16 meses**,
+reapareció a **$1.083** —por debajo de su precio de 2024, después de ~180% de inflación, o sea un
+precio viejo que la cadena siguió publicando— y de ahí saltó a **$9.969 (+820% en una semana)**.
+Ese salto es el +9,3% del índice en 2025-10-16. Desvío semanal propio del ítem: **97,4%**, contra
+7,7% del segundo peor.
+
+Otros dos con hueco en la misma canasta: `Rasuradora Simply Venus Gillette` (9 meses sin dato) y
+`Jabón de Tocador Dove 90 Gr` (6 meses).
+
+**Causa de fondo**: el constructor filtra por trazabilidad los ítems que elige —los de la
+Representativa dan 99,7% de media y mínimo 84,4%— pero **Femenina y Tecnológica se cargan a mano
+y no pasan por ese filtro**.
+
+**Fix**: screen de trazabilidad sobre los ítems de **todas** las canastas (`TRAZA_MIN_PCT = 85%`),
+que reporta por pantalla y en la hoja nueva `Alertas_trazabilidad` los ítems con huecos, con la
+canasta a la que pertenecen. No los excluye automáticamente —cambiar la canasta es decisión del
+constructor— pero deja de ser invisible.
+
 ### 🔴 BUG-28 — El encadenado se quedaba plano: la mediana es un estimador degenerado con precios pegajosos (2026-09-08) ✅ Resuelto
 
 **Síntoma.** La primera corrida de v5.7 devolvió una inflación acumulada imposible: Popular

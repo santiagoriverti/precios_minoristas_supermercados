@@ -1611,6 +1611,37 @@ def _etiqueta(i):
     return i
 presencia_items.insert(0, 'descripcion', [_etiqueta(i) for i in presencia_items.index])
 
+# ── Screen de TRAZABILIDAD sobre los items de TODAS las canastas ─────────────
+# El constructor ya filtra por trazabilidad los items que elige (los de la Representativa dan
+# 99,7% de media, minimo 84,4%), pero las canastas cargadas A MANO -Femenina y Tecnologica- no
+# pasan por ese filtro, y ahi se cuelan items con huecos largos.
+# Caso medido (corrida 2026-09-08): `Crema Corporal Nivea Body 400` pesa el 8,5% de Femenina,
+# estaba a $1.680 en 2024-01, DESAPARECIO 16 meses, reaparecio a $1.083 -por debajo de su precio
+# de 2024, despues de 180% de inflacion, o sea un precio viejo que la cadena siguio publicando- y
+# de ahi salto a $9.969 (+820% en una semana). Ese unico item explica casi toda la volatilidad de
+# la canasta: desvio semanal propio 97,4% y dato en solo 73 de 139 semanas.
+# Un item asi no puede estar en una canasta que alimenta un indice continuo. Se reporta por
+# pantalla y en la hoja para que se lo reemplace en el constructor.
+TRAZA_MIN_PCT = 85.0   # % minimo de meses con presencia para no ser reportado
+_traza = []
+for _i in presencia_items.index:
+    _fila = presencia_items.loc[_i].drop('descripcion')
+    _pct = float((_fila > 0).mean() * 100)
+    if _pct < TRAZA_MIN_PCT:
+        _cual = [n for n in CANASTAS_ACTIVAS if _i in set(RECETAS[n]['item'])]
+        _traza.append({'item': _i, 'descripcion': _etiqueta(_i), 'meses_con_dato': int((_fila > 0).sum()),
+                       'meses_totales': int(len(_fila)), 'trazabilidad_%': round(_pct, 1),
+                       'canastas': ', '.join(_cual)})
+traza_items = pd.DataFrame(_traza).sort_values('trazabilidad_%') if _traza else pd.DataFrame(
+    columns=['item','descripcion','meses_con_dato','meses_totales','trazabilidad_%','canastas'])
+if len(traza_items):
+    print(f'
+AVISO TRAZABILIDAD: {len(traza_items)} items de canasta con presencia < {TRAZA_MIN_PCT:.0f}% '
+          f'de los meses. Un item con huecos largos reingresa con precio viejo y mete un salto '
+          f'espurio; conviene reemplazarlo en el constructor.')
+    print(traza_items[['descripcion','meses_con_dato','meses_totales','trazabilidad_%','canastas']]
+          .to_string(index=False))
+
 _ultN = _SEMANAS[-MAX_SEMANAS_ARRASTRE:]
 _alertas = []
 for _i in _items_receta:
@@ -1726,6 +1757,8 @@ with pd.ExcelWriter(_xlsx, engine='openpyxl') as _w:
     cobertura_emp.to_excel(_w, 'Cobertura_emp', index=False)
     cobertura_frescos.to_excel(_w, 'Cobertura_frescos', index=False)
     presencia_items.to_excel(_w, 'Presencia_items')
+    (traza_items if len(traza_items) else pd.DataFrame({'sin_alertas':['ok']})).to_excel(
+        _w, 'Alertas_trazabilidad', index=False)
     (alertas_reemplazo if len(alertas_reemplazo) else pd.DataFrame({'sin_alertas':['ok']})
      ).to_excel(_w, 'Alertas_reemplazo', index=False)
     (alertas_precio_item if len(alertas_precio_item) else pd.DataFrame({'sin_alertas':['ok']})
@@ -1735,7 +1768,8 @@ print(f'   Guardado en: {_xlsx.parent}')
 print('   Hojas: Metodologia, Resumen, Sem_*, Mes_*, vsIPC_*, Rubro_sem_*, Comp_rubro_*, '
       'Detalle_*, Prov_*, Cadena_*, Region_*, RegionSem_*, Panel_nacional, '
       'Panel_nacional_mes, Mes_rubro, Mes_region, Mes_provincia, Mes_cadena, '
-      'Cobertura_emp, Cobertura_frescos, Presencia_items, Alertas_reemplazo, Alertas_precio_item')
+      'Cobertura_emp, Cobertura_frescos, Presencia_items, Alertas_trazabilidad, '
+      'Alertas_reemplazo, Alertas_precio_item')
 ''' ))
 
 # ── CELL 15 — REPORTE ─────────────────────────────────────────────────────────
