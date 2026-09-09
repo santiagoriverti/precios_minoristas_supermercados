@@ -471,6 +471,22 @@ Los 4 reemplazos (Swift XL, Lavandina Anti-splash, Plusbelle, Listerine) están 
 
 ## Historial de cambios
 
+### 2026-09-09 — nb05/nb02: BUG-29 (gráfico de barras) y BUG-30 (tiles del mapa)
+
+La corrida real de nb05 con 19 cervezas (agosto 2026) cortó en la CELDA 12 con
+`ValueError: shape mismatch ... (32,) vs (18,)`: el gráfico de variaciones dibujaba todas las series
+contra el eje temporal del **primer** producto, y uno de los 19 (Golden Porrón 330, desde 2025-03)
+tiene 18 meses contra 32 del resto. Ahora cada serie lleva su propio eje de fechas, el producto de
+referencia del eje es el que arranca antes (no el primero de la lista) y la leyenda aclara la base
+propia de los productos que aparecen después (`(base 03-25)`), porque su índice 100 no es el mismo
+mes que el de los demás. Mismo fix aplicado a `gen_nb02.py`, que tiene el mismo código.
+
+En la misma corrida el mapa Folium salió tapado con la leyenda *"API key required"*: CARTO empezó a
+estampar los tiles servidos sin cuenta. El fondo del mapa pasa a elegirse con **`TILES_MAPA`** en la
+CELDA 1 (`'osm'` por default, `'topo'`, o `'carto'` si algún día se consigue cuenta), con URL y
+atribución explícitas. Test de regresión nuevo: `notebooks/test_graficos_series_desiguales.py`, que
+ejecuta las celdas reales del `.ipynb` generado.
+
 ### 2026-09-04 — nb07 v5.1: robustez del nacional (primera corrida real de v5)
 
 Diagnóstico sobre `canastas_alternativas_2026-09-03`. El índice encadenado bajó los saltos de

@@ -1,6 +1,6 @@
 # Bugs Pendientes y Mejoras
 
-Última actualización: 2026-09-08 — nb07 v5.7.1: BUG-28, el eslabón del encadenado usaba la MEDIANA y con precios pegajosos daba exactamente cero
+Última actualización: 2026-09-09 — nb05/nb02: BUG-29 (el gráfico de barras reventaba si un producto arrancaba después) y BUG-30 (CartoDB pasó a exigir API key)
 
 ---
 
@@ -26,6 +26,58 @@ de la Tecnológica** hasta que haya al menos dos cadenas con cobertura de durabl
 ---
 
 ## 🟢 Cambios y fixes 2026-09
+
+### 🔴 BUG-29 — el gráfico de variaciones reventaba con productos de distinta antigüedad (2026-09-09)
+
+**Síntoma** (corrida real de nb05 con 19 cervezas, agosto 2026): la CELDA 12 corta con
+
+```
+ValueError: shape mismatch: objects cannot be broadcast to a single shape.
+Mismatch is between arg 0 with shape (32,) and arg 1 with shape (18,).
+```
+
+**Causa**: el gráfico 2 (barras agrupadas) dibujaba **todas** las series contra el eje temporal de
+`_dg0`, que era `df_g_dict[_activos_con_datos[0]]` — el **primer** producto de la lista. Cuando un
+producto aparece después que el resto (Cerveza Liviana Golden Porrón Imperial 330 Ml arranca en
+2025-03: 18 meses contra 32 de los demás), `ax2.bar()` recibe 32 fechas y 18 valores. Con canastas
+(nb02) nunca había saltado porque todas comparten el mismo caché histórico, pero el bug es el mismo
+código y la misma exposición.
+
+**Fix** (`gen_nb05.py` y `gen_nb02.py`, CELDA 12):
+1. Cada serie viaja con **su propio eje de fechas** (`df_g_dict[p]['fecha']`, no el de referencia).
+2. El producto/canasta de referencia del eje y de las series de IPC pasa a ser el que **arranca
+   antes** (a igual arranque, el más largo), no el primero de la lista — antes, si el primero era
+   el más corto, el eje quedaba recortado para todos.
+3. El índice base 100 de un producto que aparece después **está en base a SU primer mes**, no al del
+   resto: ahora la leyenda lo aclara (`Cerveza Golden Porrón 330 (base 03-25)`) para que no se lea
+   como comparable con los que arrancan en 01-24.
+4. La anotación del último valor del gráfico 1 saltea los `NaN` finales (antes escribía `nan`).
+
+**Test de regresión**: `notebooks/test_graficos_series_desiguales.py` — corre la CELDA 12 **real**
+del `.ipynb` generado con series de 32 y 18 meses. Verificado que la versión anterior (HEAD 094de64)
+reproduce el `ValueError` con esos mismos datos y la corregida pasa.
+
+### 🔴 BUG-30 — el mapa Folium sale tapado con "API key required" (2026-09-09)
+
+**Síntoma**: los mapas interactivos de nb05 y nb02 salen con la leyenda *"API key required"*
+repetida sobre todo el mapa, desde cualquier conexión.
+
+**Causa**: los notebooks usaban `tiles='cartodbpositron'`. CARTO empezó a estampar los tiles
+servidos sin API key. Verificado bajando un tile de océano abierto (`light_all/5/11/19.png`): debería
+ser un color plano y trae 20 colores distintos, ~4.400 px casi blancos y 468 px de gris oscuro
+(el texto de la marca de agua) en 3,9 KB.
+
+**Fix** (`gen_nb05.py` y `gen_nb02.py`, CELDA 1 + CELDA 17): nuevo parámetro `TILES_MAPA` en la
+configuración, con tres opciones explícitas (URL + atribución, sin depender de los alias de folium):
+
+| Valor | Fondo | API key |
+|---|---|---|
+| `'osm'` (**default**) | OpenStreetMap | no |
+| `'topo'` | OpenTopoMap | no |
+| `'carto'` | CartoDB Positron | **sí** (hoy sale con marca de agua) |
+
+Un valor no reconocido avisa y cae a `'osm'`. El `TileLayer` va con `control=False`, así que el
+selector de capas del mapa sigue mostrando solo los productos/canastas.
 
 ### 🟣 Femenina — reemplazo de los tres ítems sin trazabilidad (2026-09-08)
 

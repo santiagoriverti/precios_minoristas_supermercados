@@ -6,7 +6,37 @@ Autor: Santiago Riverti — investigador independiente
 
 ---
 
-## 🟢 ESTADO ACTUAL / HANDOFF [2026-09-08 · tarde] — v5.7.1, BUG-28 corregido
+## 🟢 ULTIMO CAMBIO [2026-09-09] — nb05 + nb02: BUG-29 (grafico) y BUG-30 (tiles)
+
+Los pendientes de nb07 de la seccion de abajo SIGUEN VIGENTES: esta sesion no toco nb07.
+
+**BUG-29** — corrida real de nb05 con 19 cervezas (agosto 2026, EANs de Imperial/Schneider/
+Heineken/Corona/Quilmes/etc.): la CELDA 12 corta con
+`ValueError: shape mismatch ... (32,) vs (18,)`. El grafico 2 (barras) dibujaba TODAS las series
+contra `_dg0['fecha']` = eje del PRIMER producto de la lista; Golden Porron 330 arranca en 2025-03
+(18 meses) contra 32 del resto. Fix en gen_nb05.py Y gen_nb02.py (mismo codigo, misma exposicion):
+cada serie con su propio eje, el de referencia pasa a ser el que arranca ANTES (a igual arranque el
+mas largo) y la leyenda del grafico 1 marca `(base 03-25)` en los productos que arrancan despues
+—su indice 100 NO es el mismo mes que el de los demas, antes se leia como comparable—. Ademas la
+anotacion del ultimo punto saltea NaN finales.
+
+**BUG-30** — el mapa Folium sale con "API key required" repetido sobre todo el mapa. CARTO empezo a
+estampar los tiles servidos sin cuenta: verificado bajando `light_all/5/11/19.png` (oceano abierto,
+deberia ser color plano) y trae 20 colores, ~4.400 px casi blancos y 468 px de gris oscuro en 3,9 KB.
+Fix: **`TILES_MAPA`** en la CELDA 1 de nb05 y nb02 — `'osm'` (default), `'topo'`, `'carto'` — con URL
+y atribucion explicitas (no los alias de folium), valor invalido avisa y cae a osm, `control=False`
+para no ensuciar el selector de capas.
+
+**Test de regresion nuevo**: `notebooks/test_graficos_series_desiguales.py`. Corre la CELDA 12 y el
+bloque de tiles REALES del `.ipynb` generado. Verificado que el `.ipynb` de HEAD 094de64 reproduce el
+ValueError con esos datos y el corregido pasa. Los dos generadores pasan `ast.parse` y las 20/23
+celdas compilan; los `.ipynb` se regeneraron con los scripts (fuente de verdad).
+
+**Ojo para la proxima corrida de nb05**: los indices base 100 de productos que arrancan despues NO
+son comparables con los que arrancan en 2024-01 (la leyenda ya lo dice). Si se quiere comparar de
+verdad, rebasear todos a un mes comun con dato en todos (para esta lista, 2025-03).
+
+## 🟡 HANDOFF ANTERIOR [2026-09-08 · tarde] — v5.7.1, BUG-28 corregido
 
 ### ✅ v5.7.1 VALIDADA contra el panel real por EAN (sin releer el SEPA)
 Se corrio el bloque de encadenado de gen_nb07.py FUERA del notebook, sobre `ean_1ad1b4b5_v5.parquet`

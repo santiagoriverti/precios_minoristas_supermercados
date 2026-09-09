@@ -69,7 +69,11 @@ MES_INICIO_HISTORICO = '2024-01'
 MES_INICIO_GRAFICO = '2024-01'
 
 # Mínimo sucursales por cadena para aparecer en rankings
-MIN_SUCURSALES_RANKING = 10"""))
+MIN_SUCURSALES_RANKING = 10
+# Fondo del mapa Folium: 'osm' (OpenStreetMap, sin API key) | 'topo' (OpenTopoMap)
+# | 'carto' (CartoDB Positron: desde 2026 devuelve los tiles con la marca de agua
+# "API key required", no usarlo salvo que tengas cuenta de CARTO).
+TILES_MAPA = 'osm'"""))
 
 # ── CELL 2 — SETUP ─────────────────────────────────────────────────────────────
 cells.append(cell_code("""\
@@ -945,8 +949,18 @@ _activos_con_datos = [p for p in PRODUCTOS_ACTIVOS if not _serie_vacia_dict[p] a
 if not _activos_con_datos:
     print('AVISO: Sin serie histórica para ningún producto. Saltando gráficos de índices.')
 else:
-    _lbl_base = _lbl_base_dict[_activos_con_datos[0]]
-    _dg0 = df_g_dict[_activos_con_datos[0]]
+    # Producto de referencia del eje temporal y de las series de IPC: el que arranca
+    # ANTES (y a igual arranque, el mas largo). Tomar el primero de la lista dejaba el
+    # eje corto cuando ese producto tenia menos historia que el resto (BUG-29).
+    _pid_ref  = min(_activos_con_datos,
+                    key=lambda p: (df_g_dict[p]['fecha'].iloc[0], -len(df_g_dict[p])))
+    _lbl_base = _lbl_base_dict[_pid_ref]
+    _dg0      = df_g_dict[_pid_ref]
+    # Un producto que aparece despues tiene su indice en base a SU primer mes, no al
+    # mes base del resto: se aclara en la leyenda para no leerlo como comparable.
+    _lbl_prod = {p: (PRODUCTO_NOMBRES[p] if _lbl_base_dict[p] == _lbl_base
+                     else f'{PRODUCTO_NOMBRES[p]} (base {_lbl_base_dict[p]})')
+                 for p in _activos_con_datos}
     _MEDIDAS_G = [
         ('',      'mediana',  'idx_producto_base',      'variacion_mensual_%',      prom_nac_dict),
         ('_prom', 'promedio', 'idx_producto_base_prom', 'variacion_mensual_prom_%', prom_nac_prom_dict),
@@ -962,12 +976,14 @@ else:
                      color=PRODUCTO_COLORS[_pid], linewidth=2.5,
                      linestyle=PRODUCTO_LINESTYLES[_pid],
                      marker=PRODUCTO_MARKERS[_pid], markersize=5,
-                     label=_name)
-            _ult = _dg.iloc[-1]
-            ax1.annotate(f"{_ult[_IDXCOL]:.0f}",
-                         xy=(_ult['fecha'], _ult[_IDXCOL]),
-                         xytext=(8, 0), textcoords='offset points',
-                         color=PRODUCTO_COLORS[_pid], fontweight='bold', fontsize=9)
+                     label=_lbl_prod[_pid])
+            _dgv = _dg.dropna(subset=[_IDXCOL])
+            if len(_dgv):
+                _ult = _dgv.iloc[-1]
+                ax1.annotate(f"{_ult[_IDXCOL]:.0f}",
+                             xy=(_ult['fecha'], _ult[_IDXCOL]),
+                             xytext=(8, 0), textcoords='offset points',
+                             color=PRODUCTO_COLORS[_pid], fontweight='bold', fontsize=9)
         if _dg0['idx_ipc_general_base'].notna().any():
             ax1.plot(_dg0['fecha'], _dg0['idx_ipc_general_base'],
                      color=COLOR_IPC_GEN, linewidth=1.8, linestyle='--', marker='s', markersize=4,
@@ -1004,11 +1020,17 @@ else:
         print(f'Gráfico 1 [{_TIT}] guardado: {out1}')
 
         # ── GRAFICO 2: Variaciones mensuales (barras agrupadas) ─────────────────
+        # Cada serie lleva SU propio eje de fechas: los productos no arrancan todos el
+        # mismo mes y usar el eje del producto de referencia rompia el grafico
+        # (ValueError: shape mismatch (32,) vs (18,)) — BUG-29.
         _series_bar = (
-            [(PRODUCTO_COLORS[p], PRODUCTO_NOMBRES[p], df_g_dict[p][_VARCOL])
+            [(PRODUCTO_COLORS[p], PRODUCTO_NOMBRES[p],
+              df_g_dict[p]['fecha'], df_g_dict[p][_VARCOL])
              for p in _activos_con_datos] +
-            [(COLOR_IPC_GEN, 'IPC INDEC - Nivel general', _dg0['ipc_general_var_%']),
-             (COLOR_IPC_ALI, 'IPC INDEC - Alimentos y bebidas', _dg0['ipc_alimentos_var_%'])]
+            [(COLOR_IPC_GEN, 'IPC INDEC - Nivel general',
+              _dg0['fecha'], _dg0['ipc_general_var_%']),
+             (COLOR_IPC_ALI, 'IPC INDEC - Alimentos y bebidas',
+              _dg0['fecha'], _dg0['ipc_alimentos_var_%'])]
         )
         _n_b    = len(_series_bar)
         _fig_w  = max(20, _n_b * 2 + 10)
@@ -1016,10 +1038,10 @@ else:
         _offs2  = [(_i - (_n_b - 1) / 2) * _bw2 for _i in range(_n_b)]
         _tick_i = 2 if _n_b > 5 else 1
         fig2, ax2 = plt.subplots(figsize=(_fig_w, 8))
-        for _i, (_col, _lbl, _vals) in enumerate(_series_bar):
+        for _i, (_col, _lbl, _fch, _vals) in enumerate(_series_bar):
             if _vals.notna().any():
                 _alpha = 0.88 if _i < len(_activos_con_datos) else 0.72
-                ax2.bar(_dg0['fecha'] + _offs2[_i], _vals,
+                ax2.bar(_fch + _offs2[_i], _vals,
                         width=_bw2, color=_col, alpha=_alpha, label=_lbl, edgecolor='none')
         ax2.axhline(0, color='#444444', linewidth=0.8)
         ax2.set_ylabel('Variación mensual (%)', fontsize=11)
@@ -1032,7 +1054,7 @@ else:
         for sp in ['top', 'right']: ax2.spines[sp].set_visible(False)
         ax2.spines['bottom'].set_color('#cccccc')
         ax2.spines['left'].set_color('#cccccc')
-        _vmax_l2 = [s.dropna().max() for _,_,s in _series_bar if s.notna().any()]
+        _vmax_l2 = [s.dropna().max() for *_, s in _series_bar if s.notna().any()]
         if _vmax_l2: ax2.set_ylim(top=max(_vmax_l2) * 1.35)
         _t2 = f'Variación mensual — análisis {_TIT}'
         if MES_PARCIAL:
@@ -1439,8 +1461,26 @@ for _SFX, _TIT, _VCOL in [('','mediana','precio_producto'), ('_prom','promedio',
     print(f'Datos popup: {len(_popup_data):,} sucursales | {len(_popup_json)/1024/1024:.1f} MB JSON compacto')
 
     # ── Mapa Folium ───────────────────────────────────────────────────────────────
+    # Fondo del mapa: CartoDB pasó a exigir API key (devuelve los tiles con la marca de
+    # agua "API key required"), así que el default es OpenStreetMap. Se elige en CELDA 1
+    # con TILES_MAPA.
+    _TILES_OPC = {
+        'osm':   ('https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                  '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors', 19),
+        'topo':  ('https://tile.opentopomap.org/{z}/{x}/{y}.png',
+                  '&copy; OpenTopoMap (CC-BY-SA) &middot; &copy; OpenStreetMap contributors', 17),
+        'carto': ('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
+                  '&copy; OpenStreetMap contributors &copy; CARTO', 20),
+    }
+    _tk = str(globals().get('TILES_MAPA', 'osm')).lower()
+    if _tk not in _TILES_OPC:
+        print(f'AVISO: TILES_MAPA="{_tk}" no reconocido; uso "osm".')
+        _tk = 'osm'
+    _turl, _tattr, _tmaxz = _TILES_OPC[_tk]
     m = folium.Map(location=[-38.0,-63.5], zoom_start=5,
-                   tiles='cartodbpositron', control_scale=True)
+                   tiles=None, control_scale=True)
+    folium.TileLayer(tiles=_turl, attr=_tattr, name='Mapa base',
+                     control=False, max_zoom=_tmaxz).add_to(m)
     folium.map.Marker(
         location=[-51.7963,-59.5236],
         icon=folium.DivIcon(icon_size=(140,28), icon_anchor=(70,14),

@@ -177,7 +177,7 @@ Donde `{canasta}` es `vulnerable`, `popular`, `media`, `media_alta`, `canasta05`
 
 ### Mapa interactivo (`.html`) — un único mapa con todas las canastas
 
-Se generan **dos** mapas: `mapa_interactivo_MMAAAA.html` (costo mediano) y `mapa_interactivo_MMAAAA_prom.html` (costo promedio, outliers fuera). Mapa Folium con las ~2.373 sucursales de Argentina, coloreadas por costo de canasta. Incluye:
+Se generan **dos** mapas: `mapa_interactivo_MMAAAA.html` (costo mediano) y `mapa_interactivo_MMAAAA_prom.html` (costo promedio, outliers fuera). Mapa Folium con las ~2.373 sucursales de Argentina, coloreadas por costo de canasta. El fondo se elige con **`TILES_MAPA`** en la CELDA 1 (`'osm'` por default; CartoDB ya no sirve sin cuenta, devuelve los tiles con la marca de agua *"API key required"*). Incluye:
 - **Selector de canasta**: cambiar entre las 6 canastas activas sin recargar
 - **Filtro de cadena**: mostrar solo Coto, DIA, Carrefour, etc.
 - **Filtro de provincia**: aislar una jurisdicción
@@ -465,6 +465,10 @@ Mismo análisis que el Notebook 02 (evolución vs. IPC, provincias, mapas, ranki
    ```
    Cada EAN se cruza contra el Maestro de Productos del repo para mostrar su descripción real en gráficos, mapas y hojas de Excel; si un EAN no aparece en el maestro, igual se analiza (se muestra por su propio código).
 3. *Entorno de ejecución → Ejecutar todo*.
+
+> **Fondo del mapa**: se elige con `TILES_MAPA` en la CELDA 1 — `'osm'` (OpenStreetMap, default),
+> `'topo'` (OpenTopoMap) o `'carto'` (CartoDB Positron). **CartoDB ya no sirve sin cuenta**: desde
+> 2026 devuelve los tiles con la marca de agua *"API key required"* tapando todo el mapa.
 
 ### Qué genera (por cada producto)
 
