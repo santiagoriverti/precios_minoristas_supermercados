@@ -5,6 +5,10 @@ Insumo del notebook **`07_evolucion_canastas_alternativas`**, que produce el inf
 > **v5 (2026-09-07)** rehízo la composición desde cero. Antes de tocar nada, leé
 > "[Por qué se rehizo](#por-qué-se-rehizo)": las canastas v4 se movían casi idénticas entre sí
 > y la causa era la construcción, no el ruido de los datos.
+>
+> **Ojo**: el 2026-09-08 se reemplazaron tres ítems de la canasta Femenina y se ancló el nivel del
+> pan francés. Las tablas de este documento son las de v5; los cambios están en
+> "[Cambios posteriores a v5](#cambios-posteriores-a-v5-2026-09-08)".
 
 ---
 
@@ -126,6 +130,40 @@ osobuco, paleta, picada) y Ejecutiva en los caros (lomo, bife de chorizo, peceto
 La distinción no es cosmética. En una corrida intermedia el algodón estaba declarado como 80
 unidades, pero el producto elegido se mide en gramos y no declara unidades, así que el motor lo
 tomó como **80 paquetes**: $111.470, el 43% de la canasta Femenina.
+
+---
+
+## Cambios posteriores a v5 (2026-09-08)
+
+Dos ajustes que **no** están reflejados en las tablas de arriba y que hay que tener en cuenta al
+retomar. Detalle completo en `docs/BUGS_Y_MEJORAS.md` y en `.claude/memory.md`.
+
+### Femenina: tres ítems reemplazados por falta de trazabilidad
+
+`Crema Corporal Nivea Body 400 Ml` pesaba 8,5% de la canasta y sólo tenía dato en 73 de 139 semanas:
+estaba a $1.680 en 2024-01, desapareció 16 meses, reapareció a **$1.083** —por debajo de su precio
+de 2024 después de 180% de inflación, un precio viejo que la cadena siguió publicando— y saltó a
+$9.969 (+820%). Ese salto **era** el +9,3% del índice en 2025-10-16.
+
+| Sale | Trazab. | Entra | qty |
+|---|---:|---|---:|
+| Crema Nivea Body 400 Ml | 50,0% | Crema Piel Extra Seca Villeneuve 250 Ml | **1,6** (mantiene 400 Ml/mes) |
+| Rasuradora Simply Venus 2 Un | 78,1% | Rasuradora Femenina Prestobarba3 Gillette 2 Un | 1,0 |
+| Jabón Tocador Original Dove 90 Gr | 84,4% | Jabón Tocador Antibacterial Dove 90 Gr | 4,0 |
+
+Los 14 ítems quedan al 100% de trazabilidad y el costo pasa de $137.597 a $137.622 (**+0,02%**): la
+sustitución no mueve el nivel. **Se aplica en `cantidad_06` del Excel de canasta** (el archivo
+editado se le entregó al usuario para reemplazar el de `MyDrive/carga/output_canasta`).
+
+### Pan francés: nivel anclado a una referencia de mercado
+
+El pan francés publicaba $7.732/kg contra ~$6.200 de mercado. Con 18 kg/mes y 13,7% de la canasta
+Popular, eso son 2,7 puntos de sobreestimación. **No se corrige con parámetros**: conviven dos
+regímenes de alta cobertura (un EAN de balanza a $10.000 exactos en 981 sucursales y un par a $4.300
+en 339) con la referencia en el medio, y barriendo `RATIO × K` el estimador salta entre
+$3.190 / $4.300 / $6.760 / $10.000. La solución es `NIVEL_REFERENCIA_FRESCO`: fija el **nivel** de la
+última semana con un precio verificado. **No altera la inflación** — el índice encadenado separa la
+forma de la serie del nivel. Si consiguen referencias de mercado de otros frescos, se cargan ahí.
 
 ---
 

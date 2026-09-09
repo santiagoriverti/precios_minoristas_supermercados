@@ -1,12 +1,17 @@
 # Contexto del Proyecto — Precios Minoristas SEPA
 
-Última actualización: 2026-09-07 (nb07 v5.3: banda de plausibilidad anclada en frescos + cobertura nacional obligatoria en las canastas; v5.2: filtro de régimen [BUG-24] y tripwire Alertas_precio_item — 287 empaquetados + 59 tipos de frescos)
+Última actualización: 2026-09-09 (nb05/nb02: BUG-29 gráfico de barras con series de distinta longitud, BUG-30/32 mosaicos del mapa —CartoDB exige API key y OSM no responde desde la red de INECO— y BUG-31 el mapa pesaba 48 MB. Antes, 2026-09-07: nb07 v5.3, banda de plausibilidad anclada en frescos)
 
-> **El proyecto tiene 6 herramientas (nb01–nb06).** Las descripciones detalladas por celda más
+> **El proyecto tiene 7 herramientas (nb01–nb07).** Las descripciones detalladas por celda más
 > abajo en este archivo son **históricas** (describen la arquitectura previa de nb02); el estado
 > vigente y el detalle por celda están en `.claude/memory.md`. Documentos por tema:
 > `docs/METODOLOGIA.md` (metodología ICR + doble análisis), `docs/BRECHA_CELIACA.md` (Notebook 06),
-> `docs/SEPA_TECNICO.md` y `docs/BUGS_Y_MEJORAS.md`.
+> `docs/canastas_alternativas/README.md` (Notebook 07), `docs/SEPA_TECNICO.md` y
+> `docs/BUGS_Y_MEJORAS.md`.
+>
+> **Para retomar el trabajo** (en esta o en otra máquina): el punto de entrada es el bloque
+> **ESTADO ACTUAL / HANDOFF** al principio de `.claude/memory.md` — estado por notebook, pendientes
+> ordenados y las reglas técnicas que suelen morder.
 >
 > **Novedades 2026-08-21**:
 > - **nb02 y nb05** generan TODO por duplicado — análisis **mediana** (nombres base) y **promedio**
@@ -42,8 +47,33 @@ El notebook 01 entrega un Excel con **cuatro hojas**:
 - **Notebook 01**: `notebooks/01_exploracion_productos.ipynb` — selección dinámica de canasta (ejecutable en Colab)
 - **Notebook 02**: `notebooks/02_evolucion_canasta_representativa.ipynb` — análisis de canasta elegida, mapas, rankings (ejecutable en Colab)
 - **Maestros**: `data/` — productos, sucursales, provincias
-- **Datos SEPA**: NO están en el repo. Están en Google Drive personal: `/carga/` (2024A.zip, 2024B.zip, 2025A.zip, 2025B.zip, 2026A.zip)
+- **Datos SEPA**: NO están en el repo. Están en Google Drive personal: `/carga/` (2024A.zip, 2024B.zip, 2025A.zip, 2025B.zip, 2026A.zip, 2026B.zip)
 - **Archivos auxiliares en Drive** (`carga/`): `IPC.xlsx` (IPC INDEC), `ar.json` (GeoJSON provincias), `output_canasta/canasta_representativa_YYYY-MM.xlsx`
+
+## Puesta en marcha en otra máquina
+
+Todo lo necesario viaja en el repo (notebooks, generadores, maestros de `data/` y documentación);
+lo único que falta son los datos SEPA y los auxiliares, que están en el Drive.
+
+```bash
+git clone https://github.com/santiagoriverti/precios_minoristas_supermercados
+cd precios_minoristas_supermercados
+python notebooks/test_celdas_graficos_y_mapa.py     # gráficos + mapa (nb05 y nb02)
+python notebooks/test_encadenado_frescos.py         # encadenado de frescos (nb07)
+```
+
+Reglas del repo que conviene saber antes de tocar nada:
+
+1. **Los `.ipynb` no se editan a mano.** La fuente de verdad son los `notebooks/gen_nbXX.py`;
+   `python notebooks/gen_nb05.py` reescribe el `.ipynb` completo. Regenerar siempre después de
+   tocar un generador y commitear los dos archivos juntos.
+2. **Dentro de `cell_code("""...""")` no van barras invertidas** (Python se las come antes de que
+   lleguen al notebook) ni comillas triples. Ver BUG-17, BUG-20 y el reincidente del 2026-09-09
+   en `docs/BUGS_Y_MEJORAS.md`.
+3. Los notebooks corren en **Colab** (badges en el README), no localmente: necesitan los ZIPs del
+   SEPA en `MyDrive/carga/`.
+4. Los maestros se buscan **primero en el Drive y después en GitHub** — el repo es privado y
+   `raw.githubusercontent` devuelve 404 (commit `502581a`).
 
 ---
 
@@ -484,7 +514,7 @@ mes que el de los demás. Mismo fix aplicado a `gen_nb02.py`, que tiene el mismo
 En la misma corrida el mapa Folium salió tapado con la leyenda *"API key required"*: CARTO empezó a
 estampar los tiles servidos sin cuenta. El fondo del mapa pasa a elegirse con **`TILES_MAPA`** en la
 CELDA 1 (`'osm'` por default, `'topo'`, o `'carto'` si algún día se consigue cuenta), con URL y
-atribución explícitas. Test de regresión nuevo: `notebooks/test_graficos_series_desiguales.py`, que
+atribución explícitas. Test de regresión nuevo: `notebooks/test_celdas_graficos_y_mapa.py`, que
 ejecuta las celdas reales del `.ipynb` generado.
 
 **BUG-31, en la misma corrida**: el `mapa_interactivo_082026.html` de 19 productos pesaba **48,6 MB**.

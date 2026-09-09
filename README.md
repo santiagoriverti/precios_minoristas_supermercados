@@ -680,18 +680,50 @@ precios_minoristas_supermercados/
 │   ├── gen_nb04.py                               # Script fuente que genera el Notebook 4
 │   ├── gen_nb05.py                               # Script fuente que genera el Notebook 5
 │   ├── gen_nb06.py                               # Script fuente que genera el Notebook 6
-│   └── gen_nb07.py                               # Script fuente que genera el Notebook 7
+│   ├── gen_nb07.py                               # Script fuente que genera el Notebook 7
+│   ├── test_celdas_graficos_y_mapa.py            # Tests: gráficos (CELDA 12) y mapa (CELDA 17) de nb05/nb02
+│   └── test_encadenado_frescos.py                # Tests: índice encadenado de frescos de nb07
 ├── data/                                # Maestros de referencia (se descargan automáticamente)
 │   ├── Maestro de Productos Interno.xlsx    # ~176K productos con rubro/categoría/subcategoría
 │   ├── maestro_sucursales_completo.xlsx     # 3.611 sucursales con cadena, provincia, región
 │   └── maestro-provincias.xlsx              # Códigos SEPA → nombres de provincia
 └── docs/                                # Documentación técnica
     ├── METODOLOGIA.md                   # Metodología ICR, canastas ENGHo, doble análisis media/mediana
-    ├── CONTEXTO.md                      # Arquitectura, pipeline detallado, historial de cambios
+    ├── CONTEXTO.md                      # Arquitectura, pipeline detallado, puesta en marcha, historial
     ├── SEPA_TECNICO.md                  # Formato SEPA, factor precio, cadenas, lectura diaria, trampas
     ├── BRECHA_CELIACA.md               # Notebook 06 — brecha TACC vs sin-TACC (metodología completa)
-    └── BUGS_Y_MEJORAS.md               # Bugs resueltos y mejoras pendientes
+    ├── BUGS_Y_MEJORAS.md               # Bugs resueltos y defectos abiertos, con causa raíz y fix
+    └── canastas_alternativas/README.md  # Notebook 07 — composición de las 6 canastas alternativas
 ```
+
+> **¿Retomás el proyecto después de un tiempo, o en otra máquina?** Empezá por el bloque
+> **ESTADO ACTUAL / HANDOFF** al principio de `.claude/memory.md`: estado de cada notebook,
+> pendientes en orden y las reglas técnicas que suelen morder. La puesta en marcha paso a paso está
+> en [`docs/CONTEXTO.md`](docs/CONTEXTO.md#puesta-en-marcha-en-otra-máquina).
+
+---
+
+## Desarrollo: generadores y tests
+
+Los `.ipynb` **no se editan a mano**: son la salida de los scripts `notebooks/gen_nbXX.py`, que son
+la fuente de verdad. El flujo es siempre el mismo:
+
+```bash
+python notebooks/gen_nb05.py            # reescribe 05_evolucion_productos_representativos.ipynb
+python notebooks/test_celdas_graficos_y_mapa.py   # y se corren los tests sobre el .ipynb generado
+```
+
+y se commitean juntos el generador y el `.ipynb`.
+
+| Test | Qué cubre |
+|---|---|
+| `notebooks/test_celdas_graficos_y_mapa.py` | Ejecuta las celdas **reales** del `.ipynb` generado: la CELDA 12 con productos de distinta antigüedad de serie (BUG-29), el orden de mosaicos del mapa y su fallback (BUG-30/32), y que el mapa no escriba marcadores en el HTML ni supere los 6 MB (BUG-31), en nb05 y en el mapa de nb02 |
+| `notebooks/test_encadenado_frescos.py` | Índice encadenado de frescos del nb07 con precios pegajosos (BUG-28) |
+
+**Regla de oro del generador**: dentro de `cell_code("""...""")` **no van barras invertidas** —
+Python se las come antes de que lleguen al notebook, y un `'\n'` termina siendo un salto de línea
+real que rompe la celda. Tampoco comillas triples. Ver BUG-17 y BUG-20 en
+[`docs/BUGS_Y_MEJORAS.md`](docs/BUGS_Y_MEJORAS.md).
 
 ---
 
@@ -730,7 +762,9 @@ El Notebook 02 usa dos estrategias para manejar la complejidad de múltiples can
 | [`docs/CONTEXTO.md`](docs/CONTEXTO.md) | Objetivo del proyecto, descripción del pipeline celda por celda, métricas de ejecución reales, historial completo de cambios |
 | [`docs/SEPA_TECNICO.md`](docs/SEPA_TECNICO.md) | Formato semestral vs. diario, autodetección de FACTOR_PRECIO, diccionario de cadenas, maestros de referencia, arquitectura anti-OOM, trampas conocidas en la selección de grupos, patrones técnicos del Notebook 02 |
 | [`docs/BRECHA_CELIACA.md`](docs/BRECHA_CELIACA.md) | **Notebook 06 — brecha celíaca (TACC vs sin-TACC)**: metodología (decisiones con los investigadores), definición de canastas y brecha intra-sucursal, resolución diaria/semanal/mensual, plantilla curada de tipos/EANs, outputs, limitaciones |
-| [`docs/BUGS_Y_MEJORAS.md`](docs/BUGS_Y_MEJORAS.md) | Bugs resueltos y mejoras pendientes, causa raíz, evidencia y fix aplicado |
+| [`docs/BUGS_Y_MEJORAS.md`](docs/BUGS_Y_MEJORAS.md) | Bugs resueltos y **defectos abiertos**, con causa raíz, evidencia y fix aplicado |
+| [`docs/canastas_alternativas/README.md`](docs/canastas_alternativas/README.md) | **Notebook 07** — composición de las 6 canastas alternativas (empaquetados por EAN + frescos por tipo) |
+| [`.claude/memory.md`](.claude/memory.md) | **Punto de entrada para retomar**: estado actual, pendientes en orden, handoffs anteriores en orden cronológico inverso |
 
 ---
 

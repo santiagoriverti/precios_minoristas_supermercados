@@ -1,7 +1,7 @@
 # Metodología — ICR (Índice de Consumo Representativo)
 
-**Última actualización:** 2026-09-07 (nb07 v5.3: banda de plausibilidad anclada en frescos + cobertura nacional obligatoria en las canastas; v5.2: filtro de régimen [BUG-24] y tripwire Alertas_precio_item — 287 empaquetados + 59 tipos de frescos)
-**Período de referencia:** enero 2024 – abril 2026
+**Última actualización:** 2026-09-09 (limitación nueva en §6: los índices base 100 de series que arrancan en meses distintos no son comparables entre sí. Antes, 2026-09-07: nb07 v5.3, banda de plausibilidad anclada en frescos + cobertura nacional obligatoria; v5.2: filtro de régimen [BUG-24] y tripwire Alertas_precio_item — 287 empaquetados + 59 tipos de frescos)
+**Período de referencia:** enero 2024 – agosto 2026
 
 ---
 
@@ -281,6 +281,19 @@ En el formato semestral, `id_bandera` representa el grupo corporativo (5 valores
 ### PLU codes (prefijo 27.../28...)
 
 Los productos vendidos por peso en góndola (frutas, verduras, fiambres a granel) tienen EANs generados en balanza con prefijo 27... o 28..., que son efímeros. No aparecen en el SEPA histórico de forma consistente. Si se incluyen en una canasta, la serie histórica quedará vacía y los gráficos de evolución no estarán disponibles para esos productos.
+
+### Índices base 100 de series que arrancan en meses distintos
+
+Cada serie se indexa a **su primer mes con dato**, no a un mes común. Cuando un producto o una
+canasta aparece más tarde que el resto —un EAN que se empieza a publicar en 2025-03 mientras los
+demás vienen de 2024-01—, su índice arranca en 100 en una base distinta y **no es comparable** con
+los otros ni con el IPC del gráfico, aunque compartan el eje.
+
+En el nb05 esto se señala: la leyenda del gráfico de índices agrega `(base MM-AA)` a los productos
+cuya base difiere de la mayoritaria. Para comparar acumulados de verdad hay que **rebasear todas las
+series a un mes con dato en todas** (para la corrida de agosto 2026 con 19 cervezas, ese mes es
+2025-03). Lo mismo vale para la lectura de los acumulados por tipo de fresco en el nb07, donde
+además pesa la estacionalidad (ver §10).
 
 ### Precios de lista vs. precios efectivos
 

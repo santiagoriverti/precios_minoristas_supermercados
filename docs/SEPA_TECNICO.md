@@ -763,3 +763,47 @@ canastas de `Selección` + `PRODUCTOS_ECONOMETRIA`). Agrega por (sucursal, EAN, 
 mediana (`precio_med`) y media recortada (`precio_prom`) de los días; imputa faltantes con la
 referencia nacional del período; agrega a nacional (ponderado población) / provincia / cadena con
 `valor_mediana` y `valor_promedio`. Caché `econ_{hash}.parquet` por mes cerrado. Salida tidy/long.
+
+
+## Patrones técnicos de los mapas Folium (nb02 y nb05) — 2026-09-09
+
+### Los marcadores los dibuja el navegador, no Python
+Un `folium.CircleMarker` con popup y tooltip cuesta **~1,6 KB de HTML** entre el `L.circleMarker`,
+su `L.popup`, el `div` del placeholder y el `bindTooltip`. Escribir un marcador por
+canasta/producto × sucursal hacía mapas de decenas de MB (48 MB con 19 productos) para mostrar
+~2.000 puntos por vez. Ahora el HTML lleva **sólo el JSON de sucursales** (metadata + `la`/`lo` +
+el valor de cada canasta/producto) y el JS crea los círculos al elegir el ítem:
+
+- el color se interpola en JS sobre la misma rampa de 7 colores, con el `min`/`max` (percentiles
+  5-95) de cada ítem, que viaja en `_cfg_json`;
+- una sola `L.layerGroup` que se redibuja, en vez de un `FeatureGroup` por ítem;
+- los filtros de cadena/provincia **recortan la lista antes de dibujar** (no esconden nodos del DOM);
+- el popup se arma con `bindPopup(function(){...})`, que Leaflet llama recién al abrirlo.
+
+Resultado: ~0,6 MB para 19 productos × 2.000 sucursales; ~0,8 MB para 6 canastas × 2.300.
+
+### El mapa base se elige solo (`TILES_MAPA`)
+`TILES_MAPA` (CELDA 1) acepta `'auto'` (default), el nombre de un proveedor o una lista con el orden
+a probar. El HTML embarca la lista y el JS agrega el primero; si en **9 segundos** no entró ningún
+mosaico —o si fallan 4 seguidos— lo saca y prueba el siguiente. Si no responde ninguno, muestra un
+aviso aclarando que los datos están bien y lo que falta es el fondo.
+
+| Orden | Proveedor | Sin API key | Nota |
+|---|---|---|---|
+| 1 | `esri` — Esri World Light Gray Base + capa de nombres/límites | sí | Gris, parecido al viejo Positron. `maxNativeZoom` 16 |
+| 2 | `osm` — OpenStreetMap | sí | **No responde desde la red de INECO** (timeout) |
+| 3 | `topo` — OpenTopoMap | sí | `maxNativeZoom` 17 |
+| 4 | `carto` — CartoDB Positron | **no** | Sin cuenta estampa *"API key required"*; como eso viaja en un HTTP 200, el fallback no lo descartaría solo → va último a propósito |
+
+Medición de referencia desde la red de INECO (2026-09-09): OSM timeout, Esri 0,3 s, OpenTopoMap
+1,2 s, CartoDB 0,2 s.
+
+### Se sacan los CDN que folium engancha y el mapa no usa
+Antes de guardar se filtran del HTML las etiquetas de jQuery, Bootstrap (JS y CSS), Font Awesome,
+awesome-markers y el `bootstrap-glyphicons` de `netdna.bootstrapcdn.com`: seis pedidos externos que
+ninguno de estos mapas necesita. Con los popups armados en JS, jQuery dejó de usarse por completo.
+
+### Cuidado con los escapes al generar estas celdas
+El filtrado anterior se escribe con `splitlines()` + `chr(10).join(...)` **a propósito**: dentro de
+`cell_code("""...""")` Python consume las barras invertidas, y un `'\n'.join(...)` llega al
+notebook como un salto de línea real y rompe la celda (BUG-17/BUG-20, reincidente el 2026-09-09).

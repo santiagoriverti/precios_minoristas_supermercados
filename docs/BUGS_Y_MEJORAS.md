@@ -12,6 +12,25 @@
 
 ## 🟡 Defectos abiertos
 
+### El mapa del nb06 sigue con los mosaicos viejos (CartoDB)
+
+`gen_nb06.py` (CELDA 12, mapa de sucursales por brecha) todavía crea el mapa con
+`tiles='cartodbpositron'`, así que hoy sale con la marca de agua *"API key required"* (BUG-30) y no
+tiene el fallback de proveedores de BUG-32. **Se sigue entendiendo** porque ese mapa dibuja los
+límites provinciales desde el `ar.json` local, pero conviene portarle el bloque de nb05/nb02.
+
+**Receta** (los tres pedazos están en `gen_nb05.py` CELDA 17 y son copiables tal cual):
+
+1. `_TILES_OPC` + `_ORDEN_DEF` + el parseo de `TILES_MAPA` → arma `_tiles_cfg`.
+2. Crear el mapa con `tiles=None` (sin `TileLayer` desde Python) y mandar `_tiles_cfg` dentro del
+   JSON de configuración que ya viaja embebido.
+3. La función `base(i)` del JS: agrega el proveedor `i`, y si en 9 s no cargó ningún mosaico (o
+   fallan 4 seguidos) lo saca y prueba el siguiente.
+
+Conviene aprovechar el viaje para revisar si al nb06 le sirve también el rediseño de BUG-31 (los
+marcadores dibujados en el navegador): su mapa ya usa lazy-load de popups, pero sigue escribiendo un
+objeto Leaflet por sucursal.
+
 ### La desagregación regional de la Tecnológica es degenerada
 
 En la corrida 2026-08-27 las **cinco regiones informan el mismo valor**, $5.853.138. La canasta
@@ -128,7 +147,7 @@ código y la misma exposición.
    como comparable con los que arrancan en 01-24.
 4. La anotación del último valor del gráfico 1 saltea los `NaN` finales (antes escribía `nan`).
 
-**Test de regresión**: `notebooks/test_graficos_series_desiguales.py` — corre la CELDA 12 **real**
+**Test de regresión**: `notebooks/test_celdas_graficos_y_mapa.py` — corre la CELDA 12 **real**
 del `.ipynb` generado con series de 32 y 18 meses. Verificado que la versión anterior (HEAD 094de64)
 reproduce el `ValueError` con esos mismos datos y la corregida pasa.
 

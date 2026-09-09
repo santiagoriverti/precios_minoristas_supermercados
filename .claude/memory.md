@@ -6,9 +6,84 @@ Autor: Santiago Riverti — investigador independiente
 
 ---
 
-## 🟢 ULTIMO CAMBIO [2026-09-09] — nb05 + nb02: BUG-29 (grafico) y BUG-30 (tiles)
+## 🟢 ESTADO ACTUAL / HANDOFF [2026-09-09] — leer esto primero
 
-Los pendientes de nb07 de la seccion de abajo SIGUEN VIGENTES: esta sesion no toco nb07.
+Proyecto EN PRODUCCION, 7 herramientas (nb01..nb07). Todo lo necesario para retomar viaja en el
+repo: notebooks, generadores, maestros (`data/`) y documentacion (`docs/`). Lo unico que NO esta
+en el repo son los datos SEPA y los auxiliares, que viven en el Drive del usuario.
+
+### Como retomar en otra PC
+
+```
+git clone https://github.com/santiagoriverti/precios_minoristas_supermercados
+cd precios_minoristas_supermercados
+python notebooks/test_celdas_graficos_y_mapa.py     # graficos + mapa (nb05 y nb02)
+python notebooks/test_encadenado_frescos.py         # encadenado de frescos (nb07)
+```
+
+- **Los `.ipynb` NO se editan a mano.** La fuente de verdad son los `gen_nbXX.py`:
+  `python notebooks/gen_nb05.py` reescribe `05_evolucion_productos_representativos.ipynb`.
+  Regenerar SIEMPRE despues de tocar un generador, y commitear los dos archivos juntos.
+- Los notebooks corren en **Colab** (badges en el README). Necesitan en `MyDrive/carga/`:
+  `2024A.zip 2024B.zip 2025A.zip 2025B.zip 2026A.zip 2026B.zip` (SEPA semestral), `IPC.xlsx`,
+  `ar.json` y `output_canasta/canasta_representativa_YYYY-MM.xlsx` (salida del nb01, con las
+  cantidades cargadas a mano).
+- Los maestros se buscan **primero en el Drive y despues en GitHub**: el repo es privado y
+  `raw.githubusercontent` devuelve 404 (commit `502581a`).
+- Ultimo mes procesado end-to-end: **agosto 2026** (2026B.zip, corrida real de nb05 con 19 cervezas).
+
+### Estado por herramienta
+
+| # | Notebook | Estado | Nota |
+|---|---|---|---|
+| 01 | `01_exploracion_productos` | ✅ estable | Selecciona ~65 productos; 6 columnas `cantidad_01..06` |
+| 02 | `02_evolucion_canasta_representativa` | ✅ al dia | Mapa y graficos corregidos el 09-sep (BUG-29..32); **sin corrida real desde entonces** |
+| 03 | `03_consolidacion_ultimo_mes` (.py y .ipynb) | ✅ estable | SEPA diario -> semestral |
+| 04 | `04_precios_seleccion` | ✅ estable | Precios por radio geografico |
+| 05 | `05_evolucion_productos_representativos` | ✅ corrido ago-2026 | 19 cervezas; graficos y mapa corregidos el 09-sep |
+| 06 | `06_evolucion_brecha_celiaca` | ✅ medicion cerrada | ⚠️ su mapa sigue con `cartodbpositron` (ver pendiente 2) |
+| 07 | `07_evolucion_canastas_alternativas` | ⚠️ v5.7.1 sin re-correr | Motor del informe semanal; ver pendiente 1 |
+
+### PENDIENTES, en orden
+
+1. **nb07 — re-correr con el Excel de canasta nuevo** (Femenina reemplazada + pan frances anclado).
+   Son MINUTOS: reusa `sem_1ad1b4b5_v5.parquet` y `ean_1ad1b4b5_v5.parquet`, la clave del cache no
+   cambio. Verificar en este orden: (a) acumulado de las canastas en el orden de 250-290 contra IPC
+   283; (b) `Panel_nacional` sin series constantes; (c) `Alertas_trazabilidad` vacia y pan frances
+   en ~$6.200/kg. Detalle en el handoff del 2026-09-08 mas abajo.
+2. **nb06 — el mapa tiene el bug de mosaicos sin corregir.** `gen_nb06.py` (CELDA 12) todavia usa
+   `tiles='cartodbpositron'`: hoy CARTO estampa "API key required" (BUG-30). Dibuja los limites
+   provinciales desde `ar.json` local, asi que se sigue entendiendo, pero conviene portarle el
+   bloque de mosaicos con fallback de nb05/nb02 (BUG-30/32): copiar `_TILES_OPC` + `_ORDEN_DEF` +
+   la funcion `base(i)` del JS. Receta completa en `docs/BUGS_Y_MEJORAS.md`.
+3. **nb05 y nb02 — confirmar en Colab** las correcciones de hoy: que el grafico de variaciones ya no
+   corte, y que el mapa abra con fondo (el print de la CELDA 17 dice el orden de mosaicos y el peso
+   final del archivo).
+4. **Mapa a GitHub Pages** (nb02 CELDA 17): bajar el HTML y subirlo como `index.html` al repo
+   `mapa_precios_minoristas`. Ahora pesa ~0,8 MB en vez de decenas de MB.
+5. **Documento LaTeX (Overleaf)**: copiar la hoja `Valores_Documento` del `canasta_analisis`;
+   Belgrano y Costa Atlantica salen a mano de la hoja `Sucs_Media`.
+6. **Seguridad**: rotar el PAT de GitHub (quedo expuesto el 24-jun y el 07-jul) y configurar Git
+   Credential Manager.
+7. Abierto de antes: cadena partida en Acelga (2 tramos), Espinaca (2) y Durazno (3); y NO publicar
+   la apertura regional/provincial de Popular, Media ni Tecnologica.
+
+### Reglas que muerden (leer antes de tocar un generador)
+
+- **Nada de barras invertidas en el codigo de celda.** Dentro de `cell_code(triple comillas)` Python
+  consume los escapes: un `'\n'.join(...)` llega al notebook como un salto de linea REAL y rompe la
+  celda con SyntaxError. Usar `splitlines()` + `chr(10).join(...)`. Tampoco `\'` en CSS ni
+  `triple comillas` adentro (BUG-17, BUG-20, y volvio a pasar el 2026-09-09).
+- **La red de INECO bloquea `tile.openstreetmap.org`** (timeout). Responden Esri
+  (`server.arcgisonline.com`, 0,3 s), OpenTopoMap (1,2 s) y CartoDB (0,2 s, pero con marca de agua).
+  Por eso los mapas llevan varios proveedores y eligen solos (BUG-32).
+- **Los indices base 100 de productos que arrancan en meses distintos NO son comparables.** La
+  leyenda de nb05 lo aclara con `(base MM-AA)`; para comparar de verdad hay que rebasear todos a un
+  mes con dato en todos.
+- El **cache** se invalida por los EANs, no por las cantidades: cambiar `cantidad_XX` no obliga a
+  releer el SEPA.
+
+### Lo que se hizo el 2026-09-09 (detalle)
 
 **BUG-29** — corrida real de nb05 con 19 cervezas (agosto 2026, EANs de Imperial/Schneider/
 Heineken/Corona/Quilmes/etc.): la CELDA 12 corta con
