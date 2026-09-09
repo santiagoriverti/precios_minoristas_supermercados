@@ -798,6 +798,19 @@ aviso aclarando que los datos están bien y lo que falta es el fondo.
 Medición de referencia desde la red de INECO (2026-09-09): OSM timeout, Esri 0,3 s, OpenTopoMap
 1,2 s, CartoDB 0,2 s.
 
+### La página se comparte por link, así que tiene título y layout de teléfono
+El HTML lleva `<title>`, `meta description`, Open Graph y un favicon SVG embebido (sin pedidos
+externos), porque folium no escribe nada de eso y la pestaña mostraba la URL cruda. Por debajo de
+**700 px** una media query pone los paneles de lado a lado con 6 px de margen, **mueve la leyenda
+dentro del panel de filtros** y arranca ese panel plegado (sólo la barra *🔍 Filtros*, se abre
+tocándola): con los anchos de escritorio —340/280/260 px— los paneles se salían de la pantalla y se
+tapaban entre sí. Además hay un cartel *Cargando el mapa* que se saca cuando aparece el primer
+marcador, porque dibujar ~2.000 círculos deja la pantalla vacía unos segundos.
+
+Todo eso vive en `_JS_UI`, un bloque **independiente del JS del mapa**: no depende de él y por eso
+se puede inyectar en un HTML ya generado (fue lo que se hizo con el mapa que ya estaba publicado en
+GitHub Pages, sin volver a correr Colab).
+
 ### Se sacan los CDN que folium engancha y el mapa no usa
 Antes de guardar se filtran del HTML las etiquetas de jQuery, Bootstrap (JS y CSS), Font Awesome,
 awesome-markers y el `bootstrap-glyphicons` de `netdna.bootstrapcdn.com`: seis pedidos externos que

@@ -184,7 +184,11 @@ Se generan **dos** mapas: `mapa_interactivo_MMAAAA.html` (costo mediano) y `mapa
 - **Popup al click**: nombre de la sucursal, cadena, barrio, provincia, tipo y costo de la canasta seleccionada
 - Tamaño: ~3–5 MB (optimizado para servir desde GitHub Pages)
 
-> **Mapa publicado**: [santiagoriverti.github.io/mapa_precios_minoristas](https://santiagoriverti.github.io/mapa_precios_minoristas/)
+> **Mapas publicados**: [santiagoriverti.github.io/mapa_precios](https://santiagoriverti.github.io/mapa_precios/)
+> (productos individuales del Notebook 05, agosto 2026 — repo `santiagoriverti/mapa_precios`) ·
+> [santiagoriverti.github.io/mapa_precios_minoristas](https://santiagoriverti.github.io/mapa_precios_minoristas/)
+> (canastas del Notebook 02). Para actualizar cualquiera: bajar el HTML de la CELDA 17, renombrarlo a
+> `index.html` y reemplazarlo en el repo correspondiente.
 
 ### Excel de análisis — `canasta_analisis_YYYY-MM.xlsx`
 

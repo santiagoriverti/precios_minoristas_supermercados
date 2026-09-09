@@ -1,6 +1,6 @@
 # Bugs Pendientes y Mejoras
 
-Última actualización: 2026-09-09 — nb05/nb02: BUG-29 (gráfico de barras), BUG-30 (CartoDB exige API key), BUG-31 (el mapa pesaba 48 MB) y BUG-32 (OSM no responde desde la red de INECO)
+Última actualización: 2026-09-09 — nb05/nb02: BUG-29 (gráfico de barras), BUG-30 (CartoDB exige API key), BUG-31 (el mapa pesaba 48 MB), BUG-32 (OSM no responde desde la red de INECO) y BUG-33 (el mapa publicado no servía como link para compartir)
 
 ---
 
@@ -45,6 +45,27 @@ de la Tecnológica** hasta que haya al menos dos cadenas con cobertura de durabl
 ---
 
 ## 🟢 Cambios y fixes 2026-09
+
+### 🔴 BUG-33 — el mapa publicado no servía como link para compartir (2026-09-09)
+
+El mapa del nb05 se publicó en GitHub Pages (`santiagoriverti/mapa_precios` →
+[santiagoriverti.github.io/mapa_precios](https://santiagoriverti.github.io/mapa_precios/)) y ahí
+quedaron a la vista tres cosas que en Colab no molestan:
+
+| Síntoma | Causa | Fix |
+|---|---|---|
+| La pestaña mostraba la URL cruda y el link no previsualizaba al compartirlo | folium no escribe `<title>` ni favicon | `<title>`, `meta description`, Open Graph y un favicon SVG embebido (sin pedidos externos) |
+| En un teléfono los paneles se salían de la pantalla y se pisaban entre sí | los paneles son `position:fixed` con anchos de 340/280/260 px pensados para escritorio. Medido a 375 px: el panel de arriba arranca en x=50 y mide 374 px (se corta), y la leyenda tapa la provincia y el botón Restablecer | media query a ≤700 px: paneles de lado a lado con 6 px de margen, la leyenda se **mueve dentro** del panel de filtros y ese panel arranca **plegado** (sólo la barra *🔍 Filtros*), se abre tocándola |
+| Los primeros segundos la pantalla queda vacía | se dibujan ~2.000 círculos y se piden los mosaicos | cartel *Cargando el mapa* que se saca cuando aparece el primer marcador |
+
+Implementado como un bloque `_JS_UI` **independiente del JS del mapa** (no lo toca), justamente para
+poder aplicarlo también a un HTML ya generado sin volver a correr Colab — que es lo que se hizo con
+el `index.html` que ya estaba publicado.
+
+**Validado en navegador** a 1280×800 y a 375×812, con el HTML publicado y con uno recién generado:
+título y favicon presentes, 2.066 marcadores, 48 mosaicos de Esri, sin errores de consola, y en
+teléfono el panel abierto entra completo en pantalla (517+289 de 812) con la leyenda adentro. En
+escritorio no cambia nada.
 
 ### 🔴 BUG-32 — el mapa quedaba sin fondo y "cargando" para siempre (2026-09-09)
 

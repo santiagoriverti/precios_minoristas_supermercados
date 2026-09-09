@@ -59,8 +59,14 @@ python notebooks/test_encadenado_frescos.py         # encadenado de frescos (nb0
 3. **nb05 y nb02 — confirmar en Colab** las correcciones de hoy: que el grafico de variaciones ya no
    corte, y que el mapa abra con fondo (el print de la CELDA 17 dice el orden de mosaicos y el peso
    final del archivo).
-4. **Mapa a GitHub Pages** (nb02 CELDA 17): bajar el HTML y subirlo como `index.html` al repo
-   `mapa_precios_minoristas`. Ahora pesa ~0,8 MB en vez de decenas de MB.
+4. **Mapa a GitHub Pages**. OJO que hay DOS repos de mapas:
+   - `mapa_precios` (nuevo, 2026-09-09) → santiagoriverti.github.io/mapa_precios/ — publica el mapa
+     de **productos** del nb05 (agosto 2026, versión `_prom`). **Este es el que está al día.**
+   - `mapa_precios_minoristas` (viejo) → publica el mapa de **canastas** del nb02. Sigue con una
+     versión anterior; cuando se re-corra el nb02 conviene actualizarlo (ahora pesa ~0,8 MB).
+
+   Para actualizar cualquiera: bajar el HTML de `output_*` en el Drive, renombrarlo a `index.html`
+   y reemplazarlo en el repo. Pages lo publica en menos de un minuto.
 5. **Documento LaTeX (Overleaf)**: copiar la hoja `Valores_Documento` del `canasta_analisis`;
    Belgrano y Costa Atlantica salen a mano de la hoja `Sucs_Media`.
 6. **Seguridad**: rotar el PAT de GitHub (quedo expuesto el 24-jun y el 07-jul) y configurar Git
@@ -140,6 +146,17 @@ rompia la celda con SyntaxError. En codigo de celda: nada de barras invertidas �
 bloque de tiles y la CELDA 17 REALES del `.ipynb` generado (nb05 y el mapa de nb02). Verificado que el `.ipynb` de HEAD 094de64 reproduce el
 ValueError con esos datos y el corregido pasa. Los dos generadores pasan `ast.parse` y las 20/23
 celdas compilan; los `.ipynb` se regeneraron con los scripts (fuente de verdad).
+
+**BUG-33** — al publicar el mapa en GitHub Pages quedaron a la vista tres cosas que en Colab no
+molestan: la pestaña mostraba la URL cruda (folium no escribe `<title>` ni favicon) y el link no
+previsualizaba al compartirlo; en un telefono de 375 px los paneles se salian de la pantalla (el de
+arriba arranca en x=50 y mide 374 px) y la leyenda tapaba la provincia y el boton Restablecer; y los
+primeros segundos la pantalla queda vacia mientras se dibujan ~2.000 circulos. Fix: `<title>` + meta
+description + Open Graph + favicon SVG embebido; media query a <=700 px (paneles de lado a lado, la
+leyenda se mueve DENTRO del panel de filtros y ese panel arranca plegado, se abre tocando la barra);
+y un cartel "Cargando el mapa" que se va con el primer marcador. Va en un bloque `_JS_UI`
+INDEPENDIENTE del JS del mapa, a proposito: asi se pudo aplicar tambien al `index.html` que ya
+estaba publicado, sin volver a correr Colab. En escritorio no cambia nada.
 
 **Ojo para la proxima corrida de nb05**: los indices base 100 de productos que arrancan despues NO
 son comparables con los que arrancan en 2024-01 (la leyenda ya lo dice). Si se quiere comparar de

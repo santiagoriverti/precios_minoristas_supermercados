@@ -1436,6 +1436,20 @@ _CSS_MAPA = '''
 .lg-t{font-size:11px;color:#0055A4;font-weight:bold;margin-bottom:6px;line-height:1.3}
 .lg-bar{height:14px;border:1px solid #999;border-radius:2px}
 .lg-x{display:flex;justify-content:space-between;font-size:10px;color:#555;margin-top:3px}
+#load{position:fixed;top:0;left:0;right:0;bottom:0;background:#f4f4f4;z-index:10000;display:flex;
+      align-items:center;justify-content:center;font-family:Arial;font-size:13px;color:#0055A4}
+#pfh{cursor:pointer}
+#pfc{float:right;color:#888}
+#pf.min #pfb{display:none}
+@media (max-width:700px){
+ #info{left:6px !important;right:6px;top:6px !important;width:auto !important;
+       padding:8px 10px !important}
+ #pf{left:6px !important;right:6px;bottom:6px !important;width:auto !important;
+     padding:8px 10px !important}
+ #lgd{position:static !important;width:auto !important;border:0 !important;box-shadow:none;
+      padding:8px 0 0 !important;margin-top:6px}
+ .lz-w{width:auto;max-width:78vw}
+}
 #tw{display:none;position:fixed;top:10px;right:25px;width:300px;background:#fff6e5;
     border:2px solid #d98b00;border-radius:8px;padding:10px 12px;font-family:Arial;
     font-size:11px;color:#7a4f00;z-index:9999;line-height:1.4}
@@ -1543,6 +1557,44 @@ boot();
 })();
 '''
 
+# Interfaz: layout para telefono, panel de filtros plegable y pantalla de carga.
+# Va aparte del JS del mapa porque no depende de el (BUG-33).
+_JS_UI = '''
+(function(){
+function el(i){return document.getElementById(i);}
+function chico(){return window.matchMedia("(max-width:700px)").matches;}
+function layout(){
+ var pf=el("pf"),lg=el("lgd"),bd=el("pfb"),c=el("pfc");
+ if(!pf||!lg||!bd){return;}
+ if(chico()){
+  if(lg.parentNode!==bd){bd.appendChild(lg);}
+  if(!pf.getAttribute("data-ini")){pf.className="min";pf.setAttribute("data-ini","1");}
+ }else{
+  if(lg.parentNode===bd){document.body.appendChild(lg);}
+  pf.className="";
+ }
+ if(c){c.innerHTML=(pf.className==="min")?"+":"-";}
+}
+var h=el("pfh");
+if(h){h.addEventListener("click",function(){
+ var pf=el("pf");
+ pf.className=(pf.className==="min")?"":"min";
+ layout();
+});}
+window.addEventListener("resize",layout);
+layout();
+var n=0;
+(function espera(){
+ n=n+1;
+ var lo=el("load");
+ if(document.querySelector("path.leaflet-interactive")||n>200){
+  if(lo&&lo.parentNode){lo.parentNode.removeChild(lo);}
+  return;
+ }
+ setTimeout(espera,150);
+})();
+})();'''
+
 # Dos mapas: analisis MEDIANA (sin sufijo) y PROMEDIO (_prom)
 for _SFX, _TIT, _VCOL in [('','mediana','canasta_total'), ('_prom','promedio','canasta_total_prom')]:
     # ── Un registro por sucursal: metadata + lat/lon + valor de cada canasta ────
@@ -1642,7 +1694,7 @@ for _SFX, _TIT, _VCOL in [('','mediana','canasta_total'), ('_prom','promedio','c
     _cad_opts  = ''.join(f'<option value="{_c}">{_c}</option>' for _c in _cadenas_u)
     _prov_opts = ''.join(f'<option value="{_p}">{_p}</option>' for _p in _provs_u)
 
-    info_h = (f'<div style="position:fixed;top:10px;left:50px;width:340px;background:white;border:2px solid #0055A4;'
+    info_h = (f'<div id="info" style="position:fixed;top:10px;left:50px;width:340px;background:white;border:2px solid #0055A4;'
               f'border-radius:8px;padding:12px 15px;font-family:Arial;z-index:9999;box-shadow:0 2px 8px rgba(0,0,0,.15);">'
               f'<div style="color:#0055A4;font-size:15px;font-weight:bold;margin-bottom:5px;">ICR — {NOMBRE_MES_TITLE} ({_TIT})</div>'
               f'<div style="font-size:11px;color:#555;line-height:1.5;">'
@@ -1653,7 +1705,7 @@ for _SFX, _TIT, _VCOL in [('','mediana','canasta_total'), ('_prom','promedio','c
     filtros_h = (
         f'<div id="pf" style="position:fixed;bottom:25px;left:50px;width:280px;background:white;'
         f'border:2px solid #0055A4;border-radius:8px;padding:12px 15px;font-family:Arial;z-index:9999;">'
-        f'<div style="color:#0055A4;font-size:13px;font-weight:bold;margin-bottom:8px;">🔍 Filtros</div>'
+        f'<div id="pfh" style="color:#0055A4;font-size:13px;font-weight:bold;margin-bottom:8px;"><span id="pfc"></span>🔍 Filtros</div><div id="pfb">'
         f'<label style="font-size:11px;color:#555;display:block;margin-top:4px;">Canasta:'
         f'<select id="fcan" style="width:100%;padding:4px;font-size:11px;margin-top:3px;">{_can_opts}</select></label>'
         f'<label style="font-size:11px;color:#555;display:block;margin-top:6px;">Cadena:'
@@ -1663,12 +1715,30 @@ for _SFX, _TIT, _VCOL in [('','mediana','canasta_total'), ('_prom','promedio','c
         f'<select id="fp" style="width:100%;padding:4px;font-size:11px;margin-top:3px;">'
         f'<option value="all">Todas</option>{_prov_opts}</select></label>'
         f'<button id="fr" style="width:100%;margin-top:10px;padding:6px;background:#f0f0f0;'
-        f'border:1px solid #ccc;border-radius:4px;font-size:11px;cursor:pointer;">Restablecer</button></div>'
+        f'border:1px solid #ccc;border-radius:4px;font-size:11px;cursor:pointer;">Restablecer</button></div></div>'
         f'<div id="lgd"></div>'
         f'<div id="tw">No se pudieron cargar los mosaicos del mapa base desde esta red '
         f'(se probaron: {", ".join(_orden)}). Los datos y los marcadores estan bien; '
-        f'lo que falta es solo el fondo del mapa.</div>')
+        f'lo que falta es solo el fondo del mapa.</div>'
+        f'<div id="load">Cargando el mapa...</div>'
+        '<script>' + _JS_UI + '</script>')
     m.get_root().html.add_child(folium.Element(filtros_h))
+
+    # ── Titulo, descripcion y favicon: esto se comparte por link (BUG-33) ───────
+    _tit_pag = f'Mapa del ICR por supermercado — {NOMBRE_MES_TITLE}'
+    _desc_pag = (f'{len(_popup_data):,} sucursales de todo el pais con el costo de 'f'{len(_items_cfg)} canastas ({_TIT}). Datos del SEPA.')
+    _svg_fav = ("<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'>"
+                "<rect width='32' height='32' rx='6' fill='rgb(0,85,164)'/>"
+                "<circle cx='16' cy='13' r='4.5' fill='rgb(255,255,255)'/>"
+                "<path d='M16 30 L9 17 L23 17 Z' fill='rgb(255,255,255)'/></svg>")
+    _fav = 'data:image/svg+xml,' + _svg_fav.replace('<','%3C').replace('>','%3E').replace(' ','%20')
+    m.get_root().header.add_child(folium.Element(
+        f'<title>{_tit_pag}</title>'
+        f'<meta name="description" content="{_desc_pag}">'
+        f'<meta property="og:type" content="website">'
+        f'<meta property="og:title" content="{_tit_pag}">'
+        f'<meta property="og:description" content="{_desc_pag}">'
+        f'<link rel="icon" href="{_fav}">'))
 
     # ── CSS + JS ────────────────────────────────────────────────────────────────
     m.get_root().html.add_child(folium.Element(
