@@ -487,6 +487,16 @@ CELDA 1 (`'osm'` por default, `'topo'`, o `'carto'` si algún día se consigue c
 atribución explícitas. Test de regresión nuevo: `notebooks/test_graficos_series_desiguales.py`, que
 ejecuta las celdas reales del `.ipynb` generado.
 
+**BUG-31, en la misma corrida**: el `mapa_interactivo_082026.html` de 19 productos pesaba **48,6 MB**.
+La CELDA 17 escribía los datos dos veces — el JSON de los popups y, además, un objeto Leaflet por
+cada par producto×sucursal (~1,6 KB cada uno entre marcador, popup, placeholder y tooltip): ~35.000
+marcadores de los que se ven ~2.000 por vez. Ahora al JSON se le agregan lat/lon y **los círculos los
+dibuja Leaflet en el navegador** al elegir producto; el color se interpola en JS con la misma rampa y
+los mismos percentiles, la leyenda se dibuja por producto, y los filtros de cadena/provincia recortan
+la lista antes de dibujar en vez de esconder nodos del DOM. Medido: **0,62 MB** para 19 productos ×
+2.000 sucursales (nb02: 0,76 MB para 6 canastas × 2.300). Verificado en navegador: marcadores,
+selector, filtros combinados, popup, tooltip, leyenda y botón Restablecer.
+
 ### 2026-09-04 — nb07 v5.1: robustez del nacional (primera corrida real de v5)
 
 Diagnóstico sobre `canastas_alternativas_2026-09-03`. El índice encadenado bajó los saltos de

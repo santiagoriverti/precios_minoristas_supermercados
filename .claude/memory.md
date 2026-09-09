@@ -27,8 +27,22 @@ Fix: **`TILES_MAPA`** en la CELDA 1 de nb05 y nb02 — `'osm'` (default), `'topo
 y atribucion explicitas (no los alias de folium), valor invalido avisa y cae a osm, `control=False`
 para no ensuciar el selector de capas.
 
-**Test de regresion nuevo**: `notebooks/test_graficos_series_desiguales.py`. Corre la CELDA 12 y el
-bloque de tiles REALES del `.ipynb` generado. Verificado que el `.ipynb` de HEAD 094de64 reproduce el
+**BUG-31** — el `mapa_interactivo_082026.html` de nb05 con 19 productos pesaba **48,6 MB**. La CELDA
+17 escribia los datos DOS veces: el JSON de los popups y, ademas, un objeto Leaflet por cada par
+producto x sucursal (medido con folium real: ~1,6 KB entre marcador, popup, placeholder y tooltip).
+35.000 marcadores para mostrar 2.000. Fix: al JSON se le agregan `la`/`lo` y los circulos los dibuja
+Leaflet en el navegador al elegir producto. El color se interpola en JS (misma rampa de 7 colores,
+mismos percentiles 5-95, ahora en `_cfg_json`), la leyenda se dibuja en un `div#lgd` por producto,
+los filtros de cadena/provincia recortan la lista ANTES de dibujar (y el promedio del panel refleja
+lo filtrado), el popup usa `bindPopup(function(){...})` -lazy de verdad- y el arranque pasa de
+`setTimeout(1200)` (BUG-22) a polling cada 100 ms. Medido: **0,62 MB** con 19 productos x 2.000
+sucursales; nb02, **0,76 MB** con 6 canastas x 2.300. Validado EN NAVEGADOR con el HTML generado:
+marcadores dibujados, selector (800 -> 2.000 segun producto), filtros combinados (2.000 -> 400 con
+Coto -> 100 con Coto+CABA), popup y tooltip correctos, boton Restablecer, y en nb02 la linea
+`50/74 productos propios (68%)` intacta.
+
+**Test de regresion nuevo**: `notebooks/test_celdas_graficos_y_mapa.py`. Corre la CELDA 12, el
+bloque de tiles y la CELDA 17 REALES del `.ipynb` generado (nb05 y el mapa de nb02). Verificado que el `.ipynb` de HEAD 094de64 reproduce el
 ValueError con esos datos y el corregido pasa. Los dos generadores pasan `ast.parse` y las 20/23
 celdas compilan; los `.ipynb` se regeneraron con los scripts (fuente de verdad).
 

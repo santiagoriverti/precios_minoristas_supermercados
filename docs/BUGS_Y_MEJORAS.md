@@ -1,6 +1,6 @@
 # Bugs Pendientes y Mejoras
 
-Última actualización: 2026-09-09 — nb05/nb02: BUG-29 (el gráfico de barras reventaba si un producto arrancaba después) y BUG-30 (CartoDB pasó a exigir API key)
+Última actualización: 2026-09-09 — nb05/nb02: BUG-29 (gráfico de barras), BUG-30 (CartoDB exige API key) y BUG-31 (el mapa pesaba 48 MB)
 
 ---
 
@@ -26,6 +26,39 @@ de la Tecnológica** hasta que haya al menos dos cadenas con cobertura de durabl
 ---
 
 ## 🟢 Cambios y fixes 2026-09
+
+### 🔴 BUG-31 — el mapa interactivo pesaba 48,6 MB (2026-09-09)
+
+**Síntoma**: `mapa_interactivo_082026.html` de nb05 con 19 productos pesa **48.611 KB**.
+
+**Causa**: la CELDA 17 escribía los datos **dos veces**. Una como JSON compacto (`_pd_json`, el que
+usan los popups) y otra como un objeto Leaflet por cada par producto×sucursal. Medido con folium
+real: **~1,6 KB por marcador** entre el `L.circleMarker`, su `L.popup`, el `div` del placeholder y
+el `bindTooltip`, cada uno con su bloque de JS y su id único. 19 productos × ~2.100 sucursales ≈
+35.000 marcadores, de los cuales el navegador muestra **~2.000 por vez** (el resto son los otros 18
+productos, en `FeatureGroup`s ocultos que igual hay que parsear al abrir el archivo).
+
+**Fix**: los marcadores dejan de escribirse desde Python. Al JSON —que ya tenía cadena, nombre,
+barrio, provincia, tipo y el precio de cada producto por sucursal— se le agregan `la`/`lo`, y
+**Leaflet dibuja los círculos en el navegador** al elegir producto. Lo que cambió dentro de la celda:
+
+| Antes (Python) | Ahora (JS en el navegador) |
+|---|---|
+| `LinearColormap` calculaba el color de cada marcador | la rampa de 7 colores se interpola en JS con el `min`/`max` (mismos percentiles 5-95) que viaja en `_cfg_json` |
+| Un `FeatureGroup` por producto, se prendía/apagaba | una sola `L.layerGroup` que se redibuja al cambiar de producto o de filtro |
+| Leyenda de `branca` para el producto por defecto | `div#lgd` dibujado en JS, se actualiza con el producto elegido |
+| Filtros escondían nodos del DOM por `className` | filtran la lista de sucursales **antes** de dibujar (y el promedio del panel refleja lo filtrado) |
+| Popup lazy con placeholder + evento `popupopen` | `bindPopup(function(){...})`: Leaflet lo pide recién al abrirlo |
+| `setTimeout(1200)` para esperar al mapa (BUG-22) | polling cada 100 ms hasta 30 s: más rápido y no depende del tamaño del archivo |
+
+**Resultado medido** (test sintético, 19 productos × 2.000 sucursales): **0,62 MB** contra los
+~50 MB que darían los 38.000 marcadores. En nb02 (6 canastas × 2.300 sucursales): **0,76 MB**.
+
+**Validado en navegador** con los HTML generados: se dibujan los marcadores, el selector de producto
+cambia la capa (800 → 2.000 marcadores según el producto), los filtros combinan bien
+(2.000 → 400 con cadena Coto → 100 con Coto + CABA), el popup y el tooltip traen los datos correctos
+y el botón Restablecer vuelve al estado inicial. En nb02 el popup conserva la línea de cobertura
+(`50/74 productos propios (68%)`).
 
 ### 🔴 BUG-29 — el gráfico de variaciones reventaba con productos de distinta antigüedad (2026-09-09)
 

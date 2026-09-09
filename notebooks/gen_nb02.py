@@ -1402,23 +1402,123 @@ for _col_id in CANASTAS_ACTIVAS:
         for i, r in enumerate(_rk_nac.sort_values('valor', ascending=False).itertuples(), 1):
             print(f'    {i:>2}. {r.cadena:<25} ${fmtn(r.valor):>12}  ({int(r.n_sucursales)} sucs)')"""))
 
-# ── CELL 17 — FOLIUM MAP (único con selector de canasta, lazy popup) ──────────
+# ── CELL 17 — FOLIUM MAP (marcadores dibujados en el navegador) ───────────────
 cells.append(cell_code("""\
 # ============================================================
-# CELDA 17 — Mapa Folium: lazy popup (datos JSON on-demand)
-# Arquitectura: datos almacenados una vez como JSON compacto;
-# popup HTML construido por JS al hacer click → archivo ~80% más liviano
+# CELDA 17 — Mapa Folium: los circulos los dibuja el navegador
+# Antes se escribia un objeto Leaflet por canasta x sucursal (~1,6 KB cada uno,
+# con popup y tooltip propios). Con muchos canastas el HTML se iba a decenas de
+# MB y el 95% eran marcadores ocultos (solo se ve una por vez). Ahora va SOLO
+# el JSON de sucursales -que ya existia para los popups- mas lat/lon, y Leaflet
+# dibuja al vuelo los del canasta elegido. Ver BUG-31.
 # ============================================================
 def fmtm(x): return f'{x:,.0f}'.replace(',','.')
 
+RAMPA_MAPA = ['#1a9850','#66bd63','#a6d96a','#fee08b','#fdae61','#f46d43','#d73027']
+
+# CSS y JS del mapa: strings PLANOS (no f-strings) para no doblar llaves ni
+# escapar comillas. Lo unico que se inyecta despues es el nombre del mapa.
+_CSS_MAPA = '''
+.lz-w{font-family:Arial;font-size:12px;width:420px;max-height:500px;overflow-y:auto}
+.lz-h4{margin:0;color:#0055A4}
+.lz-nfo{font-size:11px;color:#555;margin-bottom:5px}
+.lz-bg{background:#e6eef7;padding:2px 6px;border-radius:3px;font-size:10px}
+.lz-cx{text-align:center;margin:8px 0}
+.lz-lbl{font-size:11px;color:#555;margin-bottom:2px}
+.lz-tot{color:#0055A4;font-size:22px;font-weight:bold}
+.lz-sub{font-size:11px;color:#888;text-align:center;margin-top:3px}
+.lz-hr{margin:5px 0}
+#lgd{position:fixed;bottom:25px;right:25px;width:260px;background:white;border:2px solid #0055A4;
+     border-radius:8px;padding:10px 12px;font-family:Arial;z-index:9999}
+.lg-t{font-size:11px;color:#0055A4;font-weight:bold;margin-bottom:6px;line-height:1.3}
+.lg-bar{height:14px;border:1px solid #999;border-radius:2px}
+.lg-x{display:flex;justify-content:space-between;font-size:10px;color:#555;margin-top:3px}
+'''
+
+_JS_MAPA = '''
+(function(){
+var MAP=null,LAYER=null,PD=null,CFG=null,ESC={},NAMES={},TRIES=0;
+function el(i){return document.getElementById(i);}
+function J(i){var e=el(i);return e?JSON.parse(e.textContent):null;}
+function fmt(x){return "$"+Number(x).toLocaleString("es-AR",{minimumFractionDigits:0,maximumFractionDigits:0});}
+function mix(a,b,f){
+ var pa=[parseInt(a.substr(1,2),16),parseInt(a.substr(3,2),16),parseInt(a.substr(5,2),16)];
+ var pb=[parseInt(b.substr(1,2),16),parseInt(b.substr(3,2),16),parseInt(b.substr(5,2),16)];
+ return "rgb("+pa.map(function(v,i){return Math.round(v+(pb[i]-v)*f);}).join(",")+")";
+}
+function color(v,mn,mx){
+ var r=CFG.ramp,t=(mx>mn)?(v-mn)/(mx-mn):0;
+ t=Math.max(0,Math.min(1,t));
+ var p=t*(r.length-1),i=Math.floor(p);
+ if(i>=r.length-1){return r[r.length-1];}
+ return mix(r[i],r[i+1],p-i);
+}
+function val(s,id){var c=s.can[id];return (c===undefined)?undefined:c.t;}
+function popup(s,id){
+ var c=s.can[id];
+ if(c===undefined){return "<div>Sin datos.</div>";}
+ var v=c.t;
+ return '<div class="lz-w"><h4 class="lz-h4">'+s.cad+"</h4>"
+  +'<div class="lz-nfo"><b>'+s.nom+"</b><br>"+(s.bar?s.bar+" — ":"")+s.prv
+  +'<br><span class="lz-bg">'+s.tip+"</span></div>"
+  +'<hr class="lz-hr">'
+  +'<div class="lz-cx"><div class="lz-lbl">'+NAMES[id]+'</div><span class="lz-tot">'+fmt(v)+"</span></div>"
+  +'<div class="lz-sub">'+c.p+"/"+c.n+" productos propios ("+Math.round(c.p/c.n*100)+"%)</div>"
+  +"</div>";
+}
+function popFn(s,id){return function(){return popup(s,id);};}
+function legend(id){
+ var e=ESC[id],c=el("lgd");
+ if(!c||!e){return;}
+ c.innerHTML='<div class="lg-t">'+e.nom+" — "+CFG.cap+"</div>"
+  +'<div class="lg-bar" style="background:linear-gradient(to right,'+CFG.ramp.join(",")+')"></div>'
+  +'<div class="lg-x"><span>'+fmt(e.min)+"</span><span>"+fmt(e.max)+"</span></div>";
+}
+function render(){
+ var id=el("fcan").value,ca=el("fca").value,pv=el("fp").value,e=ESC[id];
+ if(!e){return;}
+ if(LAYER){MAP.removeLayer(LAYER);}
+ LAYER=L.layerGroup();
+ var n=0,sum=0;
+ for(var k in PD){
+  var s=PD[k],v=val(s,id);
+  if(v===undefined){continue;}
+  if(ca!=="all"&&s.cad!==ca){continue;}
+  if(pv!=="all"&&s.prv!==pv){continue;}
+  var col=color(v,e.min,e.max);
+  var mk=L.circleMarker([s.la,s.lo],{radius:5,color:col,fillColor:col,fill:true,fillOpacity:0.8,weight:1});
+  mk.bindTooltip("<b>"+s.cad+"</b><br>"+s.prv+"<br><b>"+fmt(v)+"</b>");
+  mk.bindPopup(popFn(s,id),{maxWidth:450});
+  LAYER.addLayer(mk);n++;sum+=v;
+ }
+ LAYER.addTo(MAP);
+ var a=el("info_avg");
+ if(a){a.innerHTML=(n?fmt(sum/n):"s/d")+" ("+NAMES[id]+", "+n.toLocaleString("es-AR")+" sucursales)";}
+ legend(id);
+}
+function boot(){
+ MAP=window["__MAPVAR__"];
+ if(typeof L==="undefined"||!MAP||!MAP.addLayer){
+  TRIES=TRIES+1;
+  if(TRIES>300){return;}
+  return setTimeout(boot,100);
+ }
+ PD=J("_pd_json");CFG=J("_cfg_json");
+ if(!PD||!CFG){return;}
+ CFG.items.forEach(function(p){ESC[p.id]=p;NAMES[p.id]=p.nom;});
+ ["fcan","fca","fp"].forEach(function(i){var x=el(i);if(x){x.addEventListener("change",render);}});
+ var b=el("fr");
+ if(b){b.addEventListener("click",function(){
+  el("fcan").value=CFG.items[0].id;el("fca").value="all";el("fp").value="all";render();});}
+ render();
+}
+boot();
+})();
+'''
+
 # Dos mapas: analisis MEDIANA (sin sufijo) y PROMEDIO (_prom)
 for _SFX, _TIT, _VCOL in [('','mediana','canasta_total'), ('_prom','promedio','canasta_total_prom')]:
-    # ── Construir datos compactos para popups (almacenados una vez) ──────────────
-    _cgf_ref = canasta_geo_dict[CANASTAS_ACTIVAS[0]]
-    provs_u  = sorted(_cgf_ref['PROVINCIA_NORM'].unique())
-
-    # Popup compacto: solo totales por sucursal/canasta (sin detalle de productos)
-    # → JSON ~300 KB en vez de ~60 MB
+    # ── Un registro por sucursal: metadata + lat/lon + valor de cada canasta ────
     _popup_data = {}
     for _col_id in CANASTAS_ACTIVAS:
         _nc = len(CANASTAS[_col_id])
@@ -1431,6 +1531,8 @@ for _SFX, _TIT, _VCOL in [('','mediana','canasta_total'), ('_prom','promedio','c
                     'prv': _r['PROVINCIA_NORM'],
                     'cad': _r['cadena'],
                     'tip': str(_r.get('sucursales_tipo') or 'N/D'),
+                    'la': round(float(_r['sucursales_latitud']), 5),
+                    'lo': round(float(_r['sucursales_longitud']), 5),
                     'can': {}
                 }
             _popup_data[_sk]['can'][_col_id] = {
@@ -1439,8 +1541,23 @@ for _SFX, _TIT, _VCOL in [('','mediana','canasta_total'), ('_prom','promedio','c
                 'n': _nc
             }
 
+
+    # Escala de color por canasta (mismos percentiles que usaba LinearColormap)
+    _items_cfg = []
+    for _col_id in CANASTAS_ACTIVAS:
+        _v = canasta_geo_dict[_col_id][_VCOL]
+        _a, _b = float(_v.quantile(0.05)), float(_v.quantile(0.95))
+        if _a == _b: _a, _b = float(_v.min()), float(_v.max())
+        if _a == _b: _b = _a + 1.0
+        _items_cfg.append({'id': _col_id, 'nom': f'ICR {CANASTA_NAMES[_col_id]}',
+                           'min': round(_a, 2), 'max': round(_b, 2)})
+
     _popup_json = _json.dumps(_popup_data, ensure_ascii=False, separators=(',',':'))
-    print(f'Datos popup: {len(_popup_data):,} sucursales | {len(_popup_json)/1024/1024:.1f} MB JSON compacto')
+    _cfg_json   = _json.dumps({'ramp': RAMPA_MAPA, 'items': _items_cfg,
+                               'cap': f'{NOMBRE_MES_TITLE} ({_TIT}, ARS)'},
+                              ensure_ascii=False, separators=(',',':'))
+    print(f'Datos mapa [{_TIT}]: {len(_popup_data):,} sucursales | '
+          f'{(len(_popup_json)+len(_cfg_json))/1024/1024:.2f} MB JSON')
 
     # ── Mapa Folium ───────────────────────────────────────────────────────────────
     # Fondo del mapa: CartoDB pasó a exigir API key (devuelve los tiles con la marca de
@@ -1469,61 +1586,24 @@ for _SFX, _TIT, _VCOL in [('','mediana','canasta_total'), ('_prom','promedio','c
             html='<div style="background:rgba(255,255,255,.95);border:1px solid #777;border-radius:3px;padding:3px 7px;font-family:Arial;font-size:11px;font-weight:600;text-align:center;white-space:nowrap;">Islas Malvinas (ARG)</div>')
     ).add_to(m)
 
-    _canasta_fg_ids = {}
-    for _col_id in CANASTAS_ACTIVAS:
-        _name  = CANASTA_NAMES[_col_id]
-        _short = CANASTA_SHORT[_col_id]
-        _cgf   = canasta_geo_dict[_col_id]
-        _is_default = (_col_id == CANASTAS_ACTIVAS[0])
-        _vmin = _cgf[_VCOL].quantile(0.05)
-        _vmax = _cgf[_VCOL].quantile(0.95)
-        if _vmin == _vmax: _vmin, _vmax = _cgf[_VCOL].min(), _cgf[_VCOL].max()
-        _cm = LinearColormap(
-            colors=['#1a9850','#66bd63','#a6d96a','#fee08b','#fdae61','#f46d43','#d73027'],
-            vmin=_vmin, vmax=_vmax, caption=f'ICR {_name} — {NOMBRE_MES_TITLE} ({_TIT}, ARS)')
-        if _is_default: _cm.add_to(m)
-        _fg = folium.FeatureGroup(name=_short, show=_is_default)
-        _canasta_fg_ids[_col_id] = _fg.get_name()
-        for _, _r in _cgf.iterrows():
-            val  = _r[_VCOL]
-            col  = _cm(max(_vmin, min(_vmax, val)))
-            cad  = _r['cadena']
-            prv  = _r['PROVINCIA_NORM']
-            _sk  = f"{_r['id_comercio']}_{_r['id_bandera']}_{_r['id_sucursal']}"
-            cl   = (f'sucursal-marker canasta-{_short}'
-                    f' cadena-{cad.replace(" ","_").replace("(","").replace(")","").replace("/","")}'
-                    f' prov-{prv.replace(" ","_").replace("(","").replace(")","").replace("/","")}')
-            # Popup mínimo: placeholder que JS rellena on-demand al hacer click
-            _ph = (f'<div class="lz-pop" data-key="{_sk}" data-can="{_col_id}"'
-                   f' style="font-family:Arial;min-width:200px;text-align:center;padding:15px">'
-                   f'<span style="color:#aaa;font-size:12px">Cargando detalle...</span></div>')
-            folium.CircleMarker(
-                location=[_r['sucursales_latitud'], _r['sucursales_longitud']],
-                radius=5, color=col, fill=True, fillColor=col, fillOpacity=0.8, weight=1,
-                tooltip=f'<b>{cad}</b><br>{prv}<br><b>${fmtm(val)}</b>',
-                popup=folium.Popup(_ph, max_width=450), className=cl
-            ).add_to(_fg)
-        _fg.add_to(m)
-
-    _map_var    = m.get_name()
-    _fg_ids_str = '{' + ','.join(f'"{k}":"{v}"' for k,v in _canasta_fg_ids.items()) + '}'
-    _names_str  = '{' + ','.join(f'"{k}":"{CANASTA_NAMES[k]}"' for k in CANASTAS_ACTIVAS) + '}'
-    _avgs_str   = '{' + ','.join(f'"{k}":{int(canasta_geo_dict[k][_VCOL].mean())}' for k in CANASTAS_ACTIVAS) + '}'
-
-    # Embeber JSON en script tag de tipo application/json (sin escape JS)
+    # ── Datos embebidos como JSON (el navegador los lee al abrir) ────────────────
     m.get_root().html.add_child(folium.Element(
         f'<script type="application/json" id="_pd_json">{_popup_json}</script>'))
+    m.get_root().html.add_child(folium.Element(
+        f'<script type="application/json" id="_cfg_json">{_cfg_json}</script>'))
 
-    prov_opts  = ''.join([f'<option value="prov-{p.replace(" ","_")}">{p}</option>' for p in provs_u])
-    _can_opts  = ''.join([f'<option value="{k}">{CANASTA_NAMES[k]}</option>' for k in CANASTAS_ACTIVAS])
-    _cadenas_u = sorted(_cgf_ref['cadena'].unique())
-    _cad_opts  = ''.join([f'<option value="cadena-{c.replace(" ","_").replace("(","").replace(")","").replace("/","")}">{c}</option>' for c in _cadenas_u])
+    # ── Paneles (info, filtros, leyenda) ────────────────────────────────────────
+    _cadenas_u = sorted({_d['cad'] for _d in _popup_data.values()})
+    _provs_u   = sorted({_d['prv'] for _d in _popup_data.values()})
+    _can_opts  = ''.join(f'<option value="{_c["id"]}">{_c["nom"]}</option>' for _c in _items_cfg)
+    _cad_opts  = ''.join(f'<option value="{_c}">{_c}</option>' for _c in _cadenas_u)
+    _prov_opts = ''.join(f'<option value="{_p}">{_p}</option>' for _p in _provs_u)
 
     info_h = (f'<div style="position:fixed;top:10px;left:50px;width:340px;background:white;border:2px solid #0055A4;'
               f'border-radius:8px;padding:12px 15px;font-family:Arial;z-index:9999;box-shadow:0 2px 8px rgba(0,0,0,.15);">'
               f'<div style="color:#0055A4;font-size:15px;font-weight:bold;margin-bottom:5px;">ICR — {NOMBRE_MES_TITLE} ({_TIT})</div>'
               f'<div style="font-size:11px;color:#555;line-height:1.5;">'
-              f'<b>{len(_cgf_ref):,}</b> sucursales · <b>{len(CANASTAS_ACTIVAS)}</b> canastas<br>'
+              f'<b>{len(_popup_data):,}</b> sucursales · <b>{len(_items_cfg)}</b> canastas<br>'
               f'Promedio: <span id="info_avg" style="font-weight:bold;"></span></div></div>')
     m.get_root().html.add_child(folium.Element(info_h))
 
@@ -1538,79 +1618,22 @@ for _SFX, _TIT, _VCOL in [('','mediana','canasta_total'), ('_prom','promedio','c
         f'<option value="all">Todas</option>{_cad_opts}</select></label>'
         f'<label style="font-size:11px;color:#555;display:block;margin-top:6px;">Provincia:'
         f'<select id="fp" style="width:100%;padding:4px;font-size:11px;margin-top:3px;">'
-        f'<option value="all">Todas</option>{prov_opts}</select></label>'
+        f'<option value="all">Todas</option>{_prov_opts}</select></label>'
         f'<button id="fr" style="width:100%;margin-top:10px;padding:6px;background:#f0f0f0;'
         f'border:1px solid #ccc;border-radius:4px;font-size:11px;cursor:pointer;">Restablecer</button></div>'
-        f'<style>'
-        f'.lz-w{{font-family:Arial;font-size:12px;width:420px;max-height:500px;overflow-y:auto}}'
-        f'.lz-h4{{margin:0;color:#0055A4}}'
-        f'.lz-nfo{{font-size:11px;color:#555;margin-bottom:5px}}'
-        f'.lz-bg{{background:#e6eef7;padding:2px 6px;border-radius:3px;font-size:10px}}'
-        f'.lz-cx{{text-align:center;margin:8px 0}}'
-        f'.lz-lbl{{font-size:11px;color:#555;margin-bottom:2px}}'
-        f'.lz-tot{{color:#0055A4;font-size:22px;font-weight:bold}}'
-        f'.lz-sub{{font-size:11px;color:#888;text-align:center;margin-top:3px}}'
-        f'.lz-tb{{width:100%;border-collapse:collapse;font-size:10px}}'
-        f'.lz-hd{{background:#e6eef7;font-weight:bold}}'
-        f'.lz-hd th{{padding:3px 5px;text-align:left}}'
-        f'.lz-ch td{{background:#0055A4;color:white;padding:3px 5px;font-weight:bold}}'
-        f'.lz-imp{{color:#888;font-style:italic}}'
-        f'td{{padding:2px 5px}}'
-        f'.lz-sb{{font-weight:600}}'
-        f'.lz-ft{{font-size:9px;color:#666;margin-top:4px}}'
-        f'.lz-hr{{margin:5px 0}}'
-        f'</style>'
-        f'<script>'
-        f'var _fg_ids={_fg_ids_str};var _names={_names_str};var _avgs={_avgs_str};var _pd=null;'
-        f'function _gPD(){{if(!_pd){{var el=document.getElementById("_pd_json");if(el)_pd=JSON.parse(el.textContent);}}return _pd;}}'
-        # _bPop usa template literals JS (backtick) + clases CSS → sin single-quote CSS = sin conflicto Python
-        f'function _bPop(key,cid){{'
-        f'var pd=_gPD();if(!pd||!pd[key]||!pd[key].can[cid])return "<div>Sin datos.</div>";'
-        f'var d=pd[key];var c=d.can[cid];var nm=_names[cid];'
-        f'var fmt=function(x){{return "$"+Math.round(x).toLocaleString("es-AR");}};'
-        f'var cov=Math.round(c.p/c.n*100);'
-        f'return `<div class=lz-w>`'
-        f'+`<h4 class=lz-h4>${{d.cad}}</h4>`'
-        f'+`<div class=lz-nfo><b>${{d.nom}}</b><br>${{d.bar?d.bar+" — ":""}}${{d.prv}}<br><span class=lz-bg>${{d.tip}}</span></div>`'
-        f'+"<hr class=lz-hr>"'
-        f'+`<div class=lz-cx><div class=lz-lbl>${{nm}}</div><span class=lz-tot>${{fmt(c.t)}}</span></div>`'
-        f'+`<div class=lz-sub>${{c.p}}/${{c.n}} productos propios (${{cov}}%)</div>`'
-        f'+"</div>";}}'
-        f'function _initEvt(){{var mp=window["{_map_var}"];if(!mp)return;'
-        f'mp.on("popupopen",function(e){{'
-        f'var el=e.popup.getElement().querySelector(".lz-pop");'
-        f'if(el&&el.getAttribute("data-built")!=="1"){{'
-        f'el.innerHTML=_bPop(el.getAttribute("data-key"),el.getAttribute("data-can"));'
-        f'el.setAttribute("data-built","1");e.popup.update();}}}});}}'
-        f'function switchCanasta(sel){{var mp=window["{_map_var}"];if(!mp)return;'
-        f'Object.keys(_fg_ids).forEach(function(k){{var fg=window[_fg_ids[k]];if(!fg)return;'
-        f'if(k===sel){{mp.addLayer(fg);}}else{{mp.removeLayer(fg);}}}});'
-        f'var avgEl=document.getElementById("info_avg");'
-        f'if(avgEl)avgEl.innerHTML="$"+_avgs[sel].toLocaleString("es-AR")+" ("+_names[sel]+")";apl();}}'
-        f'function apl(){{var p=document.getElementById("fp").value;var ca=document.getElementById("fca").value;'
-        f'document.querySelectorAll(".sucursal-marker").forEach(function(el){{'
-        f'var c=el.className.baseVal||el.className||"";'
-        f'var mp=(p==="all")||c.indexOf(p)>=0;'
-        f'var mc=(ca==="all")||c.indexOf(ca)>=0;'
-        f'el.style.display=(mp&&mc)?"":"none";}});}}'
-        f'setTimeout(function(){{'
-        f'var fc=document.getElementById("fcan"),sp=document.getElementById("fp"),fca=document.getElementById("fca"),btn=document.getElementById("fr");'
-        f'var def=Object.keys(_fg_ids)[0];'
-        f'_initEvt();switchCanasta(def);'
-        f'if(fc)fc.addEventListener("change",function(){{switchCanasta(this.value);}});'
-        f'if(sp)sp.addEventListener("change",apl);'
-        f'if(fca)fca.addEventListener("change",apl);'
-        f'if(btn)btn.addEventListener("click",function(){{'
-        f'if(fc){{fc.value=Object.keys(_fg_ids)[0];switchCanasta(fc.value);}}'
-        f'if(sp)sp.value="all";if(fca)fca.value="all";'
-        f'document.querySelectorAll(".sucursal-marker").forEach(e=>e.style.display="");}});'
-        f'}},1200);</script>'
-    )
+        f'<div id="lgd"></div>')
     m.get_root().html.add_child(folium.Element(filtros_h))
+
+    # ── CSS + JS ────────────────────────────────────────────────────────────────
+    m.get_root().html.add_child(folium.Element(
+        '<style>' + _CSS_MAPA + '</style>'
+        '<script>' + _JS_MAPA.replace('__MAPVAR__', m.get_name()) + '</script>'))
 
     out_map = OUTPUT_DIR / f'mapa_interactivo_{MES}{_SFX}.html'
     m.save(str(out_map))
-    print(f'Mapa [{_TIT}] guardado: {out_map.name} ({len(CANASTAS_ACTIVAS)} canastas · {len(_cgf_ref):,} sucs)')"""))
+    _mb = out_map.stat().st_size / 1024 / 1024
+    print(f'Mapa [{_TIT}] guardado: {out_map.name} '
+          f'({len(_items_cfg)} canastas · {len(_popup_data):,} sucs · {_mb:.1f} MB)')"""))
 
 # ── CELL 18 — CABA RANKINGS (per-canasta) ─────────────────────────────────────
 cells.append(cell_code("""\

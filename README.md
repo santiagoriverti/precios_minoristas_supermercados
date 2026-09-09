@@ -177,7 +177,7 @@ Donde `{canasta}` es `vulnerable`, `popular`, `media`, `media_alta`, `canasta05`
 
 ### Mapa interactivo (`.html`) — un único mapa con todas las canastas
 
-Se generan **dos** mapas: `mapa_interactivo_MMAAAA.html` (costo mediano) y `mapa_interactivo_MMAAAA_prom.html` (costo promedio, outliers fuera). Mapa Folium con las ~2.373 sucursales de Argentina, coloreadas por costo de canasta. El fondo se elige con **`TILES_MAPA`** en la CELDA 1 (`'osm'` por default; CartoDB ya no sirve sin cuenta, devuelve los tiles con la marca de agua *"API key required"*). Incluye:
+Se generan **dos** mapas: `mapa_interactivo_MMAAAA.html` (costo mediano) y `mapa_interactivo_MMAAAA_prom.html` (costo promedio, outliers fuera). Mapa Folium con las ~2.373 sucursales de Argentina, coloreadas por costo de canasta. El fondo se elige con **`TILES_MAPA`** en la CELDA 1 (`'osm'` por default; CartoDB ya no sirve sin cuenta, devuelve los tiles con la marca de agua *"API key required"*). Los círculos no se escriben en el HTML: va sólo el JSON de sucursales y los dibuja Leaflet en el navegador (~0,8 MB para 6 canastas × 2.300 sucursales). Incluye:
 - **Selector de canasta**: cambiar entre las 6 canastas activas sin recargar
 - **Filtro de cadena**: mostrar solo Coto, DIA, Carrefour, etc.
 - **Filtro de provincia**: aislar una jurisdicción
@@ -469,6 +469,10 @@ Mismo análisis que el Notebook 02 (evolución vs. IPC, provincias, mapas, ranki
 > **Fondo del mapa**: se elige con `TILES_MAPA` en la CELDA 1 — `'osm'` (OpenStreetMap, default),
 > `'topo'` (OpenTopoMap) o `'carto'` (CartoDB Positron). **CartoDB ya no sirve sin cuenta**: desde
 > 2026 devuelve los tiles con la marca de agua *"API key required"* tapando todo el mapa.
+
+> **Peso del mapa**: los círculos no se escriben en el HTML — va sólo el JSON de sucursales y los
+> dibuja Leaflet en el navegador al elegir el producto. Un mapa de 19 productos × 2.000 sucursales
+> pesa **~0,6 MB** (antes, con un objeto Leaflet por producto×sucursal, pesaba 48 MB).
 
 ### Qué genera (por cada producto)
 
