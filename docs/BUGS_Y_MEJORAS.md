@@ -1,6 +1,6 @@
 # Bugs Pendientes y Mejoras
 
-Última actualización: 2026-09-09 — nb05/nb02: BUG-29 (gráfico de barras), BUG-30 (CartoDB exige API key) y BUG-31 (el mapa pesaba 48 MB)
+Última actualización: 2026-09-09 — nb05/nb02: BUG-29 (gráfico de barras), BUG-30 (CartoDB exige API key), BUG-31 (el mapa pesaba 48 MB) y BUG-32 (OSM no responde desde la red de INECO)
 
 ---
 
@@ -26,6 +26,48 @@ de la Tecnológica** hasta que haya al menos dos cadenas con cobertura de durabl
 ---
 
 ## 🟢 Cambios y fixes 2026-09
+
+### 🔴 BUG-32 — el mapa quedaba sin fondo y "cargando" para siempre (2026-09-09)
+
+**Síntoma**: el mapa generado (ya liviano, 720 KB) abre pero **nunca termina de cargar** y no se ven
+las líneas limítrofes ni los nombres de las ciudades. Los marcadores sí aparecen.
+
+**Causa**: `tile.openstreetmap.org` —el proveedor de mosaicos que había quedado como default al
+corregir BUG-30— **no responde desde la red de INECO**. Probado desde la máquina del usuario:
+
+| Proveedor | Respuesta |
+|---|---|
+| `tile.openstreetmap.org` | **timeout** (no responde) |
+| `server.arcgisonline.com` (Esri) | OK 200, 0,3 s |
+| `tile.opentopomap.org` | OK 200, 1,2 s |
+| `basemaps.cartocdn.com` | OK 200, 0,2 s (pero con la marca de agua de BUG-30) |
+
+Las dos molestias son el mismo hecho: sin mosaicos no hay mapa de fondo, y las decenas de pedidos
+de tiles que quedan colgados mantienen la pestaña en estado *loading* hasta que cada uno expira.
+
+**Fix**: el mapa deja de depender de un proveedor fijo. `TILES_MAPA` pasa a `'auto'` y la CELDA 17
+embarca una **lista de proveedores en orden**; el JS agrega el primero y, si en 9 segundos no entró
+ni un mosaico (o si fallan 4 seguidos), lo saca y prueba el siguiente. Orden por defecto:
+
+1. **`esri`** — Esri World Light Gray Base + su capa de nombres y límites (gris, parecido al viejo
+   Positron, sin API key). Responde desde la red de INECO.
+2. `osm` — OpenStreetMap.
+3. `topo` — OpenTopoMap.
+4. `carto` — CartoDB **último a propósito**: sin cuenta devuelve los tiles con la marca de agua, y
+   como eso es un HTTP 200 el fallback nunca lo descartaría solo.
+
+`TILES_MAPA` acepta `'auto'`, el nombre de un proveedor (queda primero, los demás de respaldo) o una
+lista con el orden a probar. Si ninguno responde, aparece un aviso en el mapa aclarando que los
+**datos y los marcadores están bien y lo que falta es sólo el fondo**.
+
+De paso se sacan del HTML los CDN que folium engancha y este mapa no usa (jQuery, Bootstrap JS/CSS,
+Font Awesome, awesome-markers y el `bootstrap-glyphicons` de `netdna.bootstrapcdn.com`): 6 pedidos
+externos menos.
+
+**Validado en navegador**, sobre la red que falla: con el orden por defecto el mapa carga con Esri
+(48 mosaicos, límites y nombres visibles) y con `TILES_MAPA='osm'` forzado se ve la caída automática
+— a los 3 s pide `tile.openstreetmap.org` con 0 mosaicos cargados, a los 12 s ya está dibujando
+desde `server.arcgisonline.com`, sin perder los marcadores.
 
 ### 🔴 BUG-31 — el mapa interactivo pesaba 48,6 MB (2026-09-09)
 

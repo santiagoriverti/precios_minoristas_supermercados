@@ -109,27 +109,75 @@ def test_celda12_series_desiguales(celda12):
     print(f'OK  CELDA 12: 6 PNG, leyenda {con_base[0]!r}, 18 barras desde {ini}')
 
 
-def test_tiles(celda17):
-    """El fondo del mapa sale de TILES_MAPA y por default es OSM (CARTO exige API key)."""
+def _corre_celda17(celda17, out_dir, tiles_mapa=None, n_suc=40, n_prod=2):
+    """Ejecuta la CELDA 17 real con un dataset chico y devuelve (html, cfg)."""
+    import json as _json_mod
     import folium
-    m = re.search(r' *_TILES_OPC = \{.*?\.add_to\(m\)\n', celda17, re.S)
-    assert m, 'no se encontro el bloque de tiles en la CELDA 17'
-    bloque = textwrap.dedent(m.group(0))
+    rng = np.random.default_rng(3)
+    base = pd.DataFrame([{
+        'id_comercio': 1 + i % 5, 'id_bandera': 1, 'id_sucursal': i,
+        'sucursales_nombre': f'Sucursal {i}', 'sucursales_barrio': None,
+        'sucursales_localidad': 'CABA', 'sucursales_tipo': 'Supermercado',
+        'PROVINCIA_NORM': ['Buenos Aires', 'CABA'][i % 2],
+        'cadena': ['DIA', 'Coto'][i % 2],
+        'sucursales_latitud': -34.6 + rng.normal(0, 1),
+        'sucursales_longitud': -58.4 + rng.normal(0, 1),
+    } for i in range(n_suc)])
+    geo, nombres = {}, {}
+    for k in range(n_prod):
+        pid = f'p{k:02d}'
+        sub = base.copy()
+        sub['precio_producto'] = rng.uniform(1900, 8300, len(sub)).round(2)
+        sub['precio_producto_prom'] = (sub['precio_producto'] * 1.01).round(2)
+        geo[pid] = sub
+        nombres[pid] = f'Producto {k}'
+    env = {'folium': folium, '_json': _json_mod, 'pd': pd, 'np': np,
+           'producto_geo_dict': geo, '_prods_con_datos': list(geo),
+           'PRODUCTO_NOMBRES': nombres, 'MES': '082026',
+           'NOMBRE_MES_TITLE': 'Agosto 2026', 'OUTPUT_DIR': out_dir}
+    if tiles_mapa is not None:
+        env['TILES_MAPA'] = tiles_mapa
+    exec(compile(celda17, '<CELDA 17>', 'exec'), env)
+    html = (out_dir / 'mapa_interactivo_082026.html').read_text(encoding='utf-8')
+    cfg = _json_mod.loads(re.search('id="_cfg_json">(.*?)</script>', html, re.S).group(1))
+    return html, cfg
 
-    env = {'folium': folium}                       # sin TILES_MAPA definido
-    exec(compile(bloque, '<tiles default>', 'exec'), env)
-    html = env['m'].get_root().render()
-    assert 'tile.openstreetmap.org' in html, 'el default no quedo en OpenStreetMap'
-    assert 'cartocdn' not in html, 'quedaron tiles de CARTO en el default'
 
-    env = {'folium': folium, 'TILES_MAPA': 'carto'}
-    exec(compile(bloque, '<tiles carto>', 'exec'), env)
-    assert 'cartocdn' in env['m'].get_root().render()
+def test_tiles(celda17):
+    """El mapa base va con varios proveedores en orden y el navegador elige (BUG-32)."""
+    tmp = OUTPUT_DIR / 'tiles'
+    tmp.mkdir(exist_ok=True)
 
-    env = {'folium': folium, 'TILES_MAPA': 'no_existe'}
-    exec(compile(bloque, '<tiles invalido>', 'exec'), env)
-    assert 'tile.openstreetmap.org' in env['m'].get_root().render()
-    print('OK  CELDA 17: default OSM, TILES_MAPA="carto" respetado, invalido cae a OSM')
+    # 1) sin TILES_MAPA: orden por defecto, Esri primero (OSM no responde en INECO)
+    html, cfg = _corre_celda17(celda17, tmp)
+    orden = [t['id'] for t in cfg['tiles']]
+    assert orden == ['esri', 'osm', 'topo', 'carto'], orden
+    assert cfg['tiles'][0]['ref'], 'a Esri le falta la capa de nombres/limites'
+    # carto ultimo: sin cuenta estampa los tiles y eso NO da error, no se descarta solo
+    assert orden[-1] == 'carto'
+
+    # 2) se puede forzar uno, y los demas quedan de respaldo
+    _, cfg = _corre_celda17(celda17, tmp, tiles_mapa='osm')
+    assert [t['id'] for t in cfg['tiles']] == ['osm', 'esri', 'topo', 'carto']
+
+    # 3) acepta una lista con el orden a probar
+    _, cfg = _corre_celda17(celda17, tmp, tiles_mapa=['carto', 'osm'])
+    assert [t['id'] for t in cfg['tiles']] == ['carto', 'osm', 'esri', 'topo']
+
+    # 4) un valor invalido avisa y no rompe
+    _, cfg = _corre_celda17(celda17, tmp, tiles_mapa='no_existe')
+    assert [t['id'] for t in cfg['tiles']] == ['esri', 'osm', 'topo', 'carto']
+
+    # el mapa base lo arma el JS, no folium, y hay aviso si ninguno responde
+    assert 'tile_layer_' not in html, 'folium sigue escribiendo el TileLayer'
+    assert 'function base(i)' in html and 'tileerror' in html, 'falta el fallback de mosaicos'
+    assert 'id="tw"' in html, 'falta el aviso de mosaicos caidos'
+
+    # y no quedan CDN que este mapa no usa (uno de ellos ya esta discontinuado)
+    for cdn in ('code.jquery.com', 'bootstrap@5', 'netdna.bootstrapcdn.com',
+                'fontawesome-free', 'leaflet.awesome-markers'):
+        assert cdn not in html, f'quedo el CDN sin usar {cdn}'
+    print(f'OK  CELDA 17 mosaicos: orden {orden}, fallback en JS, 5 CDN sin usar removidos')
 
 
 def test_celda17_mapa(celda17):

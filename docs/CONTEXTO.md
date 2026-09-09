@@ -497,6 +497,16 @@ la lista antes de dibujar en vez de esconder nodos del DOM. Medido: **0,62 MB** 
 2.000 sucursales (nb02: 0,76 MB para 6 canastas × 2.300). Verificado en navegador: marcadores,
 selector, filtros combinados, popup, tooltip, leyenda y botón Restablecer.
 
+**BUG-32, al abrir esos mapas**: nunca terminaban de cargar y no mostraban las líneas limítrofes.
+`tile.openstreetmap.org` **no responde desde la red de INECO** (Esri, OpenTopoMap y CartoDB sí), así
+que no llegaba ningún mosaico y los pedidos colgados dejaban la pestaña en *loading*. El mapa deja de
+depender de un proveedor fijo: `TILES_MAPA = 'auto'` embarca una lista y el navegador se queda con el
+primero que responda (9 s de paciencia o 4 errores seguidos antes de pasar al siguiente). Orden por
+defecto **esri → osm → topo → carto** (Esri gris con nombres y límites, sin API key; CartoDB último
+porque su marca de agua viaja en un HTTP 200 y el fallback no la detectaría). Si no responde ninguno,
+el mapa avisa que sólo falta el fondo. Además se sacan del HTML los CDN que folium engancha y el mapa
+no usa (jQuery, Bootstrap, Font Awesome, awesome-markers, glyphicons).
+
 ### 2026-09-04 — nb07 v5.1: robustez del nacional (primera corrida real de v5)
 
 Diagnóstico sobre `canastas_alternativas_2026-09-03`. El índice encadenado bajó los saltos de

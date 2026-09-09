@@ -41,6 +41,26 @@ marcadores dibujados, selector (800 -> 2.000 segun producto), filtros combinados
 Coto -> 100 con Coto+CABA), popup y tooltip correctos, boton Restablecer, y en nb02 la linea
 `50/74 productos propios (68%)` intacta.
 
+**BUG-32** — el mapa ya liviano (720 KB) NO terminaba de cargar y salia sin lineas limitrofes.
+`tile.openstreetmap.org` **no responde desde la red de INECO** (medido: timeout; Esri 0,3 s,
+OpenTopoMap 1,2 s, CartoDB 0,2 s responden). Sin mosaicos no hay fondo, y los pedidos colgados dejan
+la pestaña en loading para siempre. Fix: `TILES_MAPA = 'auto'` y la CELDA 17 embarca una LISTA de
+proveedores; el JS agrega el primero y si en 9 s no entro ni un mosaico (o fallan 4 seguidos) lo saca
+y prueba el siguiente. Orden **esri -> osm -> topo -> carto**: Esri World Light Gray Base + su capa
+de nombres/limites (gris, parecido al viejo Positron, sin API key) y CARTO ultimo A PROPOSITO -su
+marca de agua viaja en un HTTP 200, el fallback no la detectaria-. Acepta 'auto', un nombre o una
+lista. Si no responde ninguno, aviso en el mapa aclarando que los datos estan bien y falta el fondo.
+De paso se sacan del HTML los 6 CDN que folium engancha y este mapa no usa (jQuery, Bootstrap JS/CSS,
+Font Awesome, awesome-markers, glyphicons de netdna.bootstrapcdn.com).
+Validado EN NAVEGADOR sobre la red que falla: por defecto carga con Esri (48 mosaicos, limites y
+nombres); forzando 'osm' se ve la caida sola (3 s pidiendo OSM con 0 mosaicos -> 12 s dibujando desde
+server.arcgisonline.com, sin perder marcadores).
+
+**⚠️ Regla del generador (BUG-17/20) que volvio a morder**: dentro de `cell_code(triple comillas)`
+Python consume los escapes. Un `'\n'.join(...)` llegaba al notebook como un salto de linea REAL y
+rompia la celda con SyntaxError. En codigo de celda: nada de barras invertidas — se uso
+`splitlines()` + `chr(10).join(...)`.
+
 **Test de regresion nuevo**: `notebooks/test_celdas_graficos_y_mapa.py`. Corre la CELDA 12, el
 bloque de tiles y la CELDA 17 REALES del `.ipynb` generado (nb05 y el mapa de nb02). Verificado que el `.ipynb` de HEAD 094de64 reproduce el
 ValueError con esos datos y el corregido pasa. Los dos generadores pasan `ast.parse` y las 20/23

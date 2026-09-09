@@ -70,10 +70,13 @@ MES_INICIO_GRAFICO = '2024-01'
 
 # Mínimo sucursales por cadena para aparecer en rankings
 MIN_SUCURSALES_RANKING = 10
-# Fondo del mapa Folium: 'osm' (OpenStreetMap, sin API key) | 'topo' (OpenTopoMap)
-# | 'carto' (CartoDB Positron: desde 2026 devuelve los tiles con la marca de agua
-# "API key required", no usarlo salvo que tengas cuenta de CARTO).
-TILES_MAPA = 'osm'"""))
+# Fondo del mapa Folium. 'auto' prueba varios proveedores y se queda con el primero
+# que responda desde la red de quien abre el mapa (en la red de INECO, por ejemplo,
+# tile.openstreetmap.org no responde). Se puede forzar uno: 'esri' (gris, con nombres
+# y limites), 'osm' (OpenStreetMap), 'topo' (OpenTopoMap) o 'carto' (CartoDB Positron:
+# sin cuenta devuelve los tiles con la marca de agua "API key required"). Tambien
+# acepta una lista con el orden a probar, ej. ['osm', 'esri'].
+TILES_MAPA = 'auto'"""))
 
 # ── CELL 2 — SETUP ─────────────────────────────────────────────────────────────
 cells.append(cell_code("""\
@@ -1457,6 +1460,9 @@ _CSS_MAPA = '''
 .lg-t{font-size:11px;color:#0055A4;font-weight:bold;margin-bottom:6px;line-height:1.3}
 .lg-bar{height:14px;border:1px solid #999;border-radius:2px}
 .lg-x{display:flex;justify-content:space-between;font-size:10px;color:#555;margin-top:3px}
+#tw{display:none;position:fixed;top:10px;right:25px;width:300px;background:#fff6e5;
+    border:2px solid #d98b00;border-radius:8px;padding:10px 12px;font-family:Arial;
+    font-size:11px;color:#7a4f00;z-index:9999;line-height:1.4}
 '''
 
 _JS_MAPA = '''
@@ -1520,6 +1526,26 @@ function render(){
  if(a){a.innerHTML=(n?fmt(sum/n):"s/d")+" ("+NAMES[id]+", "+n.toLocaleString("es-AR")+" sucursales)";}
  legend(id);
 }
+function base(i){
+ var t=CFG.tiles[i];
+ if(!t){var w=el("tw");if(w){w.style.display="block";}return;}
+ var ok=0,err=0,fue=false;
+ var opt={attribution:t.attr,maxZoom:19,maxNativeZoom:t.maxn};
+ var lay=L.tileLayer(t.url,opt),ref=t.ref?L.tileLayer(t.ref,opt):null;
+ function sig(){
+  if(fue){return;}
+  fue=true;
+  MAP.removeLayer(lay);
+  if(ref){MAP.removeLayer(ref);}
+  base(i+1);
+ }
+ lay.on("tileload",function(){ok=ok+1;});
+ lay.on("tileerror",function(){err=err+1;if(ok===0&&err>=4){sig();}});
+ lay.addTo(MAP);
+ if(ref){ref.addTo(MAP);}
+ // si en 9 s no entro ni un mosaico, el proveedor no responde desde esta red
+ setTimeout(function(){if(ok===0){sig();}},9000);
+}
 function boot(){
  MAP=window["__MAPVAR__"];
  if(typeof L==="undefined"||!MAP||!MAP.addLayer){
@@ -1529,6 +1555,7 @@ function boot(){
  }
  PD=J("_pd_json");CFG=J("_cfg_json");
  if(!PD||!CFG){return;}
+ base(0);
  CFG.items.forEach(function(p){ESC[p.id]=p;NAMES[p.id]=p.nom;});
  ["fcan","fca","fp"].forEach(function(i){var x=el(i);if(x){x.addEventListener("change",render);}});
  var b=el("fr");
@@ -1571,34 +1598,50 @@ for _SFX, _TIT, _VCOL in [('','mediana','precio_producto'), ('_prom','promedio',
         _items_cfg.append({'id': _pid, 'nom': PRODUCTO_NOMBRES[_pid],
                            'min': round(_a, 2), 'max': round(_b, 2)})
 
+    # ── Mosaicos del mapa base ───────────────────────────────────────────────────
+    # Mosaicos del mapa base: NO se fija uno solo. Van varios en orden y el navegador
+    # se queda con el PRIMERO QUE RESPONDA (BUG-32). Desde la red de INECO
+    # tile.openstreetmap.org no responde: el mapa quedaba sin lineas limitrofes y la
+    # pestaña "cargando" para siempre esperando mosaicos que nunca llegaban.
+    # CartoDB va ultimo porque sin cuenta estampa "API key required" (BUG-30) y eso
+    # NO da error, asi que nunca se descarta solo.
+    _ESRI = 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/'
+    _TILES_OPC = {
+        'esri':  {'url': _ESRI + 'World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}',
+                  'ref': _ESRI + 'World_Light_Gray_Reference/MapServer/tile/{z}/{y}/{x}',
+                  'attr': 'Mosaicos &copy; Esri', 'maxn': 16},
+        'osm':   {'url': 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                  'attr': '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+                  'maxn': 19},
+        'topo':  {'url': 'https://tile.opentopomap.org/{z}/{x}/{y}.png',
+                  'attr': '&copy; OpenTopoMap (CC-BY-SA) &middot; &copy; OpenStreetMap contributors',
+                  'maxn': 17},
+        'carto': {'url': 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
+                  'attr': '&copy; OpenStreetMap contributors &copy; CARTO', 'maxn': 20},
+    }
+    _ORDEN_DEF = ['esri', 'osm', 'topo', 'carto']
+    _pref = globals().get('TILES_MAPA', 'auto')
+    _pref = [_pref] if isinstance(_pref, str) else list(_pref)
+    _pref = [str(_t).lower() for _t in _pref if str(_t).lower() != 'auto']
+    _malos = [_t for _t in _pref if _t not in _TILES_OPC]
+    if _malos:
+        print(f'AVISO: TILES_MAPA desconocido {_malos}; opciones: {list(_TILES_OPC)}')
+    _orden = ([_t for _t in _pref if _t in _TILES_OPC]
+              + [_t for _t in _ORDEN_DEF if _t not in _pref])
+    _tiles_cfg = [dict(_TILES_OPC[_t], id=_t) for _t in _orden]
+    print(f'Mapa base: se prueba en orden {_orden} (el navegador se queda con el primero que responda)')
+
     _popup_json = _json.dumps(_popup_data, ensure_ascii=False, separators=(',',':'))
     _cfg_json   = _json.dumps({'ramp': RAMPA_MAPA, 'items': _items_cfg,
-                               'cap': f'{NOMBRE_MES_TITLE} ({_TIT}, ARS)'},
+                               'cap': f'{NOMBRE_MES_TITLE} ({_TIT}, ARS)',
+                               'tiles': _tiles_cfg},
                               ensure_ascii=False, separators=(',',':'))
     print(f'Datos mapa [{_TIT}]: {len(_popup_data):,} sucursales | '
           f'{(len(_popup_json)+len(_cfg_json))/1024/1024:.2f} MB JSON')
 
     # ── Mapa Folium ───────────────────────────────────────────────────────────────
-    # Fondo del mapa: CartoDB pasó a exigir API key (devuelve los tiles con la marca de
-    # agua "API key required"), así que el default es OpenStreetMap. Se elige en CELDA 1
-    # con TILES_MAPA.
-    _TILES_OPC = {
-        'osm':   ('https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                  '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors', 19),
-        'topo':  ('https://tile.opentopomap.org/{z}/{x}/{y}.png',
-                  '&copy; OpenTopoMap (CC-BY-SA) &middot; &copy; OpenStreetMap contributors', 17),
-        'carto': ('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}.png',
-                  '&copy; OpenStreetMap contributors &copy; CARTO', 20),
-    }
-    _tk = str(globals().get('TILES_MAPA', 'osm')).lower()
-    if _tk not in _TILES_OPC:
-        print(f'AVISO: TILES_MAPA="{_tk}" no reconocido; uso "osm".')
-        _tk = 'osm'
-    _turl, _tattr, _tmaxz = _TILES_OPC[_tk]
     m = folium.Map(location=[-38.0,-63.5], zoom_start=5,
                    tiles=None, control_scale=True)
-    folium.TileLayer(tiles=_turl, attr=_tattr, name='Mapa base',
-                     control=False, max_zoom=_tmaxz).add_to(m)
     folium.map.Marker(
         location=[-51.7963,-59.5236],
         icon=folium.DivIcon(icon_size=(140,28), icon_anchor=(70,14),
@@ -1640,7 +1683,10 @@ for _SFX, _TIT, _VCOL in [('','mediana','precio_producto'), ('_prom','promedio',
         f'<option value="all">Todas</option>{_prov_opts}</select></label>'
         f'<button id="fr" style="width:100%;margin-top:10px;padding:6px;background:#f0f0f0;'
         f'border:1px solid #ccc;border-radius:4px;font-size:11px;cursor:pointer;">Restablecer</button></div>'
-        f'<div id="lgd"></div>')
+        f'<div id="lgd"></div>'
+        f'<div id="tw">No se pudieron cargar los mosaicos del mapa base desde esta red '
+        f'(se probaron: {", ".join(_orden)}). Los datos y los marcadores estan bien; '
+        f'lo que falta es solo el fondo del mapa.</div>')
     m.get_root().html.add_child(folium.Element(filtros_h))
 
     # ── CSS + JS ────────────────────────────────────────────────────────────────
@@ -1648,8 +1694,17 @@ for _SFX, _TIT, _VCOL in [('','mediana','precio_producto'), ('_prom','promedio',
         '<style>' + _CSS_MAPA + '</style>'
         '<script>' + _JS_MAPA.replace('__MAPVAR__', m.get_name()) + '</script>'))
 
+    # Folium engancha jQuery, Bootstrap, Font Awesome y awesome-markers, que este mapa
+    # no usa: son 6 pedidos externos de mas (uno de ellos, netdna.bootstrapcdn.com, es
+    # de un CDN discontinuado). Se sacan del HTML antes de guardar.
+    _CDN_SOBRAN = ('code.jquery.com', 'bootstrap@5', 'bootstrap-glyphicons',
+                   'fontawesome-free', 'leaflet.awesome-markers', 'leaflet.awesome.rotate')
+    _html = m.get_root().render()
+    _lineas = [_l for _l in _html.splitlines()
+               if not (('<script src=' in _l or '<link rel="stylesheet"' in _l)
+                       and any(_d in _l for _d in _CDN_SOBRAN))]
     out_map = OUTPUT_DIR / f'mapa_interactivo_{MES}{_SFX}.html'
-    m.save(str(out_map))
+    out_map.write_text(chr(10).join(_lineas), encoding='utf-8')
     _mb = out_map.stat().st_size / 1024 / 1024
     print(f'Mapa [{_TIT}] guardado: {out_map.name} '
           f'({len(_items_cfg)} productos · {len(_popup_data):,} sucs · {_mb:.1f} MB)')"""))

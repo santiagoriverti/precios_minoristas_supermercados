@@ -177,7 +177,7 @@ Donde `{canasta}` es `vulnerable`, `popular`, `media`, `media_alta`, `canasta05`
 
 ### Mapa interactivo (`.html`) — un único mapa con todas las canastas
 
-Se generan **dos** mapas: `mapa_interactivo_MMAAAA.html` (costo mediano) y `mapa_interactivo_MMAAAA_prom.html` (costo promedio, outliers fuera). Mapa Folium con las ~2.373 sucursales de Argentina, coloreadas por costo de canasta. El fondo se elige con **`TILES_MAPA`** en la CELDA 1 (`'osm'` por default; CartoDB ya no sirve sin cuenta, devuelve los tiles con la marca de agua *"API key required"*). Los círculos no se escriben en el HTML: va sólo el JSON de sucursales y los dibuja Leaflet en el navegador (~0,8 MB para 6 canastas × 2.300 sucursales). Incluye:
+Se generan **dos** mapas: `mapa_interactivo_MMAAAA.html` (costo mediano) y `mapa_interactivo_MMAAAA_prom.html` (costo promedio, outliers fuera). Mapa Folium con las ~2.373 sucursales de Argentina, coloreadas por costo de canasta. El fondo se elige con **`TILES_MAPA`** en la CELDA 1 (`'auto'` por default: prueba `esri` → `osm` → `topo` → `carto` y se queda con el primero que responda desde la red de quien abre el mapa). Los círculos no se escriben en el HTML: va sólo el JSON de sucursales y los dibuja Leaflet en el navegador (~0,8 MB para 6 canastas × 2.300 sucursales). Incluye:
 - **Selector de canasta**: cambiar entre las 6 canastas activas sin recargar
 - **Filtro de cadena**: mostrar solo Coto, DIA, Carrefour, etc.
 - **Filtro de provincia**: aislar una jurisdicción
@@ -466,9 +466,12 @@ Mismo análisis que el Notebook 02 (evolución vs. IPC, provincias, mapas, ranki
    Cada EAN se cruza contra el Maestro de Productos del repo para mostrar su descripción real en gráficos, mapas y hojas de Excel; si un EAN no aparece en el maestro, igual se analiza (se muestra por su propio código).
 3. *Entorno de ejecución → Ejecutar todo*.
 
-> **Fondo del mapa**: se elige con `TILES_MAPA` en la CELDA 1 — `'osm'` (OpenStreetMap, default),
-> `'topo'` (OpenTopoMap) o `'carto'` (CartoDB Positron). **CartoDB ya no sirve sin cuenta**: desde
-> 2026 devuelve los tiles con la marca de agua *"API key required"* tapando todo el mapa.
+> **Fondo del mapa**: `TILES_MAPA` en la CELDA 1. Por defecto `'auto'`: el mapa lleva varios
+> proveedores y el navegador se queda con el **primero que responda** desde la red de quien lo abre
+> (orden `esri` → `osm` → `topo` → `carto`). Se puede forzar uno (`'esri'`, `'osm'`, `'topo'`,
+> `'carto'`) o dar una lista con el orden a probar. Dos avisos: `tile.openstreetmap.org` **no
+> responde desde la red de INECO**, y **CartoDB ya no sirve sin cuenta** (devuelve los tiles con la
+> marca de agua *"API key required"*), por eso va último.
 
 > **Peso del mapa**: los círculos no se escriben en el HTML — va sólo el JSON de sucursales y los
 > dibuja Leaflet en el navegador al elegir el producto. Un mapa de 19 productos × 2.000 sucursales
