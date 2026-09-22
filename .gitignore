@@ -27,3 +27,6 @@ Thumbs.db
 # Entornos locales
 .env
 *.env
+
+# Intermedios de los scripts de auditoria
+docs/auditoria/scripts_v59/_trabajo/

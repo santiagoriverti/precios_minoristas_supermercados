@@ -26,7 +26,7 @@ El proyecto responde tres preguntas:
 | `04_precios_seleccion` | Exporta un **Excel** con los precios diarios del último mes para todos los supermercados a menos de X km de un punto: una hoja por sucursal (productos × días) + una hoja general (producto × super, precio promedio). Ver [sección detallada](#precios-por-selección-geográfica--04_precios_seleccion). | [![Abrir en Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/santiagoriverti/precios_minoristas_supermercados/blob/main/notebooks/04_precios_seleccion.ipynb) |
 | `05_evolucion_productos_representativos` | Igual que el Notebook 02, pero para **productos individuales** en vez de canastas: evolución de precio, mapas provinciales, comparación con el IPC y rankings por cadena/barrio de cada EAN que se ingrese. Ver [sección detallada](#evolución-de-productos-individuales--05_evolucion_productos_representativos). | [![Abrir en Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/santiagoriverti/precios_minoristas_supermercados/blob/main/notebooks/05_evolucion_productos_representativos.ipynb) |
 | `06_evolucion_brecha_celiaca` | Mide la **brecha celíaca** (canasta sin-TACC vs. base con TACC) y su evolución **diaria, semanal y mensual**, usando solo tipos de producto con dicotomía celíaca (2–3 EANs representativos por lado, promediados). Brecha **intra-sucursal**, desagregada por provincia, cadena y concentración de comercios. Ver [sección detallada](#brecha-celíaca--06_evolucion_brecha_celiaca). | [![Abrir en Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/santiagoriverti/precios_minoristas_supermercados/blob/main/notebooks/06_evolucion_brecha_celiaca.ipynb) |
-| `07_evolucion_canastas_alternativas` | **Motor del informe semanal.** Costo de **6 canastas** (**Popular / Media / Ejecutiva / Tecnológica / Representativa / Femenina**) con **semana que cierra el jueves**, comparado con el **IPC**, desagregado por **rubro**, **provincia**, **región** y **cadena**. **Índice encadenado de muestra apareada** (sin saltos por altas/bajas), **nacional ponderado por población** y **provincia controlando por cadena**. Composición: **196 empaquetados** por EAN (`cantidad_01..06`) + **59 tipos de frescos** por nombre. Exporta `Presencia_items` y `Alertas_reemplazo` para trazabilidad. Ver [sección detallada](#canastas-alternativas--07_evolucion_canastas_alternativas). | [![Abrir en Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/santiagoriverti/precios_minoristas_supermercados/blob/main/notebooks/07_evolucion_canastas_alternativas.ipynb) |
+| `07_evolucion_canastas_alternativas` | **Motor del informe semanal.** Costo de **6 canastas** (**Popular / Media / Ejecutiva / Tecnológica / Representativa / Femenina**) con **semana que cierra el jueves**, comparado con el **IPC**, desagregado por **rubro**, **provincia**, **región** y **cadena**. **Índice encadenado de muestra apareada** (sin saltos por altas/bajas), **nacional ponderado por población** y **provincia controlando por cadena**. Composición: **288 empaquetados** por EAN (`cantidad_01..06`) + **59 tipos de frescos** por nombre. Exporta `Presencia_items`, `Alertas_reemplazo` y `Alertas_quiebre` para trazabilidad. **v5.10** (auditada 2026-09-22). Ver [sección detallada](#canastas-alternativas--07_evolucion_canastas_alternativas). | [![Abrir en Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/santiagoriverti/precios_minoristas_supermercados/blob/main/notebooks/07_evolucion_canastas_alternativas.ipynb) |
 
 > **¿Ves una versión vieja en Colab?** El badge siempre apunta a la última versión en GitHub, pero Colab puede mostrar una copia cacheada de tu Drive. Para forzar la actualización: eliminá el notebook de `Mi unidad/Colab Notebooks/` en Google Drive y volvé a hacer clic en el badge.
 
@@ -584,7 +584,14 @@ Se cambia con `DIA_CIERRE_SEMANA` (3=jueves, 4=viernes).
 - **Nivel en $**: costo de la canasta completa en la semana ancla (cobertura ≥95%),
   retropolado con el índice. Queda interpretable y sin saltos de composición.
 - **Nacional ponderado por población**: mediana por provincia y después promedio ponderado por
-  población provincial. Evita que DIA (≈42% de las sucursales) defina el número nacional.
+  población provincial. Reparte el peso entre provincias, pero **dentro** de cada provincia la
+  mediana es entre sucursales y DIA tiene la mayoría en Buenos Aires, CABA y Entre Ríos: en ~50% del
+  costo nacional la mediana ES el precio de DIA (auditoría v5.9). No sesga la evolución, sí el nivel.
+- **Quiebre de serie** (v5.9): un ítem que se mueve ×3 o más en una semana sale del eslabón de esa
+  semana (`QUIEBRE_ITEM_K`, hoja `Alertas_quiebre`).
+- **Nivel de frescos** (v5.10): Pan francés, Pollo, Carne picada, Merluza y Limón se anclan al precio
+  promedio del INDEC para el GBA de un mes dado (`NIVEL_REFERENCIA_FRESCO`); la evolución la sigue
+  dando el SEPA. Los demás tipos conservan el nivel del SEPA.
 - **Arrastre**: si un ítem falta, se arrastra su último precio nacional hasta 8 semanas
   (`MAX_SEMANAS_ARRASTRE`); si falta más, entra en `Alertas_reemplazo`.
 - **Outliers intra-tipo (frescos)**: dentro de cada sucursal-semana se descartan las variantes
@@ -593,6 +600,11 @@ Se cambia con `DIA_CIERRE_SEMANA` (3=jueves, 4=viernes).
   `idx_vs_nacional` = precio de cada cadena en la provincia ÷ precio nacional de esa misma
   cadena, promediado por sucursales (100 = nacional). Responde "¿qué tan cara es la provincia?"
   sin que el resultado dependa del mix de cadenas que opera ahí.
+- **Costo por sucursal** (v5.10, BUG-37): costo nacional + (precio de la sucursal − nacional) ×
+  cantidad en lo que la sucursal publica; lo que no publica se valúa al nacional. La columna
+  `pct_imputado` de `Prov_*`/`Cadena_*`/`Region_*` dice qué parte es imputada (Vea ~45%: no publica
+  verduras, pollo ni panadería). Hasta la v5.9 los rubros enteros ausentes quedaban **fuera** del
+  costo y las cadenas sin frescos salían 25-40% "más baratas".
 
 ### Config (CELDA 1)
 `CANASTA_COLS` (6 canastas), `CANASTAS_SIN_FRESCOS = {Tecnológica, Femenina}`,
@@ -610,6 +622,8 @@ Se cambia con `DIA_CIERRE_SEMANA` (3=jueves, 4=viernes).
 | `COBERTURA_MIN_INDICE` | 0.80 | Cobertura mínima de la receta para que arranque el índice |
 | `FRAC_PRODUCTOS_MIN` | 0.8 | Fracción de empaquetados que una sucursal necesita para contar |
 | `MIN_SUC_AGG` | 30 | Sucursales mínimas para reportar una desagregación como confiable |
+| `QUIEBRE_ITEM_K` | 3.0 | Variación semanal de un ítem a partir de la cual sale del eslabón |
+| `NIVEL_REFERENCIA_FRESCO` | 5 tipos, INDEC ago-26 | Nivel en $ de los frescos mal especificados: `tipo: (precio, 'YYYY-MM')` |
 
 
 ### Arquitectura (memoria)
@@ -685,11 +699,12 @@ precios_minoristas_supermercados/
 │   ├── gen_nb05.py                               # Script fuente que genera el Notebook 5
 │   ├── gen_nb06.py                               # Script fuente que genera el Notebook 6
 │   ├── gen_nb07.py                               # Script fuente que genera el Notebook 7
-│   ├── auditar_salida_nb07.py                    # Audita una salida del nb07 (réplica del índice, quiebres, trazabilidad, IPC)
+│   ├── auditar_salida_nb07.py                    # Audita una salida del nb07 (réplica del índice, quiebres, trazabilidad, IPC, aperturas, INDEC)
 │   ├── test_celdas_graficos_y_mapa.py            # Tests: gráficos (CELDA 12) y mapa (CELDA 17) de nb05/nb02
 │   ├── test_encadenado_frescos.py                # Tests: índice encadenado de frescos de nb07
 │   ├── test_quiebre_serie.py                     # Tests: quiebre de serie ante saltos imposibles (BUG-36)
-│   └── test_cache_por_mes.py                     # Tests: caché por mes del nb07, reanudación tras corte (BUG-34)
+│   ├── test_cache_por_mes.py                     # Tests: caché por mes del nb07, reanudación tras corte (BUG-34)
+│   └── test_costo_sucursal.py                    # Tests: costo por sucursal con rubros ausentes (BUG-37) y anclaje de nivel
 ├── data/                                # Maestros de referencia (se descargan automáticamente)
 │   ├── Maestro de Productos Interno.xlsx    # ~176K productos con rubro/categoría/subcategoría
 │   ├── maestro_sucursales_completo.xlsx     # 3.611 sucursales con cadena, provincia, región
@@ -700,8 +715,9 @@ precios_minoristas_supermercados/
     ├── SEPA_TECNICO.md                  # Formato SEPA, factor precio, cadenas, lectura diaria, trampas
     ├── BRECHA_CELIACA.md               # Notebook 06 — brecha TACC vs sin-TACC (metodología completa)
     ├── BUGS_Y_MEJORAS.md               # Bugs resueltos y defectos abiertos, con causa raíz y fix
-    ├── AUDITORIA_2026-09-22.md         # Auditoría completa de la corrida 2026-09-17 del nb07
-    ├── auditoria/                      # El mismo informe en HTML y PDF, para compartir
+    ├── AUDITORIA_2026-09-22.md         # Auditoría de la corrida 2026-09-17 del nb07 (v5.8)
+    ├── AUDITORIA_2026-09-22_v59.md     # Auditoría de la re-corrida con la v5.9 (BUG-37, frescos vs INDEC)
+    ├── auditoria/                      # Los informes en HTML y PDF + scripts_v59/ que reproducen la segunda
     └── canastas_alternativas/README.md  # Notebook 07 — composición de las 6 canastas alternativas
 ```
 
@@ -730,22 +746,29 @@ y se commitean juntos el generador y el `.ipynb`.
 | `notebooks/test_encadenado_frescos.py` | Índice encadenado de frescos del nb07 con precios pegajosos (BUG-28) |
 | `notebooks/test_quiebre_serie.py` | Regla de quiebre de serie del índice: un salto ×20 no entra, una variación legítima ×1,6 sí, y el ida y vuelta entre regímenes no deja escalón (BUG-36) |
 | `notebooks/test_cache_por_mes.py` | Caché por mes del nb07: corte a mitad de la lectura, reanudación, identidad contra una corrida sin caché, y que **todas** las celdas del `.ipynb` compilen (BUG-34, BUG-35) |
+| `notebooks/test_costo_sucursal.py` | Costo por sucursal del nb07: una sucursal sin rubros enteros cuesta lo mismo que el nacional (no menos), rubro parcial, cobertura mínima, reescalado de los tipos con nivel anclado y `_factor_nivel` (BUG-37, v5.10) |
 
 ### Auditar una salida del nb07
 
 Antes de publicar una corrida conviene pasarle el Excel al auditor, que reproduce los chequeos de
-[`docs/AUDITORIA_2026-09-22.md`](docs/AUDITORIA_2026-09-22.md):
+[`docs/AUDITORIA_2026-09-22.md`](docs/AUDITORIA_2026-09-22.md) y
+[`docs/AUDITORIA_2026-09-22_v59.md`](docs/AUDITORIA_2026-09-22_v59.md):
 
 ```bash
 python notebooks/auditar_salida_nb07.py canastas_alternativas_2026-09-17.xlsx
 # con el caché del Drive agrega los dos controles más fuertes (réplica del precio nacional
 # desde el panel crudo, e índice de muestra fija por EAN):
 python notebooks/auditar_salida_nb07.py canastas.xlsx --cache .../output_canasta_alternativa/_cache_nb07
+# con la planilla de precios promedio del INDEC contrasta nivel y evolución de 23 frescos:
+python notebooks/auditar_salida_nb07.py canastas.xlsx --indec sh_ipc_precios_promedio.xls
 ```
 
 Imprime OK o REVISAR por bloque: réplica del índice, grupo de control empaquetados vs frescos,
 transiciones imposibles, atribución de los saltos semanales, peso de los ítems sin trazabilidad,
-comparación con el IPC en el último mes en común, y cobertura de frescos.
+comparación con el IPC en el último mes en común, cobertura de frescos, coherencia de las aperturas
+por cadena y región (guarda del BUG-37) y, con `--indec`, frescos contra el INDEC.
+La planilla del INDEC se baja de
+<https://www.indec.gob.ar/ftp/cuadros/economia/sh_ipc_precios_promedio.xls> (sale a mediados de mes).
 
 **Regla de oro del generador**: dentro de `cell_code("""...""")` **no van barras invertidas** —
 Python se las come antes de que lleguen al notebook, y un `'\n'` termina siendo un salto de línea

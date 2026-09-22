@@ -6,7 +6,138 @@ Autor: Santiago Riverti — investigador independiente
 
 ---
 
-## 🟢 ESTADO ACTUAL / HANDOFF [2026-09-22] — leer esto primero
+## 🟢 ESTADO ACTUAL / HANDOFF [2026-09-22 · noche] — nb07 v5.10 — leer esto primero
+
+Proyecto EN PRODUCCION, 7 herramientas (nb01..nb07). Todo lo necesario para retomar viaja en el
+repo; lo unico que NO esta son los datos SEPA y los auxiliares, que viven en el Drive del usuario.
+
+### En que estamos ahora
+
+**nb07 quedo en v5.10, lista para correr en Colab. NO relee el SEPA** (nada de lo cambiado toca la
+clave del cache `8822990e`: los 32 meses cerrados se reusan y solo se lee septiembre). El usuario la
+va a volver a correr y pasar el Excel. Al recibirlo:
+
+```
+python notebooks/auditar_salida_nb07.py <Excel> --indec <sh_ipc_precios_promedio.xls>
+```
+
+Que deberia verse contra la corrida v5.9 (`canastas_alternativas_2026-09-17.xlsx`):
+- **Indice: identico** (234,1 / 240,8 / 236,0 / 231,2 / 258,5 a ago-26). Solo cambian niveles en $.
+- **Costo nacional mas bajo** por el anclaje INDEC: medido sobre ago-26, Popular −8,4% ($980k → $898k),
+  Media −4,5%, Representativa −5,2%. En sep-26 la Popular deberia quedar cerca de $925k (antes $1.007.217).
+- **Aperturas**: todas las cadenas y regiones confiables dentro de ±5% del nacional (antes Vea 0,66x,
+  Cuyo 0,66x). Chequeo 6b del auditor en OK. Columna nueva `pct_imputado` (Vea ~45%).
+- `Resumen` con `mes_parcial`, `indice_mensual_ult` y las bases; provincias sin tildes ("Neuquen").
+- La planilla del INDEC: https://www.indec.gob.ar/ftp/cuadros/economia/sh_ipc_precios_promedio.xls
+
+### Que se hizo en esta sesion (2026-09-22, tarde-noche)
+
+1. **Se audito la corrida v5.9** con todo lo disponible: el Excel, el cache (85 M de filas) y los
+   precios promedio del INDEC. Informe: `docs/AUDITORIA_2026-09-22_v59.md` + PDF en `docs/auditoria/`
+   + scripts que reproducen cada numero en `docs/auditoria/scripts_v59/` (README adentro).
+   Lo que esta BIEN: indice replicado (dif 0,002), precio nacional de los 288 empaquetados replicado
+   100% dentro del 0,1%, encadenado de frescos replicado en 56/59 tipos, empaquetados consistentes
+   contra una comparacion directa por sucursal (0 a −3,6% en 32 meses).
+2. **BUG-37 corregido** (`_costo_por_rubro`, CELDA 8): el costo por sucursal omitia los rubros ENTEROS
+   que la sucursal no publica. Todas las aperturas geograficas y por cadena estaban mal (Vea "32% mas
+   barata", Cuyo "la region mas barata"). Test nuevo `notebooks/test_costo_sucursal.py`.
+3. **Nivel de frescos anclado al INDEC** (`NIVEL_REFERENCIA_FRESCO`, formato nuevo `(precio, 'YYYY-MM')`):
+   Pan frances, Pollo, Carne picada, Merluza y Limon a ago-2026. Pollo cotizaba $12.010 contra $4.780
+   del pollo entero (entraba "Pata de Pollo Atm" de DIA). Los precios por sucursal se reescalan igual.
+4. Menores: `Resumen` con mes parcial y las dos bases; grafia de provincias deterministica;
+   `auditar_salida_nb07.py` sin las falsas alarmas de la v5.9 + chequeos 6b (aperturas) y 6c (INDEC).
+5. Se documento en BUGS_Y_MEJORAS (BUG-37 y defectos abiertos), METODOLOGIA §10.14-10.15, CONTEXTO,
+   README y `docs/canastas_alternativas/README.md`.
+
+### Como retomar en otra PC
+
+```
+git clone https://github.com/santiagoriverti/precios_minoristas_supermercados
+cd precios_minoristas_supermercados
+python notebooks/test_celdas_graficos_y_mapa.py   # graficos + mapa (nb05 y nb02)
+python notebooks/test_encadenado_frescos.py       # encadenado de frescos (nb07)
+python notebooks/test_quiebre_serie.py            # quiebre de serie del indice (BUG-36)
+python notebooks/test_cache_por_mes.py            # cache por mes + compila todas las celdas
+python notebooks/test_costo_sucursal.py           # costo por sucursal (BUG-37) + anclaje de nivel
+```
+
+- **Los `.ipynb` NO se editan a mano**: `python notebooks/gen_nb07.py` reescribe el nb07. Commitear
+  generador + `.ipynb` juntos.
+- Colab necesita en `MyDrive/carga/`: los ZIPs SEPA semestrales, `IPC.xlsx`, `ar.json`,
+  `maestro_sepa_completo.csv.gz`, los maestros de `data/` (el repo es privado: GitHub raw da 404) y
+  `output_canasta/canasta_representativa_YYYY-MM.xlsx` (nb01 + `cargar_canastas_v5.py`).
+- Cache del nb07: `MyDrive/carga/output_canasta_alternativa/_cache_nb07/sem_<key>_v5/` y `ean_<key>_v5/`.
+
+### Estado por herramienta
+
+| # | Notebook | Estado | Nota |
+|---|---|---|---|
+| 01 | `01_exploracion_productos` | ✅ estable | ~65 productos; 6 columnas `cantidad_01..06` |
+| 02 | `02_evolucion_canasta_representativa` | ⚠️ sin corrida real | Mapa y graficos corregidos el 09-sep (BUG-29..32) |
+| 03 | `03_consolidacion_ultimo_mes` | ✅ estable | SEPA diario -> semestral |
+| 04 | `04_precios_seleccion` | ✅ estable | Precios por radio geografico |
+| 05 | `05_evolucion_productos_representativos` | ✅ corrido ago-2026 | Mapa publicado en GitHub Pages |
+| 06 | `06_evolucion_brecha_celiaca` | ✅ medicion cerrada | ⚠️ mapa con `cartodbpositron` |
+| 07 | `07_evolucion_canastas_alternativas` | ✅ v5.10, auditada | Re-correr y auditar con `--indec` |
+
+### Numeros de referencia (corrida v5.9, a ago-26 = ultimo mes con IPC)
+
+| Canasta | Indice mensual (ene-24=100) | Solo alimentos | Banda por metodo de frescos |
+|---|---:|---:|---:|
+| Popular | 234,1 | 236,5 | 240-249 |
+| Media | 240,8 | 240,9 | 242-251 |
+| Ejecutiva | 236,0 | 244,0 | 234-242 |
+| Representativa | 231,2 | 239,4 | 233-241 |
+| Femenina | 258,5 | — | — |
+| IPC alimentos / general | 261,1 / 288,1 | | |
+
+La comparacion de igual a igual contra el IPC de alimentos es la columna "solo alimentos" (las
+canastas llevan limpieza, perfumeria, mascotas y alcohol). La banda: el encadenado publicado queda en
+el extremo bajo frente a TPD / INDEC (auditoria v5.9 §5).
+
+### PENDIENTES, en orden
+
+1. **nb07: re-correr con la v5.10 y auditar** (`--indec`). Deberia salir todo lo de "En que estamos".
+2. **Paquete de cambios que RELEE el SEPA** (~1h20m; hacerlos juntos):
+   (a) trazabilidad: reemplazar items <85% de Media (10,6% del costo) y Ejecutiva (8,0%) y el Jabon Dove
+   Original de Representativa; (b) **pañales**: decidir si salen de Media/Ejecutiva/Representativa (el
+   hogar tipo 2 tiene hijos de 6 y 8 años) o se redefine el hogar — DECISION DEL USUARIO; (c)
+   `TIPOS_FRESCOS`: Pollo excluir `chorizo`, Limon excluir productos en cc/ml; (d) Femenina: la
+   Prestobarba3 esta en 513 sucursales (< piso 700).
+3. **Frescos por metodo multilateral** (TPD/GEKS con ventana movil) en vez del encadenado semanal; hasta
+   entonces, publicar el indice con la banda de sensibilidad.
+4. **Tecnologica**: publicar como NIVEL (es la lista de precios de ChangoMas: 90 de 98 sucursales).
+5. **Durazno** (y Espinaca, Acelga, Palta): no publicar a nivel de item.
+6. nb06: portar el fallback de mosaicos de nb05/nb02 (`docs/BUGS_Y_MEJORAS.md`).
+7. nb05 y nb02: confirmar en Colab las correcciones del 09-sep.
+8. Mapas a GitHub Pages (`mapa_precios` al dia; `mapa_precios_minoristas` desactualizado).
+9. LaTeX en Overleaf: hoja `Valores_Documento`.
+10. **Seguridad**: rotar el PAT de GitHub (expuesto 24-jun y 07-jul) y usar Git Credential Manager.
+11. Mejora: sacar los EANs empaquetados de la clave del cache para que cambiar una canasta no cueste
+    una relectura completa.
+
+### Reglas que muerden (vigentes)
+
+- **Cambiar EANs de una canasta o `TIPOS_FRESCOS` (inc/exc/gmin/rk), `RATIO_FRESCO` o los K de la
+  lectura cambia la clave del cache** y obliga a releer el SEPA. Post-cache (sin relectura): cantidades,
+  `NIVEL_REFERENCIA_FRESCO`, `QUIEBRE_ITEM_K`, todo lo de la CELDA 8 en adelante.
+- **El costo por sucursal imputa a precio nacional lo que la sucursal no publica**: una cadena con
+  mucho `pct_imputado` se parece al nacional por construccion. Leer las aperturas con esa columna.
+- **~50% del precio nacional es el precio de DIA** (mediana entre sucursales dentro de cada provincia).
+  No sesga la evolucion; si el nivel.
+- **Los niveles de frescos pueden ser de otro producto**: contrastar con el INDEC (`--indec`) antes de
+  publicar un costo en pesos. Los anclados estan en `NIVEL_REFERENCIA_FRESCO`.
+- **Un Jevons con MEDIANA de log-ratios no sirve de control** (con precios pegajosos da 0). Y un indice
+  apareado SEMANAL por sucursal tampoco: pierde el eslabon cuando el item falta y vuelve repreciado.
+  Para controlar, comparacion directa de largo plazo con la mediana entre sucursales.
+- **El IPC sale a mediados del mes siguiente**: comparar siempre en el ultimo mes en comun.
+- **Nada de barras invertidas en el codigo de celda** (`cell_code`): usar `splitlines()` +
+  `chr(10).join(...)`. Tampoco comillas triples adentro.
+- **La red de INECO bloquea `tile.openstreetmap.org`**: los mapas eligen proveedor solos.
+
+---
+
+## 🟡 HANDOFF ANTERIOR [2026-09-22 · mañana y tarde] — v5.8 y v5.9
 
 Proyecto EN PRODUCCION, 7 herramientas (nb01..nb07). Todo lo necesario para retomar viaja en el
 repo: notebooks, generadores, maestros (`data/`), documentacion (`docs/`) y tests. Lo unico que NO

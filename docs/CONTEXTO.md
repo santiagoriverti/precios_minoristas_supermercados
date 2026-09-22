@@ -141,7 +141,8 @@ Solo tipos con dicotomía celíaca; 2–3 EANs representativos por lado, promedi
 intra-sucursal. Config: dict `TIPOS` en la CELDA 1. **Detalle completo: `docs/BRECHA_CELIACA.md`.**
 
 ### 2f. `07_evolucion_canastas_alternativas` (notebook 07) — motor del informe semanal
-**Estado: v5, 2026-09-04.** Es el notebook que alimenta el **informe semanal** del equipo de
+**Estado: v5.10, 2026-09-22** (auditada; ver `docs/AUDITORIA_2026-09-22_v59.md` y el historial de
+cambios más abajo). Es el notebook que alimenta el **informe semanal** del equipo de
 economistas. Costo de **6 canastas** vs **IPC**, desagregado por **rubro** (drill-down hasta
 producto), **provincia**, **región** y **cadena**.
 
@@ -187,6 +188,12 @@ Tecnológica y Femenina no llevan frescos y desglosan por `categoria` en vez de 
   compara consigo misma entre la provincia y el país. Necesario porque las cadenas se distribuyen
   asimétricamente (Coto en pocas provincias, La Anónima domina Patagonia).
 - `FRAC_PRODUCTOS_MIN = 0.8` (una sucursal cuenta si tiene ≥80% de los empaquetados).
+- **Costo por sucursal** (v5.10): costo nacional + (precio de la sucursal − nacional) × cantidad
+  en lo que publica; lo que no publica se valúa al nacional. Columna `pct_imputado` en las
+  aperturas. Antes se omitían los rubros enteros ausentes (BUG-37).
+- **Quiebre de serie** (v5.9): un ítem que se mueve ×3 o más en una semana sale de ese eslabón.
+- **Nivel de frescos** (v5.10): Pan francés, Pollo, Carne picada, Merluza y Limón anclados al precio
+  promedio del INDEC (GBA) de ago-2026 (`NIVEL_REFERENCIA_FRESCO`); el resto, nivel del SEPA.
 
 **Fix OOM**: la lectura colapsa los frescos a su TIPO (de ~10.600 EANs a 59) durante la lectura;
 caché `sem_*_v5.parquet`. La clave del caché incluye EANs + día de cierre + `FRESCO_OUTLIER_K`.
@@ -500,6 +507,28 @@ Los 4 reemplazos (Swift XL, Lavandina Anti-splash, Plusbelle, Listerine) están 
 ---
 
 ## Historial de cambios
+
+### 2026-09-22 — nb07 v5.10: auditoría de la corrida v5.9, BUG-37 y nivel de frescos anclado al INDEC
+
+Auditoría completa de `canastas_alternativas_2026-09-17.xlsx` (corrida v5.9, sin releer el SEPA):
+`docs/AUDITORIA_2026-09-22_v59.md` + PDF + scripts en `docs/auditoria/scripts_v59/`. El índice y el
+costo nacional se replicaron por caminos independientes (índice: dif. 0,002; precio nacional de los
+empaquetados: 100% de 37.776 celdas dentro del 0,1%). Cambios:
+
+- **BUG-37**: el costo por sucursal omitía los rubros enteros que la sucursal no publica → Vea, Disco,
+  Jumbo y Cooperativa Obrera salían 25-40% "más baratas" y Cuyo "la región más barata". Todas las
+  aperturas geográficas y por cadena estaban afectadas; el nacional no. Corregido, con columna
+  `pct_imputado` y test `notebooks/test_costo_sucursal.py`.
+- **Nivel de frescos anclado al INDEC** (precios promedio GBA, ago-2026): Pollo, Carne picada,
+  Merluza, Limón y Pan francés cotizaban otro producto o tenían un ancla sin fuente; inflaban el costo
+  de la Popular un 8%. Los precios por sucursal de esos tipos se reescalan con el mismo factor.
+- `Resumen` con `mes_parcial` y las dos bases del índice; grafía de provincias determinística.
+- `auditar_salida_nb07.py`: sin las falsas alarmas de la v5.9, más chequeo de aperturas (6b) y
+  contraste opcional con el INDEC (6c, `--indec`).
+- Hallazgos abiertos: evolución de frescos dependiente del método (publicado en el extremo bajo),
+  pañales en un hogar tipo 2 sin bebés, universo de EANs de Pollo/Limón (requiere releer el SEPA).
+
+**Nada de esto cambia la clave del caché**: la próxima corrida reusa lo leído.
 
 ### 2026-09-09 — nb05/nb02: BUG-29 (gráfico de barras) y BUG-30 (tiles del mapa)
 

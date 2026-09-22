@@ -1000,6 +1000,65 @@ cadena.
 
 ---
 
+### 10.14. nb07 v5.8-v5.9 (2026-09-22) — caché por mes y quiebre de serie
+
+- **Caché por mes** (v5.8, BUG-34): cada mes cerrado se escribe apenas se lee
+  (`_cache_nb07/sem_<key>_v5/<mes>.parquet` y `ean_<key>_v5/<mes>.parquet`). Una corrida cortada
+  retoma. **Cambiar los EANs de una canasta cambia la clave y obliga a releer todo el SEPA**
+  (~1h20m); cambiar solo cantidades o parámetros posteriores a la lectura, no.
+- **Quiebre de serie** (v5.9, BUG-36): un ítem que se mueve ×3 o más en una semana sale del eslabón
+  de esa semana y vuelve a entrar en la siguiente (`QUIEBRE_ITEM_K`). Tratamiento estándar de un
+  reemplazo de producto. Hoja `Alertas_quiebre`.
+- **Comparación contra el IPC en el último mes en común**, y columna `mes_parcial` en la serie
+  mensual.
+
+---
+
+### 10.15. nb07 v5.10 (2026-09-22) — costo por sucursal, nivel de frescos e incertidumbre de método
+
+Sale de la auditoría de la corrida v5.9 (`docs/AUDITORIA_2026-09-22_v59.md`).
+
+**Costo por sucursal** (base de todas las aperturas geográficas y por cadena):
+
+    costo(s, t) = costo nacional de la canasta completa en t
+                + Σ_{i publicado por s en t} (p(s,i,t) − p_nac(i,t)) × q(i)
+
+Lo que la sucursal no publica se valúa al precio nacional; lo que publica, a su precio. La versión
+anterior imputaba dentro de cada rubro y omitía los rubros **enteros** ausentes (BUG-37): Vea, que no
+publica verduras, pollo ni panadería, salía 32% más barata que el nacional. La columna
+`pct_imputado` informa qué parte del costo es imputada: una cadena con 45% imputado (Vea) se parece
+al nacional por construcción. Leer las aperturas junto con esa columna.
+
+**Nivel de los frescos**: el nivel en pesos de un tipo lo da el estimador nacional en una semana de
+anclaje, y la forma de la serie el encadenado por EAN (§10.11). Cuando el universo de EANs del tipo
+mezcla productos distintos, el nivel cae en el equivocado. Contra los precios promedio del INDEC
+(GBA), cuatro tipos estaban en ese caso —Pollo 2,5×, Carne picada 1,7×, Merluza 1,8×, Limón 5,3×— y
+el pan tenía un ancla sin fuente. `NIVEL_REFERENCIA_FRESCO` los ancla al INDEC de un mes dado
+(`(precio, 'YYYY-MM')`): el promedio de la serie en ese mes pasa a valer el precio de referencia y la
+evolución posterior la da el SEPA, así que la referencia no necesita actualizarse cada mes. Los
+precios por sucursal de esos tipos se reescalan con el mismo factor, para que el precio relativo
+sucursal/nacional —lo único que usan las aperturas— no cambie. Los demás tipos conservan el nivel
+del SEPA: el sobreprecio de supermercado es parte del concepto.
+
+**DIA y el precio nacional**: la ponderación por población reparte el peso entre provincias, pero
+dentro de cada provincia la mediana es entre sucursales, y DIA tiene la mayoría en Buenos Aires
+(55%), CABA (50%) y Entre Ríos (80%). En ~50% del costo nacional la mediana provincial es el precio
+de DIA. No sesga la evolución —los índices de empaquetados por cadena rodean al nacional— pero sí el
+nivel. Alternativa si se quisiera neutralizarlo: mediana de las medianas por cadena dentro de cada
+provincia.
+
+**Incertidumbre de método en frescos**: cuatro estimadores de la variación de un tipo —encadenado
+semanal por EAN (el publicado), Time-Product-Dummy por EAN, muestra fija de EANs e INDEC— difieren
+±20-40% tipo por tipo, sin dirección sistemática en la mediana. En la canasta, el publicado queda en
+el extremo bajo del rango (Popular 234 contra 240-249 a ago-26). Publicar con esa banda; la mejora de
+fondo es un índice multilateral con ventana móvil (TPD/GEKS) para los frescos.
+
+**Comparación contra el IPC**: las canastas incluyen limpieza, perfumería, mascotas y alcohol (15-39%
+del costo según la canasta), que el IPC de alimentos no cubre. La comparación de igual a igual es la
+parte de alimentos y bebidas sin alcohol: 236-244 contra 261 del IPC de alimentos (ene-24 → ago-26).
+
+---
+
 ## 11. Notebook 02 — Excel de econometría (`datos_econometria`)
 
 Insumo para análisis de series de tiempo (materia "Econometría avanzada"). El Notebook 02, además

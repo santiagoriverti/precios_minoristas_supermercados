@@ -165,6 +165,40 @@ $3.190 / $4.300 / $6.760 / $10.000. La solución es `NIVEL_REFERENCIA_FRESCO`: f
 última semana con un precio verificado. **No altera la inflación** — el índice encadenado separa la
 forma de la serie del nivel. Si consiguen referencias de mercado de otros frescos, se cargan ahí.
 
+## Cambios posteriores a v5 (2026-09-22) — auditoría de la corrida v5.9
+
+Detalle en `docs/AUDITORIA_2026-09-22_v59.md`.
+
+### Nivel de frescos anclado al INDEC (nb07 v5.10)
+
+El ancla del pan francés de arriba ($6.200) no tenía fuente documentada. Desde la v5.10, el nivel
+del pan y de otros cuatro tipos cuyo universo de EANs mezcla productos distintos se ancla al **precio
+promedio del INDEC para el GBA de agosto de 2026**:
+
+| Tipo | Antes (ago-26) | INDEC GBA | Por qué |
+|---|---:|---:|---|
+| Pan francés | $6.171 | $4.910 (tipo flauta) | ancla anterior sin fuente |
+| Pollo | $12.010 | $4.780 (entero) | entraba "Pata de Pollo Atm" de DIA y un chorizo de pollo |
+| Carne picada | $17.810 | $10.613 (común) | picada envasada de DIA a $22-24 mil/kg |
+| Merluza | $27.087 | $14.821 (filet fresco) | filet de DIA de 500 g a $31.800/kg |
+| Limón | $7.485 | $1.425 | productos a $5-14 mil/kg (jugos) |
+
+La **forma** de la serie no cambia (la da el SEPA); cambia el **costo en pesos**: −8,4% en la Popular
+a ago-26, −4,5% en la Media, −5,2% en la Representativa.
+
+### Decisiones pendientes de composición
+
+- **Pañales en un hogar sin bebés.** El hogar de referencia es el hogar tipo 2 del INDEC (hijos de 6
+  y 8 años), pero Media (4,9% del costo), Ejecutiva (6,8%) y Representativa (5,8%) llevan pañales y
+  toallitas húmedas; la Popular no. O se sacan o se redefine el hogar.
+- **Rasuradora Femenina Prestobarba3** (reemplazo del 08-sep): 513 sucursales, debajo del piso de
+  700 de la Femenina.
+- **Trazabilidad**: Media (10,6% del costo) y Ejecutiva (8,0%) tienen ítems con menos del 85% de
+  meses con dato; en Representativa, el Jabón Dove Original (81,8%).
+
+Cualquiera de estos cambios toca EANs y **obliga a releer el SEPA** (~1h20m): conviene hacerlos
+juntos, y aprovechar para limpiar el universo de EANs de Pollo y Limón en `TIPOS_FRESCOS`.
+
 ---
 
 ## Qué esperar — y qué no

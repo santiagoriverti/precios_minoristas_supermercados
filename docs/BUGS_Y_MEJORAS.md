@@ -1,6 +1,6 @@
 # Bugs Pendientes y Mejoras
 
-Última actualización: 2026-09-09 — nb05/nb02: BUG-29 (gráfico de barras), BUG-30 (CartoDB exige API key), BUG-31 (el mapa pesaba 48 MB), BUG-32 (OSM no responde desde la red de INECO) y BUG-33 (el mapa publicado no servía como link para compartir)
+Última actualización: 2026-09-22 — nb07 v5.10: BUG-37 (el costo por sucursal omitía los rubros enteros que la sucursal no publica), nivel de frescos anclado al INDEC y auditoría de la corrida v5.9 (`docs/AUDITORIA_2026-09-22_v59.md`)
 
 ---
 
@@ -11,6 +11,33 @@
 ---
 
 ## 🟡 Defectos abiertos
+
+### nb07: la EVOLUCIÓN de algunos tipos frescos sale de productos que no corresponden
+
+La v5.10 corrigió el **nivel** de Pollo, Carne picada, Merluza y Limón anclándolo al INDEC, pero el
+universo de EANs de esos tipos sigue incluyendo productos ajenos: un "Chorizo de Pollo" en Pollo,
+jugos de limón en Limón. Su **evolución** —la forma de la serie— sale de esa mezcla. Pesan poco en el
+índice (Limón 0,3% de la Popular), pero Pollo pesa 5%.
+**Arreglo**: ajustar `inc`/`exc` en `TIPOS_FRESCOS` (CELDA 1): Pollo excluir `chorizo`; Limón
+excluir los productos en `cc`/`ml`. **Cambia la clave del caché y obliga a releer el SEPA (~1h20m)**:
+hacerlo junto con el próximo cambio de EANs (reemplazos de trazabilidad de Media y Ejecutiva).
+
+### nb07: pañales en un hogar sin bebés (decisión pendiente)
+
+El hogar de referencia es el hogar tipo 2 del INDEC: dos adultos con hijos de **6 y 8 años**. Media,
+Ejecutiva y Representativa llevan pañales (XXXG, XXG, XG) y toallitas húmedas —4,9%, 6,8% y 5,8% del
+costo—; la Popular no. O se sacan (`cantidad_0X = 0` en `cargar_canastas_v5.py`, obliga a releer el
+SEPA) o se redefine el hogar de referencia con un menor de 2-3 años y se recalculan los adultos
+equivalentes.
+
+### nb07: la evolución de los frescos depende del método
+
+Tipo por tipo, el encadenado semanal, un índice multilateral TPD, una muestra fija de EANs y el INDEC
+difieren ±20-40%. En la canasta, el índice publicado a ago-26 queda en el extremo bajo del rango:
+Popular 234 contra 240-249, Media 241 contra 242-251, Representativa 231 contra 233-241 (Ejecutiva
+236, rango 234-242). Detalle en `docs/AUDITORIA_2026-09-22_v59.md` §5. **Mejora de fondo**: pasar
+los frescos a un índice multilateral con ventana móvil (TPD o GEKS). Mientras tanto, publicar con la
+banda de sensibilidad.
 
 ### El mapa del nb06 sigue con los mosaicos viejos (CartoDB)
 
@@ -45,6 +72,76 @@ de la Tecnológica** hasta que haya al menos dos cadenas con cobertura de durabl
 ---
 
 ## 🟢 Cambios y fixes 2026-09
+
+### 🔴 BUG-37 — nb07: el costo por sucursal omitía los rubros ENTEROS que la sucursal no publica (2026-09-22) ✅ Resuelto en v5.10
+
+**Hallazgo de la auditoría de la corrida v5.9** (`docs/AUDITORIA_2026-09-22_v59.md`). Las hojas
+`Cadena_*` decían que Vea era la cadena más barata de la Media y la Representativa —34% por debajo de
+DIA—, y `Region_*` que Cuyo era la región más barata. Pero ítem por ítem Vea cotiza **0,95×** el
+nacional en empaquetados y **1,07×** en frescos: no puede ser 32% más barata.
+
+**Causa**: `_costo_por_rubro` (CELDA 8) imputaba a precio nacional los ítems faltantes **dentro de
+cada rubro**: `groupby (sucursal, semana, rubro)` y después `costo = S_sucursal + (val_rubro −
+S_nacional)`. El groupby solo crea filas para los rubros donde la sucursal tiene algún ítem, así que
+**un rubro entero ausente no tenía fila y quedaba fuera del costo**. Vea no publica verduras, frutas,
+pollo, cerdo, pescado, panadería ni pañales (7 de los 17 rubros de la Media); Cooperativa Obrera no
+publica carne, fiambres, huevos ni panadería. El filtro de cobertura (80% de los **empaquetados**) no
+lo atajaba porque no mira los frescos. En la Tecnológica —cada ítem es su propio rubro— el efecto era
+máximo: $4,1 M por sucursal contra $6,2 M nacional.
+
+**Medido en ago-26 (Media)**, costo como múltiplo del nacional: Vea 0,68× → 0,99× · Cooperativa Obrera
+0,72× → 1,02× · Disco 0,75× → 1,03× · Jumbo (Representativa) 0,84× → 1,05× · Mendoza 0,66× → 0,98× · Córdoba 0,72× →
+0,99× · región Cuyo 0,66× → 0,98×. La fórmula vieja se reprodujo sobre el caché con 0,3% de error
+contra `Mes_cadena`. El costo y el índice **nacionales no estaban afectados**.
+
+**Fix (v5.10)**: costo(sucursal, semana) = costo nacional de la canasta completa + Σ (precio de la
+sucursal − precio nacional) × cantidad sobre lo que la sucursal publica, armando la grilla
+sucursal-semana × **todos** los rubros. Columna nueva `pct_imputado` en `Prov_*`, `Cadena_*` y
+`Region_*` (y en el reporte): la parte del costo valuada a precio nacional. Vea queda en 45%: se
+parece al nacional **por construcción**, y ahora eso se ve.
+Test: `notebooks/test_costo_sucursal.py` (ejecuta el bloque real de la CELDA 8: sucursal sin dos
+rubros enteros, rubro parcial, cobertura mínima y reescalado de tipos anclados). Guarda permanente:
+chequeo 6b de `auditar_salida_nb07.py` (cadenas y regiones confiables fuera de 0,85-1,20× el nacional).
+
+### 🟣 Nivel de frescos anclado a los precios promedio del INDEC (2026-09-22, v5.10)
+
+**Hallazgo de la misma auditoría.** Contra el precio promedio del INDEC para el GBA (planilla
+`sh_ipc_precios_promedio.xls`), los empaquetados del SEPA coinciden dentro de ±15% y los cortes bien
+definidos también (asado 0,96×, paleta 0,99×, nalga 0,96×). Cuatro tipos no, porque su universo de
+EANs mezcla productos y la mediana nacional —que en ~50% del costo es el precio de DIA— cae en el
+equivocado:
+
+| Tipo | Publicado ago-26 | INDEC GBA | Qué entra |
+|---|---:|---:|---|
+| Pollo | $12.010 | $4.780 (entero) | "Pata de Pollo Atm 1 Kg" de DIA en 980 sucursales; un "Chorizo de Pollo" |
+| Carne picada | $17.810 | $10.613 (común) | dos picadas envasadas de DIA a $22-24 mil/kg |
+| Merluza | $27.087 | $14.821 (filet fresco) | "Filet de Merluza Dia 500 Gr" a $31.800/kg |
+| Limón | $7.485 | $1.425 | productos a $5-14 mil/kg (jugos) |
+
+Y el ancla del pan francés ($6.200, del 2026-09-08) no tenía fuente: el INDEC da $4.910. Juntos
+inflaban el costo de ago-26 de la Popular un **8,3%** (Media 4,6%, Representativa 5,2%).
+
+**Fix (v5.10)**: `NIVEL_REFERENCIA_FRESCO` acepta `(precio, 'YYYY-MM')` y escala la serie para que su
+**promedio en ese mes** sea el precio del INDEC; la evolución posterior la da el SEPA, así que no hay
+que actualizar la referencia todos los meses. Se anclan Pan francés, Pollo, Carne picada, Merluza y
+Limón a agosto de 2026. Los precios **por sucursal** de esos tipos se reescalan con el mismo factor
+(antes no se hacía, tampoco con el pan: una sucursal a precio de mercado aparecía cara por la
+diferencia de escala). El formato viejo (un número = última semana) sigue funcionando.
+Papa, tomate, cebolla y naranja quedan 1,4-1,8× sobre el INDEC pero cotizan el producto correcto a
+precio de supermercado: no se tocaron. El chequeo 6c del auditor (`--indec`) los vigila.
+
+### 🟡 Menores de la auditoría v5.9 (2026-09-22, v5.10)
+
+- `Resumen`: `indice_base100` es el índice **semanal** (base 2024-01-04) y `vsIPC_*` el **mensual**
+  (base enero 2024) — 253 contra 240 en la Popular, fácil de confundir. Ahora van los dos con su base
+  (`base_indice_semanal`, `indice_mensual_ult`, `base_indice_mensual`) y `mes_parcial` /
+  `n_semanas_mes_ult` (el +2,4% de septiembre eran 2 semanas de 4).
+- La grafía de provincias dependía del orden de iteración de un `set`: "Neuquén" en una corrida,
+  "Neuquen" en otra. Ahora es fija (la de `PROV_NORM`, sin tildes).
+- `auditar_salida_nb07.py` daba falsas alarmas en los chequeos 1 y 2: no aplicaba la regla ×3 de la
+  v5.9. Corregido, más los chequeos 6b (aperturas) y 6c (INDEC, opcional).
+- El comentario de la CELDA 8 decía que ponderar por población evitaba que DIA definiera el nacional.
+  No es así dentro de cada provincia (ver arriba); no sesga la evolución pero sí el nivel.
 
 ### 🔴 BUG-36 — nb07: precios viejos conviviendo con precios actuales metían saltos imposibles en el índice (2026-09-22) ✅ Resuelto
 
@@ -114,6 +211,9 @@ completo.
 3. **Pan francés**: 11,1% de la Popular y 7,2% de la Representativa. El encadenado acumula +138%
    contra +487% del estimador ponderado y +669% de la mediana cruda. Es la palanca metodológica más
    grande de la Popular y conviene validarla contra una referencia de precio de pan de 2024.
+   **v5.10**: el NIVEL se ancla al INDEC ($4.910 en ago-26, pan tipo flauta GBA). Contra el INDEC, el
+   pan subió ×2,74 entre ene-24 y ago-26 y el encadenado ×2,25; el TPD da ×1,86 y la muestra fija de
+   2 EANs ×3,57. La evolución sigue abierta (auditoría v5.9, §5).
 4. **Tecnológica**: solo 3 de sus 14 ítems existen en el SEPA antes de 2025 (convector, aire y
    lavarropas), y el aire alterna ×0,24 / ×3,84. Publicar como NIVEL de referencia, no como índice.
 5. **Provincias**: Popular y Ejecutiva quedan con 3 provincias confiables (sus ítems están en menos

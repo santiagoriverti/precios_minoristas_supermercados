@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  @page { size: A4; margin: 16mm 14mm; }
+  @media print {
+    :root { --paper:#FFFFFF; }
+    body { background:#FFFFFF; }
+    .wrap { max-width:none; padding-block:0; padding-inline:0; }
+    section { break-inside: auto; margin-top:26px; }
+    h2, h3 { break-after: avoid; }
+    table, .find, .facts, .bars { break-inside: avoid; }
+    thead { display: table-header-group; }
+    .find { border-left:1px solid var(--line); }
+  }
+</style>
+<title>Auditoría de la corrida nb07 v5.9 (2026-09-17)</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,600&family=Public+Sans:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  :root{
+    --paper:#F5F6F4; --surface:#FFFFFF; --ink:#12171A; --muted:#5C6A6E; --line:#DCE1DE;
+    --accent:#1F6F6B; --ok:#2F6B3A; --warn:#9A6B12; --alert:#9E362A; --stripe:#EDEFEA;
+    --shadow:0 1px 2px rgba(18,23,26,.06);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --paper:#0F1213; --surface:#171B1C; --ink:#E7EDEB; --muted:#9BA8AB; --line:#2A3132;
+      --accent:#5FB5AE; --ok:#6FB07A; --warn:#D2A14A; --alert:#DE8074; --stripe:#1C2122;
+      --shadow:0 1px 2px rgba(0,0,0,.4);
+    }
+  }
+  :root[data-theme="dark"]{
+    --paper:#0F1213; --surface:#171B1C; --ink:#E7EDEB; --muted:#9BA8AB; --line:#2A3132;
+    --accent:#5FB5AE; --ok:#6FB07A; --warn:#D2A14A; --alert:#DE8074; --stripe:#1C2122;
+    --shadow:0 1px 2px rgba(0,0,0,.4);
+  }
+  body{background:var(--paper); color:var(--ink); font-family:"Public Sans",system-ui,-apple-system,sans-serif; line-height:1.55;}
+  .wrap{max-width:52rem; margin:0 auto; padding-inline:20px; padding-block:40px 64px;}
+  h1,h2,h3{font-family:"Newsreader",Georgia,serif; font-weight:600; text-wrap:balance; margin:0;}
+  h1{font-size:2.3rem; line-height:1.15; letter-spacing:-.01em;}
+  h2{font-size:1.45rem; margin-top:8px;}
+  h3{font-size:1.08rem; font-family:"Public Sans",sans-serif; font-weight:700;}
+  p{margin:0; max-width:65ch;}
+  .eyebrow{font-size:.72rem; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:var(--accent);}
+  .meta{font-family:"IBM Plex Mono",ui-monospace,monospace; font-size:.8rem; color:var(--muted);}
+  header{display:flex; flex-direction:column; gap:10px; border-bottom:2px solid var(--ink); padding-bottom:20px;}
+  section{display:flex; flex-direction:column; gap:14px; margin-top:40px;}
+  .lead{font-size:1.06rem;}
+  .facts{display:flex; flex-wrap:wrap; gap:0; border:1px solid var(--line); border-radius:3px; background:var(--surface); box-shadow:var(--shadow);}
+  .fact{flex:1 1 150px; padding:12px 16px; border-right:1px solid var(--line);}
+  .fact:last-child{border-right:none;}
+  .fact b{display:block; font-family:"IBM Plex Mono",monospace; font-size:1.18rem; font-weight:500; font-variant-numeric:tabular-nums;}
+  .fact span{font-size:.75rem; color:var(--muted);}
+  table{border-collapse:collapse; width:100%; font-size:.9rem;}
+  .scroll{overflow-x:auto;}
+  th,td{padding:8px 12px; text-align:left; border-bottom:1px solid var(--line);}
+  th{font-size:.72rem; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); font-weight:700;}
+  td.n,th.n{text-align:right; font-family:"IBM Plex Mono",monospace; font-variant-numeric:tabular-nums;}
+  tbody tr:nth-child(odd){background:var(--stripe);}
+  tr.ref td{font-weight:700;}
+  .bars{display:grid; grid-template-columns:auto 1fr auto; gap:6px 12px; align-items:center; font-size:.88rem;}
+  .bars .bar{height:14px; border-radius:2px; background:var(--accent);}
+  .bars .bar.ipc{background:var(--muted);}
+  .bars .v{font-family:"IBM Plex Mono",monospace; font-variant-numeric:tabular-nums; font-size:.82rem;}
+  .find{display:grid; grid-template-columns:4px 1fr; gap:0 14px; background:var(--surface); border:1px solid var(--line); border-left:none; border-radius:0 3px 3px 0;}
+  .find .stripe{background:var(--muted); border-radius:2px 0 0 2px;}
+  .find.fixed .stripe{background:var(--ok);} .find.open .stripe{background:var(--warn);} .find.bad .stripe{background:var(--alert);}
+  .find .body{padding:14px 16px; display:flex; flex-direction:column; gap:8px;}
+  .chip{display:inline-block; font-size:.68rem; font-weight:700; letter-spacing:.09em; text-transform:uppercase; padding:2px 8px; border-radius:999px; border:1px solid currentColor;}
+  .chip.fixed{color:var(--ok);} .chip.open{color:var(--warn);} .chip.bad{color:var(--alert);}
+  .stack{display:flex; flex-direction:column; gap:16px;}
+  code{font-family:"IBM Plex Mono",monospace; font-size:.86em; background:var(--stripe); padding:1px 5px; border-radius:3px;}
+  ul{margin:0; padding-left:1.1rem; display:flex; flex-direction:column; gap:6px; max-width:65ch;}
+  footer{margin-top:48px; padding-top:16px; border-top:1px solid var(--line); color:var(--muted); font-size:.82rem;}
+</style>
+<style>pre{background:var(--stripe);padding:10px 14px;border-radius:3px;overflow-x:auto;font-size:.8rem;}pre code{background:none;padding:0;} ol{margin:0;padding-left:1.3rem;display:flex;flex-direction:column;gap:6px;max-width:65ch;}section p{max-width:none;} a{color:var(--accent);}</style></head>
+<body><div class="wrap"><header><div class="eyebrow">SEPA · nb07</div><h1>Auditoría de la corrida nb07 v5.9 (2026-09-17)</h1><div class="meta">AUDITORIA_2026-09-22_v59.md</div></header>
+<p><b>Fecha</b>: 2026-09-22 (segunda auditoría del día) · <b>Excel auditado</b>: <code>canastas_alternativas_2026-09-17.xlsx</code> (1.350 KB), corrida con la <b>v5.9</b> sobre el caché <code>8822990e</code> — 32 meses cerrados, <b>sin releer el SEPA</b>. <b>Corrida</b>: 142 semanas (2024-01-04 → 2026-09-17), 85,2 M de filas sucursal×ítem×semana, 288 EANs empaquetados + 59 tipos de frescos, canasta <code>canasta_representativa_2026-09.xlsx</code>.</p>
+<p>PDF: <a href="auditoria/auditoria_nb07_v59_2026-09-22.pdf"><code>auditoria/auditoria_nb07_v59_2026-09-22.pdf</code></a> · Scripts que reproducen cada número: <a href="auditoria/scripts_v59/"><code>auditoria/scripts_v59/</code></a> · Auditoría anterior (corrida v5.8): <a href="AUDITORIA_2026-09-22.md"><code>AUDITORIA_2026-09-22.md</code></a>. Las correcciones que salieron de acá están en la <b>v5.10</b> del nb07.</p>
+<section><h2>Veredicto</h2>
+<p>El <b>índice y el costo nacional</b> de cada canasta están bien calculados: se replicaron por caminos independientes y coinciden. Pero la auditoría encontró tres problemas que cambian lo que se publica:</p>
+<ol><li><b>BUG-37 — las aperturas por cadena, provincia y región estaban mal.</b> El costo por sucursal omitía los rubros enteros que la sucursal no publica. Vea, Disco, Jumbo y Cooperativa Obrera salían 25-40% "más baratas" y Cuyo "la región más barata"; ninguna de las dos cosas es cierta.</li><li><b>Niveles de frescos mal especificados</b> inflaban el <b>costo en pesos</b> —no el índice— un 8% en la Popular: pollo, carne picada, merluza y limón cotizaban otro producto, y el ancla del pan no tenía fuente.</li><li><b>La evolución de los frescos depende del método</b>: tipo por tipo, cuatro estimadores razonables difieren ±20-40%. El índice publicado queda en el extremo bajo del rango en tres de las cuatro canastas alimentarias. La conclusión de fondo no cambia: <b>las canastas suben menos que el IPC de alimentos con cualquier método</b>.</li></ol>
+<div class="scroll"><table><thead><tr><th>Indicador</th><th>Valor</th></tr></thead><tbody><tr><td>Réplica del índice semanal (con la regla de quiebre ×3)</td><td>dif. máx. <b>0,002</b></td></tr><tr><td>Réplica del precio nacional de los 288 empaquetados desde el caché</td><td><b>100%</b> de 37.776 celdas dentro del 0,1%</td></tr><tr><td>Réplica del encadenado de frescos</td><td>idéntica en <b>56 de 59</b> tipos</td></tr><tr><td>Empaquetados: encadenado contra comparación directa por sucursal (muestra limpia)</td><td><b>0 a −3,6%</b> en 32 meses</td></tr><tr><td>Costo de Vea / nacional en la Media (ago-26)</td><td>publicado <b>0,68×</b> → corregido <b>0,99×</b></td></tr><tr><td>Sobreestimación del costo de la Popular por niveles de frescos</td><td><b>+8,3%</b> (pollo, picada, merluza, limón y pan)</td></tr></tbody></table></div>
+</section>
+<section><h2>1. Lo que pedía el handoff</h2>
+<div class="scroll"><table><thead><tr><th>Chequeo</th><th>Resultado</th></tr></thead><tbody><tr><td><code>Alertas_quiebre</code> lista arroz Molinos Ala, Rexona, Ayudín, La Toscana</td><td>✅ 21 transiciones en 10 ítems. El aire Philco no figura, y está bien: la Tecnológica arranca en 2025-06</td></tr><tr><td>Acumulado ene-24 → ago-26 baja a ~234 (Popular) y ~236 (Ejecutiva)</td><td>✅ Popular 234,1 · Media 240,8 · Ejecutiva 236,0 · Representativa 231,2 · Femenina 258,5</td></tr><tr><td><code>Panel_nacional</code> sin series constantes</td><td>✅ ninguna, ni en todo el período ni en las últimas 26 semanas</td></tr><tr><td>La corrida no releyó el SEPA</td><td>✅ <code>32 meses guardados, 0 por leer</code></td></tr></tbody></table></div>
+</section>
+<section><h2>2. Verificaciones independientes</h2>
+<div class="scroll"><table><thead><tr><th>Prueba</th><th>Método</th><th>Resultado</th></tr></thead><tbody><tr><td>Índice semanal</td><td>Recalculado desde <code>Panel_nacional</code> × recetas de <code>Detalle_*</code>, con la regla ×3</td><td>Coincide en las 6 canastas (dif. máx. 0,002)</td></tr><tr><td>Precio nacional</td><td>Reconstruido desde los 85 M de filas del caché con el maestro de sucursales: mediana provincial ponderada por población, ≥3 sucursales, winsorización K=2,5, fallback</td><td>37.776 celdas, <b>100% dentro del 0,1%</b>, mediana de la diferencia 0,0008%. (La auditoría anterior daba 98,8% dentro del 1% porque no promediaba las semanas partidas entre dos meses.)</td></tr><tr><td>Encadenado de frescos</td><td>Mismo algoritmo sobre el panel por EAN del caché</td><td>Idéntico en 56 de 59 tipos (Durazno, Acelga y Espinaca difieren por los tramos)</td></tr><tr><td>Empaquetados, 32 meses</td><td>Laspeyres directo con la <b>mediana entre sucursales</b> del ratio de precio de cada ítem, misma sucursal en ene-24 y ago-26, contra el encadenado publicado. Sin ítems con quiebre, con huecos o con ratio implausible</td><td>Popular −1,3% · Media −3,6% · Ejecutiva 0,0% · Representativa −1,6% · Femenina −3,5%</td></tr><tr><td>Empaquetados contra el INDEC</td><td>Nivel de ago-26 contra los precios promedio del GBA</td><td>Coinciden dentro de ±15%: aceite, harina, arroz, fideos, azúcar, sal, leche, yerba, café, cerveza, lavandina, jabón</td></tr></tbody></table></div>
+<p><b>Conclusión: el procesamiento de los empaquetados es consistente.</b> El pequeño sesgo hacia abajo (hasta 3,6 pts en 32 meses) está dentro de lo esperable para un índice encadenado con altas y bajas.</p>
+<p>Un índice de muestra apareada <b>semanal</b> por sucursal (misma sucursal, semana contra semana) daba entre 4% y 11% menos que el publicado. <b>No se lo usa como control</b>: pierde el eslabón cada vez que un ítem falta una semana y vuelve repreciado, y eso lo sesga hacia abajo. La comparación directa a 32 meses con la mediana no tiene ese problema.</p>
+</section>
+<section><h2>3. BUG-37 — las aperturas por cadena, provincia y región (corregido en v5.10)</h2>
+<p><code>_costo_por_rubro</code> (CELDA 8) valuaba a precio nacional los ítems que una sucursal no publica, pero lo hacía <b>dentro de cada rubro</b>: el <code>groupby (sucursal, semana, rubro)</code> solo crea filas para los rubros donde la sucursal tiene algún ítem. <b>Un rubro entero ausente quedaba fuera del costo.</b></p>
+<div class="scroll"><table><thead><tr><th>Cadena</th><th>Rubros que no publica (canasta Media)</th></tr></thead><tbody><tr><td>Vea</td><td>Verduras, Frutas, Pollo, Cerdo, Pescado, Panadería, Bebés y Mamás (7 de 17)</td></tr><tr><td>Disco</td><td>Verduras, Pollo, Cerdo, Pescado, Panadería, Bebés y Mamás</td></tr><tr><td>Jumbo</td><td>Frutas, Pollo, Pescado, Panadería, Bebés y Mamás</td></tr><tr><td>Cooperativa Obrera</td><td>Carne, Cerdo, Fiambres y Quesos, Huevos, Panadería, Pescado, Pollo</td></tr><tr><td>DIA, Coto</td><td>ninguno</td></tr></tbody></table></div>
+<p>La fórmula del notebook se reprodujo sobre agosto con un error de 0,3% contra <code>Mes_cadena</code>. Costo como múltiplo del nacional, canasta <b>Media</b>, ago-26:</p>
+<div class="scroll"><table><thead><tr><th></th><th>Publicado (v5.9)</th><th>Corregido</th></tr></thead><tbody><tr><td>Vea</td><td class="n">0,68×</td><td class="n">0,99×</td></tr><tr><td>Cooperativa Obrera</td><td class="n">0,72×</td><td class="n">1,02×</td></tr><tr><td>Disco</td><td class="n">0,75×</td><td class="n">1,03×</td></tr><tr><td>Carrefour</td><td class="n">0,95×</td><td class="n">0,95×</td></tr><tr><td>DIA</td><td class="n">1,03×</td><td class="n">1,03×</td></tr><tr><td>Mendoza</td><td class="n">0,66×</td><td class="n">0,98×</td></tr><tr><td>Córdoba</td><td class="n">0,72×</td><td class="n">0,99×</td></tr><tr><td>Región Cuyo</td><td class="n">0,66×</td><td class="n">0,98×</td></tr></tbody></table></div>
+<ul><li>En la Representativa: Vea 0,70× → 0,98×, Jumbo 0,84× → 1,05×, Cuyo 0,68× → 0,97×.</li><li>"Vea es la cadena más barata" y "Cuyo es la región más barata" eran <b>artefactos</b>. Corregido, en la Media la más barata es Carrefour (0,95×) y todas las regiones quedan dentro de ±3%.</li><li>La <b>Tecnológica</b> —cada ítem es su propio rubro— costaba $4,1 M por sucursal contra $6,2 M nacional.</li><li><b>Afectaba</b>: <code>Prov_*</code>, <code>Cadena_*</code>, <code>Region_*</code>, <code>RegionSem_*</code>, <code>Mes_region</code>, <code>Mes_provincia</code>, <code>Mes_cadena</code>, el índice "controlando por cadena" y las líneas geográficas del reporte. <b>No afectaba</b> el costo ni el índice nacional, que salen del panel nacional.</li></ul>
+<p><b>Fix (v5.10)</b>: costo de la sucursal = costo nacional de la canasta completa + Σ (precio de la sucursal − precio nacional) × cantidad, sobre lo que la sucursal publica. Se arma la grilla sucursal-semana × <b>todos</b> los rubros. Columna nueva <b><code>pct_imputado</code></b>: la parte del costo valuada a precio nacional. Vea queda en 45%, Cooperativa Obrera en 51%: una cadena con mucho imputado se parece al nacional por construcción, y eso ahora se ve. Test: <code>notebooks/test_costo_sucursal.py</code>. Guarda permanente: chequeo 6b del auditor.</p>
+</section>
+<section><h2>4. Niveles de frescos (corregido en v5.10)</h2>
+<p>El nivel en pesos de cada tipo fresco lo da el estimador nacional —mediana provincial ponderada por población— en una semana de anclaje. Dos hallazgos:</p>
+<p><b>DIA define alrededor de la mitad del precio nacional.</b> Dentro de cada provincia la mediana es entre sucursales, y DIA tiene la mayoría en Buenos Aires (55%), CABA (50%) y Entre Ríos (80%). Medido sobre la semana 2026-08-20: <b>en ~50% del costo nacional, la mediana provincial es exactamente el precio de DIA</b>, en empaquetados y en frescos. El comentario del código que decía lo contrario se corrigió. <b>No sesga la evolución</b>: los índices de empaquetados por cadena rodean al nacional (Popular: nacional ×2,23; DIA ×2,22, Coto ×2,31, Carrefour ×2,27, La Anónima ×2,05).</p>
+<p><b>Cuatro tipos cotizaban otro producto.</b> Contra el precio promedio del INDEC para el GBA (ago-26):</p>
+<div class="scroll"><table><thead><tr><th>Tipo</th><th>Publicado</th><th>INDEC</th><th>Qué entra en el tipo</th></tr></thead><tbody><tr><td>Pollo</td><td>$12.010</td><td>$4.780 (pollo entero)</td><td>"Pata de Pollo Atm 1 Kg" de DIA a $12.000 en 980 sucursales, y un "Chorizo de Pollo"</td></tr><tr><td>Carne picada</td><td>$17.810</td><td>$10.613 (común)</td><td>dos picadas envasadas de DIA a $22.475 y $23.980 en 980 sucursales</td></tr><tr><td>Merluza</td><td>$27.087</td><td>$14.821 (filet fresco)</td><td>"Filet de Merluza Dia 500 Gr" a $31.800/kg en 966 sucursales</td></tr><tr><td>Limón</td><td>$7.485</td><td>$1.425</td><td>productos a $5-14 mil/kg en 1.000+ sucursales: por el precio, jugo de limón</td></tr><tr><td>Pan francés</td><td>$6.171 (ancla $6.200)</td><td>$4.910 (tipo flauta)</td><td>ancla fijada el 2026-09-08 sin fuente documentada</td></tr></tbody></table></div>
+<p>Los cortes bien definidos coinciden: asado 0,96×, paleta 0,99×, nalga y cuadril 0,96×. Papa (1,45×), tomate (1,63×), cebolla (1,36×) y naranja (1,78×) quedan por encima, pero cotizan el producto correcto al precio de supermercado —DIA vende "Papa Mini" a $7.990, "Papa Negra" a $3.590—; ese sobreprecio es parte del concepto de la canasta y no se tocó.</p>
+<p>Efecto en el costo de ago-26 de los cuatro tipos mal especificados más el ancla del pan: <b>Popular +8,3%</b>, Media +4,6%, Representativa +5,2%, Ejecutiva +2,3%.</p>
+<p><b>Fix (v5.10)</b>: <code>NIVEL_REFERENCIA_FRESCO</code> ancla esos cinco tipos al precio promedio del INDEC de <b>agosto de 2026</b>: el promedio de la serie en ese mes pasa a valer el precio del INDEC y la evolución posterior la sigue dando el SEPA, así que <b>no hace falta actualizar la referencia cada mes</b>. Los precios <b>por sucursal</b> de esos tipos se reescalan con el mismo factor, para que las aperturas comparen precios relativos y no dos escalas. Con la v5.10, el costo nacional de agosto de la Popular pasa de $980k a $898k (−8,4%), el de la Media −4,5% y el de la Representativa −5,2%.</p>
+<p><b>Pendiente</b> (necesita releer el SEPA, así que va junto con el próximo cambio de EANs): sacar de <code>TIPOS_FRESCOS</code> los productos que no corresponden —chorizo de pollo, jugos de limón— para que también la <b>evolución</b> del tipo salga del producto correcto.</p>
+</section>
+<section><h2>5. Evolución de los frescos: incertidumbre de método</h2>
+<p>Para cada tipo fresco se calcularon cuatro estimadores de la variación ene-24 → ago-26: el encadenado publicado, un índice multilateral <b>Time-Product-Dummy</b> por EAN —el estándar internacional para datos de escáner, sin deriva de cadena—, una muestra fija de EANs presentes al principio y al final, y el precio promedio del INDEC.</p>
+<div class="scroll"><table><thead><tr><th>Tipo</th><th>INDEC</th><th>Publicado</th><th>TPD pond.</th><th>EAN fijo</th></tr></thead><tbody><tr><td>Asado</td><td class="n">×3,03</td><td class="n">×2,46</td><td class="n">×2,90</td><td class="n">×3,23</td></tr><tr><td>Paleta</td><td class="n">×3,28</td><td class="n">×2,74</td><td class="n">×4,01</td><td class="n">×4,33</td></tr><tr><td>Papa</td><td class="n">×3,15</td><td class="n">×2,61</td><td class="n">×3,61</td><td class="n">×3,61</td></tr><tr><td>Tomate</td><td class="n">×4,04</td><td class="n">×3,06</td><td class="n">×4,28</td><td class="n">×4,35</td></tr><tr><td>Pan francés</td><td class="n">×2,74</td><td class="n">×2,25</td><td class="n">×1,86</td><td class="n">×3,57</td></tr><tr><td>Pollo</td><td class="n">×2,54</td><td class="n">×3,11</td><td class="n">×3,65</td><td class="n">×2,91</td></tr><tr><td>Banana</td><td class="n">×2,19</td><td class="n">×1,31</td><td class="n">×1,62</td><td class="n">×1,63</td></tr></tbody></table></div>
+<p>(INDEC y publicado: meses completos. TPD y EAN fijo: semanas extremas, así que salen algo más altos.)</p>
+<p>En la mediana de los 59 tipos no hay deriva (publicado/TPD = 1,00), pero tipo por tipo los métodos se separan en las dos direcciones. Llevado a la canasta, el índice mensual a ago-26 (ene-24 = 100):</p>
+<div class="scroll"><table><thead><tr><th>Canasta</th><th>Publicado</th><th>Frescos por TPD pond.</th><th>Frescos por TPD simple</th><th>Frescos como el INDEC</th></tr></thead><tbody><tr><td>Popular</td><td class="n">234</td><td class="n">240</td><td class="n">249</td><td class="n">+5,6%</td></tr><tr><td>Media</td><td class="n">241</td><td class="n">242</td><td class="n">251</td><td class="n">+3,1%</td></tr><tr><td>Ejecutiva</td><td class="n">236</td><td class="n">234</td><td class="n">242</td><td class="n">+1,3%</td></tr><tr><td>Representativa</td><td class="n">231</td><td class="n">233</td><td class="n">241</td><td class="n">+3,4%</td></tr></tbody></table></div>
+<p>Las columnas TPD aplican al índice publicado la diferencia relativa medida con el mismo algoritmo de canasta (muestra apareada, quiebre ×3), sin la semana 2026-09-03 que el caché no cierra; la última columna es un Laspeyres directo con precios mensuales en el que los 23 tipos mapeados siguen al INDEC. El publicado queda en el extremo bajo del rango en Popular, Media y Representativa. <b>Recomendación</b>: publicar el índice con esta banda de sensibilidad; a mediano plazo, pasar los frescos a un índice multilateral con ventana móvil (TPD o GEKS) en lugar del encadenado semanal.</p>
+</section>
+<section><h2>6. Composición de las canastas</h2>
+<ul><li><b>Diseño sólido</b>: el núcleo alimentario replica la CBA del INDEC × 3,09 adultos equivalentes (carnes 19,4 kg, papa 20,1 kg y pan 20,9 kg/mes en la Representativa).</li><li><b>Pañales en un hogar sin bebés.</b> El hogar de referencia es el hogar tipo 2 del INDEC: dos adultos con hijos de <b>6 y 8 años</b>. Media (pañal XXXG + toallitas, 4,9% del costo), Ejecutiva (pañal XXG + toallitas, 6,8%) y Representativa (pañal XG + toallitas, 5,8%) los incluyen; la Popular no. Decisión pendiente del usuario: sacarlos (fuerza a releer el SEPA) o redefinir el hogar.</li><li><b>La comparación contra el IPC no es de igual a igual.</b> Las canastas incluyen limpieza, perfumería, mascotas y alcohol, que el IPC de alimentos no cubre. Solo alimentos y bebidas sin alcohol, ene-24 → ago-26: Popular 236,5 · Media 240,9 · Ejecutiva 244,0 · Representativa 239,4, contra <b>261,1</b> del IPC de alimentos. La brecha real es de 7 a 10% en 32 meses.</li><li><b>Femenina</b>: la Prestobarba3 Femenina que entró en el reemplazo del 08-sep está en <b>513 sucursales</b>, debajo del piso de 700 que el propio diseño fija para esa canasta.</li><li><b>Tecnológica</b>: 90 de las 98 sucursales que la cotizan son de ChangoMas. La notebook HP (19% del costo, dato en 45% de los meses) explica los saltos semanales de 2025-26. Refuerza publicarla como <b>nivel</b>, no como índice.</li><li><b>Trazabilidad</b>: sin cambios desde la auditoría anterior (Media 10,6% del costo en ítems con menos del 85% de meses con dato, Ejecutiva 8,0%).</li></ul>
+</section>
+<section><h2>7. Menores (corregidos en v5.10 salvo aclaración)</h2>
+<ul><li><code>Resumen</code> mostraba <code>indice_base100</code> = 253 (base: semana del 04-ene) mientras <code>vsIPC_*</code> muestra 240 (base: enero completo). Ahora van los dos, con su base al lado, más <code>mes_parcial</code> y <code>n_semanas_mes_ult</code>: el +2,4% de septiembre son 2 semanas de 4.</li><li>La grafía de provincias dependía del orden de un <code>set</code> ("Neuquén" en una corrida, "Neuquen" en otra). Ahora es fija y sin tildes.</li><li>El auditor <code>auditar_salida_nb07.py</code> daba falsas alarmas en los chequeos 1 y 2 (no aplicaba la regla ×3). Corregido, con dos chequeos nuevos: coherencia de las aperturas (6b) y contraste con el INDEC (6c, opcional con <code>--indec</code>).</li><li>El caso del arroz Molinos Ala 1 kg no era un "precio viejo": en enero de 2024 solo lo publicaba ChangoMas, a $120-140, un décimo del precio real. Es un <b>error de escala en la fuente</b>; la regla ×3 lo trata bien igual.</li></ul>
+</section>
+<section><h2>8. Qué publicar</h2>
+<ul><li><b>Sí</b>: costo nacional e índice de cada canasta, con la v5.10 (nivel de frescos corregido), la banda de sensibilidad del punto 5 y la comparación contra el IPC hecha <b>solo con alimentos</b>.</li><li><b>Sí, recién con la v5.10</b>: aperturas por cadena, provincia y región, mirando <code>pct_imputado</code>. Siguen sin publicarse las de Popular, Ejecutiva y Tecnológica (3 o menos provincias confiables).</li><li><b>No</b>: series a nivel de ítem de Durazno, Espinaca, Acelga y Palta (sin cambios).</li></ul>
+</section>
+<section><h2>9. Cómo se reproduce</h2>
+<pre><code>export AUD_EXCEL=.../canastas_alternativas_2026-09-17.xlsx AUD_CACHE=.../_cache_nb07 AUD_INDEC=.../sh_ipc_precios_promedio.xls
+cd docs/auditoria/scripts_v59
+python 01_replica_cache.py &amp;&amp; python 02_largo_plazo.py &amp;&amp; python 03_tpd_frescos.py &amp;&amp; python 04_informe.py</code></pre>
+<p>Y en cada corrida nueva, el control rutinario:</p>
+<pre><code>python notebooks/auditar_salida_nb07.py &lt;Excel&gt; --indec sh_ipc_precios_promedio.xls</code></pre>
+</section>
+<footer>Generado desde AUDITORIA_2026-09-22_v59.md con docs/auditoria/md_a_html.py</footer></div></body></html>
