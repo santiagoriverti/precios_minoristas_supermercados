@@ -10,6 +10,8 @@ __pycache__/
 output_canasta/
 *.parquet
 *.html
+# ...menos los informes de docs/, que son la fuente de los PDF que se comparten
+!docs/auditoria/*.html
 *.png
 *.tex
 

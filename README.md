@@ -685,8 +685,11 @@ precios_minoristas_supermercados/
 │   ├── gen_nb05.py                               # Script fuente que genera el Notebook 5
 │   ├── gen_nb06.py                               # Script fuente que genera el Notebook 6
 │   ├── gen_nb07.py                               # Script fuente que genera el Notebook 7
+│   ├── auditar_salida_nb07.py                    # Audita una salida del nb07 (réplica del índice, quiebres, trazabilidad, IPC)
 │   ├── test_celdas_graficos_y_mapa.py            # Tests: gráficos (CELDA 12) y mapa (CELDA 17) de nb05/nb02
-│   └── test_encadenado_frescos.py                # Tests: índice encadenado de frescos de nb07
+│   ├── test_encadenado_frescos.py                # Tests: índice encadenado de frescos de nb07
+│   ├── test_quiebre_serie.py                     # Tests: quiebre de serie ante saltos imposibles (BUG-36)
+│   └── test_cache_por_mes.py                     # Tests: caché por mes del nb07, reanudación tras corte (BUG-34)
 ├── data/                                # Maestros de referencia (se descargan automáticamente)
 │   ├── Maestro de Productos Interno.xlsx    # ~176K productos con rubro/categoría/subcategoría
 │   ├── maestro_sucursales_completo.xlsx     # 3.611 sucursales con cadena, provincia, región
@@ -697,6 +700,8 @@ precios_minoristas_supermercados/
     ├── SEPA_TECNICO.md                  # Formato SEPA, factor precio, cadenas, lectura diaria, trampas
     ├── BRECHA_CELIACA.md               # Notebook 06 — brecha TACC vs sin-TACC (metodología completa)
     ├── BUGS_Y_MEJORAS.md               # Bugs resueltos y defectos abiertos, con causa raíz y fix
+    ├── AUDITORIA_2026-09-22.md         # Auditoría completa de la corrida 2026-09-17 del nb07
+    ├── auditoria/                      # El mismo informe en HTML y PDF, para compartir
     └── canastas_alternativas/README.md  # Notebook 07 — composición de las 6 canastas alternativas
 ```
 
@@ -723,6 +728,24 @@ y se commitean juntos el generador y el `.ipynb`.
 |---|---|
 | `notebooks/test_celdas_graficos_y_mapa.py` | Ejecuta las celdas **reales** del `.ipynb` generado: la CELDA 12 con productos de distinta antigüedad de serie (BUG-29), el orden de mosaicos del mapa y su fallback (BUG-30/32), y que el mapa no escriba marcadores en el HTML ni supere los 6 MB (BUG-31), en nb05 y en el mapa de nb02 |
 | `notebooks/test_encadenado_frescos.py` | Índice encadenado de frescos del nb07 con precios pegajosos (BUG-28) |
+| `notebooks/test_quiebre_serie.py` | Regla de quiebre de serie del índice: un salto ×20 no entra, una variación legítima ×1,6 sí, y el ida y vuelta entre regímenes no deja escalón (BUG-36) |
+| `notebooks/test_cache_por_mes.py` | Caché por mes del nb07: corte a mitad de la lectura, reanudación, identidad contra una corrida sin caché, y que **todas** las celdas del `.ipynb` compilen (BUG-34, BUG-35) |
+
+### Auditar una salida del nb07
+
+Antes de publicar una corrida conviene pasarle el Excel al auditor, que reproduce los chequeos de
+[`docs/AUDITORIA_2026-09-22.md`](docs/AUDITORIA_2026-09-22.md):
+
+```bash
+python notebooks/auditar_salida_nb07.py canastas_alternativas_2026-09-17.xlsx
+# con el caché del Drive agrega los dos controles más fuertes (réplica del precio nacional
+# desde el panel crudo, e índice de muestra fija por EAN):
+python notebooks/auditar_salida_nb07.py canastas.xlsx --cache .../output_canasta_alternativa/_cache_nb07
+```
+
+Imprime OK o REVISAR por bloque: réplica del índice, grupo de control empaquetados vs frescos,
+transiciones imposibles, atribución de los saltos semanales, peso de los ítems sin trazabilidad,
+comparación con el IPC en el último mes en común, y cobertura de frescos.
 
 **Regla de oro del generador**: dentro de `cell_code("""...""")` **no van barras invertidas** —
 Python se las come antes de que lleguen al notebook, y un `'\n'` termina siendo un salto de línea

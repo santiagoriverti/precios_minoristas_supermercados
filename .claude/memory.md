@@ -6,111 +6,150 @@ Autor: Santiago Riverti — investigador independiente
 
 ---
 
-## 🟢 ESTADO ACTUAL / HANDOFF [2026-09-09] — leer esto primero
+## 🟢 ESTADO ACTUAL / HANDOFF [2026-09-22] — leer esto primero
 
 Proyecto EN PRODUCCION, 7 herramientas (nb01..nb07). Todo lo necesario para retomar viaja en el
-repo: notebooks, generadores, maestros (`data/`) y documentacion (`docs/`). Lo unico que NO esta
-en el repo son los datos SEPA y los auxiliares, que viven en el Drive del usuario.
+repo: notebooks, generadores, maestros (`data/`), documentacion (`docs/`) y tests. Lo unico que NO
+esta en el repo son los datos SEPA y los auxiliares, que viven en el Drive del usuario.
+
+**Ultima corrida real: nb07 el 2026-09-17** (142 semanas, 85,2 M de filas, 288 EANs, canasta
+`canasta_representativa_2026-09.xlsx`). Auditada a fondo el 2026-09-22: la maquinaria hace lo que
+documenta. Informe completo en `docs/AUDITORIA_2026-09-22.md` (+ PDF en `docs/auditoria/`).
+**Esa corrida es PREVIA a la v5.9**, asi que sus numeros publicados todavia tienen el BUG-36.
+
+### En que estamos ahora
+
+El usuario esta volviendo a correr el nb07 en Colab con la v5.9 y va a pasar el Excel resultante.
+Al recibirlo:
+
+```
+python notebooks/auditar_salida_nb07.py <el Excel>                 # chequeos de la auditoria
+python notebooks/auditar_salida_nb07.py <el Excel> --cache <_cache_nb07 del Drive>   # + controles crudos
+```
+
+Y revisar, en este orden: (a) que la hoja **`Alertas_quiebre`** liste las transiciones del arroz
+Molinos Ala, el Rexona, la lavandina Ayudin y el aceite La Toscana; (b) que el acumulado a ago-26
+baje a ~234 en Popular y ~236 en Ejecutiva (ver tabla mas abajo); (c) que `Panel_nacional` no tenga
+series constantes; (d) que la corrida NO haya releido el SEPA (el cache por mes ya esta en el Drive).
 
 ### Como retomar en otra PC
 
 ```
 git clone https://github.com/santiagoriverti/precios_minoristas_supermercados
 cd precios_minoristas_supermercados
-python notebooks/test_celdas_graficos_y_mapa.py     # graficos + mapa (nb05 y nb02)
-python notebooks/test_encadenado_frescos.py         # encadenado de frescos (nb07)
+python notebooks/test_celdas_graficos_y_mapa.py   # graficos + mapa (nb05 y nb02)
+python notebooks/test_encadenado_frescos.py       # encadenado de frescos (nb07)
+python notebooks/test_quiebre_serie.py            # quiebre de serie del indice (BUG-36)
+python notebooks/test_cache_por_mes.py            # cache por mes + compila todas las celdas
 ```
 
 - **Los `.ipynb` NO se editan a mano.** La fuente de verdad son los `gen_nbXX.py`:
-  `python notebooks/gen_nb05.py` reescribe `05_evolucion_productos_representativos.ipynb`.
+  `python notebooks/gen_nb07.py` reescribe `07_evolucion_canastas_alternativas.ipynb`.
   Regenerar SIEMPRE despues de tocar un generador, y commitear los dos archivos juntos.
 - Los notebooks corren en **Colab** (badges en el README). Necesitan en `MyDrive/carga/`:
   `2024A.zip 2024B.zip 2025A.zip 2025B.zip 2026A.zip 2026B.zip` (SEPA semestral), `IPC.xlsx`,
-  `ar.json` y `output_canasta/canasta_representativa_YYYY-MM.xlsx` (salida del nb01, con las
-  cantidades cargadas a mano).
+  `ar.json` y `output_canasta/canasta_representativa_YYYY-MM.xlsx` (salida del nb01 + el script
+  `docs/canastas_alternativas/cargar_canastas_v5.py` corrido encima).
 - Los maestros se buscan **primero en el Drive y despues en GitHub**: el repo es privado y
   `raw.githubusercontent` devuelve 404 (commit `502581a`).
-- Ultimo mes procesado end-to-end: **agosto 2026** (2026B.zip, corrida real de nb05 con 19 cervezas).
+- El cache del nb07 vive en `MyDrive/carga/output_canasta_alternativa/_cache_nb07/` como
+  `sem_<key>_v5/<mes>.parquet` y `ean_<key>_v5/<mes>.parquet`. Los archivos sueltos
+  `sem_<key>_v5.parquet` del formato viejo ya no se leen: se pueden borrar.
 
 ### Estado por herramienta
 
 | # | Notebook | Estado | Nota |
 |---|---|---|---|
 | 01 | `01_exploracion_productos` | ✅ estable | Selecciona ~65 productos; 6 columnas `cantidad_01..06` |
-| 02 | `02_evolucion_canasta_representativa` | ✅ al dia | Mapa y graficos corregidos el 09-sep (BUG-29..32); **sin corrida real desde entonces** |
+| 02 | `02_evolucion_canasta_representativa` | ⚠️ sin corrida real | Mapa y graficos corregidos el 09-sep (BUG-29..32) |
 | 03 | `03_consolidacion_ultimo_mes` (.py y .ipynb) | ✅ estable | SEPA diario -> semestral |
 | 04 | `04_precios_seleccion` | ✅ estable | Precios por radio geografico |
-| 05 | `05_evolucion_productos_representativos` | ✅ corrido ago-2026 | 19 cervezas; graficos y mapa corregidos el 09-sep |
-| 06 | `06_evolucion_brecha_celiaca` | ✅ medicion cerrada | ⚠️ su mapa sigue con `cartodbpositron` (ver pendiente 2) |
-| 07 | `07_evolucion_canastas_alternativas` | ⚠️ v5.7.1 sin re-correr | Motor del informe semanal; ver pendiente 1 |
+| 05 | `05_evolucion_productos_representativos` | ✅ corrido ago-2026 | 19 cervezas; mapa publicado en GitHub Pages |
+| 06 | `06_evolucion_brecha_celiaca` | ✅ medicion cerrada | ⚠️ su mapa sigue con `cartodbpositron` (pendiente 6) |
+| 07 | `07_evolucion_canastas_alternativas` | ✅ v5.9, corrida 09-17 auditada | Motor del informe semanal; re-correr con v5.9 |
 
-### ⚡ 2026-09-22 (noche) — AUDITORIA de la corrida 2026-09-17 + nb07 v5.9
-Corrida COMPLETA y valida (142 semanas, 85,2 M filas, 288 EANs, reemplazos aplicados). Auditada
-replicando el indice y el precio nacional desde el panel crudo: la maquinaria hace lo que dice.
-- Corregido (BUG-36): 24 transiciones imposibles (x3 a x42) por precios viejos conviviendo con
-  actuales en el mismo EAN. `QUIEBRE_ITEM_K = 3.0` las saca del eslabon + hoja `Alertas_quiebre`.
-  Acumulado ago-26: Popular 239,1 -> 234,1 | Ejecutiva 240,8 -> 236,0 | Media 243,2 -> 240,8 |
-  Representativa 232,2 -> 231,2 | Femenina sin cambio.
-- Corregido: la comparacion vs IPC mezclaba meses (canasta a sep, IPC a ago) + columna `mes_parcial`.
-- NUMEROS BUENOS (ago-26, mismo mes que el IPC): Popular +139,1% | Media +143,2% | Ejecutiva
-  +140,8% | Representativa +132,2% | Femenina +158,5% | IPC alim +161,1% | IPC gral +188,1%.
-  Interanual: canastas +26 a +28,5% contra IPC +33,5% y alimentos +34,9%.
-- Femenina NO es anomalia: es perfumeria (el rubro subio MAS en las otras canastas: +271 a +420%).
-- Tecnologica: solo 3 de 14 items antes de 2025 -> publicar como NIVEL, no como indice.
-- ABIERTO: 36 items con trazabilidad <85% (Media 10,6% del costo, Ejecutiva 8,0%, Tecnologica
-  69,9%); Durazno roto (x3,2 la mediana cruda); pan frances (+138% encadenado vs +487% ponderado,
-  11% de la Popular); ver docs/BUGS_Y_MEJORAS.md.
-- La proxima corrida NO relee el SEPA si no cambian los EANs: el cache por mes ya esta en el Drive.
+### La sesion del 2026-09-22, en tres actos
 
-### ⚡ 2026-09-22 (tarde) — nb07 v5.8: corrida murio por RAM; cache por mes (BUG-34, BUG-35)
-- La corrida con la canasta 2026-09 RELEYO TODO (1h21m): **cambiar EANs de una canasta cambia la
-  clave del cache**. Lo que decia el handoff del 08-sep ("reusa el cache") era FALSO.
-- Murio por RAM al final (concat + to_parquet de 32 meses) sin guardar nada. v5.8 guarda cada mes
-  apenas lo lee (`_cache_nb07/sem_<key>_v5/<mes>.parquet` + `ean_...`) y retoma si se corta.
-- De paso: la CELDA 13 tenia un SyntaxError (print partido, commit 602a870). Corregido;
-  `test_cache_por_mes.py` ahora compila todas las celdas.
-- **PROXIMO PASO: volver a correr nb07** (otra vez ~1h20m, no hay nada guardado). Si se corta,
-  re-ejecutar: retoma. Despues auditar la salida con la checklist de siempre.
-- Mejora posible: sacar los EANs empaquetados de la clave (leer solo los EANs nuevos) para que
-  cambiar una canasta no cueste una relectura completa.
+**1. La canasta estaba mal en el repo.** El reemplazo de Femenina del 08-sep (salen Nivea Body 400,
+Simply Venus y Dove Original) vivia solo en un Excel editado a mano; `cargar_canastas_v5.py` seguia
+cargando los items viejos. Se corrigio el script (288 EANs) y ademas se saco la Nivea Body 400 de
+**Representativa** (x0,5 -> Villenueve 250 x0,8, mismos 200 Ml/mes). EANs: Villenueve
+`7793008018759` (en el SEPA figura "Villenueve", mal escrito; OJO con `7793008018797`, que es otro
+producto con 482 sucursales), Prestobarba3 Femenina `7702018874781`, Dove Antibacterial
+`7891150075382`. `construir_canastas_v5.py` los fija con `EAN_FORZADO[(canasta, necesidad)]`, que
+busca sin `inc`/`exc` porque el `exc` de la rasuradora ('barba') descartaba a Presto**barba**3.
 
-### ⚡ 2026-09-22 — canasta corregida en el repo (commit de hoy)
-`docs/canastas_alternativas/cargar_canastas_v5.py` YA trae Femenina reemplazada y Representativa sin
-Nivea Body 400 (288 EANs). Antes el reemplazo del 08-sep vivia solo en un Excel editado a mano: el
-script seguia con los items viejos. Validado contra `canasta_representativa_2026-09.xlsx` (0 EANs
-faltantes). Para correr nb07: cargar ese script sobre el Excel de sep -> subir `_con_canastas` como
-`canasta_representativa_2026-09.xlsx`. El constructor fija los EANs con `EAN_FORZADO`.
+**2. La corrida murio por RAM (BUG-34) -> cache por mes (v5.8).** Leer los 32 meses tardo 1h21m y
+Colab corto al final, sin guardar nada. **Cambiar los EANs de una canasta cambia la clave del cache
+y obliga a releer todo el SEPA** (cambiar solo cantidades, no). Ahora cada mes cerrado se escribe
+apenas se lee, el bucle ocupa la RAM de un mes y una corrida cortada retoma. De paso se corrigio un
+`SyntaxError` en la CELDA 13 que habria cortado la corrida despues de la lectura larga (BUG-35).
+
+**3. La auditoria (v5.9).** Se replico el indice desde el panel (dif. max 0,001) y el precio
+nacional desde las 85,2 M de filas con el maestro (98,8% dentro del 1%). Resultados y numeros
+buenos en `docs/AUDITORIA_2026-09-22.md`. Dos defectos corregidos:
+- **BUG-36**: 24 transiciones imposibles (x3 a x42) en 11 items, porque el mismo EAN convive con un
+  precio viejo que la cadena nunca actualizo. `QUIEBRE_ITEM_K = 3.0` saca ese item del eslabon de
+  esa semana + hoja `Alertas_quiebre`.
+- La comparacion vs IPC mezclaba meses (canasta a sep, IPC a ago). Ahora usa el ultimo mes en comun
+  y la serie mensual lleva `mes_parcial` (sep-2026 son 2 semanas de 4: es una quincena).
+
+### Numeros de referencia (corrida 09-17, a ago-2026, mismo mes que el IPC)
+
+| Canasta | acum. ene24→ago26 | i.a. | con BUG-36 corregido |
+|---|---:|---:|---:|
+| Popular | +139,1% (239,1) | +28,3% | 234,1 |
+| Media | +143,2% (243,2) | +26,8% | 240,8 |
+| Ejecutiva | +140,8% (240,8) | +25,9% | 236,0 |
+| Representativa | +132,2% (232,2) | +26,5% | 231,2 |
+| Femenina | +158,5% (258,5) | +28,5% | 258,5 |
+| IPC alimentos | +161,1% | +34,9% | — |
+| IPC general | +188,1% | +33,5% | — |
+
+Femenina NO es una anomalia: es perfumeria, y ese rubro subio MAS en las otras canastas (+271% a
++420%). Tecnologica: solo 3 de sus 14 items existen antes de 2025 -> publicar como NIVEL, no como
+indice. Costo sep-26: Popular $1.007.217 | Media $1.654.483 | Ejecutiva $2.712.070 |
+Representativa $1.522.238 | Femenina $138.634 | Tecnologica $6.227.462.
 
 ### PENDIENTES, en orden
 
-1. **nb07 — re-correr con el Excel de canasta nuevo** (Femenina reemplazada + pan frances anclado).
-   ~~Son MINUTOS~~ FALSO: el cambio de EANs cambio la clave, relee todo (ver 2026-09-22). Verificar en este orden: (a) acumulado de las canastas en el orden de 250-290 contra IPC
-   283; (b) `Panel_nacional` sin series constantes; (c) `Alertas_trazabilidad` vacia y pan frances
-   en ~$6.200/kg. Detalle en el handoff del 2026-09-08 mas abajo.
-2. **nb06 — el mapa tiene el bug de mosaicos sin corregir.** `gen_nb06.py` (CELDA 12) todavia usa
-   `tiles='cartodbpositron'`: hoy CARTO estampa "API key required" (BUG-30). Dibuja los limites
-   provinciales desde `ar.json` local, asi que se sigue entendiendo, pero conviene portarle el
-   bloque de mosaicos con fallback de nb05/nb02 (BUG-30/32): copiar `_TILES_OPC` + `_ORDEN_DEF` +
-   la funcion `base(i)` del JS. Receta completa en `docs/BUGS_Y_MEJORAS.md`.
-3. **nb05 y nb02 — confirmar en Colab** las correcciones de hoy: que el grafico de variaciones ya no
-   corte, y que el mapa abra con fondo (el print de la CELDA 17 dice el orden de mosaicos y el peso
-   final del archivo).
-4. **Mapa a GitHub Pages**. OJO que hay DOS repos de mapas:
-   - `mapa_precios` (nuevo, 2026-09-09) → santiagoriverti.github.io/mapa_precios/ — publica el mapa
-     de **productos** del nb05 (agosto 2026, versión `_prom`). **Este es el que está al día.**
-   - `mapa_precios_minoristas` (viejo) → publica el mapa de **canastas** del nb02. Sigue con una
-     versión anterior; cuando se re-corra el nb02 conviene actualizarlo (ahora pesa ~0,8 MB).
-
-   Para actualizar cualquiera: bajar el HTML de `output_*` en el Drive, renombrarlo a `index.html`
-   y reemplazarlo en el repo. Pages lo publica en menos de un minuto.
-5. **Documento LaTeX (Overleaf)**: copiar la hoja `Valores_Documento` del `canasta_analisis`;
+1. **nb07 — re-correr con la v5.9 y auditar la salida** (en curso; el usuario lo esta corriendo).
+   No deberia releer el SEPA: los EANs no cambiaron. Usar `auditar_salida_nb07.py`.
+2. **Trazabilidad**: reemplazar en el constructor los items con <85% de Media (10,6% del costo) y
+   Ejecutiva (8,0%), y el Jabon Dove Original de Representativa (81,8%). Femenina ya quedo en 0.
+3. **Durazno**: sacarlo de las tablas por item (serie rota: $16.607/kg contra $5.122 crudo, 274
+   sucursales, cadena partida). Misma familia: Espinaca, Acelga, Palta.
+4. **Pan frances**: validar el nivel de ene-2024 ($2.608/kg implicito) contra una referencia de
+   mercado. Pesa 11,1% de la Popular y su encadenado acumula +138% contra +487% del ponderado.
+5. **Tecnologica**: decidir si se publica como nivel en vez de indice.
+6. **nb06 — mapa con mosaicos viejos.** `gen_nb06.py` (CELDA 12) usa `tiles='cartodbpositron'` y
+   CARTO estampa "API key required" (BUG-30). Portar el bloque con fallback de nb05/nb02: copiar
+   `_TILES_OPC` + `_ORDEN_DEF` + la funcion `base(i)` del JS. Receta en `docs/BUGS_Y_MEJORAS.md`.
+7. **nb05 y nb02 — confirmar en Colab** las correcciones del 09-sep (grafico de variaciones y mapa).
+8. **Mapa a GitHub Pages**. Hay DOS repos: `mapa_precios` (productos del nb05, al dia) y
+   `mapa_precios_minoristas` (canastas del nb02, desactualizado). Bajar el HTML de `output_*`,
+   renombrarlo a `index.html` y reemplazarlo.
+9. **Documento LaTeX (Overleaf)**: copiar la hoja `Valores_Documento` del `canasta_analisis`;
    Belgrano y Costa Atlantica salen a mano de la hoja `Sucs_Media`.
-6. **Seguridad**: rotar el PAT de GitHub (quedo expuesto el 24-jun y el 07-jul) y configurar Git
-   Credential Manager.
-7. Abierto de antes: cadena partida en Acelga (2 tramos), Espinaca (2) y Durazno (3); y NO publicar
-   la apertura regional/provincial de Popular, Media ni Tecnologica.
+10. **Seguridad**: rotar el PAT de GitHub (quedo expuesto el 24-jun y el 07-jul) y configurar Git
+    Credential Manager.
+11. Abierto de antes: no publicar la apertura regional/provincial de Popular, Media ni Tecnologica
+    (con la corrida 09-17: Popular y Ejecutiva quedan con 3 provincias confiables, Representativa 10).
+12. Mejora posible: sacar los EANs empaquetados de la clave del cache (leer solo los EANs nuevos)
+    para que cambiar una canasta no cueste una relectura completa de 1h20m.
 
 ### Reglas que muerden (leer antes de tocar un generador)
+
+- **Cambiar los EANs de una canasta invalida el cache del nb07** y obliga a releer el SEPA (~1h20m).
+  Cambiar solo las CANTIDADES no. El mes en curso nunca se cachea: se lee siempre.
+- **Un Jevons con MEDIANA de log-ratios no sirve de control en este panel**: con precios pegajosos
+  la mediana semanal da 0 y el indice no acumula (es el mecanismo del BUG-28). Usar media, recortada
+  si se quiere robustez.
+- **El precio nacional puede cambiar de estimador entre semanas**: si ninguna provincia llega a 3
+  sucursales, cae a mediana simple (168 celdas de 46.324 en la corrida 09-17). Es poco, pero explica
+  saltos raros en items de baja cobertura.
+- **El IPC del INDEC sale a mediados del mes siguiente**: la canasta casi siempre tiene un mes mas.
+  Comparar siempre en el ultimo mes en comun.
 
 - **Nada de barras invertidas en el codigo de celda.** Dentro de `cell_code(triple comillas)` Python
   consume los escapes: un `'\n'.join(...)` llega al notebook como un salto de linea REAL y rompe la

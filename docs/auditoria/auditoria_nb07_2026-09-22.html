@@ -1,0 +1,273 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  @page { size: A4; margin: 16mm 14mm; }
+  @media print {
+    :root { --paper:#FFFFFF; }
+    body { background:#FFFFFF; }
+    .wrap { max-width:none; padding-block:0; padding-inline:0; }
+    section { break-inside: auto; margin-top:26px; }
+    h2, h3 { break-after: avoid; }
+    table, .find, .facts, .bars { break-inside: avoid; }
+    thead { display: table-header-group; }
+    .find { border-left:1px solid var(--line); }
+  }
+</style>
+<title>Auditoría de canastas SEPA</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,600&family=Public+Sans:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  :root{
+    --paper:#F5F6F4; --surface:#FFFFFF; --ink:#12171A; --muted:#5C6A6E; --line:#DCE1DE;
+    --accent:#1F6F6B; --ok:#2F6B3A; --warn:#9A6B12; --alert:#9E362A; --stripe:#EDEFEA;
+    --shadow:0 1px 2px rgba(18,23,26,.06);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --paper:#0F1213; --surface:#171B1C; --ink:#E7EDEB; --muted:#9BA8AB; --line:#2A3132;
+      --accent:#5FB5AE; --ok:#6FB07A; --warn:#D2A14A; --alert:#DE8074; --stripe:#1C2122;
+      --shadow:0 1px 2px rgba(0,0,0,.4);
+    }
+  }
+  :root[data-theme="dark"]{
+    --paper:#0F1213; --surface:#171B1C; --ink:#E7EDEB; --muted:#9BA8AB; --line:#2A3132;
+    --accent:#5FB5AE; --ok:#6FB07A; --warn:#D2A14A; --alert:#DE8074; --stripe:#1C2122;
+    --shadow:0 1px 2px rgba(0,0,0,.4);
+  }
+  body{background:var(--paper); color:var(--ink); font-family:"Public Sans",system-ui,-apple-system,sans-serif; line-height:1.55;}
+  .wrap{max-width:52rem; margin:0 auto; padding-inline:20px; padding-block:40px 64px;}
+  h1,h2,h3{font-family:"Newsreader",Georgia,serif; font-weight:600; text-wrap:balance; margin:0;}
+  h1{font-size:2.3rem; line-height:1.15; letter-spacing:-.01em;}
+  h2{font-size:1.45rem; margin-top:8px;}
+  h3{font-size:1.08rem; font-family:"Public Sans",sans-serif; font-weight:700;}
+  p{margin:0; max-width:65ch;}
+  .eyebrow{font-size:.72rem; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:var(--accent);}
+  .meta{font-family:"IBM Plex Mono",ui-monospace,monospace; font-size:.8rem; color:var(--muted);}
+  header{display:flex; flex-direction:column; gap:10px; border-bottom:2px solid var(--ink); padding-bottom:20px;}
+  section{display:flex; flex-direction:column; gap:14px; margin-top:40px;}
+  .lead{font-size:1.06rem;}
+  .facts{display:flex; flex-wrap:wrap; gap:0; border:1px solid var(--line); border-radius:3px; background:var(--surface); box-shadow:var(--shadow);}
+  .fact{flex:1 1 150px; padding:12px 16px; border-right:1px solid var(--line);}
+  .fact:last-child{border-right:none;}
+  .fact b{display:block; font-family:"IBM Plex Mono",monospace; font-size:1.18rem; font-weight:500; font-variant-numeric:tabular-nums;}
+  .fact span{font-size:.75rem; color:var(--muted);}
+  table{border-collapse:collapse; width:100%; font-size:.9rem;}
+  .scroll{overflow-x:auto;}
+  th,td{padding:8px 12px; text-align:left; border-bottom:1px solid var(--line);}
+  th{font-size:.72rem; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); font-weight:700;}
+  td.n,th.n{text-align:right; font-family:"IBM Plex Mono",monospace; font-variant-numeric:tabular-nums;}
+  tbody tr:nth-child(odd){background:var(--stripe);}
+  tr.ref td{font-weight:700;}
+  .bars{display:grid; grid-template-columns:auto 1fr auto; gap:6px 12px; align-items:center; font-size:.88rem;}
+  .bars .bar{height:14px; border-radius:2px; background:var(--accent);}
+  .bars .bar.ipc{background:var(--muted);}
+  .bars .v{font-family:"IBM Plex Mono",monospace; font-variant-numeric:tabular-nums; font-size:.82rem;}
+  .find{display:grid; grid-template-columns:4px 1fr; gap:0 14px; background:var(--surface); border:1px solid var(--line); border-left:none; border-radius:0 3px 3px 0;}
+  .find .stripe{background:var(--muted); border-radius:2px 0 0 2px;}
+  .find.fixed .stripe{background:var(--ok);} .find.open .stripe{background:var(--warn);} .find.bad .stripe{background:var(--alert);}
+  .find .body{padding:14px 16px; display:flex; flex-direction:column; gap:8px;}
+  .chip{display:inline-block; font-size:.68rem; font-weight:700; letter-spacing:.09em; text-transform:uppercase; padding:2px 8px; border-radius:999px; border:1px solid currentColor;}
+  .chip.fixed{color:var(--ok);} .chip.open{color:var(--warn);} .chip.bad{color:var(--alert);}
+  .stack{display:flex; flex-direction:column; gap:16px;}
+  code{font-family:"IBM Plex Mono",monospace; font-size:.86em; background:var(--stripe); padding:1px 5px; border-radius:3px;}
+  ul{margin:0; padding-left:1.1rem; display:flex; flex-direction:column; gap:6px; max-width:65ch;}
+  footer{margin-top:48px; padding-top:16px; border-top:1px solid var(--line); color:var(--muted); font-size:.82rem;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <span class="eyebrow">Auditoría metodológica · nb07</span>
+    <h1>Auditoría de canastas SEPA</h1>
+    <p class="meta">Corrida 2026-09-17 · 142 semanas (cierre jueves) · 85,2 M de filas sucursal×ítem×semana · 288 EANs empaquetados + 59 tipos de frescos · 22 de septiembre de 2026</p>
+  </header>
+
+  <section>
+    <h2>Veredicto</h2>
+    <p class="lead">La corrida es válida y la maquinaria hace lo que documenta. Aparecieron dos defectos —ya corregidos— que inflaban el acumulado entre 1 y 2 puntos porcentuales y exageraban la brecha contra el IPC. Quedan cinco temas abiertos, todos de composición de canasta, ninguno que invalide el resultado.</p>
+    <div class="facts">
+      <div class="fact"><b>0,001</b><span>diferencia máxima al replicar el índice</span></div>
+      <div class="fact"><b>98,8%</b><span>celdas del precio nacional replicadas dentro del 1%</span></div>
+      <div class="fact"><b>24</b><span>transiciones imposibles detectadas (de 46.324)</span></div>
+      <div class="fact"><b>0</b><span>alertas de salto en 2026</span></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Verificaciones independientes</h2>
+    <p>Cada prueba reconstruye el resultado por un camino distinto al del notebook y lo compara contra lo publicado.</p>
+    <div class="scroll">
+      <table>
+        <thead><tr><th>Prueba</th><th>Método</th><th>Resultado</th></tr></thead>
+        <tbody>
+          <tr><td>Índice de cada canasta</td><td>Recalculado desde <code>Panel_nacional</code> + recetas</td><td>Coincide; diferencia máxima 0,001</td></tr>
+          <tr><td>Precio nacional</td><td>Reconstruido desde el panel crudo con el maestro de sucursales</td><td>98,8% de las celdas dentro del 1%</td></tr>
+          <tr><td>Grupo de control</td><td>Empaquetados vs frescos por separado</td><td>+148/+174% y +154/+157%: sin divergencia</td></tr>
+          <tr><td>Frescos</td><td>Índice de muestra fija, solo EANs supervivientes</td><td>Mediana +189% contra +181% del publicado</td></tr>
+          <tr><td>Saltos semanales</td><td>Atribución ítem por ítem de cada semana con variación &gt;4%</td><td>Todas en el 1.º trimestre de 2024, con varios ítems a la vez</td></tr>
+          <tr><td>Composición</td><td>Rubros contra el costo total de la canasta</td><td>Suman exacto ($1.007.217 en Popular)</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <h2>Las canastas contra el IPC</h2>
+    <p>Comparación a agosto de 2026, el último mes con IPC publicado. Antes el reporte comparaba la canasta a septiembre contra el IPC a agosto, y eso agrandaba la brecha.</p>
+    <div class="bars" role="img" aria-label="Acumulado enero 2024 a agosto 2026: Popular 139,1%, Media 143,2%, Ejecutiva 140,8%, Representativa 132,2%, Femenina 158,5%, IPC alimentos 161,1%, IPC general 188,1%">
+      <span>Popular</span><span class="bar" style="width:74%"></span><span class="v">+139,1%</span>
+      <span>Media</span><span class="bar" style="width:76%"></span><span class="v">+143,2%</span>
+      <span>Ejecutiva</span><span class="bar" style="width:75%"></span><span class="v">+140,8%</span>
+      <span>Representativa</span><span class="bar" style="width:70%"></span><span class="v">+132,2%</span>
+      <span>Femenina</span><span class="bar" style="width:84%"></span><span class="v">+158,5%</span>
+      <span>IPC alimentos</span><span class="bar ipc" style="width:86%"></span><span class="v">+161,1%</span>
+      <span>IPC general</span><span class="bar ipc" style="width:100%"></span><span class="v">+188,1%</span>
+    </div>
+    <div class="scroll">
+      <table>
+        <thead><tr><th>Canasta</th><th class="n">ene-24 → ago-26</th><th class="n">Interanual</th><th class="n">Costo sep-26</th></tr></thead>
+        <tbody>
+          <tr><td>Popular</td><td class="n">+139,1%</td><td class="n">+28,3%</td><td class="n">$1.007.217</td></tr>
+          <tr><td>Media</td><td class="n">+143,2%</td><td class="n">+26,8%</td><td class="n">$1.654.483</td></tr>
+          <tr><td>Ejecutiva</td><td class="n">+140,8%</td><td class="n">+25,9%</td><td class="n">$2.712.070</td></tr>
+          <tr><td>Representativa</td><td class="n">+132,2%</td><td class="n">+26,5%</td><td class="n">$1.522.238</td></tr>
+          <tr><td>Femenina</td><td class="n">+158,5%</td><td class="n">+28,5%</td><td class="n">$138.634</td></tr>
+          <tr class="ref"><td>IPC alimentos</td><td class="n">+161,1%</td><td class="n">+34,9%</td><td class="n">—</td></tr>
+          <tr class="ref"><td>IPC general</td><td class="n">+188,1%</td><td class="n">+33,5%</td><td class="n">—</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>Septiembre entra con dos semanas cerradas de cuatro: es la primera quincena, no el mes. La serie mensual ahora lo marca en la columna <code>mes_parcial</code>.</p>
+  </section>
+
+  <section>
+    <h2>Defectos corregidos</h2>
+    <div class="stack">
+      <div class="find fixed">
+        <div class="stripe"></div>
+        <div class="body">
+          <div><span class="chip fixed">Corregido</span></div>
+          <h3>BUG-36 · Precios viejos conviviendo con precios actuales</h3>
+          <p>El mismo EAN se publica a la vez con su precio actual y con uno que la cadena nunca actualizó. La mediana provincial cae en un régimen o en el otro según qué provincias llegan al mínimo de tres sucursales, y como el índice es encadenado, el salto entra una vez y no sale nunca.</p>
+          <div class="scroll">
+            <table>
+              <thead><tr><th>Ítem</th><th>Semana</th><th class="n">Factor</th><th class="n">Antes → después</th></tr></thead>
+              <tbody>
+                <tr><td>Arroz Largo Fino Molinos Ala 1 Kg</td><td>2024-03-07</td><td class="n">×20,5</td><td class="n">$122,5 → $2.506,7</td></tr>
+                <tr><td>Arroz Largo Fino Molinos Ala 500 Gr</td><td>2024-03-21</td><td class="n">×42,6</td><td class="n">$35,2 → $1.500,0</td></tr>
+                <tr><td>Desodorante Rexona Extra Cool</td><td>5 veces, 2024-09 a 2025-08</td><td class="n">×0,06 y ×17,7</td><td class="n">$177,5 ↔ ~$3.000</td></tr>
+                <tr><td>Lavandina Ayudín 1 Lt</td><td>2024-06-13</td><td class="n">×10,8</td><td class="n">$93,8 → $1.009,9</td></tr>
+                <tr><td>Aceite de Oliva La Toscana 250 Ml</td><td>2025-06-12</td><td class="n">×7,6</td><td class="n">$1.441 → $10.920</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p>Solución: un ítem que se mueve ×3 o más en una semana sale del eslabón de esa semana y vuelve en la siguiente, igual que un reemplazo de producto. El umbral no toca las variaciones legítimas: la mayor de toda la serie, en enero de 2024, fue ×1,6. Las transiciones quedan en la hoja <code>Alertas_quiebre</code>.</p>
+        </div>
+      </div>
+      <div class="find fixed">
+        <div class="stripe"></div>
+        <div class="body">
+          <div><span class="chip fixed">Corregido</span></div>
+          <h3>La comparación con el IPC mezclaba meses</h3>
+          <p>El reporte decía «2024-01→2026-09: canasta 245 vs IPC 288», pero la canasta llegaba a septiembre y el IPC solo a agosto, porque el INDEC publica a mediados del mes siguiente. Ahora se compara el último mes en común y el mes extra se informa aparte.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Qué cambia en la próxima corrida</h2>
+    <p>Efecto de la regla de quiebre sobre el acumulado a agosto de 2026, simulado sobre el panel de esta misma corrida.</p>
+    <div class="scroll">
+      <table>
+        <thead><tr><th>Canasta</th><th class="n">Publicado</th><th class="n">Con la corrección</th><th class="n">Diferencia</th></tr></thead>
+        <tbody>
+          <tr><td>Popular</td><td class="n">239,1</td><td class="n">234,1</td><td class="n">−5,0</td></tr>
+          <tr><td>Ejecutiva</td><td class="n">240,8</td><td class="n">236,0</td><td class="n">−4,8</td></tr>
+          <tr><td>Media</td><td class="n">243,2</td><td class="n">240,8</td><td class="n">−2,4</td></tr>
+          <tr><td>Representativa</td><td class="n">232,2</td><td class="n">231,2</td><td class="n">−1,0</td></tr>
+          <tr><td>Femenina</td><td class="n">258,5</td><td class="n">258,5</td><td class="n">sin cambio</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p>La corrida no vuelve a leer el SEPA mientras no cambien los EANs de las canastas: el caché por mes ya está en el Drive.</p>
+  </section>
+
+  <section>
+    <h2>Las dos preguntas del informe</h2>
+    <div class="stack">
+      <div class="find">
+        <div class="stripe"></div>
+        <div class="body">
+          <h3>La Femenina sube más porque es perfumería, no por un error</h3>
+          <p>Sus catorce ítems subieron una mediana de +213% cada uno. Y el rubro Perfumería de las otras canastas subió todavía más en el mismo período: +420% en Media, +312% en Popular, +273% en Ejecutiva y +271% en Representativa. El cuidado personal corrió muy por encima de los alimentos. Un detalle a tener presente: el 10,3% de su acumulado sale de una sola semana, el 25 de enero de 2024, con tres ítems repreciando juntos tras la devaluación.</p>
+        </div>
+      </div>
+      <div class="find open">
+        <div class="stripe"></div>
+        <div class="body">
+          <div><span class="chip open">Abierto</span></div>
+          <h3>La Tecnológica arranca tarde porque antes no hay datos</h3>
+          <p>De sus catorce ítems, solo tres existen en el SEPA antes de 2025: el convector, el aire acondicionado y el lavarropas. Los otros once son el 69,9% del costo, y el aire alterna entre ×0,24 y ×3,84. Recomendación: publicarla como nivel de referencia —cuánto cuesta equipar un hogar— y no como índice de inflación.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Temas abiertos</h2>
+    <div class="stack">
+      <div class="find bad">
+        <div class="stripe"></div>
+        <div class="body">
+          <div><span class="chip bad">Serie rota</span></div>
+          <h3>Durazno</h3>
+          <p>Publica $16.607/kg contra $5.122 de la mediana cruda, con 274 sucursales, 109 semanas de 142 y la cadena partida en tres tramos. Su acumulado da +578% contra +123% del dato crudo. Pesa menos del 0,9%, así que no contamina el total, pero no es publicable a nivel de ítem. Misma familia: Espinaca, Acelga y Palta.</p>
+        </div>
+      </div>
+      <div class="find open">
+        <div class="stripe"></div>
+        <div class="body">
+          <div><span class="chip open">Composición</span></div>
+          <h3>Trazabilidad: 36 ítems por debajo del 85%</h3>
+          <p>Pesan poco en Popular (3,9%) y Representativa (2,0%), pero 10,6% en Media, 8,0% en Ejecutiva y 69,9% en Tecnológica. En Representativa sigue el Jabón Dove Original, con 81,8%. Conviene reemplazarlos en el constructor.</p>
+        </div>
+      </div>
+      <div class="find open">
+        <div class="stripe"></div>
+        <div class="body">
+          <div><span class="chip open">A validar</span></div>
+          <h3>Pan francés</h3>
+          <p>Pesa 11,1% de la Popular y 7,2% de la Representativa. Su serie encadenada acumula +138%, contra +487% del estimador ponderado y +669% de la mediana cruda. El anclaje a $6.200/kg fija el nivel, no la evolución. Es la palanca metodológica más grande de la canasta Popular y conviene contrastarla con una referencia de precio de pan de 2024.</p>
+        </div>
+      </div>
+      <div class="find open">
+        <div class="stripe"></div>
+        <div class="body">
+          <div><span class="chip open">Cobertura</span></div>
+          <h3>Apertura provincial de Popular y Ejecutiva</h3>
+          <p>Quedan con tres provincias confiables cada una, porque sus ítems están en menos sucursales: 1.239 y 1.249 contra 2.196 de la Representativa. Refuerza la regla de no publicar la apertura provincial de esas canastas.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Próximos pasos</h2>
+    <ul>
+      <li>Volver a correr el nb07 con la versión 5.9 y revisar la hoja <code>Alertas_quiebre</code>.</li>
+      <li>Reemplazar en el constructor los ítems de baja trazabilidad de Media y Ejecutiva, y el Dove Original de Representativa.</li>
+      <li>Sacar Durazno de las tablas por ítem.</li>
+      <li>Validar el nivel del pan francés de 2024 contra una referencia de mercado.</li>
+      <li>Decidir si la Tecnológica se publica como nivel en lugar de índice.</li>
+    </ul>
+  </section>
+
+  <footer>
+    Repositorio <code>precios_minoristas_supermercados</code> · detalle técnico en <code>docs/BUGS_Y_MEJORAS.md</code> (BUG-36) · corrección en el commit <code>6d7ed9c</code>
+  </footer>
+</div>
+</body>
+</html>
