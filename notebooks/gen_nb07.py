@@ -271,6 +271,17 @@ NIVEL_REFERENCIA_FRESCO = {
 # Salto semanal del precio nacional de un item a partir del cual se lo reporta en la hoja
 # Alertas_precio_item. Es el tripwire: ningun cambio de regimen deberia volver a pasar inadvertido.
 ALERTA_SALTO_ITEM = 0.35
+# Variacion semanal a partir de la cual el movimiento de un item NO se toma como cambio de precio
+# sino como QUIEBRE DE SERIE, y el item sale del eslabon de esa semana (vuelve a entrar en la
+# siguiente). Es el tratamiento estandar de un reemplazo de producto.
+# Por que: el mismo EAN convive en el SEPA con un precio viejo que la cadena nunca actualizo, y la
+# mediana provincial cae en un regimen o en el otro segun que provincias califican esa semana. La
+# auditoria del 2026-09-22 midio 24 transiciones asi en 11 items -Arroz Molinos Ala x20,5 ($122,5 ->
+# $2.506,7); Rexona alternando x0,06 y x17,7 cinco veces; Aceite La Toscana x7,6- que inflaban el
+# acumulado de las canastas entre 1 y 2 pp. Con 3.0 se sacan solo movimientos imposibles: la mayor
+# variacion semanal legitima de la serie (enero 2024, con inflacion mensual de dos digitos) fue x1,6.
+# Poner None o 0 desactiva la regla.
+QUIEBRE_ITEM_K = 3.0
 # Agregado nacional: 'poblacion' (ponderado por poblacion provincial) | 'mediana' (mediana simple)
 AGG_NACIONAL = 'poblacion'
 # Minimo de sucursales que una provincia necesita para un item-semana para entrar en el promedio
@@ -1288,6 +1299,26 @@ print(f'Panel nacional: {nac_wide.shape[1]} items x {nac_wide.shape[0]} semanas 
 nac_ff_long = (nac_ff.reset_index().melt(id_vars='semana', var_name='item', value_name='nac')
                .dropna(subset=['nac']))
 
+# ── Eslabon del indice, con QUIEBRE DE SERIE (ver QUIEBRE_ITEM_K en la CELDA 1) ───────────────
+QUIEBRES = []
+def _eslabon(_a, _b, _k=QUIEBRE_ITEM_K):
+    """Ratio de la muestra apareada entre dos semanas, y lista de items tratados como quiebre.
+
+    Un item que se mueve mas de _k veces en UNA semana no cambio de precio: cambio de regimen de
+    publicacion. Dejarlo dentro del eslabon mete el salto entero en el indice y ya no sale nunca,
+    porque el indice es encadenado. Sacarlo de ese eslabon -y solo de ese- es lo que hace INDEC
+    ante un reemplazo de producto: la serie del item se corta y se vuelve a enganchar despues."""
+    _m = _a.notna() & _b.notna() & (_b > 0)
+    _qb = []
+    if _k and _k > 1:
+        _rr = _a / _b
+        _mal = _m & ((_rr > _k) | (_rr < 1.0 / _k))
+        if _mal.any():
+            _qb = list(_a.index[_mal])
+            _m = _m & ~_mal
+    _den = _b[_m].sum()
+    return (((_a[_m].sum() / _den) if (_m.any() and _den > 0) else 1.0), _qb)
+
 # ── Receta de cada canasta ────────────────────────────────────────────────────
 def _recipe(_name):
     _rows = []
@@ -1334,9 +1365,13 @@ for _name in CANASTAS_ACTIVAS:
     _idx = [100.0]
     for _t in range(1, len(_sem)):
         _a = _V.iloc[_t]; _b = _V.iloc[_t-1]
-        _m = _a.notna() & _b.notna()
-        _den = _b[_m].sum()
-        _idx.append(_idx[-1] * ((_a[_m].sum()/_den) if (_m.any() and _den > 0) else 1.0))
+        _r, _qb = _eslabon(_a, _b)
+        for _it in _qb:
+            QUIEBRES.append({'canasta': _name, 'semana': _sem[_t], 'item': _it,
+                             'factor': round(float(_a[_it] / _b[_it]), 2),
+                             'precio_antes': round(float(_b[_it] / _q.get(_it, 1)), 1),
+                             'precio_despues': round(float(_a[_it] / _q.get(_it, 1)), 1)})
+        _idx.append(_idx[-1] * _r)
     _idx = pd.Series(_idx, index=_sem)
     _directo = _V.sum(axis=1, min_count=1)
     _ok = _cov[_cov >= 0.95].index
@@ -1356,6 +1391,14 @@ for _name in CANASTAS_ACTIVAS:
           f'ultimo costo ${_s["costo_mediana"].iloc[-1]:,.0f} ({_s["var_sem_%"].iloc[-1]:+.1f}% sem)')
     if _aviso_desde:
         print(_aviso_desde)
+
+quiebres_idx = pd.DataFrame(QUIEBRES, columns=['canasta','semana','item','factor','precio_antes','precio_despues'])
+if len(quiebres_idx):
+    _qn = quiebres_idx.drop_duplicates(['semana','item'])
+    print(f'Quiebres de serie (item x{QUIEBRE_ITEM_K:g} o mas en una semana, fuera del eslabon): '
+          f'{len(_qn)} transiciones en {_qn["item"].nunique()} items  (hoja Alertas_quiebre)')
+else:
+    print(f'Quiebres de serie (umbral x{QUIEBRE_ITEM_K:g}): ninguno')
 
 # ── Costo por SUCURSAL (para desagregar por provincia/cadena/region) ──────────
 # Item faltante en una sucursal-semana -> se imputa con el precio nacional (ya arrastrado).
@@ -1479,6 +1522,12 @@ for _name in CANASTAS_ACTIVAS:
     _ns = costo_suc[costo_suc['canasta']==_name].groupby('mes')['suc_id'].nunique().rename('n_sucursales')
     _sm = _sm.merge(_ns, on='mes', how='left')
     _sm['var_mensual_%'] = _sm['canasta_mediana'].pct_change(fill_method=None) * 100
+    # MES PARCIAL: el ultimo mes se arma con las semanas CERRADAS que haya. Si el SEPA corta a
+    # mitad de mes quedan 2 de 4-5 semanas, y ese promedio es la primera quincena, no el mes.
+    # Compararlo contra un mes completo subestima o sobreestima segun donde caiga el precio.
+    _sm['mes_parcial'] = False
+    if len(_sm) and int(_sm['n_semanas'].iloc[-1]) < 4:
+        _sm.iloc[-1, _sm.columns.get_loc('mes_parcial')] = True
     serie_mes_dict[_name] = _sm
     if ipc is not None and len(_sm):
         _c = _sm.merge(ipc, on='mes', how='left')
@@ -1489,10 +1538,18 @@ for _name in CANASTAS_ACTIVAS:
         _c['idx_ipc_gral'] = (_c['ipc_general'] / _bi * 100).round(1) if _bi==_bi else np.nan
         _c['idx_ipc_alim'] = (_c['ipc_alimentos'] / _ba * 100).round(1) if _ba==_ba else np.nan
         comparativa_dict[_name] = _c
-        _n0 = _c[_c['idx_ipc_gral'].notna()]
+        # La comparacion se hace en el ULTIMO MES EN COMUN. El IPC del INDEC sale a mediados del
+        # mes siguiente, asi que la canasta casi siempre tiene un mes mas: comparar el ultimo de
+        # cada uno mezclaba periodos distintos y exageraba la brecha (2026-09-22).
+        _n0 = _c[_c['idx_ipc_gral'].notna() & _c['idx_canasta'].notna()]
         if len(_n0) >= 2:
-            print(f'  [{_name}] {_c["mes"].iloc[0]}->{_c["mes"].iloc[-1]}: canasta {_c["idx_canasta"].iloc[-1]:.0f} '
-                  f'vs IPC {_n0["idx_ipc_gral"].iloc[-1]:.0f} (base 100)')
+            _mc = _n0['mes'].iloc[-1]
+            _msg = (f'  [{_name}] {_c["mes"].iloc[0]}->{_mc}: canasta {_n0["idx_canasta"].iloc[-1]:.0f} '
+                    f'vs IPC {_n0["idx_ipc_gral"].iloc[-1]:.0f} (base 100)')
+            if _mc != _c['mes'].iloc[-1]:
+                _msg += (f'  [la canasta llega a {_c["mes"].iloc[-1]} ({_c["idx_canasta"].iloc[-1]:.0f}), '
+                         f'sin IPC publicado]')
+            print(_msg)
     else:
         comparativa_dict[_name] = _sm.copy()
 ''' ))
@@ -1810,6 +1867,7 @@ with pd.ExcelWriter(_xlsx, engine='openpyxl') as _w:
         {'parametro':'Frescos - regimen','valor':f'referencia nacional del tipo por MES; se descartan las variantes fuera de [ref/{FRESCO_REGIMEN_K}, ref*{FRESCO_REGIMEN_K}] antes de agregar por sucursal'},
         {'parametro':'Frescos - outliers','valor':f'precio del tipo = mediana de variantes por sucursal-semana, outliers fuera de [med/{FRESCO_OUTLIER_K}, med*{FRESCO_OUTLIER_K}] descartados'},
         {'parametro':'Tripwire','valor':f'hoja Alertas_precio_item: todo salto semanal del precio nacional de un item mayor a {ALERTA_SALTO_ITEM:.0%}'},
+        {'parametro':'Quiebre de serie','valor':f'un item que se mueve x{QUIEBRE_ITEM_K:g} o mas en una semana sale del eslabon de esa semana (hoja Alertas_quiebre)'},
         {'parametro':'Cobertura minima sucursal','valor':f'{FRAC_PRODUCTOS_MIN:.0%} de los empaquetados de la canasta'},
     ]).to_excel(_w, 'Metodologia', index=False)
     _res = []
@@ -1863,13 +1921,17 @@ with pd.ExcelWriter(_xlsx, engine='openpyxl') as _w:
      ).to_excel(_w, 'Alertas_reemplazo', index=False)
     (alertas_precio_item if len(alertas_precio_item) else pd.DataFrame({'sin_alertas':['ok']})
      ).to_excel(_w, 'Alertas_precio_item', index=False)
+    _qx = quiebres_idx.copy()
+    if len(_qx):
+        _qx.insert(3, 'descripcion', [_etiqueta(i) for i in _qx['item']])
+    (_qx if len(_qx) else pd.DataFrame({'sin_alertas':['ok']})).to_excel(_w, 'Alertas_quiebre', index=False)
 print(f'Excel: {_xlsx.name}  ({_xlsx.stat().st_size/1024:.0f} KB)')
 print(f'   Guardado en: {_xlsx.parent}')
 print('   Hojas: Metodologia, Resumen, Sem_*, Mes_*, vsIPC_*, Rubro_sem_*, Comp_rubro_*, '
       'Detalle_*, Prov_*, Cadena_*, Region_*, RegionSem_*, Panel_nacional, '
       'Panel_nacional_mes, Mes_rubro, Mes_region, Mes_provincia, Mes_cadena, '
       'Cobertura_emp, Cobertura_frescos, Presencia_items, Alertas_trazabilidad, '
-      'Alertas_reemplazo, Alertas_precio_item')
+      'Alertas_reemplazo, Alertas_precio_item, Alertas_quiebre')
 ''' ))
 
 # ── CELL 15 — REPORTE ─────────────────────────────────────────────────────────
@@ -1902,8 +1964,10 @@ for _name in CANASTAS_ACTIVAS:
         _acum = (_fin/_ini - 1)*100 if _ini else float('nan')
         _vm = float(_sm['var_mensual_%'].iloc[-1]) if len(_sm)>1 else float('nan')
         _nsuc = int(_sm['n_sucursales'].iloc[-1]) if _sm['n_sucursales'].notna().any() else 0
+        _parc = bool(_sm['mes_parcial'].iloc[-1]) if 'mes_parcial' in _sm.columns else False
         print(f'  Costo mensual ({_ult_mes}): ${_fin:,.0f} | var mes: {_vm:+.1f}% | '
-              f'acumulado {_sm["mes"].iloc[0]}->{_sm["mes"].iloc[-1]}: {_acum:+.1f}% | n_suc: {_nsuc}')
+              f'acumulado {_sm["mes"].iloc[0]}->{_sm["mes"].iloc[-1]}: {_acum:+.1f}% | n_suc: {_nsuc}'
+              + (f'  *** MES PARCIAL: {int(_sm["n_semanas"].iloc[-1])} semanas cerradas ***' if _parc else ''))
         print(f'  Semanal: ${float(_ss["costo_mediana"].iloc[-1]):,.0f} ({float(_ss["var_sem_%"].iloc[-1]):+.1f}% sem) | '
               f'items con precio {int(_ss["items_con_precio"].iloc[-1])}/{int(_ss["items_receta"].iloc[-1])}')
     except Exception as e:
@@ -1911,10 +1975,17 @@ for _name in CANASTAS_ACTIVAS:
     try:
         _c = comparativa_dict.get(_name)
         if _c is not None and 'idx_canasta' in _c.columns and _c['idx_canasta'].notna().any():
-            _msg = f'  vs IPC (base 100 en {_c["mes"].iloc[0]}): canasta = {float(_c["idx_canasta"].dropna().iloc[-1]):.0f}'
-            if _c['idx_ipc_gral'].notna().any(): _msg += f' | IPC gral = {float(_c["idx_ipc_gral"].dropna().iloc[-1]):.0f}'
-            if _c['idx_ipc_alim'].notna().any(): _msg += f' | IPC alim = {float(_c["idx_ipc_alim"].dropna().iloc[-1]):.0f}'
-            print(_msg)
+            _cc = _c[_c['idx_canasta'].notna() & _c['idx_ipc_gral'].notna()]
+            if len(_cc):
+                _msg = (f'  vs IPC en el ultimo mes en comun ({_cc["mes"].iloc[-1]}, base 100 en '
+                        f'{_c["mes"].iloc[0]}): canasta = {float(_cc["idx_canasta"].iloc[-1]):.0f}'
+                        f' | IPC gral = {float(_cc["idx_ipc_gral"].iloc[-1]):.0f}')
+                if _cc['idx_ipc_alim'].notna().any():
+                    _msg += f' | IPC alim = {float(_cc["idx_ipc_alim"].dropna().iloc[-1]):.0f}'
+                print(_msg)
+                if _cc['mes'].iloc[-1] != _c['mes'].iloc[-1]:
+                    print(f'      (la canasta llega a {_c["mes"].iloc[-1]}: {float(_c["idx_canasta"].dropna().iloc[-1]):.0f}, '
+                          f'todavia sin IPC publicado - NO comparar contra el IPC de arriba)')
     except Exception: pass
     try:
         _sh = rubro_share_dict[_name]

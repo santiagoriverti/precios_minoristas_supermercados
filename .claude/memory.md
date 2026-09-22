@@ -44,6 +44,24 @@ python notebooks/test_encadenado_frescos.py         # encadenado de frescos (nb0
 | 06 | `06_evolucion_brecha_celiaca` | ✅ medicion cerrada | ⚠️ su mapa sigue con `cartodbpositron` (ver pendiente 2) |
 | 07 | `07_evolucion_canastas_alternativas` | ⚠️ v5.7.1 sin re-correr | Motor del informe semanal; ver pendiente 1 |
 
+### ⚡ 2026-09-22 (noche) — AUDITORIA de la corrida 2026-09-17 + nb07 v5.9
+Corrida COMPLETA y valida (142 semanas, 85,2 M filas, 288 EANs, reemplazos aplicados). Auditada
+replicando el indice y el precio nacional desde el panel crudo: la maquinaria hace lo que dice.
+- Corregido (BUG-36): 24 transiciones imposibles (x3 a x42) por precios viejos conviviendo con
+  actuales en el mismo EAN. `QUIEBRE_ITEM_K = 3.0` las saca del eslabon + hoja `Alertas_quiebre`.
+  Acumulado ago-26: Popular 239,1 -> 234,1 | Ejecutiva 240,8 -> 236,0 | Media 243,2 -> 240,8 |
+  Representativa 232,2 -> 231,2 | Femenina sin cambio.
+- Corregido: la comparacion vs IPC mezclaba meses (canasta a sep, IPC a ago) + columna `mes_parcial`.
+- NUMEROS BUENOS (ago-26, mismo mes que el IPC): Popular +139,1% | Media +143,2% | Ejecutiva
+  +140,8% | Representativa +132,2% | Femenina +158,5% | IPC alim +161,1% | IPC gral +188,1%.
+  Interanual: canastas +26 a +28,5% contra IPC +33,5% y alimentos +34,9%.
+- Femenina NO es anomalia: es perfumeria (el rubro subio MAS en las otras canastas: +271 a +420%).
+- Tecnologica: solo 3 de 14 items antes de 2025 -> publicar como NIVEL, no como indice.
+- ABIERTO: 36 items con trazabilidad <85% (Media 10,6% del costo, Ejecutiva 8,0%, Tecnologica
+  69,9%); Durazno roto (x3,2 la mediana cruda); pan frances (+138% encadenado vs +487% ponderado,
+  11% de la Popular); ver docs/BUGS_Y_MEJORAS.md.
+- La proxima corrida NO relee el SEPA si no cambian los EANs: el cache por mes ya esta en el Drive.
+
 ### ⚡ 2026-09-22 (tarde) — nb07 v5.8: corrida murio por RAM; cache por mes (BUG-34, BUG-35)
 - La corrida con la canasta 2026-09 RELEYO TODO (1h21m): **cambiar EANs de una canasta cambia la
   clave del cache**. Lo que decia el handoff del 08-sep ("reusa el cache") era FALSO.

@@ -46,6 +46,95 @@ de la Tecnológica** hasta que haya al menos dos cadenas con cobertura de durabl
 
 ## 🟢 Cambios y fixes 2026-09
 
+### 🔴 BUG-36 — nb07: precios viejos conviviendo con precios actuales metían saltos imposibles en el índice (2026-09-22) ✅ Resuelto
+
+**Hallazgo de la auditoría de la corrida 2026-09-17** (canasta de sep-2026, 142 semanas). Se auditó
+replicando el índice desde `Panel_nacional` + recetas (coincide con el Excel, diferencia máxima
+0,001) y reconstruyendo el precio nacional desde las 85,2 M de filas del panel por sucursal con el
+maestro de sucursales (98,8% de las celdas dentro del 1%).
+
+**Síntoma**: 24 transiciones ítem-semana con factor mayor a ×3 o menor a ×1/3, en 11 ítems:
+
+| Ítem | Semana | Factor | Antes → después |
+|---|---|---:|---|
+| Arroz Largo Fino Molinos Ala 1 Kg | 2024-03-07 | ×20,5 | $122,5 → $2.506,7 |
+| Arroz Largo Fino Molinos Ala 500 Gr | 2024-03-21 | ×42,6 | $35,2 → $1.500,0 |
+| Desodorante Rexona Extra Cool | 5 veces (2024-09 a 2025-08) | ×0,06 y ×17,7 | $177,5 ↔ ~$3.000 |
+| Aceite de Oliva La Toscana 250 Ml | 2025-06-12 | ×7,6 | $1.441 → $10.920 |
+| Lavandina Ayudín 1 Lt | 2024-06-13 | ×10,8 | $93,8 → $1.009,9 |
+
+**Causa**: el mismo EAN convive en el SEPA con un precio viejo que la cadena nunca actualizó
+(verificado al nivel de sucursal: la Lavandina cotizaba a $67 en una sucursal mientras el mercado
+estaba en $749, y el Arroz a $122 contra ~$1.200). La mediana provincial ponderada cae en un régimen
+o en el otro según qué provincias llegan al mínimo de 3 sucursales esa semana. **No es el fallback a
+mediana simple**: ese se usa en apenas 168 celdas de 46.324 (0,4%) y explica una sola de las 24
+transiciones. Como el índice es encadenado, el salto entra una vez y ya no sale nunca.
+
+**Efecto medido sobre el acumulado ene-24 → ago-26**: Popular 239,1 → 234,1; Ejecutiva 240,8 →
+236,0; Media 243,2 → 240,8; Representativa 232,2 → 231,2; Femenina sin cambio. El acumulado
+publicado estaba sobreestimado entre 1 y 2 pp.
+
+**Fix (v5.9)**: `QUIEBRE_ITEM_K = 3.0` en la CELDA 1. Un ítem que se mueve ×3 o más en una semana
+sale del eslabón de ESA semana y vuelve a entrar en la siguiente — el tratamiento estándar de un
+reemplazo de producto. El umbral no toca las variaciones legítimas: la mayor de toda la serie, en
+enero 2024 con inflación mensual de dos dígitos, fue ×1,6. Las transiciones quedan registradas en la
+hoja nueva **`Alertas_quiebre`** y se reportan por pantalla.
+Test: `notebooks/test_quiebre_serie.py` (ejecuta `_eslabon` real: salto ×20, ida y vuelta entre
+regímenes, variación legítima ×1,6 que SÍ debe entrar, y umbral desactivado).
+
+### 🟣 La comparación contra el IPC mezclaba meses (2026-09-22) ✅ Resuelto
+
+El reporte decía "2024-01→2026-09: canasta 245 vs IPC 288", pero la canasta llegaba a septiembre y
+el IPC solo a agosto (el INDEC publica a mediados del mes siguiente). Ahora la comparación se hace
+en el **último mes en común** y, si la canasta tiene un mes más, se informa aparte con la aclaración
+de que no se compara. Además la serie mensual lleva la columna `mes_parcial`: el último mes se arma
+con las semanas cerradas que haya —septiembre 2026 tuvo 2 de 4— y no es comparable contra un mes
+completo.
+
+**Comparación correcta a ago-2026** (ambos al mismo mes):
+
+| Canasta | ene-24 → ago-26 | Interanual |
+|---|---:|---:|
+| Popular | +139,1% | +28,3% |
+| Media | +143,2% | +26,8% |
+| Ejecutiva | +140,8% | +25,9% |
+| Representativa | +132,2% | +26,5% |
+| Femenina | +158,5% | +28,5% |
+| IPC alimentos | +161,1% | +34,9% |
+| IPC general | +188,1% | +33,5% |
+
+### 🟡 Lo que la auditoría del 2026-09-22 dejó ABIERTO
+
+1. **Trazabilidad**: 36 ítems por debajo del 85%. Pesan poco en Popular (3,9%) y Representativa
+   (2,0%), pero **10,6% en Media**, **8,0% en Ejecutiva** y **69,9% en Tecnológica**. En
+   Representativa sigue el Jabón Dove Original (81,8%).
+2. **Durazno**: publica $16.607/kg contra $5.122 de la mediana cruda; 274 sucursales, 109 semanas de
+   142, cadena partida, acumulado +578% contra +123% del dato crudo. Pesa <0,9%: no contamina el
+   total, pero no es publicable a nivel de ítem. Misma familia: Espinaca, Acelga, Palta.
+3. **Pan francés**: 11,1% de la Popular y 7,2% de la Representativa. El encadenado acumula +138%
+   contra +487% del estimador ponderado y +669% de la mediana cruda. Es la palanca metodológica más
+   grande de la Popular y conviene validarla contra una referencia de precio de pan de 2024.
+4. **Tecnológica**: solo 3 de sus 14 ítems existen en el SEPA antes de 2025 (convector, aire y
+   lavarropas), y el aire alterna ×0,24 / ×3,84. Publicar como NIVEL de referencia, no como índice.
+5. **Provincias**: Popular y Ejecutiva quedan con 3 provincias confiables (sus ítems están en menos
+   sucursales: 1.239 y 1.249 contra 2.196 de la Representativa). Refuerza la regla de no publicar la
+   apertura provincial de esas canastas.
+
+### ✅ Lo que la auditoría CONFIRMÓ que está bien
+
+- Réplica independiente del índice: coincide con el Excel (diferencia máxima 0,001).
+- Réplica del precio nacional desde el panel crudo: 98,8% de las celdas dentro del 1%.
+- Grupo de control empaquetados vs frescos: +148/+174% y +154/+157%, sin divergencia (el síntoma de
+  BUG-28 no volvió).
+- Frescos contra un índice de **muestra fija por EAN** (solo supervivientes): mediana +189% contra
+  +181% del publicado.
+- Todas las semanas con variación >4% están en el 1º trimestre de 2024 y mueven varios ítems a la
+  vez. Cero alertas de salto en 2026; el salto de 2026-05-07 no volvió.
+- **Femenina**: no es una anomalía, es composición. Sus ítems subieron una mediana de +213% y el
+  rubro Perfumería de las otras canastas subió MÁS (+420% Media, +312% Popular, +273% Ejecutiva,
+  +271% Representativa). El 10,3% de su acumulado sale de una sola semana, 2024-01-25, con tres
+  ítems repreciando juntos tras la devaluación.
+
 ### 🔴 BUG-34 — nb07: la sesión de Colab murió por RAM después de 1h21m de lectura y no quedó nada guardado (2026-09-22) ✅ Resuelto
 
 **Síntoma**: corrida con la canasta de 2026-09. Lee los 32 meses cerrados (`32/32 [1:21:31]`) y
