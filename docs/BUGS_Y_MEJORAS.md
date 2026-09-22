@@ -212,6 +212,23 @@ $137.622 (+0,02%)** — la sustitución no mueve el nivel de la canasta.
 
 Se aplica sobre `cantidad_06` de la hoja `Productos unicos` del Excel de canasta.
 
+**Actualización 2026-09-22 — el reemplazo pasa al script de carga y al constructor.** El 08-sep se
+aplicó editando el Excel a mano; `cargar_canastas_v5.py` seguía cargando los tres ítems viejos, así
+que cualquier Excel nuevo (el de 2026-09, por ejemplo) los traía de vuelta. Ahora:
+
+- `cargar_canastas_v5.py` lleva los reemplazos. EANs: Prestobarba3 Femenina `7702018874781`,
+  Dove Antibacterial 90 Gr `7891150075382` y la crema `7793008018759` —en el SEPA figura como
+  "Piel Extra Seca **Villenueve** 250 Ml" (mal escrito, 1.610 sucursales). OJO con `7793008018797`,
+  "Piel Seca" sin "Extra": solo está en 482 sucursales.
+- **Representativa**: Nivea Body 400 (x0,5) también estaba ahí, con la misma trazabilidad del 50%.
+  Se reemplaza por la misma Villenueve 250 x0,8 (mantiene 200 Ml/mes). Costo de Representativa a
+  precios de sep-2026: $827.801 → $826.550 (−0,15%).
+- `construir_canastas_v5.py`: `EAN_FORZADO[(canasta, necesidad)]` fija estos EANs para que una
+  regeneración no los deshaga. Bug encontrado de paso: el `exc` de la rasuradora femenina incluye
+  `barba` y descartaba a Presto**barba**3; los EANs fijados se buscan sin `inc`/`exc`.
+- ⚠️ Si se regenera con el Excel de 2026-09, el constructor elige Nivea Body 400 para **Media**
+  (el loader actual tiene Nivea Aloe Vera 400). Revisar esa elección antes de usar un loader nuevo.
+
 ### 🟣 Anclaje de nivel de un fresco por referencia de mercado (2026-09-08)
 
 `Pan francés` publicaba **$7.732/kg** contra **~$6.200** de mercado. Pesa 18 kg/mes y el **13,7% de

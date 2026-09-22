@@ -541,6 +541,32 @@ NEEDS_FEMENINA = {
     'Jabon de tocador': dict(sub='Jabones', inc=r'jab[oó]n', exc=r'ropa|polvo|lavarropas', u='kg', qty=0.4),
 }
 
+# EANs FIJADOS a mano (2026-09-08 y 2026-09-22, docs/BUGS_Y_MEJORAS.md). El selector elegia
+# items de alta cobertura pero sin trazabilidad semanal (Nivea Body 400: dato en 73 de 139
+# semanas, y su reaparicion fue el +9,3% del indice de Femenina). Clave: (canasta, necesidad).
+# Si el EAN fijado no esta entre los candidatos del Excel, se avisa y se elige automatico.
+EAN_FORZADO = {
+    ('Femenina', 'Rasuradora femenina'): '7702018874781',  # Prestobarba3 Femenina 2 Un (antes Simply Venus)
+    ('Femenina', 'Crema corporal'):      '7793008018759',  # Villenueve Piel Extra Seca 250 Ml (antes Nivea Body 400)
+    ('Femenina', 'Jabon de tocador'):    '7891150075382',  # Dove Antibacterial 90 Gr (antes Dove Original)
+    ('Representativa', 'Crema corporal'): '7793008018759', # idem, Nivea Body 400 tambien estaba aca
+}
+
+
+def forzado(pu, cfg, canasta, need):
+    """Fila del EAN fijado para (canasta, necesidad), o None si no hay o no esta en el Excel.
+    Busca en toda la subcategoria SIN inc/exc: el exc de la rasuradora femenina ('barba')
+    descarta a PrestoBARBA3 Femenina."""
+    ean = EAN_FORZADO.get((canasta, need))
+    if ean is None:
+        return None
+    f = candidatos(pu, dict(sub=cfg['sub'], u=cfg['u']))
+    f = f[f['ean'].astype(str) == ean]
+    if not len(f):
+        print(f'  OJO {canasta}/{need}: el EAN fijado {ean} no esta entre los candidatos; eleccion automatica')
+        return None
+    return f.iloc[0]
+
 # ── Canasta TECNOLOGICA: bundle de durables, un item por necesidad ────────────
 # No escalona (es un bundle de referencia). La cantidad es 1 unidad, y el precio del
 # bundle se lee como "cuanto cuesta equipar un hogar", no como consumo mensual.
@@ -760,7 +786,11 @@ def construir(pu):
             if q is None or q <= 0:
                 continue
             # La Representativa no arrastra el piso: no es un tier, es el producto modal.
-            r, ok = elegir(c, canasta, usados, None if canasta == 'Representativa' else piso)
+            r = forzado(pu, cfg, canasta, need)
+            if r is not None:
+                ok = True
+            else:
+                r, ok = elegir(c, canasta, usados, None if canasta == 'Representativa' else piso)
             if r is None:
                 faltantes.append((f'{need} [{canasta}]', cfg['sub'], len(c)))
                 continue
@@ -787,7 +817,8 @@ def construir(pu):
         if len(c) < 1:
             faltantes.append((f'[F] {need}', cfg['sub'], len(c)))
             continue
-        r, ok = elegir(c, 'Femenina', set())
+        r = forzado(pu, cfg, 'Femenina', need)
+        r, ok = (r, True) if r is not None else elegir(c, 'Femenina', set())
         if r is None:
             faltantes.append((f'[F] {need}', cfg['sub'], len(c)))
             continue

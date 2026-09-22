@@ -44,6 +44,13 @@ python notebooks/test_encadenado_frescos.py         # encadenado de frescos (nb0
 | 06 | `06_evolucion_brecha_celiaca` | ✅ medicion cerrada | ⚠️ su mapa sigue con `cartodbpositron` (ver pendiente 2) |
 | 07 | `07_evolucion_canastas_alternativas` | ⚠️ v5.7.1 sin re-correr | Motor del informe semanal; ver pendiente 1 |
 
+### ⚡ 2026-09-22 — canasta corregida en el repo (commit de hoy)
+`docs/canastas_alternativas/cargar_canastas_v5.py` YA trae Femenina reemplazada y Representativa sin
+Nivea Body 400 (288 EANs). Antes el reemplazo del 08-sep vivia solo en un Excel editado a mano: el
+script seguia con los items viejos. Validado contra `canasta_representativa_2026-09.xlsx` (0 EANs
+faltantes). Para correr nb07: cargar ese script sobre el Excel de sep -> subir `_con_canastas` como
+`canasta_representativa_2026-09.xlsx`. El constructor fija los EANs con `EAN_FORZADO`.
+
 ### PENDIENTES, en orden
 
 1. **nb07 — re-correr con el Excel de canasta nuevo** (Femenina reemplazada + pan frances anclado).

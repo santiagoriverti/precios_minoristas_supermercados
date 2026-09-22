@@ -4,7 +4,11 @@
 # ------------------------------------------------------------
 # GENERADO AUTOMATICAMENTE por docs/canastas_alternativas/construir_canastas_v5.py
 #   periodo de referencia: 2026-08      generado: 2026-09-07
-#   287 EANs   |   hogar de referencia: hogar tipo 2 (2 adultos + 2 ninos) = 3,09 adultos equivalentes
+#   EDITADO A MANO 2026-09-22: Femenina con los reemplazos del 2026-09-08 (docs/BUGS_Y_MEJORAS.md):
+#     sale Nivea Body 400 / Simply Venus / Dove Original 90 -> entra Villeneuve Piel Extra Seca 250 (7793008018759) x1,6 /
+#     Prestobarba3 Femenina x1 / Dove Antibacterial 90 x4. Representativa: Nivea Body 400 x0,5 -> Villenueve
+#     250 x0,8 (mismos 200 Ml/mes). Los fija EAN_FORZADO en el constructor.
+#   288 EANs   |   hogar de referencia: hogar tipo 2 (2 adultos + 2 ninos) = 3,09 adultos equivalentes
 #
 # Diferencia clave con v4: cada estrato usa SU PROPIA version de cada necesidad
 # (Popular primer precio, Media marca lider, Ejecutiva premium), en vez de compartir
@@ -33,7 +37,6 @@ COLS  = ["cantidad_01","cantidad_02","cantidad_03","cantidad_04","cantidad_05","
 CANTIDADES = {
     '198990785363': {'cantidad_01': 0, 'cantidad_02': 0, 'cantidad_03': 0, 'cantidad_04': 1, 'cantidad_05': 0, 'cantidad_06': 0},  # Informática | Pc/Notebook Hp Note 15-Fc0235La R3-7320U Amd 15""""8/512Gb
     '34264476455': {'cantidad_01': 0, 'cantidad_02': 0, 'cantidad_03': 0, 'cantidad_04': 1, 'cantidad_05': 0, 'cantidad_06': 0},  # Pequeños Electrodomésticos | Licuadora De Mano Oster 800W Fpsthb2802 354 Negro
-    '4005808319695': {'cantidad_01': 0, 'cantidad_02': 0, 'cantidad_03': 0, 'cantidad_04': 0, 'cantidad_05': 0.5, 'cantidad_06': 1},  # Perfumería | Crema Corporal Milk Nutritiva Piel Extra Seca Nivea Body 4
     '4005808515592': {'cantidad_01': 0, 'cantidad_02': 0, 'cantidad_03': 4, 'cantidad_04': 0, 'cantidad_05': 0, 'cantidad_06': 0},  # Perfumería | Crema Humectante con Aceite de Jojoba y Vitamina E Nivea S
     '4005900036759': {'cantidad_01': 0, 'cantidad_02': 0, 'cantidad_03': 10, 'cantidad_04': 0, 'cantidad_05': 0, 'cantidad_06': 0},  # Perfumería | Desodorante Antitranspirante Hombre Roll On Nivea Power In
     '4005900985828': {'cantidad_01': 0, 'cantidad_02': 0, 'cantidad_03': 0, 'cantidad_04': 0, 'cantidad_05': 0, 'cantidad_06': 1},  # Perfumería | Toallitas Desmaquillantes Micellair 3 en 1 Nivea 25 Un
@@ -66,7 +69,7 @@ CANTIDADES = {
     '7622300829728': {'cantidad_01': 0, 'cantidad_02': 8, 'cantidad_03': 0, 'cantidad_04': 0, 'cantidad_05': 0, 'cantidad_06': 0},  # Almacén | Galletitas Chocolate con Relleno de Limón Melba 120 Gr
     '7702010631207': {'cantidad_01': 0, 'cantidad_02': 0, 'cantidad_03': 0, 'cantidad_04': 0, 'cantidad_05': 0.5, 'cantidad_06': 0},  # Perfumería | Cepillo Dental Triple Accion Colgate 2 Un
     '7702018037865': {'cantidad_01': 0, 'cantidad_02': 0, 'cantidad_03': 0, 'cantidad_04': 0, 'cantidad_05': 1, 'cantidad_06': 0},  # Perfumería | Repuesto Rasuradora Prestobarba Mach3 Sensitive 2 Un
-    '7702018072392': {'cantidad_01': 0, 'cantidad_02': 0, 'cantidad_03': 0, 'cantidad_04': 0, 'cantidad_05': 0, 'cantidad_06': 1},  # Perfumería | Rasuradora Desechable Simply Venus Gillette 2 Un
+    '7702018874781': {'cantidad_01': 0, 'cantidad_02': 0, 'cantidad_03': 0, 'cantidad_04': 0, 'cantidad_05': 0, 'cantidad_06': 1},  # Perfumería | Rasuradora Desechable Femenina Prestobarba3 Gillette 2 Un  [Femenina 2026-09-08, reemplaza Simply Venus]
     '7702103751416': {'cantidad_01': 0, 'cantidad_02': 0, 'cantidad_03': 4, 'cantidad_04': 0, 'cantidad_05': 0, 'cantidad_06': 0},  # Almacén | Aritos de Cereal Frutados Froot Loops 195 Gr
     '7790010002653': {'cantidad_01': 0, 'cantidad_02': 0, 'cantidad_03': 0, 'cantidad_04': 0, 'cantidad_05': 2, 'cantidad_06': 0},  # Perfumería | Toallas Femeninas con Alas Adapt Suave Siempre Libre 8 Un
     '7790010002769': {'cantidad_01': 2, 'cantidad_02': 0, 'cantidad_03': 0, 'cantidad_04': 0, 'cantidad_05': 0, 'cantidad_06': 4},  # Perfumería | Toallas Femeninas con Alas Ultrafina Suave Siempre Libre 8
@@ -210,7 +213,7 @@ CANTIDADES = {
     '7791293049595': {'cantidad_01': 1, 'cantidad_02': 0, 'cantidad_03': 0, 'cantidad_04': 0, 'cantidad_05': 0, 'cantidad_06': 0},  # Perfumería | Desodorante Aerosol V8 Men Rexona 250 Ml
     '7791293050805': {'cantidad_01': 1.5, 'cantidad_02': 0, 'cantidad_03': 0, 'cantidad_04': 0, 'cantidad_05': 0, 'cantidad_06': 0},  # Perfumería | Jabón Jazmín Cremoso Lux 360 Gr
     '7791293051017': {'cantidad_01': 0, 'cantidad_02': 2.5, 'cantidad_03': 0, 'cantidad_04': 0, 'cantidad_05': 0, 'cantidad_06': 0},  # Perfumería | Shampoo Bond Intense Repair Dove 400 Ml
-    '7791293051208': {'cantidad_01': 0, 'cantidad_02': 0, 'cantidad_03': 0, 'cantidad_04': 0, 'cantidad_05': 6, 'cantidad_06': 4},  # Perfumería | Jabón de Tocador Original Dove 90 Gr
+    '7791293051208': {'cantidad_01': 0, 'cantidad_02': 0, 'cantidad_03': 0, 'cantidad_04': 0, 'cantidad_05': 6, 'cantidad_06': 0},  # Perfumería | Jabón de Tocador Original Dove 90 Gr
     '7791337007246': {'cantidad_01': 0, 'cantidad_02': 13, 'cantidad_03': 0, 'cantidad_04': 0, 'cantidad_05': 0, 'cantidad_06': 0},  # Frescos | Yogur Firme Descremado con Colágeno Vainilla Pote Ser 190 
     '7791337008106': {'cantidad_01': 0, 'cantidad_02': 0, 'cantidad_03': 7, 'cantidad_04': 0, 'cantidad_05': 0, 'cantidad_06': 0},  # Frescos | Postre de Dulce de Leche con Crema Pote Danette 100 Gr
     '7791337008564': {'cantidad_01': 0, 'cantidad_02': 0, 'cantidad_03': 33, 'cantidad_04': 0, 'cantidad_05': 0, 'cantidad_06': 0},  # Frescos | Yogur Batido Parcialmente Descremado Vainilla con Calcio S
@@ -238,6 +241,7 @@ CANTIDADES = {
     '7792798007387': {'cantidad_01': 2, 'cantidad_02': 0, 'cantidad_03': 0, 'cantidad_04': 0, 'cantidad_05': 0, 'cantidad_06': 0},  # Bebidas | Cerveza Rubia Cristal Quilmes 1 Lt
     '7792798010561': {'cantidad_01': 0, 'cantidad_02': 3, 'cantidad_03': 0, 'cantidad_04': 0, 'cantidad_05': 0, 'cantidad_06': 0},  # Bebidas | Cerveza Blanca Botella Stella Artois 975 Cc
     '7792798014873': {'cantidad_01': 0, 'cantidad_02': 0, 'cantidad_03': 14, 'cantidad_04': 0, 'cantidad_05': 0, 'cantidad_06': 0},  # Bebidas | Cerveza Corona 330 Ml
+    '7793008018759': {'cantidad_01': 0, 'cantidad_02': 0, 'cantidad_03': 0, 'cantidad_04': 0, 'cantidad_05': 0.8, 'cantidad_06': 1.6},  # Perfumería | Crema Corporal para Piel Extra Seca Villenueve 250 Ml  [2026-09-08/22, reemplaza Nivea Body 400 en Femenina y Representativa]
     '7793100111891': {'cantidad_01': 3, 'cantidad_02': 0, 'cantidad_03': 0, 'cantidad_04': 0, 'cantidad_05': 0, 'cantidad_06': 0},  # Perfumería | Crema Dental Ultra Blanco Colgate 90 Gr
     '7793253003517': {'cantidad_01': 1, 'cantidad_02': 0, 'cantidad_03': 0, 'cantidad_04': 0, 'cantidad_05': 0, 'cantidad_06': 0},  # Limpieza | Limpiador Desinfectante Líquido Lavanda Poett 1.8 Lt
     '7793253003548': {'cantidad_01': 0, 'cantidad_02': 0, 'cantidad_03': 0, 'cantidad_04': 0, 'cantidad_05': 2, 'cantidad_06': 0},  # Limpieza | Limpiador Líquido Primavera Poett 900 Ml
@@ -300,6 +304,7 @@ CANTIDADES = {
     '7891024116128': {'cantidad_01': 0, 'cantidad_02': 0, 'cantidad_03': 2, 'cantidad_04': 0, 'cantidad_05': 0, 'cantidad_06': 0},  # Perfumería | Cepillo Dental Colgate 1 Un
     '7891024134429': {'cantidad_01': 0, 'cantidad_02': 3, 'cantidad_03': 0, 'cantidad_04': 0, 'cantidad_05': 0, 'cantidad_06': 0},  # Perfumería | Crema Dental Sensitive Blanqueador Colgate 100 Gr
     '7891150000971': {'cantidad_01': 0, 'cantidad_02': 0, 'cantidad_03': 5, 'cantidad_04': 0, 'cantidad_05': 0, 'cantidad_06': 0},  # Limpieza | Suavizante para Ropa Concentrado Cuidado Intesivo Comfor 5
+    '7891150075382': {'cantidad_01': 0, 'cantidad_02': 0, 'cantidad_03': 0, 'cantidad_04': 0, 'cantidad_05': 0, 'cantidad_06': 4},  # Perfumería | Jabón Tocador Antibacterial Cuida y Protege Dove 90 Gr  [Femenina 2026-09-08, reemplaza Dove Original]
     '7891150095618': {'cantidad_01': 0, 'cantidad_02': 7, 'cantidad_03': 0, 'cantidad_04': 0, 'cantidad_05': 0, 'cantidad_06': 0},  # Perfumería | Jabón de Tocador Piel Sensible Dove 90 Gr
     '7891515629458': {'cantidad_01': 1, 'cantidad_02': 0, 'cantidad_03': 0, 'cantidad_04': 0, 'cantidad_05': 0, 'cantidad_06': 0},  # Congelados | Formitas de Pollo Congelado Sadia 400 Gr
     '7896004004921': {'cantidad_01': 0, 'cantidad_02': 1.5, 'cantidad_03': 0, 'cantidad_04': 0, 'cantidad_05': 0, 'cantidad_06': 0},  # Almacén | Copos de Maíz Azucarados Zucaritas 240 Gr
