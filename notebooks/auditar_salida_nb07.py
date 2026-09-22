@@ -1,17 +1,26 @@
 # -*- coding: utf-8 -*-
 """Auditoria de una salida del nb07 (canastas_alternativas_YYYY-MM-DD.xlsx).
 
-Reproduce los chequeos de la auditoria del 2026-09-22 (docs/AUDITORIA_2026-09-22.md). Corre con el
-Excel solo; si ademas se le pasa la carpeta del cache por mes, agrega la replica del precio nacional
-y el indice de muestra fija por EAN, que son los dos controles mas fuertes.
+Reproduce los chequeos de las auditorias del 2026-09-22 (docs/AUDITORIA_2026-09-22.md y
+docs/AUDITORIA_2026-09-22_v59.md). Corre con el Excel solo; con la carpeta del cache por mes agrega
+controles contra el dato crudo, y con la planilla de precios promedio del INDEC contrasta el nivel
+y la evolucion de los frescos contra una fuente externa.
 
     python auditar_salida_nb07.py canastas_alternativas_2026-09-17.xlsx
     python auditar_salida_nb07.py canastas.xlsx --cache C:/.../output_canasta_alternativa/_cache_nb07
+    python auditar_salida_nb07.py canastas.xlsx --indec sh_ipc_precios_promedio.xls
+
+La planilla del INDEC es https://www.indec.gob.ar/ftp/cuadros/economia/sh_ipc_precios_promedio.xls
+(publica, se actualiza a mediados de cada mes).
 
 Cada bloque imprime OK o REVISAR. REVISAR no significa que este mal: significa que hay que mirarlo
 antes de publicar. Al final resume cuantos bloques quedaron para revisar.
 
 Que NO hace: no recalcula el SEPA ni valida el maestro. Audita la salida, no la lectura.
+
+v5.10 (2026-09-22): la replica del indice aplica la regla de quiebre x3 de la v5.9 (sin ella daba
+falsas alarmas); el chequeo de transiciones imposibles verifica que esten TODAS en Alertas_quiebre;
+chequeo nuevo de coherencia de las aperturas (guarda del BUG-37) y contraste opcional con el INDEC.
 """
 import argparse, pathlib, re, sys
 import numpy as np, pandas as pd
@@ -19,6 +28,16 @@ import numpy as np, pandas as pd
 QUIEBRE_K = 3.0        # factor a partir del cual una variacion semanal es imposible (ver BUG-36)
 SALTO_GRANDE = 4.0     # % de variacion semanal de la canasta que se reporta con su atribucion
 TRAZA_MIN = 85.0       # % de meses con dato por debajo del cual un item esta marcado
+APERTURA_RANGO = (0.85, 1.20)   # costo de una cadena/region confiable / costo nacional (ver BUG-37)
+INDEC_NIVEL = (0.6, 1.6)        # nivel publicado / precio promedio INDEC GBA aceptable para un fresco
+# Tipo fresco del nb07 -> variedad de la hoja GBA de sh_ipc_precios_promedio.xls
+INDEC_MAP = {'Pan francés': 'Pan francés tipo flauta', 'Asado': 'Asado', 'Carne picada': 'Carne picada común',
+             'Paleta': 'Paleta', 'Nalga/Cuadril': 'Nalga', 'Pollo': 'Pollo entero', 'Merluza': 'Filet de merluza fresco',
+             'Jamón cocido (kg)': 'Jamón cocido', 'Salame/Salamín': 'Salame', 'Queso cremoso': 'Queso cremoso',
+             'Queso barra/Dambo': 'Queso pategrás', 'Queso rallar (sardo/reggianito)': 'Queso sardo',
+             'Huevos': 'Huevos de gallina', 'Manzana': 'Manzana deliciosa', 'Limón': 'Limón', 'Naranja': 'Naranja',
+             'Banana': 'Banana', 'Batata': 'Batata', 'Papa': 'Papa', 'Cebolla': 'Cebolla', 'Lechuga': 'Lechuga',
+             'Tomate': 'Tomate redondo', 'Zapallo': 'Zapallo anco'}
 IPC_NOTA = 'IPC del INDEC: sale a mediados del mes siguiente, por eso la canasta suele tener un mes mas.'
 
 RES = []
@@ -79,8 +98,8 @@ def encadenar(V, tope=None):
 
 # ── 1. Replica del indice ─────────────────────────────────────────────────────
 def chequear_indice(x, P, desc, canastas):
-    bloque('1) REPLICA DEL INDICE Y GRUPO DE CONTROL (empaquetados vs frescos)')
-    print(f"{'canasta':16s}{'replica':>10s}{'excel':>10s}{'dif max':>10s}{'EMPAQ':>10s}{'FRESCOS':>10s}")
+    bloque(f'1) REPLICA DEL INDICE (con quiebre x{QUIEBRE_K:g}) Y GRUPO DE CONTROL (empaquetados vs frescos)')
+    print(f"{'canasta':16s}{'replica':>10s}{'excel':>10s}{'dif max':>10s}{'sin regla':>11s}{'EMPAQ':>10s}{'FRESCOS':>10s}")
     datos = {}
     for c in canastas:
         r = receta(x, c, P, desc)
@@ -89,15 +108,18 @@ def chequear_indice(x, P, desc, canastas):
         S = pd.read_excel(x, hoja(x, 'Sem_', c))
         sems = S['semana'].astype(str).tolist()
         V = P.loc[its].T.mul(q.reindex(its), axis=1).loc[sems]
-        a, _ = encadenar(V); a = a / a.iloc[0] * 100
+        # Desde la v5.9 el nb07 saca del eslabon los movimientos x3 o mas (Alertas_quiebre): la
+        # replica tiene que hacer lo mismo o da una falsa alarma de 2 a 5 puntos.
+        a, _ = encadenar(V, tope=QUIEBRE_K); a = a / a.iloc[0] * 100
+        sr, _ = encadenar(V); sr = sr / sr.iloc[0] * 100
         dif = float(np.abs(a.values - S['indice_100'].values).max())
         emp = [i for i in its if kind[i] == 'emp']; fr = [i for i in its if kind[i] == 'fresh']
-        ie, _ = encadenar(V[emp]); ie = ie / ie.iloc[0] * 100
+        ie, _ = encadenar(V[emp], tope=QUIEBRE_K); ie = ie / ie.iloc[0] * 100
         ifr = None
         if fr:
-            ifr, _ = encadenar(V[fr]); ifr = ifr / ifr.iloc[0] * 100
+            ifr, _ = encadenar(V[fr], tope=QUIEBRE_K); ifr = ifr / ifr.iloc[0] * 100
         datos[c] = dict(V=V, S=S, q=q, kind=kind, idx=a)
-        print(f'{c:16s}{a.iloc[-1]:10.1f}{S["indice_100"].iloc[-1]:10.1f}{dif:10.3f}'
+        print(f'{c:16s}{a.iloc[-1]:10.1f}{S["indice_100"].iloc[-1]:10.1f}{dif:10.3f}{sr.iloc[-1]:11.1f}'
               f'{ie.iloc[-1]:10.1f}' + (f'{ifr.iloc[-1]:10.1f}' if ifr is not None else f'{"-":>10s}'))
         veredicto(dif < 0.01, f'{c}: el indice publicado se reproduce desde el panel (dif {dif:.3f})')
         if ifr is not None:
@@ -121,13 +143,26 @@ def chequear_quiebres(x, P, desc, datos):
     b = pd.DataFrame(filas, columns=['item', 'semana', 'factor', 'antes', 'despues'])
     if len(b):
         print(b.sort_values('semana').to_string(index=False))
-    veredicto(len(b) == 0, f'{len(b)} transiciones imposibles en {b["item"].nunique() if len(b) else 0} items '
-                           f'(con QUIEBRE_ITEM_K activo deberian ser 0 en el indice; la hoja Alertas_quiebre las lista)')
-    if len(b):
-        print(f'\n  Efecto en el acumulado si se las saca del eslabon:')
-        for c, d in datos.items():
-            a = d['idx']; t, _ = encadenar(d['V'], tope=QUIEBRE_K); t = t / t.iloc[0] * 100
-            print(f'    {c:16s} {a.iloc[-1]:8.1f} -> {t.iloc[-1]:8.1f}  ({t.iloc[-1]/a.iloc[-1]*100-100:+.1f}%)')
+    # El panel las conserva a proposito (es la materia prima); lo que importa es que el INDICE las
+    # haya sacado del eslabon. Toda transicion que caiga dentro de la ventana de alguna canasta que
+    # usa ese item tiene que figurar en Alertas_quiebre.
+    try:
+        aq = pd.read_excel(x, 'Alertas_quiebre')
+        listadas = set(zip(aq['semana'].astype(str), aq['descripcion'].astype(str).str[:44])) if 'semana' in aq.columns else set()
+    except Exception:
+        listadas = set()
+    faltan = []
+    for c, d in datos.items():
+        cols = set(d['V'].columns); sems = list(d['V'].index)
+        for r in filas:
+            it = next((i for i in cols if desc.get(i, i)[:44] == r[0]), None)
+            if it is not None and r[1] in sems[1:] and (r[1], r[0]) not in listadas:
+                faltan.append((c,) + r)
+    print(f'\n  Transiciones dentro de la ventana de alguna canasta y NO listadas en Alertas_quiebre: {len(faltan)}')
+    for f in faltan[:10]:
+        print('   ', f)
+    veredicto(not faltan, f'{len(b)} transiciones imposibles en el panel ({b["item"].nunique() if len(b) else 0} items); '
+                          f'todas las que caen en una canasta estan fuera del eslabon (hoja Alertas_quiebre)')
 
 
 # ── 3. Saltos semanales con atribucion ────────────────────────────────────────
@@ -225,6 +260,89 @@ def chequear_frescos(x, P):
                                 f'(no publicarlos a nivel de item; pesan poco en la canasta)')
 
 
+# ── 6b. Aperturas geograficas y por cadena (guarda del BUG-37) ────────────────
+def chequear_aperturas(x, canastas):
+    bloque(f'6b) APERTURAS: costo de cadenas y regiones confiables / costo nacional (rango {APERTURA_RANGO[0]}-{APERTURA_RANGO[1]})')
+    print('  Una cadena o region "30% mas barata" con precios iguales al nacional es la firma del BUG-37:')
+    print('  el costo por sucursal dejaba afuera los rubros que la sucursal no publica.')
+    try:
+        res = pd.read_excel(x, 'Resumen').set_index('canasta')
+    except Exception:
+        print('  (sin hoja Resumen)'); return
+    fuera = []
+    for c in canastas:
+        if c not in res.index:
+            continue
+        nac = float(res.at[c, 'costo_mensual_ult'])
+        partes = []
+        for pre, col in (('Cadena_', 'cadena'), ('Region_', 'region')):
+            h = hoja(x, pre, c)
+            if h is None:
+                continue
+            d = pd.read_excel(x, h)
+            if 'confiable' in d.columns:
+                d = d[d['confiable'].astype(bool)]
+            for _, r in d.iterrows():
+                rel = float(r['costo_mediana']) / nac if nac else np.nan
+                imp = f", {r['pct_imputado']:.0f}% imp." if 'pct_imputado' in d.columns and r['pct_imputado'] == r['pct_imputado'] else ''
+                partes.append(f"{r[col]} {rel:.2f}x{imp}")
+                if not (APERTURA_RANGO[0] <= rel <= APERTURA_RANGO[1]):
+                    fuera.append((c, r[col], round(rel, 2)))
+        print(f'  {c:15s} ' + ' | '.join(partes))
+    if fuera:
+        print('\n  Fuera de rango:', fuera)
+    veredicto(not fuera, f'{len(fuera)} cadenas/regiones confiables fuera de {APERTURA_RANGO} del nacional '
+                         f'(si aparecen muchas y "baratas", revisar el costo por sucursal de la CELDA 8)')
+
+
+# ── 6c. Contraste con los precios promedio del INDEC (opcional) ───────────────
+def leer_indec(path):
+    g = pd.read_excel(path, sheet_name='GBA', header=None)
+    meses = {'enero': 1, 'febrero': 2, 'marzo': 3, 'abril': 4, 'mayo': 5, 'junio': 6, 'julio': 7, 'agosto': 8,
+             'septiembre': 9, 'setiembre': 9, 'octubre': 10, 'noviembre': 11, 'diciembre': 12}
+    anios = g.iloc[2].ffill(); mm = g.iloc[3]; cols = []
+    for j in range(g.shape[1]):
+        if j < 2:
+            cols.append(['variedad', 'unidad'][j]); continue
+        dig = re.sub(r'\D', '', str(anios[j]))[:4]; m = str(mm[j]).strip().lower()
+        cols.append(f'{dig}-{meses[m]:02d}' if dig and m in meses else f'c{j}')
+    g.columns = cols
+    g = g.iloc[6:].dropna(subset=['unidad'])
+    g['variedad'] = g['variedad'].astype(str).str.strip()
+    return g.set_index('variedad').apply(pd.to_numeric, errors='coerce')
+
+def chequear_indec(x, path):
+    bloque('6c) FRESCOS CONTRA EL INDEC (precios promedio GBA): nivel y evolucion')
+    print('  Referencia: GBA y todos los canales de venta; el SEPA es nacional y solo cadenas. Un desvio')
+    print('  moderado de nivel es esperable; uno grande delata un tipo que mezcla productos distintos.')
+    g = leer_indec(path)
+    pm = pd.read_excel(x, 'Panel_nacional_mes'); pm['item'] = pm['item'].astype(str); pm = pm.set_index('item')
+    meses = [c for c in g.columns if re.match(r'^\d{4}-\d{2}$', str(c)) and c in pm.columns]
+    if not meses:
+        print('  (sin meses en comun entre el Excel y la planilla)'); return
+    m1 = max(m for m in meses if g[m].notna().any()); m0 = min(meses)
+    try:
+        met = pd.read_excel(x, 'Metodologia').set_index('parametro')['valor']
+        anclados = str(met.get('Nivel de frescos', ''))
+    except Exception:
+        anclados = ''
+    filas = []
+    for t, v in INDEC_MAP.items():
+        if t not in pm.index or v not in g.index:
+            continue
+        niv = pm.at[t, m1] / g.at[v, m1]
+        evo_p = pm.at[t, m1] / pm.at[t, m0]; evo_i = g.at[v, m1] / g.at[v, m0]
+        filas.append((t, round(pm.at[t, m1]), round(g.at[v, m1]), round(niv, 2), round(evo_p, 2), round(evo_i, 2),
+                      round(evo_p / evo_i, 2), 'si' if t in anclados else ''))
+    d = pd.DataFrame(filas, columns=['tipo', f'publicado {m1}', f'INDEC {m1}', 'nivel pub/INDEC',
+                                     f'var pub {m0}->{m1}', 'var INDEC', 'var pub/INDEC', 'anclado'])
+    print(d.to_string(index=False))
+    mal = d[(~d['nivel pub/INDEC'].between(*INDEC_NIVEL)) & (d['anclado'] != 'si')]
+    print(f'\n  mediana var pub/INDEC: {d["var pub/INDEC"].median():.2f} | geo-media {np.exp(np.log(d["var pub/INDEC"]).mean()):.2f}')
+    veredicto(mal.empty, f'{len(mal)} tipos sin anclar con nivel fuera de {INDEC_NIVEL} del INDEC'
+                         + (f': {", ".join(mal["tipo"])} (candidatos a NIVEL_REFERENCIA_FRESCO)' if len(mal) else ''))
+
+
 # ── 7. Controles con el cache (opcionales) ────────────────────────────────────
 def chequear_cache(cache, x, P, desc):
     bloque('7) CONTROLES CON EL CACHE (mediana simple por sucursal e indice de muestra fija por EAN)')
@@ -279,6 +397,7 @@ def main():
     ap = argparse.ArgumentParser(description='Audita una salida del nb07.')
     ap.add_argument('excel', help='canastas_alternativas_YYYY-MM-DD.xlsx')
     ap.add_argument('--cache', help='carpeta _cache_nb07 (opcional: agrega los controles contra el dato crudo)')
+    ap.add_argument('--indec', help='sh_ipc_precios_promedio.xls del INDEC (opcional: nivel y evolucion de frescos)')
     a = ap.parse_args()
     x, P, sem, desc, canastas = cargar(a.excel)
     print(f'Excel: {pathlib.Path(a.excel).name}')
@@ -289,12 +408,15 @@ def main():
     chequear_trazabilidad(x, P, desc, canastas)
     chequear_ipc(x, canastas)
     chequear_frescos(x, P)
+    chequear_aperturas(x, canastas)
+    if a.indec:
+        chequear_indec(x, a.indec)
     if a.cache:
         chequear_cache(a.cache, x, P, desc)
     bloque('RESUMEN')
     malos = len(RES) - sum(RES)
     print(f'  {sum(RES)} chequeos OK | {malos} para revisar')
-    print('  Detalle de cada punto y como leerlo: docs/AUDITORIA_2026-09-22.md')
+    print('  Detalle de cada punto y como leerlo: docs/AUDITORIA_2026-09-22.md y docs/AUDITORIA_2026-09-22_v59.md')
     return 0
 
 

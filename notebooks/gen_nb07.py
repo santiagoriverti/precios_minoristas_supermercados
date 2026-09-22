@@ -18,6 +18,16 @@ Cambios v5 respecto de v4 (pedidos para el informe semanal del equipo de economi
  8. Diagnostico de PRESENCIA por item x mes (altas/bajas) exportado al Excel.
  9. Bugs corregidos: normalizacion de provincia insensible a mayusculas/acentos (San juan ->
     San Juan, que caia en "Otras"); conteo de sucursales por la terna (comercio,bandera,sucursal).
+
+v5.10 (auditoria de la corrida v5.9, 2026-09-22 - docs/AUDITORIA_2026-09-22_v59.md):
+10. BUG-37: el costo por SUCURSAL omitia los rubros ENTEROS que la sucursal no publica (Vea no
+    publica verduras, pollo ni panaderia) -> cadenas y regiones "baratas" que no lo eran. Ahora
+    se imputa sobre la grilla sucursal-semana x todos los rubros. Nueva columna pct_imputado.
+11. NIVEL de frescos mal especificados anclado a los precios promedio del INDEC (GBA) de un mes
+    dado: Pollo, Carne picada, Merluza, Limon y Pan frances. Los precios por sucursal de esos
+    tipos se reescalan con el mismo factor, para que las aperturas sigan siendo coherentes.
+12. Resumen con mes_parcial y el indice mensual; grafia de provincias deterministica.
+Nada de esto toca la clave del cache: la corrida reusa lo leido y no relee el SEPA.
 """
 import json, os, hashlib
 
@@ -264,9 +274,32 @@ FRESCO_ESLABON_K      = 2.5  # tope de variacion de un EAN en un eslabon (clip, 
 # peor. Por eso el nivel se fija por referencia y no por parametro.
 # Pan frances pesa 18 kg/mes y el 13,7% de la canasta Popular: el error de nivel se traducia en
 # una sobreestimacion del 2,7% de esa canasta.
-# Cargar solo precios VERIFICADOS contra el mercado, con la fecha de la referencia.
+#
+# v5.10 (auditoria 2026-09-22): la referencia pasa a ser el PRECIO PROMEDIO DEL INDEC para el GBA
+# (planilla `sh_ipc_precios_promedio.xls`, hoja GBA), que es publica, mensual y con especificacion
+# de producto. Contra esa planilla, los empaquetados del SEPA coinciden dentro de +-15% y los cortes
+# bien definidos tambien (asado 0,96x, paleta 0,99x, nalga 0,96x). Los que NO coinciden son tipos
+# cuyo universo de EANs mezcla productos distintos, y la mediana nacional -que en ~50% del costo es
+# el precio de DIA, la cadena con mas sucursales- cae en el producto equivocado:
+#   Pollo         $12.010 vs $4.780 del pollo entero (entran "Pata de Pollo Atm" de DIA y un chorizo)
+#   Carne picada  $17.810 vs $10.613 de la comun     (picada envasada de DIA a $22-24 mil/kg)
+#   Merluza       $27.087 vs $14.821 del filet fresco (filet de DIA de 500 g)
+#   Limon          $7.485 vs $1.425                   (productos a $5-14 mil/kg: jugos, no fruta)
+#   Pan frances    $6.200 (ancla anterior, sin fuente) vs $4.910 del pan tipo flauta
+# Juntos inflaban el costo de la Popular un 8% (medido a ago-26). Los demas tipos conservan el nivel
+# del SEPA: el sobreprecio de supermercado es parte del concepto de la canasta.
+#
+# Formato: tipo -> (precio $/kg o $/docena, 'YYYY-MM'). La serie se escala para que su PROMEDIO en
+# ese mes sea el precio de referencia; la evolucion posterior la da el propio SEPA, asi que NO hace
+# falta actualizar la referencia cada mes (se puede, cuando el INDEC publique uno nuevo). Tambien se
+# acepta un numero solo, que ancla la ULTIMA semana (formato de v5.7-v5.9).
+# Para actualizar: bajar la planilla del INDEC, hoja GBA, y copiar la fila de cada variedad.
 NIVEL_REFERENCIA_FRESCO = {
-    'Pan francés': 6200.0,   # $/kg, referencia de mercado 2026-09-08
+    'Pan francés':  (4909.98,  '2026-08'),   # INDEC GBA 'Pan francés tipo flauta' ($/kg)
+    'Pollo':        (4780.14,  '2026-08'),   # INDEC GBA 'Pollo entero' ($/kg)
+    'Carne picada': (10613.08, '2026-08'),   # INDEC GBA 'Carne picada común' ($/kg)
+    'Merluza':      (14820.86, '2026-08'),   # INDEC GBA 'Filet de merluza fresco' ($/kg)
+    'Limón':        (1424.50,  '2026-08'),   # INDEC GBA 'Limón' ($/kg)
 }
 # Salto semanal del precio nacional de un item a partir del cual se lo reporta en la hoja
 # Alertas_precio_item. Es el tripwire: ningun cambio de regimen deberia volver a pasar inadvertido.
@@ -622,7 +655,10 @@ PESOS_POBLACION = {
     'Santa Fe':3556522,'Santiago del Estero':1019304,'Tierra del Fuego':190641,'Tucuman':1737127}
 # Lookup insensible a mayusculas/acentos: antes 'San juan' no matcheaba y caia en region "Otras".
 _PROV_CANON = {_sa(k): v for k, v in PROV_NORM.items()}
-for _v in set(PROV_NORM.values()) | set(PESOS_POBLACION) | set(REGION_PROV):
+# Orden FIJO de prioridad (v5.10). Antes se iteraba un set, cuyo orden cambia entre sesiones de
+# Python: la misma provincia salia 'Neuquen' en una corrida y 'Neuquén' en otra, y las hojas
+# Mes_provincia de dos corridas no se podian unir por nombre. Ganan las grafias de PROV_NORM.
+for _v in list(PROV_NORM.values()) + sorted(PESOS_POBLACION) + sorted(REGION_PROV):
     _PROV_CANON.setdefault(_sa(_v), _v)
 def norm_prov(x):
     return _PROV_CANON.get(_sa(x), str(x).strip())
@@ -1086,8 +1122,11 @@ cells.append(cell_code(r'''# ===================================================
 # ============================================================
 # Metodologia:
 #  1. Precio NACIONAL del item por semana = mediana por provincia, luego promedio de esas
-#     medianas PONDERADO POR POBLACION provincial. Asi DIA (42% de las sucursales) no define
-#     el numero nacional.
+#     medianas PONDERADO POR POBLACION provincial. Asi las provincias con muchas sucursales de
+#     una cadena no pesan mas que su poblacion. OJO: DENTRO de cada provincia la mediana sigue
+#     siendo entre sucursales, y DIA tiene la mayoria en Buenos Aires (55%), CABA (50%) y Entre
+#     Rios (80%): medido en la auditoria 2026-09-22, ~50% del costo nacional es el precio de DIA.
+#     No sesga la EVOLUCION (los indices por cadena rodean al nacional) pero si el NIVEL.
 #  2. ARRASTRE: si un item falta una semana, se arrastra su ultimo precio conocido hasta
 #     MAX_SEMANAS_ARRASTRE. Ausencias mas largas quedan como NaN y disparan alerta.
 #  3. INDICE ENCADENADO de MUESTRA APAREADA: la variacion entre t-1 y t se calcula solo con
@@ -1265,24 +1304,48 @@ if _n_ratio:
           f'({_n_ratio / max(int(nac_wide.notna().sum().sum()) + _n_ratio, 1) * 100:.1f}%) | '
           + ', '.join(f'{t} {n}' for t, n in sorted(_ratio_fuera, key=lambda x: -x[1])))
 
-# ── Anclaje de nivel por referencia de mercado (ver NIVEL_REFERENCIA_FRESCO en la CELDA 1) ──
+# ── Anclaje de nivel por referencia externa (ver NIVEL_REFERENCIA_FRESCO en la CELDA 1) ──
 # Va DESPUES de la banda de plausibilidad a proposito: la banda compara contra el ancla de
 # verduras y esta pensada para el estimador interno, no para un precio verificado a mano.
+def _factor_nivel(_serie, _ref):
+    """Factor que lleva la serie al nivel de referencia. `_ref` es (precio, 'YYYY-MM') -el promedio
+    de las semanas de ese mes pasa a valer `precio`- o un numero solo -la ultima semana con dato-.
+    Devuelve (factor, nivel_antes, etiqueta) o None si no hay con que anclar."""
+    _mes = None
+    if isinstance(_ref, (tuple, list)):
+        _ref, _mes = _ref[0], str(_ref[1])
+    try:
+        _ref = float(_ref)
+    except (TypeError, ValueError):
+        return None
+    if not (_ref == _ref and _ref > 0):
+        return None
+    _v = _serie.dropna()
+    if _mes is not None:
+        _v = _v[[_mes_de_semana(_w) == _mes for _w in _v.index]]
+    if not len(_v):
+        return None
+    _antes = float(_v.mean()) if _mes is not None else float(_v.iloc[-1])
+    if _antes <= 0:
+        return None
+    return _ref / _antes, _antes, (_mes if _mes is not None else 'ultima semana')
+
+FACTOR_NIVEL_FRESCO = {}   # tipo -> factor aplicado (se reusa para los precios por sucursal)
 _niv = []
 for _t, _ref in NIVEL_REFERENCIA_FRESCO.items():
-    if _t not in nac_wide.columns or not (_ref == _ref and _ref > 0):
+    if _t not in nac_wide.columns:
         continue
-    _v = nac_wide[_t].dropna()
-    if not len(_v):
+    _fn = _factor_nivel(nac_wide[_t], _ref)
+    if _fn is None:
+        print(f'AVISO: {_t}: sin dato en el periodo de su referencia de nivel -> queda sin anclar')
         continue
-    _antes = float(_v.iloc[-1])
-    if _antes <= 0:
-        continue
-    nac_wide[_t] = nac_wide[_t] * (_ref / _antes)
-    _niv.append((_t, _antes, float(_ref), _ref / _antes))
+    _k, _antes, _cuando = _fn
+    nac_wide[_t] = nac_wide[_t] * _k
+    FACTOR_NIVEL_FRESCO[_t] = _k
+    _niv.append((_t, _antes, _antes * _k, _k, _cuando))
 if _niv:
-    print('Nivel por referencia de mercado (la FORMA de la serie no cambia): '
-          + ', '.join(f'{t} ${a:,.0f} -> ${b:,.0f} (x{k:.2f})' for t, a, b, k in _niv))
+    print('Nivel por referencia externa (la FORMA de la serie no cambia): '
+          + ', '.join(f'{t} ${a:,.0f} -> ${b:,.0f} en {c} (x{k:.2f})' for t, a, b, k, c in _niv))
 
 nac_obs  = nac_wide.notna()                                   # presencia REAL (diagnostico)
 nac_ff   = nac_wide.ffill(limit=MAX_SEMANAS_ARRASTRE)         # con arrastre
@@ -1400,27 +1463,59 @@ if len(quiebres_idx):
 else:
     print(f'Quiebres de serie (umbral x{QUIEBRE_ITEM_K:g}): ninguno')
 
+# ── Precios POR SUCURSAL de los tipos con nivel anclado ───────────────────────
+# El anclaje de nivel reescala el precio NACIONAL de un tipo fresco. Si los precios de las
+# sucursales quedaran en la escala vieja, cada sucursal apareceria cara o barata por la diferencia
+# entre las dos escalas (con Pollo, 2,5x) y no por su precio. Se aplica el mismo factor: el precio
+# relativo sucursal/nacional -lo unico que usan las aperturas- queda igual que antes del anclaje.
+if FACTOR_NIVEL_FRESCO:
+    _fk = sval['item'].map(FACTOR_NIVEL_FRESCO)
+    _mk = _fk.notna()
+    sval.loc[_mk, 'price'] = sval.loc[_mk, 'price'] * _fk[_mk]
+    del _fk, _mk
+
 # ── Costo por SUCURSAL (para desagregar por provincia/cadena/region) ──────────
-# Item faltante en una sucursal-semana -> se imputa con el precio nacional (ya arrastrado).
+# costo(sucursal, semana) = costo NACIONAL de la canasta completa esa semana
+#                         + suma, sobre los items que la sucursal publica, de
+#                           (precio de la sucursal - precio nacional) x cantidad.
+# Lo que la sucursal no publica se valua al precio nacional; lo que publica, a su precio.
+# BUG-37 (auditoria 2026-09-22 de la corrida v5.9): la version anterior imputaba DENTRO de cada
+# rubro con un groupby (sucursal, semana, rubro), que solo crea filas para los rubros donde la
+# sucursal tiene algun item. Un rubro ENTERO ausente no se imputaba: quedaba fuera del costo.
+# Vea no publica verduras, frutas, pollo, cerdo, pescado, panaderia ni pañales; Cooperativa Obrera
+# no publica carne, fiambres, huevos ni panaderia. Medido en ago-26 sobre la Media: Vea salia a
+# 0,68x el nacional (corregido 0,99x), Mendoza 0,66x (0,98x), Cordoba 0,72x (0,99x), y la
+# Tecnologica -un rubro por item- costaba $4,1 M por sucursal contra $6,2 M nacional. Ahora se
+# arma la grilla sucursal-semana x TODOS los rubros de la receta.
+# `imputado` = parte del costo valuada a precio nacional (lo que la sucursal no publica). La
+# columna pct_imputado de las aperturas dice cuanto del costo de una cadena o provincia es
+# observado y cuanto es supuesto: una cadena con 40% imputado se parece al nacional por construccion.
 def _costo_por_rubro(_name):
-    _rec = RECETAS[_name]
+    _rec = RECETAS[_name][['item','qty','rubro','kind']]
     _n_emp = int((_rec['kind']=='emp').sum())
     _av = nac_ff_long.merge(_rec, on='item', how='inner')
     _av['val'] = _av['nac'] * _av['qty']
     _all = _av.groupby(['semana','rubro'], as_index=False)['val'].sum().rename(columns={'val':'val_all'})
-    _pv = sval.merge(_rec, on='item', how='inner').merge(nac_ff_long, on=['item','semana'], how='left')
-    _pv['store_val'] = _pv['price'] * _pv['qty']
-    _pv['nac_val']   = _pv['nac']   * _pv['qty']
-    _g = (_pv.groupby(_SK + ['semana','rubro'])
-            .agg(S_store=('store_val','sum'), S_nac=('nac_val','sum'),
-                 n_emp=('kind', lambda s: (s=='emp').sum())).reset_index())
-    _g = _g.merge(_all, on=['semana','rubro'], how='left')
-    _g['costo'] = _g['S_store'] + (_g['val_all'].fillna(0) - _g['S_nac'].fillna(0))
+    del _av
+    _pv = sval[_SK + ['semana','item','price']].merge(_rec, on='item', how='inner')
+    # Cobertura: sobre lo que la sucursal PUBLICA, tenga o no precio nacional esa semana.
+    _pv['_e'] = (_pv['kind'] == 'emp').astype('int32')
+    _cov = _pv.groupby(_SK + ['semana'], as_index=False)['_e'].sum()
+    _ok = _cov.loc[_cov['_e'] / max(_n_emp, 1) >= FRAC_PRODUCTOS_MIN, _SK + ['semana']]
+    del _cov
+    # Desvio de la sucursal: solo items con precio nacional esa semana (si no, no hay contra que).
+    _pv = _pv.merge(nac_ff_long, on=['item','semana'], how='inner')
+    _pv['dif'] = (_pv['price'] - _pv['nac']) * _pv['qty']
+    _pv['obs'] = _pv['nac'] * _pv['qty']
+    _d = _pv.groupby(_SK + ['semana','rubro'], as_index=False)[['dif','obs']].sum()
+    del _pv
+    _g = _ok.merge(_all, on='semana', how='inner')          # grilla: sucursal-semana x todos los rubros
+    _g = _g.merge(_d, on=_SK + ['semana','rubro'], how='left')
+    _g[['dif','obs']] = _g[['dif','obs']].fillna(0.0)
+    _g['costo'] = _g['val_all'] + _g['dif']
+    _g['imputado'] = _g['val_all'] - _g['obs']
     _g['canasta'] = _name
-    _cov = _g.groupby(_SK + ['semana'])['n_emp'].sum().reset_index(name='n_emp_tot')
-    _cov['frac'] = _cov['n_emp_tot'] / max(_n_emp, 1)
-    _ok = _cov[_cov['frac'] >= FRAC_PRODUCTOS_MIN][_SK + ['semana']]
-    return _g.merge(_ok, on=_SK + ['semana'], how='inner')
+    return _g
 
 costo_rubro = pd.concat([_costo_por_rubro(n) for n in CANASTAS_ACTIVAS], ignore_index=True)
 costo_rubro['mes'] = costo_rubro['semana'].map(_mes_de_semana)
@@ -1428,9 +1523,13 @@ costo_rubro = costo_rubro.merge(suc_geo, on=_SK, how='left')
 costo_rubro['provincia'] = costo_rubro['provincia'].fillna('Otras')
 costo_rubro['region']    = costo_rubro['region'].fillna('Otras')
 costo_suc = (costo_rubro.groupby(['canasta'] + _SK + ['semana','mes','cadena','provincia','region','suc_id'],
-                                 as_index=False)['costo'].sum())
+                                 as_index=False)
+             .agg(costo=('costo','sum'), imputado=('imputado','sum'), costo_nac=('val_all','sum')))
+costo_suc['pct_imputado'] = (costo_suc['imputado'] / costo_suc['costo_nac'] * 100).round(1)
 print(f'Costo por sucursal-semana: {len(costo_suc):,} filas | '
       f'sucursales {costo_suc["suc_id"].nunique():,} (cobertura minima {FRAC_PRODUCTOS_MIN:.0%})')
+print('  % del costo valuado a precio nacional (lo que la sucursal no publica), mediana: '
+      + ' | '.join(f'{n} {v:.0f}%' for n, v in costo_suc.groupby('canasta')['pct_imputado'].median().items()))
 ''' ))
 
 # ── CELL 9 — RUBROS ───────────────────────────────────────────────────────────
@@ -1651,12 +1750,14 @@ for _name in CANASTAS_ACTIVAS:
     if not len(_cs): continue
     for _geo, _dic in (('provincia', prov_dict), ('region', region_dict)):
         _d = (_cs.groupby(_geo).agg(costo_mediana=('costo','median'), costo_prom=('costo', _pmean),
-                                    n_sucursales=('suc_id','nunique'), n_cadenas=('cadena','nunique')).reset_index())
+                                    n_sucursales=('suc_id','nunique'), n_cadenas=('cadena','nunique'),
+                                    pct_imputado=('pct_imputado','median')).reset_index())
         _d = _d.merge(_idx_controlado(_cs, _geo)[[_geo,'idx_vs_nacional']], on=_geo, how='left')
         _d['confiable'] = (_d['n_sucursales'] >= MIN_SUC_AGG) & (_d['n_cadenas'] >= 2)
         _dic[_name] = _d.sort_values('costo_mediana')
     _c = (_cs.groupby('cadena').agg(costo_mediana=('costo','median'), costo_prom=('costo', _pmean),
-                                    n_sucursales=('suc_id','nunique'), n_provincias=('provincia','nunique')).reset_index())
+                                    n_sucursales=('suc_id','nunique'), n_provincias=('provincia','nunique'),
+                                    pct_imputado=('pct_imputado','median')).reset_index())
     _c['confiable'] = _c['n_sucursales'] >= MIN_SUC_AGG
     cadena_dict[_name] = _c.sort_values('costo_mediana')
     _cr = costo_suc[costo_suc['canasta'] == _name]
@@ -1693,8 +1794,10 @@ for _name in CANASTAS_ACTIVAS:
             f'{r["provincia"]} {r["idx_vs_nacional"]:.0f}' for _, r in _pi.head(3).iterrows()) +
             '  ...  ' + ' | '.join(f'{r["provincia"]} {r["idx_vs_nacional"]:.0f}' for _, r in _pi.tail(3).iterrows()))
     if len(_cc):
-        print(f'   cadena mas barata: {_cc.iloc[0]["cadena"]} ${_cc.iloc[0]["costo_mediana"]:,.0f} | '
-              f'mas cara: {_cc.iloc[-1]["cadena"]} ${_cc.iloc[-1]["costo_mediana"]:,.0f}')
+        print(f'   cadena mas barata: {_cc.iloc[0]["cadena"]} ${_cc.iloc[0]["costo_mediana"]:,.0f} '
+              f'({_cc.iloc[0]["pct_imputado"]:.0f}% imputado) | '
+              f'mas cara: {_cc.iloc[-1]["cadena"]} ${_cc.iloc[-1]["costo_mediana"]:,.0f} '
+              f'({_cc.iloc[-1]["pct_imputado"]:.0f}% imputado)')
     print('   por region (crudo | controlado): ' + ' | '.join(
         f'{r["region"]} ${r["costo_mediana"]:,.0f} ({r["idx_vs_nacional"]:.0f})'
         for _, r in _rg.sort_values('costo_mediana').iterrows()))
@@ -1869,17 +1972,32 @@ with pd.ExcelWriter(_xlsx, engine='openpyxl') as _w:
         {'parametro':'Tripwire','valor':f'hoja Alertas_precio_item: todo salto semanal del precio nacional de un item mayor a {ALERTA_SALTO_ITEM:.0%}'},
         {'parametro':'Quiebre de serie','valor':f'un item que se mueve x{QUIEBRE_ITEM_K:g} o mas en una semana sale del eslabon de esa semana (hoja Alertas_quiebre)'},
         {'parametro':'Cobertura minima sucursal','valor':f'{FRAC_PRODUCTOS_MIN:.0%} de los empaquetados de la canasta'},
+        {'parametro':'Costo por sucursal','valor':'costo nacional + (precio de la sucursal - nacional) x cantidad en lo que publica; lo que no publica se valua al nacional (columna pct_imputado)'},
+        {'parametro':'Nivel de frescos','valor':'; '.join(f'{t}: ${(r[0] if isinstance(r, (tuple, list)) else r):,.0f} en {(r[1] if isinstance(r, (tuple, list)) else "ult. semana")}' for t, r in NIVEL_REFERENCIA_FRESCO.items()) + ' (INDEC GBA, precios promedio). El resto, nivel del SEPA.'},
+        {'parametro':'Version','valor':'nb07 v5.10'},
     ]).to_excel(_w, 'Metodologia', index=False)
     _res = []
     for _name in CANASTAS_ACTIVAS:
         _sm = serie_mes_dict.get(_name); _ss = serie_sem_dict.get(_name)
         if _ss is None or not len(_ss): continue
+        _cm = comparativa_dict.get(_name)
+        _hay_m = _sm is not None and len(_sm) > 0
+        # Dos bases distintas conviven en el Excel y se confundian: `indice_base100` es el SEMANAL
+        # (base = primera semana, 2024-01-04) y el de vsIPC_* es el MENSUAL (base = enero 2024).
+        # Van las dos, con su base al lado. Y el ultimo mes puede ser PARCIAL (2 de 4 semanas).
         _res.append({'canasta':_name,
-                     'costo_mensual_ult': round(float(_sm['canasta_mediana'].iloc[-1]),0) if _sm is not None and len(_sm) else None,
-                     'var_mensual_%': round(float(_sm['var_mensual_%'].iloc[-1]),1) if _sm is not None and len(_sm)>1 else None,
+                     'mes_ult': _sm['mes'].iloc[-1] if _hay_m else None,
+                     'mes_parcial': bool(_sm['mes_parcial'].iloc[-1]) if _hay_m else None,
+                     'n_semanas_mes_ult': int(_sm['n_semanas'].iloc[-1]) if _hay_m else None,
+                     'costo_mensual_ult': round(float(_sm['canasta_mediana'].iloc[-1]),0) if _hay_m else None,
+                     'var_mensual_%': round(float(_sm['var_mensual_%'].iloc[-1]),1) if _hay_m and len(_sm)>1 else None,
                      'costo_semanal_ult': round(float(_ss['costo_mediana'].iloc[-1]),0),
                      'var_semanal_%': round(float(_ss['var_sem_%'].iloc[-1]),1) if len(_ss)>1 else None,
                      'indice_base100': round(float(_ss['indice_100'].iloc[-1]),1),
+                     'base_indice_semanal': _ss['semana'].iloc[0],
+                     'indice_mensual_ult': (round(float(_cm['idx_canasta'].dropna().iloc[-1]),1)
+                                            if _cm is not None and 'idx_canasta' in _cm.columns and _cm['idx_canasta'].notna().any() else None),
+                     'base_indice_mensual': _sm['mes'].iloc[0] if _hay_m else None,
                      'n_productos_emp': len(CANASTAS_EMP[_name]),
                      'n_tipos_frescos': int((RECETAS[_name]['kind']=='fresh').sum())})
     pd.DataFrame(_res).to_excel(_w, 'Resumen', index=False)
@@ -1939,11 +2057,15 @@ cells.append(cell_code(r'''# ===================================================
 # CELDA 15 - REPORTE PARA CLAUDE (copia y pega TODO el bloque)
 # ============================================================
 print('='*72)
-print('REPORTE PARA CLAUDE - canastas alternativas nb07 v5')
+print('REPORTE PARA CLAUDE - canastas alternativas nb07 v5.10')
 print('='*72)
 print(f'Ultima semana (cierra jueves): {ULTIMA_SEMANA} | Ultimo mes: {_ult_mes}')
 print(f'Canastas activas: {CANASTAS_ACTIVAS}')
-print(f'Nacional: {AGG_NACIONAL} | arrastre: {MAX_SEMANAS_ARRASTRE} sem | regimen K: {FRESCO_REGIMEN_K} | outlier K: {FRESCO_OUTLIER_K} | frac min: {FRAC_PRODUCTOS_MIN}')
+print(f'Nacional: {AGG_NACIONAL} | arrastre: {MAX_SEMANAS_ARRASTRE} sem | regimen K: {FRESCO_REGIMEN_K} | outlier K: {FRESCO_OUTLIER_K} | frac min: {FRAC_PRODUCTOS_MIN} | quiebre x{QUIEBRE_ITEM_K}')
+if FACTOR_NIVEL_FRESCO:
+    print('Nivel de frescos anclado por referencia externa (CELDA 1): ' + ', '.join(
+        f'{t} x{k:.2f} ({NIVEL_REFERENCIA_FRESCO[t][1] if isinstance(NIVEL_REFERENCIA_FRESCO[t], (tuple, list)) else "ult. semana"})'
+        for t, k in FACTOR_NIVEL_FRESCO.items()))
 try:
     if _FR_DESCARTES:
         _nd = sum(x[1] for x in _FR_DESCARTES)
@@ -2004,7 +2126,8 @@ for _name in CANASTAS_ACTIVAS:
                 f'{r["provincia"]} {r["idx_vs_nacional"]:.0f}' for _, r in _pc.iterrows()))
         _c2 = cadena_dict[_name]; _cc = _c2[_c2['confiable']]
         if len(_cc):
-            print('  Cadenas: ' + ' | '.join(f'{r["cadena"]} ${r["costo_mediana"]:,.0f}' for _, r in _cc.iterrows()))
+            print('  Cadenas (costo | % imputado a precio nacional): ' + ' | '.join(
+                f'{r["cadena"]} ${r["costo_mediana"]:,.0f} ({r["pct_imputado"]:.0f}%)' for _, r in _cc.iterrows()))
     except Exception: pass
 
 # Fiabilidad de la desagregacion: la volatilidad de una region escala con 1/sqrt(n_sucursales),
