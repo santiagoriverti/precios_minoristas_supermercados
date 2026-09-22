@@ -44,6 +44,18 @@ python notebooks/test_encadenado_frescos.py         # encadenado de frescos (nb0
 | 06 | `06_evolucion_brecha_celiaca` | ✅ medicion cerrada | ⚠️ su mapa sigue con `cartodbpositron` (ver pendiente 2) |
 | 07 | `07_evolucion_canastas_alternativas` | ⚠️ v5.7.1 sin re-correr | Motor del informe semanal; ver pendiente 1 |
 
+### ⚡ 2026-09-22 (tarde) — nb07 v5.8: corrida murio por RAM; cache por mes (BUG-34, BUG-35)
+- La corrida con la canasta 2026-09 RELEYO TODO (1h21m): **cambiar EANs de una canasta cambia la
+  clave del cache**. Lo que decia el handoff del 08-sep ("reusa el cache") era FALSO.
+- Murio por RAM al final (concat + to_parquet de 32 meses) sin guardar nada. v5.8 guarda cada mes
+  apenas lo lee (`_cache_nb07/sem_<key>_v5/<mes>.parquet` + `ean_...`) y retoma si se corta.
+- De paso: la CELDA 13 tenia un SyntaxError (print partido, commit 602a870). Corregido;
+  `test_cache_por_mes.py` ahora compila todas las celdas.
+- **PROXIMO PASO: volver a correr nb07** (otra vez ~1h20m, no hay nada guardado). Si se corta,
+  re-ejecutar: retoma. Despues auditar la salida con la checklist de siempre.
+- Mejora posible: sacar los EANs empaquetados de la clave (leer solo los EANs nuevos) para que
+  cambiar una canasta no cueste una relectura completa.
+
 ### ⚡ 2026-09-22 — canasta corregida en el repo (commit de hoy)
 `docs/canastas_alternativas/cargar_canastas_v5.py` YA trae Femenina reemplazada y Representativa sin
 Nivea Body 400 (288 EANs). Antes el reemplazo del 08-sep vivia solo en un Excel editado a mano: el
@@ -54,8 +66,7 @@ faltantes). Para correr nb07: cargar ese script sobre el Excel de sep -> subir `
 ### PENDIENTES, en orden
 
 1. **nb07 — re-correr con el Excel de canasta nuevo** (Femenina reemplazada + pan frances anclado).
-   Son MINUTOS: reusa `sem_1ad1b4b5_v5.parquet` y `ean_1ad1b4b5_v5.parquet`, la clave del cache no
-   cambio. Verificar en este orden: (a) acumulado de las canastas en el orden de 250-290 contra IPC
+   ~~Son MINUTOS~~ FALSO: el cambio de EANs cambio la clave, relee todo (ver 2026-09-22). Verificar en este orden: (a) acumulado de las canastas en el orden de 250-290 contra IPC
    283; (b) `Panel_nacional` sin series constantes; (c) `Alertas_trazabilidad` vacia y pan frances
    en ~$6.200/kg. Detalle en el handoff del 2026-09-08 mas abajo.
 2. **nb06 — el mapa tiene el bug de mosaicos sin corregir.** `gen_nb06.py` (CELDA 12) todavia usa

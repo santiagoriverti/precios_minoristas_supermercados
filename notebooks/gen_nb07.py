@@ -775,7 +775,11 @@ _cache_key  = hashlib.md5(('|'.join(sorted(EANS_LECTURA)) + f'|w{DIA_CIERRE_SEMA
                            f'|r{FRESCO_REGIMEN_K}|p{FRESCO_PISO_ANCLA}|t{FRESCO_TECHO_ANCLA}'
                            f'|refmode=ancla_x_ratio|rk={_rk_sig}|ratio={_ratio_sig}'
                            ).encode()).hexdigest()[:8]
-_cache_path = CACHE_DIR / f'sem_{_cache_key}_v5.parquet'   # v5 = semana jueves + outlier filter
+# v5 = semana jueves + outlier filter. Desde v5.8 el cache es una CARPETA con un parquet por mes
+# cerrado (ver mas abajo). Los `sem_<key>_v5.parquet` de un solo archivo de versiones anteriores
+# ya no se leen: se pueden borrar del Drive.
+_cache_dir_sem = CACHE_DIR / f'sem_{_cache_key}_v5'
+_cache_dir_ean = CACHE_DIR / f'ean_{_cache_key}_v5'
 
 def _leer_mes(_lbl):
     _zip_path, _archs = _mapa_mes[_lbl]
@@ -917,40 +921,98 @@ def _colapsar(_df, _lbl_mes=''):
     gc.collect()
     return _out
 
-if USE_CACHE and _cache_path.exists():
-    _cache = pd.read_parquet(_cache_path)
-    _cache = _cache[_cache['semana'].map(_mes_de_semana) < _mes_actual].copy()
-    gc.collect()
-else:
-    _cache = pd.DataFrame(columns=_SKR + ['semana','item','price'])
-_en_cache = set(_cache['semana'].map(_mes_de_semana).unique()) if len(_cache) else set()
-_faltantes = [m for m in _meses_disp if m < _mes_actual and m not in _en_cache]
-_nuevos = []
-for _lbl in tqdm(_faltantes, desc='Meses cerrados'):
-    _dc = _colapsar(_leer_mes(_lbl), _lbl)
-    if _dc is not None: _nuevos.append(_dc)
-    gc.collect()
-if _nuevos:
-    _cache = pd.concat([_cache] + _nuevos, ignore_index=True)
-    if USE_CACHE:
-        _cache.to_parquet(_cache_path, compression='snappy', index=False)
-        print(f'Cache actualizado: {_cache_path.name}')
-del _nuevos; gc.collect()
+# CACHE POR MES (v5.8). Hasta v5.7 el bucle juntaba los ~32 meses en una lista, los concatenaba
+# y recien ahi escribia UN parquet: el concat sostenia la lista y el panel a la vez, y to_parquet
+# sumaba la copia de Arrow. El 2026-09-22 la sesion de Colab murio justo en ese paso, despues de
+# 1h21m de lectura, y no quedo nada guardado. Ahora cada mes cerrado se escribe apenas se lee
+# -panel por sucursal y panel por EAN-, asi que el bucle ocupa la RAM de UN mes y una corrida
+# cortada retoma desde el ultimo mes guardado. Un mes cuenta como hecho cuando existe su parquet
+# `sem`; el de `ean` se escribe ANTES, para que nunca quede un `sem` sin su `ean`.
+import pyarrow as pa, pyarrow.parquet as pq, pyarrow.compute as pc
+_SCH_SEM = pa.schema([(c, pa.string()) for c in _SKR] +
+                     [('semana', pa.string()), ('item', pa.string()), ('price', pa.float64())])
+_SCH_EAN = pa.schema([('item', pa.string()), ('ean_norm', pa.string()), ('semana', pa.string()),
+                      ('p', pa.float64()), ('n_suc', pa.int64())])
 
-# Cache PARALELO por EAN (mismo key: describe la misma lectura). Es chico -del orden de 10k EANs
-# x 139 semanas- y es lo que permite iterar la metodologia de frescos SIN releer el SEPA: todo el
-# encadenado se calcula despues del cache.
-_ean_cache_path = CACHE_DIR / f'ean_{_cache_key}_v5.parquet'
-if USE_CACHE and _ean_cache_path.exists():
-    _ean_cerrados = pd.read_parquet(_ean_cache_path)
-    _ean_cerrados = _ean_cerrados[_ean_cerrados['semana'].map(_mes_de_semana) < _mes_actual].copy()
-else:
-    _ean_cerrados = pd.DataFrame(columns=['item','ean_norm','semana','p','n_suc'])
-if _EAN_NAC:   # meses cerrados que se acaban de leer
-    _ean_cerrados = pd.concat([_ean_cerrados] + _EAN_NAC, ignore_index=True)
+def _a_tabla(_df, _sch):
+    # Tipos FIJOS: un mes vacio o con un tipo inferido distinto romperia el concat de tablas.
+    if _df is None or len(_df) == 0:
+        return _sch.empty_table()
+    _df = _df[_sch.names].copy()
+    for _fl in _sch:
+        if pa.types.is_string(_fl.type):
+            _df[_fl.name] = _df[_fl.name].astype(str)
+        elif pa.types.is_integer(_fl.type):
+            _df[_fl.name] = _df[_fl.name].astype('int64')
+        else:
+            _df[_fl.name] = _df[_fl.name].astype('float64')
+    return pa.Table.from_pandas(_df, schema=_sch, preserve_index=False)
+
+def _guardar_mes(_tabla, _dir, _lbl):
+    # Escribe a un temporal y renombra: un corte a mitad de escritura no deja un parquet roto
+    # que la proxima corrida tome por bueno.
+    _dir.mkdir(parents=True, exist_ok=True)
+    _tmp = _dir / f'{_lbl}.parquet.tmp'
+    pq.write_table(_tabla, str(_tmp), compression='snappy')
+    os.replace(str(_tmp), str(_dir / f'{_lbl}.parquet'))
+
+def _meses_guardados(_dir):
+    return {_p.stem for _p in _dir.glob('*.parquet')} if _dir.exists() else set()
+
+def _cargar_meses(_dir, _sch, _meses):
+    # Lee los meses pedidos y descarta las semanas cuyo mes dueno es el mes en curso (se leen de
+    # nuevo mas abajo, con el mes completo). El filtro se hace en Arrow, antes de pasar a pandas,
+    # y to_pandas(self_destruct) libera cada columna de Arrow a medida que la convierte.
+    _tabs = [pq.read_table(str(_dir / f'{_m}.parquet'), schema=_sch) for _m in sorted(_meses)]
+    if not _tabs:
+        return _sch.empty_table().to_pandas()
+    _t = pa.concat_tables(_tabs); del _tabs
+    _su = _t.column('semana').unique().to_pylist()
+    _ok = [_w for _w in _su if _mes_de_semana(_w) < _mes_actual]
+    if len(_ok) < len(_su):
+        _t = _t.filter(pc.is_in(_t.column('semana'), value_set=pa.array(_ok, type=pa.string())))
+    _df = _t.to_pandas(split_blocks=True, self_destruct=True); del _t
+    gc.collect()
+    return _df
+
+_hechos = _meses_guardados(_cache_dir_sem) if USE_CACHE else set()
+_faltantes = [m for m in _meses_disp if m < _mes_actual and m not in _hechos]
+if USE_CACHE:
+    print(f'Cache por mes ({_cache_dir_sem.name}/): {len(_hechos)} meses guardados, '
+          f'{len(_faltantes)} por leer')
+_mem_sem, _mem_ean = [], []   # solo con USE_CACHE = False
+for _lbl in tqdm(_faltantes, desc='Meses cerrados'):
+    _EAN_NAC.clear()
+    _dc = _colapsar(_leer_mes(_lbl), _lbl)
+    _en = pd.concat(_EAN_NAC, ignore_index=True) if _EAN_NAC else None
+    _EAN_NAC.clear()
     if USE_CACHE:
-        _ean_cerrados.to_parquet(_ean_cache_path, compression='snappy', index=False)
-        print(f'Cache por EAN actualizado: {_ean_cache_path.name} ({len(_ean_cerrados):,} filas)')
+        _guardar_mes(_a_tabla(_en, _SCH_EAN), _cache_dir_ean, _lbl)
+        _guardar_mes(_a_tabla(_dc, _SCH_SEM), _cache_dir_sem, _lbl)
+    else:
+        _mem_sem.append(_a_tabla(_dc, _SCH_SEM)); _mem_ean.append(_a_tabla(_en, _SCH_EAN))
+    del _dc, _en
+    gc.collect()
+
+if USE_CACHE:
+    _cerrados = sorted(m for m in _meses_guardados(_cache_dir_sem) if m < _mes_actual)
+    _sin_ean = [m for m in _cerrados if m not in _meses_guardados(_cache_dir_ean)]
+    if _sin_ean:
+        raise RuntimeError(f'Cache inconsistente: {_sin_ean} tienen panel por sucursal y no por EAN. '
+                           f'Borrar esos archivos de {_cache_dir_sem} y volver a correr.')
+    _cache = _cargar_meses(_cache_dir_sem, _SCH_SEM, _cerrados)
+    _ean_cerrados = _cargar_meses(_cache_dir_ean, _SCH_EAN, _cerrados)
+    print(f'Cache: {len(_cerrados)} meses cerrados | {len(_cache):,} filas por sucursal | '
+          f'{len(_ean_cerrados):,} filas por EAN')
+else:
+    def _de_memoria(_tabs, _sch):
+        _t = pa.concat_tables(_tabs) if _tabs else _sch.empty_table()
+        return _t.to_pandas()
+    _cache = _de_memoria(_mem_sem, _SCH_SEM)
+    _ean_cerrados = _de_memoria(_mem_ean, _SCH_EAN)
+    _cache = _cache[_cache['semana'].map(_mes_de_semana) < _mes_actual]
+    _ean_cerrados = _ean_cerrados[_ean_cerrados['semana'].map(_mes_de_semana) < _mes_actual]
+del _mem_sem, _mem_ean
 _EAN_NAC.clear(); gc.collect()
 
 # Mes en curso: siempre fresco. Guardamos el crudo por-EAN para los diagnosticos.
@@ -1673,8 +1735,8 @@ for _i in presencia_items.index:
 traza_items = pd.DataFrame(_traza).sort_values('trazabilidad_%') if _traza else pd.DataFrame(
     columns=['item','descripcion','meses_con_dato','meses_totales','trazabilidad_%','canastas'])
 if len(traza_items):
-    print(f'
-AVISO TRAZABILIDAD: {len(traza_items)} items de canasta con presencia < {TRAZA_MIN_PCT:.0f}% '
+    print()
+    print(f'AVISO TRAZABILIDAD: {len(traza_items)} items de canasta con presencia < {TRAZA_MIN_PCT:.0f}% '
           f'de los meses. Un item con huecos largos reingresa con precio viejo y mete un salto '
           f'espurio; conviene reemplazarlo en el constructor.')
     print(traza_items[['descripcion','meses_con_dato','meses_totales','trazabilidad_%','canastas']]

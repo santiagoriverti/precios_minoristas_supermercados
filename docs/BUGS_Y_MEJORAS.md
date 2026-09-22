@@ -46,6 +46,41 @@ de la Tecnológica** hasta que haya al menos dos cadenas con cobertura de durabl
 
 ## 🟢 Cambios y fixes 2026-09
 
+### 🔴 BUG-34 — nb07: la sesión de Colab murió por RAM después de 1h21m de lectura y no quedó nada guardado (2026-09-22) ✅ Resuelto
+
+**Síntoma**: corrida con la canasta de 2026-09. Lee los 32 meses cerrados (`32/32 [1:21:31]`) y
+Colab corta con "se usó toda la RAM disponible". No se escribió ningún caché.
+
+**Por qué releyó todo**: la clave del caché incluye los EANs **empaquetados**. El reemplazo de
+Femenina y Representativa (entran 3 EANs, sale 1) cambió la clave. El handoff del 08-sep decía
+que ese reemplazo reusaba el caché: era falso. **Cualquier cambio de EANs en una canasta obliga a
+releer el SEPA** (cambiar solo cantidades, no).
+
+**Por qué murió**: hasta v5.7 el bucle juntaba los meses en una lista, los concatenaba y recién
+ahí escribía UN parquet. El concat sostenía la lista y el panel a la vez, y `to_parquet` sumaba la
+copia de Arrow: el pico era ~3 veces el panel, al final, después de toda la lectura.
+
+**Fix (v5.8)**: caché **por mes**. Cada mes cerrado se escribe apenas se lee, en
+`_cache_nb07/sem_<key>_v5/<mes>.parquet` y `_cache_nb07/ean_<key>_v5/<mes>.parquet`:
+- el bucle ocupa la RAM de UN mes;
+- una corrida cortada **retoma** desde el último mes guardado (el print dice
+  `Cache por mes (...): N meses guardados, M por leer`);
+- la carga final filtra en Arrow y convierte con `to_pandas(self_destruct=True)`, sin la lista
+  intermedia;
+- escritura a `.tmp` + rename: un corte a mitad de escritura no deja un parquet roto;
+- tipos fijos por esquema, y un mes sin datos se guarda vacío (no se relee).
+
+Los `sem_<key>_v5.parquet` de un solo archivo ya no se leen; se pueden borrar del Drive.
+Test: `notebooks/test_cache_por_mes.py` (ejecuta el bloque real: corte a mitad, reanudación,
+identidad contra una corrida sin caché, filtro del mes en curso, caché inconsistente).
+
+### 🔴 BUG-35 — nb07: la CELDA 13 (diagnósticos) no compilaba (2026-09-22) ✅ Resuelto
+
+El aviso de trazabilidad (commit `602a870`) tenía un `print(f'` partido en dos líneas: el salto de
+línea quedó escrito tal cual dentro del string. `SyntaxError` en la CELDA 13, que habría cortado
+la corrida DESPUÉS de la lectura larga. No lo agarraban los tests porque ninguno compilaba el
+notebook entero. Ahora `test_cache_por_mes.py` compila todas las celdas de código del `.ipynb`.
+
 ### 🔴 BUG-33 — el mapa publicado no servía como link para compartir (2026-09-09)
 
 El mapa del nb05 se publicó en GitHub Pages (`santiagoriverti/mapa_precios` →
