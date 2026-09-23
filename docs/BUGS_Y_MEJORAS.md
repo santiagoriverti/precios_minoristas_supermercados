@@ -130,6 +130,11 @@ que actualizar la referencia todos los meses. Se anclan Pan francés, Pollo, Car
 Limón a agosto de 2026. Los precios **por sucursal** de esos tipos se reescalan con el mismo factor
 (antes no se hacía, tampoco con el pan: una sucursal a precio de mercado aparecía cara por la
 diferencia de escala). El formato viejo (un número = última semana) sigue funcionando.
+**Efecto medido en la corrida v5.10 (2026-09-23)**: además del costo, baja el índice acumulado, porque
+el anclaje corrige el PESO de esos tipos (cantidad × precio) y pollo, picada y merluza subieron más
+que el promedio: ene-24 → ago-26 Popular 234,1 → 231,1, Representativa 231,2 → 229,5, Media 240,8 →
+239,4, Ejecutiva 236,0 → 235,4. El interanual casi no se mueve. Se había anticipado, mal, que el índice
+quedaba idéntico.
 Papa, tomate, cebolla y naranja quedan 1,4-1,8× sobre el INDEC pero cotizan el producto correcto a
 precio de supermercado: no se tocaron. El chequeo 6c del auditor (`--indec`) los vigila.
 
@@ -471,7 +476,9 @@ peor todavía.
 **Solución**: `NIVEL_REFERENCIA_FRESCO`, que fija el nivel de la última semana con un precio de
 mercado verificado. El índice ya separa **forma** (la cadena de EANs apareados) de **nivel** (el
 anclaje de una semana), así que esto **no altera la inflación medida** — sólo desplaza la serie por
-un factor. Se aplica después de la banda de plausibilidad, que está pensada para el estimador
+un factor. *(Corrección 2026-09-23: vale para la inflación del TIPO, no para la de la canasta. En un
+índice de cantidades fijas el tipo pesa cantidad × precio, así que corregir su nivel corrige su peso
+y mueve el acumulado de la canasta. Ver el anclaje INDEC de la v5.10.)* Se aplica después de la banda de plausibilidad, que está pensada para el estimador
 interno y no para un precio verificado a mano.
 
 ### 🟡 Femenina — un ítem con 16 meses de hueco explicaba casi toda su volatilidad (2026-09-08)

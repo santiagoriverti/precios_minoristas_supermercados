@@ -6,31 +6,49 @@ Autor: Santiago Riverti — investigador independiente
 
 ---
 
-## 🟢 ESTADO ACTUAL / HANDOFF [2026-09-22 · noche] — nb07 v5.10 — leer esto primero
+## 🟢 ESTADO ACTUAL / HANDOFF [2026-09-23] — nb07 v5.10 corrida y verificada — leer esto primero
 
 Proyecto EN PRODUCCION, 7 herramientas (nb01..nb07). Todo lo necesario para retomar viaja en el
 repo; lo unico que NO esta son los datos SEPA y los auxiliares, que viven en el Drive del usuario.
 
 ### En que estamos ahora
 
-**nb07 quedo en v5.10, lista para correr en Colab. NO relee el SEPA** (nada de lo cambiado toca la
-clave del cache `8822990e`: los 32 meses cerrados se reusan y solo se lee septiembre). El usuario la
-va a volver a correr y pasar el Excel. Al recibirlo:
+**La v5.10 se corrio el 2026-09-23 y paso la auditoria** (`auditar_salida_nb07.py --cache --indec`):
+sin relectura del SEPA (cache `8822990e` identico), indice replicado (dif 0,002), 0 cadenas/regiones
+fuera de rango (BUG-37 resuelto), solo cambiaron los 5 tipos anclados. Detalle: auditoria v5.9 §10.
+**Es publicable** (con la banda de sensibilidad de frescos y la comparacion IPC solo-alimentos).
 
-```
-python notebooks/auditar_salida_nb07.py <Excel> --indec <sh_ipc_precios_promedio.xls>
-```
+**Correccion**: el handoff anterior anticipaba "indice identico" y NO fue asi. El anclaje de nivel
+corrige el PESO de los tipos (cantidad x precio) y el acumulado bajo: ver la tabla de abajo.
 
-Que deberia verse contra la corrida v5.9 (`canastas_alternativas_2026-09-17.xlsx`):
-- **Indice: identico** (234,1 / 240,8 / 236,0 / 231,2 / 258,5 a ago-26). Solo cambian niveles en $.
-- **Costo nacional mas bajo** por el anclaje INDEC: medido sobre ago-26, Popular −8,4% ($980k → $898k),
-  Media −4,5%, Representativa −5,2%. En sep-26 la Popular deberia quedar cerca de $925k (antes $1.007.217).
-- **Aperturas**: todas las cadenas y regiones confiables dentro de ±5% del nacional (antes Vea 0,66x,
-  Cuyo 0,66x). Chequeo 6b del auditor en OK. Columna nueva `pct_imputado` (Vea ~45%).
-- `Resumen` con `mes_parcial`, `indice_mensual_ult` y las bases; provincias sin tildes ("Neuquen").
-- La planilla del INDEC: https://www.indec.gob.ar/ftp/cuadros/economia/sh_ipc_precios_promedio.xls
+**Proximo paso: el PAQUETE DE RELECTURA** (una sola relectura del SEPA, ~1h20m). Necesita que el
+usuario pase `canasta_representativa_2026-09.xlsx` (salida del nb01, en `MyDrive/carga/output_canasta/`),
+que es el insumo de `construir_canastas_v5.py`. Contenido:
+  (a) pañales y toallitas FUERA de Media/Ejecutiva/Representativa — YA HECHO en `cargar_canastas_v5.py`
+      (282 EANs) y en el constructor (commit 6a258f7); falta aplicarlo en el Drive;
+  (b) trazabilidad: reemplazar los items <85% de Media (11,1% del costo) y Ejecutiva (8,2%) y el
+      Jabon Dove Original de Representativa; Femenina: Prestobarba3 (513 suc < piso 700);
+  (c) `TIPOS_FRESCOS`: Pollo excluir `chorizo`; Limon excluir productos en cc/ml;
+  (d) anclas INDEC nuevas (post-cache, pero van juntas para publicar una sola vez): Tomate
+      ($3.011,77) y Naranja ($1.171,57) de ago-26; Suprema/Pechuga no tiene ancla INDEC
+      ($20.131 = 4,1x el pollo entero, por "Suprema Pollo Atm" de DIA): decidir criterio.
+Despues: usuario corre el cargador en Colab, sube el Excel al Drive y corre el nb07 (relee).
 
-### Que se hizo en esta sesion (2026-09-22, tarde-noche)
+### Numeros vigentes (corrida v5.10 del 2026-09-23, a ago-26 = ultimo mes con IPC)
+
+| Canasta | Indice ene-24=100 (v5.9 -> v5.10) | i.a. | Solo alimentos | Costo sep-26 (parcial) |
+|---|---:|---:|---:|---:|
+| Popular | 234,1 -> **231,1** | +28,8% | 233,2 | $924.193 |
+| Media | 240,8 -> **239,4** | +26,3% | 239,2 | $1.579.851 |
+| Ejecutiva | 236,0 -> **235,4** | +25,8% | 243,2 | $2.648.261 |
+| Representativa | 231,2 -> **229,5** | +26,7% | 237,4 | $1.443.087 |
+| Femenina | 258,5 | +28,5% | — | $138.634 |
+| IPC alimentos / general | 261,1 / 288,1 | +34,9% / +33,5% | | |
+
+Tecnologica: $6.227.462 (publicar como NIVEL). La banda por metodo de frescos (auditoria v5.9 §5) se
+calculo sobre la v5.9: el publicado queda en el extremo bajo (Popular +2,5% a +6% con TPD/INDEC).
+
+### Que se hizo en la sesion del 2026-09-22 (tarde-noche) y el 2026-09-23
 
 1. **Se audito la corrida v5.9** con todo lo disponible: el Excel, el cache (85 M de filas) y los
    precios promedio del INDEC. Informe: `docs/AUDITORIA_2026-09-22_v59.md` + PDF en `docs/auditoria/`
@@ -78,9 +96,9 @@ python notebooks/test_costo_sucursal.py           # costo por sucursal (BUG-37) 
 | 04 | `04_precios_seleccion` | ✅ estable | Precios por radio geografico |
 | 05 | `05_evolucion_productos_representativos` | ✅ corrido ago-2026 | Mapa publicado en GitHub Pages |
 | 06 | `06_evolucion_brecha_celiaca` | ✅ medicion cerrada | ⚠️ mapa con `cartodbpositron` |
-| 07 | `07_evolucion_canastas_alternativas` | ✅ v5.10, auditada | Re-correr y auditar con `--indec` |
+| 07 | `07_evolucion_canastas_alternativas` | ✅ v5.10 corrida y verificada (09-23) | Proximo: paquete de relectura |
 
-### Numeros de referencia (corrida v5.9, a ago-26 = ultimo mes con IPC)
+### Numeros de referencia de la corrida v5.9 (historicos: los vigentes estan arriba)
 
 | Canasta | Indice mensual (ene-24=100) | Solo alimentos | Banda por metodo de frescos |
 |---|---:|---:|---:|
@@ -97,8 +115,8 @@ el extremo bajo frente a TPD / INDEC (auditoria v5.9 §5).
 
 ### PENDIENTES, en orden
 
-1. **nb07: re-correr con la v5.10 y auditar** (`--indec`). Deberia salir todo lo de "En que estamos".
-2. **Paquete de cambios que RELEE el SEPA** (~1h20m; hacerlos juntos):
+1. ~~nb07: re-correr con la v5.10 y auditar~~ HECHO 2026-09-23 (OK, ver arriba).
+2. **Paquete de cambios que RELEE el SEPA** (detalle arriba, en "En que estamos") (~1h20m; hacerlos juntos):
    (a) trazabilidad: reemplazar items <85% de Media (10,6% del costo) y Ejecutiva (8,0%) y el Jabon Dove
    Original de Representativa; (b) **pañales: DECIDIDO (2026-09-23), SALEN** pañales y toallitas de
    Media/Ejecutiva/Representativa — ya aplicado en `cargar_canastas_v5.py` (282 EANs) y en el
@@ -416,7 +434,7 @@ elige (Representativa: 99,7% de media, minimo 84,4%); Femenina y Tecnologica se 
   cobertura (un EAN de balanza a $10.000 EXACTOS en 981 sucursales y un par a $4.300 en 339) con la
   referencia en el medio; barriendo RATIO x K el estimador salta entre $3.190/$4.300/$6.760/$10.000.
   Media geometrica ponderada: $1.938, peor. Solucion: `NIVEL_REFERENCIA_FRESCO` fija el nivel de la
-  ultima semana con un precio verificado; NO altera la inflacion (el indice separa forma de nivel).
+  ultima semana con un precio verificado; NO altera la inflacion DEL TIPO (si su peso en la canasta: ver v5.10).
 
 ### PENDIENTE
 1. **Re-correr nb07** con el Excel de canasta nuevo (minutos: reusa `sem_1ad1b4b5` y `ean_1ad1b4b5`,

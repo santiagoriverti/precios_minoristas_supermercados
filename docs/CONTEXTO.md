@@ -508,6 +508,18 @@ Los 4 reemplazos (Swift XL, Lavandina Anti-splash, Plusbelle, Listerine) están 
 
 ## Historial de cambios
 
+### 2026-09-23 — nb07 v5.10 corrida y verificada; pañales fuera de las canastas
+
+- Corrida v5.10 sin releer el SEPA, auditada (`auditar_salida_nb07.py --cache --indec`): índice
+  replicado, 0 cadenas/regiones fuera de rango (BUG-37 resuelto), solo cambian los 5 tipos anclados.
+  El acumulado ene-24 → ago-26 **bajó** (Popular 234,1 → 231,1): el anclaje corrige el peso de esos
+  tipos en la canasta. Se había anticipado, mal, que quedaba idéntico. Detalle: auditoría v5.9 §10.
+- Decisión del usuario: pañales y toallitas húmedas fuera de Media, Ejecutiva y Representativa (el
+  hogar tipo 2 tiene hijos de 6 y 8 años). Hecho en `cargar_canastas_v5.py` (282 EANs) y en el
+  constructor; se aplica en el Drive con el próximo paquete de relectura.
+- Hallazgo nuevo: Suprema/Pechuga a 4,1× el pollo entero (producto de DIA); Tomate y Naranja siguen
+  fuera de rango contra el INDEC.
+
 ### 2026-09-22 — nb07 v5.10: auditoría de la corrida v5.9, BUG-37 y nivel de frescos anclado al INDEC
 
 Auditoría completa de `canastas_alternativas_2026-09-17.xlsx` (corrida v5.9, sin releer el SEPA):

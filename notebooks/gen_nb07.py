@@ -263,8 +263,9 @@ FRESCO_ESLABON_K      = 2.5  # tope de variacion de un EAN en un eslabon (clip, 
 # El indice de frescos separa FORMA (la cadena de EANs apareados) de NIVEL (el estimador interno
 # en una semana de anclaje). Cuando el universo de EANs de un tipo esta dominado por codigos de
 # balanza con valores implausibles, el NIVEL sale mal aunque la forma este bien; una referencia
-# de mercado verificada es mejor ancla, y cambiarla NO altera la inflacion medida -solo desplaza
-# la serie entera por un factor-.
+# de mercado verificada es mejor ancla. Cambiarla no altera la inflacion DEL TIPO -desplaza su serie
+# entera por un factor- pero SI la de la CANASTA: en un indice de cantidades fijas cada item pesa
+# cantidad x precio, asi que corregir el nivel corrige su PESO (ver la nota de v5.10 mas abajo).
 # Caso medido (panel 2026-08): `Pan frances` publica $7.732/kg contra ~$6.200 de mercado. Su
 # universo tiene DOS regimenes de alta cobertura -un EAN de balanza a $10.000 EXACTOS en 981
 # sucursales y un par a $4.300 en 339- y la referencia real cae entre los dos. Se probo calibrar
@@ -288,6 +289,13 @@ FRESCO_ESLABON_K      = 2.5  # tope de variacion de un EAN en un eslabon (clip, 
 #   Pan frances    $6.200 (ancla anterior, sin fuente) vs $4.910 del pan tipo flauta
 # Juntos inflaban el costo de la Popular un 8% (medido a ago-26). Los demas tipos conservan el nivel
 # del SEPA: el sobreprecio de supermercado es parte del concepto de la canasta.
+#
+# OJO, el anclaje SI mueve el indice de la canasta (medido en la corrida v5.10 del 2026-09-23): la
+# evolucion de cada tipo no cambia, pero su peso (cantidad x precio) si. Pollo, picada y merluza
+# subieron mas que el promedio y pesaban 1,7 a 2,5 veces de mas, asi que la v5.9 sobreestimaba el
+# acumulado: ene-24 -> ago-26 Popular 234,1 -> 231,1; Representativa 231,2 -> 229,5; Media
+# 240,8 -> 239,4; Ejecutiva 236,0 -> 235,4. El interanual casi no se mueve. El indice correcto es el
+# de los pesos correctos: agregar o sacar un tipo de esta lista es un cambio de ponderacion.
 #
 # Formato: tipo -> (precio $/kg o $/docena, 'YYYY-MM'). La serie se escala para que su PROMEDIO en
 # ese mes sea el precio de referencia; la evolucion posterior la da el propio SEPA, asi que NO hace
@@ -1344,7 +1352,7 @@ for _t, _ref in NIVEL_REFERENCIA_FRESCO.items():
     FACTOR_NIVEL_FRESCO[_t] = _k
     _niv.append((_t, _antes, _antes * _k, _k, _cuando))
 if _niv:
-    print('Nivel por referencia externa (la FORMA de la serie no cambia): '
+    print('Nivel por referencia externa (la forma de la serie del tipo no cambia; su peso en la canasta si): '
           + ', '.join(f'{t} ${a:,.0f} -> ${b:,.0f} en {c} (x{k:.2f})' for t, a, b, k, c in _niv))
 
 nac_obs  = nac_wide.notna()                                   # presencia REAL (diagnostico)

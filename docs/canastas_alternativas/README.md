@@ -162,8 +162,9 @@ Popular, eso son 2,7 puntos de sobreestimación. **No se corrige con parámetros
 regímenes de alta cobertura (un EAN de balanza a $10.000 exactos en 981 sucursales y un par a $4.300
 en 339) con la referencia en el medio, y barriendo `RATIO × K` el estimador salta entre
 $3.190 / $4.300 / $6.760 / $10.000. La solución es `NIVEL_REFERENCIA_FRESCO`: fija el **nivel** de la
-última semana con un precio verificado. **No altera la inflación** — el índice encadenado separa la
-forma de la serie del nivel. Si consiguen referencias de mercado de otros frescos, se cargan ahí.
+última semana con un precio verificado. No altera la inflación **del pan**, pero sí su peso en la
+canasta y por lo tanto el índice (ver los cambios del 2026-09-22 más abajo). Si consiguen referencias
+de mercado de otros frescos, se cargan ahí.
 
 ## Cambios posteriores a v5 (2026-09-22) — auditoría de la corrida v5.9
 
@@ -183,8 +184,10 @@ promedio del INDEC para el GBA de agosto de 2026**:
 | Merluza | $27.087 | $14.821 (filet fresco) | filet de DIA de 500 g a $31.800/kg |
 | Limón | $7.485 | $1.425 | productos a $5-14 mil/kg (jugos) |
 
-La **forma** de la serie no cambia (la da el SEPA); cambia el **costo en pesos**: −8,4% en la Popular
-a ago-26, −4,5% en la Media, −5,2% en la Representativa.
+La **forma** de la serie de cada tipo no cambia (la da el SEPA). Cambia el **costo en pesos** (sep-26:
+Popular $1.007.217 → $924.193, Media −4,5%, Representativa −5,2%) y también el **índice**, porque cambia
+el peso de esos tipos: ene-24 → ago-26 Popular 234,1 → 231,1, Representativa 231,2 → 229,5, Media 240,8
+→ 239,4, Ejecutiva 236,0 → 235,4 (corrida v5.10 del 2026-09-23).
 
 ### Decisiones pendientes de composición
 

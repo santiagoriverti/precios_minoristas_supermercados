@@ -1035,8 +1035,11 @@ mezcla productos distintos, el nivel cae en el equivocado. Contra los precios pr
 (GBA), cuatro tipos estaban en ese caso —Pollo 2,5×, Carne picada 1,7×, Merluza 1,8×, Limón 5,3×— y
 el pan tenía un ancla sin fuente. `NIVEL_REFERENCIA_FRESCO` los ancla al INDEC de un mes dado
 (`(precio, 'YYYY-MM')`): el promedio de la serie en ese mes pasa a valer el precio de referencia y la
-evolución posterior la da el SEPA, así que la referencia no necesita actualizarse cada mes. Los
-precios por sucursal de esos tipos se reescalan con el mismo factor, para que el precio relativo
+evolución posterior la da el SEPA, así que la referencia no necesita actualizarse cada mes. **Ojo**:
+la inflación de cada tipo no cambia, pero su peso en la canasta (cantidad × precio) sí, y con eso el
+índice: en la corrida v5.10 el acumulado ene-24 → ago-26 de la Popular pasó de 234,1 a 231,1. Anclar
+o desanclar un tipo es un cambio de ponderación. Los precios por sucursal de esos tipos se reescalan
+con el mismo factor, para que el precio relativo
 sucursal/nacional —lo único que usan las aperturas— no cambie. Los demás tipos conservan el nivel
 del SEPA: el sobreprecio de supermercado es parte del concepto.
 
