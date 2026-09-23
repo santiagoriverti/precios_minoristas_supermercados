@@ -22,13 +22,16 @@ jugos de limón en Limón. Su **evolución** —la forma de la serie— sale de 
 excluir los productos en `cc`/`ml`. **Cambia la clave del caché y obliga a releer el SEPA (~1h20m)**:
 hacerlo junto con el próximo cambio de EANs (reemplazos de trazabilidad de Media y Ejecutiva).
 
-### nb07: pañales en un hogar sin bebés (decisión pendiente)
+### nb07: pañales en un hogar sin bebés — DECIDIDO: salen (2026-09-23), falta aplicarlo en el Drive
 
 El hogar de referencia es el hogar tipo 2 del INDEC: dos adultos con hijos de **6 y 8 años**. Media,
-Ejecutiva y Representativa llevan pañales (XXXG, XXG, XG) y toallitas húmedas —4,9%, 6,8% y 5,8% del
-costo—; la Popular no. O se sacan (`cantidad_0X = 0` en `cargar_canastas_v5.py`, obliga a releer el
-SEPA) o se redefine el hogar de referencia con un menor de 2-3 años y se recalculan los adultos
-equivalentes.
+Ejecutiva y Representativa llevaban pañales (XXXG, XXG, XG) y toallitas húmedas —4,9%, 6,8% y 5,8% del
+costo—; la Popular no. **El usuario decidió sacarlos.** Ya está hecho en el repo: `cargar_canastas_v5.py`
+pasa de 288 a 282 EANs (Media, Ejecutiva y Representativa de 76 a 74) y `NEEDS` del constructor deja
+`Panales` y `Toallitas humedas` en `(N, N, N, N)`. **Falta** correr el cargador en Colab y el nb07 —que
+por el cambio de EANs relee el SEPA—, junto con el resto del paquete de relectura (ver
+`.claude/memory.md`). `canastas_v5_detalle.csv` todavía los lista: se regenera la próxima vez que se
+corra el constructor.
 
 ### nb07: la evolución de los frescos depende del método
 

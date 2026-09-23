@@ -511,10 +511,15 @@ NEEDS = {
     'Toallitas femeninas': dict(sub='Toallitas Higiénicas', inc=r'toallit|toalla', exc=r'humed|beb[eé]|adulto|nocturn.*pack 6',
                                 u='un', qty=(16.0, 20.0, 24.0, 18.0), cba=''),
     # ─────────────────────────── BEBES Y MASCOTAS ──────────────────────────────
+    # Pañales y toallitas FUERA de todas las canastas (decision del usuario, 2026-09-23). El hogar de
+    # referencia es el hogar tipo 2 del INDEC -2 adultos con hijos de 6 y 8 años-, que no usa pañales;
+    # estaban en Media (4,9% del costo), Ejecutiva (6,8%) y Representativa (5,8%) y no en Popular.
+    # Auditoria de la corrida v5.9, docs/AUDITORIA_2026-09-22_v59.md §6. Antes: qty=(N, 90, 120, 80)
+    # y (N, 240, 320, 200).
     'Panales': dict(sub='Cambio de Pañales', inc=r'pa[ñn]al', exc=r'adulto|humed|toallit',
-                    u='un', qty=(N, 90.0, 120.0, 80.0), cba=''),
+                    u='un', qty=(N, N, N, N), cba=''),
     'Toallitas humedas': dict(sub='Cambio de Pañales', inc=r'toallit.*h[uú]med|h[uú]med', exc=r'adulto|desmaquill',
-                              u='un', qty=(N, 240.0, 320.0, 200.0), cba=''),
+                              u='un', qty=(N, N, N, N), cba=''),
     'Alimento para perro': dict(sub='Alimentos para Perros', inc=r'alimento|balanceado', exc=r'snack|premio|hueso|lata|sachet',
                                 u='kg', qty=(3.0, 6.0, 9.0, 4.0), cba=''),
     'Alimento para gato': dict(sub='Alimentos para Gatos', inc=r'alimento|balanceado', exc=r'snack|premio|lata|sachet|piedra|arena',

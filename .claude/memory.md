@@ -100,8 +100,9 @@ el extremo bajo frente a TPD / INDEC (auditoria v5.9 §5).
 1. **nb07: re-correr con la v5.10 y auditar** (`--indec`). Deberia salir todo lo de "En que estamos".
 2. **Paquete de cambios que RELEE el SEPA** (~1h20m; hacerlos juntos):
    (a) trazabilidad: reemplazar items <85% de Media (10,6% del costo) y Ejecutiva (8,0%) y el Jabon Dove
-   Original de Representativa; (b) **pañales**: decidir si salen de Media/Ejecutiva/Representativa (el
-   hogar tipo 2 tiene hijos de 6 y 8 años) o se redefine el hogar — DECISION DEL USUARIO; (c)
+   Original de Representativa; (b) **pañales: DECIDIDO (2026-09-23), SALEN** pañales y toallitas de
+   Media/Ejecutiva/Representativa — ya aplicado en `cargar_canastas_v5.py` (282 EANs) y en el
+   constructor, NO en el Excel del Drive: NO correr el cargador hasta tener el paquete completo; (c)
    `TIPOS_FRESCOS`: Pollo excluir `chorizo`, Limon excluir productos en cc/ml; (d) Femenina: la
    Prestobarba3 esta en 513 sucursales (< piso 700).
 3. **Frescos por metodo multilateral** (TPD/GEKS con ventana movil) en vez del encadenado semanal; hasta

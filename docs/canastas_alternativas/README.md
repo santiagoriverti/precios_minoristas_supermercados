@@ -188,9 +188,10 @@ a ago-26, −4,5% en la Media, −5,2% en la Representativa.
 
 ### Decisiones pendientes de composición
 
-- **Pañales en un hogar sin bebés.** El hogar de referencia es el hogar tipo 2 del INDEC (hijos de 6
-  y 8 años), pero Media (4,9% del costo), Ejecutiva (6,8%) y Representativa (5,8%) llevan pañales y
-  toallitas húmedas; la Popular no. O se sacan o se redefine el hogar.
+- **Pañales en un hogar sin bebés — DECIDIDO (2026-09-23): salen.** El hogar de referencia es el
+  hogar tipo 2 del INDEC (hijos de 6 y 8 años). Pañales y toallitas húmedas salen de Media, Ejecutiva
+  y Representativa (eran 4,9%, 6,8% y 5,8% del costo). Aplicado en `cargar_canastas_v5.py` (282 EANs) y
+  en `NEEDS` del constructor; falta correr el cargador en Colab (relee el SEPA).
 - **Rasuradora Femenina Prestobarba3** (reemplazo del 08-sep): 513 sucursales, debajo del piso de
   700 de la Femenina.
 - **Trazabilidad**: Media (10,6% del costo) y Ejecutiva (8,0%) tienen ítems con menos del 85% de

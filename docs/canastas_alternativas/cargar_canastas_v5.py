@@ -8,7 +8,10 @@
 #     sale Nivea Body 400 / Simply Venus / Dove Original 90 -> entra Villeneuve Piel Extra Seca 250 (7793008018759) x1,6 /
 #     Prestobarba3 Femenina x1 / Dove Antibacterial 90 x4. Representativa: Nivea Body 400 x0,5 -> Villenueve
 #     250 x0,8 (mismos 200 Ml/mes). Los fija EAN_FORZADO en el constructor.
-#   288 EANs   |   hogar de referencia: hogar tipo 2 (2 adultos + 2 ninos) = 3,09 adultos equivalentes
+#   EDITADO A MANO 2026-09-23: salen los pañales y las toallitas humedas de Media, Ejecutiva y Representativa
+#     (el hogar tipo 2 tiene hijos de 6 y 8 años). EANs: 7794626015298 7500435228770 7500435228763
+#     7798311610317 7891010251024 7794626011023. Mismo cambio en NEEDS del constructor.
+#   282 EANs   |   hogar de referencia: hogar tipo 2 (2 adultos + 2 ninos) = 3,09 adultos equivalentes
 #
 # Diferencia clave con v4: cada estrato usa SU PROPIA version de cada necesidad
 # (Popular primer precio, Media marca lider, Ejecutiva premium), en vez de compartir
@@ -48,8 +51,6 @@ CANTIDADES = {
     '7500435178570': {'cantidad_01': 0, 'cantidad_02': 1.5, 'cantidad_03': 0, 'cantidad_04': 0, 'cantidad_05': 0, 'cantidad_06': 0},  # Perfumería | Máquina de Afeitar Descartable Cuerpo Gillete 2 Un
     '7500435202671': {'cantidad_01': 0, 'cantidad_02': 0, 'cantidad_03': 7, 'cantidad_04': 0, 'cantidad_05': 0, 'cantidad_06': 0},  # Perfumería | Shampoo Limpieza y Revitalización Head & Shoulders 180 Cc
     '7500435225366': {'cantidad_01': 0, 'cantidad_02': 0, 'cantidad_03': 2, 'cantidad_04': 0, 'cantidad_05': 0, 'cantidad_06': 0},  # Perfumería | Repuesto Máquina Afeitar Carbono Gillette Mach 3 2 Un
-    '7500435228763': {'cantidad_01': 0, 'cantidad_02': 0, 'cantidad_03': 0, 'cantidad_04': 0, 'cantidad_05': 2, 'cantidad_06': 0},  # Bebés y mamás | Pañal Talle XG Baby-dry Hipoalergénico Pampers 36 Un
-    '7500435228770': {'cantidad_01': 0, 'cantidad_02': 0, 'cantidad_03': 4, 'cantidad_04': 0, 'cantidad_05': 0, 'cantidad_06': 0},  # Bebés y mamás | Pañal Talle XXG Baby-dry Hipoalergénico Pampers 34 Un
     '7500435229494': {'cantidad_01': 0, 'cantidad_02': 0, 'cantidad_03': 1.5, 'cantidad_04': 0, 'cantidad_05': 0, 'cantidad_06': 0},  # Perfumería | Toallas Femeninas con Alas Noches Tranquilas Seca Always 1
     '7500435245852': {'cantidad_01': 1, 'cantidad_02': 0, 'cantidad_03': 0, 'cantidad_04': 0, 'cantidad_05': 0, 'cantidad_06': 0},  # Perfumería | Máquina de Afeitar Desechable Carbón Prestobarba 3 Gillett
     '7500435247955': {'cantidad_01': 0, 'cantidad_02': 0, 'cantidad_03': 5, 'cantidad_04': 0, 'cantidad_05': 0, 'cantidad_06': 0},  # Perfumería | Acondicionador Pro-V Miracles Biotinamina B3 Pantene 250 M
@@ -270,8 +271,6 @@ CANTIDADES = {
     '7794440000098': {'cantidad_01': 0, 'cantidad_02': 3, 'cantidad_03': 0, 'cantidad_04': 0, 'cantidad_05': 0, 'cantidad_06': 0},  # Limpieza | Esponja con Fibra Siempre Limpia Virulana 1 Un
     '7794440003303': {'cantidad_01': 2, 'cantidad_02': 0, 'cantidad_03': 0, 'cantidad_04': 0, 'cantidad_05': 0, 'cantidad_06': 0},  # Limpieza | Esponja con Cuadraditos y Cuida Uñas Virulana 1 Un
     '7794440003341': {'cantidad_01': 0, 'cantidad_02': 0, 'cantidad_03': 0, 'cantidad_04': 0, 'cantidad_05': 2.5, 'cantidad_06': 0},  # Limpieza | Esponja Multiuso Fibraesponjas Virulana Un
-    '7794626011023': {'cantidad_01': 0, 'cantidad_02': 0, 'cantidad_03': 0, 'cantidad_04': 0, 'cantidad_05': 4, 'cantidad_06': 0},  # Bebés y mamás | Toallitas Húmedas Clásico y Cotidiano Huggies 48 Un
-    '7794626015298': {'cantidad_01': 0, 'cantidad_02': 3, 'cantidad_03': 0, 'cantidad_04': 0, 'cantidad_05': 0, 'cantidad_06': 0},  # Bebés y mamás | Pañal XXXG Huggies Classic 28 Un
     '7794820902943': {'cantidad_01': 0, 'cantidad_02': 0, 'cantidad_03': 1.5, 'cantidad_04': 0, 'cantidad_05': 0, 'cantidad_06': 0},  # Frescos | Dulce de Leche Repostero Milkaut 400 Gr
     '7794820903292': {'cantidad_01': 0, 'cantidad_02': 0, 'cantidad_03': 4, 'cantidad_04': 0, 'cantidad_05': 0, 'cantidad_06': 0},  # Frescos | Manteca Calidad Extra Milkaut 100 Gr
     '7794990878925': {'cantidad_01': 0, 'cantidad_02': 2.5, 'cantidad_03': 0, 'cantidad_04': 0, 'cantidad_05': 0, 'cantidad_06': 0},  # Frescos | Queso Untable Fundido con Jamón La Paulina 190 Gr
@@ -292,13 +291,11 @@ CANTIDADES = {
     '7798140257554': {'cantidad_01': 0, 'cantidad_02': 0, 'cantidad_03': 0, 'cantidad_04': 0, 'cantidad_05': 0, 'cantidad_06': 1},  # Perfumería | Crema Facial Humectante Teatrical 100 Gr
     '7798174970016': {'cantidad_01': 0, 'cantidad_02': 4, 'cantidad_03': 0, 'cantidad_04': 0, 'cantidad_05': 0, 'cantidad_06': 0},  # Almacén | Azúcar Común Azucel 1 Kg
     '7798181510212': {'cantidad_01': 0, 'cantidad_02': 0, 'cantidad_03': 7, 'cantidad_04': 0, 'cantidad_05': 0, 'cantidad_06': 0},  # Almacén | Galletitas Crackers Smams 150 Gr
-    '7798311610317': {'cantidad_01': 0, 'cantidad_02': 5, 'cantidad_03': 0, 'cantidad_04': 0, 'cantidad_05': 0, 'cantidad_06': 0},  # Bebés y mamás | Toallas Húmedas con Aloe Vera Toddler 48 Un
     '7798316700808': {'cantidad_01': 0, 'cantidad_02': 0, 'cantidad_03': 0, 'cantidad_04': 0, 'cantidad_05': 4, 'cantidad_06': 0},  # Almacén | Aceite de Girasol Legítimo 900 Ml
     '7798338291070': {'cantidad_01': 0, 'cantidad_02': 1, 'cantidad_03': 0, 'cantidad_04': 0, 'cantidad_05': 0, 'cantidad_06': 0},  # Frescos | Crema de Leche Clásica para Cocinar Las Tres Niñas 200 Ml
     '7799086000389': {'cantidad_01': 4, 'cantidad_02': 0, 'cantidad_03': 0, 'cantidad_04': 0, 'cantidad_05': 0, 'cantidad_06': 0},  # Almacén | Azúcar Domino 1 Kg
     '77991584': {'cantidad_01': 4, 'cantidad_02': 0, 'cantidad_03': 0, 'cantidad_04': 0, 'cantidad_05': 0, 'cantidad_06': 0},  # Almacén | Alfajor Triple de Chocolate Fantoche 85 Gr
     '7891000345528': {'cantidad_01': 1, 'cantidad_02': 1, 'cantidad_03': 1, 'cantidad_04': 0, 'cantidad_05': 1, 'cantidad_06': 0},  # Almacén | Caldo de Verdura Maggi 114 Gr
-    '7891010251024': {'cantidad_01': 0, 'cantidad_02': 0, 'cantidad_03': 7, 'cantidad_04': 0, 'cantidad_05': 0, 'cantidad_06': 0},  # Bebés y mamás | Toallitas Húmedas Johnsons 44 Un
     '7891010254773': {'cantidad_01': 0, 'cantidad_02': 0, 'cantidad_03': 0, 'cantidad_04': 0, 'cantidad_05': 0, 'cantidad_06': 2},  # Perfumería | Tampones Medio O.B. 8 Un
     '7891010560737': {'cantidad_01': 0, 'cantidad_02': 0, 'cantidad_03': 0, 'cantidad_04': 0, 'cantidad_05': 1, 'cantidad_06': 0},  # Perfumería | Hisopos Caja Johnson'S 75 Un
     '7891024116128': {'cantidad_01': 0, 'cantidad_02': 0, 'cantidad_03': 2, 'cantidad_04': 0, 'cantidad_05': 0, 'cantidad_06': 0},  # Perfumería | Cepillo Dental Colgate 1 Un
