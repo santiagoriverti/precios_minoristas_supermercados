@@ -12,7 +12,11 @@
 
 ## 🟡 Defectos abiertos
 
-### nb07: la EVOLUCIÓN de algunos tipos frescos sale de productos que no corresponden
+### nb07: la EVOLUCIÓN de algunos tipos frescos sale de productos que no corresponden — EN CURSO (v5.11)
+
+**v5.11 (2026-09-23)**: bandejas Atm de DIA fuera de Pollo y Suprema, chorizos fuera de Pollo, jugos
+fuera de Limón y `RATIO_FRESCO` recalibrado (ver la entrada v5.11 más abajo). Se verifica con la
+corrida de relectura. Texto original:
 
 La v5.10 corrigió el **nivel** de Pollo, Carne picada, Merluza y Limón anclándolo al INDEC, pero el
 universo de EANs de esos tipos sigue incluyendo productos ajenos: un "Chorizo de Pollo" en Pollo,
@@ -22,7 +26,7 @@ jugos de limón en Limón. Su **evolución** —la forma de la serie— sale de 
 excluir los productos en `cc`/`ml`. **Cambia la clave del caché y obliga a releer el SEPA (~1h20m)**:
 hacerlo junto con el próximo cambio de EANs (reemplazos de trazabilidad de Media y Ejecutiva).
 
-### nb07: pañales en un hogar sin bebés — DECIDIDO: salen (2026-09-23), falta aplicarlo en el Drive
+### nb07: pañales en un hogar sin bebés — DECIDIDO: salen (2026-09-23), se aplica con la relectura v5.11
 
 El hogar de referencia es el hogar tipo 2 del INDEC: dos adultos con hijos de **6 y 8 años**. Media,
 Ejecutiva y Representativa llevaban pañales (XXXG, XXG, XG) y toallitas húmedas —4,9%, 6,8% y 5,8% del
@@ -75,6 +79,46 @@ de la Tecnológica** hasta que haya al menos dos cadenas con cobertura de durabl
 ---
 
 ## 🟢 Cambios y fixes 2026-09
+
+### 🟣 nb07 v5.11 — paquete de relectura: frescos bien especificados y candidatos a reemplazo (2026-09-23)
+
+Cambia la clave del caché: **la corrida relee el SEPA** (~1h20m, retoma si Colab se corta).
+
+1. **Bandejas "Atm" de DIA fuera de Pollo y Suprema/Pechuga** (decisión del usuario).
+   `EXCLUIR_EAN_FRESCO` (CELDA 1) excluye por EAN `2406851000004` "Pata de Pollo Atm 1 Kg" y
+   `2406848000000` "Suprema Pollo Atm 1 Kg", marca Día, 1.037 sucursales cada una. Por EAN y no por
+   nombre, para no arrastrar productos de otras cadenas. Además Pollo excluye `chorizo` (4 EANs de
+   chorizo de pollo) y Limón los productos medidos en volumen (`cc`, `ml`, `lt`: jugos).
+2. **`RATIO_FRESCO` recalibrado donde centraba el filtro de régimen en el producto equivocado.** El
+   filtro de la lectura acepta, por sucursal, las variantes dentro de `[ref/K, ref×K]` con
+   `ref = ancla del mes × RATIO_FRESCO`. Calibrado sobre datos contaminados, descartaba justo lo que
+   había que medir. Medido sobre ago-26 (ancla ≈ $3.000/kg):
+
+   | Tipo | Ratio | Lo que quedaba adentro | Ratio nuevo | Lo que queda adentro |
+   |---|---:|---|---:|---|
+   | Pollo | 3,89 | piezas, mediana $10.600 (el pollo entero de DIA a $3.690 quedaba AFUERA) | 1,50 | pollo entero, mediana $4.800 |
+   | Carne picada | 5,63 | picada envasada de DIA, $22.475 | 3,35 | común/especial, $15.000 |
+   | Limón | 2,15 | jugos, $5.756 (el limón a granel de DIA a $1.690 quedaba AFUERA) | 0,45 | limón, $1.690 |
+   | Suprema/Pechuga | 9,53 | la bandeja Atm de DIA, $20.000 | 3,50 | $8.800 (~1,8× el pollo entero) |
+
+   Los ratios nuevos salen de precio INDEC / ancla (Suprema, que el INDEC no publica, del orden
+   habitual de ~2× el pollo entero). Afectan el precio **por sucursal** (aperturas) y el nivel de la
+   Suprema, que no está anclada; la serie nacional de cada tipo es el encadenado por EAN.
+3. **Tomate y Naranja anclados al INDEC** (ago-26: $3.011,77 y $1.171,57). Eran los dos que el
+   chequeo 6c de la corrida v5.10 dejaba fuera de rango (1,63× y 1,78×).
+4. **`EANS_CANDIDATOS`**: 90 EANs —los 23 ítems con huecos (o, en la Femenina, bajo el piso de
+   sucursales) y hasta 4 candidatos por necesidad, elegidos con la lógica del constructor— se leen
+   del SEPA **sin entrar a ninguna canasta**. La hoja nueva **`Candidatos_trazabilidad`** da, para
+   cada uno, los meses con dato, el primer mes y la cobertura actual. **Por qué así**: la clave del
+   caché depende del universo de EANs leído; si el reemplazo sale de esta lista, cambiar la canasta
+   después NO relee el SEPA. Por eso también están los ítems actuales. Test:
+   `notebooks/test_candidatos_reemplazo.py`.
+5. Pañales y toallitas fuera de Media, Ejecutiva y Representativa (en el Excel de canasta: correr
+   `cargar_canastas_v5.py`, 282 EANs).
+
+**Después de la corrida**: elegir en `Candidatos_trazabilidad` el reemplazo de cada ítem (trazabilidad
+≥85%, cobertura ≥ piso de su canasta, monotonicidad entre estratos), actualizar el cargador y el
+`EAN_FORZADO` del constructor, y correr de nuevo el nb07 (minutos: no relee).
 
 ### 🔴 BUG-37 — nb07: el costo por sucursal omitía los rubros ENTEROS que la sucursal no publica (2026-09-22) ✅ Resuelto en v5.10
 

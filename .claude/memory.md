@@ -6,7 +6,7 @@ Autor: Santiago Riverti — investigador independiente
 
 ---
 
-## 🟢 ESTADO ACTUAL / HANDOFF [2026-09-23] — nb07 v5.10 corrida y verificada — leer esto primero
+## 🟢 ESTADO ACTUAL / HANDOFF [2026-09-23] — nb07 v5.10 verificada, v5.11 (relectura) lista — leer esto primero
 
 Proyecto EN PRODUCCION, 7 herramientas (nb01..nb07). Todo lo necesario para retomar viaja en el
 repo; lo unico que NO esta son los datos SEPA y los auxiliares, que viven en el Drive del usuario.
@@ -21,18 +21,25 @@ fuera de rango (BUG-37 resuelto), solo cambiaron los 5 tipos anclados. Detalle: 
 **Correccion**: el handoff anterior anticipaba "indice identico" y NO fue asi. El anclaje de nivel
 corrige el PESO de los tipos (cantidad x precio) y el acumulado bajo: ver la tabla de abajo.
 
-**Proximo paso: el PAQUETE DE RELECTURA** (una sola relectura del SEPA, ~1h20m). Necesita que el
-usuario pase `canasta_representativa_2026-09.xlsx` (salida del nb01, en `MyDrive/carga/output_canasta/`),
-que es el insumo de `construir_canastas_v5.py`. Contenido:
-  (a) pañales y toallitas FUERA de Media/Ejecutiva/Representativa — YA HECHO en `cargar_canastas_v5.py`
-      (282 EANs) y en el constructor (commit 6a258f7); falta aplicarlo en el Drive;
-  (b) trazabilidad: reemplazar los items <85% de Media (11,1% del costo) y Ejecutiva (8,2%) y el
-      Jabon Dove Original de Representativa; Femenina: Prestobarba3 (513 suc < piso 700);
-  (c) `TIPOS_FRESCOS`: Pollo excluir `chorizo`; Limon excluir productos en cc/ml;
-  (d) anclas INDEC nuevas (post-cache, pero van juntas para publicar una sola vez): Tomate
-      ($3.011,77) y Naranja ($1.171,57) de ago-26; Suprema/Pechuga no tiene ancla INDEC
-      ($20.131 = 4,1x el pollo entero, por "Suprema Pollo Atm" de DIA): decidir criterio.
-Despues: usuario corre el cargador en Colab, sube el Excel al Drive y corre el nb07 (relee).
+**AHORA: nb07 v5.11 = PAQUETE DE RELECTURA, lista para correr (RELEE el SEPA, ~1h20m o algo mas).**
+Contenido (detalle en BUGS_Y_MEJORAS, entrada v5.11, y METODOLOGIA §10.16):
+  (a) pañales y toallitas fuera de Media/Ejecutiva/Representativa: `cargar_canastas_v5.py` (282 EANs);
+  (b) `EXCLUIR_EAN_FRESCO`: bandejas Atm de DIA fuera de Pollo (2406851000004) y Suprema (2406848000000);
+      Pollo sin chorizo; Limon sin productos en cc/ml;
+  (c) `RATIO_FRESCO` recalibrado: Pollo 1,50 · Carne picada 3,35 · Limon 0,45 · Suprema 3,50 (el filtro de
+      regimen estaba centrado en el producto equivocado: descartaba el pollo entero y el limon real);
+  (d) anclas INDEC nuevas: Tomate $3.011,77 y Naranja $1.171,57 (ago-26);
+  (e) `EANS_CANDIDATOS`: 90 EANs (23 items con huecos + hasta 4 candidatos c/u) que se leen sin entrar a
+      ninguna canasta -> hoja `Candidatos_trazabilidad`. Los reemplazos NO van en esta corrida.
+Pasos del usuario: (1) pegar `cargar_canastas_v5.py` en Colab, subir `canasta_representativa_2026-09.xlsx`,
+bajar el `_con_canastas.xlsx` y subirlo al Drive como `canasta_representativa_2026-09.xlsx` (reemplazando);
+(2) correr el nb07 v5.11 desde el badge (arranca con "0 meses guardados, 32 por leer" y tarda); (3) pasar
+Excel + reporte + zips del cache nuevo.
+AL VOLVER: auditar (`--cache --indec`); elegir de `Candidatos_trazabilidad` el reemplazo de cada item
+(trazabilidad >=85%, cobertura >= piso de la canasta, monotonicidad Popular <= Media <= Ejecutiva),
+calcular la cantidad (qty fisica / presentacion, ver `canastas_v5_detalle.csv`), actualizar el cargador y
+`EAN_FORZADO` del constructor; el usuario corre cargador + nb07 (NO relee: los candidatos ya estan leidos).
+Verificar que Suprema quede ~2x el pollo entero y que Pollo/Limon/Picada tengan aperturas coherentes.
 
 ### Numeros vigentes (corrida v5.10 del 2026-09-23, a ago-26 = ultimo mes con IPC)
 
@@ -77,6 +84,7 @@ python notebooks/test_encadenado_frescos.py       # encadenado de frescos (nb07)
 python notebooks/test_quiebre_serie.py            # quiebre de serie del indice (BUG-36)
 python notebooks/test_cache_por_mes.py            # cache por mes + compila todas las celdas
 python notebooks/test_costo_sucursal.py           # costo por sucursal (BUG-37) + anclaje de nivel
+python notebooks/test_candidatos_reemplazo.py     # hoja Candidatos_trazabilidad (v5.11)
 ```
 
 - **Los `.ipynb` NO se editan a mano**: `python notebooks/gen_nb07.py` reescribe el nb07. Commitear
@@ -96,7 +104,7 @@ python notebooks/test_costo_sucursal.py           # costo por sucursal (BUG-37) 
 | 04 | `04_precios_seleccion` | ✅ estable | Precios por radio geografico |
 | 05 | `05_evolucion_productos_representativos` | ✅ corrido ago-2026 | Mapa publicado en GitHub Pages |
 | 06 | `06_evolucion_brecha_celiaca` | ✅ medicion cerrada | ⚠️ mapa con `cartodbpositron` |
-| 07 | `07_evolucion_canastas_alternativas` | ✅ v5.10 corrida y verificada (09-23) | Proximo: paquete de relectura |
+| 07 | `07_evolucion_canastas_alternativas` | ✅ v5.10 verificada · v5.11 lista (relee) | Correr la relectura; despues elegir reemplazos |
 
 ### Numeros de referencia de la corrida v5.9 (historicos: los vigentes estan arriba)
 

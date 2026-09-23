@@ -203,6 +203,12 @@ el peso de esos tipos: ene-24 → ago-26 Popular 234,1 → 231,1, Representativa
 Cualquiera de estos cambios toca EANs y **obliga a releer el SEPA** (~1h20m): conviene hacerlos
 juntos, y aprovechar para limpiar el universo de EANs de Pollo y Limón en `TIPOS_FRESCOS`.
 
+**Estado (2026-09-23, nb07 v5.11)**: la relectura lleva los pañales afuera, los frescos limpios y
+los **candidatos a reemplazo** de los ítems con huecos (`EANS_CANDIDATOS` en la CELDA 1 del nb07).
+Los reemplazos se eligen DESPUÉS de esa corrida, con la trazabilidad medida en la hoja
+`Candidatos_trazabilidad`, y como los candidatos ya están en el universo leído, aplicarlos no vuelve
+a releer el SEPA.
+
 ---
 
 ## Qué esperar — y qué no

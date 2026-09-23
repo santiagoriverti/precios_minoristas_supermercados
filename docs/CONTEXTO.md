@@ -141,7 +141,7 @@ Solo tipos con dicotomía celíaca; 2–3 EANs representativos por lado, promedi
 intra-sucursal. Config: dict `TIPOS` en la CELDA 1. **Detalle completo: `docs/BRECHA_CELIACA.md`.**
 
 ### 2f. `07_evolucion_canastas_alternativas` (notebook 07) — motor del informe semanal
-**Estado: v5.10, 2026-09-22** (auditada; ver `docs/AUDITORIA_2026-09-22_v59.md` y el historial de
+**Estado: v5.11, 2026-09-23** (relectura pendiente de correr; v5.10 auditada; ver `docs/AUDITORIA_2026-09-22_v59.md` y el historial de
 cambios más abajo). Es el notebook que alimenta el **informe semanal** del equipo de
 economistas. Costo de **6 canastas** vs **IPC**, desagregado por **rubro** (drill-down hasta
 producto), **provincia**, **región** y **cadena**.
@@ -507,6 +507,14 @@ Los 4 reemplazos (Swift XL, Lavandina Anti-splash, Plusbelle, Listerine) están 
 ---
 
 ## Historial de cambios
+
+### 2026-09-23 — nb07 v5.11: paquete de relectura (frescos bien especificados y candidatos a reemplazo)
+
+Relee el SEPA. Bandejas Atm de DIA fuera de Pollo y Suprema (decisión del usuario), chorizos fuera de
+Pollo, jugos fuera de Limón, `RATIO_FRESCO` recalibrado donde el filtro de régimen descartaba el
+producto correcto (Pollo, Carne picada, Limón, Suprema), Tomate y Naranja anclados al INDEC, y 90
+candidatos a reemplazo leídos sin entrar a ninguna canasta (hoja `Candidatos_trazabilidad`) para
+elegir los reemplazos de los ítems con huecos sin otra relectura. Test `test_candidatos_reemplazo.py`.
 
 ### 2026-09-23 — nb07 v5.10 corrida y verificada; pañales fuera de las canastas
 

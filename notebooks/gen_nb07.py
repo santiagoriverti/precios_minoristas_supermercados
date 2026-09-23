@@ -28,6 +28,17 @@ v5.10 (auditoria de la corrida v5.9, 2026-09-22 - docs/AUDITORIA_2026-09-22_v59.
     tipos se reescalan con el mismo factor, para que las aperturas sigan siendo coherentes.
 12. Resumen con mes_parcial y el indice mensual; grafia de provincias deterministica.
 Nada de esto toca la clave del cache: la corrida reusa lo leido y no relee el SEPA.
+
+v5.11 (paquete de relectura, 2026-09-23) - ESTA SI RELEE EL SEPA (cambia la clave del cache):
+13. Bandejas "Atm" de DIA fuera de Pollo y Suprema/Pechuga (EXCLUIR_EAN_FRESCO); Pollo sin chorizos;
+    Limon sin productos medidos en volumen (jugos).
+14. RATIO_FRESCO recalibrado en Pollo, Carne picada, Limon y Suprema: el filtro de regimen estaba
+    centrado en el producto equivocado (Limon en los jugos, Pollo en las piezas de DIA).
+15. Tomate y Naranja anclados al INDEC (ago-2026).
+16. EANS_CANDIDATOS: 90 EANs que se leen sin entrar a ninguna canasta para medir su trazabilidad
+    (hoja Candidatos_trazabilidad). Si el reemplazo de un item con huecos sale de esta lista, cambiar
+    la canasta despues NO obliga a releer el SEPA.
+Y en el Excel de canasta: pañales y toallitas fuera de Media/Ejecutiva/Representativa (282 EANs).
 """
 import json, os, hashlib
 
@@ -179,7 +190,7 @@ RATIO_FRESCO = {
     'Bife de chorizo': 6.95,
     'Bondiola': 8.08,
     'Brócoli': 3.87,
-    'Carne picada': 5.63,
+    'Carne picada': 3.35,   # v5.11: era 5.63 (calibrado sobre la picada envasada de DIA); 3,35 = INDEC comun / ancla ago-26
     'Carré de cerdo': 6.94,
     'Cebolla': 1.05,
     'Chaucha': 3.31,
@@ -193,7 +204,7 @@ RATIO_FRESCO = {
     'Jamón cocido (kg)': 8.47,
     'Kiwi': 4.70,
     'Lechuga': 2.82,
-    'Limón': 2.15,
+    'Limón': 0.45,          # v5.11: era 2.15 y centraba el filtro en los JUGOS (~$7.500/kg): descartaba el limon real
     'Lomo': 9.25,
     'Mandarina': 1.07,
     'Manzana': 2.02,
@@ -212,7 +223,7 @@ RATIO_FRESCO = {
     'Pechito/Costilla cerdo': 5.83,
     'Pepino': 1.77,
     'Pera': 1.61,
-    'Pollo': 3.89,
+    'Pollo': 1.50,          # v5.11: era 3.89 y descartaba el pollo entero ($3.690 en DIA); 1,50 = INDEC pollo entero / ancla
     'Pomelo': 1.62,
     'Queso barra/Dambo': 13.20,
     'Queso cremoso': 7.73,
@@ -221,7 +232,7 @@ RATIO_FRESCO = {
     'Repollo': 1.72,
     'Roast beef': 5.04,
     'Salame/Salamín': 10.36,
-    'Suprema/Pechuga': 9.53,
+    'Suprema/Pechuga': 3.50,  # v5.11: era 9.53 (centrado en la bandeja Atm de DIA a $20.500); sin ella, ~1,8x el pollo entero
     'Tomate': 2.44,
     'Uva': 3.62,
     'Vacío': 7.46,
@@ -308,7 +319,151 @@ NIVEL_REFERENCIA_FRESCO = {
     'Carne picada': (10613.08, '2026-08'),   # INDEC GBA 'Carne picada común' ($/kg)
     'Merluza':      (14820.86, '2026-08'),   # INDEC GBA 'Filet de merluza fresco' ($/kg)
     'Limón':        (1424.50,  '2026-08'),   # INDEC GBA 'Limón' ($/kg)
+    # v5.11: los dos que la auditoria de la v5.10 dejo fuera de rango (chequeo 6c): cotizan el
+    # producto correcto pero la mediana cae en la variedad de DIA ("Tomate Redondo Elegido" $5.690).
+    'Tomate':       (3011.77,  '2026-08'),   # INDEC GBA 'Tomate redondo' ($/kg)
+    'Naranja':      (1171.57,  '2026-08'),   # INDEC GBA 'Naranja' ($/kg)
 }
+
+# ── EANs de frescos EXCLUIDOS a mano (v5.11) ──────────────────────────────────
+# Las bandejas en atmosfera modificada ("Atm") de DIA, 1.037 sucursales cada una, definian el tipo
+# por su sola cobertura: "Pata de Pollo Atm" a $12.000/kg hacia que Pollo cotizara 2,5 veces el pollo
+# entero del INDEC, y "Suprema Pollo Atm" a $20.500 dejaba la suprema en 4,1 veces el pollo entero.
+# Decision del usuario (2026-09-23): afuera de los dos tipos. Se excluyen por EAN y no por nombre
+# para no arrastrar productos de otras cadenas. Cambiar esta lista cambia la clave del cache.
+EXCLUIR_EAN_FRESCO = {
+    '2406851000004': 'Pata de Pollo Atm 1 Kg (Dia)',
+    '2406848000000': 'Suprema Pollo Atm 1 Kg (Dia)',
+}
+
+# ── Candidatos a REEMPLAZO que se leen del SEPA sin entrar a ninguna canasta (v5.11) ───────
+# 23 items de Popular/Media/Ejecutiva/Representativa/Femenina tienen dato en menos del 85% de los
+# meses (hoja Alertas_trazabilidad) o, la rasuradora de la Femenina, menos sucursales que el piso
+# de su canasta. Para elegir el reemplazo hace falta saber que candidato SI tiene historia, y eso
+# solo se mide leyendo el SEPA. Estos EANs se leen junto con las canastas y la hoja
+# Candidatos_trazabilidad dice, para cada uno, en cuantos meses tuvo dato.
+# Por que van aca y no recien cuando se elijan: la clave del cache depende del universo de EANs
+# leido. Si el reemplazo elegido YA esta en esta lista, cambiar la canasta NO cambia el universo y
+# NO obliga a releer el SEPA. Por eso tambien estan los items ACTUALES: cuando salgan de su
+# canasta, el universo sigue igual. NO sacar EANs de aca sin querer releer todo.
+# Generados con la logica del constructor (necesidad, ventana de tier, pisos de cobertura,
+# monotonicidad) sobre canasta_representativa_2026-09.xlsx.
+EANS_CANDIDATOS = {
+    # Popular / Bolsas de residuo
+    '7793253007102': 'Popular / Bolsas de residuo / ACTUAL (trazab. 42%) / Bolsas de Residuos 45X55 Cm de 15 Un Mortimer 1 Un',
+    '7790117000200': 'Popular / Bolsas de residuo / Bolsas de Residuos de 45 Cm 60 Cm en Rollo Asurin 30 (1490 suc)',
+    '7790117061836': 'Popular / Bolsas de residuo / Bolsas de Residuos Cierra Fácil Rollo 45x55 Cm Asurí (832 suc)',
+    # Popular / Azucar
+    '7799086000389': 'Popular / Azucar / ACTUAL (trazab. 46%) / Azúcar Domino 1 Kg',
+    '7798174970016': 'Popular / Azucar / Azúcar Común Azucel 1 Kg (1184 suc)',
+    # Popular / Milanesas / nuggets de pollo
+    '7891515629458': 'Popular / Milanesas / nuggets de pollo / ACTUAL (trazab. 48%) / Formitas de Pollo Congelado Sadia 400 Gr',
+    '7790070036599': 'Popular / Milanesas / nuggets de pollo / Patitas de Pollo Granja del Sol 400 Gr (2209 suc)',
+    '7790070035950': 'Popular / Milanesas / nuggets de pollo / Bocaditos de Pollo Rebozados +100 Gr Gratis Patitas  (1777 suc)',
+    '7793281493656': 'Popular / Milanesas / nuggets de pollo / Nuggets de Pollo Crocantes Unión Ganadera  1 Kg (1366 suc)',
+    '7790070036636': 'Popular / Milanesas / nuggets de pollo / Formitas de Pollo Rebozadas Lucchetti 350 Gr (882 suc)',
+    # Popular / Afeitado
+    '7500435245852': 'Popular / Afeitado / ACTUAL (trazab. 58%) / Máquina de Afeitar Desechable Carbón Prestobarba 3 G',
+    '7702018874729': 'Popular / Afeitado / Máquina de Afeitar Prestobarba 3 Gillette 2 Un (2026 suc)',
+    '7500435178570': 'Popular / Afeitado / Máquina de Afeitar Descartable Cuerpo Gillete 2 Un (1711 suc)',
+    '7702018983872': 'Popular / Afeitado / Rasuradora Desechable Men Prestobarba3 Ice Gillette  (1671 suc)',
+    '7506339337525': 'Popular / Afeitado / Máquina Afeitar Masculina Prestobarba Sense Care Gil (1665 suc)',
+    # Popular / Harina de maiz / polenta
+    '7791120103858': 'Popular / Harina de maiz / polenta / ACTUAL (trazab. 61%) / Polenta Instantánea Molinos Ala 500 Gr',
+    '7790580138738': 'Popular / Harina de maiz / polenta / Harina de Maíz Paquete Prestopronta 500 Gr (2436 suc)',
+    '7790580138721': 'Popular / Harina de maiz / polenta / Polenta Prestopronta 730 Gr (2349 suc)',
+    # Popular / Tomate envasado
+    '7790088001497': 'Popular / Tomate envasado / ACTUAL (trazab. 61%) / Puré de Tomate en Tetrabrik Alco 520 Gr',
+    '7790580138868': 'Popular / Tomate envasado / Puré de Tomate La Campagnola 530 Gr (2462 suc)',
+    '7790580146115': 'Popular / Tomate envasado / Pure de Tomate Arcor 520 Gr (2445 suc)',
+    '7793360000157': 'Popular / Tomate envasado / Puré de Tomate Tetrabrik Salsati La Campagnola 520 G (2337 suc)',
+    '7798079670059': 'Popular / Tomate envasado / Tomate Triturado Don Francisco Noel 960 Ml (812 suc)',
+    # Popular / Salchichas
+    '7790625010401': 'Popular / Salchichas / ACTUAL (trazab. 73%) / Salchicha Viena 66 190 Gr',
+    '7790360970053': 'Popular / Salchichas / Salchichas Kids Swift Flowpack 190 Gr (1997 suc)',
+    # Media / Jabon en polvo
+    '7791290796577': 'Media / Jabon en polvo / ACTUAL (trazab. 42%) / Jabón en Polvo mas Blancos Ala 600 Gr',
+    '7791290792050': 'Media / Jabon en polvo / Jabón en Polvo Lavado a Mano Ala 800 Gr (2108 suc)',
+    '7791290792142': 'Media / Jabon en polvo / Jabón en Polvo Matic Mañana de Sol Ala 800 Gr (2060 suc)',
+    # Media / Alimento para perro
+    '8445290987938': 'Media / Alimento para perro / ACTUAL (trazab. 70%) / Alimento para Perros Adultos Medianos y Pequeños Bol',
+    '7797453001526': 'Media / Alimento para perro / Alimento para Perros Adulto de Carne Pollo y Cerdo 1 (1260 suc)',
+    '7797453001533': 'Media / Alimento para perro / Alimento para Perros Carne Pollo y Cereales Pedigree (818 suc)',
+    '7797453001519': 'Media / Alimento para perro / Alimento para Perros Cachorros Pedigree 3 Kg (806 suc)',
+    # Media / Shampoo
+    '7791293051017': 'Media / Shampoo / ACTUAL (trazab. 79%) / Shampoo Bond Intense Repair Dove 400 Ml',
+    '7500435229821': 'Media / Shampoo / Shampoo Limpia-Purifica Detox Pantene 400 Ml (2136 suc)',
+    '7500435209694': 'Media / Shampoo / Shampoo Equilibrio Pantene 400 Ml (2045 suc)',
+    '7791293047003': 'Media / Shampoo / Shampoo Regeneración Extrema Dove 200 Ml (1995 suc)',
+    '7509552876444': 'Media / Shampoo / Shampoo Hidra Purificante Hialurónico Elvive 400 Ml (1892 suc)',
+    # Media / Gaseosa cola
+    '7791813828464': 'Media / Gaseosa cola / ACTUAL (trazab. 82%) / Gaseosa Cola Pepsi Black 2 Lt',
+    '7790895000218': 'Media / Gaseosa cola / Coca Cola Retornable 2 Lt (1996 suc)',
+    '7791813888475': 'Media / Gaseosa cola / Gaseosa Cola Pepsi 3 Lt (1468 suc)',
+    '7790639003888': 'Media / Gaseosa cola / Gaseosa Cola Suave Cunnington 1.5 Lt (1318 suc)',
+    '7790639003567': 'Media / Gaseosa cola / Gaseosa Cola Cunnington 1.5Lt (1269 suc)',
+    # Media / Jabon de tocador
+    '7891150095618': 'Media / Jabon de tocador / ACTUAL (trazab. 85%) / Jabón de Tocador Piel Sensible Dove 90 Gr',
+    '4006000050171': 'Media / Jabon de tocador / Jabón de Tocador Creme Care Nivea 125 Gr (1623 suc)',
+    '7791293046884': 'Media / Jabon de tocador / Jabón de Tocador Antibacterial Fresh Rexona 90 Gr (1543 suc)',
+    '7891024034897': 'Media / Jabon de tocador / Jabón de Tocador Nutrimilk Palmolive 85 Gr (1535 suc)',
+    '7891024042229': 'Media / Jabon de tocador / Jabón de Tocador Kids Minions Palmolive 85 Gr (1286 suc)',
+    # Ejecutiva / Insecticida
+    '7790520508607': 'Ejecutiva / Insecticida / ACTUAL (trazab. 42%) / Insecticida Mata Moscas y Mosquitos sin Olor en Aero',
+    '7790520997623': 'Ejecutiva / Insecticida / Mata Moscas y Mosquitos Aerosol Raid 370 Ml (2256 suc)',
+    '7790520997678': 'Ejecutiva / Insecticida / Insecticida Casa y Jardín en Aerosol Raid 360 Ml (1890 suc)',
+    # Ejecutiva / Jabon liquido para ropa
+    '7791290796409': 'Ejecutiva / Jabon liquido para ropa / ACTUAL (trazab. 48%) / Jabón Liquido Limpieza Activo Skip 800 Ml',
+    '7791290796430': 'Ejecutiva / Jabon liquido para ropa / Jabón Liquido Limpieza Activo Doypack Skip 800 Ml (1911 suc)',
+    '7791290796454': 'Ejecutiva / Jabon liquido para ropa / Jabón Liquido Fresh Activo Doypack  Skip 800 Ml (1627 suc)',
+    '7791290796423': 'Ejecutiva / Jabon liquido para ropa / Jabón Líquido Botella Fresh Activo Skip 800 Ml (1612 suc)',
+    '7791290796416': 'Ejecutiva / Jabon liquido para ropa / Jabón Liquido Cuidado Activo Skip 800 Ml (1446 suc)',
+    # Ejecutiva / Acondicionador
+    '7500435247955': 'Ejecutiva / Acondicionador / ACTUAL (trazab. 58%) / Acondicionador Pro-V Miracles Biotinamina B3 Pantene',
+    '7509552902341': 'Ejecutiva / Acondicionador / Acondicionador Hidra Hialurónico Elvive 200 Cc (2062 suc)',
+    '7509552964417': 'Ejecutiva / Acondicionador / Acondicionador Dream Liso Elvive 200 Ml (1847 suc)',
+    '7500435202732': 'Ejecutiva / Acondicionador / Acondicionador Revitalizante Head & Shoulders 300 Cc (1823 suc)',
+    '7509552874099': 'Ejecutiva / Acondicionador / Acondicionador Hair Food Aguacate Fructis 300 Ml (1733 suc)',
+    # Ejecutiva / Pan de molde
+    '7793890261486': 'Ejecutiva / Pan de molde / ACTUAL (trazab. 61%) / Pan Integral Bolsa Fargo 400 Gr',
+    '7793890258776': 'Ejecutiva / Pan de molde / Pan de Mesa Salvado Chico Lactal 330 Gr (2102 suc)',
+    # Ejecutiva / Esponja / trapo
+    '7792459163100': 'Ejecutiva / Esponja / trapo / ACTUAL (trazab. 73%) / Fibra Esponja Parrillera Go 1 Un',
+    '7794440101702': 'Ejecutiva / Esponja / trapo / Lana de Acero Virulana 10 Un (1300 suc)',
+    '7891040142712': 'Ejecutiva / Esponja / trapo / Esponja con Fibra Naranja Cocina Cero Rayas Scotchbr (1212 suc)',
+    '7891040003167': 'Ejecutiva / Esponja / trapo / Esponja con Fibra Sanitaria 3M Scotch Brite 1 Un (1211 suc)',
+    # Ejecutiva / Manteca / margarina
+    '7794820903292': 'Ejecutiva / Manteca / margarina / ACTUAL (trazab. 76%) / Manteca Calidad Extra Milkaut 100 Gr',
+    '7793940052002': 'Ejecutiva / Manteca / margarina / Manteca Extra La Serenísima 100 Gr (2468 suc)',
+    '7790787960651': 'Ejecutiva / Manteca / margarina / Manteca Ilolay 100 Gr (1779 suc)',
+    '7790398100071': 'Ejecutiva / Manteca / margarina / Manteca La Paulina 100 Gr (882 suc)',
+    # Ejecutiva / Cerveza
+    '7792798014873': 'Ejecutiva / Cerveza / ACTUAL (trazab. 85%) / Cerveza Corona 330 Ml',
+    '7792798003716': 'Ejecutiva / Cerveza / Cerveza en Botella No Retornable Corona 710 Cc (2332 suc)',
+    '7792798003709': 'Ejecutiva / Cerveza / Cerveza Rubia en Botella Corona 355 Cc (2321 suc)',
+    '7793147009137': 'Ejecutiva / Cerveza / Cerveza Rubia Heineken 330 Cc (2244 suc)',
+    '7792798001972': 'Ejecutiva / Cerveza / Cerveza Rubia en Lata Patagonia 473 Ml (1955 suc)',
+    # Representativa / Alimento para perro
+    '8445290977373': 'Representativa / Alimento para perro / ACTUAL (trazab. 70%) / Alimento para Perros Adultos Medianos a Grandes Bols',
+    '7613287613356': 'Representativa / Alimento para perro / Alimento para Perros Adultos Bolsa Dogui 1.5 Kg (2110 suc)',
+    '7613287613226': 'Representativa / Alimento para perro / Alimento para Perro Cachorros Dogui 1.5 Kg (1771 suc)',
+    '7613287613431': 'Representativa / Alimento para perro / Alimento para Perros Adultos Bolsa Dogui 3 Kg (1662 suc)',
+    '8445290944801': 'Representativa / Alimento para perro / Alimento para Perros Minis y Pequeños Dog Chow 1.5 K (1580 suc)',
+    # Representativa / Jabon de tocador
+    '7791293051208': 'Representativa / Jabon de tocador / ACTUAL (trazab. 82%) / Jabón de Tocador Original Dove 90 Gr',
+    '7891150075382': 'Representativa / Jabon de tocador / Jabón Tocador Antibacterial Cuida y Protege Dove 90  (2462 suc)',
+    '7791293050805': 'Representativa / Jabon de tocador / Jabón Jazmín Cremoso Lux 360 Gr (2408 suc)',
+    '7791293050836': 'Representativa / Jabon de tocador / Jabón Rosas Francesas Lux 360 Gr (2367 suc)',
+    '7898422746827': 'Representativa / Jabon de tocador / Jabón Exfoliante Blanco Dove 90 Gr (2348 suc)',
+    # Femenina / Rasuradora femenina
+    '7702018874781': 'Femenina / Rasuradora femenina / ACTUAL (trazab. nan%) / Rasuradora Desechable Femenina Prestobarba3 Gillette',
+    '7702018072392': 'Femenina / Rasuradora femenina / Rasuradora Desechable Simply Venus Gillette 2 Un (2509 suc)',
+    '7702018072477': 'Femenina / Rasuradora femenina / Repuesto Rasuradora Recargable Venus Gillette 2 Un (1845 suc)',
+    '7506309841762': 'Femenina / Rasuradora femenina / Máquina de Afeitar Mujer Venus Original Gillette 1 U (1743 suc)',
+    '7702018072408': 'Femenina / Rasuradora femenina / Máquina Simply Venus3 Gillette 4 Un (1729 suc)',
+    # Ejecutiva / Jabon en polvo
+}
+
 # Salto semanal del precio nacional de un item a partir del cual se lo reporta en la hoja
 # Alertas_precio_item. Es el tripwire: ningun cambio de regimen deberia volver a pasar inadvertido.
 ALERTA_SALTO_ITEM = 0.35
@@ -357,7 +512,7 @@ TIPOS_FRESCOS = {
     'Manzana':     {'rubro':'Frutas','unidad':'kg','qty':(1.72, 2.58, 3, 2.62), 'inc':r'\bmanzana', 'exc':r'jugo|pur[eé]|vinagre|snack|licor|yogur|rall|deshidr|chip|desodor|t[eé] |gaseosa|sidra|gatorade|levite|aromat|torta|budin'},
     'Naranja':     {'rubro':'Frutas','unidad':'kg','qty':(2.58, 2.58, 2.4, 2.62), 'inc':r'\bnaranja', 'exc':r'jugo|gaseosa|aceite|esen|yogur|fanta|desodor|aromatiz|jab[oó]n|amarg|licor|tang|clight|pan de|\bpan\b|budin|torta|mermelada|dulce'},
     'Mandarina':   {'rubro':'Frutas','unidad':'kg','qty':(1.72, 1.55, 1.2, 1.57), 'inc':r'\bmandarina', 'exc':r'jugo|esen|gaseosa|licor'},
-    'Limón':       {'rubro':'Frutas','unidad':'kg','qty':(0.43, 0.52, 0.84, 0.52), 'inc':r'\blim[oó]n|\blimones', 'exc':r'jugo|deterg|lavand|lavavaj|gaseosa|jab[oó]n|aceite|yogur|soda|amarg|aromatiz|desodor|hipoclor|limpiad|esen|tang|clight|t[eé]\b|pastilla|carame|crema|cera|pisos|helad|torta|budin|licor|vodka|\bpez\b|piedra|arena|gato|wondercat|pastel'},
+    'Limón':       {'rubro':'Frutas','unidad':'kg','qty':(0.43, 0.52, 0.84, 0.52), 'inc':r'\blim[oó]n|\blimones', 'exc':r'jugo|deterg|lavand|lavavaj|gaseosa|jab[oó]n|aceite|yogur|soda|amarg|aromatiz|desodor|hipoclor|limpiad|esen|tang|clight|t[eé]\b|pastilla|carame|crema|cera|pisos|helad|torta|budin|licor|vodka|\bpez\b|piedra|arena|gato|wondercat|pastel|\d+\s*(?:cc|ml|lts?|litros?)\b'},
     'Pera':        {'rubro':'Frutas','unidad':'kg','qty':(0.86, 1.55, 1.8, 1.57), 'inc':r'\bpera\b|\bperas\b', 'exc':r'jugo|campera|frapera|heladera|esen|almibar|lata|mitades|light'},
     'Frutilla':    {'rubro':'Frutas','unidad':'kg','qty':(0, 0.52, 1.44, 0.42), 'inc':r'\bfrutilla', 'exc':r'yogur|mermelada|dulce|helad|licor|gelatina|jugo|leche|postre|bomb|alfajor|chicle|carame|flan|congel|pulpa'},
     'Uva':         {'rubro':'Frutas','unidad':'kg','qty':(0, 0.72, 1.56, 0.52), 'inc':r'\buva\b|\buvas\b', 'exc':r'jugo|vino|pasa|vinagre|mermelada|licor|aceite|semilla|sidra|espum'},
@@ -401,7 +556,7 @@ TIPOS_FRESCOS = {
     'Paleta':      {'rubro':'Carne','unidad':'kg','qty':(1.53, 0.89, 0.43, 1.06), 'rk':2.0, 'inc':r'\bpaleta\b', 'exc':r'cerdo|cocida|jam[oó]n|fiambre|helad|paletita|pintur|rodillo|ping|pong|tenis|playa|espatula|cordero|congel|guanaco'},
     'Falda/Puchero':{'rubro':'Carne','unidad':'kg','qty':(1.84, 0.89, 0.32, 1.06), 'rk':2.0, 'inc':r'\bfalda\b|\bpuchero|\bcaracu|\bazotillo', 'exc':r'cerdo|pollo|congel|mixto|cordero'},
     # ---- POLLO ($/kg) ----
-    'Pollo':       {'rubro':'Pollo','unidad':'kg','qty':(4.09, 3.56, 2.66, 3.73), 'rk':2.0, 'inc':r'\bpollo\b|pata muslo', 'exc':r'caldo|sopa|saboriz|congel|nugget|pat[eé]|medall|hamburg|milanesa|pella|arroz|fideo|snack|cubito|aliment|merluza|pescado|pechuga|suprema|\bfilet|fajita|deshuesad|campero|colonial|org[aá]nic|kosher|criado|sandwich|s[aá]ndwich|empanada|tarta|salch|picada|croqueta|bocadit|rebozad|\bmax\b|triangulo|relleno|arrollado|taco|wrap|ensalada|pizza|salsa|al vac[ií]o|ahumad|grill|listo|rostiz|precoc|\bmed\b|\bjam|patita|\bseco\b|cuarto|cocido|hervid'},
+    'Pollo':       {'rubro':'Pollo','unidad':'kg','qty':(4.09, 3.56, 2.66, 3.73), 'rk':2.0, 'inc':r'\bpollo\b|pata muslo', 'exc':r'caldo|sopa|saboriz|congel|nugget|pat[eé]|medall|hamburg|milanesa|pella|arroz|fideo|snack|cubito|aliment|merluza|pescado|pechuga|suprema|\bfilet|fajita|deshuesad|campero|colonial|org[aá]nic|kosher|criado|sandwich|s[aá]ndwich|empanada|tarta|salch|picada|croqueta|bocadit|rebozad|\bmax\b|triangulo|relleno|arrollado|taco|wrap|ensalada|pizza|salsa|al vac[ií]o|ahumad|grill|listo|rostiz|precoc|\bmed\b|\bjam|patita|\bseco\b|cuarto|cocido|hervid|chorizo'},
     'Suprema/Pechuga':{'rubro':'Pollo','unidad':'kg','qty':(0.51, 1.33, 2.13, 1.06), 'rk':2.0, 'inc':r'\bpechuga|\bsuprema', 'exc':r'congel|milanesa|rebozad|nugget|medall|hamburg|sandwich|s[aá]ndwich|pavo|cerdo|salsa|empanad|grill|listas|granja del sol|swift|paty|\bmax\b|merluza|pescado|verdeo|ahumad|fiambre|feteado|al vac[ií]o'},
     # ---- CERDO ($/kg) ----
     'Bondiola':    {'rubro':'Cerdo','unidad':'kg','qty':(0.2, 0.56, 1.06, 0.43), 'rk':2.0, 'inc':r'\bbondiola', 'exc':r'ahumad|curad|fiambre|feteado|sandwich|s[aá]ndwich|costeletero|sin bondiola|congel|finas hierbas|adobad|marinad|saboriz|al vac[ií]o|piamontesa|lario|cagnoli|paladini'},
@@ -740,6 +895,7 @@ for _tipo, _cfg in TIPOS_FRESCOS.items():
     if _cats:
         _m &= (_cat_all.isin(_cats) | (_cat_all == ''))
     _cand = MP_META[_m].copy()
+    _cand = _cand[~_cand.index.isin(set(EXCLUIR_EAN_FRESCO))]      # v5.11: bandejas Atm de DIA
     if _cfg['unidad'] == 'kg':
         _gmin = _cfg.get('gmin', _GRAMS_MIN_DEFAULT)
         _cand = _cand[_cand['grams'].notna() & (_cand['grams'] >= _gmin)]
@@ -756,12 +912,18 @@ for _tipo, _cfg in TIPOS_FRESCOS.items():
                         'n_EANs_maestro':int(_m.sum()),'n_EANs_usables':_n})
 cobertura_fresco_maestro = pd.DataFrame(_cob_fresco)
 EANS_FRESCOS = set(EAN_TIPO.keys())
-EANS_LECTURA = EANS_EMP | EANS_FRESCOS
+# Candidatos a reemplazo (CELDA 1): se leen como empaquetados pero no entran a ninguna canasta.
+EANS_CAND = {normalizar_ean(_e) for _e in EANS_CANDIDATOS} - EANS_FRESCOS
+EANS_EMP_LECT = EANS_EMP | EANS_CAND
+EANS_LECTURA = EANS_EMP_LECT | EANS_FRESCOS
 
 print(f'Tipos frescos: {len(FRESCO_INFO)} | EANs frescos candidatos: {len(EANS_FRESCOS):,}')
 print(cobertura_fresco_maestro.to_string(index=False))
 print(f'\nUniverso de EANs a leer del SEPA: {len(EANS_LECTURA):,} '
-      f'(empaquetados {len(EANS_EMP)} + frescos {len(EANS_FRESCOS)})')
+      f'(empaquetados {len(EANS_EMP)} + candidatos a reemplazo fuera de canasta {len(EANS_CAND - EANS_EMP)} '
+      f'+ frescos {len(EANS_FRESCOS)})')
+if EXCLUIR_EAN_FRESCO:
+    print('Frescos excluidos a mano: ' + ', '.join(f'{_e} {_d}' for _e, _d in EXCLUIR_EAN_FRESCO.items()))
 _sin_cand = list(cobertura_fresco_maestro.loc[cobertura_fresco_maestro['n_EANs_usables'] == 0, 'tipo'])
 if _sin_cand:
     print(f'AVISO: tipos SIN candidatos en el maestro (revisar inc/exc/gmin): {_sin_cand}')
@@ -887,7 +1049,7 @@ _FR_DESCARTES = []   # (mes, observaciones fuera de la banda de plausibilidad, a
 _EAN_NAC = []        # agregado nacional por (tipo, EAN, semana): insumo del encadenado de frescos
 def _colapsar(_df, _lbl_mes=''):
     if _df is None or len(_df) == 0: return None
-    _e = (_df[_df['ean_norm'].isin(EANS_EMP)][_SKR + ['semana','ean_norm','precio']]
+    _e = (_df[_df['ean_norm'].isin(EANS_EMP_LECT)][_SKR + ['semana','ean_norm','precio']]
           .rename(columns={'ean_norm':'item','precio':'price'}))
     # OJO CON LA RAM: cada `_f = _f[mascara]` copia el panel ENTERO de frescos del mes, que
     # son decenas de millones de filas con varias columnas de texto. La version anterior hacia
@@ -1872,11 +2034,12 @@ _pm['mes'] = [_mes_de_semana(s) for s in _pm.index]
 presencia_items = (_pm.groupby('mes').mean().T * 100).round(0)   # % de semanas del mes con dato real
 _items_receta = sorted(set().union(*[set(RECETAS[n]['item']) for n in CANASTAS_ACTIVAS]))
 presencia_items = presencia_items.reindex([i for i in _items_receta if i in presencia_items.index])
+_DESC_CAND = {normalizar_ean(_e): _d.split(' / ')[-1] for _e, _d in EANS_CANDIDATOS.items()}
 def _etiqueta(i):
     if i in FRESCO_INFO: return f'{i} (fresco)'
     for n in CANASTAS_ACTIVAS:
         if i in CANASTAS_EMP[n]: return CANASTAS_EMP[n][i][0]
-    return i
+    return _DESC_CAND.get(i, i)
 presencia_items.insert(0, 'descripcion', [_etiqueta(i) for i in presencia_items.index])
 
 # ── Screen de TRAZABILIDAD sobre los items de TODAS las canastas ─────────────
@@ -1909,6 +2072,40 @@ if len(traza_items):
           f'espurio; conviene reemplazarlo en el constructor.')
     print(traza_items[['descripcion','meses_con_dato','meses_totales','trazabilidad_%','canastas']]
           .to_string(index=False))
+
+# ── CANDIDATOS A REEMPLAZO (v5.11): meses con dato de cada candidato ─────────
+# Mismo criterio que Presencia_items (mes con dato = alguna semana del mes con precio nacional real).
+# Un candidato sirve de reemplazo si tiene trazabilidad >= TRAZA_MIN_PCT y cobertura actual.
+_cand_rows = []
+_pm_all = nac_obs.copy(); _pm_all['mes'] = [_mes_de_semana(s) for s in _pm_all.index]
+_pres_all = (_pm_all.groupby('mes').mean().T > 0)
+_cov_act = (_dm[_dm['ean_norm'].isin(EANS_CAND)].groupby('ean_norm')
+            .agg(n_cadenas=('cadena','nunique'), n_provincias=('provincia','nunique'),
+                 n_sucursales=('suc_id','nunique')) if len(_dm) else pd.DataFrame())
+for _e, _d in EANS_CANDIDATOS.items():
+    _en = normalizar_ean(_e)
+    _p = _d.split(' / ')
+    _fila = _pres_all.loc[_en] if _en in _pres_all.index else None
+    _cand_rows.append({'ean': _en, 'canasta': _p[0], 'necesidad': _p[1],
+                       'rol': 'ACTUAL' if (len(_p) > 2 and _p[2].startswith('ACTUAL')) else 'candidato',
+                       'descripcion': _p[-1],
+                       'meses_con_dato': int(_fila.sum()) if _fila is not None else 0,
+                       'meses_totales': int(_pres_all.shape[1]),
+                       'trazabilidad_%': round(float(_fila.mean() * 100), 1) if _fila is not None else 0.0,
+                       'primer_mes': (_fila[_fila].index.min() if _fila is not None and _fila.any() else None),
+                       'n_sucursales_ult_mes': int(_cov_act['n_sucursales'].get(_en, 0)) if len(_cov_act) else 0,
+                       'n_cadenas_ult_mes': int(_cov_act['n_cadenas'].get(_en, 0)) if len(_cov_act) else 0,
+                       'precio_nac_ult': (round(float(nac_ff[_en].dropna().iloc[-1]), 1)
+                                          if _en in nac_ff.columns and nac_ff[_en].notna().any() else None),
+                       'en_canasta_hoy': ', '.join(n for n in CANASTAS_ACTIVAS if _en in CANASTAS_EMP[n])})
+candidatos_traza = pd.DataFrame(_cand_rows)
+if len(candidatos_traza):
+    _ok_c = candidatos_traza[(candidatos_traza['rol'] == 'candidato')
+                             & (candidatos_traza['trazabilidad_%'] >= TRAZA_MIN_PCT)]
+    print(f'\n=== CANDIDATOS A REEMPLAZO: {len(candidatos_traza)} EANs | con trazabilidad >= {TRAZA_MIN_PCT:.0f}%: '
+          f'{len(_ok_c)} | necesidades con al menos uno: '
+          f'{_ok_c.groupby(["canasta","necesidad"]).ngroups} de {candidatos_traza.groupby(["canasta","necesidad"]).ngroups}  '
+          f'(hoja Candidatos_trazabilidad)')
 
 _ultN = _SEMANAS[-MAX_SEMANAS_ARRASTRE:]
 _alertas = []
@@ -1982,7 +2179,8 @@ with pd.ExcelWriter(_xlsx, engine='openpyxl') as _w:
         {'parametro':'Cobertura minima sucursal','valor':f'{FRAC_PRODUCTOS_MIN:.0%} de los empaquetados de la canasta'},
         {'parametro':'Costo por sucursal','valor':'costo nacional + (precio de la sucursal - nacional) x cantidad en lo que publica; lo que no publica se valua al nacional (columna pct_imputado)'},
         {'parametro':'Nivel de frescos','valor':'; '.join(f'{t}: ${(r[0] if isinstance(r, (tuple, list)) else r):,.0f} en {(r[1] if isinstance(r, (tuple, list)) else "ult. semana")}' for t, r in NIVEL_REFERENCIA_FRESCO.items()) + ' (INDEC GBA, precios promedio). El resto, nivel del SEPA.'},
-        {'parametro':'Version','valor':'nb07 v5.10'},
+        {'parametro':'Excluidos a mano (frescos)','valor':'; '.join(f'{e} {d}' for e, d in EXCLUIR_EAN_FRESCO.items())},
+        {'parametro':'Version','valor':'nb07 v5.11'},
     ]).to_excel(_w, 'Metodologia', index=False)
     _res = []
     for _name in CANASTAS_ACTIVAS:
@@ -2051,13 +2249,16 @@ with pd.ExcelWriter(_xlsx, engine='openpyxl') as _w:
     if len(_qx):
         _qx.insert(3, 'descripcion', [_etiqueta(i) for i in _qx['item']])
     (_qx if len(_qx) else pd.DataFrame({'sin_alertas':['ok']})).to_excel(_w, 'Alertas_quiebre', index=False)
+    if len(candidatos_traza):
+        candidatos_traza.sort_values(['canasta','necesidad','rol','trazabilidad_%'],
+                                     ascending=[True, True, True, False]).to_excel(_w, 'Candidatos_trazabilidad', index=False)
 print(f'Excel: {_xlsx.name}  ({_xlsx.stat().st_size/1024:.0f} KB)')
 print(f'   Guardado en: {_xlsx.parent}')
 print('   Hojas: Metodologia, Resumen, Sem_*, Mes_*, vsIPC_*, Rubro_sem_*, Comp_rubro_*, '
       'Detalle_*, Prov_*, Cadena_*, Region_*, RegionSem_*, Panel_nacional, '
       'Panel_nacional_mes, Mes_rubro, Mes_region, Mes_provincia, Mes_cadena, '
       'Cobertura_emp, Cobertura_frescos, Presencia_items, Alertas_trazabilidad, '
-      'Alertas_reemplazo, Alertas_precio_item, Alertas_quiebre')
+      'Alertas_reemplazo, Alertas_precio_item, Alertas_quiebre, Candidatos_trazabilidad')
 ''' ))
 
 # ── CELL 15 — REPORTE ─────────────────────────────────────────────────────────
@@ -2065,7 +2266,7 @@ cells.append(cell_code(r'''# ===================================================
 # CELDA 15 - REPORTE PARA CLAUDE (copia y pega TODO el bloque)
 # ============================================================
 print('='*72)
-print('REPORTE PARA CLAUDE - canastas alternativas nb07 v5.10')
+print('REPORTE PARA CLAUDE - canastas alternativas nb07 v5.11')
 print('='*72)
 print(f'Ultima semana (cierra jueves): {ULTIMA_SEMANA} | Ultimo mes: {_ult_mes}')
 print(f'Canastas activas: {CANASTAS_ACTIVAS}')
@@ -2165,6 +2366,10 @@ try:
     print(f'  Candidatos a REEMPLAZO: {len(alertas_reemplazo)}')
     if len(alertas_reemplazo):
         print(alertas_reemplazo[['descripcion','canastas','estado']].to_string(index=False))
+    if len(candidatos_traza):
+        _cc = candidatos_traza[candidatos_traza['rol'] == 'candidato']
+        print(f'  Candidatos a reemplazo: {len(_cc)} | con trazabilidad >= {TRAZA_MIN_PCT:.0f}%: '
+              f'{int((_cc["trazabilidad_%"] >= TRAZA_MIN_PCT).sum())}  (hoja Candidatos_trazabilidad)')
     print(f'  Saltos de item >{ALERTA_SALTO_ITEM:.0%} en una semana: {len(alertas_precio_item)} en la serie '
           f'| {len(_sal_ult)} en el ultimo trimestre  (hoja Alertas_precio_item)')
     if len(_sal_ult):

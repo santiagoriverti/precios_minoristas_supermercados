@@ -1062,6 +1062,32 @@ parte de alimentos y bebidas sin alcohol: 236-244 contra 261 del IPC de alimento
 
 ---
 
+### 10.16. nb07 v5.11 (2026-09-23) — especificación de los frescos y candidatos a reemplazo
+
+**Tres capas en el precio de un tipo fresco** (conviene tenerlas separadas al diagnosticar):
+
+1. **Qué EANs son el tipo**: `inc`/`exc` de `TIPOS_FRESCOS`, la categoría del maestro y, desde la
+   v5.11, `EXCLUIR_EAN_FRESCO` (exclusiones puntuales por EAN, como las bandejas Atm de DIA).
+2. **Qué variantes cuentan en cada sucursal**: el filtro de régimen de la lectura, centrado en
+   `ancla del mes × RATIO_FRESCO[tipo]`. Define el precio del tipo **por sucursal** —y por lo tanto
+   las aperturas— y el **nivel** de los tipos que no tienen ancla externa.
+3. **La serie nacional**: encadenado por EAN (§10.11) sobre los EANs de la capa 1, con el nivel del
+   estimador interno o, si el tipo está en `NIVEL_REFERENCIA_FRESCO`, del INDEC.
+
+La auditoría de la v5.9-v5.10 encontró errores en las tres capas: EANs de otro producto en la 1
+(chorizo de pollo, jugos de limón), filtros centrados en el producto equivocado en la 2 (el de Pollo
+descartaba el pollo entero, el de Limón el limón) y niveles de otro producto en la 3. La v5.11
+corrige la 1 y la 2 (`RATIO_FRESCO` = precio INDEC / ancla para Pollo, Carne picada y Limón) y amplía
+la 3 a Tomate y Naranja. **Regla**: si se ancla un tipo al INDEC, revisar también que su
+`RATIO_FRESCO` apunte al mismo producto, o las aperturas mezclan escalas.
+
+**Candidatos a reemplazo leídos sin entrar a la canasta** (`EANS_CANDIDATOS`): la trazabilidad de
+un EAN solo se mide leyendo su historia en el SEPA, y cambiar la canasta cambia la clave del caché.
+Leer los candidatos junto con las canastas resuelve las dos cosas: la hoja `Candidatos_trazabilidad`
+mide su historia, y como ya están en el universo leído, pasarlos a una canasta no obliga a releer.
+
+---
+
 ## 11. Notebook 02 — Excel de econometría (`datos_econometria`)
 
 Insumo para análisis de series de tiempo (materia "Econometría avanzada"). El Notebook 02, además
