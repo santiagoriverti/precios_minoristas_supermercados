@@ -58,9 +58,20 @@ lo único que falta son los datos SEPA y los auxiliares, que están en el Drive.
 ```bash
 git clone https://github.com/santiagoriverti/precios_minoristas_supermercados
 cd precios_minoristas_supermercados
+pip install -r requirements.txt                     # pandas, pyarrow, openpyxl, xlrd, matplotlib, folium, tqdm
 python notebooks/test_celdas_graficos_y_mapa.py     # gráficos + mapa (nb05 y nb02)
 python notebooks/test_encadenado_frescos.py         # encadenado de frescos (nb07)
+python notebooks/test_quiebre_serie.py              # quiebre de serie del índice (BUG-36)
+python notebooks/test_cache_por_mes.py              # caché por mes + compilan todas las celdas del nb07
+python notebooks/test_costo_sucursal.py             # costo por sucursal (BUG-37) + anclaje de nivel
+python notebooks/test_candidatos_reemplazo.py       # hoja Candidatos_trazabilidad (v5.11)
 ```
+
+**Por dónde empezar**: `CLAUDE.md` (raíz) y el bloque **ESTADO ACTUAL / HANDOFF** de
+`.claude/memory.md`, que dice en qué quedó el trabajo y qué hacer con los próximos resultados.
+Para auditar una corrida del nb07 hacen falta el Excel de salida y las carpetas del caché del Drive
+(`_cache_nb07/sem_<clave>_v5` y `ean_<clave>_v5`, en zip); la planilla de precios promedio del INDEC
+está en `data/sh_ipc_precios_promedio_2026-08.xls` (bajar la nueva cuando se publique).
 
 Reglas del repo que conviene saber antes de tocar nada:
 
@@ -141,7 +152,7 @@ Solo tipos con dicotomía celíaca; 2–3 EANs representativos por lado, promedi
 intra-sucursal. Config: dict `TIPOS` en la CELDA 1. **Detalle completo: `docs/BRECHA_CELIACA.md`.**
 
 ### 2f. `07_evolucion_canastas_alternativas` (notebook 07) — motor del informe semanal
-**Estado: v5.11, 2026-09-23** (relectura pendiente de correr; v5.10 auditada; ver `docs/AUDITORIA_2026-09-22_v59.md` y el historial de
+**Estado: v5.11, 2026-09-23** (relectura corriendo en Colab; v5.10 auditada; ver `docs/AUDITORIA_2026-09-22_v59.md` y el historial de
 cambios más abajo). Es el notebook que alimenta el **informe semanal** del equipo de
 economistas. Costo de **6 canastas** vs **IPC**, desagregado por **rubro** (drill-down hasta
 producto), **provincia**, **región** y **cadena**.
@@ -150,7 +161,9 @@ producto), **provincia**, **región** y **cadena**.
 fecha de cierre (`2026-09-03`). Corriendo el viernes, la última semana está completa.
 `DIA_CIERRE_SEMANA` (3=jueves, 4=viernes). *nb02 y nb06 siguen usando semana ISO.*
 
-**Las 6 canastas** (hoja `Productos unicos`, 287 EANs empaquetados únicos + 59 tipos frescos).
+**Las 6 canastas** (hoja `Productos unicos`, 282 EANs empaquetados únicos desde el 2026-09-23 —288
+hasta la v5.10, salieron pañales y toallitas— + 59 tipos frescos; además, desde la v5.11, 90
+`EANS_CANDIDATOS` que se leen sin entrar a ninguna canasta).
 Desde **v5 (2026-09-07)** cada estrato usa su propia versión de cada necesidad, con cantidades
 físicas ancladas a la **CBA del INDEC para hogar tipo 2** (3,09 adultos equivalentes):
 
@@ -192,23 +205,37 @@ Tecnológica y Femenina no llevan frescos y desglosan por `categoria` en vez de 
   en lo que publica; lo que no publica se valúa al nacional. Columna `pct_imputado` en las
   aperturas. Antes se omitían los rubros enteros ausentes (BUG-37).
 - **Quiebre de serie** (v5.9): un ítem que se mueve ×3 o más en una semana sale de ese eslabón.
-- **Nivel de frescos** (v5.10): Pan francés, Pollo, Carne picada, Merluza y Limón anclados al precio
-  promedio del INDEC (GBA) de ago-2026 (`NIVEL_REFERENCIA_FRESCO`); el resto, nivel del SEPA.
+- **Nivel de frescos** (v5.10-v5.11): Pan francés, Pollo, Carne picada, Merluza, Limón, Tomate y
+  Naranja anclados al precio promedio del INDEC (GBA) de ago-2026 (`NIVEL_REFERENCIA_FRESCO`); el
+  resto, nivel del SEPA. Anclar un tipo cambia su peso en la canasta, y por eso también el índice.
+- **Especificación de frescos** (v5.11): `EXCLUIR_EAN_FRESCO` (bandejas Atm de DIA fuera de Pollo y
+  Suprema) y `RATIO_FRESCO` recalibrado en Pollo, Carne picada, Limón y Suprema (METODOLOGIA §10.16).
+- **Candidatos a reemplazo** (v5.11): `EANS_CANDIDATOS` se leen del SEPA sin entrar a ninguna canasta;
+  la hoja `Candidatos_trazabilidad` mide su historia. Pasarlos a una canasta no relee el SEPA.
 
-**Fix OOM**: la lectura colapsa los frescos a su TIPO (de ~10.600 EANs a 59) durante la lectura;
-caché `sem_*_v5.parquet`. La clave del caché incluye EANs + día de cierre + `FRESCO_OUTLIER_K`.
+**Caché y RAM**: la lectura colapsa los frescos a su TIPO (de ~10.600 EANs a 59) durante la lectura y
+guarda un parquet por mes cerrado: `_cache_nb07/sem_<clave>_v5/<mes>.parquet` (precio por sucursal) y
+`ean_<clave>_v5/<mes>.parquet` (panel por EAN de frescos). Una corrida cortada retoma desde el último
+mes guardado. La clave es un md5 del universo de EANs leído (canastas + candidatos + frescos) y de los
+parámetros de la lectura (`DIA_CIERRE_SEMANA`, K de outliers y de régimen, piso/techo del ancla, `rk`,
+`RATIO_FRESCO`): si cambia, se relee todo el SEPA (~1h20m).
 
 **Salidas** (en `output_canasta_alternativa`; entrada en `output_canasta`):
 `canastas_alternativas_YYYY-MM-DD.xlsx` con `Metodologia`, `Resumen`, y por canasta
 `Sem_*`/`Mes_*`/`vsIPC_*`/`Rubro_sem_*`/`Comp_rubro_*`/`Detalle_*`/`Prov_*`/`Cadena_*`/`Region_*`/
-`RegionSem_*`, más `Cobertura_emp`, `Cobertura_frescos`, **`Presencia_items`** (ítem × mes, % de
-semanas con dato real) y **`Alertas_reemplazo`** (ítems sin dato hace >8 semanas).
+`RegionSem_*`, `Panel_nacional` y `Panel_nacional_mes` (precio nacional de cada ítem), `Mes_rubro`/
+`Mes_region`/`Mes_provincia`/`Mes_cadena`, `Cobertura_emp`, `Cobertura_frescos`, **`Presencia_items`**
+(ítem × mes, % de semanas con dato real), **`Alertas_trazabilidad`**, **`Alertas_reemplazo`** (ítems
+sin dato hace >8 semanas), **`Alertas_precio_item`** (saltos >35%), **`Alertas_quiebre`** (movimientos
+×3 sacados del índice) y **`Candidatos_trazabilidad`** (v5.11).
 CELDA 15 imprime el bloque **"REPORTE PARA CLAUDE"** en texto plano.
 
 **Carga de cantidades**: `docs/canastas_alternativas/cargar_canastas_v5.py` (loader de Colab,
-287 EANs, `cantidad_01..06`; limpia y reescribe las 6 columnas). Lo **genera**
+282 EANs, `cantidad_01..06`; limpia y reescribe las 6 columnas). Lo **genera**
 `construir_canastas_v5.py`, que se corre local y deja además `canastas_v5_detalle.csv` con el
-porqué de cada elección y `frescos_v5_qty.txt` con las tuplas para `TIPOS_FRESCOS`.
+porqué de cada elección y `frescos_v5_qty.txt` con las tuplas para `TIPOS_FRESCOS`. Para cambiar
+productos puntuales sin recalibrar todo: `aplicar_reemplazos.py` (mismas reglas del constructor;
+actualiza el cargador y `EAN_FORZADO`).
 Generador: `gen_nb07.py`. **Detalle en README y `docs/canastas_alternativas/README.md`.**
 
 ### 3. `analisis_SEPA_evolucion.ipynb`
@@ -507,6 +534,13 @@ Los 4 reemplazos (Swift XL, Lavandina Anti-splash, Plusbelle, Listerine) están 
 ---
 
 ## Historial de cambios
+
+### 2026-09-23 (noche) — handoff para retomar en otra PC
+
+`CLAUDE.md` en la raíz, `requirements.txt`, la planilla del INDEC en `data/`, y
+`docs/canastas_alternativas/aplicar_reemplazos.py` (reemplazos puntuales con las reglas del
+constructor, probado). La corrida v5.11 quedó corriendo en Colab; los pasos para cuando lleguen sus
+resultados están en `.claude/memory.md`.
 
 ### 2026-09-23 — nb07 v5.11: paquete de relectura (frescos bien especificados y candidatos a reemplazo)
 

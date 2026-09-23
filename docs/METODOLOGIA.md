@@ -1085,6 +1085,8 @@ la 3 a Tomate y Naranja. **Regla**: si se ancla un tipo al INDEC, revisar tambi�
 un EAN solo se mide leyendo su historia en el SEPA, y cambiar la canasta cambia la clave del caché.
 Leer los candidatos junto con las canastas resuelve las dos cosas: la hoja `Candidatos_trazabilidad`
 mide su historia, y como ya están en el universo leído, pasarlos a una canasta no obliga a releer.
+El reemplazo se aplica con `docs/canastas_alternativas/aplicar_reemplazos.py`, que usa las mismas
+reglas del constructor (cantidad física / presentación, cobertura, monotonicidad entre estratos).
 
 ---
 

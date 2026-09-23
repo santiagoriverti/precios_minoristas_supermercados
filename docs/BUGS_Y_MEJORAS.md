@@ -1,6 +1,6 @@
 # Bugs Pendientes y Mejoras
 
-Última actualización: 2026-09-22 — nb07 v5.10: BUG-37 (el costo por sucursal omitía los rubros enteros que la sucursal no publica), nivel de frescos anclado al INDEC y auditoría de la corrida v5.9 (`docs/AUDITORIA_2026-09-22_v59.md`)
+Última actualización: 2026-09-23 — nb07 v5.11 (paquete de relectura: Atm de DIA fuera de Pollo y Suprema, `RATIO_FRESCO` recalibrado, Tomate y Naranja al INDEC, candidatos a reemplazo) corriendo en Colab; v5.10 (BUG-37, frescos anclados al INDEC) verificada; `aplicar_reemplazos.py` para los reemplazos de trazabilidad
 
 ---
 
@@ -117,8 +117,10 @@ Cambia la clave del caché: **la corrida relee el SEPA** (~1h20m, retoma si Cola
    `cargar_canastas_v5.py`, 282 EANs).
 
 **Después de la corrida**: elegir en `Candidatos_trazabilidad` el reemplazo de cada ítem (trazabilidad
-≥85%, cobertura ≥ piso de su canasta, monotonicidad entre estratos), actualizar el cargador y el
-`EAN_FORZADO` del constructor, y correr de nuevo el nb07 (minutos: no relee).
+≥85%, cobertura ≥ piso de su canasta, monotonicidad entre estratos) y aplicarlo con
+`docs/canastas_alternativas/aplicar_reemplazos.py` (simula por defecto, `--escribir` actualiza el
+cargador y el `EAN_FORZADO` del constructor). Después, cargador en Colab y nb07 otra vez (minutos: no
+relee). Pasos detallados en `.claude/memory.md`.
 
 ### 🔴 BUG-37 — nb07: el costo por sucursal omitía los rubros ENTEROS que la sucursal no publica (2026-09-22) ✅ Resuelto en v5.10
 

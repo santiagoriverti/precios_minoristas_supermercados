@@ -269,6 +269,31 @@ Medición sobre `canasta_representativa_2026-08.xlsx`: **51% de Carnicería y 20
 
 Así el tipo es comparable entre cadenas y provincias aunque cada una use un EAN distinto. Los frescos **empaquetados con marca** (fiambres, huevos de marca) SÍ tienen EAN universal (prefijo 77…) y podrían ir por EAN, pero nb07 los trata igual por tipo para homogeneidad.
 
+#### La trampa: DIA define el tipo por cobertura (auditoría 2026-09-22/23)
+
+DIA tiene ~980-1.040 sucursales en el SEPA (la mayoría en Buenos Aires, CABA y Entre Ríos), y sus
+códigos de balanza aparecen en todas. Como el precio nacional es la **mediana entre sucursales** dentro
+de cada provincia, en ~50% del costo nacional la mediana ES el precio de DIA. Si DIA vende una
+variedad cara de un tipo, esa variedad **es** el tipo:
+
+| Tipo | Producto de DIA que lo definía | Efecto |
+|---|---|---|
+| Pollo | "Pata de Pollo Atm 1 Kg" (`2406851000004`) a $12.000/kg | Pollo 2,5× el pollo entero del INDEC |
+| Suprema/Pechuga | "Suprema Pollo Atm 1 Kg" (`2406848000000`) a $20.500/kg | Suprema 4,1× el pollo entero |
+| Carne picada | dos picadas envasadas a $22.475 y $23.980/kg | 1,7× la carne picada común |
+| Merluza | "Filet de Merluza Dia 500 Gr" a $31.800/kg | 1,8× el filet fresco |
+| Tomate | "Tomate Redondo Elegido 1 Kg" a $5.690/kg | 1,6× el tomate redondo |
+
+Y el filtro de régimen de la lectura (`ancla × RATIO_FRESCO`, ver más abajo), calibrado sobre esos
+niveles, descartaba el producto correcto: en Pollo, el "Pollo Embolsado" de DIA a $3.690; en Limón,
+el "Limon Granel Dia" a $1.690 (quedaban los jugos de limón, a $5-14 mil/kg).
+
+**Cómo se corrige (nb07 v5.10-v5.11)**, en tres capas (METODOLOGIA §10.16): `EXCLUIR_EAN_FRESCO` saca
+EANs puntuales del tipo; `RATIO_FRESCO` recalibrado con precio INDEC / ancla; y
+`NIVEL_REFERENCIA_FRESCO` fija el nivel con el precio promedio del INDEC (planilla
+`sh_ipc_precios_promedio.xls`, hoja GBA; copia en `data/`). **Antes de publicar un costo en pesos**,
+contrastar los frescos con el INDEC: `auditar_salida_nb07.py <Excel> --indec <planilla>` (chequeo 6c).
+
 ### Safeguard MIN_PRODUCTOS_PROPIOS vs N_CANASTA
 
 Cuando `MIN_PRODUCTOS_PROPIOS >= N_CANASTA` ninguna sucursal puede pasar el filtro. El notebook auto-corrige en CELDA 3:
@@ -699,11 +724,23 @@ El universo de frescos por nombre es de **~10.600 EANs de balanza**; arrastrarlo
 (sucursal × EAN × semana) sobre 30+ meses agota la RAM (OOM). **Solución (CELDA 7)**: la función
 `_colapsar(_df)` mapea, **en la lectura mensual**, cada EAN fresco a su **TIPO** y normaliza a
 $/kg o $/docena (mediana de variantes por sucursal-semana). Así el panel pasa de ~10.800 items a
-~255 (**~40× menos filas**). El esquema cacheado es `item/price` (`sem_{hash}_v5.parquet`); el
-crudo por-EAN del último mes se guarda aparte (`datos_ult_raw`) para los diagnósticos por variante.
+~255 (**~40× menos filas**). El esquema cacheado es `item/price`; el crudo por-EAN del último mes se
+guarda aparte (`datos_ult_raw`) para los diagnósticos por variante.
 
-> La clave del caché incluye el universo de EANs, el día de cierre de semana y `FRESCO_OUTLIER_K`.
-> Cambiar cualquiera de los tres invalida el caché y fuerza una relectura completa (~50-60 min).
+**Caché por mes (desde v5.8)**: `_cache_nb07/sem_<clave>_v5/<mes>.parquet` (precio por sucursal, una
+fila por sucursal × ítem × semana) y `ean_<clave>_v5/<mes>.parquet` (panel por EAN de los frescos:
+mediana entre sucursales y cantidad de sucursales, insumo del encadenado). Cada mes cerrado se escribe
+apenas se lee, así que una corrida cortada retoma; el mes en curso se lee siempre. Una semana partida
+entre dos meses aparece en los dos parquet (cada uno con la mediana de sus días) y se promedian.
+
+> **La clave del caché** es un md5 del universo de EANs leído —empaquetados de las canastas +
+> `EANS_CANDIDATOS` + frescos de `TIPOS_FRESCOS` menos `EXCLUIR_EAN_FRESCO`, que a su vez depende del
+> maestro de productos— y de los parámetros de la lectura: `DIA_CIERRE_SEMANA`, `FRESCO_OUTLIER_K`,
+> `FRESCO_REGIMEN_K`, `FRESCO_PISO_ANCLA`, `FRESCO_TECHO_ANCLA`, los `rk` por tipo y `RATIO_FRESCO`.
+> Cambiar cualquiera invalida el caché y fuerza una relectura completa (~1h20m con 33 meses). No lo
+> invalidan: las cantidades de las canastas, `NIVEL_REFERENCIA_FRESCO`, `QUIEBRE_ITEM_K` ni nada de la
+> CELDA 8 en adelante. Por eso un producto que se piensa sumar a una canasta conviene agregarlo a
+> `EANS_CANDIDATOS` en una relectura previa: después, pasarlo a la canasta no cambia el universo.
 
 ### Filtro de outliers intra-tipo (frescos)
 Dentro de cada **sucursal-semana**, antes de tomar la mediana de las variantes de un tipo, se

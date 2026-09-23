@@ -1,0 +1,11 @@
+# Dependencias para correr LOCALMENTE los tests, el auditor y los scripts de docs/.
+# Los notebooks corren en Colab, que instala lo suyo (ver CELDA 2 de cada notebook).
+#   pip install -r requirements.txt
+pandas
+numpy
+pyarrow
+openpyxl
+xlrd          # la planilla de precios promedio del INDEC es .xls (auditar_salida_nb07.py --indec)
+matplotlib    # test_celdas_graficos_y_mapa.py
+folium        # test_celdas_graficos_y_mapa.py (mapa)
+tqdm          # test_cache_por_mes.py

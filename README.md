@@ -26,7 +26,7 @@ El proyecto responde tres preguntas:
 | `04_precios_seleccion` | Exporta un **Excel** con los precios diarios del último mes para todos los supermercados a menos de X km de un punto: una hoja por sucursal (productos × días) + una hoja general (producto × super, precio promedio). Ver [sección detallada](#precios-por-selección-geográfica--04_precios_seleccion). | [![Abrir en Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/santiagoriverti/precios_minoristas_supermercados/blob/main/notebooks/04_precios_seleccion.ipynb) |
 | `05_evolucion_productos_representativos` | Igual que el Notebook 02, pero para **productos individuales** en vez de canastas: evolución de precio, mapas provinciales, comparación con el IPC y rankings por cadena/barrio de cada EAN que se ingrese. Ver [sección detallada](#evolución-de-productos-individuales--05_evolucion_productos_representativos). | [![Abrir en Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/santiagoriverti/precios_minoristas_supermercados/blob/main/notebooks/05_evolucion_productos_representativos.ipynb) |
 | `06_evolucion_brecha_celiaca` | Mide la **brecha celíaca** (canasta sin-TACC vs. base con TACC) y su evolución **diaria, semanal y mensual**, usando solo tipos de producto con dicotomía celíaca (2–3 EANs representativos por lado, promediados). Brecha **intra-sucursal**, desagregada por provincia, cadena y concentración de comercios. Ver [sección detallada](#brecha-celíaca--06_evolucion_brecha_celiaca). | [![Abrir en Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/santiagoriverti/precios_minoristas_supermercados/blob/main/notebooks/06_evolucion_brecha_celiaca.ipynb) |
-| `07_evolucion_canastas_alternativas` | **Motor del informe semanal.** Costo de **6 canastas** (**Popular / Media / Ejecutiva / Tecnológica / Representativa / Femenina**) con **semana que cierra el jueves**, comparado con el **IPC**, desagregado por **rubro**, **provincia**, **región** y **cadena**. **Índice encadenado de muestra apareada** (sin saltos por altas/bajas), **nacional ponderado por población** y **provincia controlando por cadena**. Composición: **288 empaquetados** por EAN (`cantidad_01..06`) + **59 tipos de frescos** por nombre. Exporta `Presencia_items`, `Alertas_reemplazo`, `Alertas_quiebre` y `Candidatos_trazabilidad` para trazabilidad. **v5.11** (v5.10 auditada 2026-09-23). Ver [sección detallada](#canastas-alternativas--07_evolucion_canastas_alternativas). | [![Abrir en Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/santiagoriverti/precios_minoristas_supermercados/blob/main/notebooks/07_evolucion_canastas_alternativas.ipynb) |
+| `07_evolucion_canastas_alternativas` | **Motor del informe semanal.** Costo de **6 canastas** (**Popular / Media / Ejecutiva / Tecnológica / Representativa / Femenina**) con **semana que cierra el jueves**, comparado con el **IPC**, desagregado por **rubro**, **provincia**, **región** y **cadena**. **Índice encadenado de muestra apareada** (sin saltos por altas/bajas), **nacional ponderado por población** y **provincia controlando por cadena**. Composición: **282 empaquetados** por EAN (`cantidad_01..06`) + **59 tipos de frescos** por nombre. Exporta `Presencia_items`, `Alertas_reemplazo`, `Alertas_quiebre` y `Candidatos_trazabilidad` para trazabilidad. **v5.11** (v5.10 auditada 2026-09-23). Ver [sección detallada](#canastas-alternativas--07_evolucion_canastas_alternativas). | [![Abrir en Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/santiagoriverti/precios_minoristas_supermercados/blob/main/notebooks/07_evolucion_canastas_alternativas.ipynb) |
 
 > **¿Ves una versión vieja en Colab?** El badge siempre apunta a la última versión en GitHub, pero Colab puede mostrar una copia cacheada de tu Drive. Para forzar la actualización: eliminá el notebook de `Mi unidad/Colab Notebooks/` en Google Drive y volvé a hacer clic en el badge.
 
@@ -306,8 +306,11 @@ MyDrive/carga/
 ├── 2024B.zip     # Julio–diciembre 2024
 ├── 2025A.zip     # Enero–junio 2025
 ├── 2025B.zip     # Julio–diciembre 2025
-└── 2026A.zip     # Enero–junio 2026 (se va completando mes a mes)
-    (futuro) 2026B.zip  # Julio–diciembre 2026
+├── 2026A.zip     # Enero–junio 2026
+├── 2026B.zip     # Julio–diciembre 2026 (se va completando mes a mes)
+├── IPC.xlsx, ar.json, maestro_sepa_completo.csv.gz y los maestros de data/
+├── output_canasta/                     # canasta_representativa_YYYY-MM.xlsx (entrada del nb07)
+└── output_canasta_alternativa/         # salidas del nb07 + _cache_nb07/ (sem_<clave>_v5/, ean_<clave>_v5/)
 ```
 
 Cada ZIP contiene archivos `MMAAAA_pais_parteNCOMPLETO.csv.gz` — formato wide con una columna de precio por día del período. Los notebooks **detectan automáticamente el último mes disponible** escaneando todos los ZIPs: cuando se agregue mayo o junio a `2026A.zip`, o se cree `2026B.zip`, ambos notebooks lo toman sin ningún cambio de código.
@@ -563,14 +566,16 @@ Se cambia con `DIA_CIERRE_SEMANA` (3=jueves, 4=viernes).
 > equivalentes). Ver `docs/canastas_alternativas/README.md`.
 
 ### Composición híbrida (dos fuentes)
-- **Empaquetados (por EAN)**: **287 EANs únicos**. El umbral de cobertura es **por canasta**
-  (Popular ≥2 cadenas/≥10 provincias/≥600 sucursales, Media y Representativa ≥4/≥15/≥800,
-  Ejecutiva y Femenina ≥3/≥12/≥500, durables ≥3/≥10/≥90): Popular baja el umbral a propósito
-  porque el primer precio y la marca propia no existen en 4 cadenas. Los picks que no llegan
-  quedan marcados en `canastas_v5_detalle.csv`. Se leen de la hoja **`Productos unicos`**
+- **Empaquetados (por EAN)**: **282 EANs únicos** (288 hasta la v5.10; el 2026-09-23 salieron
+  pañales y toallitas). Umbral de cobertura (`COBERTURA` del constructor): Popular, Media, Ejecutiva
+  y Representativa ≥4 cadenas/≥15 provincias/≥800 sucursales, Femenina ≥4/≥15/≥700, durables
+  ≥3/≥10/≥90; piso absoluto 3/12/700. Los picks que no llegan quedan marcados en
+  `canastas_v5_detalle.csv`. Se leen de la hoja **`Productos unicos`**
   (`carga/output_canasta/canasta_representativa_*.xlsx`), columnas `cantidad_01..06`.
-  Se cargan con **`docs/canastas_alternativas/cargar_canastas_v5.py`**, que genera
-  **`construir_canastas_v5.py`**.
+  Se cargan con **`docs/canastas_alternativas/cargar_canastas_v5.py`**, que es la salida de
+  **`construir_canastas_v5.py`**; los reemplazos puntuales se aplican con
+  **`aplicar_reemplazos.py`**. Además, desde la v5.11 se leen 90 **`EANS_CANDIDATOS`** (CELDA 1) que
+  no entran a ninguna canasta: son los candidatos a reemplazar los ítems con huecos.
 - **Frescos (por TIPO/nombre)**: **59 tipos**. No tienen EAN estable entre cadenas (balanza),
   así que se seleccionan **por nombre + categoría del maestro** (`Frutas y Verduras`,
   `Carnicería`, `Fiambrería`, `Panificados`, `Pescados y Mariscos`, `Huevos`), filtro que
@@ -589,9 +594,13 @@ Se cambia con `DIA_CIERRE_SEMANA` (3=jueves, 4=viernes).
   costo nacional la mediana ES el precio de DIA (auditoría v5.9). No sesga la evolución, sí el nivel.
 - **Quiebre de serie** (v5.9): un ítem que se mueve ×3 o más en una semana sale del eslabón de esa
   semana (`QUIEBRE_ITEM_K`, hoja `Alertas_quiebre`).
-- **Nivel de frescos** (v5.10): Pan francés, Pollo, Carne picada, Merluza y Limón se anclan al precio
-  promedio del INDEC para el GBA de un mes dado (`NIVEL_REFERENCIA_FRESCO`); la evolución la sigue
-  dando el SEPA. Los demás tipos conservan el nivel del SEPA.
+- **Nivel de frescos** (v5.10-v5.11): Pan francés, Pollo, Carne picada, Merluza, Limón, Tomate y
+  Naranja se anclan al precio promedio del INDEC para el GBA de un mes dado
+  (`NIVEL_REFERENCIA_FRESCO`); la evolución la sigue dando el SEPA. Los demás tipos conservan el
+  nivel del SEPA. Anclar un tipo cambia su peso en la canasta y, con eso, también el índice.
+- **Especificación de frescos** (v5.11): `EXCLUIR_EAN_FRESCO` saca las bandejas Atm de DIA de Pollo
+  y Suprema, y `RATIO_FRESCO` está recalibrado donde el filtro de régimen descartaba el producto
+  correcto (Pollo, Carne picada, Limón, Suprema). Ver `docs/METODOLOGIA.md` §10.16.
 - **Arrastre**: si un ítem falta, se arrastra su último precio nacional hasta 8 semanas
   (`MAX_SEMANAS_ARRASTRE`); si falta más, entra en `Alertas_reemplazo`.
 - **Outliers intra-tipo (frescos)**: dentro de cada sucursal-semana se descartan las variantes
@@ -630,8 +639,11 @@ Se cambia con `DIA_CIERRE_SEMANA` (3=jueves, 4=viernes).
 
 ### Arquitectura (memoria)
 La lectura semanal **colapsa los frescos a su TIPO durante la lectura** (de ~10k EANs de balanza
-a 59 tipos) para no reventar la RAM sobre toda la historia; cachea por mes cerrado
-(`sem_*_v5.parquet`) y relee el mes en curso fresco.
+a 59 tipos) para no reventar la RAM sobre toda la historia. Cachea un parquet por mes cerrado en
+`_cache_nb07/sem_<clave>_v5/<mes>.parquet` (precio por sucursal) y `ean_<clave>_v5/<mes>.parquet`
+(panel por EAN de frescos), así una corrida cortada retoma; el mes en curso se lee siempre. La
+clave depende del universo de EANs leído (canastas + candidatos + frescos) y de los parámetros de la
+lectura: si cambia, se relee todo el SEPA (~1h20m).
 
 ### Qué genera (en `output_canasta_alternativa/`)
 - Bloque **"REPORTE PARA CLAUDE"** (CELDA 15) en texto plano para copiar.
@@ -641,8 +653,11 @@ a 59 tipos) para no reventar la RAM sobre toda la historia; cachea por mes cerra
   `Prov_*`/`Cadena_*`/`Region_*`/`RegionSem_*`, + `Cobertura_emp`, `Cobertura_frescos`,
   **`Panel_nacional`** (precio nacional de cada ítem por semana — la materia prima de todas las
   series; sirve para ir directo al ítem que causó un salto),
-  **`Presencia_items`** (matriz ítem × mes: % de semanas con dato real) y
-  **`Alertas_reemplazo`** (ítems sin dato hace más de 8 semanas).
+  `Panel_nacional_mes`, `Mes_rubro`/`Mes_region`/`Mes_provincia`/`Mes_cadena` (series mensuales en
+  formato largo), **`Presencia_items`** (matriz ítem × mes: % de semanas con dato real),
+  **`Alertas_trazabilidad`**, **`Alertas_reemplazo`** (ítems sin dato hace más de 8 semanas),
+  **`Alertas_precio_item`** (saltos >35%), **`Alertas_quiebre`** (movimientos ×3 sacados del índice)
+  y **`Candidatos_trazabilidad`** (historia de los candidatos a reemplazo, v5.11).
 
 > **Semana incompleta**: si el último dato del SEPA es anterior al jueves de cierre de la última
 > semana, esa semana se descarta automáticamente (no se publica una semana con 4 de 7 días).
@@ -687,6 +702,9 @@ El motor relee los ZIPs conservando el día, agrega por (sucursal, ítem, semana
 ```
 precios_minoristas_supermercados/
 ├── README.md
+├── CLAUDE.md                                     # Entrada para sesiones de Claude Code: estado, reglas, git
+├── requirements.txt                              # Dependencias para tests, auditor y scripts locales
+├── .claude/memory.md                             # ESTADO ACTUAL / HANDOFF + historia de las sesiones
 ├── notebooks/
 │   ├── 01_exploracion_productos.ipynb            # Notebook 1 — canasta representativa
 │   ├── 02_evolucion_canasta_representativa.ipynb # Notebook 2 — análisis ICR multi-canasta
@@ -711,7 +729,8 @@ precios_minoristas_supermercados/
 ├── data/                                # Maestros de referencia (se descargan automáticamente)
 │   ├── Maestro de Productos Interno.xlsx    # ~176K productos con rubro/categoría/subcategoría
 │   ├── maestro_sucursales_completo.xlsx     # 3.611 sucursales con cadena, provincia, región
-│   └── maestro-provincias.xlsx              # Códigos SEPA → nombres de provincia
+│   ├── maestro-provincias.xlsx              # Códigos SEPA → nombres de provincia
+│   └── sh_ipc_precios_promedio_2026-08.xls  # INDEC: precios promedio GBA hasta ago-26 (auditor --indec)
 └── docs/                                # Documentación técnica
     ├── METODOLOGIA.md                   # Metodología ICR, canastas ENGHo, doble análisis media/mediana
     ├── CONTEXTO.md                      # Arquitectura, pipeline detallado, puesta en marcha, historial
@@ -721,10 +740,16 @@ precios_minoristas_supermercados/
     ├── AUDITORIA_2026-09-22.md         # Auditoría de la corrida 2026-09-17 del nb07 (v5.8)
     ├── AUDITORIA_2026-09-22_v59.md     # Auditoría de la re-corrida con la v5.9 (BUG-37, frescos vs INDEC)
     ├── auditoria/                      # Los informes en HTML y PDF + scripts_v59/ que reproducen la segunda
-    └── canastas_alternativas/README.md  # Notebook 07 — composición de las 6 canastas alternativas
+    └── canastas_alternativas/           # Notebook 07 — composición de las 6 canastas alternativas
+        ├── README.md                    #   diseño, flujo de trabajo, cambios posteriores a v5
+        ├── construir_canastas_v5.py     #   constructor (local): elige productos y genera el cargador
+        ├── cargar_canastas_v5.py        #   cargador (se pega en Colab): escribe cantidad_01..06
+        ├── aplicar_reemplazos.py        #   reemplazos puntuales con las reglas del constructor
+        ├── canastas_v5_detalle.csv      #   por qué se eligió cada producto (corrida del constructor)
+        └── frescos_v5_qty.txt           #   cantidades de frescos para TIPOS_FRESCOS
 ```
 
-> **¿Retomás el proyecto después de un tiempo, o en otra máquina?** Empezá por el bloque
+> **¿Retomás el proyecto después de un tiempo, o en otra máquina?** Empezá por `CLAUDE.md` y el bloque
 > **ESTADO ACTUAL / HANDOFF** al principio de `.claude/memory.md`: estado de cada notebook,
 > pendientes en orden y las reglas técnicas que suelen morder. La puesta en marcha paso a paso está
 > en [`docs/CONTEXTO.md`](docs/CONTEXTO.md#puesta-en-marcha-en-otra-máquina).

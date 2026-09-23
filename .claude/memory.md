@@ -6,40 +6,57 @@ Autor: Santiago Riverti — investigador independiente
 
 ---
 
-## 🟢 ESTADO ACTUAL / HANDOFF [2026-09-23] — nb07 v5.10 verificada, v5.11 (relectura) lista — leer esto primero
+## 🟢 ESTADO ACTUAL / HANDOFF [2026-09-23 · noche] — nb07 v5.11 CORRIENDO en Colab — leer esto primero
 
 Proyecto EN PRODUCCION, 7 herramientas (nb01..nb07). Todo lo necesario para retomar viaja en el
-repo; lo unico que NO esta son los datos SEPA y los auxiliares, que viven en el Drive del usuario.
+repo; lo unico que NO esta son los datos SEPA, el cache y los Excel de salida, que viven en el Drive
+del usuario (`MyDrive/carga/`). Entrada rapida para Claude: `CLAUDE.md` en la raiz del repo.
 
-### En que estamos ahora
+### En que estamos
 
-**La v5.10 se corrio el 2026-09-23 y paso la auditoria** (`auditar_salida_nb07.py --cache --indec`):
-sin relectura del SEPA (cache `8822990e` identico), indice replicado (dif 0,002), 0 cadenas/regiones
-fuera de rango (BUG-37 resuelto), solo cambiaron los 5 tipos anclados. Detalle: auditoria v5.9 §10.
-**Es publicable** (con la banda de sensibilidad de frescos y la comparacion IPC solo-alimentos).
+El 2026-09-23 el usuario lanzo en Colab la **corrida v5.11 = paquete de relectura** (relee todo el
+SEPA: la clave del cache cambia, deja de ser `8822990e`). Antes corrio `cargar_canastas_v5.py` para
+sacar pañales y toallitas del Excel de canasta del Drive. Contenido de la v5.11 (detalle en
+BUGS_Y_MEJORAS, entrada v5.11, y METODOLOGIA §10.16):
+  (a) pañales y toallitas fuera de Media/Ejecutiva/Representativa (282 EANs; 74 items c/u);
+  (b) `EXCLUIR_EAN_FRESCO`: bandejas Atm de DIA fuera de Pollo (2406851000004 "Pata de Pollo Atm")
+      y Suprema/Pechuga (2406848000000 "Suprema Pollo Atm"); Pollo sin chorizos; Limon sin jugos (cc/ml);
+  (c) `RATIO_FRESCO` recalibrado (el filtro de regimen descartaba el producto correcto): Pollo 3,89->1,50,
+      Carne picada 5,63->3,35, Limon 2,15->0,45, Suprema 9,53->3,50;
+  (d) anclas INDEC nuevas: Tomate $3.011,77 y Naranja $1.171,57 (ago-26). Anclados en total: Pan, Pollo,
+      Carne picada, Merluza, Limon, Tomate, Naranja;
+  (e) `EANS_CANDIDATOS` (CELDA 1): 90 EANs que se leen sin entrar a ninguna canasta -> hoja
+      `Candidatos_trazabilidad`. Son los 23 items con huecos (trazabilidad <85%, o la rasuradora de la
+      Femenina bajo el piso de 700 sucursales) y hasta 4 candidatos por necesidad.
 
-**Correccion**: el handoff anterior anticipaba "indice identico" y NO fue asi. El anclaje de nivel
-corrige el PESO de los tipos (cantidad x precio) y el acumulado bajo: ver la tabla de abajo.
+**CUANDO EL USUARIO PASE LOS RESULTADOS** (Excel + bloque REPORTE + zips `sem_<clave>_v5` y `ean_<clave>_v5`):
 
-**AHORA: nb07 v5.11 = PAQUETE DE RELECTURA, lista para correr (RELEE el SEPA, ~1h20m o algo mas).**
-Contenido (detalle en BUGS_Y_MEJORAS, entrada v5.11, y METODOLOGIA §10.16):
-  (a) pañales y toallitas fuera de Media/Ejecutiva/Representativa: `cargar_canastas_v5.py` (282 EANs);
-  (b) `EXCLUIR_EAN_FRESCO`: bandejas Atm de DIA fuera de Pollo (2406851000004) y Suprema (2406848000000);
-      Pollo sin chorizo; Limon sin productos en cc/ml;
-  (c) `RATIO_FRESCO` recalibrado: Pollo 1,50 · Carne picada 3,35 · Limon 0,45 · Suprema 3,50 (el filtro de
-      regimen estaba centrado en el producto equivocado: descartaba el pollo entero y el limon real);
-  (d) anclas INDEC nuevas: Tomate $3.011,77 y Naranja $1.171,57 (ago-26);
-  (e) `EANS_CANDIDATOS`: 90 EANs (23 items con huecos + hasta 4 candidatos c/u) que se leen sin entrar a
-      ninguna canasta -> hoja `Candidatos_trazabilidad`. Los reemplazos NO van en esta corrida.
-Pasos del usuario: (1) pegar `cargar_canastas_v5.py` en Colab, subir `canasta_representativa_2026-09.xlsx`,
-bajar el `_con_canastas.xlsx` y subirlo al Drive como `canasta_representativa_2026-09.xlsx` (reemplazando);
-(2) correr el nb07 v5.11 desde el badge (arranca con "0 meses guardados, 32 por leer" y tarda); (3) pasar
-Excel + reporte + zips del cache nuevo.
-AL VOLVER: auditar (`--cache --indec`); elegir de `Candidatos_trazabilidad` el reemplazo de cada item
-(trazabilidad >=85%, cobertura >= piso de la canasta, monotonicidad Popular <= Media <= Ejecutiva),
-calcular la cantidad (qty fisica / presentacion, ver `canastas_v5_detalle.csv`), actualizar el cargador y
-`EAN_FORZADO` del constructor; el usuario corre cargador + nb07 (NO relee: los candidatos ya estan leidos).
-Verificar que Suprema quede ~2x el pollo entero y que Pollo/Limon/Picada tengan aperturas coherentes.
+1. Reporte: debe decir `nb07 v5.11`, `EANs empaquetados (union): 282` (si dice 288, NO se aplico el
+   cargador: pedir que lo corra y vuelva a correr el nb07), `Frescos excluidos a mano: 2406851000004 ...
+   2406848000000 ...`, `candidatos a reemplazo fuera de canasta` ~50, y en el cache
+   `0 meses guardados, 32 por leer` (primera vez con la clave nueva).
+2. Auditar: `python notebooks/auditar_salida_nb07.py <Excel> --cache <carpeta con los dos zips
+   descomprimidos> --indec data/sh_ipc_precios_promedio_2026-08.xls`. Esperado: replica del indice OK,
+   6b (aperturas) OK, 6c sin tipos fuera de rango (Tomate y Naranja ahora anclados).
+3. Revisar frescos: Suprema/Pechuga deberia quedar ~2x el pollo entero (~$9-11 mil/kg; antes $20.131);
+   precio por sucursal de Pollo, Carne picada y Limon coherente con el nacional (aperturas sin cadenas raras).
+4. Comparar con la v5.10 (tabla de abajo). El indice VA A CAMBIAR por pesos: salen pañales (Media 5,1%,
+   Ejecutiva 7,0%, Representativa 6,2% del costo), baja el nivel de Suprema, Tomate y Naranja, y cambia la
+   evolucion de Pollo y Suprema (sin Atm). Explicarle al usuario cuanto aporta cada cosa.
+5. **Elegir los reemplazos** con la hoja `Candidatos_trazabilidad`: por cada (canasta, necesidad) con rol
+   ACTUAL, el candidato con trazabilidad >=85%, cobertura actual >= piso de su canasta (Popular/Media/
+   Ejecutiva/Representativa: 4 cadenas, 15 provincias, 800 sucursales; Femenina 700) y, en Popular/Media/
+   Ejecutiva, precio unitario monotono (Popular <= Media <= Ejecutiva) y distinto del de otro estrato si
+   se puede. Si ningun candidato sirve, dejar el actual y anotarlo. Mostrarle la propuesta al usuario.
+6. Escribir `reemplazos.csv` (`canasta,necesidad,ean_nuevo`, opcional `ean_actual`) y correr
+   `python docs/canastas_alternativas/aplicar_reemplazos.py --excel <canasta_representativa_2026-09.xlsx> --reemplazos reemplazos.csv`
+   (simula y avisa cobertura/monotonicidad/producto compartido) y despues con `--escribir`. El Excel de
+   canasta lo pasa el usuario (esta en su Drive, `output_canasta/`). Actualiza `cargar_canastas_v5.py` y
+   `EAN_FORZADO` del constructor. NO hace falta tocar `gen_nb07.py`: los candidatos ya estan leidos.
+7. Commit + push; el usuario corre el cargador en Colab, reemplaza el Excel del Drive y corre el nb07:
+   esta vez **NO relee** (`32 meses guardados, 0 por leer`) porque el universo de EANs no cambia.
+8. Auditar esa corrida final y documentar (BUGS_Y_MEJORAS, CONTEXTO, esta memoria). Con la clave nueva
+   verificada, el usuario puede borrar del Drive las carpetas viejas `sem_8822990e_v5` y `ean_8822990e_v5`.
 
 ### Numeros vigentes (corrida v5.10 del 2026-09-23, a ago-26 = ultimo mes con IPC)
 
@@ -52,33 +69,32 @@ Verificar que Suprema quede ~2x el pollo entero y que Pollo/Limon/Picada tengan 
 | Femenina | 258,5 | +28,5% | — | $138.634 |
 | IPC alimentos / general | 261,1 / 288,1 | +34,9% / +33,5% | | |
 
-Tecnologica: $6.227.462 (publicar como NIVEL). La banda por metodo de frescos (auditoria v5.9 §5) se
-calculo sobre la v5.9: el publicado queda en el extremo bajo (Popular +2,5% a +6% con TPD/INDEC).
+Tecnologica: $6.227.462 (publicar como NIVEL: 90 de sus 98 sucursales son ChangoMas). La comparacion
+de igual a igual contra el IPC de alimentos es "solo alimentos" (las canastas llevan limpieza,
+perfumeria, mascotas y alcohol). Banda por metodo de frescos (auditoria v5.9 §5, sobre la v5.9): el
+publicado queda en el extremo bajo (Popular +2,5% a +6% con TPD/INDEC).
 
-### Que se hizo en la sesion del 2026-09-22 (tarde-noche) y el 2026-09-23
+### Que se hizo en las sesiones del 2026-09-22 y 2026-09-23
 
-1. **Se audito la corrida v5.9** con todo lo disponible: el Excel, el cache (85 M de filas) y los
-   precios promedio del INDEC. Informe: `docs/AUDITORIA_2026-09-22_v59.md` + PDF en `docs/auditoria/`
-   + scripts que reproducen cada numero en `docs/auditoria/scripts_v59/` (README adentro).
-   Lo que esta BIEN: indice replicado (dif 0,002), precio nacional de los 288 empaquetados replicado
-   100% dentro del 0,1%, encadenado de frescos replicado en 56/59 tipos, empaquetados consistentes
-   contra una comparacion directa por sucursal (0 a −3,6% en 32 meses).
-2. **BUG-37 corregido** (`_costo_por_rubro`, CELDA 8): el costo por sucursal omitia los rubros ENTEROS
-   que la sucursal no publica. Todas las aperturas geograficas y por cadena estaban mal (Vea "32% mas
-   barata", Cuyo "la region mas barata"). Test nuevo `notebooks/test_costo_sucursal.py`.
-3. **Nivel de frescos anclado al INDEC** (`NIVEL_REFERENCIA_FRESCO`, formato nuevo `(precio, 'YYYY-MM')`):
-   Pan frances, Pollo, Carne picada, Merluza y Limon a ago-2026. Pollo cotizaba $12.010 contra $4.780
-   del pollo entero (entraba "Pata de Pollo Atm" de DIA). Los precios por sucursal se reescalan igual.
-4. Menores: `Resumen` con mes parcial y las dos bases; grafia de provincias deterministica;
-   `auditar_salida_nb07.py` sin las falsas alarmas de la v5.9 + chequeos 6b (aperturas) y 6c (INDEC).
-5. Se documento en BUGS_Y_MEJORAS (BUG-37 y defectos abiertos), METODOLOGIA §10.14-10.15, CONTEXTO,
-   README y `docs/canastas_alternativas/README.md`.
+1. **Auditoria de la corrida v5.9** (Excel + cache de 85 M de filas + precios promedio del INDEC):
+   `docs/AUDITORIA_2026-09-22_v59.md` + PDF + scripts reproducibles en `docs/auditoria/scripts_v59/`.
+   Indice y precio nacional replicados exacto; empaquetados consistentes; problemas en aperturas y frescos.
+2. **v5.10**: BUG-37 (el costo por sucursal omitia rubros enteros -> aperturas por cadena/region falsas),
+   nivel de 5 frescos anclado al INDEC, `Resumen` con mes parcial, provincias deterministicas, auditor
+   con chequeos 6b (aperturas) y 6c (`--indec`). Corrida del 23-sep verificada (auditoria §10).
+   Correccion: se habia dicho que anclar el nivel no movia el indice; SI lo mueve (pesos).
+3. Decision del usuario: **pañales y toallitas fuera** (hogar tipo 2 = hijos de 6 y 8 años).
+4. **v5.11** (paquete de relectura, arriba) + test `test_candidatos_reemplazo.py`.
+5. Herramienta nueva `docs/canastas_alternativas/aplicar_reemplazos.py` (probada: simulacion, errores,
+   escritura y reversion). `CLAUDE.md` en la raiz, `requirements.txt`, y la planilla del INDEC en
+   `data/sh_ipc_precios_promedio_2026-08.xls`.
 
 ### Como retomar en otra PC
 
 ```
 git clone https://github.com/santiagoriverti/precios_minoristas_supermercados
 cd precios_minoristas_supermercados
+pip install -r requirements.txt
 python notebooks/test_celdas_graficos_y_mapa.py   # graficos + mapa (nb05 y nb02)
 python notebooks/test_encadenado_frescos.py       # encadenado de frescos (nb07)
 python notebooks/test_quiebre_serie.py            # quiebre de serie del indice (BUG-36)
@@ -89,10 +105,14 @@ python notebooks/test_candidatos_reemplazo.py     # hoja Candidatos_trazabilidad
 
 - **Los `.ipynb` NO se editan a mano**: `python notebooks/gen_nb07.py` reescribe el nb07. Commitear
   generador + `.ipynb` juntos.
-- Colab necesita en `MyDrive/carga/`: los ZIPs SEPA semestrales, `IPC.xlsx`, `ar.json`,
-  `maestro_sepa_completo.csv.gz`, los maestros de `data/` (el repo es privado: GitHub raw da 404) y
-  `output_canasta/canasta_representativa_YYYY-MM.xlsx` (nb01 + `cargar_canastas_v5.py`).
-- Cache del nb07: `MyDrive/carga/output_canasta_alternativa/_cache_nb07/sem_<key>_v5/` y `ean_<key>_v5/`.
+- Colab necesita en `MyDrive/carga/`: los ZIPs SEPA semestrales (`2024A` ... `2026B`), `IPC.xlsx`,
+  `ar.json`, `maestro_sepa_completo.csv.gz`, los maestros de `data/` (el repo es privado: GitHub raw da
+  404) y `output_canasta/canasta_representativa_YYYY-MM.xlsx` (nb01 + `cargar_canastas_v5.py`; un solo
+  archivo con ese patron en la carpeta: el nb07 toma el de nombre mas alto).
+- Cache del nb07: `MyDrive/carga/output_canasta_alternativa/_cache_nb07/sem_<clave>_v5/<mes>.parquet` y
+  `ean_<clave>_v5/<mes>.parquet`. Para auditar localmente, el usuario baja esas dos carpetas en zip.
+- Planilla del INDEC para el auditor: `data/sh_ipc_precios_promedio_2026-08.xls` (hasta ago-26). La de
+  sep-26 sale a mediados de octubre.
 
 ### Estado por herramienta
 
@@ -104,65 +124,53 @@ python notebooks/test_candidatos_reemplazo.py     # hoja Candidatos_trazabilidad
 | 04 | `04_precios_seleccion` | ✅ estable | Precios por radio geografico |
 | 05 | `05_evolucion_productos_representativos` | ✅ corrido ago-2026 | Mapa publicado en GitHub Pages |
 | 06 | `06_evolucion_brecha_celiaca` | ✅ medicion cerrada | ⚠️ mapa con `cartodbpositron` |
-| 07 | `07_evolucion_canastas_alternativas` | ✅ v5.10 verificada · v5.11 lista (relee) | Correr la relectura; despues elegir reemplazos |
-
-### Numeros de referencia de la corrida v5.9 (historicos: los vigentes estan arriba)
-
-| Canasta | Indice mensual (ene-24=100) | Solo alimentos | Banda por metodo de frescos |
-|---|---:|---:|---:|
-| Popular | 234,1 | 236,5 | 240-249 |
-| Media | 240,8 | 240,9 | 242-251 |
-| Ejecutiva | 236,0 | 244,0 | 234-242 |
-| Representativa | 231,2 | 239,4 | 233-241 |
-| Femenina | 258,5 | — | — |
-| IPC alimentos / general | 261,1 / 288,1 | | |
-
-La comparacion de igual a igual contra el IPC de alimentos es la columna "solo alimentos" (las
-canastas llevan limpieza, perfumeria, mascotas y alcohol). La banda: el encadenado publicado queda en
-el extremo bajo frente a TPD / INDEC (auditoria v5.9 §5).
+| 07 | `07_evolucion_canastas_alternativas` | 🔄 v5.11 corriendo (relectura) | Despues: auditar y aplicar reemplazos (pasos 1-8 de arriba) |
 
 ### PENDIENTES, en orden
 
-1. ~~nb07: re-correr con la v5.10 y auditar~~ HECHO 2026-09-23 (OK, ver arriba).
-2. **Paquete de cambios que RELEE el SEPA** (detalle arriba, en "En que estamos") (~1h20m; hacerlos juntos):
-   (a) trazabilidad: reemplazar items <85% de Media (10,6% del costo) y Ejecutiva (8,0%) y el Jabon Dove
-   Original de Representativa; (b) **pañales: DECIDIDO (2026-09-23), SALEN** pañales y toallitas de
-   Media/Ejecutiva/Representativa — ya aplicado en `cargar_canastas_v5.py` (282 EANs) y en el
-   constructor, NO en el Excel del Drive: NO correr el cargador hasta tener el paquete completo; (c)
-   `TIPOS_FRESCOS`: Pollo excluir `chorizo`, Limon excluir productos en cc/ml; (d) Femenina: la
-   Prestobarba3 esta en 513 sucursales (< piso 700).
-3. **Frescos por metodo multilateral** (TPD/GEKS con ventana movil) en vez del encadenado semanal; hasta
+1. **nb07 v5.11**: auditar la relectura y aplicar los reemplazos de trazabilidad (pasos 1-8 de arriba).
+2. **Frescos por metodo multilateral** (TPD/GEKS con ventana movil) en vez del encadenado semanal; hasta
    entonces, publicar el indice con la banda de sensibilidad.
-4. **Tecnologica**: publicar como NIVEL (es la lista de precios de ChangoMas: 90 de 98 sucursales).
-5. **Durazno** (y Espinaca, Acelga, Palta): no publicar a nivel de item.
-6. nb06: portar el fallback de mosaicos de nb05/nb02 (`docs/BUGS_Y_MEJORAS.md`).
-7. nb05 y nb02: confirmar en Colab las correcciones del 09-sep.
-8. Mapas a GitHub Pages (`mapa_precios` al dia; `mapa_precios_minoristas` desactualizado).
-9. LaTeX en Overleaf: hoja `Valores_Documento`.
-10. **Seguridad**: rotar el PAT de GitHub (expuesto 24-jun y 07-jul) y usar Git Credential Manager.
-11. Mejora: sacar los EANs empaquetados de la clave del cache para que cambiar una canasta no cueste
-    una relectura completa.
+3. **Tecnologica**: publicar como NIVEL (lista de precios de ChangoMas).
+4. **Durazno** (y Espinaca, Acelga, Palta): no publicar a nivel de item.
+5. nb06: portar el fallback de mosaicos de nb05/nb02 (`docs/BUGS_Y_MEJORAS.md`).
+6. nb05 y nb02: confirmar en Colab las correcciones del 09-sep.
+7. Mapas a GitHub Pages (`mapa_precios` al dia; `mapa_precios_minoristas` desactualizado).
+8. LaTeX en Overleaf: hoja `Valores_Documento`.
+9. **Seguridad**: rotar el PAT de GitHub (expuesto 24-jun y 07-jul) y usar Git Credential Manager.
+10. Mejora: sacar los EANs empaquetados de la clave del cache (hoy `EANS_CANDIDATOS` es el parche:
+    todo EAN que vaya a entrar a una canasta conviene agregarlo ahi ANTES de la relectura).
 
 ### Reglas que muerden (vigentes)
 
-- **Cambiar EANs de una canasta o `TIPOS_FRESCOS` (inc/exc/gmin/rk), `RATIO_FRESCO` o los K de la
-  lectura cambia la clave del cache** y obliga a releer el SEPA. Post-cache (sin relectura): cantidades,
+- **Clave del cache del nb07** = md5 del universo de EANs leido (`EANS_EMP` + `EANS_CANDIDATOS` +
+  `EANS_FRESCOS`, que depende de `TIPOS_FRESCOS` inc/exc/gmin, las categorias del maestro,
+  `EXCLUIR_EAN_FRESCO` y el propio maestro de productos) + `DIA_CIERRE_SEMANA`, `FRESCO_OUTLIER_K`,
+  `FRESCO_REGIMEN_K`, `FRESCO_PISO_ANCLA`, `FRESCO_TECHO_ANCLA`, los `rk` y `RATIO_FRESCO`. Si cambia,
+  **relee todo el SEPA** (~1h20m; retoma si Colab se corta). Post-cache (sin relectura): cantidades,
   `NIVEL_REFERENCIA_FRESCO`, `QUIEBRE_ITEM_K`, todo lo de la CELDA 8 en adelante.
-- **El costo por sucursal imputa a precio nacional lo que la sucursal no publica**: una cadena con
-  mucho `pct_imputado` se parece al nacional por construccion. Leer las aperturas con esa columna.
+- **Anclar el nivel de un fresco cambia el indice**, no solo el costo: cada item pesa cantidad x precio.
+- **Si se ancla un tipo al INDEC, revisar que su `RATIO_FRESCO` apunte al mismo producto**, o el precio
+  por sucursal (aperturas) queda en otra escala (METODOLOGIA §10.16).
+- **El costo por sucursal imputa a precio nacional lo que la sucursal no publica** (`pct_imputado`): una
+  cadena con mucho imputado se parece al nacional por construccion.
 - **~50% del precio nacional es el precio de DIA** (mediana entre sucursales dentro de cada provincia).
-  No sesga la evolucion; si el nivel.
-- **Los niveles de frescos pueden ser de otro producto**: contrastar con el INDEC (`--indec`) antes de
-  publicar un costo en pesos. Los anclados estan en `NIVEL_REFERENCIA_FRESCO`.
-- **Un Jevons con MEDIANA de log-ratios no sirve de control** (con precios pegajosos da 0). Y un indice
-  apareado SEMANAL por sucursal tampoco: pierde el eslabon cuando el item falta y vuelve repreciado.
-  Para controlar, comparacion directa de largo plazo con la mediana entre sucursales.
-- **El IPC sale a mediados del mes siguiente**: comparar siempre en el ultimo mes en comun.
-- **Nada de barras invertidas en el codigo de celda** (`cell_code`): usar `splitlines()` +
-  `chr(10).join(...)`. Tampoco comillas triples adentro.
+  No sesga la evolucion; si el nivel, y un producto de DIA puede definir un tipo fresco entero (Atm).
+- **Un Jevons con MEDIANA de log-ratios no sirve de control** (con precios pegajosos da 0), ni un indice
+  apareado SEMANAL por sucursal (pierde el eslabon cuando el item falta y vuelve repreciado). Para
+  controlar: comparacion directa de largo plazo con la mediana entre sucursales.
+- **El IPC sale a mediados del mes siguiente**: comparar siempre en el ultimo mes en comun, y contra el
+  IPC de alimentos solo la parte de alimentos de la canasta.
+- **Nada de barras invertidas en celdas `cell_code` no raw**; y al editar el generador desde la shell,
+  hacerlo con un script en archivo (la shell se come las barras de los heredocs).
 - **La red de INECO bloquea `tile.openstreetmap.org`**: los mapas eligen proveedor solos.
 
 ---
+
+## 🟡 HANDOFF ANTERIOR [2026-09-23 · tarde] — v5.10 verificada, v5.11 preparada
+
+(Reemplazado por el bloque de arriba. Lo esencial quedo integrado ahi: numeros de la v5.10, correccion
+sobre el anclaje y el indice, contenido del paquete de relectura.)
 
 ## 🟡 HANDOFF ANTERIOR [2026-09-22 · mañana y tarde] — v5.8 y v5.9
 

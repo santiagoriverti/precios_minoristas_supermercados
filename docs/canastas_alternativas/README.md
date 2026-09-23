@@ -26,6 +26,10 @@ Insumo del notebook **`07_evolucion_canastas_alternativas`**, que produce el inf
 **287 EANs únicos** + **59 tipos de frescos** (los frescos van por regla de nombre en la
 CELDA 1 del notebook, `TIPOS_FRESCOS`, porque el EAN de balanza cambia entre cadenas).
 
+> **Vigente desde el 2026-09-23: 282 EANs.** Salieron pañales y toallitas de Media, Ejecutiva y
+> Representativa (74 necesidades cada una). Y la relectura v5.11 del nb07 lee además 90
+> `EANS_CANDIDATOS` para reemplazar los ítems con huecos. Ver "Cambios posteriores" más abajo.
+
 **Hogar de referencia: hogar tipo 2 del INDEC** — 2 adultos + 2 niños = **3,09 adultos
 equivalentes**. Todas las cantidades están expresadas para ese hogar.
 
@@ -266,15 +270,34 @@ vez de incluir un ítem que solo cotiza en 400 sucursales.
    cualquier versión: el script **limpia y reescribe** `cantidad_01..06` completo).
 3. Descargá el `*_con_canastas.xlsx`.
 4. Subilo a Drive en `carga/output_canasta/` como `canasta_representativa_<periodo>.xlsx`.
-   **Dejá un solo archivo** con ese patrón: nb07 toma el de nombre más alto.
-5. Corré el notebook 07.
+   **Dejá un solo archivo** con ese patrón: nb07 toma el de nombre más alto (una copia de
+   respaldo tiene que ir a OTRA carpeta: `..._backup.xlsx` en la misma le ganaría).
+5. Corré el notebook 07. Si cambiaron los EANs y alguno no estaba en `EANS_CANDIDATOS`, relee el
+   SEPA (~1h20m); si no, tarda minutos.
 
 ### Para cambiar la composición
 
-**Ajuste puntual** (subir o bajar una cantidad, cambiar un producto): editá el diccionario
-`CANTIDADES` de `cargar_canastas_v5.py`. Cada fila es
+**Ajuste de cantidad**: editá el diccionario `CANTIDADES` de `cargar_canastas_v5.py`. Cada fila es
 `'<EAN>': {'cantidad_01': q1, ..., 'cantidad_06': q6},  # rubro | descripción`.
 Poné `0` para sacar un producto de una canasta.
+
+**Reemplazo puntual de un producto** (por ejemplo, uno sin trazabilidad): `aplicar_reemplazos.py`.
+Toma un CSV `canasta,necesidad,ean_nuevo` (opcional `ean_actual`), busca el nuevo entre los
+candidatos de esa necesidad con la misma función del constructor, calcula la cantidad (cantidad física
+/ presentación, mismo redondeo), avisa si no cumple la cobertura de su canasta, si rompe la
+monotonicidad Popular ≤ Media ≤ Ejecutiva, si otro estrato ya usa ese producto o si no está en
+`EANS_CANDIDATOS` del nb07 (en ese caso el nb07 releería el SEPA). Por defecto simula; `--escribir`
+actualiza el cargador (cantidades, conteo de EANs y un registro en el encabezado) y agrega el par a
+`EAN_FORZADO` del constructor, para que una recalibración futura no lo deshaga.
+
+```bash
+python aplicar_reemplazos.py --excel ruta/al/canasta_representativa_YYYY-MM.xlsx --reemplazos reemplazos.csv
+python aplicar_reemplazos.py --excel ... --reemplazos ... --escribir
+```
+
+Los nombres de canasta y necesidad son los de `Candidatos_trazabilidad` (y de `NEEDS` /
+`NEEDS_FEMENINA`). **No** corras el constructor entero para un reemplazo: recalibra todas las canastas
+sobre la cobertura del Excel que le pases y cambia muchos productos.
 
 **Recalibración en serio** (cambiar productos por necesidad, cantidades físicas, el hogar de
 referencia o los umbrales de cobertura): editá `construir_canastas_v5.py` y regeneralo:
