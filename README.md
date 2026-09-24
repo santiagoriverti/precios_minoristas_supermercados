@@ -741,6 +741,7 @@ precios_minoristas_supermercados/
     ├── BUGS_Y_MEJORAS.md               # Bugs resueltos y defectos abiertos, con causa raíz y fix
     ├── AUDITORIA_2026-09-22.md         # Auditoría de la corrida 2026-09-17 del nb07 (v5.8)
     ├── AUDITORIA_2026-09-22_v59.md     # Auditoría de la re-corrida con la v5.9 (BUG-37, frescos vs INDEC)
+    ├── AUDITORIA_2026-09-24_v512.md    # Revisión de la v5.12: brecha con el IPC, incertidumbre, dos defectos
     ├── auditoria/                      # Los informes en HTML y PDF + scripts_v59/ que reproducen la segunda
     └── canastas_alternativas/           # Notebook 07 — composición de las 6 canastas alternativas
         ├── README.md                    #   diseño, flujo de trabajo, cambios posteriores a v5
@@ -783,7 +784,8 @@ y se commitean juntos el generador y el `.ipynb`.
 
 Antes de publicar una corrida conviene pasarle el Excel al auditor, que reproduce los chequeos de
 [`docs/AUDITORIA_2026-09-22.md`](docs/AUDITORIA_2026-09-22.md) y
-[`docs/AUDITORIA_2026-09-22_v59.md`](docs/AUDITORIA_2026-09-22_v59.md):
+[`docs/AUDITORIA_2026-09-22_v59.md`](docs/AUDITORIA_2026-09-22_v59.md) (la revisión más completa es
+[`docs/AUDITORIA_2026-09-24_v512.md`](docs/AUDITORIA_2026-09-24_v512.md)):
 
 ```bash
 python notebooks/auditar_salida_nb07.py canastas_alternativas_2026-09-17.xlsx

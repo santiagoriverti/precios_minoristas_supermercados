@@ -6,7 +6,36 @@ Autor: Santiago Riverti — investigador independiente
 
 ---
 
-## 🟢 ESTADO ACTUAL / HANDOFF [2026-09-24 · noche] — nb07 v5.12 LISTA para correr (relee) — leer esto primero
+## 🟢 ESTADO ACTUAL / HANDOFF [2026-09-24 · noche, tarde] — v5.12 CORRIDA Y REVISADA; decisiones pendientes — leer esto primero
+
+### En que estamos
+
+- Corrida **v5.12** (relectura completa, cache `f32678cd`, semana al 24-sep) revisada a fondo:
+  `docs/AUDITORIA_2026-09-24_v512.md` (+ PDF, `docs/auditoria/scripts_v512/revision_v512.py`). Auditor 17 OK / 3 conocidos.
+- Hallazgos: (1) **la brecha con el IPC de alimentos sale de los frescos** (empaquetados SEPA = INDEC, mediana 1,03; con
+  la evolucion INDEC en 23 frescos, alimentos 256-264 vs IPC 261 desde ene-24); (2) incertidumbre del acumulado ±8-9,5
+  puntos (jackknife) y 3-6 puntos por datos flacos de 2024; el interanual es robusto; (3) defecto: filtro de regimen de
+  Naranja/Tomate (v5.12) y Limon (v5.11) calibrado con UN mes -> corta la estacionalidad en las APERTURAS (no en la serie
+  nacional); (4) defecto: el nivel de los frescos no anclados se fija con la ULTIMA semana -> cada semana se revisa la
+  historia (Mortadela x1,49; indice ago-26 +-0,2).
+- Ronda 2: `proponer_reemplazos.py` propone 19; recomendados 15 (`docs/canastas_alternativas/ronda2_propuesta_2026-09-24.csv`, auditoria §5; el Skip -> Woolite
+  Detergente 900 ml 7791130003643); dejar 4 (arvejas Popular, Nesquik Repr, agua Levite Ejec, vino Luigi Bosca).
+
+### DECISIONES PENDIENTES DEL USUARIO (auditoria §7)
+
+1. Ronda 2: aplicar los 15 (no relee): `docs/canastas_alternativas/ronda2_propuesta_2026-09-24.csv` ->
+   `aplicar_reemplazos.py --excel <canasta 270> --reemplazos <ese csv>` (simular; despues --escribir).
+2. Nivel de frescos fijo en el mes de referencia (no relee; cambia el indice unas decimas).
+3. Regla de cobertura minima para empaquetados (no relee; mueve el acumulado 3-6 puntos en Ejec/Repr) o rebasar a ene-25.
+4. Filtro estacional Naranja 0,73 / Tomate 1,26 / Limon 1,01 (RELEE: juntar con la proxima relectura).
+5. Frescos por metodo multilateral (la mejora que mas cambia la comparacion con el IPC).
+
+### Numeros vigentes (corrida v5.12, ene-24 -> ago-26)
+
+Popular 230,4 · Media 241,7 · Ejecutiva 243,8 · Representativa 235,9 · Femenina 260,0 | i.a. ago-26: +29,5 / +27,3 /
++27,1 / +27,7 / +28,6% | IPC alimentos 261,1 (+34,9% i.a.), general 288,1. Sep-26 (3 semanas): +2,0 a +2,6% m/m.
+
+## 🟡 HANDOFF ANTERIOR [2026-09-24 · noche] — v5.12 preparada
 
 ### En que estamos
 

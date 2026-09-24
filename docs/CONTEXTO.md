@@ -152,9 +152,8 @@ Solo tipos con dicotomía celíaca; 2–3 EANs representativos por lado, promedi
 intra-sucursal. Config: dict `TIPOS` en la CELDA 1. **Detalle completo: `docs/BRECHA_CELIACA.md`.**
 
 ### 2f. `07_evolucion_canastas_alternativas` (notebook 07) — motor del informe semanal
-**Estado: v5.12 lista para correr, 2026-09-24** (relectura: candidatos para la historia flaca, Woolite,
-Naranja y Tomate recalibrados; la v5.11.1 con los 24 reemplazos está verificada, ver
-`docs/AUDITORIA_2026-09-22_v59.md` §11 y el historial de cambios más abajo). Es el notebook que alimenta el **informe semanal** del equipo de
+**Estado: v5.12 corrida y revisada, 2026-09-24** (ver `docs/AUDITORIA_2026-09-24_v512.md`: la brecha con el
+IPC sale de los frescos; ronda 2 de reemplazos y dos arreglos pendientes de decisión; historial más abajo). Es el notebook que alimenta el **informe semanal** del equipo de
 economistas. Costo de **6 canastas** vs **IPC**, desagregado por **rubro** (drill-down hasta
 producto), **provincia**, **región** y **cadena**.
 
@@ -536,6 +535,14 @@ Los 4 reemplazos (Swift XL, Lavandina Anti-splash, Plusbelle, Listerine) están 
 ---
 
 ## Historial de cambios
+
+### 2026-09-24 (noche) — corrida v5.12 y revisión a fondo
+
+Relectura completa con la semana al 24-sep. Revisión en `docs/AUDITORIA_2026-09-24_v512.md` (+ PDF y
+`docs/auditoria/scripts_v512/`): la brecha con el IPC de alimentos sale de los frescos (los empaquetados siguen
+al INDEC); incertidumbre del acumulado ±8-9,5 puntos por elección de productos; dos defectos nuevos (filtro
+estacional de Naranja/Tomate/Limón, introducido en v5.11/v5.12, y el nivel de los frescos revisado cada
+semana); ronda 2 de reemplazos propuesta (15 recomendados). Pendiente: decisiones del usuario (auditoría §7).
 
 ### 2026-09-24 (tarde) — nb07 v5.12 preparada (ronda 2 de relectura)
 

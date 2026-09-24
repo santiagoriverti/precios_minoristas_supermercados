@@ -1,6 +1,6 @@
 # Bugs Pendientes y Mejoras
 
-Última actualización: 2026-09-24 — corrida v5.11 verificada (`docs/AUDITORIA_2026-09-22_v59.md` §11); 24 reemplazos de trazabilidad aplicados (270 EANs, no relee el SEPA); nb07 v5.11.1 (BUG-38); `aplicar_reemplazos.py` sin falsas alarmas (BUG-39); auditor con cobertura histórica (bloque 7b). nb07 **v5.12 lista** para correr (relee el SEPA: 65 candidatos nuevos, Naranja y Tomate recalibrados); `proponer_reemplazos.py`
+Última actualización: 2026-09-24 (noche) — corrida v5.12 revisada a fondo (`docs/AUDITORIA_2026-09-24_v512.md`): la brecha con el IPC sale de los frescos; dos defectos nuevos abiertos (filtro estacional de Naranja/Tomate/Limón, nivel de frescos revisado cada semana); ronda 2 propuesta. Antes: corrida v5.11 verificada (`docs/AUDITORIA_2026-09-22_v59.md` §11); 24 reemplazos de trazabilidad aplicados (270 EANs, no relee el SEPA); nb07 v5.11.1 (BUG-38); `aplicar_reemplazos.py` sin falsas alarmas (BUG-39); auditor con cobertura histórica (bloque 7b). nb07 **v5.12 lista** para correr (relee el SEPA: 65 candidatos nuevos, Naranja y Tomate recalibrados); `proponer_reemplazos.py`
 
 ---
 
@@ -11,6 +11,41 @@
 ---
 
 ## 🟡 Defectos abiertos
+
+### nb07: el filtro de régimen corta la estacionalidad de Naranja, Tomate y Limón — INTRODUCIDO en v5.11/v5.12
+
+La v5.11 (Limón) y la v5.12 (Naranja, Tomate) pusieron `RATIO_FRESCO = INDEC / ancla` de **agosto**. El
+cociente cambia mucho con la estación (Naranja 0,38-1,40; Tomate 0,63-2,52; Limón 0,41-2,49) y la banda ×3
+queda corta: la Naranja pierde 67-95% de sus observaciones por sucursal en feb-abr, el Tomate 50-92% en sus
+picos, y el precio del INDEC del Limón queda afuera en 8 de 32 meses. **No mueve la serie nacional** (el
+encadenado por EAN se toma antes del filtro; la evolución publicada de Naranja y Tomate es idéntica a la de la
+v5.11) sino el precio por sucursal, o sea las aperturas de esos ítems. **Arreglo**: ratio = centro geométrico
+del rango estacional (Naranja 0,73; Tomate 1,26; Limón 1,01). Relee: juntarlo con la próxima relectura.
+Detalle: `docs/AUDITORIA_2026-09-24_v512.md` §4.1.
+
+### nb07: el nivel de los frescos no anclados se revisa cada semana
+
+Bloque 2b de la CELDA 7: cada tramo del encadenado por EAN toma su nivel del estimador anterior en la **última
+semana válida**. Cada semana nueva reescala toda la serie de un fresco no anclado: entre las corridas del 17 y
+del 24-sep, 46 frescos cambiaron por un factor constante (Mortadela ×1,49; Chaucha ×1,14; Cebolla ×1,09), y con
+eso sus pesos y el índice de meses cerrados (±0,2 puntos en ago-26). **Arreglo**: nivel = mediana del cociente
+estimador / encadenado en las semanas del mes de referencia de las anclas (`NIVEL_REFERENCIA_FRESCO`, hoy
+2026-08). Posterior al caché: no relee. Detalle: auditoría §4.2.
+
+### nb07: los frescos suben menos que el INDEC y explican toda la brecha con el IPC
+
+Los empaquetados del SEPA siguen al INDEC (mediana 1,03 desde ene-25); los frescos no (asado 0,81, paleta 0,84,
+banana 0,60 de la variación del INDEC). Con la evolución del INDEC en los 23 frescos con equivalente, la parte de
+alimentos de las canastas queda a la par del IPC. Es la mejora de método que más importa: índice multilateral
+(TPD/GEKS con ventana móvil) para los frescos. Mientras tanto, **no publicar que en los supermercados la
+inflación fue menor**. Detalle: auditoría §2.3.
+
+### nb07: el acumulado desde ene-24 depende de datos flacos de 2024
+
+Tratar como faltante el precio de un empaquetado en semanas con pocas sucursales mueve el acumulado de la
+Ejecutiva y la Representativa 3-6 puntos (el interanual, ±0,3 pp). Ejemplo: vino Luigi Bosca ×4,4 desde ene-24
+con 26-153 sucursales en el primer semestre; ×1,41 desde ago-24. Decisión pendiente: adoptar una regla de
+cobertura mínima (auditoría §3.2) o rebasar el acumulado a ene-25.
 
 ### nb07: productos con historia "flaca" que la trazabilidad no marca — para la relectura v5.12
 

@@ -1117,8 +1117,27 @@ interanual casi igual.
 variantes dentro de `[ref/K, ref×K]` con `ref = ancla × RATIO_FRESCO`. Si el ratio quedó calibrado sobre otro
 producto, el filtro descarta el correcto aunque el nivel esté anclado: pasó con el Limón (v5.11) y con la
 Naranja y el Tomate (v5.12: la Naranja dejaba afuera naranjas de $600-1.300/kg y adentro productos de
-$6.900-9.500). Regla: **ratio = precio INDEC / ancla** para todo tipo anclado. Merluza queda como está: su
+$6.900-9.500). **Corrección (revisión del 2026-09-24)**: calibrar con el cociente de UN mes corta la
+estacionalidad (la Naranja perdió 67-95% de sus observaciones en feb-abr). La regla correcta es el **centro
+geométrico del rango estacional** de INDEC/ancla (Naranja 0,73; Tomate 1,26; Limón 1,01), para que la banda ×3
+cubra todo el año; y el filtro no mueve la serie nacional (el encadenado por EAN se toma antes). Merluza queda como está: su
 banda ya contiene el filet del INDEC y deja afuera la merluza entera, que es otro producto.
+
+### 10.18. Revisión de la corrida v5.12 (2026-09-24): qué dicen los números
+
+Detalle y tablas en `docs/AUDITORIA_2026-09-24_v512.md`.
+
+- **La brecha con el IPC de alimentos sale de los frescos.** Los empaquetados del SEPA siguen a los precios
+  promedio del INDEC categoría por categoría (mediana 1,03 desde ene-25). Con la evolución del INDEC en los 23
+  frescos que tienen equivalente, la parte de alimentos de las canastas queda a la par del IPC (256-264 contra
+  261 desde ene-24). El encadenado por EAN de los frescos sube menos (asado 0,81, paleta 0,84 del INDEC) y es la
+  mejora metodológica prioritaria (índice multilateral).
+- **Incertidumbre**: error estándar por elección de productos ±8-9,5 puntos en el acumulado ene-24 → ago-26 y
+  ±2-5 pp en el interanual; la regla para datos flacos de 2024 mueve el acumulado 3-6 puntos y el interanual
+  ±0,3 pp; el encadenado semanal queda 1-2% por debajo de una canasta fija. Titular con el interanual.
+- **Revisión semanal del nivel de los frescos**: cada tramo del encadenado toma su nivel del estimador en la
+  última semana, así que cada semana nueva reescala la historia de los frescos no anclados. Arreglo propuesto:
+  fijar el nivel en el mes de referencia de las anclas del INDEC.
 
 ---
 

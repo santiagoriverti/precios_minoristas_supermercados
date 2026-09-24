@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  @page { size: A4; margin: 16mm 14mm; }
+  @media print {
+    :root { --paper:#FFFFFF; }
+    body { background:#FFFFFF; }
+    .wrap { max-width:none; padding-block:0; padding-inline:0; }
+    section { break-inside: auto; margin-top:26px; }
+    h2, h3 { break-after: avoid; }
+    table, .find, .facts, .bars { break-inside: avoid; }
+    thead { display: table-header-group; }
+    .find { border-left:1px solid var(--line); }
+  }
+</style>
+<title>Revisión de la corrida nb07 v5.12 (2026-09-24)</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,600&family=Public+Sans:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+  :root{
+    --paper:#F5F6F4; --surface:#FFFFFF; --ink:#12171A; --muted:#5C6A6E; --line:#DCE1DE;
+    --accent:#1F6F6B; --ok:#2F6B3A; --warn:#9A6B12; --alert:#9E362A; --stripe:#EDEFEA;
+    --shadow:0 1px 2px rgba(18,23,26,.06);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --paper:#0F1213; --surface:#171B1C; --ink:#E7EDEB; --muted:#9BA8AB; --line:#2A3132;
+      --accent:#5FB5AE; --ok:#6FB07A; --warn:#D2A14A; --alert:#DE8074; --stripe:#1C2122;
+      --shadow:0 1px 2px rgba(0,0,0,.4);
+    }
+  }
+  :root[data-theme="dark"]{
+    --paper:#0F1213; --surface:#171B1C; --ink:#E7EDEB; --muted:#9BA8AB; --line:#2A3132;
+    --accent:#5FB5AE; --ok:#6FB07A; --warn:#D2A14A; --alert:#DE8074; --stripe:#1C2122;
+    --shadow:0 1px 2px rgba(0,0,0,.4);
+  }
+  body{background:var(--paper); color:var(--ink); font-family:"Public Sans",system-ui,-apple-system,sans-serif; line-height:1.55;}
+  .wrap{max-width:52rem; margin:0 auto; padding-inline:20px; padding-block:40px 64px;}
+  h1,h2,h3{font-family:"Newsreader",Georgia,serif; font-weight:600; text-wrap:balance; margin:0;}
+  h1{font-size:2.3rem; line-height:1.15; letter-spacing:-.01em;}
+  h2{font-size:1.45rem; margin-top:8px;}
+  h3{font-size:1.08rem; font-family:"Public Sans",sans-serif; font-weight:700;}
+  p{margin:0; max-width:65ch;}
+  .eyebrow{font-size:.72rem; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:var(--accent);}
+  .meta{font-family:"IBM Plex Mono",ui-monospace,monospace; font-size:.8rem; color:var(--muted);}
+  header{display:flex; flex-direction:column; gap:10px; border-bottom:2px solid var(--ink); padding-bottom:20px;}
+  section{display:flex; flex-direction:column; gap:14px; margin-top:40px;}
+  .lead{font-size:1.06rem;}
+  .facts{display:flex; flex-wrap:wrap; gap:0; border:1px solid var(--line); border-radius:3px; background:var(--surface); box-shadow:var(--shadow);}
+  .fact{flex:1 1 150px; padding:12px 16px; border-right:1px solid var(--line);}
+  .fact:last-child{border-right:none;}
+  .fact b{display:block; font-family:"IBM Plex Mono",monospace; font-size:1.18rem; font-weight:500; font-variant-numeric:tabular-nums;}
+  .fact span{font-size:.75rem; color:var(--muted);}
+  table{border-collapse:collapse; width:100%; font-size:.9rem;}
+  .scroll{overflow-x:auto;}
+  th,td{padding:8px 12px; text-align:left; border-bottom:1px solid var(--line);}
+  th{font-size:.72rem; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); font-weight:700;}
+  td.n,th.n{text-align:right; font-family:"IBM Plex Mono",monospace; font-variant-numeric:tabular-nums;}
+  tbody tr:nth-child(odd){background:var(--stripe);}
+  tr.ref td{font-weight:700;}
+  .bars{display:grid; grid-template-columns:auto 1fr auto; gap:6px 12px; align-items:center; font-size:.88rem;}
+  .bars .bar{height:14px; border-radius:2px; background:var(--accent);}
+  .bars .bar.ipc{background:var(--muted);}
+  .bars .v{font-family:"IBM Plex Mono",monospace; font-variant-numeric:tabular-nums; font-size:.82rem;}
+  .find{display:grid; grid-template-columns:4px 1fr; gap:0 14px; background:var(--surface); border:1px solid var(--line); border-left:none; border-radius:0 3px 3px 0;}
+  .find .stripe{background:var(--muted); border-radius:2px 0 0 2px;}
+  .find.fixed .stripe{background:var(--ok);} .find.open .stripe{background:var(--warn);} .find.bad .stripe{background:var(--alert);}
+  .find .body{padding:14px 16px; display:flex; flex-direction:column; gap:8px;}
+  .chip{display:inline-block; font-size:.68rem; font-weight:700; letter-spacing:.09em; text-transform:uppercase; padding:2px 8px; border-radius:999px; border:1px solid currentColor;}
+  .chip.fixed{color:var(--ok);} .chip.open{color:var(--warn);} .chip.bad{color:var(--alert);}
+  .stack{display:flex; flex-direction:column; gap:16px;}
+  code{font-family:"IBM Plex Mono",monospace; font-size:.86em; background:var(--stripe); padding:1px 5px; border-radius:3px;}
+  ul{margin:0; padding-left:1.1rem; display:flex; flex-direction:column; gap:6px; max-width:65ch;}
+  footer{margin-top:48px; padding-top:16px; border-top:1px solid var(--line); color:var(--muted); font-size:.82rem;}
+</style>
+<style>pre{background:var(--stripe);padding:10px 14px;border-radius:3px;overflow-x:auto;font-size:.8rem;}pre code{background:none;padding:0;} ol{margin:0;padding-left:1.3rem;display:flex;flex-direction:column;gap:6px;max-width:65ch;}section p{max-width:none;} a{color:var(--accent);}</style></head>
+<body><div class="wrap"><header><div class="eyebrow">SEPA · nb07</div><h1>Revisión de la corrida nb07 v5.12 (2026-09-24)</h1><div class="meta">AUDITORIA_2026-09-24_v512.md</div></header>
+<p><b>Fecha</b>: 2026-09-24 · <b>Excel revisado</b>: <code>canastas_alternativas_2026-09-24.xlsx</code> (nb07 <b>v5.12</b>, relectura completa del SEPA, caché <code>f32678cd</code>: 32 meses cerrados, 103,8 M de filas) · 143 semanas (2024-01-04 → 2026-09-24) · canasta de 270 EANs + 155 candidatos leídos + 59 tipos frescos. <b>Comparaciones</b>: la corrida anterior (v5.11.1 con los 24 reemplazos, caché <code>e9dffc0d</code>), los precios promedio del INDEC (GBA, hasta ago-26) y el IPC.</p>
+<p>Revisión en tres miradas: integridad de los datos, solidez estadística del índice y lectura económica (la comparación con el IPC). Scripts que reproducen cada número: <a href="auditoria/scripts_v512/"><code>auditoria/scripts_v512/</code></a>. PDF: <a href="auditoria/auditoria_nb07_v512_2026-09-24.pdf"><code>auditoria/auditoria_nb07_v512_2026-09-24.pdf</code></a>.</p>
+<section><h2>Resumen</h2>
+<ol><li><b>La corrida es consistente.</b> El índice se reproduce desde el panel (dif. máx. 0,002); las aperturas por cadena y región quedan dentro de 0,85-1,20× el nacional; ningún fresco sin anclar se aparta del INDEC fuera de 0,6-1,6×. Los empaquetados leídos son idénticos a la corrida anterior en los 32 meses.</li><li><b>Toda la brecha con el IPC de alimentos sale de los frescos.</b> Los empaquetados del SEPA siguen a los precios promedio del INDEC categoría por categoría (mediana 1,03 desde ene-25). Los frescos del SEPA suben menos que los del INDEC, sobre todo carnes (asado 0,81, paleta 0,84) y algunas frutas y verduras. Con la evolución del INDEC en los 23 frescos que tienen equivalente, la parte de alimentos de las canastas da 256-264 desde ene-24 (IPC alimentos 261) y 157-162 desde ene-25 (IPC 158,5): <b>igual que el IPC</b>. No hay que publicar "en los supermercados la inflación fue menor": la diferencia está en cómo se miden los frescos (el encadenado por EAN queda en el extremo bajo de los métodos posibles).</li><li><b>El acumulado desde ene-24 es incierto; el interanual, no.</b> Elección de productos (jackknife): ±8 a ±9,5 puntos en el acumulado, ±2 a ±5 pp en el interanual. Datos flacos de 2024: ±3 a ±6 puntos en el acumulado según la regla, ±0,3 pp en el interanual. El encadenado semanal queda 1-2% por debajo de la comparación directa de canasta fija.</li><li><b>Dos defectos del nb07</b>, los dos con arreglo:</li><li><i>(introducido por la v5.12 en Naranja y Tomate, y por la v5.11 en el Limón)</i> recalibrar el filtro de régimen con el cociente INDEC/ancla de <b>un solo mes</b> corta la estacionalidad: la Naranja pierde 67-95% de sus observaciones en feb-abr; el precio del INDEC del Limón queda afuera de la banda en 8 de 32 meses. Afecta el precio por sucursal (aperturas), <b>no</b> la serie nacional.</li><li>el nivel de cada fresco no anclado se fija con la <b>última semana</b>: cada semana nueva reescala toda su historia (Mortadela ×1,49; Chaucha ×1,14; Cebolla ×1,09) y revisa el índice de meses ya cerrados.</li><li><b>Ronda 2 de reemplazos</b>: de los 19 que propone <code>proponer_reemplazos.py</code>, recomiendo 15 (el Skip pasa a Woolite Detergente 900 ml) y dejar 4 (sección 5).</li></ol>
+</section>
+<section><h2>1. Integridad de la corrida</h2>
+<div class="scroll"><table><thead><tr><th>Chequeo</th><th>Resultado</th></tr></thead><tbody><tr><td>Reporte</td><td>v5.12, 270 EANs, universo 10.792 (el esperado), relectura en 1h06m, semana 2026-09-24 completa</td></tr><tr><td>Empaquetados, caché nuevo vs anterior</td><td>idénticos en los 32 meses (mismas filas, mismos precios)</td></tr><tr><td>Frescos, caché nuevo vs anterior</td><td>cambian solo Naranja (−29% de filas, −34% precio medio) y Tomate (−15%, −16%)</td></tr><tr><td>Réplica del índice</td><td>✅ dif. máx. 0,002</td></tr><tr><td>Aperturas (6b)</td><td>✅ 0 cadenas o regiones confiables fuera de 0,85-1,20×</td></tr><tr><td>Frescos contra el INDEC (6c)</td><td>✅ 0 tipos sin anclar fuera de rango</td></tr><tr><td>Auditor completo</td><td>17 OK, 3 para revisar (Tecnológica, 8 frescos finos, historia flaca de la Ejecutiva 11,2%)</td></tr></tbody></table></div>
+<p>"Ancla mediana $1.790/kg" y "1.581.974 observaciones fuera de la banda" en el reporte <b>no son un problema</b>: son la mediana y la suma sobre los 32 meses releídos (≈49 mil por mes). En una corrida que no relee, esas cifras cuentan solo el mes en curso.</p>
+<p><b>Septiembre</b> (3 semanas cerradas) contra agosto: Popular +2,6% · Media +2,2% · Ejecutiva +2,1% · Representativa +2,1% · Femenina +2,0%. Semana al 24-sep: +0,5 a +0,6%.</p>
+<p><b>Índice ene-24 → ago-26</b>, v5.11.1 → v5.12: Popular 230,17 → 230,36 · Media 241,51 → 241,66 · Ejecutiva 243,60 → 243,75 · Representativa 235,73 → 235,93 · Femenina 259,97 (sin cambio). La diferencia no viene de Naranja y Tomate (su evolución publicada es idéntica) sino del segundo defecto de la sección 4: la semana nueva reescaló el nivel de 46 frescos.</p>
+</section>
+<section><h2>2. La brecha con el IPC</h2>
+<h3>2.1. Por subperíodo</h3>
+<div class="scroll"><table><thead><tr><th>Período</th><th>Popular</th><th>Media</th><th>Ejecutiva</th><th>Representativa</th><th>IPC alimentos</th><th>IPC general</th></tr></thead><tbody><tr><td>ene-24 → dic-24</td><td class="n">+55,4%</td><td class="n">+63,7%</td><td class="n">+65,5%</td><td class="n">+58,3%</td><td class="n">+61,7%</td><td class="n">+80,5%</td></tr><tr><td>dic-24 → dic-25</td><td class="n">+25,9%</td><td class="n">+26,3%</td><td class="n">+26,6%</td><td class="n">+27,3%</td><td class="n">+32,2%</td><td class="n">+31,5%</td></tr><tr><td>dic-25 → ago-26</td><td class="n">+17,7%</td><td class="n">+16,9%</td><td class="n">+16,3%</td><td class="n">+17,1%</td><td class="n">+22,1%</td><td class="n">+21,3%</td></tr><tr><td>ago-25 → ago-26 (i.a.)</td><td class="n">+29,5%</td><td class="n">+27,3%</td><td class="n">+27,1%</td><td class="n">+27,7%</td><td class="n">+34,9%</td><td class="n">+33,5%</td></tr><tr><td>ene-24 → ago-26</td><td class="n">+130,4%</td><td class="n">+141,7%</td><td class="n">+143,8%</td><td class="n">+135,9%</td><td class="n">+161,1%</td><td class="n">+188,1%</td></tr></tbody></table></div>
+<p>En 2024 la Media y la Ejecutiva suben <b>más</b> que el IPC de alimentos; desde 2025 las cuatro canastas suben 5-6 puntos por año menos. No es un efecto del mes base: la brecha aparece en cada subperíodo desde 2025.</p>
+<h3>2.2. Empaquetados: el SEPA sigue al INDEC</h3>
+<p>Para 30 categorías con precio promedio del INDEC (aceite de girasol, azúcar, yerba, fideos, leche, café, lavandina, shampoo, etc.), la variación del SEPA (productos de las canastas) contra la del INDEC:</p>
+<div class="scroll"><table><thead><tr><th>Período</th><th>Mediana SEPA/INDEC</th><th>Media geométrica</th><th>Rango</th></tr></thead><tbody><tr><td>ene-25 → ago-26</td><td class="n"><b>1,03</b></td><td class="n">1,05</td><td>0,86 (café) a 1,26 (salchicha)</td></tr><tr><td>ene-24 → ago-26</td><td class="n">1,07</td><td class="n">1,23</td><td>con extremos por datos flacos de 2024: arroz 5,4, lavandina 2,5, vino 1,9</td></tr></tbody></table></div>
+<p>Desde 2025, los empaquetados del SEPA suben lo mismo que los precios promedio del INDEC.</p>
+<h3>2.3. Frescos: ahí está la brecha</h3>
+<p>El chequeo 6c del auditor da, para 23 frescos, la variación publicada contra la del INDEC (ene-24 → ago-26): mediana 0,96, pero <b>asado 0,81, paleta 0,84, pan francés 0,82, naranja 0,82, tomate 0,76, zapallo 0,76, banana 0,60</b>. Los frescos pesan 52-72% del costo de alimentos de las canastas.</p>
+<p>Canasta fija de solo alimentos, con la evolución del SEPA en los frescos y con la del INDEC en los 23 que tienen equivalente:</p>
+<div class="scroll"><table><thead><tr><th>Período</th><th>Canasta</th><th>Frescos SEPA</th><th>Frescos con evolución INDEC</th><th>IPC alimentos</th></tr></thead><tbody><tr><td>ene-24 → ago-26</td><td>Popular</td><td class="n">241,2</td><td>258,3 (+7,1%)</td><td class="n">261,1</td></tr><tr><td></td><td>Media</td><td class="n">248,5</td><td>258,4 (+4,0%)</td><td></td></tr><tr><td></td><td>Ejecutiva</td><td class="n">258,4</td><td>263,8 (+2,1%)</td><td></td></tr><tr><td></td><td>Representativa</td><td class="n">243,1</td><td>255,7 (+5,2%)</td><td></td></tr><tr><td>ene-25 → ago-26</td><td>Popular</td><td class="n">150,8</td><td>162,2 (+7,6%)</td><td class="n">158,5</td></tr><tr><td></td><td>Media</td><td class="n">150,1</td><td>157,0 (+4,6%)</td><td></td></tr><tr><td></td><td>Ejecutiva</td><td class="n">155,0</td><td>159,3 (+2,8%)</td><td></td></tr><tr><td></td><td>Representativa</td><td class="n">150,4</td><td>158,4 (+5,3%)</td><td></td></tr></tbody></table></div>
+<p><b>Con los frescos del INDEC, las canastas quedan a la par del IPC de alimentos.</b> La brecha entera se explica por los frescos. Parte es método: el encadenado por EAN sube 22 pp menos que una muestra fija de EANs (bloque 7 del auditor, tipo mediano), y en la auditoría v5.9 (§5) un índice multilateral TPD daba +2,5% a +6% más que el publicado. La otra parte puede ser real (el supermercado contra la carnicería y la verdulería, que el INDEC incluye). <b>Mejora prioritaria</b>: pasar los frescos a un índice multilateral (TPD/GEKS con ventana móvil) y publicar mientras tanto con la banda de método.</p>
+</section>
+<section><h2>3. Qué tan firme es el número</h2>
+<h3>3.1. Elección de productos (jackknife)</h3>
+<p>Sacar un producto por vez y recalcular da el error estándar por la elección de productos:</p>
+<div class="scroll"><table><thead><tr><th>Canasta</th><th>Índice ene-24 → ago-26</th><th>Interanual ago-26</th></tr></thead><tbody><tr><td>Popular</td><td>230,4 ± 8,1</td><td>+29,5% ± 5,1 pp</td></tr><tr><td>Media</td><td>241,7 ± 7,7</td><td>+27,3% ± 2,8 pp</td></tr><tr><td>Ejecutiva</td><td>243,8 ± 9,5</td><td>+27,1% ± 2,0 pp</td></tr><tr><td>Representativa</td><td>235,9 ± 8,2</td><td>+27,7% ± 3,3 pp</td></tr></tbody></table></div>
+<p>La diferencia entre canastas en el acumulado (230 contra 244) está dentro de ~1,5 errores estándar: <b>no es robusta</b>. Los productos que más mueven el índice: papel higiénico Higienol (sacarlo sube el índice 3 a 5,6 puntos), arroz Molinos Ala, fideos, rollo de cocina, el vino Luigi Bosca (−4 en la Ejecutiva) y frescos volátiles (papa, banana, carne picada).</p>
+<p>El papel higiénico es real: está casi plano en pesos en todas las cadenas (DIA $6.399 → $6.869 entre ene-24 y jul-26; La Anónima $5.495 → $7.673). Lo mismo el arroz, que baja en pesos también en el INDEC. Son productos que quedaron caros tras la devaluación de dic-23 y cuyo precio relativo cayó después.</p>
+<h3>3.2. Datos flacos de 2024</h3>
+<p>En 2024 muchos productos estaban en muchas menos sucursales que hoy. Si se trata como faltante el precio de un producto en las semanas con pocas sucursales:</p>
+<div class="scroll"><table><thead><tr><th>Regla</th><th>Celdas que saca</th><th>Popular</th><th>Media</th><th>Ejecutiva</th><th>Representativa</th><th>Femenina</th></tr></thead><tbody><tr><td>sin regla (publicado)</td><td class="n">0%</td><td class="n">230,4</td><td class="n">241,7</td><td class="n">243,8</td><td class="n">235,9</td><td class="n">260,0</td></tr><tr><td>mínimo 100 sucursales</td><td class="n">3,0%</td><td class="n">230,0</td><td class="n">242,0</td><td class="n">240,2</td><td class="n">232,6</td><td class="n">261,7</td></tr><tr><td>mínimo 300 sucursales</td><td class="n">6,5%</td><td class="n">230,5</td><td class="n">241,2</td><td class="n">241,0</td><td class="n">231,9</td><td class="n">258,4</td></tr><tr><td>25% de su cobertura típica</td><td class="n">5,9%</td><td class="n">231,0</td><td class="n">244,8</td><td class="n">237,3</td><td class="n">232,5</td><td class="n">261,6</td></tr></tbody></table></div>
+<p>El interanual no cambia (±0,3 pp) con ninguna regla. El acumulado de la Ejecutiva y la Representativa baja 3-6 puntos: arrastra precios de 2024 medidos en pocas sucursales. Caso testigo: el vino Luigi Bosca estaba a $4.158 en ene-24 (104 sucursales) y a $10.277 en mar-24 (26 sucursales); desde ago-24, con más de 300 sucursales, sube ×1,41, igual que el Nieto Senetiner (×1,43). Su ×4,4 desde ene-24 es un artefacto.</p>
+<h3>3.3. Encadenado semanal contra canasta fija</h3>
+<p>Con productos limpios (≥300 sucursales todos los meses y sin saltos ×3), el encadenado semanal queda por debajo de la comparación directa de canasta fija: <b>−0,6% a −1,5%</b> en ene-24 → ago-26 y −0,7% a −1,3% en ene-25 → ago-26 (en solo alimentos, −0,8% a −2,0%). Es la deriva típica de un encadenado de alta frecuencia con productos que faltan algunas semanas y con la regla de quiebre.</p>
+</section>
+<section><h2>4. Defectos encontrados y arreglo propuesto</h2>
+<h3>4.1. El filtro de régimen corta la estacionalidad (Naranja, Tomate, Limón)</h3>
+<p>El filtro de lectura acepta, por sucursal, las variantes dentro de <code>[ref/3, ref×3]</code> con <code>ref = ancla × RATIO_FRESCO</code>. La v5.11 (Limón) y la v5.12 (Naranja y Tomate) pusieron <code>RATIO = INDEC / ancla</code> <b>de agosto</b>. Pero el cociente cambia mucho con la estación:</p>
+<div class="scroll"><table><thead><tr><th>Tipo</th><th>INDEC / ancla, ene-24 a ago-26</th><th>Banda actual</th><th>Meses con el precio del INDEC afuera</th></tr></thead><tbody><tr><td>Naranja</td><td>0,38 a 1,40</td><td>0,12 a 1,11</td><td class="n">2</td></tr><tr><td>Tomate</td><td>0,63 a 2,52</td><td>0,32 a 2,85</td><td class="n">0</td></tr><tr><td>Limón</td><td>0,41 a 2,49</td><td>0,15 a 1,35</td><td class="n">8</td></tr></tbody></table></div>
+<p>Y el SEPA cotiza por encima del INDEC en contraestación: la Naranja pierde 67-95% de sus observaciones en feb-abr (lo que queda son productos baratos, $599-1.183 cuando la naranja costaba ~$4.000 en el SEPA), el Tomate 50-92% en sus picos. <b>No mueve la serie nacional</b> (el encadenado por EAN se toma antes del filtro y el nivel está anclado al INDEC: la evolución publicada de Naranja y Tomate es idéntica a la de la v5.11). Afecta el precio por sucursal, es decir las aperturas por cadena y región de esos ítems.</p>
+<p><b>Arreglo</b>: ratio = centro geométrico del rango estacional (Naranja 0,73; Tomate 1,26; Limón 1,01), para que la banda ×3 cubra todo el año. Con esa banda los productos de $6.900-9.500 de Carrefour quedan afuera igual; si hiciera falta, excluir por EAN (<code>7791720050170</code>, 113 sucursales) después de ver su descripción en el maestro. Cambia la clave del caché: <b>relee</b> (juntarlo con la próxima relectura).</p>
+<h3>4.2. El nivel de los frescos se revisa cada semana</h3>
+<p><code>gen_nb07.py</code>, bloque 2b: cada tramo del encadenado por EAN toma su nivel del estimador anterior en la <b>última semana válida</b>. Con cada semana nueva, el nivel de toda la serie de un fresco no anclado se reescala por el cociente de esa semana. Entre la corrida del 17-sep y la del 24-sep, 46 frescos cambiaron su serie entera por un factor constante (Mortadela ×1,49; Chaucha ×1,14; Cebolla ×1,09; Pera ×0,94), y con eso sus pesos en la canasta y el índice de meses cerrados (±0,2 puntos en ago-26).</p>
+<p><b>Arreglo</b>: fijar el nivel en el <b>mes de referencia</b> de las anclas del INDEC (<code>NIVEL_REFERENCIA_FRESCO</code>, hoy 2026-08): mediana, sobre las semanas de ese mes, del cociente estimador / encadenado. Así una corrida semanal solo agrega la semana nueva; el nivel se revisa una vez por mes, a propósito, cuando se actualiza el mes de referencia. Es posterior al caché: <b>no relee</b>.</p>
+</section>
+<section><h2>5. Ronda 2 de reemplazos</h2>
+<p><code>proponer_reemplazos.py</code> sobre esta corrida (con los 65 candidatos ya medidos) propone 19 cambios. Efecto de cada uno sobre su canasta (índice ene-24 → ago-26) y recomendación:</p>
+<div class="scroll"><table><thead><tr><th>Canasta</th><th>Sale (meses con &lt;300 suc.)</th><th>Entra</th><th>Efecto</th><th>Recomendación</th></tr></thead><tbody><tr><td>Ejecutiva</td><td>Arroz Doble Carolina (8)</td><td>Arroz Oro Gallo 1 kg</td><td class="n">+0,41</td><td>aplicar</td></tr><tr><td>Ejecutiva</td><td>Fideos sin TACC Matarazzo (7)</td><td>Fetuccini Don Vicente</td><td class="n">+0,28</td><td>aplicar</td></tr><tr><td>Media</td><td>Aceite de oliva Natura (7)</td><td>Aceite de oliva Lira</td><td class="n">−0,33</td><td>aplicar</td></tr><tr><td>Ejecutiva</td><td>Aceite de oliva La Toscana (19; ×7,3)</td><td>Oliovita 500 ml</td><td class="n">+0,84</td><td>aplicar</td></tr><tr><td>Media</td><td>Arvejas Marolio (13)</td><td>Arvejas La Campagnola</td><td class="n">−0,23</td><td>aplicar</td></tr><tr><td>Ejecutiva</td><td>Oreo Milka (14; ×8,4)</td><td>Tableta Cadbury 29 g</td><td class="n">+1,06</td><td>aplicar</td></tr><tr><td>Representativa</td><td>Brócoli congelado Green Life (7)</td><td>Espinaca congelada Green Life</td><td class="n">+0,08</td><td>aplicar</td></tr><tr><td>Media, Ejecutiva, Repr.</td><td>Jabón blanco Argentino (7)</td><td>Jabón en pan con glicerina Argentino</td><td>+0,02 a +0,09</td><td>aplicar</td></tr><tr><td>Popular</td><td>Lavandina Héroe 1 L (5)</td><td>Lavandina Odex 2 L</td><td class="n">−0,01</td><td>aplicar</td></tr><tr><td>Media</td><td>Desodorante Rexona Extra Cool (27)</td><td>Rexona Sensitive Men</td><td class="n">−0,25</td><td>aplicar</td></tr><tr><td>Representativa</td><td>Repuesto Prestobarba Mach3 (15; ×8,9)</td><td>Repuesto Mach3 Carbono 4 un</td><td class="n">−1,27</td><td>aplicar</td></tr><tr><td>Ejecutiva</td><td>Hisopos Family Q (7)</td><td>Hisopos Johnson's</td><td class="n">+0,41</td><td>aplicar</td></tr><tr><td>Ejecutiva</td><td>Skip Limpieza Activo (18)</td><td><b>Woolite Detergente 900 ml</b> (la regla daba Woolite Ropa de Bebé)</td><td class="n">+0,67</td><td>aplicar (decisión pendiente del Skip)</td></tr><tr><td>Popular</td><td>Arvejas Inalpa (8, entrada tardía)</td><td>arvejas de la Representativa</td><td class="n">+0,55</td><td>dejar: +61% de costo del ítem, compartido</td></tr><tr><td>Representativa</td><td>Nesquik 150 g (5, entrada tardía)</td><td>Chocolino 360 g</td><td class="n">−0,36</td><td>dejar: cambio de marca por 5 meses</td></tr><tr><td>Ejecutiva</td><td>Agua Levité 500 cc (7)</td><td>Aquarius 1,5 L</td><td class="n">−0,95</td><td>dejar: −$17.700/mes; la "prima" es de envase chico</td></tr><tr><td>Ejecutiva</td><td>Vino Luigi Bosca (7)</td><td>Nieto Senetiner</td><td class="n">−4,57</td><td>dejar: el problema son los datos de 2024 (3.2), no el vino</td></tr></tbody></table></div>
+<p>Los 15 recomendados, sin otra regla, llevan el índice a Popular 230,4 · Media 240,9 · Ejecutiva 247,4 · Representativa 234,8. No cambian el universo leído: <b>no relee</b>. Woolite Detergente 900 ml: historia completa (0 meses flacos), $8.443/L, apenas encima del Ala de la Media ($8.422/L); cuesta ~$36.000/mes menos que el Skip Activo, que a su vez cuesta 2,8× por litro lo que el Skip Bio Enzimas del mismo tamaño (posible concentrado).</p>
+</section>
+<section><h2>6. Qué publicar y cómo</h2>
+<ul><li><b>Titular con el interanual y la variación mensual</b>: son robustos a todo lo probado (±0,3 pp).</li><li><b>El acumulado desde ene-24, con banda</b> (±8-10 puntos) o rebasado a ene-25, cuando la cobertura del SEPA ya era completa.</li><li><b>La comparación con el IPC</b>, aclarando que la diferencia sale de los frescos (sección 2.3). Mostrar también la cifra con la evolución del INDEC en los frescos.</li><li><b>Aperturas por cadena</b>: no publicar las de cadenas con más de 40% del costo imputado a precio nacional (en la Popular, Vea 57% y Disco 50%; en la Media y la Representativa, Cooperativa Obrera 50-52%). Tecnológica solo nacional. No comparar cadenas en Suprema/Pechuga ni en Carne picada (productos distintos según la cadena).</li></ul>
+</section>
+<section><h2>7. Decisiones pendientes</h2>
+<ol><li>Ronda 2: aplicar los 15 recomendados (incluye el Skip → Woolite Detergente 900 ml). No relee.</li><li>Fijar el nivel de los frescos en el mes de referencia (4.2). No relee; cambia el índice unas décimas.</li><li>Regla de cobertura mínima para el precio nacional de un empaquetado (3.2): cuál y si se adopta. No relee.</li><li>Filtro estacional de Naranja, Tomate y Limón (4.1). Relee: juntarlo con la próxima relectura.</li><li>Frescos por método multilateral (2.3): es la mejora que más cambia la comparación con el IPC.</li></ol>
+</section>
+<footer>Generado desde AUDITORIA_2026-09-24_v512.md con docs/auditoria/md_a_html.py</footer></div></body></html>

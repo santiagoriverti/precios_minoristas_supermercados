@@ -35,6 +35,10 @@ informe semanal: 6 canastas, índice encadenado, comparación con el IPC y apert
   SEPA (~1h20m)**. No la cambian: cantidades, `NIVEL_REFERENCIA_FRESCO`, `QUIEBRE_ITEM_K`, nada de la
   CELDA 8 en adelante.
 - **Anclar el nivel de un fresco cambia el índice** (cada ítem pesa cantidad × precio), no solo el costo.
+- **`RATIO_FRESCO` de un tipo estacional NO se calibra con un solo mes** (INDEC/ancla de agosto cortó la
+  Naranja fuera de temporada): usar el centro geométrico del rango estacional para que la banda ×3 cubra el año.
+- **La serie nacional de un fresco sale del encadenado por EAN, que se toma ANTES del filtro de régimen**: el
+  ratio y las exclusiones cambian el precio por sucursal (aperturas), no la evolución nacional.
 - **Auditar cada corrida** antes de publicar:
   `python notebooks/auditar_salida_nb07.py <Excel> --cache <carpeta con sem_*_v5 y ean_*_v5> --indec data/sh_ipc_precios_promedio_2026-08.xls`
   (bajar la planilla nueva del INDEC cuando salga: https://www.indec.gob.ar/ftp/cuadros/economia/sh_ipc_precios_promedio.xls).
@@ -63,5 +67,6 @@ informe semanal: 6 canastas, índice encadenado, comparación con el IPC y apert
 | `docs/METODOLOGIA.md` | Metodología; nb07 en §10 (§10.14-10.16 lo último) |
 | `docs/BUGS_Y_MEJORAS.md` | Defectos abiertos arriba; bugs resueltos con causa y fix |
 | `docs/SEPA_TECNICO.md` | Formato SEPA, cadenas, frescos por tipo, caché |
+| `docs/AUDITORIA_2026-09-24_v512.md` | **Revisión de la v5.12**: la brecha con el IPC sale de los frescos, incertidumbre del acumulado, dos defectos (filtro estacional, nivel de frescos revisado cada semana), ronda 2 |
 | `docs/AUDITORIA_2026-09-22_v59.md` | Auditoría de la v5.9 + verificación de la v5.10 (§10) y de la v5.11 con los reemplazos de trazabilidad (§11) + PDF y scripts en `docs/auditoria/` |
 | `docs/canastas_alternativas/README.md` | Composición de las 6 canastas, cargador, constructor, reemplazos |
