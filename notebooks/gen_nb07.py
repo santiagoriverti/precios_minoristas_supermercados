@@ -39,6 +39,10 @@ v5.11 (paquete de relectura, 2026-09-23) - ESTA SI RELEE EL SEPA (cambia la clav
     (hoja Candidatos_trazabilidad). Si el reemplazo de un item con huecos sale de esta lista, cambiar
     la canasta despues NO obliga a releer el SEPA.
 Y en el Excel de canasta: pañales y toallitas fuera de Media/Ejecutiva/Representativa (282 EANs).
+
+v5.11.1 (2026-09-24) - no toca la clave del cache:
+17. Hoja Candidatos_trazabilidad: la necesidad se cortaba en el primer ' / ' ('Milanesas / nuggets
+    de pollo' salia 'Milanesas') y el item ACTUAL de esas necesidades figuraba como candidato.
 """
 import json, os, hashlib
 
@@ -2084,10 +2088,16 @@ _cov_act = (_dm[_dm['ean_norm'].isin(EANS_CAND)].groupby('ean_norm')
                  n_sucursales=('suc_id','nunique')) if len(_dm) else pd.DataFrame())
 for _e, _d in EANS_CANDIDATOS.items():
     _en = normalizar_ean(_e)
+    # 'canasta / necesidad / [ACTUAL (trazab. X%) / ] descripcion'. La necesidad puede llevar ' / '
+    # ('Milanesas / nuggets de pollo'): se arma con todo lo que queda entre la canasta y la marca
+    # ACTUAL (o la descripcion). Antes se tomaba solo el segundo campo y en 16 de 90 candidatos la
+    # necesidad salia cortada y el item ACTUAL figuraba como candidato (v5.11.1).
     _p = _d.split(' / ')
+    _es_act = len(_p) >= 3 and _p[-2].startswith('ACTUAL')
     _fila = _pres_all.loc[_en] if _en in _pres_all.index else None
-    _cand_rows.append({'ean': _en, 'canasta': _p[0], 'necesidad': _p[1],
-                       'rol': 'ACTUAL' if (len(_p) > 2 and _p[2].startswith('ACTUAL')) else 'candidato',
+    _cand_rows.append({'ean': _en, 'canasta': _p[0],
+                       'necesidad': ' / '.join(_p[1:-2] if _es_act else _p[1:-1]),
+                       'rol': 'ACTUAL' if _es_act else 'candidato',
                        'descripcion': _p[-1],
                        'meses_con_dato': int(_fila.sum()) if _fila is not None else 0,
                        'meses_totales': int(_pres_all.shape[1]),
@@ -2180,7 +2190,7 @@ with pd.ExcelWriter(_xlsx, engine='openpyxl') as _w:
         {'parametro':'Costo por sucursal','valor':'costo nacional + (precio de la sucursal - nacional) x cantidad en lo que publica; lo que no publica se valua al nacional (columna pct_imputado)'},
         {'parametro':'Nivel de frescos','valor':'; '.join(f'{t}: ${(r[0] if isinstance(r, (tuple, list)) else r):,.0f} en {(r[1] if isinstance(r, (tuple, list)) else "ult. semana")}' for t, r in NIVEL_REFERENCIA_FRESCO.items()) + ' (INDEC GBA, precios promedio). El resto, nivel del SEPA.'},
         {'parametro':'Excluidos a mano (frescos)','valor':'; '.join(f'{e} {d}' for e, d in EXCLUIR_EAN_FRESCO.items())},
-        {'parametro':'Version','valor':'nb07 v5.11'},
+        {'parametro':'Version','valor':'nb07 v5.11.1'},
     ]).to_excel(_w, 'Metodologia', index=False)
     _res = []
     for _name in CANASTAS_ACTIVAS:
@@ -2266,7 +2276,7 @@ cells.append(cell_code(r'''# ===================================================
 # CELDA 15 - REPORTE PARA CLAUDE (copia y pega TODO el bloque)
 # ============================================================
 print('='*72)
-print('REPORTE PARA CLAUDE - canastas alternativas nb07 v5.11')
+print('REPORTE PARA CLAUDE - canastas alternativas nb07 v5.11.1')
 print('='*72)
 print(f'Ultima semana (cierra jueves): {ULTIMA_SEMANA} | Ultimo mes: {_ult_mes}')
 print(f'Canastas activas: {CANASTAS_ACTIVAS}')

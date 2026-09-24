@@ -28,6 +28,8 @@ import numpy as np, pandas as pd
 QUIEBRE_K = 3.0        # factor a partir del cual una variacion semanal es imposible (ver BUG-36)
 SALTO_GRANDE = 4.0     # % de variacion semanal de la canasta que se reporta con su atribucion
 TRAZA_MIN = 85.0       # % de meses con dato por debajo del cual un item esta marcado
+FLACO_SUC = 300        # sucursales en un mes por debajo de las cuales el precio nacional de un item es fragil
+FLACO_MESES = 4        # meses "flacos" tolerados (sobre ~32 cerrados) antes de marcar el item
 APERTURA_RANGO = (0.85, 1.20)   # costo de una cadena/region confiable / costo nacional (ver BUG-37)
 INDEC_NIVEL = (0.6, 1.6)        # nivel publicado / precio promedio INDEC GBA aceptable para un fresco
 # Tipo fresco del nb07 -> variedad de la hoja GBA de sh_ipc_precios_promedio.xls
@@ -393,6 +395,40 @@ def chequear_cache(cache, x, P, desc):
             veredicto(abs(dif) < 40, f'el encadenado no se despega de la muestra fija ({dif:+.1f} pp de mediana)')
 
 
+# ── 7b. Cobertura historica (con el cache) ────────────────────────────────────
+def chequear_cobertura_historica(cache, x, P, desc, canastas):
+    """El bloque 4 cuenta un mes como presente aunque el item este en UNA sucursal (Raid 370 tuvo 1 en
+    ene-25 y 97% de trazabilidad). Aca se cuentan las sucursales de cada empaquetado mes a mes."""
+    bloque(f'7b) COBERTURA HISTORICA: items con mas de {FLACO_MESES} meses en menos de {FLACO_SUC} sucursales')
+    dsem = next(iter(sorted(pathlib.Path(cache).glob('sem_*_v5'))), None)
+    if dsem is None:
+        print('  (no encontre la carpeta sem_<key>_v5)'); return
+    filas = []
+    for f in sorted(dsem.glob('*.parquet')):
+        d = pd.read_parquet(f, columns=['id_comercio', 'id_bandera', 'id_sucursal', 'item'])
+        d = d[d['item'].str.isdigit()].drop_duplicates()
+        n = d.groupby('item').size().rename('suc').reset_index(); n['mes'] = f.stem
+        filas.append(n)
+    cob = pd.concat(filas, ignore_index=True).pivot(index='item', columns='mes', values='suc').fillna(0)
+    flacos = (cob < FLACO_SUC).sum(axis=1)
+    print(f'  {cob.shape[1]} meses cerrados en el cache ({cob.columns[0]} -> {cob.columns[-1]}); un mes sin el item cuenta como flaco')
+    peor = 0.0
+    for c in canastas:
+        r = receta(x, c, P, desc)
+        r = r[r['item'].astype(str).str.isdigit()].copy()
+        tot = pd.read_excel(x, hoja(x, 'Detalle_', c))['costo'].sum()
+        r['flacos'] = r['item'].astype(str).map(flacos).fillna(cob.shape[1])
+        sub = r[r['flacos'] > FLACO_MESES]
+        peso = 100 * sub['costo'].sum() / tot if tot else 0
+        if c.lower() != 'tecnológica':
+            peor = max(peor, peso)
+        det = ', '.join(f'{str(z.base)[:24]} {int(z.flacos)}m {100 * z.costo / tot:.1f}%'
+                        for z in sub.sort_values('costo', ascending=False).head(4).itertuples())
+        print(f'{c:16s} {len(sub):2d} items | {peso:5.1f}% del costo' + (f' | {det}' if det else ''))
+    veredicto(peor < 5, f'peso maximo de items con historia flaca fuera de Tecnologica: {peor:.1f}% '
+                        f'(>5% = buscarles reemplazo con historia en la proxima relectura)')
+
+
 def main():
     ap = argparse.ArgumentParser(description='Audita una salida del nb07.')
     ap.add_argument('excel', help='canastas_alternativas_YYYY-MM-DD.xlsx')
@@ -413,6 +449,7 @@ def main():
         chequear_indec(x, a.indec)
     if a.cache:
         chequear_cache(a.cache, x, P, desc)
+        chequear_cobertura_historica(a.cache, x, P, desc, canastas)
     bloque('RESUMEN')
     malos = len(RES) - sum(RES)
     print(f'  {sum(RES)} chequeos OK | {malos} para revisar')
