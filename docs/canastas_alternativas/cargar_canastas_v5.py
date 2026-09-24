@@ -36,7 +36,24 @@
 #     Representativa / Jabon de tocador: 7791293051208 -> 7891150075382 (Jabón Tocador Antibacterial Cuida y Protege Dove)
 #     Representativa / Alimento para perro: 8445290977373 -> 7613287613431 (Alimento para Perros Adultos Bolsa Dogui 3 Kg)
 #     Femenina / Rasuradora femenina: 7702018874781 -> 7702018072477 (Repuesto Rasuradora Recargable Venus Gillette 2 )
-#   270 EANs   |   hogar de referencia: hogar tipo 2 (2 adultos + 2 ninos) = 3,09 adultos equivalentes
+#   REEMPLAZOS 2026-09-24, RONDA 2 (aplicar_reemplazos.py; items con historia flaca en 2024 o sin historia,
+#     elegidos con proponer_reemplazos.py sobre la relectura v5.12: ronda2_propuesta_2026-09-24.csv):
+#     Ejecutiva / Arroz: 7791120021558 -> 7790070433091 (Arroz Oro Selección Gallo 1 Kg)
+#     Ejecutiva / Fideos secos: 7790070335982 -> 7790070336545 (Fideos Fetuccini Don Vicente 500 Gr)
+#     Media / Aceite de oliva: 7790272008394 -> 7790070231833 (Aceite de Oliva Extra Virgen Lira 500 Ml)
+#     Ejecutiva / Aceite de oliva: 7798080520084 -> 7798061190183 (Aceite de Oliva Oliovita 500 Ml)
+#     Media / Arvejas en lata: 7797470007426 -> 7793360132384 (Arvejas Secas Remojadas La Campagnola 300 Gr)
+#     Ejecutiva / Chocolate en tableta: 7622300631574 -> 7622201818654 (Tableta de Chocolate con Yogur Frutilla Cadbury )
+#     Representativa / Vegetales congelados: 7790670052586 -> 7790670052562 (Espinaca Congelada Green Life 550 Gr)
+#     Media / Jabon en pan: 7794218106854 -> 7794218106328 (Jabón en Pan con Glicerina Argentino 200 Gr)
+#     Ejecutiva / Jabon en pan: 7794218106854 -> 7794218106328 (Jabón en Pan con Glicerina Argentino 200 Gr)
+#     Representativa / Jabon en pan: 7794218106854 -> 7794218106328 (Jabón en Pan con Glicerina Argentino 200 Gr)
+#     Popular / Lavandina: 7798131250380 -> 7791905023210 (Lavandina Común Odex 2 Lt)
+#     Media / Desodorante: 7791293022581 -> 7791293049496 (Desodorante Aerosol Sensitive Men Rexona 150 Ml)
+#     Representativa / Afeitado: 7702018037865 -> 7500435211635 (Repuesto Mach3 Carbono Gillette 4 Un)
+#     Ejecutiva / Algodon / hisopos: 7790773007124 -> 7891010560737 (Hisopos Caja Johnson'S 75 Un)
+#     Ejecutiva / Jabon liquido para ropa: 7791290796409 -> 7791130003643 (Detergente para Ropa Doypack Woolite 900 Ml)
+#   267 EANs   |   hogar de referencia: hogar tipo 2 (2 adultos + 2 ninos) = 3,09 adultos equivalentes
 #
 # Diferencia clave con v4: cada estrato usa SU PROPIA version de cada necesidad
 # (Popular primer precio, Media marca lider, Ejecutiva premium), en vez de compartir
@@ -51,6 +68,10 @@
 # serio (cambiar productos, cantidades fisicas o el hogar de referencia), conviene
 # editar construir_canastas_v5.py y volver a generar este archivo, que deja registro
 # de por que se eligio cada producto en canastas_v5_detalle.csv.
+# OJO: ESTE archivo es la composicion vigente. El constructor elige por percentil de precio y
+# cobertura del Excel que recibe: corrido con el de OTRO mes elige otros productos (2026-09-24,
+# con el de 2026-09: 278 EANs y 132 distintos). Respeta EAN_FORZADO (42 pares), nada mas. Los
+# cambios puntuales van por aplicar_reemplazos.py; regenerar entero es rediseñar la canasta.
 # ============================================================
 import openpyxl, os
 from google.colab import files
@@ -89,10 +110,8 @@ CANTIDADES = {
     '7622201735685': {'cantidad_01': 13, 'cantidad_02': 0, 'cantidad_03': 0, 'cantidad_04': 0, 'cantidad_05': 0, 'cantidad_06': 0},  # Bebidas | Jugo en Polvo Sabor Limón Dulce Tang 15 Gr
     '7622201735906': {'cantidad_01': 0, 'cantidad_02': 0, 'cantidad_03': 10, 'cantidad_04': 0, 'cantidad_05': 0, 'cantidad_06': 0},  # Almacén | Galletitas con Chips Chocolate Pepitos 119 Gr
     '7622201736033': {'cantidad_01': 0, 'cantidad_02': 6, 'cantidad_03': 0, 'cantidad_04': 0, 'cantidad_05': 0, 'cantidad_06': 0},  # Almacén | Galletitas Clásicas Cerealitas 212 Gr
-    '7622300631574': {'cantidad_01': 0, 'cantidad_02': 0, 'cantidad_03': 3, 'cantidad_04': 0, 'cantidad_05': 0, 'cantidad_06': 0},  # Almacén | Chocolate con Relleno Oreo Milka 100 Gr
     '7622300829728': {'cantidad_01': 0, 'cantidad_02': 8, 'cantidad_03': 0, 'cantidad_04': 0, 'cantidad_05': 0, 'cantidad_06': 0},  # Almacén | Galletitas Chocolate con Relleno de Limón Melba 120 Gr
     '7702010631207': {'cantidad_01': 0, 'cantidad_02': 0, 'cantidad_03': 0, 'cantidad_04': 0, 'cantidad_05': 0.5, 'cantidad_06': 0},  # Perfumería | Cepillo Dental Triple Accion Colgate 2 Un
-    '7702018037865': {'cantidad_01': 0, 'cantidad_02': 0, 'cantidad_03': 0, 'cantidad_04': 0, 'cantidad_05': 1, 'cantidad_06': 0},  # Perfumería | Repuesto Rasuradora Prestobarba Mach3 Sensitive 2 Un
     '7702103751416': {'cantidad_01': 0, 'cantidad_02': 0, 'cantidad_03': 4, 'cantidad_04': 0, 'cantidad_05': 0, 'cantidad_06': 0},  # Almacén | Aritos de Cereal Frutados Froot Loops 195 Gr
     '7790010002653': {'cantidad_01': 0, 'cantidad_02': 0, 'cantidad_03': 0, 'cantidad_04': 0, 'cantidad_05': 2, 'cantidad_06': 0},  # Perfumería | Toallas Femeninas con Alas Adapt Suave Siempre Libre 8 Un
     '7790010002769': {'cantidad_01': 2, 'cantidad_02': 0, 'cantidad_03': 0, 'cantidad_04': 0, 'cantidad_05': 0, 'cantidad_06': 4},  # Perfumería | Toallas Femeninas con Alas Ultrafina Suave Siempre Libre 8
@@ -112,7 +131,6 @@ CANTIDADES = {
     '7790070036308': {'cantidad_01': 0, 'cantidad_02': 0, 'cantidad_03': 1.5, 'cantidad_04': 0, 'cantidad_05': 0, 'cantidad_06': 0},  # Congelados | Brócoli Congelado Granja Del Sol 400 Gr
     '7790070231864': {'cantidad_01': 0, 'cantidad_02': 0, 'cantidad_03': 0, 'cantidad_04': 0, 'cantidad_05': 0.5, 'cantidad_06': 0},  # Almacén | Aceite de Oliva Cocinero 500 Cc
     '7790070320001': {'cantidad_01': 0, 'cantidad_02': 10, 'cantidad_03': 0, 'cantidad_04': 0, 'cantidad_05': 0, 'cantidad_06': 0},  # Almacén | Fideos Cabellos de Ángel Matarazzo 500 Gr
-    '7790070335982': {'cantidad_01': 0, 'cantidad_02': 0, 'cantidad_03': 8, 'cantidad_04': 0, 'cantidad_05': 0, 'cantidad_06': 0},  # Almacén | Fideos Tirabuzón sin Gluten Matarazzo 500 Gr
     '7790070336118': {'cantidad_01': 12, 'cantidad_02': 0, 'cantidad_03': 0, 'cantidad_04': 0, 'cantidad_05': 0, 'cantidad_06': 0},  # Almacén | Fideos Tallarín N5 Lucchetti 500 Gr
     '7790070336385': {'cantidad_01': 0, 'cantidad_02': 0, 'cantidad_03': 0, 'cantidad_04': 0, 'cantidad_05': 11, 'cantidad_06': 0},  # Almacén | Fideos Spaghetti N7 Lucchetti 500 Gr
     '7790070418203': {'cantidad_01': 0, 'cantidad_02': 0, 'cantidad_03': 20, 'cantidad_04': 0, 'cantidad_05': 0, 'cantidad_06': 0},  # Almacén | Alfajor de Arroz Dulce de Leche Chocoarroz 22 Gr
@@ -153,7 +171,6 @@ CANTIDADES = {
     '7790250056881': {'cantidad_01': 0, 'cantidad_02': 0, 'cantidad_03': 0, 'cantidad_04': 0, 'cantidad_05': 2, 'cantidad_06': 0},  # Limpieza | Rollos de Cocina Clásico 50 Paños Sussex 3 Un
     '7790250057765': {'cantidad_01': 2, 'cantidad_02': 2.5, 'cantidad_03': 4, 'cantidad_04': 0, 'cantidad_05': 2, 'cantidad_06': 0},  # Limpieza | Servilletas Papel Hoja Simple Clásica 30X30 Sussex 80 Un
     '7790272001005': {'cantidad_01': 0, 'cantidad_02': 0, 'cantidad_03': 3, 'cantidad_04': 0, 'cantidad_05': 0, 'cantidad_06': 0},  # Almacén | Aceite de Girasol Natura 900 Ml
-    '7790272008394': {'cantidad_01': 0, 'cantidad_02': 0.5, 'cantidad_03': 0, 'cantidad_04': 0, 'cantidad_05': 0, 'cantidad_06': 0},  # Almacén | Aceite de Oliva Extra Vírgen Suave Natura 500 Ml
     '7790290101459': {'cantidad_01': 0, 'cantidad_02': 1, 'cantidad_03': 0, 'cantidad_04': 0, 'cantidad_05': 0, 'cantidad_06': 0},  # Bebidas | Aperitivo Fernet Vittone 750 Cc
     '7790290101602': {'cantidad_01': 0, 'cantidad_02': 0, 'cantidad_03': 2, 'cantidad_04': 0, 'cantidad_05': 0, 'cantidad_06': 0},  # Bebidas | Fernet Branca 750 Ml
     '7790310985366': {'cantidad_01': 1, 'cantidad_02': 0, 'cantidad_03': 0, 'cantidad_04': 0, 'cantidad_05': 0, 'cantidad_06': 0},  # Almacén | Papas Fritas Clásicas Pehuamar 135 Gr
@@ -182,7 +199,6 @@ CANTIDADES = {
     '7790580607210': {'cantidad_01': 0, 'cantidad_02': 0, 'cantidad_03': 0, 'cantidad_04': 0, 'cantidad_05': 4, 'cantidad_06': 0},  # Almacén | Chocolate Leche Arcor 25 Gr
     '7790639003437': {'cantidad_01': 2.5, 'cantidad_02': 0, 'cantidad_03': 0, 'cantidad_04': 0, 'cantidad_05': 0, 'cantidad_06': 0},  # Bebidas | Gaseosa Cola Classic Cunnington 2.25 Lt
     '7790639003468': {'cantidad_01': 1, 'cantidad_02': 0, 'cantidad_03': 0, 'cantidad_04': 0, 'cantidad_05': 0, 'cantidad_06': 0},  # Bebidas | Gaseosa Lima Limón Classic Cunnington 2.25 Lt
-    '7790670052586': {'cantidad_01': 0, 'cantidad_02': 0, 'cantidad_03': 0, 'cantidad_04': 0, 'cantidad_05': 0.5, 'cantidad_06': 0},  # Congelados | Brocoli Congelado Green Life 450 Gr
     '7790742011701': {'cantidad_01': 0, 'cantidad_02': 0, 'cantidad_03': 2, 'cantidad_04': 0, 'cantidad_05': 0, 'cantidad_06': 0},  # Frescos | Crema de Leche Uat Tetra Top La Serenísima 200 Ml
     '7790742067005': {'cantidad_01': 0, 'cantidad_02': 1, 'cantidad_03': 0, 'cantidad_04': 0, 'cantidad_05': 0, 'cantidad_06': 0},  # Frescos | Dulce de Leche Repostero La Serenísima 400 Gr
     '7790742141101': {'cantidad_01': 0, 'cantidad_02': 0, 'cantidad_03': 0, 'cantidad_04': 0, 'cantidad_05': 0.5, 'cantidad_06': 0},  # Frescos | Crema de Leche Uat Tetra Top La Serenísima 330 Ml
@@ -192,13 +208,11 @@ CANTIDADES = {
     '7790742363008': {'cantidad_01': 0, 'cantidad_02': 27, 'cantidad_03': 0, 'cantidad_04': 0, 'cantidad_05': 0, 'cantidad_06': 0},  # Frescos | Leche Larga Vida Entera Clásica 3% La Serenisima 1 Lt
     '7790742625304': {'cantidad_01': 0, 'cantidad_02': 0, 'cantidad_03': 0, 'cantidad_04': 0, 'cantidad_05': 1, 'cantidad_06': 0},  # Frescos | Dulce de Leche Clásico La Serenísima 400 Gr
     '7790770601851': {'cantidad_01': 0, 'cantidad_02': 2.5, 'cantidad_03': 0, 'cantidad_04': 0, 'cantidad_05': 0, 'cantidad_06': 0},  # Perfumería | Toallas Femeninas Nocturna Max Nosotras 8 Un
-    '7790773007124': {'cantidad_01': 0, 'cantidad_02': 0, 'cantidad_03': 2, 'cantidad_04': 0, 'cantidad_05': 0, 'cantidad_06': 0},  # Perfumería | Hisopos Family Q Soft 150 Un
     '7790895000447': {'cantidad_01': 0, 'cantidad_02': 2, 'cantidad_03': 0, 'cantidad_04': 0, 'cantidad_05': 0, 'cantidad_06': 0},  # Bebidas | Gaseosa Sprite 1.5 Lt
     '7790895000829': {'cantidad_01': 0, 'cantidad_02': 0, 'cantidad_03': 7, 'cantidad_04': 0, 'cantidad_05': 0, 'cantidad_06': 0},  # Bebidas | Gaseosa Sprite 500 Cc
     '7790895000997': {'cantidad_01': 0, 'cantidad_02': 0, 'cantidad_03': 4, 'cantidad_04': 0, 'cantidad_05': 0, 'cantidad_06': 0},  # Bebidas | Coca Cola Sabor Original 2.25 Lt
     '7790895001000': {'cantidad_01': 0, 'cantidad_02': 0, 'cantidad_03': 0, 'cantidad_04': 0, 'cantidad_05': 1, 'cantidad_06': 0},  # Bebidas | Gaseosa Sprite 2.25 Lt
     '7790895640483': {'cantidad_01': 0, 'cantidad_02': 0, 'cantidad_03': 0, 'cantidad_04': 0, 'cantidad_05': 2, 'cantidad_06': 0},  # Bebidas | Agua Saborizada Manzana sin Gas Aquarius 1.5 Lt
-    '7791120021558': {'cantidad_01': 0, 'cantidad_02': 0, 'cantidad_03': 3, 'cantidad_04': 0, 'cantidad_05': 0, 'cantidad_06': 0},  # Almacén | Arroz Doble Carolina Molinos Ala 1 Kg
     '7791120031557': {'cantidad_01': 4, 'cantidad_02': 0, 'cantidad_03': 0, 'cantidad_04': 0, 'cantidad_05': 0, 'cantidad_06': 0},  # Almacén | Arroz Largo Fino 00000 Molinos Ala 1 Kg
     '7791120031564': {'cantidad_01': 0, 'cantidad_02': 7, 'cantidad_03': 0, 'cantidad_04': 0, 'cantidad_05': 0, 'cantidad_06': 0},  # Almacén | Arroz Largo Fino 00000 Molinos Ala 500 Gr
     '7791120037559': {'cantidad_01': 0, 'cantidad_02': 0, 'cantidad_03': 0, 'cantidad_04': 0, 'cantidad_05': 4, 'cantidad_06': 0},  # Almacén | Arroz Parboil Molinos Ala 1 Kg
@@ -219,8 +233,6 @@ CANTIDADES = {
     '7791290795112': {'cantidad_01': 2.5, 'cantidad_02': 0, 'cantidad_03': 0, 'cantidad_04': 0, 'cantidad_05': 0, 'cantidad_06': 0},  # Limpieza | Jabón Líquido para Ropa Limón Doypack Granby 800 Ml
     '7791290795259': {'cantidad_01': 0, 'cantidad_02': 7, 'cantidad_03': 0, 'cantidad_04': 0, 'cantidad_05': 0, 'cantidad_06': 0},  # Limpieza | Jabón Líquido para Ropa Fina Doypack Ala 450 Ml
     '7791290795600': {'cantidad_01': 0, 'cantidad_02': 0, 'cantidad_03': 0, 'cantidad_04': 0, 'cantidad_05': 1.5, 'cantidad_06': 0},  # Limpieza | Limpiador Líquido Baño Expert Doypack Cif 450 Ml
-    '7791290796409': {'cantidad_01': 0, 'cantidad_02': 0, 'cantidad_03': 5, 'cantidad_04': 0, 'cantidad_05': 0, 'cantidad_06': 0},  # Limpieza | Jabón Liquido Limpieza Activo Skip 800 Ml
-    '7791293022581': {'cantidad_01': 0, 'cantidad_02': 2.5, 'cantidad_03': 0, 'cantidad_04': 0, 'cantidad_05': 0, 'cantidad_06': 0},  # Perfumería | Desodorante Antitranspirante en Aerosol Rexona Extra Cool 
     '7791293043791': {'cantidad_01': 0, 'cantidad_02': 0, 'cantidad_03': 0, 'cantidad_04': 0, 'cantidad_05': 2.5, 'cantidad_06': 0},  # Perfumería | Desodorante Aerosol Marine Axe 150 Cc
     '7791293045740': {'cantidad_01': 2.5, 'cantidad_02': 0, 'cantidad_03': 0, 'cantidad_04': 0, 'cantidad_05': 0, 'cantidad_06': 0},  # Perfumería | Shampoo Crema Balance Sedal 340 Ml
     '7791293045948': {'cantidad_01': 1, 'cantidad_02': 0, 'cantidad_03': 0, 'cantidad_04': 0, 'cantidad_05': 0, 'cantidad_06': 0},  # Perfumería | Acondicionador Crema Balance Sedal 340 Ml
@@ -263,7 +275,7 @@ CANTIDADES = {
     '7793360131516': {'cantidad_01': 0, 'cantidad_02': 1, 'cantidad_03': 0, 'cantidad_04': 0, 'cantidad_05': 0, 'cantidad_06': 0},  # Almacén | Mermelada de Durazno Bc La Campagnola 390 Gr
     '7793360131547': {'cantidad_01': 0, 'cantidad_02': 0, 'cantidad_03': 0, 'cantidad_04': 0, 'cantidad_05': 1, 'cantidad_06': 0},  # Almacén | Mermelada de Ciruela Bc 390 Gr
     '7793360131561': {'cantidad_01': 0, 'cantidad_02': 0, 'cantidad_03': 1, 'cantidad_04': 0, 'cantidad_05': 0, 'cantidad_06': 0},  # Almacén | Mermelada Arándanos Bc La Campagnola 390 Gr
-    '7793360132384': {'cantidad_01': 0, 'cantidad_02': 0, 'cantidad_03': 3, 'cantidad_04': 0, 'cantidad_05': 0, 'cantidad_06': 0},  # Almacén | Arvejas Secas Remojadas La Campagnola 300 Gr
+    '7793360132384': {'cantidad_01': 0, 'cantidad_02': 3, 'cantidad_03': 3, 'cantidad_04': 0, 'cantidad_05': 0, 'cantidad_06': 0},  # Almacén | Arvejas Secas Remojadas La Campagnola 300 Gr
     '7793433000497': {'cantidad_01': 0, 'cantidad_02': 0, 'cantidad_03': 1, 'cantidad_04': 0, 'cantidad_05': 0, 'cantidad_06': 0},  # Almacén | Sal Fina Modificada 66% Menos de Sodio Genser 300 Gr
     '7793704000928': {'cantidad_01': 0, 'cantidad_02': 1.5, 'cantidad_03': 0, 'cantidad_04': 0, 'cantidad_05': 0, 'cantidad_06': 0},  # Almacén | Yerba Suave Playadito 1 Kg
     '7793862008910': {'cantidad_01': 0, 'cantidad_02': 0, 'cantidad_03': 0, 'cantidad_04': 1, 'cantidad_05': 0, 'cantidad_06': 0},  # Climatización | Convector Liliana Convectory Plus Mod Cfb17 1 Un
@@ -275,8 +287,7 @@ CANTIDADES = {
     '7794000006058': {'cantidad_01': 0, 'cantidad_02': 0.5, 'cantidad_03': 0, 'cantidad_04': 0, 'cantidad_05': 0, 'cantidad_06': 0},  # Almacén | Mayonesa Clásica Doypack Hellmanns 950 Gr
     '7794000007093': {'cantidad_01': 0, 'cantidad_02': 0, 'cantidad_03': 2.5, 'cantidad_04': 0, 'cantidad_05': 0, 'cantidad_06': 0},  # Almacén | Mayonesa Liviana sin TACC Doypack Hellmann's 237 Gr
     '7794000007109': {'cantidad_01': 0.5, 'cantidad_02': 0, 'cantidad_03': 0, 'cantidad_04': 0, 'cantidad_05': 0, 'cantidad_06': 0},  # Almacén | Mayonesa Liviana sin TACC Doypack Hellmann's 475 Gr
-    '7794218106328': {'cantidad_01': 3, 'cantidad_02': 0, 'cantidad_03': 0, 'cantidad_04': 0, 'cantidad_05': 0, 'cantidad_06': 0},  # Limpieza | Jabón en Pan con Glicerina Argentino 200 Gr
-    '7794218106854': {'cantidad_01': 0, 'cantidad_02': 2.5, 'cantidad_03': 1.5, 'cantidad_04': 0, 'cantidad_05': 3, 'cantidad_06': 0},  # Limpieza | Jabón Blanco Argentino 150 Gr
+    '7794218106328': {'cantidad_01': 3, 'cantidad_02': 2, 'cantidad_03': 1, 'cantidad_04': 0, 'cantidad_05': 2.5, 'cantidad_06': 0},  # Limpieza | Jabón en Pan con Glicerina Argentino 200 Gr
     '7794440000098': {'cantidad_01': 0, 'cantidad_02': 3, 'cantidad_03': 0, 'cantidad_04': 0, 'cantidad_05': 0, 'cantidad_06': 0},  # Limpieza | Esponja con Fibra Siempre Limpia Virulana 1 Un
     '7794440003303': {'cantidad_01': 2, 'cantidad_02': 0, 'cantidad_03': 0, 'cantidad_04': 0, 'cantidad_05': 0, 'cantidad_06': 0},  # Limpieza | Esponja con Cuadraditos y Cuida Uñas Virulana 1 Un
     '7794440003341': {'cantidad_01': 0, 'cantidad_02': 0, 'cantidad_03': 0, 'cantidad_04': 0, 'cantidad_05': 2.5, 'cantidad_06': 0},  # Limpieza | Esponja Multiuso Fibraesponjas Virulana Un
@@ -288,13 +299,10 @@ CANTIDADES = {
     '7797026970037': {'cantidad_01': 0, 'cantidad_02': 0, 'cantidad_03': 0, 'cantidad_04': 1, 'cantidad_05': 0, 'cantidad_06': 0},  # Informática | Parlante Bt Stromberg Boombox Force
     '7797102526875': {'cantidad_01': 0, 'cantidad_02': 0, 'cantidad_03': 0, 'cantidad_04': 1, 'cantidad_05': 0, 'cantidad_06': 0},  # Heladeras y Freezers | Heladera con Freezer Cíclica 2 Fríos Modelo HDR280F50B Dre
     '7797453972291': {'cantidad_01': 0, 'cantidad_02': 3, 'cantidad_03': 0, 'cantidad_04': 0, 'cantidad_05': 0, 'cantidad_06': 0},  # Mascotas | Alimento para Gatos Atún y Sardina Whiskas 1 Kg
-    '7797470007426': {'cantidad_01': 0, 'cantidad_02': 4, 'cantidad_03': 0, 'cantidad_04': 0, 'cantidad_05': 0, 'cantidad_06': 0},  # Almacén | Arvejas Secas Remojadas Marolio 200 Gr
     '7798062548679': {'cantidad_01': 0, 'cantidad_02': 2.5, 'cantidad_03': 0, 'cantidad_04': 0, 'cantidad_05': 0, 'cantidad_06': 0},  # Bebidas | Agua Saborizada Pomelo Sin Gas Levité 1.5 Lt
     '7798062548686': {'cantidad_01': 0, 'cantidad_02': 0, 'cantidad_03': 16, 'cantidad_04': 0, 'cantidad_05': 0, 'cantidad_06': 0},  # Bebidas | Agua Saborizada Pomelo sin Gas Villa Del Sur Levité 500 Cc
     '7798074864675': {'cantidad_01': 0, 'cantidad_02': 2, 'cantidad_03': 0, 'cantidad_04': 0, 'cantidad_05': 0, 'cantidad_06': 0},  # Bebidas | Vino Tinto Malbec Portillo 750 Ml
-    '7798080520084': {'cantidad_01': 0, 'cantidad_02': 0, 'cantidad_03': 3, 'cantidad_04': 0, 'cantidad_05': 0, 'cantidad_06': 0},  # Almacén | Aceite de Oliva Extra Virgen Vidrio La Toscana 250 Ml
     '7798081287429': {'cantidad_01': 0, 'cantidad_02': 0, 'cantidad_03': 0, 'cantidad_04': 1, 'cantidad_05': 0, 'cantidad_06': 0},  # Pequeños Electrodomésticos | Jarra Electrica Smart Life Mod Slek1714Wpn Blanca
-    '7798131250380': {'cantidad_01': 3, 'cantidad_02': 0, 'cantidad_03': 0, 'cantidad_04': 0, 'cantidad_05': 0, 'cantidad_06': 0},  # Limpieza | Lavandina Aditivada Naranja Héroe 1 Lt
     '7798137725820': {'cantidad_01': 0, 'cantidad_02': 0, 'cantidad_03': 0, 'cantidad_04': 1, 'cantidad_05': 0, 'cantidad_06': 0},  # Informática | Auricular Ear Btwins 49 Noganet 1 Un
     '7798140257554': {'cantidad_01': 0, 'cantidad_02': 0, 'cantidad_03': 0, 'cantidad_04': 0, 'cantidad_05': 0, 'cantidad_06': 1},  # Perfumería | Crema Facial Humectante Teatrical 100 Gr
     '7798181510212': {'cantidad_01': 0, 'cantidad_02': 0, 'cantidad_03': 7, 'cantidad_04': 0, 'cantidad_05': 0, 'cantidad_06': 0},  # Almacén | Galletitas Crackers Smams 150 Gr
@@ -303,7 +311,7 @@ CANTIDADES = {
     '77991584': {'cantidad_01': 4, 'cantidad_02': 0, 'cantidad_03': 0, 'cantidad_04': 0, 'cantidad_05': 0, 'cantidad_06': 0},  # Almacén | Alfajor Triple de Chocolate Fantoche 85 Gr
     '7891000345528': {'cantidad_01': 1, 'cantidad_02': 1, 'cantidad_03': 1, 'cantidad_04': 0, 'cantidad_05': 1, 'cantidad_06': 0},  # Almacén | Caldo de Verdura Maggi 114 Gr
     '7891010254773': {'cantidad_01': 0, 'cantidad_02': 0, 'cantidad_03': 0, 'cantidad_04': 0, 'cantidad_05': 0, 'cantidad_06': 2},  # Perfumería | Tampones Medio O.B. 8 Un
-    '7891010560737': {'cantidad_01': 0, 'cantidad_02': 0, 'cantidad_03': 0, 'cantidad_04': 0, 'cantidad_05': 1, 'cantidad_06': 0},  # Perfumería | Hisopos Caja Johnson'S 75 Un
+    '7891010560737': {'cantidad_01': 0, 'cantidad_02': 0, 'cantidad_03': 2, 'cantidad_04': 0, 'cantidad_05': 1, 'cantidad_06': 0},  # Perfumería | Hisopos Caja Johnson'S 75 Un
     '7891024116128': {'cantidad_01': 0, 'cantidad_02': 0, 'cantidad_03': 2, 'cantidad_04': 0, 'cantidad_05': 0, 'cantidad_06': 0},  # Perfumería | Cepillo Dental Colgate 1 Un
     '7891024134429': {'cantidad_01': 0, 'cantidad_02': 3, 'cantidad_03': 0, 'cantidad_04': 0, 'cantidad_05': 0, 'cantidad_06': 0},  # Perfumería | Crema Dental Sensitive Blanqueador Colgate 100 Gr
     '7891150000971': {'cantidad_01': 0, 'cantidad_02': 0, 'cantidad_03': 5, 'cantidad_04': 0, 'cantidad_05': 0, 'cantidad_06': 0},  # Limpieza | Suavizante para Ropa Concentrado Cuidado Intesivo Comfor 5
@@ -333,6 +341,16 @@ CANTIDADES = {
     '7500435202732': {'cantidad_01': 0, 'cantidad_02': 0, 'cantidad_03': 4, 'cantidad_04': 0, 'cantidad_05': 0, 'cantidad_06': 0},  # Perfumería | Acondicionador Revitalizante Head & Shoulders 300 Cc
     '7613287613431': {'cantidad_01': 0, 'cantidad_02': 0, 'cantidad_03': 0, 'cantidad_04': 0, 'cantidad_05': 1.5, 'cantidad_06': 0},  # Mascotas | Alimento para Perros Adultos Bolsa Dogui 3 Kg
     '7702018072477': {'cantidad_01': 0, 'cantidad_02': 0, 'cantidad_03': 0, 'cantidad_04': 0, 'cantidad_05': 0, 'cantidad_06': 1},  # Perfumería | Repuesto Rasuradora Recargable Venus Gillette 2 Un
+    '7790070433091': {'cantidad_01': 0, 'cantidad_02': 0, 'cantidad_03': 3, 'cantidad_04': 0, 'cantidad_05': 0, 'cantidad_06': 0},  # Almacén | Arroz Oro Selección Gallo 1 Kg
+    '7790070336545': {'cantidad_01': 0, 'cantidad_02': 0, 'cantidad_03': 8, 'cantidad_04': 0, 'cantidad_05': 0, 'cantidad_06': 0},  # Almacén | Fideos Fetuccini Don Vicente 500 Gr
+    '7790070231833': {'cantidad_01': 0, 'cantidad_02': 0.5, 'cantidad_03': 0, 'cantidad_04': 0, 'cantidad_05': 0, 'cantidad_06': 0},  # Almacén | Aceite de Oliva Extra Virgen Lira 500 Ml
+    '7798061190183': {'cantidad_01': 0, 'cantidad_02': 0, 'cantidad_03': 1.5, 'cantidad_04': 0, 'cantidad_05': 0, 'cantidad_06': 0},  # Almacén | Aceite de Oliva Oliovita 500 Ml
+    '7622201818654': {'cantidad_01': 0, 'cantidad_02': 0, 'cantidad_03': 10, 'cantidad_04': 0, 'cantidad_05': 0, 'cantidad_06': 0},  # Almacén | Tableta de Chocolate con Yogur Frutilla Cadbury 29 Gr
+    '7790670052562': {'cantidad_01': 0, 'cantidad_02': 0, 'cantidad_03': 0, 'cantidad_04': 0, 'cantidad_05': 0.5, 'cantidad_06': 0},  # Congelados | Espinaca Congelada Green Life 550 Gr
+    '7791905023210': {'cantidad_01': 1.5, 'cantidad_02': 0, 'cantidad_03': 0, 'cantidad_04': 0, 'cantidad_05': 0, 'cantidad_06': 0},  # Limpieza | Lavandina Común Odex 2 Lt
+    '7791293049496': {'cantidad_01': 0, 'cantidad_02': 2.5, 'cantidad_03': 0, 'cantidad_04': 0, 'cantidad_05': 0, 'cantidad_06': 0},  # Perfumería | Desodorante Aerosol Sensitive Men Rexona 150 Ml
+    '7500435211635': {'cantidad_01': 0, 'cantidad_02': 0, 'cantidad_03': 0, 'cantidad_04': 0, 'cantidad_05': 0.5, 'cantidad_06': 0},  # Perfumería | Repuesto Mach3 Carbono Gillette 4 Un
+    '7791130003643': {'cantidad_01': 0, 'cantidad_02': 0, 'cantidad_03': 4, 'cantidad_04': 0, 'cantidad_05': 0, 'cantidad_06': 0},  # Limpieza | Detergente para Ropa Doypack Woolite 900 Ml
 }
 
 wb = openpyxl.load_workbook(archivo_excel)

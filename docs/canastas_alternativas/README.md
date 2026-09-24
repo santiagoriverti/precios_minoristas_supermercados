@@ -26,9 +26,10 @@ Insumo del notebook **`07_evolucion_canastas_alternativas`**, que produce el inf
 **287 EANs únicos** + **59 tipos de frescos** (los frescos van por regla de nombre en la
 CELDA 1 del notebook, `TIPOS_FRESCOS`, porque el EAN de balanza cambia entre cadenas).
 
-> **Vigente desde el 2026-09-24: 270 EANs.** El 2026-09-23 salieron pañales y toallitas de Media,
-> Ejecutiva y Representativa (74 necesidades cada una); el 2026-09-24 se reemplazaron 24 ítems sin
-> historia completa en el SEPA (ver "[Reemplazos de trazabilidad](#cambios-posteriores-a-v5-2026-09-24--reemplazos-de-trazabilidad)").
+> **Vigente desde el 2026-09-24 (ronda 2): 267 EANs** (58/74/74/14/74/14). El 2026-09-23 salieron pañales y
+> toallitas de Media, Ejecutiva y Representativa (74 necesidades cada una); el 2026-09-24 se reemplazaron 24 ítems sin
+> historia completa en el SEPA (ver "[Reemplazos de trazabilidad](#cambios-posteriores-a-v5-2026-09-24--reemplazos-de-trazabilidad)")
+> y después otros 15 con historia flaca en 2024 (ver "[Ronda 2](#cambios-posteriores-a-v5-2026-09-24-ronda-2--historia-flaca)").
 > El nb07 lee además `EANS_CANDIDATOS` que no entran a ninguna canasta (90 en la v5.11, 155 desde la v5.12).
 
 **Hogar de referencia: hogar tipo 2 del INDEC** — 2 adultos + 2 niños = **3,09 adultos
@@ -264,12 +265,50 @@ Enzimas del mismo tamaño; si es concentrado, 4 L/mes sobreestiman el consumo (m
 241,5 · Ejecutiva 242,8 → 243,6 · Representativa 234,9 → 235,7 · Femenina 258,5 → 260,0. Costos ±0,4%
 salvo la Femenina (+2,6%); el interanual se mueve como mucho 0,2 puntos.
 
-**Queda para la próxima relectura**: ítems con historia flaca que la trazabilidad no marcaba
+**Queda para la próxima relectura** (hecho: ronda 2, sección siguiente): ítems con historia flaca que la trazabilidad no marcaba
 (Ejecutiva 11,3% del costo: Skip, vino Luigi Bosca, fideos sin TACC Matarazzo, agua Villa del Sur,
 aceite La Tosca, Oreo Milka; Media: desodorante aerosol, 27 meses con <300 sucursales). Necesitan
 candidatos nuevos en `EANS_CANDIDATOS`, y eso relee el SEPA. El auditor los mide en el bloque 7b.
 **v5.12** los agrega (65 EANs, con Woolite para el Skip); después de esa corrida se eligen con
 `proponer_reemplazos.py`.
+
+## Cambios posteriores a v5 (2026-09-24, ronda 2) — historia flaca
+
+Con la relectura v5.12 (que leyó 65 candidatos nuevos) `proponer_reemplazos.py` propuso 19 reemplazos; se aplicaron
+los 15 recomendados en la revisión (`docs/AUDITORIA_2026-09-24_v512.md` §5), lista en
+[`ronda2_propuesta_2026-09-24.csv`](ronda2_propuesta_2026-09-24.csv), con `aplicar_reemplazos.py --escribir`: cargador
+de 270 a **267 EANs**, `EAN_FORZADO` con **42 pares** (el constructor los respeta 42/42). No relee el SEPA: los que
+entran estaban en `EANS_CANDIDATOS`. Mismo criterio que la ronda 1 (lógica del constructor, historia completa:
+≥85% de meses con dato y ≥300 sucursales en 28 de 32 meses).
+
+| Canasta | Necesidad | Sale | Entra |
+|---|---|---|---|
+| Ejecutiva | Arroz | Doble Carolina Molinos Ala 1 kg | Gallo Oro Selección 1 kg ×3 |
+| Ejecutiva | Fideos secos | Tirabuzón sin gluten Matarazzo 500 g | Fetuccini Don Vicente 500 g ×8 |
+| Media | Aceite de oliva | Natura Extra Virgen Suave 500 ml | Lira Extra Virgen 500 ml ×0,5 |
+| Ejecutiva | Aceite de oliva | La Toscana Extra Virgen 250 ml | Oliovita 500 ml ×1,5 |
+| Media | Arvejas en lata | Marolio secas remojadas 200 g | La Campagnola secas remojadas 300 g ×3 (compartido con Ejecutiva) |
+| Ejecutiva | Chocolate en tableta | Milka Oreo 100 g | Cadbury Yogur Frutilla ×10 |
+| Representativa | Vegetales congelados | Brócoli Green Life 450 g | Espinaca Green Life 550 g ×0,5 |
+| Media, Ejecutiva y Representativa | Jabón en pan | Blanco Argentino 150 g | Argentino con glicerina 200 g (compartido con la Popular) |
+| Popular | Lavandina | Héroe aditivada 1 L | Odex común 2 L ×1,5 |
+| Media | Desodorante | Rexona aerosol | Rexona Men Sensitive aerosol 150 ml ×2,5 |
+| Representativa | Afeitado | Prestobarba Mach3 Sensitive 2 un | Repuesto Mach3 Carbono 4 un ×0,5 |
+| Ejecutiva | Algodón / hisopos | Family Q Soft 150 un | Johnson's 75 un ×2 (compartido con Representativa) |
+| Ejecutiva | Jabón líquido para ropa | **Skip Limpieza Activo 800 ml** | **Woolite Doypack 900 ml ×4** |
+
+Las cantidades salen de la cantidad física mensual de la necesidad dividida por el envase nuevo (mismo redondeo que
+el constructor). Los productos compartidos entre estratos son avisos, no errores: en jabón blanco, hisopos y arvejas
+remojadas no hay escalón de precio con historia. En la Ejecutiva, los fideos sin gluten eran "premium" solo por
+precio por kilo; Don Vicente es el premium de consumo.
+
+**Quedan sin reemplazo, a propósito**: arvejas de la Popular (Inalpa), Nesquik de la Representativa, agua Levité y
+vino Luigi Bosca de la Ejecutiva (no hay candidato con historia mejor). La cobertura mínima de la v5.13 (semanas con
+menos de min(300, 50% de la típica) sucursales = faltante) les saca las semanas flacas de 2024.
+
+**Efecto estimado** (panel v5.12, junto con el resto de la v5.13; METODOLOGIA §10.19): índice ene-24 → ago-26
+Popular 242,8 · Media 247,6 · Ejecutiva 243,3 · Representativa 239,2 · Femenina 258,7. La ronda 2 sola (sobre la
+v5.12) movía la Ejecutiva +3,6 puntos (cambian siete de sus ítems) y las demás ±1.
 
 ---
 
@@ -361,7 +400,10 @@ python aplicar_reemplazos.py --excel ... --reemplazos ... --escribir
 
 Los nombres de canasta y necesidad son los de `Candidatos_trazabilidad` (y de `NEEDS` /
 `NEEDS_FEMENINA`). **No** corras el constructor entero para un reemplazo: recalibra todas las canastas
-sobre la cobertura del Excel que le pases y cambia muchos productos.
+sobre la cobertura del Excel que le pases y cambia muchos productos. Medido el 2026-09-24: con el Excel de
+2026-09 elige 278 EANs y **132 distintos** de la composición vigente (que salió del Excel de 2026-08 y de las
+dos rondas de reemplazos). La composición vigente es `cargar_canastas_v5.py`; el constructor solo respeta los
+42 pares de `EAN_FORZADO`.
 
 **Recalibración en serio** (cambiar productos por necesidad, cantidades físicas, el hogar de
 referencia o los umbrales de cobertura): editá `construir_canastas_v5.py` y regeneralo:

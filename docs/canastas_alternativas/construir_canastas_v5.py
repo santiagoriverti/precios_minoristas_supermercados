@@ -578,6 +578,21 @@ EAN_FORZADO = {
     ('Ejecutiva', 'Acondicionador'): '7500435202732',  # Acondicionador Revitalizante Head & Shoulders 300  (2026-09-24, trazabilidad)
     ('Representativa', 'Jabon de tocador'): '7891150075382',  # Jabón Tocador Antibacterial Cuida y Protege Dove 9 (2026-09-24, trazabilidad)
     ('Representativa', 'Alimento para perro'): '7613287613431',  # Alimento para Perros Adultos Bolsa Dogui 3 Kg (2026-09-24, trazabilidad)
+    ('Ejecutiva', 'Arroz'): '7790070433091',  # Arroz Oro Selección Gallo 1 Kg (2026-09-24, trazabilidad)
+    ('Ejecutiva', 'Fideos secos'): '7790070336545',  # Fideos Fetuccini Don Vicente 500 Gr (2026-09-24, trazabilidad)
+    ('Media', 'Aceite de oliva'): '7790070231833',  # Aceite de Oliva Extra Virgen Lira 500 Ml (2026-09-24, trazabilidad)
+    ('Ejecutiva', 'Aceite de oliva'): '7798061190183',  # Aceite de Oliva Oliovita 500 Ml (2026-09-24, trazabilidad)
+    ('Media', 'Arvejas en lata'): '7793360132384',  # Arvejas Secas Remojadas La Campagnola 300 Gr (2026-09-24, trazabilidad)
+    ('Ejecutiva', 'Chocolate en tableta'): '7622201818654',  # Tableta de Chocolate con Yogur Frutilla Cadbury 29 (2026-09-24, trazabilidad)
+    ('Representativa', 'Vegetales congelados'): '7790670052562',  # Espinaca Congelada Green Life 550 Gr (2026-09-24, trazabilidad)
+    ('Media', 'Jabon en pan'): '7794218106328',  # Jabón en Pan con Glicerina Argentino 200 Gr (2026-09-24, trazabilidad)
+    ('Ejecutiva', 'Jabon en pan'): '7794218106328',  # Jabón en Pan con Glicerina Argentino 200 Gr (2026-09-24, trazabilidad)
+    ('Representativa', 'Jabon en pan'): '7794218106328',  # Jabón en Pan con Glicerina Argentino 200 Gr (2026-09-24, trazabilidad)
+    ('Popular', 'Lavandina'): '7791905023210',  # Lavandina Común Odex 2 Lt (2026-09-24, trazabilidad)
+    ('Media', 'Desodorante'): '7791293049496',  # Desodorante Aerosol Sensitive Men Rexona 150 Ml (2026-09-24, trazabilidad)
+    ('Representativa', 'Afeitado'): '7500435211635',  # Repuesto Mach3 Carbono Gillette 4 Un (2026-09-24, trazabilidad)
+    ('Ejecutiva', 'Algodon / hisopos'): '7891010560737',  # Hisopos Caja Johnson'S 75 Un (2026-09-24, trazabilidad)
+    ('Ejecutiva', 'Jabon liquido para ropa'): '7791130003643',  # Detergente para Ropa Doypack Woolite 900 Ml (2026-09-24, trazabilidad)
 }
 
 
