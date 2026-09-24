@@ -6,7 +6,34 @@ Autor: Santiago Riverti — investigador independiente
 
 ---
 
-## 🟢 ESTADO ACTUAL / HANDOFF [2026-09-24 · tarde] — reemplazos aplicados Y VERIFICADOS; siguiente: relectura v5.12 — leer esto primero
+## 🟢 ESTADO ACTUAL / HANDOFF [2026-09-24 · noche] — nb07 v5.12 LISTA para correr (relee) — leer esto primero
+
+### En que estamos
+
+- v5.11.1 con los 24 reemplazos: VERIFICADA (auditoria §11.1). Numeros vigentes (ene-24 -> ago-26): Popular 230,2 ·
+  Media 241,5 · Ejecutiva 243,6 · Representativa 235,7 · Femenina 260,0.
+- **v5.12 preparada y pusheada** (ronda 2, RELEE el SEPA ~1h20m): `EANS_CANDIDATOS` 90 -> 155 (candidatos para los
+  18 items con historia flaca + los 3 Woolite para el Skip + los items actuales); `RATIO_FRESCO` Naranja 1,33 -> 0,37
+  y Tomate 2,44 -> 0,95 (= INDEC / ancla; el filtro descartaba la naranja real y dejaba pasar productos de
+  $6.900-9.500 de Carrefour). Herramienta nueva `docs/canastas_alternativas/proponer_reemplazos.py`.
+- El usuario va a sumar en esta corrida una semana mas de datos (ya en el Drive): va en el mes en curso.
+
+### CUANDO EL USUARIO PASE LOS RESULTADOS DE LA v5.12
+
+El Excel de canasta NO cambia (270 EANs, el del Drive). El usuario solo corre el nb07.
+1. REPORTE: `nb07 v5.12`; `EANs empaquetados (union): 270`; universo **10.792** (270 + 111 candidatos fuera de canasta
+   + 10.411 frescos); cache NUEVO: `0 meses guardados, 32 por leer` (relee). Ultima semana: 2026-09-24 si entro la
+   semana nueva.
+2. Pedir el Excel + REPORTE + zips `sem_<clave nueva>_v5` y `ean_<clave nueva>_v5`. Auditar con `--cache --indec`.
+   Mirar: Naranja y Tomate por cadena (Carrefour ya no a $9.500), chequeo 6c (Naranja/Tomate anclados igual),
+   indice contra el de la v5.11.1 (cambia poco: solo Naranja y Tomate).
+3. `python docs/canastas_alternativas/proponer_reemplazos.py --nb07 <Excel> --excel <canasta_representativa_2026-09.xlsx
+   (270)> --cache <carpeta> --salida ronda2.csv`. REVISAR la propuesta (producto razonable; con lo leido antes de la
+   v5.12 proponia un vino dulce para la Ejecutiva), mostrarsela al usuario, y aplicar con `aplicar_reemplazos.py`
+   (simular, despues `--escribir`). El Skip: decidir con la historia de Woolite (decision del usuario: medirlo).
+4. Commit + push; el usuario corre el cargador nuevo y el nb07 (NO relee). Auditar y documentar (§12).
+
+## 🟡 HANDOFF ANTERIOR [2026-09-24 · tarde] — reemplazos aplicados y verificados
 
 Proyecto EN PRODUCCION, 7 herramientas (nb01..nb07). Todo viaja en el repo menos los datos SEPA, el
 cache y los Excel de salida (Drive del usuario, `MyDrive/carga/`). Entrada rapida: `CLAUDE.md`.

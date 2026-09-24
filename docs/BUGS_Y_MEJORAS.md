@@ -1,6 +1,6 @@
 # Bugs Pendientes y Mejoras
 
-Última actualización: 2026-09-24 — corrida v5.11 verificada (`docs/AUDITORIA_2026-09-22_v59.md` §11); 24 reemplazos de trazabilidad aplicados (270 EANs, no relee el SEPA); nb07 v5.11.1 (BUG-38); `aplicar_reemplazos.py` sin falsas alarmas (BUG-39); auditor con cobertura histórica (bloque 7b). Pendiente: relectura v5.12 (historia flaca, Woolite, Naranja de Carrefour)
+Última actualización: 2026-09-24 — corrida v5.11 verificada (`docs/AUDITORIA_2026-09-22_v59.md` §11); 24 reemplazos de trazabilidad aplicados (270 EANs, no relee el SEPA); nb07 v5.11.1 (BUG-38); `aplicar_reemplazos.py` sin falsas alarmas (BUG-39); auditor con cobertura histórica (bloque 7b). nb07 **v5.12 lista** para correr (relee el SEPA: 65 candidatos nuevos, Naranja y Tomate recalibrados); `proponer_reemplazos.py`
 
 ---
 
@@ -22,8 +22,9 @@ saltos que no son inflación (Scotch Brite: ×2,4 en una semana de feb-24, con ~
 sucursales). Después de los reemplazos del 24-sep quedan: **Ejecutiva 11,3% del costo** (Skip Activo
 2,7%, vino Luigi Bosca 2,3%, fideos sin TACC Matarazzo 1,5%, agua Villa del Sur 1,4%, aceite La Tosca
 1,3%, Oreo Milka 1,3%), Media 1,8% (desodorante aerosol, 27 meses flacos), Representativa 1,9%, Popular
-0,6%. **Arreglo**: agregar a `EANS_CANDIDATOS` candidatos con historia para esas necesidades y releer
-(v5.12); sumar las sucursales por mes a `Presencia_items` del nb07.
+0,6%. **Arreglo**: agregar a `EANS_CANDIDATOS` candidatos con historia para esas necesidades y releer.
+**v5.12 (2026-09-24, lista para correr)**: +65 candidatos (18 necesidades) y los ítems actuales; después de
+la corrida, `proponer_reemplazos.py` elige con la historia medida.
 
 ### nb07: el Skip de la Ejecutiva no tiene reemplazo premium con historia
 
@@ -32,15 +33,19 @@ aparece en el SEPA en jun-25. El único candidato leído con historia que respet
 el Ala Ropa Fina de la Media (mitad de precio). **Decisión del usuario (2026-09-24): medir Woolite** (450 y
 900 ml, $8.400-9.200/L, 830-1.700 sucursales) y otros líquidos caros en la relectura v5.12. Duda abierta:
 el Skip Activo cuesta 2,8× por litro lo que el Skip Bio Enzimas de 800 ml; si es concentrado, los 4 L/mes
-de la Ejecutiva sobreestiman el consumo (verificar la etiqueta).
+de la Ejecutiva sobreestiman el consumo (verificar la etiqueta). **v5.12**: los tres Woolite entran a
+`EANS_CANDIDATOS`.
 
 ### nb07: la Naranja de Carrefour no es naranja por kilo
 
 En la corrida v5.11, Carrefour y Carrefour Market cotizan Naranja a $9.500/kg (6,4× el nacional). El EAN
 `7791720050170` (113 sucursales) no es naranja por kilo; tampoco `727373047691` ($34.000/kg, 42
 sucursales). El nivel nacional está anclado al INDEC, así que el efecto está en la apertura de Carrefour y
-en la evolución del tipo. **Arreglo**: sumarlos a `EXCLUIR_EAN_FRESCO` en la relectura v5.12 (cambia la
-clave del caché). En Suprema/Pechuga y Carne picada las cadenas venden productos distintos (pechuga con
+en la evolución del tipo. **Causa** (2026-09-24): el `RATIO_FRESCO` de la Naranja (1,33) centraba el filtro de
+régimen en ~$4.200/kg, así que descartaba naranjas de $600-1.300 y dejaba pasar productos de $6.900-9.500. Igual
+que el Limón en la v5.11: el tipo se ancló al INDEC sin recalibrar el ratio. El Tomate tenía lo mismo (2,44:
+afuera tomates de $1.700-2.500, adentro productos de $12.000-16.600). **Arreglo v5.12**: ratio = INDEC / ancla
+(Naranja 0,37, Tomate 0,95); sin lista de EANs a excluir. Se verifica con la corrida. En Suprema/Pechuga y Carne picada las cadenas venden productos distintos (pechuga con
 hueso o suprema; picada común o envasada especial): nivel nacional razonable, pero **no comparar cadenas
 en esos tipos**.
 
@@ -117,6 +122,18 @@ de la Tecnológica** hasta que haya al menos dos cadenas con cobertura de durabl
 ---
 
 ## 🟢 Cambios y fixes 2026-09
+
+### 🟣 nb07 v5.12 — ronda 2 de relectura (2026-09-24, lista para correr)
+
+Cambia la clave del caché: **relee el SEPA** (~1h20m). (1) `EANS_CANDIDATOS` de 90 a 155: candidatos para
+los 18 ítems con historia flaca (Ejecutiva: vino, aceite de oliva, fideos, agua saborizada, chocolate,
+arroz, hisopos; Media: desodorante, aceite de oliva, arvejas; Representativa: afeitado, cacao, vegetales
+congelados; Popular: lavandina, arvejas; jabón en pan en tres canastas), los tres Woolite para el Skip, y los
+ítems actuales (reemplazarlos después no relee). (2) `RATIO_FRESCO` de Naranja (1,33 → 0,37) y Tomate (2,44 →
+0,95) = INDEC / ancla. Universo esperado: 10.792 EANs (270 empaquetados + 111 candidatos fuera de canasta +
+10.411 frescos). Herramienta nueva: `docs/canastas_alternativas/proponer_reemplazos.py` (lógica del
+constructor restringida a lo leído con historia completa; salida para `aplicar_reemplazos.py`).
+
 
 ### 🟣 Reemplazos de trazabilidad aplicados (2026-09-24)
 

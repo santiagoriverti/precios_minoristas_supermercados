@@ -40,7 +40,8 @@ informe semanal: 6 canastas, índice encadenado, comparación con el IPC y apert
   (bajar la planilla nueva del INDEC cuando salga: https://www.indec.gob.ar/ftp/cuadros/economia/sh_ipc_precios_promedio.xls).
 - **Reemplazos puntuales de productos**: `docs/canastas_alternativas/aplicar_reemplazos.py` (simula por
   defecto; `--escribir` aplica). No correr el constructor entero para un reemplazo: recalibra todo.
-  Ejemplo aplicado: `docs/canastas_alternativas/reemplazos_2026-09-24.csv`.
+  Ejemplo aplicado: `docs/canastas_alternativas/reemplazos_2026-09-24.csv`. Para PROPONER los reemplazos con
+  la lógica del constructor y la historia medida: `proponer_reemplazos.py --nb07 ... --excel ... --cache ...`.
 - **"Meses con dato" no alcanza para juzgar la historia de un producto**: un mes cuenta aunque el
   producto esté en UNA sucursal (Raid 370: 97% de meses con dato y 1 sucursal en 2025). Antes de elegir
   un reemplazo, contar sucursales por mes (auditor con `--cache`, bloque 7b: ≥300 en 28 de 32 meses).

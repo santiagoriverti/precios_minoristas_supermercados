@@ -43,6 +43,16 @@ Y en el Excel de canasta: pañales y toallitas fuera de Media/Ejecutiva/Represen
 v5.11.1 (2026-09-24) - no toca la clave del cache:
 17. Hoja Candidatos_trazabilidad: la necesidad se cortaba en el primer ' / ' ('Milanesas / nuggets
     de pollo' salia 'Milanesas') y el item ACTUAL de esas necesidades figuraba como candidato.
+
+v5.12 (ronda 2, 2026-09-24) - RELEE EL SEPA (cambia la clave del cache):
+18. EANS_CANDIDATOS: +65 (155). Candidatos para los items con historia flaca (mas de 4 meses con menos
+    de 300 sucursales: vino, aceite de oliva, fideos, agua saborizada, chocolate y arroz de la Ejecutiva,
+    desodorante de la Media, afeitado y cacao de la Representativa...), Woolite para el Skip de la
+    Ejecutiva, y los items actuales, para que reemplazarlos despues no relea.
+19. RATIO_FRESCO de Naranja (1,33 -> 0,37) y Tomate (2,44 -> 0,95) = INDEC / ancla: los dos se anclaron
+    al INDEC en la v5.11 sin recalibrar el filtro de regimen, que quedaba centrado en otro producto
+    (la regla de la v5.11: si se ancla un tipo, su ratio tiene que apuntar al mismo producto).
+Y en el Excel de canasta: los 24 reemplazos de trazabilidad del 2026-09-24 (270 EANs).
 """
 import json, os, hashlib
 
@@ -218,7 +228,7 @@ RATIO_FRESCO = {
     'Morrón': 3.44,
     'Mortadela': 5.72,
     'Nalga/Cuadril': 7.39,
-    'Naranja': 1.33,
+    'Naranja': 0.37,        # v5.12: era 1.33; centraba el filtro en ~$4.200: DESCARTABA naranjas de $600-1.300/kg y dejaba pasar productos de $6.900-9.500 (Carrefour, Cadena 3); 0,37 = INDEC / ancla ago-26
     'Osobuco': 4.77,
     'Paleta': 7.12,
     'Palta': 3.87,
@@ -237,7 +247,7 @@ RATIO_FRESCO = {
     'Roast beef': 5.04,
     'Salame/Salamín': 10.36,
     'Suprema/Pechuga': 3.50,  # v5.11: era 9.53 (centrado en la bandeja Atm de DIA a $20.500); sin ella, ~1,8x el pollo entero
-    'Tomate': 2.44,
+    'Tomate': 0.95,         # v5.12: era 2.44; dejaba afuera tomates de $1.700-2.500 y adentro productos de $12.000-16.600; 0,95 = INDEC / ancla ago-26
     'Uva': 3.62,
     'Vacío': 7.46,
     'Zanahoria': 0.88,
@@ -466,6 +476,92 @@ EANS_CANDIDATOS = {
     '7506309841762': 'Femenina / Rasuradora femenina / Máquina de Afeitar Mujer Venus Original Gillette 1 U (1743 suc)',
     '7702018072408': 'Femenina / Rasuradora femenina / Máquina Simply Venus3 Gillette 4 Un (1729 suc)',
     # Ejecutiva / Jabon en polvo
+    # ── v5.12 (ronda 2, 2026-09-24): items con historia FLACA (mas de 4 meses con menos de 300
+    # sucursales, auditor bloque 7b) y candidatos con cobertura actual alta para cada uno; y para el Skip
+    # de la Ejecutiva (linea Activo desde jun-25), los Woolite. Los ACTUALES van para que sacarlos de la
+    # canasta despues no cambie el universo leido (no relee). Ver docs/AUDITORIA_2026-09-22_v59.md §11.
+    # Ejecutiva / Arroz
+    '7791120021558': 'Ejecutiva / Arroz / ACTUAL (historia flaca: 8 meses <300 suc) / Arroz Doble Carolina Molinos Ala 1 Kg',
+    '7790070431417': 'Ejecutiva / Arroz / Arroz Parboil Bolsa Gallo Oro 1 Kg (2307 suc)',
+    '7790070433145': 'Ejecutiva / Arroz / Arroz Largo Fino Selección Gallo 500 Gr (2125 suc)',
+    '7790070433091': 'Ejecutiva / Arroz / Arroz Oro Selección Gallo 1 Kg (905 suc)',
+    '7791120103148': 'Ejecutiva / Arroz / Arroz Monovarietal Corto Molinos Ala 1 Kg (1211 suc)',
+    # Ejecutiva / Fideos secos
+    '7790070335982': 'Ejecutiva / Fideos secos / ACTUAL (historia flaca: 7 meses <300 suc) / Fideos Tirabuzón sin Gluten Matarazzo 500 Gr',
+    '7790070336545': 'Ejecutiva / Fideos secos / Fideos Fetuccini Don Vicente 500 Gr (2475 suc)',
+    '7790070336576': 'Ejecutiva / Fideos secos / Fideos Tallarín Don Vicente 500 Gr (2463 suc)',
+    '7790070336552': 'Ejecutiva / Fideos secos / Fideos Caserito Don Vicente 500 Gr (2311 suc)',
+    '7790070336651': 'Ejecutiva / Fideos secos / Spaghetti Rina Matarazzo 500 Gr (2222 suc)',
+    # Media / Aceite de oliva
+    '7790272008394': 'Media / Aceite de oliva / ACTUAL (historia flaca: 7 meses <300 suc) / Aceite de Oliva Extra Vírgen Suave Natura 500 Ml',
+    '7790199604174': 'Media / Aceite de oliva / Aceite de Oliva Extra Virgen Morixe 500 Ml (1148 suc)',
+    '7790070231871': 'Media / Aceite de oliva / Aceite de Oliva Extra Virgen Suave Cocinero 500 Ml (2061 suc)',
+    '7792180005175': 'Media / Aceite de oliva / Aceite de Oliva Extra Virgen en Lata Cañuelas 500 Ml (1653 suc)',
+    '7790070265098': 'Media / Aceite de oliva / Aceite de Oliva Puro sin TACC Vidrio 500 Ml (1173 suc)',
+    # Ejecutiva / Aceite de oliva
+    '7798080520084': 'Ejecutiva / Aceite de oliva / ACTUAL (historia flaca: 19 meses <300 suc) / Aceite de Oliva Extra Virgen Vidrio La Toscana 250 Ml',
+    '7798061190183': 'Ejecutiva / Aceite de oliva / Aceite de Oliva Oliovita 500 Ml (855 suc)',
+    '7798080520534': 'Ejecutiva / Aceite de oliva / Aceite de Oliva Extra Virgen con Albahaca La Toscana  250 Ml (1286 suc)',
+    '7790070231833': 'Ejecutiva / Aceite de oliva / Aceite de Oliva Extra Virgen Lira 500 Ml (1081 suc)',
+    # Popular / Arvejas en lata
+    '7792350067019': 'Popular / Arvejas en lata / ACTUAL (historia flaca: 8 meses <300 suc) / Arvejas Secas Remojadas Inalpa 300 Gr',
+    # Media / Arvejas en lata
+    '7797470007426': 'Media / Arvejas en lata / ACTUAL (historia flaca: 13 meses <300 suc) / Arvejas Secas Remojadas Marolio 200 Gr',
+    # Representativa / Cacao / chocolatada en polvo
+    '8445291121843': 'Representativa / Cacao / chocolatada en polvo / ACTUAL (historia flaca: 5 meses <300 suc) / Polvo Chocolatado Nesquik 150 Gr',
+    '8445291121881': 'Representativa / Cacao / chocolatada en polvo / Cacao Paquete Nesquik 360 Gr (2448 suc)',
+    '8445291121904': 'Representativa / Cacao / chocolatada en polvo / Cacao sinTACC Nesquik 800 Gr (2382 suc)',
+    '7790150830468': 'Representativa / Cacao / chocolatada en polvo / Cacao en Polvo Chocolino Bolsa 360 Gr (2217 suc)',
+    '7790150830444': 'Representativa / Cacao / chocolatada en polvo / Cacao en Polvo Chocolino 180 Gr (1775 suc)',
+    # Ejecutiva / Chocolate en tableta
+    '7622300631574': 'Ejecutiva / Chocolate en tableta / ACTUAL (historia flaca: 14 meses <300 suc) / Chocolate con Relleno Oreo Milka 100 Gr',
+    '78909434': 'Ejecutiva / Chocolate en tableta / Bombones Chocolate Avellana Ferrero Rocher 37.5 Gr (2343 suc)',
+    '7622201818654': 'Ejecutiva / Chocolate en tableta / Tableta de Chocolate con Yogur Frutilla Cadbury 29 Gr (1308 suc)',
+    '7622201818739': 'Ejecutiva / Chocolate en tableta / Tableta de Chocolate Tres Sueños Cadbury 80 Gr (1258 suc)',
+    '7790580103415': 'Ejecutiva / Chocolate en tableta / Chocolate Blanco Cofler Air 55 Gr (892 suc)',
+    # Representativa / Vegetales congelados
+    '7790670052586': 'Representativa / Vegetales congelados / ACTUAL (historia flaca: 7 meses <300 suc) / Brocoli Congelado Green Life 450 Gr',
+    '7790670052562': 'Representativa / Vegetales congelados / Espinaca Congelada Green Life 550 Gr (826 suc)',
+    # Ejecutiva / Agua saborizada
+    '7798062548686': 'Ejecutiva / Agua saborizada / ACTUAL (historia flaca: 7 meses <300 suc) / Agua Saborizada Pomelo sin Gas Villa Del Sur Levité 500 Cc',
+    '7790895640490': 'Ejecutiva / Agua saborizada / Agua Saborizada Pomelo sin Gas Aquarius 1.5 Lt (2548 suc)',
+    '7790895641237': 'Ejecutiva / Agua saborizada / Agua Saborizada Naranja sin Gas Aquarius 1.5 Lt (2535 suc)',
+    '7790895640476': 'Ejecutiva / Agua saborizada / Agua Saborizada Pera sin Gas Aquarius 1.5 Lt (2422 suc)',
+    '7790895009204': 'Ejecutiva / Agua saborizada / Agua Saborizada Pera Aquarius 600 Ml (1845 suc)',
+    # Ejecutiva / Vino
+    '7791203001231': 'Ejecutiva / Vino / ACTUAL (historia flaca: 7 meses <300 suc) / Vino Tinto Malbec Luigi Bosca 750 Cc',
+    '7790240002010': 'Ejecutiva / Vino / Vino Tinto Cabernet Sauvignon Fond de Cave 750 Cc (2397 suc)',
+    '7791203003341': 'Ejecutiva / Vino / Vino Malbec Botella Finca La Linda 750 Cc (2309 suc)',
+    '7790070760821': 'Ejecutiva / Vino / Vino Tinto Malbec Nieto Senetiner 750 Ml (2293 suc)',
+    '7794450000781': 'Ejecutiva / Vino / Vino Tinto Malbec Selección Álamos 750 Cc (2291 suc)',
+    # Ejecutiva / Jabon liquido para ropa
+    '7791130963503': 'Ejecutiva / Jabon liquido para ropa / Jabón Líquido para Ropa Todos los Días Doypack Woolite 450 M (1704 suc)',
+    '7791130001649': 'Ejecutiva / Jabon liquido para ropa / Jabón Líquido Ropa de Bebé en Doypack Woolite 450 Cc (1684 suc)',
+    '7791130003643': 'Ejecutiva / Jabon liquido para ropa / Detergente para Ropa Doypack Woolite 900 Ml (829 suc)',
+    # Media / Jabon en pan
+    '7794218106854': 'Media / Jabon en pan / ACTUAL (historia flaca: 7 meses <300 suc) / Jabón Blanco Argentino 150 Gr',
+    # Popular / Lavandina
+    '7798131250380': 'Popular / Lavandina / ACTUAL (historia flaca: 5 meses <300 suc) / Lavandina Aditivada Naranja Héroe 1 Lt',
+    '7791905023210': 'Popular / Lavandina / Lavandina Común Odex 2 Lt (2031 suc)',
+    '7798131250397': 'Popular / Lavandina / Lavandina Aditivada Naranja Héroe 2 Lt (1271 suc)',
+    '7793253006709': 'Popular / Lavandina / Lavandina Original Desinfectante Ayudín 2 Lt (2195 suc)',
+    '7793253003753': 'Popular / Lavandina / Lavandina Glaciar Triple Poder Ayudín 2 Lt (1784 suc)',
+    # Media / Desodorante
+    '7791293022581': 'Media / Desodorante / ACTUAL (historia flaca: 27 meses <300 suc) / Desodorante Antitranspirante en Aerosol Rexona Extra Cool 15',
+    '7791293049496': 'Media / Desodorante / Desodorante Aerosol Sensitive Men Rexona 150 Ml (2682 suc)',
+    '7791293049502': 'Media / Desodorante / Desodorante Aerosol Men Rexona 150 Ml (2676 suc)',
+    '7791293025537': 'Media / Desodorante / Desodorante Antitranspirante en Aerosol Rexona Antibacterial (2501 suc)',
+    '4005808979813': 'Media / Desodorante / Desodorante Antitranspirante Aerosol Nivea Clear Invisible B (2473 suc)',
+    # Representativa / Afeitado
+    '7702018037865': 'Representativa / Afeitado / ACTUAL (historia flaca: 15 meses <300 suc) / Repuesto Rasuradora Prestobarba Mach3 Sensitive 2 Un',
+    '7500435169646': 'Representativa / Afeitado / Máquina de Afeitar Ultra Grip 2 Blister 3 Un Gillette 1 Un (1567 suc)',
+    '7500435211635': 'Representativa / Afeitado / Repuesto Mach3 Carbono Gillette 4 Un (1508 suc)',
+    '7702018072217': 'Representativa / Afeitado / Máquina Afeitar Woman Gillette 2 Un (1479 suc)',
+    '7501843503350': 'Representativa / Afeitado / Máquina Afeitar Flex3 3 Hojas Bic 2 Un (1395 suc)',
+    # Ejecutiva / Algodon / hisopos
+    '7790773007124': 'Ejecutiva / Algodon / hisopos / ACTUAL (historia flaca: 7 meses <300 suc) / Hisopos Family Q Soft 150 Un',
+    '7790064002029': 'Ejecutiva / Algodon / hisopos / Algodón Pompones Estrella 50 Un (1965 suc)',
+    '7798364400354': 'Ejecutiva / Algodon / hisopos / Hisopos sw Bambú Miraki 100 Un (1213 suc)',
 }
 
 # Salto semanal del precio nacional de un item a partir del cual se lo reporta en la hoja
@@ -2190,7 +2286,7 @@ with pd.ExcelWriter(_xlsx, engine='openpyxl') as _w:
         {'parametro':'Costo por sucursal','valor':'costo nacional + (precio de la sucursal - nacional) x cantidad en lo que publica; lo que no publica se valua al nacional (columna pct_imputado)'},
         {'parametro':'Nivel de frescos','valor':'; '.join(f'{t}: ${(r[0] if isinstance(r, (tuple, list)) else r):,.0f} en {(r[1] if isinstance(r, (tuple, list)) else "ult. semana")}' for t, r in NIVEL_REFERENCIA_FRESCO.items()) + ' (INDEC GBA, precios promedio). El resto, nivel del SEPA.'},
         {'parametro':'Excluidos a mano (frescos)','valor':'; '.join(f'{e} {d}' for e, d in EXCLUIR_EAN_FRESCO.items())},
-        {'parametro':'Version','valor':'nb07 v5.11.1'},
+        {'parametro':'Version','valor':'nb07 v5.12'},
     ]).to_excel(_w, 'Metodologia', index=False)
     _res = []
     for _name in CANASTAS_ACTIVAS:
@@ -2276,7 +2372,7 @@ cells.append(cell_code(r'''# ===================================================
 # CELDA 15 - REPORTE PARA CLAUDE (copia y pega TODO el bloque)
 # ============================================================
 print('='*72)
-print('REPORTE PARA CLAUDE - canastas alternativas nb07 v5.11.1')
+print('REPORTE PARA CLAUDE - canastas alternativas nb07 v5.12')
 print('='*72)
 print(f'Ultima semana (cierra jueves): {ULTIMA_SEMANA} | Ultimo mes: {_ult_mes}')
 print(f'Canastas activas: {CANASTAS_ACTIVAS}')

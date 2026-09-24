@@ -152,8 +152,9 @@ Solo tipos con dicotomía celíaca; 2–3 EANs representativos por lado, promedi
 intra-sucursal. Config: dict `TIPOS` en la CELDA 1. **Detalle completo: `docs/BRECHA_CELIACA.md`.**
 
 ### 2f. `07_evolucion_canastas_alternativas` (notebook 07) — motor del informe semanal
-**Estado: v5.11.1, 2026-09-24** (corrida v5.11 verificada y 24 reemplazos de trazabilidad aplicados;
-ver `docs/AUDITORIA_2026-09-22_v59.md` §11 y el historial de cambios más abajo). Es el notebook que alimenta el **informe semanal** del equipo de
+**Estado: v5.12 lista para correr, 2026-09-24** (relectura: candidatos para la historia flaca, Woolite,
+Naranja y Tomate recalibrados; la v5.11.1 con los 24 reemplazos está verificada, ver
+`docs/AUDITORIA_2026-09-22_v59.md` §11 y el historial de cambios más abajo). Es el notebook que alimenta el **informe semanal** del equipo de
 economistas. Costo de **6 canastas** vs **IPC**, desagregado por **rubro** (drill-down hasta
 producto), **provincia**, **región** y **cadena**.
 
@@ -535,6 +536,12 @@ Los 4 reemplazos (Swift XL, Lavandina Anti-splash, Plusbelle, Listerine) están 
 ---
 
 ## Historial de cambios
+
+### 2026-09-24 (tarde) — nb07 v5.12 preparada (ronda 2 de relectura)
+
+65 candidatos nuevos en `EANS_CANDIDATOS` (historia flaca y Woolite), `RATIO_FRESCO` de Naranja y Tomate
+= INDEC / ancla, y `proponer_reemplazos.py`. Relee el SEPA; la corrida suma además la semana que el usuario
+agregó al Drive. Después: proponer y aplicar la ronda 2 de reemplazos (sin otra relectura).
 
 ### 2026-09-24 — corrida v5.11 verificada y reemplazos de trazabilidad
 

@@ -29,7 +29,7 @@ CELDA 1 del notebook, `TIPOS_FRESCOS`, porque el EAN de balanza cambia entre cad
 > **Vigente desde el 2026-09-24: 270 EANs.** El 2026-09-23 salieron pañales y toallitas de Media,
 > Ejecutiva y Representativa (74 necesidades cada una); el 2026-09-24 se reemplazaron 24 ítems sin
 > historia completa en el SEPA (ver "[Reemplazos de trazabilidad](#cambios-posteriores-a-v5-2026-09-24--reemplazos-de-trazabilidad)").
-> El nb07 lee además 90 `EANS_CANDIDATOS` que no entran a ninguna canasta.
+> El nb07 lee además `EANS_CANDIDATOS` que no entran a ninguna canasta (90 en la v5.11, 155 desde la v5.12).
 
 **Hogar de referencia: hogar tipo 2 del INDEC** — 2 adultos + 2 niños = **3,09 adultos
 equivalentes**. Todas las cantidades están expresadas para ese hogar.
@@ -268,6 +268,8 @@ salvo la Femenina (+2,6%); el interanual se mueve como mucho 0,2 puntos.
 (Ejecutiva 11,3% del costo: Skip, vino Luigi Bosca, fideos sin TACC Matarazzo, agua Villa del Sur,
 aceite La Tosca, Oreo Milka; Media: desodorante aerosol, 27 meses con <300 sucursales). Necesitan
 candidatos nuevos en `EANS_CANDIDATOS`, y eso relee el SEPA. El auditor los mide en el bloque 7b.
+**v5.12** los agrega (65 EANs, con Woolite para el Skip); después de esa corrida se eligen con
+`proponer_reemplazos.py`.
 
 ---
 
@@ -336,6 +338,12 @@ vez de incluir un ítem que solo cotiza en 400 sucursales.
 **Ajuste de cantidad**: editá el diccionario `CANTIDADES` de `cargar_canastas_v5.py`. Cada fila es
 `'<EAN>': {'cantidad_01': q1, ..., 'cantidad_06': q6},  # rubro | descripción`.
 Poné `0` para sacar un producto de una canasta.
+
+**Proponer reemplazos** para los ítems sin historia completa: `proponer_reemplazos.py --nb07 <Excel del nb07>
+--excel <canasta_representativa_YYYY-MM.xlsx> --cache <carpeta con sem_<clave>_v5>`. Elige con la lógica del
+constructor entre lo que el nb07 ya lee y tiene historia (≥85% de meses con dato y ≥300 sucursales en 28 de
+32 meses) y escribe un CSV para el paso siguiente. Es una propuesta: revisar que el producto sea razonable
+para la necesidad (antes de la relectura v5.12 proponía, por ejemplo, un vino dulce para la Ejecutiva).
 
 **Reemplazo puntual de un producto** (por ejemplo, uno sin trazabilidad): `aplicar_reemplazos.py`.
 Toma un CSV `canasta,necesidad,ean_nuevo` (opcional `ean_actual`), busca el nuevo entre los

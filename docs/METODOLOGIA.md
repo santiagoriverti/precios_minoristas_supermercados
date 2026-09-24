@@ -1110,8 +1110,15 @@ insecticida de la Media, 2026-09-24). Detalle y números: `docs/AUDITORIA_2026-0
 
 **Efecto sobre el índice**: reemplazar una entrada tardía por un producto con historia cambia el índice
 según cuánto subió el reemplazo antes de que el original apareciera, comparado con el resto de la
-canasta. En la ronda del 2026-09-24 el efecto estimado fue de −1,4 a +1,5 puntos sobre ~240 (ene-24 →
-ago-26), con el interanual casi igual.
+canasta. En la ronda del 2026-09-24 el efecto fue de −1,4 a +1,5 puntos sobre ~240 (ene-24 → ago-26), con el
+interanual casi igual.
+
+**Ratio del filtro de régimen y ancla al INDEC (v5.12).** El filtro de la lectura acepta, por sucursal, las
+variantes dentro de `[ref/K, ref×K]` con `ref = ancla × RATIO_FRESCO`. Si el ratio quedó calibrado sobre otro
+producto, el filtro descarta el correcto aunque el nivel esté anclado: pasó con el Limón (v5.11) y con la
+Naranja y el Tomate (v5.12: la Naranja dejaba afuera naranjas de $600-1.300/kg y adentro productos de
+$6.900-9.500). Regla: **ratio = precio INDEC / ancla** para todo tipo anclado. Merluza queda como está: su
+banda ya contiene el filet del INDEC y deja afuera la merluza entera, que es otro producto.
 
 ---
 
