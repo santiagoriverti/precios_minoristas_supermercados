@@ -294,6 +294,12 @@ EANs puntuales del tipo; `RATIO_FRESCO` recalibrado con precio INDEC / ancla; y
 `sh_ipc_precios_promedio.xls`, hoja GBA; copia en `data/`). **Antes de publicar un costo en pesos**,
 contrastar los frescos con el INDEC: `auditar_salida_nb07.py <Excel> --indec <planilla>` (chequeo 6c).
 
+> **`RATIO_FRESCO` nunca se calibra con UN mes** (v5.13). En los tipos estacionales el cociente precio INDEC /
+> ancla va de 0,4 a 2,5 a lo largo del año: el ratio de un solo mes (v5.12) dejaba afuera el 67-95% de la naranja
+> de feb-abr. Se elige el ratio que maximiza el *recall* del precio plausible (precio INDEC del tipo / ancla, mes a
+> mes desde 2024, dentro de `[ref/K, ref×K]`) con contaminación acotada (share de precios aceptados que son de otro
+> producto): Naranja 0,85, Tomate 1,45, Limón 1,01. Cambiarlo relee el SEPA (está en la clave del caché).
+
 ### Safeguard MIN_PRODUCTOS_PROPIOS vs N_CANASTA
 
 Cuando `MIN_PRODUCTOS_PROPIOS >= N_CANASTA` ninguna sucursal puede pasar el filtro. El notebook auto-corrige en CELDA 3:
@@ -793,6 +799,39 @@ contra **12,0%** en Patagonia (38). Como el nacional se pondera por población, 
 ### Región
 `REGION_PROV` mapea provincia → una de 5 regiones (Centro/Pampeana, NOA, NEA, Cuyo, Patagonia).
 `costo_suc` gana la columna `region`; se agregan `region_dict` (snapshot) y `serie_region_dict` (semanal).
+
+### Índice TPD de los frescos (v5.13, CELDA 8 bloque 2b)
+Insumo: el panel por EAN del caché `ean_<clave>_v5` (mediana entre sucursales `p` y `n_suc` por tipo × EAN ×
+semana), filtrado a `n_suc >= FRESCO_EAN_MIN_SUC`. Se pivotea a una matriz semana × EAN (`_w`) por tipo.
+- `_tpd_alfa(LP, W)`: efectos fijos de `log p = alfa(semana) + gama(EAN)` por **medias alternadas** (alfa = media de
+  log p − gama en la semana; gama = media de log p − alfa en el EAN; W = 1 donde hay dato), hasta que alfa cambia
+  menos de 1e-10 o `FRESCO_TPD_ITER` (300) vueltas. Es mínimos cuadrados sin ponderar; no hace falta armar la
+  matriz de dummies (con 150 EANs × 52 semanas serían 200 columnas y 7.800 filas por semana y tipo).
+- `_tpd_ean(_w)`: para cada semana t estima la ventana `[t−51, t]` y avanza el índice alfa(t) − alfa(t'), t' = la
+  última semana con dato (**empalme de movimiento**: lo publicado no se toca). Pide `FRESCO_MIN_EANS_PAR` EANs en
+  la semana. Si t' quedó fuera de la ventana arranca un tramo nuevo (`_seg`), como en el encadenado.
+- `_meses_nivel(semanas, cob, mes)`: los `FRESCO_NIVEL_MESES` (3) últimos meses hasta `mes` (el de
+  `NIVEL_REFERENCIA_FRESCO`, 2026-08) con cobertura normal: `cob` es `_nsuc_is[tipo]` (sucursales con precio válido
+  por semana, del bloque 1b) y un mes cuenta si su promedio llega al `FRESCO_NIVEL_COB_MIN` (50%) de la mediana de
+  las 52 semanas con dato hasta `mes`. Todo medido hasta `mes`: la elección no cambia con las semanas nuevas.
+- `_nivelar(idx, seg, est, meses)`: el nivel de cada tramo es la mediana de estimador / índice en las semanas de
+  esos meses; si el tramo no llega, la última semana con estimador. `FRESCO_MES_NIVEL_TIPO` guarda los tipos cuyo
+  nivel sale de otros meses (en la v5.12 simulada: Durazno feb-abr, Roast beef may-jul) y el REPORTE los imprime.
+- Costo: 59 tipos × ~140 semanas × una ventana cada una, del orden de un minuto en Colab. Con
+  `FRESCO_EXPORTAR_METODOS` se calcula también el encadenado (`_encadenado_ean`) para la hoja `Frescos_metodos`.
+- Nada de esto invalida el caché (es CELDA 8). Tests: `notebooks/test_frescos_v513.py` (TPD = Jevons en panel
+  balanceado, recupera la inflación con rotación de EANs, una semana nueva no revisa la historia) y
+  `notebooks/test_encadenado_frescos.py tpd`. El TPD pide `FRESCO_MIN_EANS_PAR` (2) EANs en la semana: con uno solo el
+  efecto de semana queda determinado por un EAN suelto (Durazno fuera de temporada: un EAN a $13.400/kg lo hacía
+  saltar x3).
+
+### Cobertura mínima de empaquetados y arrastre (v5.13, CELDA 8 bloque 1b)
+`N_SUC_ITEM_SEMANA` = sucursales distintas con precio válido (`sval`) por empaquetado y semana. La celda es
+faltante si `n < min(MIN_SUC_ITEM_SEMANA, FRAC_SUC_ITEM_TIPICA × mediana de las últimas 26 semanas con dato)`.
+Se enmascara en `nac_wide` **y otra vez en `nac_ff` después del arrastre** (`nac_ff.mask(_flaco_is)`, igual que
+`_ratio_bad`). Enmascarar solo antes del `ffill` no alcanza: el arrastre rellena la celda con el precio de la
+semana anterior, el eslabón de la muestra apareada da 1,0 en plena inflación y al volver el ítem publica todo lo
+acumulado. En el panel v5.12 eso le sacaba 30 puntos a la Tecnológica entre ene y mar-24 (tres ítems con dato).
 
 ## Patrón técnico del notebook 02 — motor `datos_econometria`
 Mismo enfoque de lectura conservando el día, pero **sin frescos** (solo empaquetados: EANs de las

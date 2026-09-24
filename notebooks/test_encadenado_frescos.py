@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Test del encadenado por EAN de frescos (nb07 v5.7).
+"""Test del indice por EAN de frescos (nb07 v5.7; desde v5.13 corre los dos metodos: encadenado y TPD).
 
 Ejecuta el CODIGO REAL extraido de gen_nb07.py -no una copia- contra un panel sintetico que
 reproduce el patron medido en la corrida 2026-08-27: un regimen barato de alta cobertura que
@@ -15,7 +15,7 @@ import io, pathlib, numpy as np, pandas as pd
 
 SRC = pathlib.Path(__file__).with_name('gen_nb07.py')
 src = io.open(SRC, encoding='utf-8').read()
-i0 = src.index('if FRESCO_NAC_ENCADENADO and len(ean_nac):')
+i0 = src.index('# ── 2b. Frescos: la FORMA de la serie sale de un indice por EAN')   # v5.13: incluye las funciones
 i1 = src.index('# \u2500\u2500 Banda de plausibilidad POR TIPO', i0)
 BLOQUE = src[i0:i1]
 print(f'bloque extraido: {len(BLOQUE)} chars\n')
@@ -62,6 +62,12 @@ FRESCO_EAN_MIN_SUC    = 10
 FRESCO_MIN_EANS_PAR   = 2
 FRESCO_MAX_HUECO_PAR  = 8
 FRESCO_ESLABON_K      = 2.5
+# v5.13: metodo y nivel (el nivel sin mes de referencia cae en la ultima semana, como antes)
+FRESCO_TPD_VENTANA = 52; FRESCO_TPD_ITER = 300; FRESCO_EXPORTAR_METODOS = False
+FRESCO_NIVEL_MES = None; NIVEL_REFERENCIA_FRESCO = {}
+import sys as _sys
+FRESCO_METODO = _sys.argv[1] if len(_sys.argv) > 1 else 'encadenado'
+print(f'metodo: {FRESCO_METODO}')
 
 print('=== ANTES (estimador actual): salto por cambio de mezcla ===')
 for t in casos:

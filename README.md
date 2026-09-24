@@ -26,7 +26,7 @@ El proyecto responde tres preguntas:
 | `04_precios_seleccion` | Exporta un **Excel** con los precios diarios del último mes para todos los supermercados a menos de X km de un punto: una hoja por sucursal (productos × días) + una hoja general (producto × super, precio promedio). Ver [sección detallada](#precios-por-selección-geográfica--04_precios_seleccion). | [![Abrir en Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/santiagoriverti/precios_minoristas_supermercados/blob/main/notebooks/04_precios_seleccion.ipynb) |
 | `05_evolucion_productos_representativos` | Igual que el Notebook 02, pero para **productos individuales** en vez de canastas: evolución de precio, mapas provinciales, comparación con el IPC y rankings por cadena/barrio de cada EAN que se ingrese. Ver [sección detallada](#evolución-de-productos-individuales--05_evolucion_productos_representativos). | [![Abrir en Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/santiagoriverti/precios_minoristas_supermercados/blob/main/notebooks/05_evolucion_productos_representativos.ipynb) |
 | `06_evolucion_brecha_celiaca` | Mide la **brecha celíaca** (canasta sin-TACC vs. base con TACC) y su evolución **diaria, semanal y mensual**, usando solo tipos de producto con dicotomía celíaca (2–3 EANs representativos por lado, promediados). Brecha **intra-sucursal**, desagregada por provincia, cadena y concentración de comercios. Ver [sección detallada](#brecha-celíaca--06_evolucion_brecha_celiaca). | [![Abrir en Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/santiagoriverti/precios_minoristas_supermercados/blob/main/notebooks/06_evolucion_brecha_celiaca.ipynb) |
-| `07_evolucion_canastas_alternativas` | **Motor del informe semanal.** Costo de **6 canastas** (**Popular / Media / Ejecutiva / Tecnológica / Representativa / Femenina**) con **semana que cierra el jueves**, comparado con el **IPC**, desagregado por **rubro**, **provincia**, **región** y **cadena**. **Índice encadenado de muestra apareada** (sin saltos por altas/bajas), **nacional ponderado por población** y **provincia controlando por cadena**. Composición: **270 empaquetados** por EAN (`cantidad_01..06`) + **59 tipos de frescos** por nombre. Exporta `Presencia_items`, `Alertas_reemplazo`, `Alertas_quiebre` y `Candidatos_trazabilidad` para trazabilidad. **v5.12** (relectura con candidatos de la ronda 2; v5.11.1 con 24 reemplazos verificada, 2026-09-24). Ver [sección detallada](#canastas-alternativas--07_evolucion_canastas_alternativas). | [![Abrir en Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/santiagoriverti/precios_minoristas_supermercados/blob/main/notebooks/07_evolucion_canastas_alternativas.ipynb) |
+| `07_evolucion_canastas_alternativas` | **Motor del informe semanal.** Costo de **6 canastas** (**Popular / Media / Ejecutiva / Tecnológica / Representativa / Femenina**) con **semana que cierra el jueves**, comparado con el **IPC**, desagregado por **rubro**, **provincia**, **región** y **cadena**. **Índice encadenado de muestra apareada** (sin saltos por altas/bajas), **nacional ponderado por población** y **provincia controlando por cadena**. Composición: **267 empaquetados** por EAN (`cantidad_01..06`) + **59 tipos de frescos** por nombre (índice multilateral **TPD** por EAN). Exporta `Presencia_items`, `Alertas_reemplazo`, `Alertas_quiebre`, `Candidatos_trazabilidad` y `Frescos_metodos`. **v5.13** (2026-09-24, lista para correr: frescos por TPD con nivel fijo, cobertura mínima de empaquetados, filtro estacional y ronda 2 de reemplazos). Ver [sección detallada](#canastas-alternativas--07_evolucion_canastas_alternativas). | [![Abrir en Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/santiagoriverti/precios_minoristas_supermercados/blob/main/notebooks/07_evolucion_canastas_alternativas.ipynb) |
 
 > **¿Ves una versión vieja en Colab?** El badge siempre apunta a la última versión en GitHub, pero Colab puede mostrar una copia cacheada de tu Drive. Para forzar la actualización: eliminá el notebook de `Mi unidad/Colab Notebooks/` en Google Drive y volvé a hacer clic en el badge.
 
@@ -566,15 +566,17 @@ Se cambia con `DIA_CIERRE_SEMANA` (3=jueves, 4=viernes).
 > equivalentes). Ver `docs/canastas_alternativas/README.md`.
 
 ### Composición híbrida (dos fuentes)
-- **Empaquetados (por EAN)**: **270 EANs únicos** (288 hasta la v5.10; el 2026-09-23 salieron
-  pañales y toallitas y el 2026-09-24 se reemplazaron 24 ítems sin historia completa, lista en
-  `docs/canastas_alternativas/reemplazos_2026-09-24.csv`). Umbral de cobertura (`COBERTURA` del constructor): Popular, Media, Ejecutiva
+- **Empaquetados (por EAN)**: **267 EANs únicos** (288 hasta la v5.10; el 2026-09-23 salieron
+  pañales y toallitas y el 2026-09-24 se reemplazaron 24 ítems sin historia completa y después otros 15 con
+  historia flaca, listas en `docs/canastas_alternativas/reemplazos_2026-09-24.csv` y
+  `ronda2_propuesta_2026-09-24.csv`). Umbral de cobertura (`COBERTURA` del constructor): Popular, Media, Ejecutiva
   y Representativa ≥4 cadenas/≥15 provincias/≥800 sucursales, Femenina ≥4/≥15/≥700, durables
   ≥3/≥10/≥90; piso absoluto 3/12/700. Los picks que no llegan quedan marcados en
   `canastas_v5_detalle.csv`. Se leen de la hoja **`Productos unicos`**
   (`carga/output_canasta/canasta_representativa_*.xlsx`), columnas `cantidad_01..06`.
-  Se cargan con **`docs/canastas_alternativas/cargar_canastas_v5.py`**, que es la salida de
-  **`construir_canastas_v5.py`**; los reemplazos puntuales se aplican con
+  Se cargan con **`docs/canastas_alternativas/cargar_canastas_v5.py`** (la composición vigente), que salió de
+  **`construir_canastas_v5.py`** con el Excel de 2026-08 (corrido con el de otro mes elige otros productos);
+  los reemplazos puntuales se aplican con
   **`aplicar_reemplazos.py`** (propuesta previa: **`proponer_reemplazos.py`**). Además, desde la v5.11 se leen
   **`EANS_CANDIDATOS`** (CELDA 1; 155 desde la v5.12) que
   no entran a ninguna canasta: son los candidatos a reemplazar los ítems con huecos.
@@ -603,8 +605,16 @@ Se cambia con `DIA_CIERRE_SEMANA` (3=jueves, 4=viernes).
 - **Especificación de frescos** (v5.11): `EXCLUIR_EAN_FRESCO` saca las bandejas Atm de DIA de Pollo
   y Suprema, y `RATIO_FRESCO` está recalibrado donde el filtro de régimen descartaba el producto
   correcto (Pollo, Carne picada, Limón, Suprema). Ver `docs/METODOLOGIA.md` §10.16.
+- **Frescos por TPD** (v5.13): la forma de la serie de cada tipo sale de un índice multilateral
+  time-product-dummy sin ponderar sobre sus EANs (ventana de 52 semanas, empalme de movimiento: una semana
+  nueva no revisa la historia). El nivel sale del estimador en los 3 últimos meses con cobertura normal hasta
+  el mes de referencia (un mes fuera de temporada no cuenta). Hoja `Frescos_metodos` con el encadenado al lado.
+  `RATIO_FRESCO` estacional de Naranja, Tomate y Limón elegido por recall/contaminación. METODOLOGIA §10.19.
+- **Cobertura mínima de empaquetados** (v5.13): un ítem-semana con menos de min(300, 50% de su cobertura
+  típica) sucursales es faltante y queda fuera de la muestra apareada.
 - **Arrastre**: si un ítem falta, se arrastra su último precio nacional hasta 8 semanas
-  (`MAX_SEMANAS_ARRASTRE`); si falta más, entra en `Alertas_reemplazo`.
+  (`MAX_SEMANAS_ARRASTRE`); si falta más, entra en `Alertas_reemplazo`. No se arrastra una celda sacada
+  por calidad (banda de plausibilidad o cobertura mínima).
 - **Outliers intra-tipo (frescos)**: dentro de cada sucursal-semana se descartan las variantes
   fuera de `[mediana/2.5, mediana×2.5]`. Protege de gramajes mal cargados o precios por unidad.
 - **Provincia/región controlando por cadena**: además del costo crudo se reporta
@@ -723,7 +733,8 @@ precios_minoristas_supermercados/
 │   ├── gen_nb07.py                               # Script fuente que genera el Notebook 7
 │   ├── auditar_salida_nb07.py                    # Audita una salida del nb07 (réplica del índice, quiebres, trazabilidad, IPC, aperturas, INDEC)
 │   ├── test_celdas_graficos_y_mapa.py            # Tests: gráficos (CELDA 12) y mapa (CELDA 17) de nb05/nb02
-│   ├── test_encadenado_frescos.py                # Tests: índice encadenado de frescos de nb07
+│   ├── test_encadenado_frescos.py                # Tests: índice de frescos de nb07 (argumento encadenado | tpd)
+│   ├── test_frescos_v513.py                      # Tests: TPD, nivel fijo, cobertura mínima y nivel fuera de temporada (v5.13)
 │   ├── test_quiebre_serie.py                     # Tests: quiebre de serie ante saltos imposibles (BUG-36)
 │   ├── test_cache_por_mes.py                     # Tests: caché por mes del nb07, reanudación tras corte (BUG-34)
 │   ├── test_costo_sucursal.py                    # Tests: costo por sucursal con rubros ausentes (BUG-37) y anclaje de nivel
@@ -741,13 +752,16 @@ precios_minoristas_supermercados/
     ├── BUGS_Y_MEJORAS.md               # Bugs resueltos y defectos abiertos, con causa raíz y fix
     ├── AUDITORIA_2026-09-22.md         # Auditoría de la corrida 2026-09-17 del nb07 (v5.8)
     ├── AUDITORIA_2026-09-22_v59.md     # Auditoría de la re-corrida con la v5.9 (BUG-37, frescos vs INDEC)
-    ├── AUDITORIA_2026-09-24_v512.md    # Revisión de la v5.12: brecha con el IPC, incertidumbre, dos defectos
+    ├── AUDITORIA_2026-09-24_v512.md    # Revisión de la v5.12: brecha con el IPC, incertidumbre, dos defectos (aplicada en la v5.13)
     ├── auditoria/                      # Los informes en HTML y PDF + scripts_v59/ que reproducen la segunda
     └── canastas_alternativas/           # Notebook 07 — composición de las 6 canastas alternativas
         ├── README.md                    #   diseño, flujo de trabajo, cambios posteriores a v5
         ├── construir_canastas_v5.py     #   constructor (local): elige productos y genera el cargador
         ├── cargar_canastas_v5.py        #   cargador (se pega en Colab): escribe cantidad_01..06
         ├── aplicar_reemplazos.py        #   reemplazos puntuales con las reglas del constructor
+        ├── proponer_reemplazos.py       #   propone reemplazos con historia (lógica del constructor + caché)
+        ├── reemplazos_2026-09-24.csv    #   ronda 1 aplicada (24 reemplazos de trazabilidad)
+        ├── ronda2_propuesta_2026-09-24.csv  # ronda 2 aplicada (15 reemplazos, historia flaca)
         ├── canastas_v5_detalle.csv      #   por qué se eligió cada producto (corrida del constructor)
         └── frescos_v5_qty.txt           #   cantidades de frescos para TIPOS_FRESCOS
 ```
@@ -774,7 +788,8 @@ y se commitean juntos el generador y el `.ipynb`.
 | Test | Qué cubre |
 |---|---|
 | `notebooks/test_celdas_graficos_y_mapa.py` | Ejecuta las celdas **reales** del `.ipynb` generado: la CELDA 12 con productos de distinta antigüedad de serie (BUG-29), el orden de mosaicos del mapa y su fallback (BUG-30/32), y que el mapa no escriba marcadores en el HTML ni supere los 6 MB (BUG-31), en nb05 y en el mapa de nb02 |
-| `notebooks/test_encadenado_frescos.py` | Índice encadenado de frescos del nb07 con precios pegajosos (BUG-28) |
+| `notebooks/test_encadenado_frescos.py` | Índice de frescos del nb07 con precios pegajosos (BUG-28); se corre con `encadenado` y con `tpd` |
+| `notebooks/test_frescos_v513.py` | v5.13: el TPD es el Jevons en un panel balanceado y recupera la inflación con rotación de EANs; una semana nueva no revisa la historia; la cobertura mínima (umbral relativo) y que el arrastre no rellene la celda sacada (BUG-40); el nivel de un fresco fuera de temporada (BUG-41) |
 | `notebooks/test_quiebre_serie.py` | Regla de quiebre de serie del índice: un salto ×20 no entra, una variación legítima ×1,6 sí, y el ida y vuelta entre regímenes no deja escalón (BUG-36) |
 | `notebooks/test_cache_por_mes.py` | Caché por mes del nb07: corte a mitad de la lectura, reanudación, identidad contra una corrida sin caché, y que **todas** las celdas del `.ipynb` compilen (BUG-34, BUG-35) |
 | `notebooks/test_costo_sucursal.py` | Costo por sucursal del nb07: una sucursal sin rubros enteros cuesta lo mismo que el nacional (no menos), rubro parcial, cobertura mínima, reescalado de los tipos con nivel anclado y `_factor_nivel` (BUG-37, v5.10) |

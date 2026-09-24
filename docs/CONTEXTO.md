@@ -1,6 +1,6 @@
 # Contexto del Proyecto — Precios Minoristas SEPA
 
-Última actualización: 2026-09-09 (nb05/nb02: BUG-29 gráfico de barras con series de distinta longitud, BUG-30/32 mosaicos del mapa —CartoDB exige API key y OSM no responde desde la red de INECO— y BUG-31 el mapa pesaba 48 MB. Antes, 2026-09-07: nb07 v5.3, banda de plausibilidad anclada en frescos)
+Última actualización: 2026-09-24 (nb07 v5.13 lista para correr: frescos por TPD con nivel fijo, cobertura mínima de empaquetados, filtro estacional de frescos y ronda 2 de reemplazos —267 EANs—; ver el historial de cambios y `.claude/memory.md`. Antes, 2026-09-09: nb05/nb02: BUG-29 gráfico de barras con series de distinta longitud, BUG-30/32 mosaicos del mapa —CartoDB exige API key y OSM no responde desde la red de INECO— y BUG-31 el mapa pesaba 48 MB. Antes, 2026-09-07: nb07 v5.3, banda de plausibilidad anclada en frescos)
 
 > **El proyecto tiene 7 herramientas (nb01–nb07).** Las descripciones detalladas por celda más
 > abajo en este archivo son **históricas** (describen la arquitectura previa de nb02); el estado
@@ -152,8 +152,10 @@ Solo tipos con dicotomía celíaca; 2–3 EANs representativos por lado, promedi
 intra-sucursal. Config: dict `TIPOS` en la CELDA 1. **Detalle completo: `docs/BRECHA_CELIACA.md`.**
 
 ### 2f. `07_evolucion_canastas_alternativas` (notebook 07) — motor del informe semanal
-**Estado: v5.12 corrida y revisada, 2026-09-24** (ver `docs/AUDITORIA_2026-09-24_v512.md`: la brecha con el
-IPC sale de los frescos; ronda 2 de reemplazos y dos arreglos pendientes de decisión; historial más abajo). Es el notebook que alimenta el **informe semanal** del equipo de
+**Estado: v5.13 lista para correr (relee el SEPA), 2026-09-24.** Implementa las decisiones de la revisión de la
+v5.12 (`docs/AUDITORIA_2026-09-24_v512.md` §7): frescos por índice multilateral TPD con el nivel fijado en el mes de
+referencia, cobertura mínima de empaquetados, filtro estacional de Naranja/Tomate/Limón y la ronda 2 de reemplazos
+(267 EANs). Efecto estimado y checklist de la corrida en `.claude/memory.md`. Es el notebook que alimenta el **informe semanal** del equipo de
 economistas. Costo de **6 canastas** vs **IPC**, desagregado por **rubro** (drill-down hasta
 producto), **provincia**, **región** y **cadena**.
 
@@ -161,20 +163,20 @@ producto), **provincia**, **región** y **cadena**.
 fecha de cierre (`2026-09-03`). Corriendo el viernes, la última semana está completa.
 `DIA_CIERRE_SEMANA` (3=jueves, 4=viernes). *nb02 y nb06 siguen usando semana ISO.*
 
-**Las 6 canastas** (hoja `Productos unicos`, 270 EANs empaquetados únicos desde el 2026-09-24 —288
-hasta la v5.10; el 23-sep salieron pañales y toallitas y el 24-sep se reemplazaron 24 ítems sin historia
-completa— + 59 tipos frescos; además, desde la v5.11, 90 `EANS_CANDIDATOS` que se leen sin entrar a
-ninguna canasta).
+**Las 6 canastas** (hoja `Productos unicos`, **267 EANs** empaquetados únicos desde la ronda 2 del 2026-09-24 —288
+hasta la v5.10; el 23-sep salieron pañales y toallitas, el 24-sep se reemplazaron 24 ítems sin historia completa
+(270) y después otros 15 con historia flaca en 2024 (267)— + 59 tipos frescos; además, desde la v5.11,
+`EANS_CANDIDATOS` —155 desde la v5.12— que se leen sin entrar a ninguna canasta).
 Desde **v5 (2026-09-07)** cada estrato usa su propia versión de cada necesidad, con cantidades
 físicas ancladas a la **CBA del INDEC para hogar tipo 2** (3,09 adultos equivalentes):
 
 | Col | Canasta | Empaquetados | Frescos | Criterio de producto |
 |---|---|---:|---:|---|
 | `cantidad_01` | Popular | 58 | 32 | marca más barata con presencia nacional |
-| `cantidad_02` | Media | 76 | 57 | marca líder |
-| `cantidad_03` | Ejecutiva | 76 | 59 | premium |
+| `cantidad_02` | Media | 74 | 57 | marca líder |
+| `cantidad_03` | Ejecutiva | 74 | 59 | premium |
 | `cantidad_04` | Tecnológica | 14 | — | producto modal (bundle de durables) |
-| `cantidad_05` | Representativa | 76 | 59 | producto modal — comparable con INDEC |
+| `cantidad_05` | Representativa | 74 | 59 | producto modal — comparable con INDEC |
 | `cantidad_06` | Femenina | 14 | — | marca líder |
 
 > ⚠️ **No confundir**: `cantidad_01..06` en la hoja **`Productos unicos`** son estas 6 canastas
@@ -213,6 +215,16 @@ Tecnológica y Femenina no llevan frescos y desglosan por `categoria` en vez de 
   Suprema) y `RATIO_FRESCO` recalibrado en Pollo, Carne picada, Limón y Suprema (METODOLOGIA §10.16).
 - **Candidatos a reemplazo** (v5.11): `EANS_CANDIDATOS` se leen del SEPA sin entrar a ninguna canasta;
   la hoja `Candidatos_trazabilidad` mide su historia. Pasarlos a una canasta no relee el SEPA.
+- **Frescos por TPD** (v5.13): la forma de la serie de cada tipo sale de un índice multilateral time-product-dummy
+  sin ponderar sobre sus EANs (ventana móvil de 52 semanas, empalme de movimiento: una semana nueva no revisa la
+  historia); el nivel, del estimador ponderado por población en los 3 últimos meses con cobertura normal hasta el
+  mes de referencia (2026-08), no en la última semana: un mes fuera de temporada (Durazno) o con media muestra
+  perdida (Roast beef ago-26) no fija el nivel. Hoja `Frescos_metodos` con el encadenado de la v5.10-v5.12 al lado
+  (METODOLOGIA §10.19).
+- **Cobertura mínima de empaquetados** (v5.13): un ítem-semana con menos de min(300, 50% de su cobertura típica)
+  sucursales es faltante y queda fuera de la muestra apareada (no se arrastra).
+- **Filtro de régimen estacional** (v5.13): `RATIO_FRESCO` de Naranja 0,85, Tomate 1,45 y Limón 1,01, elegidos por
+  recall/contaminación contra el precio INDEC de todos los meses (no de uno).
 
 **Caché y RAM**: la lectura colapsa los frescos a su TIPO (de ~10.600 EANs a 59) durante la lectura y
 guarda un parquet por mes cerrado: `_cache_nb07/sem_<clave>_v5/<mes>.parquet` (precio por sucursal) y
@@ -232,11 +244,13 @@ sin dato hace >8 semanas), **`Alertas_precio_item`** (saltos >35%), **`Alertas_q
 CELDA 15 imprime el bloque **"REPORTE PARA CLAUDE"** en texto plano.
 
 **Carga de cantidades**: `docs/canastas_alternativas/cargar_canastas_v5.py` (loader de Colab,
-282 EANs, `cantidad_01..06`; limpia y reescribe las 6 columnas). Lo **genera**
-`construir_canastas_v5.py`, que se corre local y deja además `canastas_v5_detalle.csv` con el
+267 EANs, `cantidad_01..06`; limpia y reescribe las 6 columnas). Lo **generó**
+`construir_canastas_v5.py` (con el Excel de 2026-08), que se corre local y deja además `canastas_v5_detalle.csv` con el
 porqué de cada elección y `frescos_v5_qty.txt` con las tuplas para `TIPOS_FRESCOS`. Para cambiar
 productos puntuales sin recalibrar todo: `aplicar_reemplazos.py` (mismas reglas del constructor;
-actualiza el cargador y `EAN_FORZADO`).
+actualiza el cargador y `EAN_FORZADO`); para proponerlos, `proponer_reemplazos.py`. **El cargador es la composición
+vigente**: el constructor corrido con el Excel de otro mes elige otros productos (con el de 2026-09, 132 EANs
+distintos); solo respeta los 42 pares de `EAN_FORZADO`.
 Generador: `gen_nb07.py`. **Detalle en README y `docs/canastas_alternativas/README.md`.**
 
 ### 3. `analisis_SEPA_evolucion.ipynb`
@@ -535,6 +549,21 @@ Los 4 reemplazos (Swift XL, Lavandina Anti-splash, Plusbelle, Listerine) están 
 ---
 
 ## Historial de cambios
+
+### 2026-09-24 (cierre) — nb07 v5.13 lista para correr + ronda 2 aplicada
+
+El usuario aprobó las cinco decisiones de la revisión de la v5.12. nb07 **v5.13** (relee el SEPA por los ratios):
+(1) frescos por índice multilateral **TPD** sin ponderar, ventana de 52 semanas con empalme de movimiento (contra el
+INDEC 0,99, el encadenado 0,94); (2) **nivel de los frescos fijo**: 3 últimos meses con cobertura normal hasta el mes
+de referencia (2026-08); una semana nueva ya no reescala la historia, y al simular con el estimador replicado apareció
+que el Durazno tomaba el nivel de agosto, fuera de temporada (4 veces su peso) y el Roast beef el de un mes con media
+muestra perdida; (3) **cobertura mínima de empaquetados** min(300, 50% de la típica), fuera de la muestra
+apareada (con arrastre, el eslabón de esas semanas daba 1,0: se detectó en la simulación, la Tecnológica perdía 30
+puntos de 2024); (4) **`RATIO_FRESCO` estacional** de Naranja, Tomate y Limón por recall/contaminación; (5) **ronda 2**
+de reemplazos (15, 267 EANs, no relee). Test nuevo `notebooks/test_frescos_v513.py`; 8 tests OK. Efecto estimado sobre
+el panel v5.12 (ene-24 → ago-26, simulación con el código real): Popular 230,4 → 242,8, Media 241,7 → 247,6,
+Ejecutiva 243,8 → 243,3, Representativa 235,9 → 239,2, Femenina 260,0 → 258,7
+(`docs/auditoria/scripts_v513/simular_v513.py`).
 
 ### 2026-09-24 (noche) — corrida v5.12 y revisión a fondo
 

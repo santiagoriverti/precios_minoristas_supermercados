@@ -53,6 +53,19 @@ v5.12 (ronda 2, 2026-09-24) - RELEE EL SEPA (cambia la clave del cache):
     al INDEC en la v5.11 sin recalibrar el filtro de regimen, que quedaba centrado en otro producto
     (la regla de la v5.11: si se ancla un tipo, su ratio tiene que apuntar al mismo producto).
 Y en el Excel de canasta: los 24 reemplazos de trazabilidad del 2026-09-24 (270 EANs).
+
+v5.13 (2026-09-24, revision docs/AUDITORIA_2026-09-24_v512.md) - RELEE EL SEPA (cambia RATIO_FRESCO):
+20. Frescos: indice multilateral TPD sin ponderar (ventana 52 semanas, empalme de movimiento) en vez
+    del encadenado por EAN; la hoja Frescos_metodos trae los dos. Contra el INDEC: 0,99 vs 0,94.
+21. El NIVEL de los frescos se fija con los 3 ultimos meses con cobertura normal hasta el mes de
+    referencia (no en la ultima semana): una corrida semanal ya no reescala la historia, y un mes fuera
+    de temporada o con media muestra perdida no fija el nivel (Durazno feb-abr, Roast beef may-jul).
+22. Cobertura minima de los empaquetados: un item-semana con menos de min(300, 50% de su cobertura
+    tipica) sucursales es faltante (los arranques de 2024 con un punado de sucursales). Queda fuera de
+    la muestra apareada: el arrastre no la rellena (como las semanas rechazadas por la banda).
+23. RATIO_FRESCO estacional: Naranja 0,85, Tomate 1,45, Limon 1,01 (la v5.11/v5.12 los habia calibrado
+    con UN mes y cortaban la temporada).
+Y en el Excel de canasta: ronda 2 de reemplazos (15 items con historia flaca o sin historia).
 """
 import json, os, hashlib
 
@@ -218,7 +231,7 @@ RATIO_FRESCO = {
     'Jamón cocido (kg)': 8.47,
     'Kiwi': 4.70,
     'Lechuga': 2.82,
-    'Limón': 0.45,          # v5.11: era 2.15 y centraba el filtro en los JUGOS (~$7.500/kg): descartaba el limon real
+    'Limón': 1.01,          # v5.13: 1,01. v5.11 0,45 dejaba afuera el limon de verano (INDEC/ancla va de 0,41 a 2,49); antes 2,15 centrado en los jugos. Recall 98,6% del precio plausible mes a mes (revision 2026-09-24)
     'Lomo': 9.25,
     'Mandarina': 1.07,
     'Manzana': 2.02,
@@ -228,7 +241,7 @@ RATIO_FRESCO = {
     'Morrón': 3.44,
     'Mortadela': 5.72,
     'Nalga/Cuadril': 7.39,
-    'Naranja': 0.37,        # v5.12: era 1.33; centraba el filtro en ~$4.200: DESCARTABA naranjas de $600-1.300/kg y dejaba pasar productos de $6.900-9.500 (Carrefour, Cadena 3); 0,37 = INDEC / ancla ago-26
+    'Naranja': 0.85,        # v5.13: 0,85. v5.12 0,37 (INDEC/ancla de UN mes) cortaba la naranja fuera de temporada: 67-95% de las observaciones en feb-abr; v5.11 1,33 dejaba pasar los productos de $6.900-9.500 de Carrefour. Recall 99,9%, contaminacion 1,9%
     'Osobuco': 4.77,
     'Paleta': 7.12,
     'Palta': 3.87,
@@ -247,7 +260,7 @@ RATIO_FRESCO = {
     'Roast beef': 5.04,
     'Salame/Salamín': 10.36,
     'Suprema/Pechuga': 3.50,  # v5.11: era 9.53 (centrado en la bandeja Atm de DIA a $20.500); sin ella, ~1,8x el pollo entero
-    'Tomate': 0.95,         # v5.12: era 2.44; dejaba afuera tomates de $1.700-2.500 y adentro productos de $12.000-16.600; 0,95 = INDEC / ancla ago-26
+    'Tomate': 1.45,         # v5.13: 1,45. v5.12 0,95 cortaba los picos (50-92% de las observaciones); v5.11 2,44 dejaba adentro productos de $12.000-16.600. Recall 98,4% (minimo 90%), contaminacion 5%
     'Uva': 3.62,
     'Vacío': 7.46,
     'Zanahoria': 0.88,
@@ -284,6 +297,36 @@ FRESCO_EAN_MIN_SUC    = 10   # sucursales minimas de un EAN-semana para entrar e
 FRESCO_MIN_EANS_PAR   = 2    # EANs apareados minimos entre dos semanas para aceptar el eslabon
 FRESCO_MAX_HUECO_PAR  = 8    # semanas maximas que puede saltear un eslabon para reenganchar
 FRESCO_ESLABON_K      = 2.5  # tope de variacion de un EAN en un eslabon (clip, no descarte)
+# ── v5.13: METODO del indice de un fresco y NIVEL fijo ──────────────────────────────────────
+# 'tpd' (v5.13): indice multilateral TPD (time-product dummy: log p = semana + EAN) SIN PONDERAR,
+# en una ventana movil de FRESCO_TPD_VENTANA semanas; cada semana nueva agrega el movimiento de la
+# ultima ventana (empalme de movimiento), asi que una corrida semanal no revisa la historia.
+# 'encadenado' (v5.7-v5.12): media geometrica de los EANs apareados entre semanas consecutivas.
+# Por que (docs/AUDITORIA_2026-09-24_v512.md): contra los precios promedio del INDEC en 23 frescos,
+# el encadenado sube 0,94 de lo que sube el INDEC desde ene-24 (0,92 desde ene-25) y el TPD sin
+# ponderar 0,99 (0,96). Ponderar por sucursales da 0,96 (0,92): la cantidad de sucursales no es
+# gasto y deja el tipo en manos de DIA. Ventana: con 26 semanas el TPD se parece al encadenado; con
+# 52 y con 104 da lo mismo (0,991 y 0,990). La hoja Frescos_metodos trae los dos, tipo por tipo.
+FRESCO_METODO           = 'tpd'
+FRESCO_TPD_VENTANA      = 52
+FRESCO_TPD_ITER         = 300    # tope de iteraciones del ajuste de efectos fijos (converge antes)
+FRESCO_EXPORTAR_METODOS = True   # calcular los dos metodos y dejarlos en la hoja Frescos_metodos
+# NIVEL de cada tramo del indice de un fresco = mediana del cociente (estimador / indice) en las
+# semanas de los FRESCO_NIVEL_MESES ultimos meses CON COBERTURA NORMAL hasta FRESCO_NIVEL_MES (None = el
+# mes de NIVEL_REFERENCIA_FRESCO, hoy 2026-08). Solo usa datos hasta ese mes: no se revisa. Hasta v5.12
+# era la ULTIMA semana y cada semana nueva reescalaba la historia de los frescos no anclados (entre las
+# corridas del 17 y del 24-sep: Mortadela x1,49, Chaucha x1,14; el indice de ago-26 se movia 0,2).
+# Tres meses y no uno: el estimador de un tipo salta de un mes a otro por la mezcla de variantes aunque
+# la cobertura no cambie (Mortadela: 10.200, 17.400, 13.700, 16.100 y 12.600 $/kg entre ene y ago-26).
+FRESCO_NIVEL_MES        = None
+FRESCO_NIVEL_MESES      = 3
+# Un mes con menos de FRESCO_NIVEL_COB_MIN de la cobertura tipica del tipo (sucursales con precio
+# valido, mediana de las 52 semanas con dato hasta el mes de nivel) no cuenta: fuera de temporada o
+# con media muestra perdida. Durazno: en ago-26 lo publican 273 sucursales contra ~1.500 en temporada y
+# su nivel de agosto (16.000 $/kg, 4x la mediana de sus EANs) le daba 4 veces su peso en la canasta todo
+# el año -> nivel de feb-abr. Roast beef: en ago-26 pasa de 1.480 a 727 sucursales y el estimador salta
+# +35% -> nivel de may-jul.
+FRESCO_NIVEL_COB_MIN    = 0.5
 # ── Anclaje de NIVEL con referencia de mercado externa ($/kg de la ULTIMA semana) ────────────
 # El indice de frescos separa FORMA (la cadena de EANs apareados) de NIVEL (el estimador interno
 # en una semana de anclaje). Cuando el universo de EANs de un tipo esta dominado por codigos de
@@ -584,6 +627,16 @@ AGG_NACIONAL = 'poblacion'
 # nacional ponderado. Sin esto, provincias con 2-3 sucursales (Patagonia, NEA) meten su ruido de
 # muestreo en la serie nacional con TODO su peso poblacional.
 MIN_SUC_PROV_ITEM = 3
+# v5.13: COBERTURA MINIMA de un EMPAQUETADO por semana. El precio nacional de un item en una semana
+# con menos de MIN_SUC_ITEM_SEMANA sucursales -o de FRAC_SUC_ITEM_TIPICA de su cobertura tipica de
+# las ultimas 26 semanas, lo que sea MENOR, para no borrar items de pocas sucursales como los de la
+# Tecnologica- se trata como FALTANTE. En 2024 muchos productos estaban en muchas menos sucursales
+# que hoy y su precio nacional salia de un punado de ellas: el vino Luigi Bosca estaba a $4.158 en
+# ene-24 con 104 sucursales y a $10.277 en mar-24 con 26; desde ago-24 (300+) sube x1,41 como los
+# otros vinos. Sin la regla, ese arranque le sumaba ~4 puntos al acumulado de la Ejecutiva.
+# La celda faltante NO se arrastra (CELDA 8): con el precio anterior el eslabon daria 1,0.
+MIN_SUC_ITEM_SEMANA  = 300
+FRAC_SUC_ITEM_TIPICA = 0.5
 # Winsorizacion de las medianas provinciales contra la mediana entre provincias, antes de
 # promediar. Descarta la provincia cuyo precio se va fuera de [med/K, med*K].
 PROV_OUTLIER_K = 2.5
@@ -1457,96 +1510,198 @@ else:
 # ── 2. Arrastre (forward-fill acotado) ────────────────────────────────────────
 nac_wide = nac_item.pivot(index='semana', columns='item', values='nac').sort_index()
 
-# ── 2b. Frescos: reemplazo de la FORMA de la serie por un encadenado por EAN ──
-# Ver FRESCO_NAC_ENCADENADO en la CELDA 1. Se conserva el NIVEL del estimador ponderado por
-# poblacion en la ultima semana valida y se reconstruye la historia encadenando ratios de EANs
-# apareados. Un eslabon puede saltear hasta FRESCO_MAX_HUECO_PAR semanas para reenganchar; si no
-# reengancha, la celda queda NaN y el resto de la maquinaria (muestra apareada, arrastre acotado)
-# la trata como faltante, que es el comportamiento correcto.
+# ── 1b. Cobertura minima de los EMPAQUETADOS por semana (v5.13, ver MIN_SUC_ITEM_SEMANA) ──────
+_nsuc_is = (sval.groupby(['item','semana'])['suc_id'].nunique().unstack('item')
+            .reindex(index=nac_wide.index))
+_emp_c = [c for c in nac_wide.columns if c in EANS_EMP_LECT and c in _nsuc_is.columns]
+N_SUC_ITEM_SEMANA = _nsuc_is[_emp_c]
+_tipica = N_SUC_ITEM_SEMANA.apply(lambda s: s.dropna().iloc[-26:].median() if s.notna().any() else np.nan)
+_umbral_is = np.minimum(float(MIN_SUC_ITEM_SEMANA), FRAC_SUC_ITEM_TIPICA * _tipica)
+_flaco_is = N_SUC_ITEM_SEMANA.lt(_umbral_is, axis=1) & nac_wide[_emp_c].notna()
+N_CELDAS_FLACAS = int(_flaco_is.values.sum())
+_n_celdas_emp = int(nac_wide[_emp_c].notna().values.sum())
+if N_CELDAS_FLACAS:
+    nac_wide[_emp_c] = nac_wide[_emp_c].mask(_flaco_is)
+print(f'Cobertura minima de empaquetados: {N_CELDAS_FLACAS:,} celdas item-semana con menos de '
+      f'min({MIN_SUC_ITEM_SEMANA}, {FRAC_SUC_ITEM_TIPICA:.0%} de su cobertura tipica) sucursales -> faltantes '
+      f'({N_CELDAS_FLACAS / max(_n_celdas_emp, 1) * 100:.1f}% de las celdas de empaquetados)')
+
+# ── 2b. Frescos: la FORMA de la serie sale de un indice por EAN; el NIVEL, del estimador ────
+# Ver FRESCO_METODO y FRESCO_NIVEL_MES en la CELDA 1. El estimador ponderado por poblacion da el
+# NIVEL en el mes de referencia; la historia la da un indice sobre los EANs del tipo, que compara
+# cada EAN consigo mismo, asi que un cambio en la mezcla de EANs no mueve el indice.
+#  - 'encadenado' (v5.7): media geometrica de los EANs apareados entre semanas consecutivas.
+#  - 'tpd' (v5.13): log p = semana + EAN, sin ponderar, en una ventana movil; cada semana nueva
+#    agrega el movimiento de la ultima ventana (empalme de movimiento).
+# Un eslabon (o una ventana) que no puede enganchar abre un TRAMO nuevo, y cada tramo se nivela por
+# separado contra el estimador anterior: encadenar a traves del hueco publicaria de golpe toda la
+# inflacion acumulada, y reanclar todo con una sola semana base rebasea los tramos viejos (lo
+# detecto el test sintetico: Palta quedaba con un salto de 17% en la costura).
+def _encadenado_ean(_w):
+    """(indice, tramo) del encadenado de EANs apareados. _w: semanas x EANs (NaN si falta)."""
+    _idx = pd.Series(np.nan, index=_w.index, dtype=float)
+    _seg = pd.Series(np.nan, index=_w.index, dtype=float)   # id de tramo encadenado
+    _prev, _lvl, _sid = None, 1.0, 0
+    for _sem in _w.index:
+        _fila = _w.loc[_sem]
+        if _fila.notna().sum() == 0:
+            continue
+        if _prev is None or (_w.index.get_loc(_sem) - _w.index.get_loc(_prev)) > FRESCO_MAX_HUECO_PAR:
+            # Un tramo solo puede ABRIR en una semana que tenga con que encadenar hacia adelante.
+            # Sin esta condicion se abria un tramo en una semana de un solo EAN, quedaba un tramo de
+            # UNA semana y se lo anclaba al estimador viejo -justo el valor contaminado que se quiere
+            # evitar-.
+            if int(_fila.notna().sum()) < FRESCO_MIN_EANS_PAR:
+                continue
+            _sid += 1; _lvl = 1.0
+            _idx.loc[_sem] = _lvl; _seg.loc[_sem] = _sid; _prev = _sem; continue
+        _a, _b = _w.loc[_prev], _fila
+        _par = _a.notna() & _b.notna() & (_a > 0) & (_b > 0)
+        if int(_par.sum()) < FRESCO_MIN_EANS_PAR:
+            continue
+        # MEDIA geometrica, NO mediana. Los precios de supermercado son pegajosos: en una semana
+        # solo una MINORIA de los EANs cambia de precio, y la mediana del ratio da 1,0 y la cadena
+        # no acumula nada (BUG-28: Pan frances con UN valor distinto en 139 semanas).
+        _lr = np.log((_b[_par] / _a[_par]).astype(float)).to_numpy()
+        _lr = _lr[np.isfinite(_lr)]
+        if _lr.size < FRESCO_MIN_EANS_PAR:
+            continue
+        # Robustez por CLIP absoluto, no por recorte de cuantiles: la masa grande en cero (los que
+        # no reprecian) haria que un recorte por cuantiles borre justamente la senal.
+        _lim = np.log(FRESCO_ESLABON_K)
+        _lvl = _lvl * float(np.exp(np.clip(_lr, -_lim, _lim).mean()))
+        _idx.loc[_sem] = _lvl; _seg.loc[_sem] = _sid; _prev = _sem
+    return _idx, _seg
+
+def _tpd_alfa(_LP, _W):
+    """Efectos de semana del modelo log p_te = alfa_t + gamma_e (minimos cuadrados con pesos 0/1,
+    por medias alternadas). NaN en las semanas sin dato."""
+    _wt = _W.sum(axis=1); _we = _W.sum(axis=0)
+    _g = np.zeros(_LP.shape[1]); _a = np.zeros(_LP.shape[0])
+    for _it in range(FRESCO_TPD_ITER):
+        _an = np.where(_wt > 0, ((_LP - _g[None, :]) * _W).sum(axis=1) / np.maximum(_wt, 1e-12), 0.0)
+        _g = np.where(_we > 0, ((_LP - _an[:, None]) * _W).sum(axis=0) / np.maximum(_we, 1e-12), 0.0)
+        _fin = float(np.max(np.abs(_an - _a))) < 1e-10
+        _a = _an
+        if _fin:
+            break
+    return np.where(_wt > 0, _a, np.nan)
+
+def _tpd_ean(_w, _ventana=None):
+    """(indice, tramo) del TPD sin ponderar con ventana movil y empalme de movimiento: el movimiento
+    entre la ultima semana con dato y la actual sale de la ventana que termina en la actual, y ya no
+    se recalcula. Un tramo nuevo abre cuando la semana anterior con dato quedo fuera de la ventana."""
+    _ventana = int(_ventana or FRESCO_TPD_VENTANA)
+    _v = _w.values.astype(float)
+    _W = (np.isfinite(_v) & (_v > 0)).astype(float)
+    _LP = np.where(_W > 0, np.log(np.where(_W > 0, _v, 1.0)), 0.0)
+    _idx = np.full(len(_v), np.nan); _seg = np.full(len(_v), np.nan)
+    _prev, _lvl, _sid = None, 0.0, 0
+    for _t in range(len(_v)):
+        if _W[_t].sum() < FRESCO_MIN_EANS_PAR:
+            continue
+        _lo = max(0, _t - _ventana + 1)
+        if _prev is None or _prev < _lo:
+            _sid += 1; _lvl = 0.0
+            _idx[_t] = 0.0; _seg[_t] = _sid; _prev = _t
+            continue
+        _a = _tpd_alfa(_LP[_lo:_t + 1], _W[_lo:_t + 1])
+        _j = _prev - _lo
+        if not (np.isfinite(_a[_j]) and np.isfinite(_a[-1])):
+            continue
+        _lvl += float(_a[-1] - _a[_j])
+        _idx[_t] = _lvl; _seg[_t] = _sid; _prev = _t
+    return pd.Series(np.exp(_idx), index=_w.index), pd.Series(_seg, index=_w.index)
+
+def _meses_nivel(_semanas, _cob, _mes):
+    """Meses de los que sale el nivel de un tipo: los FRESCO_NIVEL_MESES ultimos hasta _mes con
+    cobertura normal (un mes fuera de temporada no cuenta). Usa solo datos hasta _mes: no se revisa."""
+    if _mes is None:
+        return []
+    _todos = sorted({_mes_de_semana(_s) for _s in _semanas if _mes_de_semana(_s) <= _mes})
+    if _cob is None:
+        return _todos[-FRESCO_NIVEL_MESES:]
+    _c = _cob[_cob > 0].dropna()
+    _mm = pd.Series([_mes_de_semana(_s) for _s in _c.index], index=_c.index)
+    _c = _c[_mm <= _mes]; _mm = _mm[_mm <= _mes]
+    if not len(_c):
+        return _todos[-FRESCO_NIVEL_MESES:]
+    _tip = float(_c.iloc[-52:].median())
+    _pm = _c.groupby(_mm).mean()
+    _ok = [_m for _m in _pm.index if _pm[_m] >= FRESCO_NIVEL_COB_MIN * _tip]
+    return (_ok or _todos)[-FRESCO_NIVEL_MESES:]
+
+def _nivelar(_idx, _seg, _est, _meses):
+    """Lleva cada tramo del indice al nivel del estimador: mediana del cociente estimador/indice en
+    las semanas de _meses (ver _meses_nivel); si el tramo no los cubre, la ultima semana con los dos datos."""
+    _nuevo = pd.Series(np.nan, index=_idx.index, dtype=float)
+    _ok = _idx.notna() & _est.notna()
+    for _sd in sorted(_seg.dropna().unique()):
+        _m = (_seg == _sd)
+        if int(_m.sum()) < 2:
+            continue          # tramo de una sola semana: no tiene ningun eslabon, no informa
+        _mb = _m & _ok
+        if not bool(_mb.any()):
+            continue          # tramo sin referencia de nivel: se deja faltante
+        _sb = [s for s in _idx.index[_mb] if _meses and _mes_de_semana(s) in _meses]
+        if _sb:
+            _f = float(np.median([float(_est[s]) / float(_idx[s]) for s in _sb]))
+        else:
+            _b = _idx.index[_mb][-1]
+            _f = float(_est[_b]) / float(_idx[_b])
+        _nuevo[_m] = _idx[_m] * _f
+    return _nuevo
+
+FRESCO_SERIES_METODO = {}   # (tipo, metodo) -> serie semanal nivelada (hoja Frescos_metodos)
 if FRESCO_NAC_ENCADENADO and len(ean_nac):
+    _mes_ref = FRESCO_NIVEL_MES
+    if _mes_ref is None:
+        _ms = [str(_v[1]) for _v in NIVEL_REFERENCIA_FRESCO.values() if isinstance(_v, (tuple, list))]
+        _mes_ref = max(set(_ms), key=_ms.count) if _ms else None
+    FRESCO_MES_NIVEL = _mes_ref   # para el REPORTE
+    _metodos = (['encadenado', 'tpd'] if (FRESCO_EXPORTAR_METODOS or FRESCO_METODO == 'tpd')
+                else ['encadenado'])
     _tipos_fr = [c for c in nac_wide.columns if c in FRESCO_INFO]
     _en = ean_nac[ean_nac['n_suc'] >= FRESCO_EAN_MIN_SUC]
     _rep, _sin = [], []
+    _cob_fr = globals().get('_nsuc_is')          # sucursales con precio valido por item y semana (bloque 1b)
+    FRESCO_MES_NIVEL_TIPO = {}                   # tipos cuyo nivel sale de otros meses (fuera de temporada)
+    _meses_def = _meses_nivel(nac_wide.index, None, _mes_ref)
     for _t in _tipos_fr:
         _sub = _en[_en['item'] == _t]
         if len(_sub) < FRESCO_MIN_EANS_PAR:
             _sin.append(_t); continue
-        _w = _sub.pivot_table(index='semana', columns='ean_norm', values='p', aggfunc='median')
-        _w = _w.reindex(nac_wide.index)
-        _idx = pd.Series(np.nan, index=nac_wide.index, dtype=float)
-        _seg = pd.Series(np.nan, index=nac_wide.index, dtype=float)   # id de tramo encadenado
-        _prev, _lvl, _sid = None, 1.0, 0
-        for _sem in nac_wide.index:
-            _fila = _w.loc[_sem]
-            if _fila.notna().sum() == 0:
-                continue
-            if _prev is None or (nac_wide.index.get_loc(_sem)
-                                 - nac_wide.index.get_loc(_prev)) > FRESCO_MAX_HUECO_PAR:
-                # Un tramo solo puede ABRIR en una semana que tenga con que encadenar hacia
-                # adelante. Sin esta condicion se abria un tramo en una semana de un solo EAN,
-                # quedaba un tramo de UNA semana y se lo anclaba al estimador viejo -es decir,
-                # justo al valor contaminado que estamos tratando de no publicar-.
-                if int(_fila.notna().sum()) < FRESCO_MIN_EANS_PAR:
-                    continue
-                # Arranque, o hueco tan largo que no hay muestra apareada para cruzarlo. Se abre
-                # un TRAMO nuevo. Cada tramo se ancla por separado contra el estimador anterior:
-                # encadenar a traves del hueco publicaria de golpe toda la inflacion acumulada, y
-                # reanclar todo con una sola semana base rebasea los tramos viejos (lo detecto el
-                # test sintetico: Palta quedaba con un salto de 17% en la costura).
-                _sid += 1; _lvl = 1.0
-                _idx.loc[_sem] = _lvl; _seg.loc[_sem] = _sid; _prev = _sem; continue
-            _a, _b = _w.loc[_prev], _fila
-            _par = _a.notna() & _b.notna() & (_a > 0) & (_b > 0)
-            if int(_par.sum()) < FRESCO_MIN_EANS_PAR:
-                continue
-            # MEDIA geometrica recortada, NO mediana. Los precios de supermercado son pegajosos:
-            # en una semana dada solo una MINORIA de los EANs cambia de precio. Si repricea menos
-            # de la mitad, la mediana del ratio da exactamente 1,0 y la cadena no acumula NADA.
-            # Medido en la corrida 2026-09-08 con mediana: 93-100% de las semanas con variacion
-            # cero, Pan frances con UN solo valor distinto en 139 semanas, y el acumulado de los
-            # frescos en +58% contra +161% de los empaquetados (que no se encadenan) y +157% del
-            # IPC alimentos. La media geometrica es el estimador de Jevons y captura el cambio
-            # promedio aunque solo se mueva una parte del panel; el recorte de colas conserva la
-            # robustez que motivaba la mediana.
-            _lr = np.log((_b[_par] / _a[_par]).astype(float)).to_numpy()
-            _lr = _lr[np.isfinite(_lr)]
-            if _lr.size < FRESCO_MIN_EANS_PAR:
-                continue
-            # Robustez por CLIP absoluto, no por recorte de cuantiles: la distribucion de los
-            # log-ratios tiene una masa grande en cero (los que no reprecian) mas una cola de los
-            # que si, y un recorte por cuantiles puede borrar justamente la senal. El clip acota
-            # la influencia de un EAN disparatado sin sacarlo del promedio.
-            _lim = np.log(FRESCO_ESLABON_K)
-            _lvl = _lvl * float(np.exp(np.clip(_lr, -_lim, _lim).mean()))
-            _idx.loc[_sem] = _lvl; _seg.loc[_sem] = _sid; _prev = _sem
-        _ok_idx = _idx.notna() & nac_wide[_t].notna()
-        if int(_ok_idx.sum()) == 0:
-            _sin.append(_t); continue
-        _nuevo = pd.Series(np.nan, index=nac_wide.index, dtype=float)
-        for _sd in sorted(_seg.dropna().unique()):
-            _m = (_seg == _sd)
-            if int(_m.sum()) < 2:
-                continue          # tramo de una sola semana: no tiene ningun eslabon, no informa
-            _mb = _m & _ok_idx
-            if not bool(_mb.any()):
-                continue          # tramo sin referencia de nivel: se deja faltante
-            _base = _idx.index[_mb][-1]
-            _nuevo[_m] = _idx[_m] / _idx.loc[_base] * float(nac_wide.at[_base, _t])
+        _w = (_sub.pivot_table(index='semana', columns='ean_norm', values='p', aggfunc='median')
+              .reindex(nac_wide.index))
+        _mes_t = _meses_nivel(nac_wide.index, _cob_fr[_t] if (_cob_fr is not None and _t in _cob_fr.columns) else None,
+                              _mes_ref)
+        if _mes_t != _meses_def:
+            FRESCO_MES_NIVEL_TIPO[_t] = (f'{_mes_t[0]}..{_mes_t[-1]}' if len(_mes_t) > 1 else ''.join(_mes_t))
+        for _met in _metodos:
+            _i, _s = _encadenado_ean(_w) if _met == 'encadenado' else _tpd_ean(_w)
+            FRESCO_SERIES_METODO[(_t, _met)] = _nivelar(_i, _s, nac_wide[_t], _mes_t)
+        _nuevo = FRESCO_SERIES_METODO.get((_t, FRESCO_METODO), FRESCO_SERIES_METODO[(_t, 'encadenado')])
         if not bool(_nuevo.notna().any()):
             _sin.append(_t); continue
         _dif = float(np.nanmax(np.abs(_nuevo / nac_wide[_t] - 1))) * 100
         _rep.append((_t, int(_nuevo.notna().sum()), round(_dif, 1)))
         nac_wide[_t] = _nuevo
-    print(f'Frescos encadenados por EAN: {len(_rep)} de {len(_tipos_fr)} tipos '
-          f'(min {FRESCO_EAN_MIN_SUC} suc/EAN, {FRESCO_MIN_EANS_PAR} EANs apareados)')
+    print(f'Frescos: indice por EAN, metodo {FRESCO_METODO}'
+          + (f' (TPD sin ponderar, ventana {FRESCO_TPD_VENTANA} semanas)' if FRESCO_METODO == 'tpd' else '')
+          + (f' | nivel: {len(_meses_def)} meses con cobertura normal hasta {_mes_ref}' if _mes_ref else ' | nivel en la ultima semana')
+          + f' | {len(_rep)} de {len(_tipos_fr)} tipos '
+          f'(min {FRESCO_EAN_MIN_SUC} suc/EAN, {FRESCO_MIN_EANS_PAR} EANs)')
+    if FRESCO_MES_NIVEL_TIPO:
+        print('  nivel de otros meses (fuera de temporada o cobertura caida hasta ' + str(_mes_ref) + '): '
+              + ', '.join(f'{_k} -> {_v}' for _k, _v in FRESCO_MES_NIVEL_TIPO.items()))
     if _sin:
-        print(f'  sin encadenar (se deja el estimador anterior): {", ".join(_sin)}')
+        print(f'  sin indice por EAN (se deja el estimador anterior): {", ".join(_sin)}')
     _rr = sorted(_rep, key=lambda x: -x[2])[:8]
     print('  mayor revision de la serie (max |nuevo/viejo-1|): '
           + ', '.join(f'{t} {d:.0f}%' for t, _, d in _rr))
     _pocos = [(t, n) for t, n, _ in _rep if n < len(nac_wide) * 0.8]
     if _pocos:
-        print('  eslabones incompletos (<80% de las semanas): '
+        print('  semanas con dato incompletas (<80%): '
               + ', '.join(f'{t} {n}/{len(nac_wide)}' for t, n in sorted(_pocos, key=lambda x: x[1])[:8]))
 
 # ── Banda de plausibilidad POR TIPO (ver RATIO_FRESCO en la CELDA 1) ─────────
@@ -1626,6 +1781,12 @@ nac_ff   = nac_wide.ffill(limit=MAX_SEMANAS_ARRASTRE)         # con arrastre
 # generar salto. (Medido sobre el panel real: baja el desvio de la variacion semanal de 2,32%
 # a 2,17% y saca un salto de mas de 8%.)
 nac_ff   = nac_ff.mask(_ratio_bad)
+# Lo mismo con las celdas de POCAS SUCURSALES del bloque 1b: quedan fuera de la muestra apareada, el
+# arrastre no las rellena. Rellenadas con el precio anterior, el eslabon de esas semanas daria 1,0
+# (precio congelado en plena inflacion) y al volver el item publicaria de golpe lo acumulado. (Medido
+# en el panel v5.12: con arrastre la Tecnologica perdia 30 puntos de 2024 en tres meses.)
+if N_CELDAS_FLACAS:
+    nac_ff = nac_ff.mask(_flaco_is.reindex(index=nac_ff.index, columns=nac_ff.columns, fill_value=False))
 _n_arr = int((nac_ff.notna() & ~nac_obs).sum().sum())
 print(f'Panel nacional: {nac_wide.shape[1]} items x {nac_wide.shape[0]} semanas | '
       f'celdas arrastradas: {_n_arr:,} ({_n_arr/max(nac_ff.notna().sum().sum(),1)*100:.1f}%)')
@@ -2286,7 +2447,10 @@ with pd.ExcelWriter(_xlsx, engine='openpyxl') as _w:
         {'parametro':'Costo por sucursal','valor':'costo nacional + (precio de la sucursal - nacional) x cantidad en lo que publica; lo que no publica se valua al nacional (columna pct_imputado)'},
         {'parametro':'Nivel de frescos','valor':'; '.join(f'{t}: ${(r[0] if isinstance(r, (tuple, list)) else r):,.0f} en {(r[1] if isinstance(r, (tuple, list)) else "ult. semana")}' for t, r in NIVEL_REFERENCIA_FRESCO.items()) + ' (INDEC GBA, precios promedio). El resto, nivel del SEPA.'},
         {'parametro':'Excluidos a mano (frescos)','valor':'; '.join(f'{e} {d}' for e, d in EXCLUIR_EAN_FRESCO.items())},
-        {'parametro':'Version','valor':'nb07 v5.12'},
+        {'parametro':'Frescos - indice','valor':(f'TPD multilateral sin ponderar por EAN, ventana movil de {FRESCO_TPD_VENTANA} semanas con empalme de movimiento' if FRESCO_METODO == 'tpd' else 'encadenado de EANs apareados (media geometrica)') + '; hoja Frescos_metodos compara los dos'},
+        {'parametro':'Frescos - nivel','valor':f'mediana estimador/indice en los {FRESCO_NIVEL_MESES} ultimos meses con cobertura normal hasta {globals().get("FRESCO_MES_NIVEL") or "el mes de NIVEL_REFERENCIA_FRESCO"} (no se revisa semana a semana); un mes con menos del {FRESCO_NIVEL_COB_MIN:.0%} de la cobertura tipica no cuenta. De otros meses: ' + (', '.join(f'{k} {v}' for k, v in globals().get('FRESCO_MES_NIVEL_TIPO', {}).items()) or 'ninguno')},
+        {'parametro':'Cobertura minima empaquetados','valor':f'precio nacional de un item-semana con menos de min({MIN_SUC_ITEM_SEMANA}, {FRAC_SUC_ITEM_TIPICA:.0%} de su cobertura tipica) sucursales = faltante (fuera de la muestra apareada, sin arrastre)'},
+        {'parametro':'Version','valor':'nb07 v5.13'},
     ]).to_excel(_w, 'Metodologia', index=False)
     _res = []
     for _name in CANASTAS_ACTIVAS:
@@ -2358,13 +2522,23 @@ with pd.ExcelWriter(_xlsx, engine='openpyxl') as _w:
     if len(candidatos_traza):
         candidatos_traza.sort_values(['canasta','necesidad','rol','trazabilidad_%'],
                                      ascending=[True, True, True, False]).to_excel(_w, 'Candidatos_trazabilidad', index=False)
+    # v5.13: los dos metodos de frescos, tipo por tipo (promedio mensual, nivel fijado en el mismo mes)
+    if FRESCO_SERIES_METODO:
+        _fm = pd.DataFrame({f'{_k[0]}||{_k[1]}': _v for _k, _v in FRESCO_SERIES_METODO.items()})
+        _fm = _fm.groupby([_mes_de_semana(_s) for _s in _fm.index]).mean().T
+        _fm.index = pd.MultiIndex.from_tuples([tuple(_i.split('||')) for _i in _fm.index], names=['tipo', 'metodo'])
+        _mc = [c for c in _fm.columns if not _fm[c].isna().all()]
+        if len(_mc) >= 13:
+            _fm.insert(0, 'var_12m_%', (_fm[_mc[-1]] / _fm[_mc[-13]] - 1) * 100)
+        _fm.insert(0, 'var_total_%', (_fm[_mc[-1]] / _fm[_mc[0]] - 1) * 100)
+        _fm.reset_index().sort_values(['tipo', 'metodo']).to_excel(_w, 'Frescos_metodos', index=False)
 print(f'Excel: {_xlsx.name}  ({_xlsx.stat().st_size/1024:.0f} KB)')
 print(f'   Guardado en: {_xlsx.parent}')
 print('   Hojas: Metodologia, Resumen, Sem_*, Mes_*, vsIPC_*, Rubro_sem_*, Comp_rubro_*, '
       'Detalle_*, Prov_*, Cadena_*, Region_*, RegionSem_*, Panel_nacional, '
       'Panel_nacional_mes, Mes_rubro, Mes_region, Mes_provincia, Mes_cadena, '
       'Cobertura_emp, Cobertura_frescos, Presencia_items, Alertas_trazabilidad, '
-      'Alertas_reemplazo, Alertas_precio_item, Alertas_quiebre, Candidatos_trazabilidad')
+      'Alertas_reemplazo, Alertas_precio_item, Alertas_quiebre, Candidatos_trazabilidad, Frescos_metodos')
 ''' ))
 
 # ── CELL 15 — REPORTE ─────────────────────────────────────────────────────────
@@ -2372,11 +2546,16 @@ cells.append(cell_code(r'''# ===================================================
 # CELDA 15 - REPORTE PARA CLAUDE (copia y pega TODO el bloque)
 # ============================================================
 print('='*72)
-print('REPORTE PARA CLAUDE - canastas alternativas nb07 v5.12')
+print('REPORTE PARA CLAUDE - canastas alternativas nb07 v5.13')
 print('='*72)
 print(f'Ultima semana (cierra jueves): {ULTIMA_SEMANA} | Ultimo mes: {_ult_mes}')
 print(f'Canastas activas: {CANASTAS_ACTIVAS}')
 print(f'Nacional: {AGG_NACIONAL} | arrastre: {MAX_SEMANAS_ARRASTRE} sem | regimen K: {FRESCO_REGIMEN_K} | outlier K: {FRESCO_OUTLIER_K} | frac min: {FRAC_PRODUCTOS_MIN} | quiebre x{QUIEBRE_ITEM_K}')
+print(f'Frescos: metodo {FRESCO_METODO}' + (f' (TPD sin ponderar, ventana {FRESCO_TPD_VENTANA} sem)' if FRESCO_METODO == 'tpd' else '')
+      + f' | nivel: {FRESCO_NIVEL_MESES} meses con cobertura normal hasta {globals().get("FRESCO_MES_NIVEL") or "la ultima semana"}'
+      + (' (de otros meses: ' + ', '.join(f'{k} {v}' for k, v in globals().get('FRESCO_MES_NIVEL_TIPO', {}).items()) + ')'
+         if globals().get('FRESCO_MES_NIVEL_TIPO') else '')
+      + f' | cobertura minima de empaquetados: {globals().get("N_CELDAS_FLACAS", 0):,} celdas item-semana faltantes')
 if FACTOR_NIVEL_FRESCO:
     print('Nivel de frescos anclado por referencia externa (CELDA 1): ' + ', '.join(
         f'{t} x{k:.2f} ({NIVEL_REFERENCIA_FRESCO[t][1] if isinstance(NIVEL_REFERENCIA_FRESCO[t], (tuple, list)) else "ult. semana"})'
@@ -2385,8 +2564,8 @@ try:
     if _FR_DESCARTES:
         _nd = sum(x[1] for x in _FR_DESCARTES)
         _aa = np.median([x[2] for x in _FR_DESCARTES])
-        print(f'Plausibilidad frescos: {_nd:,} observaciones fuera de la banda '
-              f'[ancla*{FRESCO_PISO_ANCLA}, ancla*{FRESCO_TECHO_ANCLA}] | ancla mediana ${_aa:,.0f}/kg')
+        print(f'Plausibilidad frescos (meses leidos en esta corrida: {len(_FR_DESCARTES)}): {_nd:,} observaciones fuera de la banda '
+              f'[ancla*{FRESCO_PISO_ANCLA}, ancla*{FRESCO_TECHO_ANCLA}] | ancla mediana de esos meses ${_aa:,.0f}/kg')
 except Exception:
     pass
 

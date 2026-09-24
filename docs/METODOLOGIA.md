@@ -1137,7 +1137,82 @@ Detalle y tablas en `docs/AUDITORIA_2026-09-24_v512.md`.
   ±0,3 pp; el encadenado semanal queda 1-2% por debajo de una canasta fija. Titular con el interanual.
 - **Revisión semanal del nivel de los frescos**: cada tramo del encadenado toma su nivel del estimador en la
   última semana, así que cada semana nueva reescala la historia de los frescos no anclados. Arreglo propuesto:
-  fijar el nivel en el mes de referencia de las anclas del INDEC.
+  fijar el nivel en el mes de referencia de las anclas del INDEC. **Resuelto en la v5.13 (§10.19).**
+
+### 10.19. nb07 v5.13 (2026-09-24) — frescos por TPD, nivel fijo, cobertura mínima y filtro estacional
+
+Implementa las cinco decisiones de la revisión de la v5.12 (auditoría §7). Relee el SEPA (cambia `RATIO_FRESCO`).
+
+**Frescos: índice multilateral TPD** (`FRESCO_METODO = 'tpd'`). La forma de la serie nacional de cada tipo sale de
+una regresión *time-product dummy* sobre el panel de sus EANs (precio mediano semanal de cada EAN con al menos
+`FRESCO_EAN_MIN_SUC` sucursales):
+
+    log p(e,t) = alfa(t) + gama(e) + error
+
+sin ponderar (cada EAN-semana pesa lo mismo), estimada por medias alternadas (converge a mínimos cuadrados; tolerancia
+1e-10). En un panel balanceado exp(alfa(t) - alfa(s)) es exactamente el índice de Jevons; con altas y bajas usa todos
+los precios de la ventana y no solo los pares de semanas contiguas, que es donde el encadenado pierde información y
+acumula deriva. **Ventana móvil de 52 semanas con empalme de movimiento**: la semana t se estima en [t-51, t] y el
+índice avanza alfa(t) - alfa(t') (t' = la última semana con dato); el pasado no se revisa nunca. Si la semana previa
+quedó fuera de la ventana (hueco de más de 52 semanas) arranca un tramo nuevo, como en el encadenado. **Sin
+ponderar** porque ponderado por sucursales sigue a los EANs de las cadenas grandes (DIA tiene el 42% de las
+sucursales) y se aleja del INDEC. Prototipo sobre el panel v5.12 (23 tipos con equivalente INDEC; suba de cada método
+/ suba del INDEC, ene-24 → ago-26 y entre paréntesis ene-25 → ago-26): TPD sin ponderar 0,99 (0,96); ponderado por
+sucursales 0,96 (0,92); encadenado 0,94 (0,92). Ventana: con 26 semanas el TPD se parece al encadenado; con 52 y 104
+da lo mismo (0,991 y 0,990). La hoja
+`Frescos_metodos` trae los dos métodos tipo por tipo (`FRESCO_EXPORTAR_METODOS`).
+
+**Nivel fijo** (`FRESCO_NIVEL_MES`, por defecto el mes modal de `NIVEL_REFERENCIA_FRESCO`, 2026-08). El nivel de cada
+tramo del índice es la mediana de estimador / índice en las semanas de los **`FRESCO_NIVEL_MESES` = 3 últimos meses
+con cobertura normal** hasta ese mes; si el tramo no los cubre, la última semana con estimador (como antes). Solo usa
+datos hasta el mes de referencia, así que una semana nueva ya no reescala la historia (en la v5.12 la Mortadela se
+reescaló x1,49 de una semana a la otra). Tres meses y no uno porque el estimador salta de un mes a otro por la mezcla
+de variantes aunque la cobertura no cambie (Mortadela: 10.200, 17.400, 13.700, 16.100 y 12.600 $/kg entre ene y
+ago-26). **Cobertura normal**: el mes tiene al menos `FRESCO_NIVEL_COB_MIN` = 50% de la cobertura típica del tipo
+(sucursales con precio válido, mediana de las 52 semanas con dato hasta el mes de referencia). Un mes fuera de
+temporada no fija el nivel: en ago-26 al Durazno lo publican 273 sucursales contra ~1.500 en temporada, su estimador
+de agosto (11.100-16.000 $/kg según la semana, 4 veces la mediana de sus EANs) le daba 4 veces su peso en la canasta
+todo el año; ahora su nivel sale de feb-abr (~4.600 $/kg en ago-26). Tampoco un mes con media muestra perdida: el
+Roast beef pasa de 1.480 a 727 sucursales en ago-26 y su estimador salta +35% (las que quedan son las caras); su nivel
+sale de may-jul.
+
+**Cobertura mínima de empaquetados**. El precio nacional de un ítem-semana es faltante si lo publican menos de
+min(`MIN_SUC_ITEM_SEMANA` = 300, `FRAC_SUC_ITEM_TIPICA` = 50% × mediana de sus sucursales en las últimas 26 semanas
+con dato). El umbral relativo protege a los ítems de pocas sucursales por naturaleza (la Tecnológica tiene 90-470).
+La celda faltante queda **fuera de la muestra apareada: no se arrastra** (igual que una semana rechazada por la banda
+de plausibilidad). Con arrastre el eslabón de esas semanas da 1,0 en plena inflación y, cuando el ítem vuelve,
+publica todo lo acumulado de golpe: en la simulación la Tecnológica perdía 30 puntos entre ene y mar-24. Saca ~5% de
+las celdas de empaquetados, casi todas de 2024 (por ejemplo, el vino Luigi Bosca: $4.158 en ene-24 con 104
+sucursales y $10.277 en mar-24 con 26).
+
+**Filtro de régimen estacional**. El filtro acepta el precio de una sucursal-semana de un tipo fresco en
+[ref/K, ref×K], con ref = ancla mensual × `RATIO_FRESCO`. El ratio se elige por **recall** del precio plausible
+(precio INDEC del tipo / ancla, todos los meses desde 2024) con **contaminación** acotada (share de precios aceptados
+que son de otro producto). Calibrarlo con un solo mes (v5.12) cortaba la temporada: fuera de estación quedaba afuera
+el 67-95% de las observaciones de Naranja (feb-abr). Valores: Naranja 0,85 (recall 99,9%, contaminación 1,9%),
+Tomate 1,45 (98,4%, 5%), Limón 1,01 (98,6%). Afecta los precios por sucursal (aperturas y nivel del estimador); la
+forma nacional sale del índice por EAN, que se calcula antes del filtro.
+
+**Ronda 2 de reemplazos** (sin relectura): 15 ítems con historia flaca en 2024 o sin historia, elegidos con
+`proponer_reemplazos.py` (lógica del constructor restringida a EANs leídos con historia completa); 267 EANs.
+
+**Efecto estimado** sobre el panel v5.12 (sin la relectura; ene-24 → ago-26, índice ene-24 = 100). Simulación con el
+código real del nb07 (bloques 1b y 2b ejecutados sobre el caché de la v5.12, con el estimador de los frescos replicado
+desde los precios por sucursal y las 7 anclas del INDEC; `docs/auditoria/scripts_v513/simular_v513.py`):
+
+| Canasta | v5.12 | v5.13 | i.a. ago-26 |
+|---|---:|---:|---:|
+| Popular | 230,4 | 242,8 | +29,5% → +33,8% |
+| Media | 241,7 | 247,6 | +27,3% → +29,4% |
+| Ejecutiva | 243,8 | 243,3 | +27,1% → +28,2% |
+| Representativa | 235,9 | 239,2 | +27,7% → +30,0% |
+| Femenina | 260,0 | 258,7 | +28,6% → +28,6% |
+| Tecnológica (jun-25 = 100) | 111,0 | 111,9 | +11,4% → +10,6% |
+
+La Popular es la que más se mueve porque es la que más pesa en frescos: con el TPD los frescos dejan de subir menos
+que el INDEC (IPC alimentos 261,1 en el mismo período). El TPD pide 2 EANs por semana (como el encadenado): con uno
+solo, el Durazno fuera de temporada saltaba x3 por un EAN suelto de $13.400/kg y movía el interanual de las canastas
+hasta 0,8 pp.
 
 ---
 

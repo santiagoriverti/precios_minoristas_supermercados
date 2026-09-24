@@ -3,6 +3,7 @@
 Pipeline sobre el **SEPA** (precios de supermercados de Argentina): 7 notebooks de Colab (nb01–nb07).
 El que se trabaja hoy es el **nb07** (`notebooks/07_evolucion_canastas_alternativas.ipynb`), motor del
 informe semanal: 6 canastas, índice encadenado, comparación con el IPC y aperturas por cadena/región.
+Versión vigente: **nb07 v5.13** (frescos por índice multilateral TPD, nivel fijo, cobertura mínima de empaquetados).
 
 ## Al empezar una sesión
 
@@ -11,7 +12,9 @@ informe semanal: 6 canastas, índice encadenado, comparación con el IPC y apert
 2. Correr los tests (`pip install -r requirements.txt` si es una PC nueva):
    ```bash
    python notebooks/test_celdas_graficos_y_mapa.py
-   python notebooks/test_encadenado_frescos.py
+   python notebooks/test_encadenado_frescos.py encadenado
+   python notebooks/test_encadenado_frescos.py tpd
+   python notebooks/test_frescos_v513.py
    python notebooks/test_quiebre_serie.py
    python notebooks/test_cache_por_mes.py
    python notebooks/test_costo_sucursal.py
@@ -36,9 +39,15 @@ informe semanal: 6 canastas, índice encadenado, comparación con el IPC y apert
   CELDA 8 en adelante.
 - **Anclar el nivel de un fresco cambia el índice** (cada ítem pesa cantidad × precio), no solo el costo.
 - **`RATIO_FRESCO` de un tipo estacional NO se calibra con un solo mes** (INDEC/ancla de agosto cortó la
-  Naranja fuera de temporada): usar el centro geométrico del rango estacional para que la banda ×3 cubra el año.
-- **La serie nacional de un fresco sale del encadenado por EAN, que se toma ANTES del filtro de régimen**: el
-  ratio y las exclusiones cambian el precio por sucursal (aperturas), no la evolución nacional.
+  Naranja fuera de temporada): elegirlo por recall del precio INDEC de todos los meses con contaminación acotada
+  (v5.13: Naranja 0,85, Tomate 1,45, Limón 1,01).
+- **La serie nacional de un fresco sale del índice por EAN (TPD desde la v5.13), que se toma ANTES del filtro de
+  régimen**: el ratio y las exclusiones cambian el precio por sucursal (aperturas), no la evolución nacional. El
+  NIVEL sí sale del estimador: nunca de un solo mes ni de un mes fuera de temporada (Durazno en agosto pesaba 4×).
+- **Una celda que se saca por calidad NO se arrastra** (banda de plausibilidad, cobertura mínima): si el arrastre
+  la rellena, el eslabón da 1,0 en plena inflación (BUG-40).
+- **Antes de dar por buena una regla nueva del nb07, correr el bloque REAL de `gen_nb07.py` sobre el panel de la
+  última corrida** (`exec` del bloque con el caché; ver los tests): BUG-40 y BUG-41 solo aparecieron así.
 - **Auditar cada corrida** antes de publicar:
   `python notebooks/auditar_salida_nb07.py <Excel> --cache <carpeta con sem_*_v5 y ean_*_v5> --indec data/sh_ipc_precios_promedio_2026-08.xls`
   (bajar la planilla nueva del INDEC cuando salga: https://www.indec.gob.ar/ftp/cuadros/economia/sh_ipc_precios_promedio.xls).
@@ -64,9 +73,9 @@ informe semanal: 6 canastas, índice encadenado, comparación con el IPC y apert
 |---|---|
 | `.claude/memory.md` | **Estado y próximos pasos** (bloque de arriba) + handoffs históricos |
 | `docs/CONTEXTO.md` | Pipeline, puesta en marcha en otra máquina, historial de cambios |
-| `docs/METODOLOGIA.md` | Metodología; nb07 en §10 (§10.14-10.16 lo último) |
+| `docs/METODOLOGIA.md` | Metodología; nb07 en §10 (§10.19 = v5.13, lo último) |
 | `docs/BUGS_Y_MEJORAS.md` | Defectos abiertos arriba; bugs resueltos con causa y fix |
 | `docs/SEPA_TECNICO.md` | Formato SEPA, cadenas, frescos por tipo, caché |
-| `docs/AUDITORIA_2026-09-24_v512.md` | **Revisión de la v5.12**: la brecha con el IPC sale de los frescos, incertidumbre del acumulado, dos defectos (filtro estacional, nivel de frescos revisado cada semana), ronda 2 |
+| `docs/AUDITORIA_2026-09-24_v512.md` | **Revisión de la v5.12**: la brecha con el IPC sale de los frescos, incertidumbre del acumulado, dos defectos (filtro estacional, nivel de frescos revisado cada semana), ronda 2. Sus decisiones (§7) están aplicadas en la v5.13 |
 | `docs/AUDITORIA_2026-09-22_v59.md` | Auditoría de la v5.9 + verificación de la v5.10 (§10) y de la v5.11 con los reemplazos de trazabilidad (§11) + PDF y scripts en `docs/auditoria/` |
 | `docs/canastas_alternativas/README.md` | Composición de las 6 canastas, cargador, constructor, reemplazos |

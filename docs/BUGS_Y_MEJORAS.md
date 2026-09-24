@@ -1,6 +1,9 @@
 # Bugs Pendientes y Mejoras
 
-Última actualización: 2026-09-24 (noche) — corrida v5.12 revisada a fondo (`docs/AUDITORIA_2026-09-24_v512.md`): la brecha con el IPC sale de los frescos; dos defectos nuevos abiertos (filtro estacional de Naranja/Tomate/Limón, nivel de frescos revisado cada semana); ronda 2 propuesta. Antes: corrida v5.11 verificada (`docs/AUDITORIA_2026-09-22_v59.md` §11); 24 reemplazos de trazabilidad aplicados (270 EANs, no relee el SEPA); nb07 v5.11.1 (BUG-38); `aplicar_reemplazos.py` sin falsas alarmas (BUG-39); auditor con cobertura histórica (bloque 7b). nb07 **v5.12 lista** para correr (relee el SEPA: 65 candidatos nuevos, Naranja y Tomate recalibrados); `proponer_reemplazos.py`
+Última actualización: 2026-09-24 (cierre) — **nb07 v5.13 lista para correr** (relee el SEPA): frescos por TPD, nivel
+de frescos fijo (3 meses con cobertura normal), cobertura mínima de empaquetados, filtro estacional de Naranja/Tomate/
+Limón; ronda 2 de reemplazos aplicada (267 EANs); BUG-40 y BUG-41 encontrados al simular y corregidos antes de publicar.
+Los defectos abiertos que resuelve quedan marcados abajo (se verifican con la corrida). Antes, 2026-09-24 (noche): corrida v5.12 revisada a fondo (`docs/AUDITORIA_2026-09-24_v512.md`): la brecha con el IPC sale de los frescos; dos defectos nuevos abiertos (filtro estacional de Naranja/Tomate/Limón, nivel de frescos revisado cada semana); ronda 2 propuesta. Antes: corrida v5.11 verificada (`docs/AUDITORIA_2026-09-22_v59.md` §11); 24 reemplazos de trazabilidad aplicados (270 EANs, no relee el SEPA); nb07 v5.11.1 (BUG-38); `aplicar_reemplazos.py` sin falsas alarmas (BUG-39); auditor con cobertura histórica (bloque 7b). nb07 **v5.12 lista** para correr (relee el SEPA: 65 candidatos nuevos, Naranja y Tomate recalibrados); `proponer_reemplazos.py`
 
 ---
 
@@ -12,7 +15,11 @@
 
 ## 🟡 Defectos abiertos
 
-### nb07: el filtro de régimen corta la estacionalidad de Naranja, Tomate y Limón — INTRODUCIDO en v5.11/v5.12
+### nb07: el filtro de régimen corta la estacionalidad de Naranja, Tomate y Limón — INTRODUCIDO en v5.11/v5.12 — RESUELTO en v5.13 (verificar con la corrida)
+
+**v5.13**: el ratio no sale del centro del rango sino de maximizar el *recall* del precio plausible (INDEC / ancla,
+todos los meses) con contaminación acotada: Naranja 0,85 (recall 99,9%, contaminación 1,9%), Tomate 1,45 (98,4%, 5%),
+Limón 1,01 (98,6%). Verificar en la corrida: Naranja y Tomate por mes y por cadena (feb-abr con observaciones).
 
 La v5.11 (Limón) y la v5.12 (Naranja, Tomate) pusieron `RATIO_FRESCO = INDEC / ancla` de **agosto**. El
 cociente cambia mucho con la estación (Naranja 0,38-1,40; Tomate 0,63-2,52; Limón 0,41-2,49) y la banda ×3
@@ -23,7 +30,10 @@ v5.11) sino el precio por sucursal, o sea las aperturas de esos ítems. **Arregl
 del rango estacional (Naranja 0,73; Tomate 1,26; Limón 1,01). Relee: juntarlo con la próxima relectura.
 Detalle: `docs/AUDITORIA_2026-09-24_v512.md` §4.1.
 
-### nb07: el nivel de los frescos no anclados se revisa cada semana
+### nb07: el nivel de los frescos no anclados se revisa cada semana — RESUELTO en v5.13
+
+**v5.13**: nivel = mediana estimador / índice en los 3 últimos meses con cobertura normal hasta el mes de referencia
+(2026-08); todo medido hasta ese mes, así que no se revisa. Test: `test_frescos_v513.py` (bloques 3 y 6). Ver BUG-41.
 
 Bloque 2b de la CELDA 7: cada tramo del encadenado por EAN toma su nivel del estimador anterior en la **última
 semana válida**. Cada semana nueva reescala toda la serie de un fresco no anclado: entre las corridas del 17 y
@@ -32,7 +42,10 @@ eso sus pesos y el índice de meses cerrados (±0,2 puntos en ago-26). **Arreglo
 estimador / encadenado en las semanas del mes de referencia de las anclas (`NIVEL_REFERENCIA_FRESCO`, hoy
 2026-08). Posterior al caché: no relee. Detalle: auditoría §4.2.
 
-### nb07: los frescos suben menos que el INDEC y explican toda la brecha con el IPC
+### nb07: los frescos suben menos que el INDEC y explican toda la brecha con el IPC — ABORDADO en v5.13 (verificar)
+
+**v5.13**: índice multilateral TPD sin ponderar (ventana 52 semanas, empalme de movimiento): en el prototipo sube
+0,99 de lo que sube el INDEC (el encadenado 0,94). Verificar con la hoja `Frescos_metodos` de la corrida.
 
 Los empaquetados del SEPA siguen al INDEC (mediana 1,03 desde ene-25); los frescos no (asado 0,81, paleta 0,84,
 banana 0,60 de la variación del INDEC). Con la evolución del INDEC en los 23 frescos con equivalente, la parte de
@@ -40,14 +53,22 @@ alimentos de las canastas queda a la par del IPC. Es la mejora de método que m�
 (TPD/GEKS con ventana móvil) para los frescos. Mientras tanto, **no publicar que en los supermercados la
 inflación fue menor**. Detalle: auditoría §2.3.
 
-### nb07: el acumulado desde ene-24 depende de datos flacos de 2024
+### nb07: el acumulado desde ene-24 depende de datos flacos de 2024 — RESUELTO en v5.13
+
+**v5.13**: cobertura mínima de empaquetados, min(300, 50% de la cobertura típica) sucursales por ítem-semana; la
+celda que no llega queda fuera de la muestra apareada (sin arrastre, ver BUG-40). Saca ~5% de las celdas.
 
 Tratar como faltante el precio de un empaquetado en semanas con pocas sucursales mueve el acumulado de la
 Ejecutiva y la Representativa 3-6 puntos (el interanual, ±0,3 pp). Ejemplo: vino Luigi Bosca ×4,4 desde ene-24
 con 26-153 sucursales en el primer semestre; ×1,41 desde ago-24. Decisión pendiente: adoptar una regla de
 cobertura mínima (auditoría §3.2) o rebasar el acumulado a ene-25.
 
-### nb07: productos con historia "flaca" que la trazabilidad no marca — para la relectura v5.12
+### nb07: productos con historia "flaca" que la trazabilidad no marca — HECHO (ronda 2, 2026-09-24)
+
+**Ronda 2 aplicada**: 15 reemplazos elegidos con `proponer_reemplazos.py` sobre la relectura v5.12
+(`docs/canastas_alternativas/ronda2_propuesta_2026-09-24.csv`); 267 EANs. Quedan a propósito: arvejas de la Popular
+(Inalpa), Nesquik de la Representativa, agua Levité y vino Luigi Bosca de la Ejecutiva (sin candidato mejor; la
+cobertura mínima de la v5.13 les saca las semanas flacas).
 
 "Meses con dato" (hoja `Alertas_trazabilidad`, bloque 4 del auditor) cuenta un mes aunque el producto
 esté en **una** sucursal. Raid 370, el insecticida de la Media hasta el 2026-09-24, tenía 97% de
@@ -61,7 +82,10 @@ sucursales). Después de los reemplazos del 24-sep quedan: **Ejecutiva 11,3% del
 **v5.12 (2026-09-24, lista para correr)**: +65 candidatos (18 necesidades) y los ítems actuales; después de
 la corrida, `proponer_reemplazos.py` elige con la historia medida.
 
-### nb07: el Skip de la Ejecutiva no tiene reemplazo premium con historia
+### nb07: el Skip de la Ejecutiva no tiene reemplazo premium con historia — HECHO (ronda 2)
+
+**Ronda 2**: entra Woolite Detergente para Ropa Doypack 900 ml (`7791130003643`) ×4 (833 sucursales, historia medida
+en la relectura v5.12).
 
 Jabón líquido Skip Limpieza Activo 800 ml (2,7% de la Ejecutiva): toda la línea "Skip Activo" (6 EANs)
 aparece en el SEPA en jun-25. El único candidato leído con historia que respeta la escalera de precios es
@@ -115,7 +139,9 @@ por el cambio de EANs relee el SEPA—, junto con el resto del paquete de relect
 `.claude/memory.md`). `canastas_v5_detalle.csv` todavía los lista: se regenera la próxima vez que se
 corra el constructor.
 
-### nb07: la evolución de los frescos depende del método
+### nb07: la evolución de los frescos depende del método — ABORDADO en v5.13
+
+**v5.13**: el método publicado es el TPD; la hoja `Frescos_metodos` trae el encadenado al lado, tipo por tipo.
 
 Tipo por tipo, el encadenado semanal, un índice multilateral TPD, una muestra fija de EANs y el INDEC
 difieren ±20-40%. En la canasta, el índice publicado a ago-26 queda en el extremo bajo del rango:
@@ -157,6 +183,45 @@ de la Tecnológica** hasta que haya al menos dos cadenas con cobertura de durabl
 ---
 
 ## 🟢 Cambios y fixes 2026-09
+
+### 🟣 nb07 v5.13 — frescos por TPD, nivel fijo, cobertura mínima y filtro estacional (2026-09-24, lista para correr)
+
+Implementa las cinco decisiones de la revisión de la v5.12 (auditoría §7). **Relee el SEPA** (cambia
+`RATIO_FRESCO`). (1) `FRESCO_METODO = 'tpd'`: índice multilateral time-product-dummy sin ponderar, ventana de 52
+semanas, empalme de movimiento; hoja nueva `Frescos_metodos`. (2) Nivel de los frescos: 3 meses con cobertura normal
+hasta el mes de referencia (`FRESCO_NIVEL_MESES`, `FRESCO_NIVEL_COB_MIN`). (3) Cobertura mínima de empaquetados
+(`MIN_SUC_ITEM_SEMANA` = 300, `FRAC_SUC_ITEM_TIPICA` = 0,5). (4) `RATIO_FRESCO` Naranja 0,85, Tomate 1,45, Limón 1,01.
+(5) Ronda 2 de reemplazos (267 EANs, no relee). Test nuevo `notebooks/test_frescos_v513.py` (6 bloques); 8 tests OK.
+Efecto simulado con el código real sobre el panel v5.12 (`docs/auditoria/scripts_v513/simular_v513.py`): Popular
+230,4 → 242,8; Media 241,7 → 247,6; Ejecutiva 243,8 → 243,3; Representativa 235,9 → 239,2; Femenina 260,0 → 258,7
+(METODOLOGIA §10.19).
+
+### 🔴 BUG-40 — nb07 v5.13 (antes de publicar): la cobertura mínima con arrastre congelaba el eslabón ✅ Resuelto
+
+La primera versión de la cobertura mínima enmascaraba la celda en `nac_wide` **antes** del arrastre: el `ffill` la
+rellenaba con el precio de la semana anterior, el eslabón de la muestra apareada daba 1,0 en plena inflación y, al
+volver el ítem, se publicaba todo lo acumulado. Simulada sobre el panel v5.12, la Tecnológica perdía 30 puntos entre
+ene y mar-24 (tres ítems con dato, 20% de inflación mensual). **Fix**: la celda se enmascara también en `nac_ff`
+después del arrastre, igual que `_ratio_bad`. Test: `test_frescos_v513.py` bloque 5.
+
+### 🔴 BUG-41 — nb07: el nivel de un fresco salía de un mes fuera de temporada o con la muestra caída ✅ Resuelto en v5.13
+
+El nivel de cada tramo de un fresco no anclado venía del estimador en la última semana (v5.7-v5.12) o, en la primera
+versión de la v5.13, en el mes de referencia. En agosto el Durazno está fuera de temporada (273 sucursales contra
+~1.500) y su estimador sale de las pocas sucursales caras: 11.100-16.000 $/kg, 4 veces la mediana de sus EANs. Con ese
+nivel, el Durazno pesaba 4 veces lo que debía en la canasta todo el año (0,9% de la Media en vez de ~0,25%). Desde
+oct-25 la serie publicada lo tenía así (el tramo nuevo del encadenado tomó el nivel de un mes sin temporada). Lo mismo
+el Roast beef en ago-26: pasa de 1.480 a 727 sucursales y su estimador salta +35%. Se encontró replicando el estimador
+desde el caché y corriendo el bloque 2b real. **Fix**: nivel de los 3 últimos meses con cobertura normal (≥50% de la
+típica) hasta el mes de referencia: Durazno feb-abr, Roast beef may-jul. Test: `test_frescos_v513.py` bloque 6.
+
+### 🟣 Ronda 2 de reemplazos aplicada (2026-09-24)
+
+15 reemplazos (`ronda2_propuesta_2026-09-24.csv`, elegidos con `proponer_reemplazos.py` sobre la relectura v5.12):
+`cargar_canastas_v5.py` pasa a 267 EANs (58/74/74/14/74/14), `EAN_FORZADO` a 42 pares (el constructor los respeta
+42/42). No relee (los 15 estaban en `EANS_CANDIDATOS`). Nota: el constructor corrido con el Excel de 2026-09 elige
+278 EANs y 132 distintos de la composición vigente, porque elige por percentil de precio y cobertura del mes: la
+composición vigente es el cargador, y los cambios van por `aplicar_reemplazos.py`.
 
 ### 🟣 nb07 v5.12 — ronda 2 de relectura (2026-09-24, lista para correr)
 

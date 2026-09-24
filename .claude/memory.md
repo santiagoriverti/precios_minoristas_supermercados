@@ -6,7 +6,101 @@ Autor: Santiago Riverti — investigador independiente
 
 ---
 
-## 🟢 ESTADO ACTUAL / HANDOFF [2026-09-24 · noche, tarde] — v5.12 CORRIDA Y REVISADA; decisiones pendientes — leer esto primero
+## 🟢 ESTADO ACTUAL / HANDOFF [2026-09-24 · cierre] — v5.13 LISTA PARA CORRER (RELEE el SEPA) — leer esto primero
+
+### En que estamos
+
+El usuario aprobo las 5 decisiones de la revision v5.12 (auditoria §7: "1 si, 2 si, 3 lo mas recomendable, 4 todos
+los cambios y hago una nueva lectura, 5 si") y pidio "todo lo recomendado para que la metodologia y las canastas
+queden del mejor nivel". Todo implementado, testeado y pusheado:
+
+1. **Ronda 2 aplicada**: los 15 de `docs/canastas_alternativas/ronda2_propuesta_2026-09-24.csv` ->
+   `cargar_canastas_v5.py` **267 EANs** (58/74/74/14/74/14), `EAN_FORZADO` 42 pares (el constructor los respeta 42/42).
+   El universo leido no cambia. Quedan sin reemplazo (a proposito): arvejas Popular (Inalpa), Nesquik Repr, agua Levite
+   Ejec, vino Luigi Bosca Ejec.
+2. **Nivel de frescos fijo**: mediana estimador/indice en los **3 ultimos meses con cobertura normal** hasta el mes
+   de referencia (`FRESCO_NIVEL_MES = None` -> 2026-08; `FRESCO_NIVEL_MESES = 3`; un mes con menos del 50% de la
+   cobertura tipica no cuenta, `FRESCO_NIVEL_COB_MIN`). Una semana nueva ya no reescala la historia (antes Mortadela
+   x1,49). Hallazgo al simular con el estimador replicado: **Durazno** tenia nivel de agosto, fuera de temporada
+   (16.000 $/kg, 4x la mediana de sus EANs, 4 veces su peso) -> ahora feb-abr (~4.600 en ago-26); **Roast beef**
+   pierde media muestra en ago-26 (1.480 -> 727 sucursales, estimador +35%) -> may-jul. Matambre x0,62 y Frutilla
+   x0,69 bajan porque la v5.12 tomaba el nivel de la ultima semana de septiembre.
+3. **Cobertura minima de empaquetados** (elegida sobre "rebasar a ene-25": conserva 2024 y saca solo lo flaco):
+   item-semana con menos de min(`MIN_SUC_ITEM_SEMANA`=300, `FRAC_SUC_ITEM_TIPICA`=50% de su cobertura tipica de las
+   ultimas 26 semanas) sucursales = faltante, y **fuera de la muestra apareada (no se arrastra)**. Ojo: con arrastre
+   el eslabon de esas semanas daba 1,0 y la Tecnologica perdia 30 puntos de 2024 en la simulacion -> corregido antes
+   de publicar (mismo tratamiento que `_ratio_bad`). ~5% de las celdas de empaquetados.
+4. **RATIO_FRESCO estacional** por recall/contaminacion contra el precio INDEC mes a mes: Naranja 0,85, Tomate 1,45,
+   Limon 1,01 (v5.12 los habia calibrado con UN mes y cortaba la temporada). **Esto es lo que obliga a releer.**
+5. **Frescos por TPD** (`FRESCO_METODO = 'tpd'`): log p = semana + EAN, sin ponderar, ventana movil de 52 semanas,
+   empalme de movimiento (sin revisiones). Contra el INDEC 0,99 (encadenado 0,94). Hoja nueva `Frescos_metodos` con
+   los dos metodos tipo por tipo (`FRESCO_EXPORTAR_METODOS`).
+
+nb07 **v5.13**; tests: 8 OK (nuevo `notebooks/test_frescos_v513.py`, 6 bloques; `test_encadenado_frescos.py` corre
+con `encadenado` y con `tpd`). Simulacion reproducible de la v5.13 sobre el cache v5.12:
+`docs/auditoria/scripts_v513/simular_v513.py`.
+
+### Efecto estimado de la v5.13 (panel v5.12, SIN la relectura; ene-24 -> ago-26)
+
+| Canasta | v5.12 | v5.13 estimado | i.a. ago-26 v5.12 -> v5.13 |
+|---|---:|---:|---:|
+| Popular | 230,4 | **242,8** | +29,5 -> +33,8% |
+| Media | 241,7 | **247,6** | +27,3 -> +29,4% |
+| Ejecutiva | 243,8 | **243,3** | +27,1 -> +28,2% |
+| Representativa | 235,9 | **239,2** | +27,7 -> +30,0% |
+| Femenina | 260,0 | **258,7** | +28,6 -> +28,6% |
+| Tecnologica (base jun-25) | 111,0 | **111,9** | +11,4 -> +10,6% |
+
+Simulacion fiel: bloque 2b REAL de gen_nb07 con el estimador de frescos replicado desde el cache `sem_f32678cd_v5`
+(mediana provincial >=3 suc, winsor 2,5, ponderado por poblacion), anclas INDEC al nivel publicado, empaquetados con
+la cobertura minima y la ronda 2. La Popular sube por los frescos (TPD); IPC alimentos 261,1 (+34,9% i.a.). La
+relectura (ratios nuevos) y la semana nueva mueven +-1-2 puntos mas. Los costos en $ bajan donde pesan Durazno,
+Matambre, Roast beef y Frutilla. La tabla sale de `docs/auditoria/scripts_v513/simular_v513.py` (AUD_EXCEL +
+AUD_CACHE de la v5.12; ~4 min). Otra diferencia con el prototipo TPD de la revision: el TPD pide 2 EANs por semana
+(el prototipo aceptaba 1, y el Durazno fuera de temporada saltaba x3 con un solo EAN).
+
+### CUANDO EL USUARIO PASE LOS RESULTADOS DE LA v5.13
+
+El usuario tiene que: (a) pegar el `cargar_canastas_v5.py` NUEVO en Colab, subir `canasta_representativa_2026-09.xlsx`
+y reemplazar el del Drive (`MyDrive/carga/output_canasta/`, uno solo) por el `_con_canastas.xlsx` renombrado; el
+cargador tiene que decir `EANs de la canasta: 267 | encontrados en la hoja: 267`; (b) correr el nb07 v5.13 (~1h20m).
+
+1. REPORTE: `nb07 v5.13`; `EANs empaquetados (union): 267`; universo **10.792** (igual que v5.12); cache NUEVO
+   `0 meses guardados, 32 por leer` (33 si los datos nuevos ya entran en octubre); lineas nuevas `Cobertura minima de empaquetados: N celdas ... (~5%)` y
+   `Frescos: indice por EAN, metodo tpd (TPD sin ponderar, ventana 52 semanas) | nivel: 3 meses con cobertura normal
+   hasta 2026-08 | ...` y abajo `nivel de otros meses (...): Durazno -> 2026-02..2026-04, Roast beef -> 2026-05..2026-07`
+   (con la relectura pueden cambiar; si aparece un tipo raro, mirar su cobertura mensual).
+   Si la Popular queda ~230, el TPD no esta activo (mirar `FRESCO_METODO`).
+2. Pedir Excel + REPORTE + zips `sem_<clave>_v5` y `ean_<clave>_v5`. Auditar:
+   `python notebooks/auditar_salida_nb07.py <Excel> --cache <carpeta> --indec data/sh_ipc_precios_promedio_2026-08.xls`.
+   Mirar: hoja `Frescos_metodos` (tpd vs encadenado vs INDEC, tipo por tipo); Naranja/Tomate/Limon por cadena y por
+   mes (la temporada tiene que estar: recall); bloque 7b (tiene que bajar); comparacion contra la tabla de arriba.
+3. Documentar (auditoria nueva de la corrida v5.13, BUGS_Y_MEJORAS, CONTEXTO, esta memoria) y commitear.
+
+### Pendientes despues de la v5.13
+
+1. Revisar la corrida v5.13 (arriba). Si algun fresco del TPD queda lejos del INDEC, mirarlo por EAN (hoja
+   `Frescos_metodos`) antes de tocar parametros.
+2. Tecnologica: publicar como NIVEL (no como indice). Durazno, Espinaca, Acelga, Palta: no publicar a nivel de item.
+3. El costo en $ de cada canasta (`costo_mediana`) se ancla en la ultima semana con cobertura >=95%: cada corrida
+   re-expresa la historia en pesos (el indice y las variaciones no cambian). Decision de diseño, documentada.
+4. nb06 fallback de mosaicos; nb05/nb02 confirmar en Colab; mapas a GitHub Pages; LaTeX (`Valores_Documento`).
+5. Seguridad (del usuario): rotar el PAT de GitHub; Git Credential Manager.
+
+### Reglas que muerden (nuevas)
+
+- **Una celda que se saca por calidad NO se arrastra**: si el arrastre la rellena con el precio anterior, el eslabon
+  da 1,0 en plena inflacion y el item publica todo junto al volver. Vale para la banda de plausibilidad y la cobertura.
+- **El constructor depende del mes del Excel**: con el de 2026-09 elige 278 EANs y 132 distintos de la composicion
+  vigente. La composicion es `cargar_canastas_v5.py`; los cambios van por `aplicar_reemplazos.py`.
+- **Ratios de frescos**: nunca calibrar con UN mes (corta la estacionalidad); elegir por recall/contaminacion en
+  todos los meses contra el precio INDEC.
+- **El nivel de un fresco nunca de un solo mes ni de un mes flaco**: fuera de temporada (Durazno en agosto) o con
+  media muestra perdida (Roast beef ago-26) el estimador sale de las sucursales caras. 3 meses con cobertura normal.
+- **Simular antes de dar por buena una regla nueva**: la cobertura minima con arrastre y el nivel de agosto del
+  Durazno solo aparecieron al correr el codigo REAL sobre el panel v5.12 (`exec` del bloque de gen_nb07).
+
+## 🟡 HANDOFF ANTERIOR [2026-09-24 · noche, tarde] — v5.12 CORRIDA Y REVISADA; decisiones pendientes (ya tomadas: ver arriba)
 
 ### En que estamos
 
