@@ -126,6 +126,8 @@ historia completa (dato en ≥85% de los meses **y** ≥300 sucursales en 28 de 
 usuario y efecto esperado en `docs/canastas_alternativas/README.md`. El cargador pasa de 282 a **270
 EANs**; los 24 pares quedan en `EAN_FORZADO` (el constructor los respeta: 27 de 27). El universo leído
 no cambia: el nb07 **no relee**. Queda el Skip de la Ejecutiva (defecto abierto de arriba).
+**Verificado** con la corrida del mismo día (auditoría §11.1): índice idéntico al estimado, bloque 4 del
+auditor OK, y la Popular pasa de 1.239 a 1.746 sucursales cotizadas.
 
 ### 🔴 BUG-38 — nb07: la hoja `Candidatos_trazabilidad` cortaba la necesidad en el primer " / " (2026-09-24) ✅ Resuelto en v5.11.1
 

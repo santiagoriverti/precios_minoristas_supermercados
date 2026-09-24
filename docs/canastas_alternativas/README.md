@@ -260,7 +260,7 @@ precio: −1,3% del costo de la Ejecutiva, +1,6 puntos de índice). **Decisión 
 (y otros líquidos caros) en la próxima relectura. Duda abierta: cuesta 2,8× por litro lo que el Skip Bio
 Enzimas del mismo tamaño; si es concentrado, 4 L/mes sobreestiman el consumo (mirar la etiqueta).
 
-**Efecto esperado** (panel de la v5.11), índice ene-24 → ago-26: Popular 231,6 → 230,2 · Media 241,0 →
+**Efecto verificado** (corrida del 2026-09-24 con los reemplazos, idéntica al estimado), índice ene-24 → ago-26: Popular 231,6 → 230,2 · Media 241,0 →
 241,5 · Ejecutiva 242,8 → 243,6 · Representativa 234,9 → 235,7 · Femenina 258,5 → 260,0. Costos ±0,4%
 salvo la Femenina (+2,6%); el interanual se mueve como mucho 0,2 puntos.
 

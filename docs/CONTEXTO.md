@@ -545,7 +545,8 @@ Los 4 reemplazos (Swift XL, Lavandina Anti-splash, Plusbelle, Listerine) están 
 - Hallazgo de método: "meses con dato" no ve la cobertura flaca (Raid 370 en 1 sucursal durante 2025).
   El auditor suma el bloque 7b (sucursales por mes).
 - 24 reemplazos aplicados (`docs/canastas_alternativas/reemplazos_2026-09-24.csv`): 270 EANs, sin
-  relectura. El Skip de la Ejecutiva se queda hasta medir Woolite en la relectura v5.12.
+  relectura. Corrida verificada el mismo día (§11.1): índice ene-24 → ago-26 Popular 230,2 · Media 241,5 ·
+  Ejecutiva 243,6 · Representativa 235,7 · Femenina 260,0; la Popular cotiza en 1.746 sucursales (antes 1.239). El Skip de la Ejecutiva se queda hasta medir Woolite en la relectura v5.12.
 - nb07 v5.11.1 (BUG-38, hoja `Candidatos_trazabilidad`) y `aplicar_reemplazos.py` sin falsas alarmas
   (BUG-39).
 

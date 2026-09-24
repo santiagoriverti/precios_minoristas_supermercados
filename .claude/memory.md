@@ -6,7 +6,7 @@ Autor: Santiago Riverti — investigador independiente
 
 ---
 
-## 🟢 ESTADO ACTUAL / HANDOFF [2026-09-24] — reemplazos aplicados; falta la corrida en Colab — leer esto primero
+## 🟢 ESTADO ACTUAL / HANDOFF [2026-09-24 · tarde] — reemplazos aplicados Y VERIFICADOS; siguiente: relectura v5.12 — leer esto primero
 
 Proyecto EN PRODUCCION, 7 herramientas (nb01..nb07). Todo viaja en el repo menos los datos SEPA, el
 cache y los Excel de salida (Drive del usuario, `MyDrive/carga/`). Entrada rapida: `CLAUDE.md`.
@@ -25,7 +25,15 @@ cache y los Excel de salida (Drive del usuario, `MyDrive/carga/`). Entrada rapid
 - nb07 **v5.11.1** (BUG-38), `aplicar_reemplazos.py` sin falsas alarmas (BUG-39), auditor con bloque
   **7b** (cobertura historica). 6 tests OK.
 
-### CUANDO EL USUARIO PASE LOS RESULTADOS DE LA CORRIDA CON LOS REEMPLAZOS
+### ✅ Corrida con los reemplazos: VERIFICADA (2026-09-24 tarde, auditoria §11.1)
+
+Mismo cache `e9dffc0d` (no releyo), 270 EANs, auditor 17 OK / 3 revisar (Tecnologica, frescos finos, 7b
+Ejecutiva 11,3%). Indice ene-24 -> ago-26 identico al estimado: Popular 230,2 · Media 241,5 · Ejecutiva 243,6 ·
+Representativa 235,7 · Femenina 260,0. La Popular cotiza en 1.746 sucursales (antes 1.239). Estos son los
+NUMEROS VIGENTES (reemplazan la tabla de la v5.11 de abajo). El usuario avisa que la PROXIMA corrida suma una
+semana mas de datos (ya en el Drive): va en el mes en curso, que el nb07 lee siempre del SEPA (no cambia el cache).
+
+### (historico) CUANDO EL USUARIO PASE LOS RESULTADOS DE LA CORRIDA CON LOS REEMPLAZOS
 
 El usuario tiene que: pegar el `cargar_canastas_v5.py` NUEVO en Colab, subir `canasta_representativa_2026-09.xlsx`,
 reemplazar el del Drive por el `_con_canastas.xlsx` renombrado (uno solo en `output_canasta/`) y correr el nb07.
