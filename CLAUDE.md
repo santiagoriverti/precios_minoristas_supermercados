@@ -40,6 +40,10 @@ informe semanal: 6 canastas, índice encadenado, comparación con el IPC y apert
   (bajar la planilla nueva del INDEC cuando salga: https://www.indec.gob.ar/ftp/cuadros/economia/sh_ipc_precios_promedio.xls).
 - **Reemplazos puntuales de productos**: `docs/canastas_alternativas/aplicar_reemplazos.py` (simula por
   defecto; `--escribir` aplica). No correr el constructor entero para un reemplazo: recalibra todo.
+  Ejemplo aplicado: `docs/canastas_alternativas/reemplazos_2026-09-24.csv`.
+- **"Meses con dato" no alcanza para juzgar la historia de un producto**: un mes cuenta aunque el
+  producto esté en UNA sucursal (Raid 370: 97% de meses con dato y 1 sucursal en 2025). Antes de elegir
+  un reemplazo, contar sucursales por mes (auditor con `--cache`, bloque 7b: ≥300 en 28 de 32 meses).
 
 ## Git
 
@@ -58,5 +62,5 @@ informe semanal: 6 canastas, índice encadenado, comparación con el IPC y apert
 | `docs/METODOLOGIA.md` | Metodología; nb07 en §10 (§10.14-10.16 lo último) |
 | `docs/BUGS_Y_MEJORAS.md` | Defectos abiertos arriba; bugs resueltos con causa y fix |
 | `docs/SEPA_TECNICO.md` | Formato SEPA, cadenas, frescos por tipo, caché |
-| `docs/AUDITORIA_2026-09-22_v59.md` | Última auditoría (v5.9 y verificación de la v5.10, §10) + PDF y scripts en `docs/auditoria/` |
+| `docs/AUDITORIA_2026-09-22_v59.md` | Auditoría de la v5.9 + verificación de la v5.10 (§10) y de la v5.11 con los reemplazos de trazabilidad (§11) + PDF y scripts en `docs/auditoria/` |
 | `docs/canastas_alternativas/README.md` | Composición de las 6 canastas, cargador, constructor, reemplazos |

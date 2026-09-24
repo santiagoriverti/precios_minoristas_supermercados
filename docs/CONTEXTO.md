@@ -152,8 +152,8 @@ Solo tipos con dicotomía celíaca; 2–3 EANs representativos por lado, promedi
 intra-sucursal. Config: dict `TIPOS` en la CELDA 1. **Detalle completo: `docs/BRECHA_CELIACA.md`.**
 
 ### 2f. `07_evolucion_canastas_alternativas` (notebook 07) — motor del informe semanal
-**Estado: v5.11, 2026-09-23** (relectura corriendo en Colab; v5.10 auditada; ver `docs/AUDITORIA_2026-09-22_v59.md` y el historial de
-cambios más abajo). Es el notebook que alimenta el **informe semanal** del equipo de
+**Estado: v5.11.1, 2026-09-24** (corrida v5.11 verificada y 24 reemplazos de trazabilidad aplicados;
+ver `docs/AUDITORIA_2026-09-22_v59.md` §11 y el historial de cambios más abajo). Es el notebook que alimenta el **informe semanal** del equipo de
 economistas. Costo de **6 canastas** vs **IPC**, desagregado por **rubro** (drill-down hasta
 producto), **provincia**, **región** y **cadena**.
 
@@ -161,9 +161,10 @@ producto), **provincia**, **región** y **cadena**.
 fecha de cierre (`2026-09-03`). Corriendo el viernes, la última semana está completa.
 `DIA_CIERRE_SEMANA` (3=jueves, 4=viernes). *nb02 y nb06 siguen usando semana ISO.*
 
-**Las 6 canastas** (hoja `Productos unicos`, 282 EANs empaquetados únicos desde el 2026-09-23 —288
-hasta la v5.10, salieron pañales y toallitas— + 59 tipos frescos; además, desde la v5.11, 90
-`EANS_CANDIDATOS` que se leen sin entrar a ninguna canasta).
+**Las 6 canastas** (hoja `Productos unicos`, 270 EANs empaquetados únicos desde el 2026-09-24 —288
+hasta la v5.10; el 23-sep salieron pañales y toallitas y el 24-sep se reemplazaron 24 ítems sin historia
+completa— + 59 tipos frescos; además, desde la v5.11, 90 `EANS_CANDIDATOS` que se leen sin entrar a
+ninguna canasta).
 Desde **v5 (2026-09-07)** cada estrato usa su propia versión de cada necesidad, con cantidades
 físicas ancladas a la **CBA del INDEC para hogar tipo 2** (3,09 adultos equivalentes):
 
@@ -534,6 +535,19 @@ Los 4 reemplazos (Swift XL, Lavandina Anti-splash, Plusbelle, Listerine) están 
 ---
 
 ## Historial de cambios
+
+### 2026-09-24 — corrida v5.11 verificada y reemplazos de trazabilidad
+
+- Auditoría de la corrida v5.11 (`docs/AUDITORIA_2026-09-22_v59.md` §11): índice replicado, aperturas y
+  frescos contra el INDEC en rango. Contra la v5.10 el índice sube por los pañales (Ejecutiva +7,7
+  puntos: bajaban de precio relativo) y cambia poco por los frescos. Hallazgo: la Naranja de Carrefour
+  no es naranja por kilo.
+- Hallazgo de método: "meses con dato" no ve la cobertura flaca (Raid 370 en 1 sucursal durante 2025).
+  El auditor suma el bloque 7b (sucursales por mes).
+- 24 reemplazos aplicados (`docs/canastas_alternativas/reemplazos_2026-09-24.csv`): 270 EANs, sin
+  relectura. El Skip de la Ejecutiva se queda hasta medir Woolite en la relectura v5.12.
+- nb07 v5.11.1 (BUG-38, hoja `Candidatos_trazabilidad`) y `aplicar_reemplazos.py` sin falsas alarmas
+  (BUG-39).
 
 ### 2026-09-23 (noche) — handoff para retomar en otra PC
 

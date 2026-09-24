@@ -6,7 +6,85 @@ Autor: Santiago Riverti — investigador independiente
 
 ---
 
-## 🟢 ESTADO ACTUAL / HANDOFF [2026-09-23 · noche] — nb07 v5.11 CORRIENDO en Colab — leer esto primero
+## 🟢 ESTADO ACTUAL / HANDOFF [2026-09-24] — reemplazos aplicados; falta la corrida en Colab — leer esto primero
+
+Proyecto EN PRODUCCION, 7 herramientas (nb01..nb07). Todo viaja en el repo menos los datos SEPA, el
+cache y los Excel de salida (Drive del usuario, `MyDrive/carga/`). Entrada rapida: `CLAUDE.md`.
+
+### En que estamos
+
+- **Corrida v5.11 verificada** (`docs/AUDITORIA_2026-09-22_v59.md` §11): la relectura se hizo el 23-sep
+  (cache `e9dffc0d`, 32 meses); la corrida del 24-sep lo reuso. Auditor 16 OK / 3 revisar (conocidos).
+- **24 reemplazos de trazabilidad aplicados en el repo** (`docs/canastas_alternativas/reemplazos_2026-09-24.csv`;
+  tabla y desvios en `docs/canastas_alternativas/README.md`): `cargar_canastas_v5.py` pasa a **270 EANs**
+  (58/74/74/14/74/14 por canasta), 27 pares en `EAN_FORZADO` (el constructor los respeta). El universo
+  leido NO cambia -> el nb07 no relee. Decisiones del usuario: desvios de jabon (Media Dove Exfoliante,
+  Representativa Dove Antibacterial) y perro (Representativa Dogui adultos 3 kg); azucar e insecticida
+  resueltos para toda la necesidad (Ledesma y Fuyi, la Media incluida); **Skip de la Ejecutiva se queda
+  hasta medir Woolite** en la proxima relectura.
+- nb07 **v5.11.1** (BUG-38), `aplicar_reemplazos.py` sin falsas alarmas (BUG-39), auditor con bloque
+  **7b** (cobertura historica). 6 tests OK.
+
+### CUANDO EL USUARIO PASE LOS RESULTADOS DE LA CORRIDA CON LOS REEMPLAZOS
+
+El usuario tiene que: pegar el `cargar_canastas_v5.py` NUEVO en Colab, subir `canasta_representativa_2026-09.xlsx`,
+reemplazar el del Drive por el `_con_canastas.xlsx` renombrado (uno solo en `output_canasta/`) y correr el nb07.
+
+1. REPORTE: `nb07 v5.11.1`; `EANs empaquetados (union): 270`; cache `32 meses guardados, 0 por leer` (si dice
+   `0 guardados, 32 por leer`, el universo cambio: parar y revisar); universo 10.743 (270 + 62 candidatos + frescos).
+   El cargador tiene que decir `EANs de la canasta: 270 | encontrados en la hoja: 270`.
+2. Auditar: `python notebooks/auditar_salida_nb07.py <Excel> --cache <carpeta con sem_e9dffc0d_v5 y ean_e9dffc0d_v5>
+   --indec data/sh_ipc_precios_promedio_2026-08.xls`. El cache es el mismo de la v5.11 (si no esta en la PC, pedir
+   los zips de nuevo). Esperado: replica OK; bloque 4 (trazabilidad) OK salvo la Ejecutiva (Skip 2,7%, <5%);
+   7b Ejecutiva ~11% (lo que queda para la v5.12).
+3. Comparar con el estimado (panel v5.11, ene-24 -> ago-26): Popular 230,2 · Media 241,5 · Ejecutiva 243,6 ·
+   Representativa 235,7 · Femenina 260,0; costos +-0,4% salvo Femenina +2,6%.
+4. Documentar (AUDITORIA §12 o doc nuevo, BUGS_Y_MEJORAS, CONTEXTO, esta memoria) y commitear.
+
+### Siguiente: relectura v5.12 (ronda 2)
+
+- Candidatos con historia (>=300 sucursales en 28 de 32 meses) para lo que queda flaco: Ejecutiva 11,3% del costo
+  (Skip 2,7%, vino Luigi Bosca 2,3%, fideos sin TACC Matarazzo 1,5%, agua Villa del Sur 1,4%, aceite La Tosca 1,3%,
+  Oreo Milka 1,3%), Media 1,8% (desodorante aerosol, 27 meses flacos), Representativa 1,9%, Popular 0,6%.
+- Woolite (450 y 900 ml) y otros liquidos caros para el Skip. Duda: el Skip Activo cuesta 2,8x por litro que el Skip
+  Bio Enzimas; si es concentrado, 4 L/mes sobreestiman (ver etiqueta).
+- Naranja: `7791720050170` (Carrefour, $9.500/kg) y `727373047691` ($34.000) a `EXCLUIR_EAN_FRESCO`.
+- Sucursales por mes en `Presencia_items` del nb07. Todo junto: una sola relectura (~1h20m).
+- Herramienta para proponer reemplazos con la logica del constructor + historia: ver `docs/canastas_alternativas/`
+  (si no existe `proponer_reemplazos.py`, rehacerla: constructor `elegir()` restringido a EANs leidos con
+  trazabilidad >=85% y >=300 sucursales en 28/32 meses, contados desde `sem_<clave>_v5`).
+
+### Numeros vigentes (corrida v5.11, ago-26 = ultimo mes con IPC)
+
+| Canasta | Indice ene-24=100 (v5.10 -> v5.11) | i.a. | Solo alimentos | Costo sep-26 (parcial) |
+|---|---:|---:|---:|---:|
+| Popular | 231,1 -> **231,6** | +29,1% | 233,8 | $911.850 |
+| Media | 239,4 -> **241,0** | +27,1% | 239,2 | $1.477.588 |
+| Ejecutiva | 235,4 -> **242,8** | +27,0% | 242,9 | $2.434.654 |
+| Representativa | 229,5 -> **234,9** | +27,7% | 237,5 | $1.335.205 |
+| Femenina | 258,5 -> 258,5 | +28,5% | — | $138.634 |
+| IPC alimentos / general | 261,1 / 288,1 | | | |
+
+Descomposicion del cambio v5.10 -> v5.11: panales +1,6 (M) / +7,7 (E) / +5,4 (R); anclas Tomate y Naranja
++0,3 a +0,7; resto de frescos (Atm, ratios) -0,3 a -0,5.
+
+### PENDIENTES, en orden
+
+1. Corrida con los reemplazos + auditoria (arriba).
+2. Relectura v5.12 (arriba).
+3. Frescos por metodo multilateral (TPD/GEKS); hasta entonces, banda de sensibilidad.
+4. Tecnologica: publicar como NIVEL. Durazno, Espinaca, Acelga, Palta: no publicar a nivel de item. No comparar
+   cadenas en Suprema/Pechuga ni Carne picada.
+5. nb06: fallback de mosaicos. 6. nb05/nb02: confirmar en Colab lo del 09-sep. 7. Mapas a GitHub Pages.
+8. LaTeX (`Valores_Documento`). 9. Seguridad: rotar el PAT de GitHub; Git Credential Manager.
+
+### Reglas que muerden (nuevas; las anteriores siguen abajo)
+
+- **"Meses con dato" no ve la cobertura flaca**: contar sucursales por mes (auditor 7b) antes de elegir reemplazos.
+- **Trazabilidad baja no es siempre un hueco**: la mayoria son entradas tardias (sin salto en el encadenado).
+- Un cambio de composicion que saca items con poca inflacion (panales) SUBE el indice: explicar por pesos.
+
+## 🟡 HANDOFF ANTERIOR [2026-09-23 · noche] — nb07 v5.11 corriendo en Colab (reemplazado por el de arriba)
 
 Proyecto EN PRODUCCION, 7 herramientas (nb01..nb07). Todo lo necesario para retomar viaja en el
 repo; lo unico que NO esta son los datos SEPA, el cache y los Excel de salida, que viven en el Drive

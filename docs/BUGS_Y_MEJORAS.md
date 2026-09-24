@@ -1,6 +1,6 @@
 # Bugs Pendientes y Mejoras
 
-Última actualización: 2026-09-23 — nb07 v5.11 (paquete de relectura: Atm de DIA fuera de Pollo y Suprema, `RATIO_FRESCO` recalibrado, Tomate y Naranja al INDEC, candidatos a reemplazo) corriendo en Colab; v5.10 (BUG-37, frescos anclados al INDEC) verificada; `aplicar_reemplazos.py` para los reemplazos de trazabilidad
+Última actualización: 2026-09-24 — corrida v5.11 verificada (`docs/AUDITORIA_2026-09-22_v59.md` §11); 24 reemplazos de trazabilidad aplicados (270 EANs, no relee el SEPA); nb07 v5.11.1 (BUG-38); `aplicar_reemplazos.py` sin falsas alarmas (BUG-39); auditor con cobertura histórica (bloque 7b). Pendiente: relectura v5.12 (historia flaca, Woolite, Naranja de Carrefour)
 
 ---
 
@@ -12,11 +12,46 @@
 
 ## 🟡 Defectos abiertos
 
-### nb07: la EVOLUCIÓN de algunos tipos frescos sale de productos que no corresponden — EN CURSO (v5.11)
+### nb07: productos con historia "flaca" que la trazabilidad no marca — para la relectura v5.12
+
+"Meses con dato" (hoja `Alertas_trazabilidad`, bloque 4 del auditor) cuenta un mes aunque el producto
+esté en **una** sucursal. Raid 370, el insecticida de la Media hasta el 2026-09-24, tenía 97% de
+trazabilidad y estuvo en 1 sucursal en ene-25 y jun-25; con tan pocas sucursales el precio nacional pega
+saltos que no son inflación (Scotch Brite: ×2,4 en una semana de feb-24, con ~100 sucursales). Desde el
+2026-09-24 el auditor lo mide con el caché (bloque **7b**: ítems con más de 4 meses con menos de 300
+sucursales). Después de los reemplazos del 24-sep quedan: **Ejecutiva 11,3% del costo** (Skip Activo
+2,7%, vino Luigi Bosca 2,3%, fideos sin TACC Matarazzo 1,5%, agua Villa del Sur 1,4%, aceite La Tosca
+1,3%, Oreo Milka 1,3%), Media 1,8% (desodorante aerosol, 27 meses flacos), Representativa 1,9%, Popular
+0,6%. **Arreglo**: agregar a `EANS_CANDIDATOS` candidatos con historia para esas necesidades y releer
+(v5.12); sumar las sucursales por mes a `Presencia_items` del nb07.
+
+### nb07: el Skip de la Ejecutiva no tiene reemplazo premium con historia
+
+Jabón líquido Skip Limpieza Activo 800 ml (2,7% de la Ejecutiva): toda la línea "Skip Activo" (6 EANs)
+aparece en el SEPA en jun-25. El único candidato leído con historia que respeta la escalera de precios es
+el Ala Ropa Fina de la Media (mitad de precio). **Decisión del usuario (2026-09-24): medir Woolite** (450 y
+900 ml, $8.400-9.200/L, 830-1.700 sucursales) y otros líquidos caros en la relectura v5.12. Duda abierta:
+el Skip Activo cuesta 2,8× por litro lo que el Skip Bio Enzimas de 800 ml; si es concentrado, los 4 L/mes
+de la Ejecutiva sobreestiman el consumo (verificar la etiqueta).
+
+### nb07: la Naranja de Carrefour no es naranja por kilo
+
+En la corrida v5.11, Carrefour y Carrefour Market cotizan Naranja a $9.500/kg (6,4× el nacional). El EAN
+`7791720050170` (113 sucursales) no es naranja por kilo; tampoco `727373047691` ($34.000/kg, 42
+sucursales). El nivel nacional está anclado al INDEC, así que el efecto está en la apertura de Carrefour y
+en la evolución del tipo. **Arreglo**: sumarlos a `EXCLUIR_EAN_FRESCO` en la relectura v5.12 (cambia la
+clave del caché). En Suprema/Pechuga y Carne picada las cadenas venden productos distintos (pechuga con
+hueso o suprema; picada común o envasada especial): nivel nacional razonable, pero **no comparar cadenas
+en esos tipos**.
+
+### nb07: la EVOLUCIÓN de algunos tipos frescos sale de productos que no corresponden — VERIFICADO en v5.11
+
+**Verificado el 2026-09-24** (auditoría §11): sin la bandeja Atm, el Pollo de DIA pasó de $12.000 a
+$4.800/kg y la Suprema nacional de $20.131 a $11.147 (2,3× el pollo); el Limón de DIA, de $5.519 (jugos)
+a $1.690. Queda la Naranja de Carrefour (entrada de arriba).
 
 **v5.11 (2026-09-23)**: bandejas Atm de DIA fuera de Pollo y Suprema, chorizos fuera de Pollo, jugos
-fuera de Limón y `RATIO_FRESCO` recalibrado (ver la entrada v5.11 más abajo). Se verifica con la
-corrida de relectura. Texto original:
+fuera de Limón y `RATIO_FRESCO` recalibrado (ver la entrada v5.11 más abajo). Texto original:
 
 La v5.10 corrigió el **nivel** de Pollo, Carne picada, Merluza y Limón anclándolo al INDEC, pero el
 universo de EANs de esos tipos sigue incluyendo productos ajenos: un "Chorizo de Pollo" en Pollo,
@@ -26,7 +61,10 @@ jugos de limón en Limón. Su **evolución** —la forma de la serie— sale de 
 excluir los productos en `cc`/`ml`. **Cambia la clave del caché y obliga a releer el SEPA (~1h20m)**:
 hacerlo junto con el próximo cambio de EANs (reemplazos de trazabilidad de Media y Ejecutiva).
 
-### nb07: pañales en un hogar sin bebés — DECIDIDO: salen (2026-09-23), se aplica con la relectura v5.11
+### nb07: pañales en un hogar sin bebés — HECHO (relectura v5.11, verificada el 2026-09-24)
+
+**Efecto medido** (auditoría §11): los pañales subieron ×1,2 a ×1,9 contra ×2,4 de la canasta, así que
+sacarlos subió el índice ene-24 → ago-26: Media +1,6, Ejecutiva +7,7, Representativa +5,4 puntos.
 
 El hogar de referencia es el hogar tipo 2 del INDEC: dos adultos con hijos de **6 y 8 años**. Media,
 Ejecutiva y Representativa llevaban pañales (XXXG, XXG, XG) y toallitas húmedas —4,9%, 6,8% y 5,8% del
@@ -79,6 +117,41 @@ de la Tecnológica** hasta que haya al menos dos cadenas con cobertura de durabl
 ---
 
 ## 🟢 Cambios y fixes 2026-09
+
+### 🟣 Reemplazos de trazabilidad aplicados (2026-09-24)
+
+24 cambios elegidos con la lógica del constructor, restringida a productos que el nb07 ya lee y con
+historia completa (dato en ≥85% de los meses **y** ≥300 sucursales en 28 de 32). Lista:
+`docs/canastas_alternativas/reemplazos_2026-09-24.csv`; tabla, desvíos de la regla aprobados por el
+usuario y efecto esperado en `docs/canastas_alternativas/README.md`. El cargador pasa de 282 a **270
+EANs**; los 24 pares quedan en `EAN_FORZADO` (el constructor los respeta: 27 de 27). El universo leído
+no cambia: el nb07 **no relee**. Queda el Skip de la Ejecutiva (defecto abierto de arriba).
+
+### 🔴 BUG-38 — nb07: la hoja `Candidatos_trazabilidad` cortaba la necesidad en el primer " / " (2026-09-24) ✅ Resuelto en v5.11.1
+
+**Síntoma**: en la corrida v5.11, "Milanesas / nuggets de pollo" figuraba como "Milanesas", y el ítem
+actual de esas necesidades salía con rol `candidato`. **Causa**: el comentario de cada EAN de
+`EANS_CANDIDATOS` es `canasta / necesidad / [ACTUAL (trazab. X%) / ] descripción`, y el código tomaba el
+segundo campo como necesidad y el tercero como marca de ACTUAL; con una necesidad que lleva " / " (4 de
+22) se corría todo. 16 de 90 candidatos quedaban mal asignados. **Fix**: la necesidad es todo lo que
+queda entre la canasta y la marca ACTUAL (o la descripción). Post-caché: no cambia la clave. Test:
+`notebooks/test_candidatos_reemplazo.py` (caso nuevo 2b, falla con el código anterior).
+
+### 🔴 BUG-39 — `aplicar_reemplazos.py`: dos falsas alarmas (2026-09-24) ✅ Resuelto
+
+(1) Avisaba que el nb07 **releería el SEPA** cuando el EAN nuevo no estaba en `EANS_CANDIDATOS`, aunque
+ya estuviera en otra canasta (y por lo tanto en el universo leído): pasó con la Pepsi 2 L de la
+Representativa. (2) La monotonicidad y el producto compartido se miraban contra la composición **vieja**:
+si Media y Ejecutiva pasan juntas al mismo producto, la Ejecutiva nueva "rompía" contra la Media vieja.
+**Fix**: esos chequeos se hacen contra la composición con todos los cambios aplicados, y el aviso de
+relectura compara el universo leído completo (canastas + `EANS_CANDIDATOS`) antes y después: avisa si
+entra un EAN no leído **o si sale** uno del universo (achicarlo también cambia la clave del caché).
+
+### 🟣 Auditor: cobertura histórica por ítem (bloque 7b, 2026-09-24)
+
+`auditar_salida_nb07.py --cache` cuenta, mes a mes, las sucursales de cada empaquetado de las canastas y
+reporta el peso de los que tienen más de 4 meses con menos de 300 sucursales (un mes sin el ítem cuenta
+como flaco). Es la medida que faltaba al lado de "meses con dato" (defecto abierto de arriba).
 
 ### 🟣 nb07 v5.11 — paquete de relectura: frescos bien especificados y candidatos a reemplazo (2026-09-23)
 

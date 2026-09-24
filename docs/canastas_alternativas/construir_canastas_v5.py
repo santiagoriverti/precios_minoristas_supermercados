@@ -551,10 +551,33 @@ NEEDS_FEMENINA = {
 # semanas, y su reaparicion fue el +9,3% del indice de Femenina). Clave: (canasta, necesidad).
 # Si el EAN fijado no esta entre los candidatos del Excel, se avisa y se elige automatico.
 EAN_FORZADO = {
-    ('Femenina', 'Rasuradora femenina'): '7702018874781',  # Prestobarba3 Femenina 2 Un (antes Simply Venus)
+    ('Femenina', 'Rasuradora femenina'): '7702018072477',  # Repuesto Rasuradora Recargable Venus Gillette 2 Un (2026-09-24, trazabilidad)
     ('Femenina', 'Crema corporal'):      '7793008018759',  # Villenueve Piel Extra Seca 250 Ml (antes Nivea Body 400)
     ('Femenina', 'Jabon de tocador'):    '7891150075382',  # Dove Antibacterial 90 Gr (antes Dove Original)
     ('Representativa', 'Crema corporal'): '7793008018759', # idem, Nivea Body 400 tambien estaba aca
+    ('Popular', 'Harina de maiz / polenta'): '7790580138738',  # Harina de Maíz Paquete Prestopronta 500 Gr (2026-09-24, trazabilidad)
+    ('Popular', 'Azucar'): '7792540250450',  # Azúcar Molida Superior Ledesma 1 Kg (2026-09-24, trazabilidad)
+    ('Popular', 'Tomate envasado'): '7790580146115',  # Pure de Tomate Arcor 520 Gr (2026-09-24, trazabilidad)
+    ('Popular', 'Salchichas'): '7790360970053',  # Salchichas Kids Swift Flowpack 190 Gr (2026-09-24, trazabilidad)
+    ('Popular', 'Milanesas / nuggets de pollo'): '7790070036636',  # Formitas de Pollo Rebozadas Lucchetti 350 Gr (2026-09-24, trazabilidad)
+    ('Popular', 'Bolsas de residuo'): '7790117000200',  # Bolsas de Residuos de 45 Cm 60 Cm en Rollo Asurin  (2026-09-24, trazabilidad)
+    ('Popular', 'Afeitado'): '7500435178570',  # Máquina de Afeitar Descartable Cuerpo Gillete 2 Un (2026-09-24, trazabilidad)
+    ('Media', 'Azucar'): '7792540250450',  # Azúcar Molida Superior Ledesma 1 Kg (2026-09-24, trazabilidad)
+    ('Media', 'Gaseosa cola'): '7791813888468',  # Gaseosa Cola Pepsi 2 Lt (2026-09-24, trazabilidad)
+    ('Media', 'Jabon en polvo'): '7791290792050',  # Jabón en Polvo Lavado a Mano Ala 800 Gr (2026-09-24, trazabilidad)
+    ('Media', 'Shampoo'): '7500435229821',  # Shampoo Limpia-Purifica Detox Pantene 400 Ml (2026-09-24, trazabilidad)
+    ('Media', 'Jabon de tocador'): '7898422746827',  # Jabón Exfoliante Blanco Dove 90 Gr (2026-09-24, trazabilidad)
+    ('Media', 'Alimento para perro'): '7797453001526',  # Alimento para Perros Adulto de Carne Pollo y Cerdo (2026-09-24, trazabilidad)
+    ('Media', 'Insecticida'): '7790520025869',  # Mata Mosca Mosquito Acuosa Aerosol Fuyi 360 Cc (2026-09-24, trazabilidad)
+    ('Ejecutiva', 'Pan de molde'): '7793890258776',  # Pan de Mesa Salvado Chico Lactal 330 Gr (2026-09-24, trazabilidad)
+    ('Ejecutiva', 'Manteca / margarina'): '7790398100071',  # Manteca La Paulina 100 Gr (2026-09-24, trazabilidad)
+    ('Ejecutiva', 'Cerveza'): '7792798001972',  # Cerveza Rubia en Lata Patagonia 473 Ml (2026-09-24, trazabilidad)
+    ('Ejecutiva', 'Jabon en polvo'): '7791290792050',  # Jabón en Polvo Lavado a Mano Ala 800 Gr (2026-09-24, trazabilidad)
+    ('Ejecutiva', 'Esponja / trapo'): '7794440101702',  # Lana de Acero Virulana 10 Un (2026-09-24, trazabilidad)
+    ('Ejecutiva', 'Insecticida'): '7790520025869',  # Mata Mosca Mosquito Acuosa Aerosol Fuyi 360 Cc (2026-09-24, trazabilidad)
+    ('Ejecutiva', 'Acondicionador'): '7500435202732',  # Acondicionador Revitalizante Head & Shoulders 300  (2026-09-24, trazabilidad)
+    ('Representativa', 'Jabon de tocador'): '7891150075382',  # Jabón Tocador Antibacterial Cuida y Protege Dove 9 (2026-09-24, trazabilidad)
+    ('Representativa', 'Alimento para perro'): '7613287613431',  # Alimento para Perros Adultos Bolsa Dogui 3 Kg (2026-09-24, trazabilidad)
 }
 
 

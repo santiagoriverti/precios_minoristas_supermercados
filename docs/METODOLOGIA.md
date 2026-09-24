@@ -1088,6 +1088,31 @@ mide su historia, y como ya están en el universo leído, pasarlos a una canasta
 El reemplazo se aplica con `docs/canastas_alternativas/aplicar_reemplazos.py`, que usa las mismas
 reglas del constructor (cantidad física / presentación, cobertura, monotonicidad entre estratos).
 
+### 10.17. Reemplazos de trazabilidad (2026-09-24): entradas tardías, huecos y cobertura flaca
+
+**Tres cosas distintas bajo "trazabilidad baja".** (1) **Entrada tardía**: el producto aparece en el
+SEPA en 2024-25 y desde ahí no se corta (19 de los 21 ítems marcados en la v5.11). El encadenado lo
+incorpora sin salto; lo que se pierde es su inflación previa, que el índice imputa con la del resto de
+la canasta. (2) **Huecos en el medio**: el producto desaparece y vuelve (2 de 21: Puré Alco, Insecticida
+Raid sin olor); al volver puede meter un salto. (3) **Cobertura flaca**: el producto tiene dato casi
+todos los meses pero en muy pocas sucursales (Raid 370: 1 sucursal en ene-25 y jun-25, con 97% de
+"meses con dato"). Con pocas sucursales el precio nacional es frágil y pega saltos que no son
+inflación. "Meses con dato" solo ve (1) y (2); para (3) hay que contar sucursales por mes (auditor,
+bloque 7b).
+
+**Criterio para elegir un reemplazo**: la lógica del constructor (ventana de percentil de precio del
+estrato, la mayor cobertura adentro, piso de monotonicidad, EAN distinto por estrato si se puede; la
+Representativa, el de mayor cobertura) restringida a productos ya leídos por el nb07 con dato en ≥85%
+de los meses **y** ≥300 sucursales en al menos 28 de los 32 meses cerrados. Si ningún candidato cumple
+y respeta la escalera, el ítem se queda y se anota (el Skip de la Ejecutiva). Cuando el producto de
+otro estrato de la misma necesidad tiene el mismo problema, la necesidad se resuelve entera (azúcar e
+insecticida de la Media, 2026-09-24). Detalle y números: `docs/AUDITORIA_2026-09-22_v59.md` §11.
+
+**Efecto sobre el índice**: reemplazar una entrada tardía por un producto con historia cambia el índice
+según cuánto subió el reemplazo antes de que el original apareciera, comparado con el resto de la
+canasta. En la ronda del 2026-09-24 el efecto estimado fue de −1,4 a +1,5 puntos sobre ~240 (ene-24 →
+ago-26), con el interanual casi igual.
+
 ---
 
 ## 11. Notebook 02 — Excel de econometría (`datos_econometria`)

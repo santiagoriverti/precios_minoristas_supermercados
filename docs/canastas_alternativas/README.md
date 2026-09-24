@@ -26,9 +26,10 @@ Insumo del notebook **`07_evolucion_canastas_alternativas`**, que produce el inf
 **287 EANs únicos** + **59 tipos de frescos** (los frescos van por regla de nombre en la
 CELDA 1 del notebook, `TIPOS_FRESCOS`, porque el EAN de balanza cambia entre cadenas).
 
-> **Vigente desde el 2026-09-23: 282 EANs.** Salieron pañales y toallitas de Media, Ejecutiva y
-> Representativa (74 necesidades cada una). Y la relectura v5.11 del nb07 lee además 90
-> `EANS_CANDIDATOS` para reemplazar los ítems con huecos. Ver "Cambios posteriores" más abajo.
+> **Vigente desde el 2026-09-24: 270 EANs.** El 2026-09-23 salieron pañales y toallitas de Media,
+> Ejecutiva y Representativa (74 necesidades cada una); el 2026-09-24 se reemplazaron 24 ítems sin
+> historia completa en el SEPA (ver "[Reemplazos de trazabilidad](#cambios-posteriores-a-v5-2026-09-24--reemplazos-de-trazabilidad)").
+> El nb07 lee además 90 `EANS_CANDIDATOS` que no entran a ninguna canasta.
 
 **Hogar de referencia: hogar tipo 2 del INDEC** — 2 adultos + 2 niños = **3,09 adultos
 equivalentes**. Todas las cantidades están expresadas para ese hogar.
@@ -193,25 +194,80 @@ Popular $1.007.217 → $924.193, Media −4,5%, Representativa −5,2%) y tambi�
 el peso de esos tipos: ene-24 → ago-26 Popular 234,1 → 231,1, Representativa 231,2 → 229,5, Media 240,8
 → 239,4, Ejecutiva 236,0 → 235,4 (corrida v5.10 del 2026-09-23).
 
-### Decisiones pendientes de composición
+### Decisiones de composición (resueltas)
 
-- **Pañales en un hogar sin bebés — DECIDIDO (2026-09-23): salen.** El hogar de referencia es el
-  hogar tipo 2 del INDEC (hijos de 6 y 8 años). Pañales y toallitas húmedas salen de Media, Ejecutiva
-  y Representativa (eran 4,9%, 6,8% y 5,8% del costo). Aplicado en `cargar_canastas_v5.py` (282 EANs) y
-  en `NEEDS` del constructor; falta correr el cargador en Colab (relee el SEPA).
-- **Rasuradora Femenina Prestobarba3** (reemplazo del 08-sep): 513 sucursales, debajo del piso de
-  700 de la Femenina.
-- **Trazabilidad**: Media (10,6% del costo) y Ejecutiva (8,0%) tienen ítems con menos del 85% de
-  meses con dato; en Representativa, el Jabón Dove Original (81,8%).
+- **Pañales en un hogar sin bebés — HECHO (2026-09-23, relectura v5.11).** El hogar de referencia es
+  el hogar tipo 2 del INDEC (hijos de 6 y 8 años). Pañales y toallitas húmedas salieron de Media,
+  Ejecutiva y Representativa (eran 4,9%, 6,8% y 5,8% del costo). Como subieron mucho menos que el resto
+  (×1,2 a ×1,9 contra ×2,4), sacarlos **subió** el índice ene-24 → ago-26: Media +1,6, Ejecutiva +7,7,
+  Representativa +5,4 puntos.
+- **Rasuradora Femenina Prestobarba3** (reemplazo del 08-sep): ~515 sucursales por mes, debajo del
+  piso de 700 de la Femenina → reemplazada el 2026-09-24 (abajo).
+- **Trazabilidad** de Media, Ejecutiva y Representativa → reemplazos del 2026-09-24 (abajo).
 
-Cualquiera de estos cambios toca EANs y **obliga a releer el SEPA** (~1h20m): conviene hacerlos
-juntos, y aprovechar para limpiar el universo de EANs de Pollo y Limón en `TIPOS_FRESCOS`.
+## Cambios posteriores a v5 (2026-09-24) — reemplazos de trazabilidad
 
-**Estado (2026-09-23, nb07 v5.11)**: la relectura lleva los pañales afuera, los frescos limpios y
-los **candidatos a reemplazo** de los ítems con huecos (`EANS_CANDIDATOS` en la CELDA 1 del nb07).
-Los reemplazos se eligen DESPUÉS de esa corrida, con la trazabilidad medida en la hoja
-`Candidatos_trazabilidad`, y como los candidatos ya están en el universo leído, aplicarlos no vuelve
-a releer el SEPA.
+Con la corrida v5.11 (que leyó los `EANS_CANDIDATOS`) se reemplazaron 24 ítems. Lista aplicada:
+[`reemplazos_2026-09-24.csv`](reemplazos_2026-09-24.csv), escrita con `aplicar_reemplazos.py --escribir`
+(cargador de 282 a **270 EANs**; los 24 pares quedaron en `EAN_FORZADO` y el constructor los respeta).
+El universo que lee el nb07 **no cambia** (los que salen quedan en `EANS_CANDIDATOS`): no relee el SEPA.
+
+**Cómo se eligió.** La lógica del constructor (ventana de percentil de precio del estrato, la mayor
+cobertura adentro, piso de monotonicidad Popular ≤ Media ≤ Ejecutiva, EAN distinto por estrato si se
+puede; la Representativa, el de mayor cobertura), restringida a productos que el nb07 ya lee y con
+**historia completa**: dato en ≥85% de los meses **y** ≥300 sucursales en al menos 28 de los 32 meses
+cerrados. El segundo requisito se agregó porque "meses con dato" cuenta un mes aunque el producto esté
+en una sola sucursal: Raid 370 tuvo **1** sucursal en ene-25 y jun-25 con 97% de "trazabilidad";
+Scotch Brite, ~100 hasta mediados de 2025; Azucel, 207-414.
+
+| Canasta | Sale | Entra | Nota |
+|---|---|---|---|
+| Popular | Polenta Molinos Ala 500 g | Harina de maíz Prestopronta 500 g | compartido con Ejecutiva y Representativa |
+| Popular y Media | Azúcar Domino / Azucel 1 kg | Azúcar Ledesma 1 kg | los cuatro estratos comparten (producto homogéneo) |
+| Popular | Puré de tomate Alco 520 g | Puré Arcor 520 g | Alco tenía huecos en el medio |
+| Popular | Salchicha Viena 66 190 g | Swift Kids 190 g | compartido con los otros tres |
+| Popular | Formitas de pollo Sadia 400 g | Formitas Lucchetti 350 g | |
+| Popular | Bolsas Mortimer 45×55 | Asurin 45×60 rollo 30 | compartido con Representativa |
+| Popular | Prestobarba 3 Carbón | Gillette Cuerpo descartable 2 un | compartido con Media |
+| Media | Pepsi Black 2 L | Pepsi 2 L | compartido con Representativa |
+| Media y Ejecutiva | Ala Más Blancos 600 g | Ala Lavado a Mano 800 g | solo 3 productos con cobertura en la necesidad |
+| Media | Shampoo Dove Bond Intense 400 ml | Pantene Detox 400 ml | |
+| Media | Jabón Dove Piel Sensible 90 g | Dove Exfoliante 90 g | desvío de la regla (ver abajo) |
+| Media | Dog Chow adultos med/peq | Pedigree adulto carne, pollo y cerdo | el actual tenía 390 sucursales |
+| Media y Ejecutiva | Raid 370 / Raid sin olor | Fuyi 360 cc | todos los Raid, <100 sucursales hasta fines de 2025 |
+| Ejecutiva | Pan integral Fargo 400 g | Lactal Salvado 330 g | compartido con Media |
+| Ejecutiva | Manteca Milkaut 100 g | La Paulina 100 g | |
+| Ejecutiva | Cerveza Corona 330 ml | Patagonia lata 473 ml | |
+| Ejecutiva | Esponja parrillera Go | Lana de acero Virulana 10 un | |
+| Ejecutiva | Acondicionador Pantene Pro-V 250 ml | H&S Revitalizante 300 ml | |
+| Representativa | Jabón Dove Original 90 g | Dove Antibacterial 90 g | desvío de la regla; el mismo de la Femenina |
+| Representativa | Dog Chow adultos med/grandes | Dogui adultos 3 kg | desvío de la regla |
+| Femenina | Prestobarba3 Femenina | Repuesto Venus 2 un | la actual, bajo el piso de 700 sucursales |
+
+**Desvíos de la regla (decisión del usuario).** (1) Jabón: la regla daba a la Media el Dove
+Antibacterial (empate de precio con el Exfoliante, gana por cobertura) y dejaba a la Representativa con
+el Lux Rosas 360 g —otra marca, 55% más barato por kilo, sin datos hasta abr-24—; se invirtió para que
+la Representativa tenga el de mayor cobertura. (2) Perro: la regla daba Dogui **cachorros** a la
+Representativa; va Dogui **adultos** 3 kg, como el producto que reemplaza (el constructor no distingue
+cachorro de adulto: la Ejecutiva tiene Dog Chow Cachorro). En la esponja la regla daba lana de acero y
+se respetó: la Scotch Brite, más parecida al producto actual, estuvo en ~100 sucursales hasta 2025 y
+saltó ×2,4 en una semana de feb-24.
+
+**No se reemplazó: el Skip de la Ejecutiva** (Limpieza Activo 800 ml, 2,7% del costo). Toda la línea
+"Skip Activo" apareció en jun-25; desde ahí no se corta y se movió como la canasta (×1,29 contra ×1,31).
+El único candidato leído con historia que respeta la escalera es el Ala Ropa Fina de la Media (mitad de
+precio: −1,3% del costo de la Ejecutiva, +1,6 puntos de índice). **Decisión del usuario: medir Woolite**
+(y otros líquidos caros) en la próxima relectura. Duda abierta: cuesta 2,8× por litro lo que el Skip Bio
+Enzimas del mismo tamaño; si es concentrado, 4 L/mes sobreestiman el consumo (mirar la etiqueta).
+
+**Efecto esperado** (panel de la v5.11), índice ene-24 → ago-26: Popular 231,6 → 230,2 · Media 241,0 →
+241,5 · Ejecutiva 242,8 → 243,6 · Representativa 234,9 → 235,7 · Femenina 258,5 → 260,0. Costos ±0,4%
+salvo la Femenina (+2,6%); el interanual se mueve como mucho 0,2 puntos.
+
+**Queda para la próxima relectura**: ítems con historia flaca que la trazabilidad no marcaba
+(Ejecutiva 11,3% del costo: Skip, vino Luigi Bosca, fideos sin TACC Matarazzo, agua Villa del Sur,
+aceite La Tosca, Oreo Milka; Media: desodorante aerosol, 27 meses con <300 sucursales). Necesitan
+candidatos nuevos en `EANS_CANDIDATOS`, y eso relee el SEPA. El auditor los mide en el bloque 7b.
 
 ---
 
@@ -344,6 +400,15 @@ constructor elige sobre la cobertura del período de referencia que le pases.
 - **`Alertas_reemplazo`** — ítems sin dato en las últimas 8 semanas. Son los candidatos a
   reemplazar: buscá un sustituto y editá el loader (o recalibrá el constructor).
 - **`Cobertura_emp`** — cobertura de cada ítem-canasta y si es comparable.
+- **`Candidatos_trazabilidad`** *(v5.11)* — meses con dato, primer mes y cobertura actual de los
+  `EANS_CANDIDATOS`: de acá salen los reemplazos de ítems con huecos.
+
+**"Meses con dato" no alcanza.** Un mes cuenta aunque el producto esté en una sola sucursal, y con
+tan pocas el precio nacional pega saltos que no son inflación. Antes de elegir un reemplazo, mirar
+cuántas sucursales tuvo mes a mes: el auditor lo hace con el caché (bloque 7b, ≥300 sucursales).
+De los 21 ítems con menos de 85% de meses del 2026-09-24, 19 eran **entradas tardías** (el producto
+aparece en 2024-25 y no se corta: el encadenado lo incorpora sin salto, solo pierde su inflación
+previa) y 2 tenían huecos en el medio.
 
 Un ítem que falta pocas semanas **no rompe la serie**: el notebook arrastra su último precio
 nacional conocido hasta 8 semanas y el índice es encadenado de muestra apareada, así que las

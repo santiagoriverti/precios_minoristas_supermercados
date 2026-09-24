@@ -18,8 +18,9 @@ Para cada cambio:
     constructor) y calcula la cantidad = cantidad fisica / presentacion, con el mismo redondeo;
   - identifica el EAN ACTUAL de esa canasta en esa necesidad (en `EANS_CANDIDATOS` del nb07);
   - AVISA si el nuevo no cumple la cobertura de su canasta, si rompe la monotonicidad de precio
-    unitario Popular <= Media <= Ejecutiva, o si NO esta en `EANS_CANDIDATOS` (en ese caso el nb07
-    releeria todo el SEPA);
+    unitario Popular <= Media <= Ejecutiva o si otro estrato ya usa ese producto (las dos cosas
+    contra la composicion con TODOS los cambios aplicados), y si cambia el universo de EANs que lee
+    el nb07 (canastas + `EANS_CANDIDATOS`): en ese caso el nb07 releeria todo el SEPA;
   - sin `--escribir`, solo muestra lo que haria. Con `--escribir`, actualiza `cargar_canastas_v5.py`
     (cantidades, conteo de EANs y una linea de registro en el encabezado) y agrega el par
     (canasta, necesidad) -> EAN a `EAN_FORZADO` del constructor, para que una recalibracion futura
@@ -129,21 +130,32 @@ def main():
                 errores.append(f'{can}/{need}: hay mas de un item actual posible {actuales}: indicar ean_actual'); continue
         if not actuales:
             avisos.append(f'{can}/{need}: no encuentro el item ACTUAL (solo se agrega el nuevo)')
-        otros = [t for t in TIERS + ['Representativa'] if t != can and CANT.get(nuevo, {}).get(COL[t], 0) > 0]
-        if otros:
-            avisos.append(f'{can}/{need}: {nuevo} ya lo usa {", ".join(otros)} (los estratos compartirian producto)')
-        if nuevo not in CAND:
-            avisos.append(f'{can}/{need}: {nuevo} NO esta en EANS_CANDIDATOS -> el nb07 RELEERA el SEPA')
         reg = cc.COBERTURA[can]
         if not (x['n_cadenas'] >= reg['cadenas'] and x['n_provincias'] >= reg['provincias'] and x['n_sucursales'] >= reg['sucursales']):
             avisos.append(f"{can}/{need}: {nuevo} bajo el piso de {can} ({int(x['n_sucursales'])} suc, {int(x['n_cadenas'])} cad, "
                           f"{int(x['n_provincias'])} prov; piso {reg})")
+        cambios.append(dict(canasta=can, necesidad=need, nuevo=nuevo, actuales=actuales, n=n, x=x, c=c))
+
+    # Lo que depende de la composicion (producto compartido, monotonicidad, universo leido) se mira
+    # contra la composicion DESPUES de todos los cambios. Contra la de antes daba falsas alarmas: si
+    # Media y Ejecutiva pasan juntas al mismo producto, la Ejecutiva nueva "rompia" contra la Media vieja.
+    despues = {e: dict(v) for e, v in CANT.items()}
+    for c in cambios:
+        col = COL[c['canasta']]
+        for act in c['actuales']:
+            despues[act][col] = 0
+        despues.setdefault(c['nuevo'], {k: 0 for k in COLS})[col] = c['n']
+    for c in cambios:
+        can, need, nuevo, x = c['canasta'], c['necesidad'], c['nuevo'], c['x']
+        otros = [t for t in TIERS + ['Representativa'] if t != can and despues.get(nuevo, {}).get(COL[t], 0) > 0]
+        if otros:
+            avisos.append(f'{can}/{need}: {nuevo} ya lo usa {", ".join(otros)} (los estratos compartirian producto)')
         if can in TIERS:
             k = TIERS.index(can)
             for otra in TIERS:
                 if otra == can:
                     continue
-                suyos = c[c['ean'].isin([e for e, v in CANT.items() if v.get(COL[otra], 0) > 0])]
+                suyos = c['c'][c['c']['ean'].isin([e for e, v in despues.items() if v.get(COL[otra], 0) > 0])]
                 if not len(suyos):
                     continue
                 p_otra = float(suyos['pu'].min())
@@ -151,7 +163,17 @@ def main():
                 if (ko < k and x['pu'] < p_otra) or (ko > k and x['pu'] > p_otra):
                     avisos.append(f'{can}/{need}: precio unitario {x["pu"]:,.0f} rompe la monotonicidad contra '
                                   f'{otra} ({p_otra:,.0f})')
-        cambios.append(dict(canasta=can, necesidad=need, nuevo=nuevo, actuales=actuales, n=n, x=x))
+    # La clave del cache del nb07 depende del universo leido = EANs de las canastas + EANS_CANDIDATOS
+    # (+ frescos, que esto no toca). Un producto que ya esta en otra canasta NO obliga a releer; uno
+    # que sale de todas las canastas y no esta en EANS_CANDIDATOS, SI (achica el universo).
+    en_uso = lambda d: {e for e, v in d.items() if any(v[k] > 0 for k in COLS)}
+    u0, u1 = set(CAND) | en_uso(CANT), set(CAND) | en_uso(despues)
+    if u1 - u0:
+        avisos.append(f'entran al universo leido {sorted(u1 - u0)} -> el nb07 RELEERA el SEPA '
+                      '(conviene agregarlos a EANS_CANDIDATOS antes de una relectura)')
+    if u0 - u1:
+        avisos.append(f'salen del universo leido {sorted(u0 - u1)} -> cambia la clave del cache y el nb07 RELEERA el SEPA '
+                      '(dejarlos en EANS_CANDIDATOS)')
 
     print(f'{len(pedidos)} pedidos | {len(cambios)} aplicables | {len(errores)} errores | {len(avisos)} avisos\n')
     for c in cambios:
@@ -162,6 +184,8 @@ def main():
         print('  ERROR ', e)
     for w in avisos:
         print('  AVISO ', w)
+    if u0 == u1:
+        print('\n  Universo de EANs que lee el nb07: sin cambios -> NO relee el SEPA')
     if errores:
         sys.exit('\nHay errores: no se escribio nada.')
     if not a.escribir:
@@ -169,15 +193,10 @@ def main():
         return
 
     for c in cambios:
-        col = COL[c['canasta']]
-        for act in c['actuales']:
-            CANT[act][col] = 0
-        CANT.setdefault(c['nuevo'], {k: 0 for k in COLS})
-        CANT[c['nuevo']][col] = c['n']
         if c['nuevo'] not in comentarios:
             x = c['x']
             comentarios[c['nuevo']] = f"{str(x['rubro']).strip()} | {str(x['desc'])[:58]}"
-    vivos = {e: v for e, v in CANT.items() if any(v[k] > 0 for k in COLS)}
+    vivos = {e: v for e, v in despues.items() if any(v[k] > 0 for k in COLS)}
     # Las lineas que no cambian conservan su comentario entero. `i1` apunta al salto de linea que
     # sigue a la llave de cierre, asi que el cuerpo termina en '}' sin salto.
     cuerpo = 'CANTIDADES = {\n' + '\n'.join(_linea(e, v, comentarios.get(e, '? | ?'))
