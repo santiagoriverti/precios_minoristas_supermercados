@@ -8,6 +8,14 @@ Autor: Santiago Riverti — investigador independiente
 
 ## 🟢 ESTADO ACTUAL / HANDOFF [2026-10-02] — v5.14 = v5.13 que entra en el Colab GRATUITO — leer esto primero
 
+**Corrida v5.14 al 2026-10-01 HECHA Y AUDITADA** (`docs/AUDITORIA_2026-10-02_v514.md`): corrio en Colab gratuito, 267 EANs,
+cache `22211cb0`, universo 10.674 (frescos 10.293: cambio el maestro SEPA del Drive), auditor 18 OK / 2 conocidos.
+Ago-26 (ene-24=100): Popular 243 | Media 248 | Ejecutiva 244 | Representativa 239 | Femenina 259 | Tecnologica 110
+(jun-25=100) — igual a lo simulado. Sep-26: 250/253/250/245/265. IPC alim 261, gral 288. Publicable; Femenina mensual,
+Tecnologica como nivel. Pendientes nuevos: reemplazar Lavarropas (sin dato desde 08-13) y Comp_rubro que omite items
+sin precio en el mes (BUGS_Y_MEJORAS). OJO: el usuario cargo primero un Excel con la composicion VIEJA (270, sin ronda 2):
+verificar siempre el Excel de canasta contra `cargar_canastas_v5.py` (267) antes de una corrida.
+
 El usuario perdio Colab Pro: el nb07 solo corria con "RAM amplia". **v5.14**: mismo calculo y mismas salidas que la
 v5.13, pico de RAM ÷3 (medido 9,3 -> 3,4 GB sobre 31 M de filas; ~25 -> ~8-9 GB extrapolado a las 85 M reales).
 No cambia el cache ni su clave. Detalle en BUGS_Y_MEJORAS (2026-10) y en CLAUDE.md (regla de categoricos).

@@ -15,6 +15,18 @@ Los defectos abiertos que resuelve quedan marcados abajo (se verifican con la co
 
 ## 🟡 Defectos abiertos
 
+### nb07: la composición por rubro deja afuera un ítem sin precio en el mes (2026-10-02)
+
+`Comp_rubro_*`/`Detalle_*` valúan solo los ítems con precio en el último mes. En la corrida al 2026-10-01 el
+Lavarropas de la Tecnológica no tiene dato desde el 2026-08-13: la composición suma $5.294.428 y el costo de la
+canasta $6.129.206 (el índice y el costo están bien). Arreglo: valuar el faltante a su último precio (como el
+arrastre) o marcarlo en la tabla. Ver `docs/AUDITORIA_2026-10-02_v514.md` §5.
+
+### nb07: Lavarropas de la Tecnológica sin dato desde 2026-08-13 — reemplazar
+
+~14% del costo de la Tecnológica. `proponer_reemplazos.py` → `aplicar_reemplazos.py` (no relee si el reemplazo ya
+está entre los candidatos leídos).
+
 ### nb07: el filtro de régimen corta la estacionalidad de Naranja, Tomate y Limón — INTRODUCIDO en v5.11/v5.12 — RESUELTO en v5.13 (verificar con la corrida)
 
 **v5.13**: el ratio no sale del centro del rango sino de maximizar el *recall* del precio plausible (INDEC / ancla,
