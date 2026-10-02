@@ -73,6 +73,13 @@ v5.14 (2026-10-02) - RAM: corre en el Colab GRATUITO (~12,7 GB). NO relee el SEP
     meses se calcula solo sobre esas semanas; los filtros de semanas no copian el panel; `sval` no
     copia `datos_sem` ni le pega la geografia (solo la provincia); el costo por sucursal se suma
     canasta por canasta antes de pegarle la geografia. El cache en disco no cambia (misma clave).
+
+v5.15 (2026-10-02, auditoria docs/AUDITORIA_2026-10-02_v514.md) - RELEE EL SEPA (cambia EANS_CANDIDATOS):
+25. Composicion por rubro: un item sin precio en el mes se valua a su ultimo aporte movido con el nivel de la
+    canasta (columna `imputado` en Detalle_*). Antes los rubros de la Tecnologica sumaban $5,29 M contra $6,13 M.
+26. Tecnologica: candidatos a reemplazo para las 14 necesidades (el actual + los 3 elegibles con mas
+    sucursales en canasta_representativa_2026-10.xlsx), para medir su historia. Lavarropas Samsung
+    WW65A4000EEU -> BGH Bwfe06s24ar (el Samsung perdio la mitad de sus sucursales desde ago-26).
 """
 import json, os, hashlib
 
@@ -612,6 +619,80 @@ EANS_CANDIDATOS = {
     '7790773007124': 'Ejecutiva / Algodon / hisopos / ACTUAL (historia flaca: 7 meses <300 suc) / Hisopos Family Q Soft 150 Un',
     '7790064002029': 'Ejecutiva / Algodon / hisopos / Algodón Pompones Estrella 50 Un (1965 suc)',
     '7798364400354': 'Ejecutiva / Algodon / hisopos / Hisopos sw Bambú Miraki 100 Un (1213 suc)',
+    # ── Tecnologica (2026-10-02): el ACTUAL de cada necesidad + los 3 elegibles con mas sucursales en
+    #    canasta_representativa_2026-10.xlsx (regla del constructor: >=3 cadenas, >=10 provincias, >=90 suc).
+    #    Se leen para medir su historia: el reemplazo de un durable sin cobertura no relee el SEPA.
+    # Tecnologica / Heladera
+    '7797102526875': 'Tecnologica / Heladera / ACTUAL / Heladera con Freezer Cíclica 2 Fríos Modelo HDR280F50B Drean',
+    '7791758120500': 'Tecnologica / Heladera / Heladera con Freezer Modelo HGF358AFB Blanca Gafa 1 Un (218 suc)',
+    '7791758121002': 'Tecnologica / Heladera / Heladera con Freezer Modelo HGF388AFB 374 Lt Blanca Gafa 1 U (216 suc)',
+    '8806088806440': 'Tecnologica / Heladera / Heladera con Freezer No Frost Modelo RT38K5932SL Digital Inv (170 suc)',
+    # Tecnologica / Lavarropas
+    '7796885340661': 'Tecnologica / Lavarropas / ACTUAL (desde 2026-10, reemplaza al Samsung WW65A4000EEU) / Lavarropas 6kg Bwfe06s24ar 1000rpm Gris Inv A+++ Bgh 1 Un',
+    '7791758900126': 'Tecnologica / Lavarropas / Lavarropa Fuzzy Fit Blanco Electrolux (242 suc; la descripcion no dice si es frontal)',
+    '8806094365566': 'Tecnologica / Lavarropas / Lavarropas Frontal Inventer WW65A4000S Plata 6.5 Kt Samsung  (211 suc)',
+    '7796885340654': 'Tecnologica / Lavarropas / Lavarropas Cf 6Kg 1000R Inv Pih034065 Bgh 1 Un (191 suc)',
+    '8806094365573': 'Tecnologica / Lavarropas / Lavarropas Frontal Inventer WW65A4000EEU Blanco 6.5 Kg Samsu (134 suc)',
+    # Tecnologica / Cocina
+    '7502271278278': 'Tecnologica / Cocina / ACTUAL / Cocina Multigas Cd5602Ab0 Drean 1 Un',
+    '7502271277936': 'Tecnologica / Cocina / Cocina Cd5603Ai0 Drean 1 Un (154 suc)',
+    '7897180598938': 'Tecnologica / Cocina / Cocina Multigas 56 Cm 94Ccm056N Atma 1 Un (111 suc)',
+    '7502271278285': 'Tecnologica / Cocina / Cocina Cd5617Ai0  Drean 1 Un (107 suc)',
+    # Tecnologica / Aire acondicionado
+    '7796962987321': 'Tecnologica / Aire acondicionado / ACTUAL / Aire Acondicionado Philco Split 3200W Frio Calor Cl. A Phs32',
+    '7796885016689': 'Tecnologica / Aire acondicionado / Aire Acondicionado Split 3600W F/C "A+" R32 Bgh 1 Un (243 suc)',
+    '7796885016719': 'Tecnologica / Aire acondicionado / Aire Acondicionado Split Inverter 3650W Bgh 1 Un (220 suc)',
+    '7796962987291': 'Tecnologica / Aire acondicionado / Aire Acondicionado Philco Split 2500W Frio Calor Cl. A Phs25 (218 suc)',
+    # Tecnologica / Televisor
+    '8718863045688': 'Tecnologica / Televisor / ACTUAL / Smart Tv 43" Full Hd 43Pfd6910/77 Philips 1 Un',
+    '8718863045695': 'Tecnologica / Televisor / Tv Led 32" Full Hd 32Phd6910/77 con Titan Os Philips 1 Un (339 suc)',
+    '8718863042359': 'Tecnologica / Televisor / Smart Led Tv 4K 50" Titan Os Wifi Usb2 Hdmi4 Bluetooth Phili (310 suc)',
+    '7796962001379': 'Tecnologica / Televisor / Tv 50"" Smart 4K Dv50X8580 Goog (238 suc)',
+    # Tecnologica / Notebook
+    '198990785363': 'Tecnologica / Notebook / ACTUAL / Pc/Notebook Hp Note 15-Fc0235La R3-7320U Amd 15""""8/512Gb',
+    '198990785394': 'Tecnologica / Notebook / Notebook 15-Fc0251La 15" 8/512Gb Hp 1 Un (139 suc)',
+    '198415328557': 'Tecnologica / Notebook / Notebook 14-Ep0029La Hp 1 Un (96 suc)',
+    '4711387204290': 'Tecnologica / Notebook / Notebook Modelo X515EA-EJ3969W 15.6" Asus 1 Un (91 suc)',
+    # Tecnologica / Celular
+    '6932554416638': 'Tecnologica / Celular / ACTUAL / Celular 14C 4Gb/128Gb Starry Blue Azul Redmi Xiaomi 1 Un',
+    '6932554416676': 'Tecnologica / Celular / Celular 14C Sage Green Redmi Xiaomi 1 Un (287 suc)',
+    '6932554416683': 'Tecnologica / Celular / Celular 14C Sage Green Redmi Xiaomi 1 Un (267 suc)',
+    '6932554416652': 'Tecnologica / Celular / Celular 14C 4Gb/128Gb Midnight Black Negro Redmi Xiaomi 1 Un (254 suc)',
+    # Tecnologica / Microondas
+    '7796885495194': 'Tecnologica / Microondas / ACTUAL / Hornos Microondas 20Lt Blanco 700 W Bgh 1 Un',
+    '7797750980548': 'Tecnologica / Microondas / Microondas Modelo WMS20BSDNA Plata Whirlpool 1 Un (153 suc)',
+    '7796885486642': 'Tecnologica / Microondas / Microondas 28 Lt Grill B228Dbe Bgh 1 Un (122 suc)',
+    '7796885495125': 'Tecnologica / Microondas / Microondas Modelo B120DN20I Negro Bgh 1 Un (121 suc)',
+    # Tecnologica / Licuadora
+    '34264476455': 'Tecnologica / Licuadora / ACTUAL / Licuadora De Mano Oster 800W Fpsthb2802 354 Negro',
+    '34264476431': 'Tecnologica / Licuadora / Licuadora De Mano Oster 800W Fpsthb2803 354 Rojo (114 suc)',
+    '34264476448': 'Tecnologica / Licuadora / Licuadora De Mano Oster Fpsthb2801 354 Roja 800 W (108 suc)',
+    '3616958850009': 'Tecnologica / Licuadora / Mixer Plastico Bluesky Bco Bhb170 24L (100 suc)',
+    # Tecnologica / Pava electrica
+    '7798081287429': 'Tecnologica / Pava electrica / ACTUAL / Jarra Electrica Smart Life Mod Slek1714Wpn Blanca',
+    '7798081287566': 'Tecnologica / Pava electrica / Jarra Electrica Smartlife Digital Inox Sl Ekd1520 (138 suc)',
+    '7798081287412': 'Tecnologica / Pava electrica / Jarra Electrica Smart Life Mod Slek1714Bpn Negra (129 suc)',
+    '3616958849171': 'Tecnologica / Pava electrica / Jarra Electrica Bluesky Acero Inox Bwk17S 24L (125 suc)',
+    # Tecnologica / Plancha
+    '53891142960': 'Tecnologica / Plancha / ACTUAL / Plancha A Vapor Oster Gcstbs5905',
+    '7798081285494': 'Tecnologica / Plancha / Plancha Seca Smart Life Sl Di2386Pn (104 suc)',
+    '7798081285500': 'Tecnologica / Plancha / Plancha A Vapor Smart Life 1740W Si2473Pn (97 suc)',
+    '3616959284537': 'Tecnologica / Plancha / Plancha A Vapor Klindo Ksi2600 24L (96 suc)',
+    # Tecnologica / Parlante bluetooth
+    '7797026970037': 'Tecnologica / Parlante bluetooth / ACTUAL / Parlante Bt Stromberg Boombox Force',
+    '7797026970020': 'Tecnologica / Parlante bluetooth / Torre Stromberg Intense Pro (127 suc)',
+    '7797026970013': 'Tecnologica / Parlante bluetooth / Torre De Sonido Stromberg Inspire Pro (124 suc)',
+    '4895229133525': 'Tecnologica / Parlante bluetooth / Torre Philips 2X12P 400W Tax5708 77 (118 suc)',
+    # Tecnologica / Auriculares
+    '7798137725820': 'Tecnologica / Auriculares / ACTUAL / Auricular Ear Btwins 49 Noganet 1 Un',
+    '4895229109681': 'Tecnologica / Auriculares / Auricular Vincha Philips Tah4105Bk/00 Bass + (109 suc)',
+    '4895229110038': 'Tecnologica / Auriculares / Auricular Vincha Bt Philips Tah1205Bk/00 Negro (108 suc)',
+    '7798111354763': 'Tecnologica / Auriculares / Auricular Bt Earbud Aiwa Mod. Twa 70N Negro (107 suc)',
+    # Tecnologica / Calefactor
+    '7793862008910': 'Tecnologica / Calefactor / ACTUAL / Convector Liliana Convectory Plus Mod Cfb17 1 Un',
+    '7798115593076': 'Tecnologica / Calefactor / Calefactor Infrarrojo 1300W Hn 13 Protalia 1 Un (128 suc)',
+    '7798115593090': 'Tecnologica / Calefactor / Caloventor Fh801 2000 W Blanco Protalia 1 Un (128 suc)',
+    '7793862012320': 'Tecnologica / Calefactor / Calefactor Infrarrojo Vertical Modelo CVO-27 Liliana 1 Un (121 suc)',
 }
 
 # Salto semanal del precio nacional de un item a partir del cual se lo reporta en la hoja
@@ -2100,6 +2181,11 @@ cells.append(cell_code(r'''# ===================================================
 # ============================================================
 # Se calcula sobre el panel NACIONAL (nac_ff x cantidad), no sobre la mediana entre
 # sucursales, para que los rubros sumen exactamente el costo de la canasta.
+# v5.15: un item SIN precio una semana (fuera del arrastre, o sacado por la cobertura minima) se
+# valua a su ultimo aporte movido con el nivel de la canasta: es lo que hace el indice de muestra
+# apareada con un faltante. Antes quedaba afuera y los rubros sumaban menos que el costo (corrida
+# 2026-10-01: Tecnologica $5,29 M contra $6,13 M, por el Lavarropas; con la imputacion, $6,19 M: no es
+# exacto porque el eslabon tambien saca items que reingresan). Columna `imputado` en Detalle_*.
 rubro_sem_dict = {}; rubro_share_dict = {}; detalle_dict = {}
 _ult_mes = max(s['mes'].max() for s in serie_sem_dict.values() if len(s))
 
@@ -2107,6 +2193,9 @@ for _name in CANASTAS_ACTIVAS:
     _rec = RECETAS[_name]; _V = aporte_dict.get(_name)
     if _V is None or not len(_V): continue
     _map = _rec.set_index('item')['rubro']
+    _nv = serie_sem_dict[_name].set_index('semana')['costo_mediana'].reindex(_V.index)
+    _Vobs = _V
+    _V = _V.div(_nv, axis=0).ffill().mul(_nv, axis=0)     # solo hacia adelante: antes del alta, NaN
     _long = (_V.reset_index().melt(id_vars='semana', var_name='item', value_name='val')
                .dropna(subset=['val']))
     _long['rubro'] = _long['item'].map(_map)
@@ -2123,16 +2212,21 @@ for _name in CANASTAS_ACTIVAS:
     _det = _rec.copy()
     _det['precio_unit'] = _det['item'].map(_pu)
     _det['costo'] = _det['precio_unit'] * _det['qty']
+    _det['imputado'] = _det['item'].map(_Vobs.loc[_um].isna().all()).fillna(False).astype(bool)
     _det['detalle'] = _det.apply(lambda r: (str(CANASTAS_EMP[_name][r['item']][0]) if r['kind']=='emp'
                                             else f"{r['item']} ($/{FRESCO_INFO[r['item']]['unidad']})"), axis=1)
-    detalle_dict[_name] = _det[['rubro','detalle','kind','qty','precio_unit','costo']].sort_values(
+    detalle_dict[_name] = _det[['rubro','detalle','kind','qty','precio_unit','costo','imputado']].sort_values(
         ['rubro','costo'], ascending=[True,False])
 
 for _name in CANASTAS_ACTIVAS:
     _sh = rubro_share_dict.get(_name)
     if _sh is None: continue
     print(f'=== [{_name}] Composicion por rubro ({_ult_mes}) - total ${_sh["costo_mensual"].sum():,.0f} ===')
-    print(_sh.to_string(index=False)); print()
+    print(_sh.to_string(index=False))
+    _imp = detalle_dict[_name].loc[detalle_dict[_name]['imputado'], 'detalle'].tolist()
+    if _imp:
+        print(f'  sin precio en {_ult_mes}, valuado a su ultimo aporte movido con la canasta: ' + '; '.join(_imp))
+    print()
 ''' ))
 
 # ── CELL 10 — IPC + MENSUAL ───────────────────────────────────────────────────
@@ -2581,7 +2675,7 @@ with pd.ExcelWriter(_xlsx, engine='openpyxl') as _w:
         {'parametro':'Frescos - indice','valor':(f'TPD multilateral sin ponderar por EAN, ventana movil de {FRESCO_TPD_VENTANA} semanas con empalme de movimiento' if FRESCO_METODO == 'tpd' else 'encadenado de EANs apareados (media geometrica)') + '; hoja Frescos_metodos compara los dos'},
         {'parametro':'Frescos - nivel','valor':f'mediana estimador/indice en los {FRESCO_NIVEL_MESES} ultimos meses con cobertura normal hasta {globals().get("FRESCO_MES_NIVEL") or "el mes de NIVEL_REFERENCIA_FRESCO"} (no se revisa semana a semana); un mes con menos del {FRESCO_NIVEL_COB_MIN:.0%} de la cobertura tipica no cuenta. De otros meses: ' + (', '.join(f'{k} {v}' for k, v in globals().get('FRESCO_MES_NIVEL_TIPO', {}).items()) or 'ninguno')},
         {'parametro':'Cobertura minima empaquetados','valor':f'precio nacional de un item-semana con menos de min({MIN_SUC_ITEM_SEMANA}, {FRAC_SUC_ITEM_TIPICA:.0%} de su cobertura tipica) sucursales = faltante (fuera de la muestra apareada, sin arrastre)'},
-        {'parametro':'Version','valor':'nb07 v5.14'},
+        {'parametro':'Version','valor':'nb07 v5.15'},
     ]).to_excel(_w, 'Metodologia', index=False)
     _res = []
     for _name in CANASTAS_ACTIVAS:
@@ -2677,7 +2771,7 @@ cells.append(cell_code(r'''# ===================================================
 # CELDA 15 - REPORTE PARA CLAUDE (copia y pega TODO el bloque)
 # ============================================================
 print('='*72)
-print('REPORTE PARA CLAUDE - canastas alternativas nb07 v5.14')
+print('REPORTE PARA CLAUDE - canastas alternativas nb07 v5.15')
 print('='*72)
 print(f'Ultima semana (cierra jueves): {ULTIMA_SEMANA} | Ultimo mes: {_ult_mes}')
 print(f'Canastas activas: {CANASTAS_ACTIVAS}')

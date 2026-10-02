@@ -3,8 +3,8 @@
 Pipeline sobre el **SEPA** (precios de supermercados de Argentina): 7 notebooks de Colab (nb01–nb07).
 El que se trabaja hoy es el **nb07** (`notebooks/07_evolucion_canastas_alternativas.ipynb`), motor del
 informe semanal: 6 canastas, índice encadenado, comparación con el IPC y aperturas por cadena/región.
-Versión vigente: **nb07 v5.14** (= v5.13 en método y resultados; v5.14 baja el pico de RAM para correr en el
-Colab GRATUITO: frescos por índice multilateral TPD, nivel fijo, cobertura mínima de empaquetados).
+Versión vigente: **nb07 v5.15** (v5.13 en método: frescos por TPD, nivel fijo, cobertura mínima; v5.14: corre en el
+Colab GRATUITO; v5.15: composición por rubro con faltantes imputados, candidatos de la Tecnológica y Lavarropas BGH).
 
 ## Al empezar una sesión
 

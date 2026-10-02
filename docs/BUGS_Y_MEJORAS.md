@@ -15,17 +15,26 @@ Los defectos abiertos que resuelve quedan marcados abajo (se verifican con la co
 
 ## 🟡 Defectos abiertos
 
-### nb07: la composición por rubro deja afuera un ítem sin precio en el mes (2026-10-02)
+### nb07: la composición por rubro deja afuera un ítem sin precio en el mes (2026-10-02) — RESUELTO en v5.15
+
+v5.15: el faltante se valúa a su último aporte movido con el nivel de la canasta (lo que hace el índice de muestra
+apareada) y `Detalle_*` lo marca en la columna `imputado`. Con los datos de la corrida al 2026-10-01 la Tecnológica
+pasa de $5,29 M a $6,19 M contra un costo de $6,13 M (no es exacto: el eslabón también saca ítems que reingresan).
+Las otras canastas no cambian.
 
 `Comp_rubro_*`/`Detalle_*` valúan solo los ítems con precio en el último mes. En la corrida al 2026-10-01 el
 Lavarropas de la Tecnológica no tiene dato desde el 2026-08-13: la composición suma $5.294.428 y el costo de la
 canasta $6.129.206 (el índice y el costo están bien). Arreglo: valuar el faltante a su último precio (como el
 arrastre) o marcarlo en la tabla. Ver `docs/AUDITORIA_2026-10-02_v514.md` §5.
 
-### nb07: Lavarropas de la Tecnológica sin dato desde 2026-08-13 — reemplazar
+### nb07: Lavarropas de la Tecnológica sin dato desde 2026-08-13 — REEMPLAZADO en v5.15 (relee)
 
-~14% del costo de la Tecnológica. `proponer_reemplazos.py` → `aplicar_reemplazos.py` (no relee si el reemplazo ya
-está entre los candidatos leídos).
+No desapareció: el Samsung WW65A4000EEU pasó de ~460 sucursales y 8 cadenas a ~135 y 4 desde ago-26, y la cobertura
+mínima (v5.13) lo saca como faltante. Reemplazo: BGH Bwfe06s24ar 6 kg frontal inverter (7796885340661; 229 suc, 4
+cadenas, 24 provincias). El de más sucursales era el Electrolux Fuzzy Fit, pero su descripción no dice si es frontal:
+queda como candidato. `aplicar_reemplazos.py` no cubre la Tecnológica: se cambió a mano en `cargar_canastas_v5.py`.
+Se agregaron 57 EANs a `EANS_CANDIDATOS` (el actual + 3 elegibles por necesidad de la Tecnológica) para medir su
+historia: eso cambia la clave del caché y **relee el SEPA** una vez; después, un reemplazo de la Tecnológica no relee.
 
 ### nb07: el filtro de régimen corta la estacionalidad de Naranja, Tomate y Limón — INTRODUCIDO en v5.11/v5.12 — RESUELTO en v5.13 (verificar con la corrida)
 

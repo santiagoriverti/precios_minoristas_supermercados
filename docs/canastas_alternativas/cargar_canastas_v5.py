@@ -53,6 +53,9 @@
 #     Representativa / Afeitado: 7702018037865 -> 7500435211635 (Repuesto Mach3 Carbono Gillette 4 Un)
 #     Ejecutiva / Algodon / hisopos: 7790773007124 -> 7891010560737 (Hisopos Caja Johnson'S 75 Un)
 #     Ejecutiva / Jabon liquido para ropa: 7791290796409 -> 7791130003643 (Detergente para Ropa Doypack Woolite 900 Ml)
+#   REEMPLAZO 2026-10-02 (a mano; aplicar_reemplazos.py no cubre la Tecnologica): el Samsung paso de ~460 a ~135
+#     sucursales y de 8 a 4 cadenas desde ago-26 y la cobertura minima lo saca del indice (AUDITORIA_2026-10-02_v514):
+#     Tecnologica / Lavarropas: 8806094365573 -> 7796885340661 (Lavarropas 6kg Bwfe06s24ar Inv Bgh, frontal, 229 suc)
 #   267 EANs   |   hogar de referencia: hogar tipo 2 (2 adultos + 2 ninos) = 3,09 adultos equivalentes
 #
 # Diferencia clave con v4: cada estrato usa SU PROPIA version de cada necesidad
@@ -329,7 +332,7 @@ CANTIDADES = {
     '8445291082199': {'cantidad_01': 0, 'cantidad_02': 0, 'cantidad_03': 3, 'cantidad_04': 0, 'cantidad_05': 0, 'cantidad_06': 0},  # Almacén | Café Instantáneo Origen Dolca 100 Gr
     '8445291121843': {'cantidad_01': 0, 'cantidad_02': 0, 'cantidad_03': 0, 'cantidad_04': 0, 'cantidad_05': 2.5, 'cantidad_06': 0},  # Almacén | Polvo Chocolatado Nesquik 150 Gr
     '8718863045688': {'cantidad_01': 0, 'cantidad_02': 0, 'cantidad_03': 0, 'cantidad_04': 1, 'cantidad_05': 0, 'cantidad_06': 0},  # Tv Audio y Video | Smart Tv 43" Full Hd 43Pfd6910/77 Philips 1 Un
-    '8806094365573': {'cantidad_01': 0, 'cantidad_02': 0, 'cantidad_03': 0, 'cantidad_04': 1, 'cantidad_05': 0, 'cantidad_06': 0},  # Lavado | Lavarropas Frontal Inventer WW65A4000EEU Blanco 6.5 Kg Sam
+    '7796885340661': {'cantidad_01': 0, 'cantidad_02': 0, 'cantidad_03': 0, 'cantidad_04': 1, 'cantidad_05': 0, 'cantidad_06': 0},  # Lavado | Lavarropas 6kg Bwfe06s24ar 1000rpm Gris Inv A+++ Bgh (frontal; reemplaza Samsung WW65A4000EEU sin cobertura desde 2026-08, 2026-10-02)
     '7790580146115': {'cantidad_01': 5, 'cantidad_02': 0, 'cantidad_03': 0, 'cantidad_04': 0, 'cantidad_05': 0, 'cantidad_06': 0},  # Almacén | Pure de Tomate Arcor 520 Gr
     '7790070036636': {'cantidad_01': 1, 'cantidad_02': 0, 'cantidad_03': 0, 'cantidad_04': 0, 'cantidad_05': 0, 'cantidad_06': 0},  # Congelados | Formitas de Pollo Rebozadas Lucchetti 350 Gr
     '7500435229821': {'cantidad_01': 0, 'cantidad_02': 2.5, 'cantidad_03': 0, 'cantidad_04': 0, 'cantidad_05': 0, 'cantidad_06': 0},  # Perfumería | Shampoo Limpia-Purifica Detox Pantene 400 Ml

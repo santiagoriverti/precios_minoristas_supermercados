@@ -6,7 +6,20 @@ Autor: Santiago Riverti — investigador independiente
 
 ---
 
-## 🟢 ESTADO ACTUAL / HANDOFF [2026-10-02] — v5.14 = v5.13 que entra en el Colab GRATUITO — leer esto primero
+## 🟢 ESTADO ACTUAL / HANDOFF [2026-10-02 · tarde] — v5.15 LISTA PARA CORRER (RELEE el SEPA) — leer esto primero
+
+**v5.15** (pedida por el usuario tras la auditoria v5.14): (1) Comp_rubro/Detalle valuan el item sin precio en el mes
+a su ultimo aporte movido con el nivel de la canasta (columna `imputado`); Tecnologica $5,29 M -> ~$6,19 M vs costo
+$6,13 M. (2) Lavarropas Samsung 8806094365573 -> BGH 7796885340661 (frontal, 229 suc) en `cargar_canastas_v5.py`
+(267 EANs). (3) 57 EANs nuevos en EANS_CANDIDATOS (Tecnologica: actual + 3 elegibles por necesidad, del Excel 2026-10).
+**Relee el SEPA (~2h10m en Colab gratis).** El usuario tiene que: pegar el `cargar_canastas_v5.py` NUEVO en Colab sobre
+`canasta_representativa_2026-10.xlsx`, subir el `_con_canastas` renombrado a `canasta_representativa_2026-10.xlsx`
+(uno solo en output_canasta) y correr el nb07. REPORTE esperado: `nb07 v5.15`, `EANs empaquetados (union): 267`,
+universo ~10.731 (267 + 114 + 57 candidatos + ~10.293 frescos), cache nuevo `0 guardados`. Auditar: la Tecnologica
+con el BGH (indice sin salto en el cambio), Comp_rubro_Tecnologica ~= costo, hoja Candidatos_trazabilidad con los de la
+Tecnologica (elegir ahi reemplazos de la Notebook HP y demas con historia, ya sin releer).
+
+## 🟡 HANDOFF [2026-10-02] — v5.14 = v5.13 que entra en el Colab GRATUITO
 
 **Corrida v5.14 al 2026-10-01 HECHA Y AUDITADA** (`docs/AUDITORIA_2026-10-02_v514.md`): corrio en Colab gratuito, 267 EANs,
 cache `22211cb0`, universo 10.674 (frescos 10.293: cambio el maestro SEPA del Drive), auditor 18 OK / 2 conocidos.
