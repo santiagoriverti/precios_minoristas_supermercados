@@ -1216,6 +1216,34 @@ hasta 0,8 pp.
 
 ---
 
+### 10.20. nb07 v5.14-v5.15 (2026-10-02) — Colab gratuito, composición por rubro y Tecnológica
+
+**v5.14 no cambia la metodología**: es la v5.13 con el panel semanal en una representación compacta (sucursal como
+entero, `semana`/`item`/`provincia` categóricos) y sin copias, para que entre en los ~12,7 GB del Colab gratuito.
+Verificado con el código real (vieja vs nueva, 31 M de filas): `datos_sem`, precio nacional, cobertura por ítem y
+costo por sucursal idénticos (el costo, salvo 1 ulp por el orden de la suma).
+
+**Primera corrida de la v5.13/v5.14 (2026-10-01)**: los índices quedaron donde los había puesto la simulación de §10.19
+(±1 punto). Volatilidad: desde 2025 el desvío semanal de las canastas de alimentos es 0,3-0,6 pp y casi no hay semanas
+con |var| > 2%; los picos de los gráficos son de 2024 (inflación alta y muestra flaca). La Femenina (14 ítems de
+perfumería, cada uno 6-13% del costo) tiene desvío semanal 1,2-1,5 y mensual 1,7: se publica mensual. La Tecnológica
+sube 10% desde jun-25 contra 39% del IPC (baja real de durables) pero en 2026 tiene desvío semanal 2,6 por la notebook
+(22,6% del costo) y 12 de 14 ítems con huecos: se publica como nivel en pesos.
+
+**v5.15 — composición por rubro con faltantes**. `Comp_rubro_*` y `Detalle_*` sumaban solo los ítems con precio en el
+mes; un ítem ausente (fuera del arrastre o sacado por la cobertura mínima) quedaba afuera y los rubros no sumaban el
+costo (Tecnológica: $5,29 M contra $6,13 M). Ahora el faltante se valúa a su último aporte movido con el nivel de la
+canasta, que es lo que el índice de muestra apareada le asigna implícitamente; queda marcado en la columna `imputado`.
+No es exacto cuando el eslabón también saca ítems que reingresan (Tecnológica $6,19 M contra $6,13 M).
+
+**v5.15 — Tecnológica**. Un durable puede seguir en el SEPA y salir del índice por la cobertura mínima: el Lavarropas
+Samsung pasó de ~460 sucursales en 8 cadenas a ~135 en 4 desde ago-26. Se reemplazó por el BGH Bwfe06s24ar (frontal,
+229 sucursales). Para que los próximos reemplazos de la Tecnológica se elijan con historia y sin releer, se leen como
+candidatos el ítem actual y los 3 elegibles con más sucursales de cada necesidad (regla del constructor: ≥3 cadenas,
+≥10 provincias, ≥90 sucursales).
+
+---
+
 ## 11. Notebook 02 — Excel de econometría (`datos_econometria`)
 
 Insumo para análisis de series de tiempo (materia "Econometría avanzada"). El Notebook 02, además

@@ -60,7 +60,9 @@ git clone https://github.com/santiagoriverti/precios_minoristas_supermercados
 cd precios_minoristas_supermercados
 pip install -r requirements.txt                     # pandas, pyarrow, openpyxl, xlrd, matplotlib, folium, tqdm
 python notebooks/test_celdas_graficos_y_mapa.py     # gráficos + mapa (nb05 y nb02)
-python notebooks/test_encadenado_frescos.py         # encadenado de frescos (nb07)
+python notebooks/test_encadenado_frescos.py encadenado   # índice de frescos (nb07), método encadenado
+python notebooks/test_encadenado_frescos.py tpd          # índice de frescos (nb07), método TPD (el vigente)
+python notebooks/test_frescos_v513.py              # TPD, nivel fijo, cobertura mínima (v5.13)
 python notebooks/test_quiebre_serie.py              # quiebre de serie del índice (BUG-36)
 python notebooks/test_cache_por_mes.py              # caché por mes + compilan todas las celdas del nb07
 python notebooks/test_costo_sucursal.py             # costo por sucursal (BUG-37) + anclaje de nivel
@@ -82,7 +84,8 @@ Reglas del repo que conviene saber antes de tocar nada:
    lleguen al notebook) ni comillas triples. Ver BUG-17, BUG-20 y el reincidente del 2026-09-09
    en `docs/BUGS_Y_MEJORAS.md`.
 3. Los notebooks corren en **Colab** (badges en el README), no localmente: necesitan los ZIPs del
-   SEPA en `MyDrive/carga/`.
+   SEPA en `MyDrive/carga/`. El nb07 corre en el **Colab gratuito** desde la v5.14 (antes pedía "RAM
+   amplia" de Colab Pro); una relectura completa del SEPA tarda ~2h10m ahí y retoma por mes si se corta.
 4. Los maestros se buscan **primero en el Drive y después en GitHub** — el repo es privado y
    `raw.githubusercontent` devuelve 404 (commit `502581a`).
 
@@ -549,6 +552,26 @@ Los 4 reemplazos (Swift XL, Lavandina Anti-splash, Plusbelle, Listerine) están 
 ---
 
 ## Historial de cambios
+
+### 2026-10-02 — nb07 v5.14 (Colab gratuito), corrida al 2026-10-01 auditada, v5.15 lista
+
+El usuario perdió Colab Pro y el nb07 solo corría con "RAM amplia". **v5.14**: el panel semanal (~85-91 M de filas)
+pasa a una representación compacta (sucursal entera, `semana`/`item`/`provincia` categóricos), la mediana de las
+semanas partidas solo sobre esas semanas, sin copias del panel, costo por sucursal sumado por canasta; mismo
+resultado (identidad vieja vs nueva con el código real sobre 31 M de filas) y pico de RAM 9,3 → 3,4 GB
+(`docs/auditoria/scripts_v514/`). El caché en disco no cambia.
+
+Corrida al 2026-10-01 en Colab gratuito (relectura 2h10m). Primero se cargó un Excel de canasta con la composición
+vieja (270 EANs): se detectó comparándolo con `cargar_canastas_v5.py` y se corrigió antes de correr. Auditoría
+`docs/AUDITORIA_2026-10-02_v514.md`: 18 OK / 2 conocidos, índices iguales a lo simulado para la v5.13 (Popular 243,
+Media 248, Ejecutiva 244, Representativa 239, Femenina 259 a ago-26; IPC alimentos 261). Femenina volátil por
+construcción (publicar mensual); Tecnológica como nivel. Hallazgos: el Lavarropas Samsung perdió la mitad de sus
+sucursales y la cobertura mínima lo saca; la composición por rubro omitía ítems sin precio.
+
+**v5.15** (no corrida): composición por rubro con faltantes imputados (columna `imputado`), Lavarropas → BGH
+Bwfe06s24ar y 57 candidatos de la Tecnológica en `EANS_CANDIDATOS` (relee el SEPA una vez; después los reemplazos de
+la Tecnológica no releen). Excel de canasta listo: `canasta_representativa_2026-10_v515.xlsx` (en Descargas del
+usuario; se regenera con el cargador). Próximo paso: correrla y auditarla (`.claude/memory.md`).
 
 ### 2026-09-24 (cierre) — nb07 v5.13 lista para correr + ronda 2 aplicada
 

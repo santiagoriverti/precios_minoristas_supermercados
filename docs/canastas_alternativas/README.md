@@ -312,6 +312,24 @@ v5.12) movía la Ejecutiva +3,6 puntos (cambian siete de sus ítems) y las demá
 
 ---
 
+## Cambios posteriores a v5 (2026-10-02) — Tecnológica
+
+- **Lavarropas**: Samsung WW65A4000EEU (8806094365573) → **BGH Bwfe06s24ar 6 kg frontal inverter (7796885340661)**.
+  El Samsung sigue en el SEPA pero pasó de ~460 sucursales en 8 cadenas a ~135 en 4 desde ago-26, y la cobertura
+  mínima del nb07 lo saca del índice. El elegible con más sucursales era el Electrolux Fuzzy Fit, pero su descripción
+  no dice si es de carga frontal: quedó como candidato. Se cambió **a mano** en `cargar_canastas_v5.py`:
+  `aplicar_reemplazos.py` no cubre la Tecnológica (no escalona; el constructor toma el de más sucursales).
+- **Candidatos de la Tecnológica** en `EANS_CANDIDATOS` del nb07: el ítem actual y los 3 elegibles con más sucursales
+  de cada una de las 14 necesidades (`canasta_representativa_2026-10.xlsx`). Relee el SEPA una vez; después, la hoja
+  `Candidatos_trazabilidad` dice cuál tiene historia y el reemplazo no relee.
+- Pendiente: la Notebook HP (22,6% del costo, 27 de 33 meses en menos de 300 sucursales) y los demás durables con
+  huecos; elegir reemplazos con historia después de la corrida v5.15. La Tecnológica se publica como nivel en pesos.
+
+**Antes de cada corrida, verificar el Excel de canasta** contra `cargar_canastas_v5.py` (267 EANs, 58/74/74/14/74/14):
+el 2026-10-02 se subió uno armado con un cargador viejo (270 EANs, sin la ronda 2).
+
+---
+
 ## Qué esperar — y qué no
 
 El escalonamiento por marca separa bien los **niveles** de precio, pero **no** va a producir
@@ -370,7 +388,7 @@ vez de incluir un ítem que solo cotiza en 400 sucursales.
    **Dejá un solo archivo** con ese patrón: nb07 toma el de nombre más alto (una copia de
    respaldo tiene que ir a OTRA carpeta: `..._backup.xlsx` en la misma le ganaría).
 5. Corré el notebook 07. Si cambiaron los EANs y alguno no estaba en `EANS_CANDIDATOS`, relee el
-   SEPA (~1h20m); si no, tarda minutos.
+   SEPA (~2h10m en Colab gratuito; ~1h10m en Pro); si no, tarda minutos.
 
 ### Para cambiar la composición
 

@@ -6,18 +6,80 @@ Autor: Santiago Riverti — investigador independiente
 
 ---
 
-## 🟢 ESTADO ACTUAL / HANDOFF [2026-10-02 · tarde] — v5.15 LISTA PARA CORRER (RELEE el SEPA) — leer esto primero
+## 🟢 ESTADO ACTUAL / HANDOFF [2026-10-02 · cierre] — v5.15 LISTA PARA CORRER (RELEE el SEPA) — leer esto primero
 
-**v5.15** (pedida por el usuario tras la auditoria v5.14): (1) Comp_rubro/Detalle valuan el item sin precio en el mes
-a su ultimo aporte movido con el nivel de la canasta (columna `imputado`); Tecnologica $5,29 M -> ~$6,19 M vs costo
-$6,13 M. (2) Lavarropas Samsung 8806094365573 -> BGH 7796885340661 (frontal, 229 suc) en `cargar_canastas_v5.py`
-(267 EANs). (3) 57 EANs nuevos en EANS_CANDIDATOS (Tecnologica: actual + 3 elegibles por necesidad, del Excel 2026-10).
-**Relee el SEPA (~2h10m en Colab gratis).** El usuario tiene que: pegar el `cargar_canastas_v5.py` NUEVO en Colab sobre
-`canasta_representativa_2026-10.xlsx`, subir el `_con_canastas` renombrado a `canasta_representativa_2026-10.xlsx`
-(uno solo en output_canasta) y correr el nb07. REPORTE esperado: `nb07 v5.15`, `EANs empaquetados (union): 267`,
-universo ~10.731 (267 + 114 + 57 candidatos + ~10.293 frescos), cache nuevo `0 guardados`. Auditar: la Tecnologica
-con el BGH (indice sin salto en el cambio), Comp_rubro_Tecnologica ~= costo, hoja Candidatos_trazabilidad con los de la
-Tecnologica (elegir ahi reemplazos de la Notebook HP y demas con historia, ya sin releer).
+### En que estamos
+
+- El usuario **ya no tiene Colab Pro**. Desde la **v5.14** el nb07 corre en el Colab **gratuito** (pico de RAM ÷3,
+  mismo resultado; BUGS_Y_MEJORAS 2026-10). La lectura completa del SEPA tarda **~2h10m** en Colab gratis (en Pro ~1h10m).
+- **Corrida v5.14 al 2026-10-01: hecha, auditada y publicable** (`docs/AUDITORIA_2026-10-02_v514.md`). Cache
+  `22211cb0`, 267 EANs, universo 10.674, auditor 18 OK / 2 conocidos. Es la ultima corrida con resultados vigentes:
+
+  | Canasta | ago-26 (ene-24=100) | sep-26 | var sep | costo sep-26 |
+  |---|---:|---:|---:|---:|
+  | Popular | 243 | 250 | +2,9% | $892.498 |
+  | Media | 248 | 253 | +2,4% | $1.434.724 |
+  | Ejecutiva | 244 | 250 | +2,5% | $2.323.289 |
+  | Representativa | 239 | 245 | +2,4% | $1.299.067 |
+  | Femenina | 259 | 265 | +2,5% | $143.010 |
+  | Tecnologica (jun-25=100) | 110 | 110 | +0,0% | $6.129.206 |
+
+  IPC ago-26 (ene-24=100): alimentos 261, general 288. Publicar: Popular/Media/Ejecutiva/Representativa semanal y
+  mensual; **Femenina mensual** (14 items de perfumeria, una promo la mueve 1-2 pts); **Tecnologica como NIVEL en $**.
+- **v5.15 (commit dcbe3c3) lista, NO corrida todavia.** Cambios: (1) Comp_rubro/Detalle valuan el item sin precio en
+  el mes a su ultimo aporte movido con el nivel de la canasta (columna `imputado`); (2) Lavarropas Samsung
+  8806094365573 -> **BGH 7796885340661** (frontal, 229 suc) en `cargar_canastas_v5.py` (sigue en 267 EANs); (3) **57 EANs
+  nuevos en `EANS_CANDIDATOS`** (Tecnologica: el actual + 3 elegibles por necesidad) -> cambia la clave del cache y
+  **relee el SEPA**. El Electrolux Fuzzy Fit (mas sucursales) quedo como candidato: su descripcion no dice si es frontal.
+
+### LO PROXIMO: correr la v5.15
+
+El usuario tiene que:
+1. Reemplazar en `MyDrive/carga/output_canasta/` el Excel por el que se le dejo en
+   `C:\Users\sriverti\Downloads\canasta_representativa_2026-10_v515.xlsx` (ya pasado por el cargador nuevo: 267/267,
+   BGH=1, Samsung=0), renombrado `canasta_representativa_2026-10.xlsx`, **uno solo** en la carpeta. Si esta en otra PC
+   y no tiene ese archivo: pegar `docs/canastas_alternativas/cargar_canastas_v5.py` en Colab sobre el
+   `canasta_representativa_2026-10.xlsx` actual del Drive y subir el `_con_canastas` renombrado.
+2. Abrir el nb07 desde GitHub (badge del README) y "Ejecutar todo" (~2h10m; si se corta, retoma por mes).
+
+REPORTE esperado: `nb07 v5.15`; `EANs empaquetados (union): 267`; universo ~10.731 (267 + ~171 candidatos fuera de
+canasta + ~10.293 frescos); `Cache por mes (sem_<clave nueva>_v5/): 0 meses guardados, 33 por leer` (34 si ya hay
+datos de noviembre); la Tecnologica sin salto en la semana del cambio; la composicion de la Tecnologica ~= su costo
+(con la linea `sin precio en ..., valuado a su ultimo aporte` solo si falta algo). Las otras canastas tienen que dar
+como en la tabla de arriba (+-1 punto: la semana nueva y nada mas).
+
+Despues: pedir Excel + REPORTE + zips `sem_<clave>_v5` y `ean_<clave>_v5` y auditar:
+`python notebooks/auditar_salida_nb07.py <Excel> --cache <carpeta> --indec data/sh_ipc_precios_promedio_2026-08.xls`.
+Mirar la hoja `Candidatos_trazabilidad` filtrando canasta Tecnologica: elegir ahi reemplazos con historia para la
+Notebook HP (22,6% del costo, 27 meses flacos) y los demas durables flacos; aplicarlos A MANO en
+`cargar_canastas_v5.py` (`aplicar_reemplazos.py` no cubre la Tecnologica) -> ya NO relee.
+
+### Pendientes (en orden)
+
+1. Correr y auditar la v5.15 (arriba). Documentar en una `docs/AUDITORIA_<fecha>_v515.md`.
+2. Tecnologica: reemplazos con historia desde `Candidatos_trazabilidad` (sin releer). Publicarla como nivel.
+3. Cuando el INDEC publique sep-26 (mediados de octubre): bajar
+   https://www.indec.gob.ar/ftp/cuadros/economia/sh_ipc_precios_promedio.xls a `data/sh_ipc_precios_promedio_2026-09.xls`
+   y usarla en `--indec`; el nb07 lee el IPC solo (CELDA 10).
+4. Frescos que siguen lejos del INDEC en evolucion (2024-01 -> 2026-08, pub/INDEC): Banana 0,67, Zapallo 0,65, Tomate
+   0,71, Papa y Cebolla 0,83 (abajo); Pollo 1,29, Lechuga 1,44 (arriba). Explican la brecha Popular 243 vs IPC alim 261.
+   Mirar por EAN en `Frescos_metodos` antes de tocar parametros.
+5. No publicar a nivel item: Durazno, Acelga, Osobuco, Palta, Chaucha, Espinaca, Pepino (huecos o <300 sucursales).
+6. Otros notebooks: nb06 fallback de mosaicos; nb05/nb02 confirmar en Colab; mapas a GitHub Pages; LaTeX.
+7. Seguridad (del usuario): rotar el PAT de GitHub; Git Credential Manager.
+
+### Reglas que muerden (nuevas en esta sesion)
+
+- **Verificar el Excel de canasta contra `cargar_canastas_v5.py` antes de una corrida**: el usuario subio primero uno
+  con la composicion VIEJA (270 EANs, sin la ronda 2) hecho con un cargador viejo. Chequeo rapido: 267 EANs con
+  cantidad, 58/74/74/14/74/14 por canasta, sin diferencias de cantidad (ver el script de la sesion en el historial
+  de CONTEXTO). El nb07 toma el `canasta_representativa_*.xlsx` de nombre mas alto: uno solo en la carpeta.
+- **RAM (v5.14)**: panel compacto (sucursal entera `suc`, `semana`/`item`/`provincia` categoricos). Todo groupby sobre
+  el panel con `observed=True`; resultados chicos a texto con `_sin_cat`; nada de `.copy()` del panel. Medir con
+  `docs/auditoria/scripts_v514/bench_ram.py` (codigo real, vieja vs nueva) antes de tocar las CELDAS 7-8.
+- **Cobertura minima != producto desaparecido**: un item puede seguir en el SEPA y salir del indice porque perdio la
+  mitad de sus sucursales (Lavarropas: 460 -> 135). Mirar el cache por semana antes de concluir.
+- **Agregar un EAN (candidato o canasta) relee todo el SEPA** (~2h10m en Colab gratis); cambiar cantidades no.
 
 ## 🟡 HANDOFF [2026-10-02] — v5.14 = v5.13 que entra en el Colab GRATUITO
 

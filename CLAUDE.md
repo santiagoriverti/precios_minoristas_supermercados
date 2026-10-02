@@ -23,7 +23,8 @@ Colab GRATUITO; v5.15: composición por rubro con faltantes imputados, candidato
    ```
 3. Los datos (ZIPs del SEPA, caché, Excel de salida) **no están en el repo**: viven en el Drive del
    usuario (`MyDrive/carga/`). Para auditar una corrida, el usuario pasa el Excel del nb07 y los zips
-   de las carpetas del caché.
+   de las carpetas del caché. El usuario corre en el **Colab gratuito** (sin "RAM amplia"): no subir el
+   pico de RAM de las CELDAS 7-8 sin medirlo (`docs/auditoria/scripts_v514/bench_ram.py`).
 
 ## Reglas que muerden
 
@@ -81,9 +82,10 @@ Colab GRATUITO; v5.15: composición por rubro con faltantes imputados, candidato
 |---|---|
 | `.claude/memory.md` | **Estado y próximos pasos** (bloque de arriba) + handoffs históricos |
 | `docs/CONTEXTO.md` | Pipeline, puesta en marcha en otra máquina, historial de cambios |
-| `docs/METODOLOGIA.md` | Metodología; nb07 en §10 (§10.19 = v5.13, lo último) |
+| `docs/METODOLOGIA.md` | Metodología; nb07 en §10 (§10.19 = v5.13; §10.20 = v5.14-v5.15, lo último) |
 | `docs/BUGS_Y_MEJORAS.md` | Defectos abiertos arriba; bugs resueltos con causa y fix |
 | `docs/SEPA_TECNICO.md` | Formato SEPA, cadenas, frescos por tipo, caché |
+| `docs/AUDITORIA_2026-10-02_v514.md` | **Ultima corrida auditada** (v5.14 al 2026-10-01, Colab gratuito): numeros vigentes, volatilidad de Femenina/Tecnologica, Lavarropas y composicion por rubro (resueltos en la v5.15) |
 | `docs/AUDITORIA_2026-09-24_v512.md` | **Revisión de la v5.12**: la brecha con el IPC sale de los frescos, incertidumbre del acumulado, dos defectos (filtro estacional, nivel de frescos revisado cada semana), ronda 2. Sus decisiones (§7) están aplicadas en la v5.13 |
 | `docs/AUDITORIA_2026-09-22_v59.md` | Auditoría de la v5.9 + verificación de la v5.10 (§10) y de la v5.11 con los reemplazos de trazabilidad (§11) + PDF y scripts en `docs/auditoria/` |
 | `docs/canastas_alternativas/README.md` | Composición de las 6 canastas, cargador, constructor, reemplazos |

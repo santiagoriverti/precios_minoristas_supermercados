@@ -612,6 +612,11 @@ Se cambia con `DIA_CIERRE_SEMANA` (3=jueves, 4=viernes).
   `RATIO_FRESCO` estacional de Naranja, Tomate y Limón elegido por recall/contaminación. METODOLOGIA §10.19.
 - **Cobertura mínima de empaquetados** (v5.13): un ítem-semana con menos de min(300, 50% de su cobertura
   típica) sucursales es faltante y queda fuera de la muestra apareada.
+- **Colab gratuito** (v5.14): el panel semanal (~90 M de filas) va en memoria con la sucursal como entero y
+  `semana`/`item`/`provincia` categóricos; pico de RAM ~3,4 GB por cada 31 M de filas (antes ~9,3). Una relectura
+  completa del SEPA tarda ~2h10m en Colab gratis y retoma por mes si se corta.
+- **Composición por rubro** (v5.15): un ítem sin precio en el mes se valúa a su último aporte movido con el nivel de
+  la canasta (columna `imputado` de `Detalle_*`), para que los rubros sumen el costo.
 - **Arrastre**: si un ítem falta, se arrastra su último precio nacional hasta 8 semanas
   (`MAX_SEMANAS_ARRASTRE`); si falta más, entra en `Alertas_reemplazo`. No se arrastra una celda sacada
   por calidad (banda de plausibilidad o cobertura mínima).
@@ -753,7 +758,8 @@ precios_minoristas_supermercados/
     ├── AUDITORIA_2026-09-22.md         # Auditoría de la corrida 2026-09-17 del nb07 (v5.8)
     ├── AUDITORIA_2026-09-22_v59.md     # Auditoría de la re-corrida con la v5.9 (BUG-37, frescos vs INDEC)
     ├── AUDITORIA_2026-09-24_v512.md    # Revisión de la v5.12: brecha con el IPC, incertidumbre, dos defectos (aplicada en la v5.13)
-    ├── auditoria/                      # Los informes en HTML y PDF + scripts_v59/ que reproducen la segunda
+    ├── AUDITORIA_2026-10-02_v514.md    # Última corrida auditada (v5.14 al 2026-10-01, Colab gratuito): números vigentes
+    ├── auditoria/                      # Informes HTML/PDF + scripts_v59/, v512/, v513/ (simulación) y v514/ (benchmark de RAM)
     └── canastas_alternativas/           # Notebook 07 — composición de las 6 canastas alternativas
         ├── README.md                    #   diseño, flujo de trabajo, cambios posteriores a v5
         ├── construir_canastas_v5.py     #   constructor (local): elige productos y genera el cargador

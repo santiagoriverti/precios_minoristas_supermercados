@@ -739,6 +739,12 @@ mediana entre sucursales y cantidad de sucursales, insumo del encadenado). Cada 
 apenas se lee, así que una corrida cortada retoma; el mes en curso se lee siempre. Una semana partida
 entre dos meses aparece en los dos parquet (cada uno con la mediana de sus días) y se promedian.
 
+**En memoria (desde v5.14)** el panel NO tiene las tres claves de sucursal como texto: lleva `suc` (int32, código
+de `SUC_COD`, en el orden de las claves ordenadas) y `semana`/`item` como categóricos (diccionario ya en Arrow, mes
+por mes); `sval` agrega `provincia` categórica. Con ~90 M de filas, eso es lo que permite correr en el Colab
+gratuito. Todo `groupby` sobre esos frames lleva `observed=True` y los resultados chicos vuelven a texto con
+`_sin_cat`. El parquet en disco sigue con las tres claves: los cachés de versiones anteriores sirven igual.
+
 > **La clave del caché** es un md5 del universo de EANs leído —empaquetados de las canastas +
 > `EANS_CANDIDATOS` + frescos de `TIPOS_FRESCOS` menos `EXCLUIR_EAN_FRESCO`, que a su vez depende del
 > maestro de productos— y de los parámetros de la lectura: `DIA_CIERRE_SEMANA`, `FRESCO_OUTLIER_K`,
