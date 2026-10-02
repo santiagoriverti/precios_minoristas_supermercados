@@ -26,6 +26,7 @@ B2 = src[src.index('# ── 2b. Frescos: la FORMA de la serie sale de un indice
 B1 = src[src.index('# ── 1b. Cobertura minima de los EMPAQUETADOS'):
          src.index('# ── 2b. Frescos: la FORMA de la serie sale de un indice por EAN')]
 MES = src[src.index('def _mes_de_semana('):src.index('\ndef _sem_anterior(')]
+_n = {'pd': pd}; exec(src[src.index('def _sin_cat('):src.index('\ndef _contar_semanas(')], _n); SIN_CAT = _n['_sin_cat']
 
 fallas = []
 def chequear(ok, msg):
@@ -100,12 +101,12 @@ filas = []
 for t, s in enumerate(sem):
     n_a = 60 if t < 5 else 2000          # arranca con un punado de sucursales
     n_b = 30 if t == 20 else 90          # item de pocas sucursales por naturaleza (tipo Tecnologica)
-    for k in range(n_a): filas.append({'item': '111', 'semana': s, 'suc_id': f'a{k}', 'price': 100.0})
-    for k in range(n_b): filas.append({'item': '222', 'semana': s, 'suc_id': f'b{k}', 'price': 900.0})
-    for k in range(20): filas.append({'item': 'Palta', 'semana': s, 'suc_id': f'c{k}', 'price': 50.0})
+    for k in range(n_a): filas.append({'item': '111', 'semana': s, 'suc': f'a{k}', 'price': 100.0})
+    for k in range(n_b): filas.append({'item': '222', 'semana': s, 'suc': f'b{k}', 'price': 900.0})
+    for k in range(20): filas.append({'item': 'Palta', 'semana': s, 'suc': f'c{k}', 'price': 50.0})
 sval = pd.DataFrame(filas)
 nw = pd.DataFrame({'111': 100.0, '222': 900.0, 'Palta': 50.0}, index=pd.Index(sem, name='semana'))
-ns = dict(np=np, pd=pd, sval=sval, nac_wide=nw.copy(), EANS_EMP_LECT={'111', '222'},
+ns = dict(np=np, pd=pd, _sin_cat=SIN_CAT, sval=sval, nac_wide=nw.copy(), EANS_EMP_LECT={'111', '222'},
           MIN_SUC_ITEM_SEMANA=300, FRAC_SUC_ITEM_TIPICA=0.5)
 exec(B1, ns)
 r = ns['nac_wide']
@@ -119,7 +120,7 @@ print('\n=== 5) arrastre: una celda flaca queda fuera de la muestra apareada ===
 ARR = src[src.index('nac_obs  = nac_wide.notna()'):src.index('nac_ff_long = ')]
 nw = pd.DataFrame({'111': [100.0 * 1.02 ** t for t in range(40)], '222': 900.0, 'Palta': 50.0}, index=pd.Index(sem, name='semana'))
 nw.iloc[30, 0] = np.nan                                                    # faltante comun: se arrastra
-ns = dict(np=np, pd=pd, sval=sval, nac_wide=nw.copy(), EANS_EMP_LECT={'111', '222'},
+ns = dict(np=np, pd=pd, _sin_cat=SIN_CAT, sval=sval, nac_wide=nw.copy(), EANS_EMP_LECT={'111', '222'},
           MIN_SUC_ITEM_SEMANA=300, FRAC_SUC_ITEM_TIPICA=0.5, MAX_SEMANAS_ARRASTRE=8)
 exec(B1, ns)
 ns['_ratio_bad'] = pd.DataFrame(False, index=ns['nac_wide'].index, columns=ns['nac_wide'].columns)

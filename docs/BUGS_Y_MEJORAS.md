@@ -182,6 +182,25 @@ de la Tecnológica** hasta que haya al menos dos cadenas con cobertura de durabl
 
 ---
 
+## 🟢 Cambios y fixes 2026-10
+
+### 🟣 nb07 v5.14 — corre en el Colab gratuito (2026-10-02) — mismo resultado, un tercio de la RAM
+
+Sin Colab Pro ("RAM amplia") la sesión moría: el panel semanal tiene ~85 M de filas (sucursal × ítem × semana) con
+cinco columnas de texto, y las CELDAS 7–8 lo copiaban varias veces (concat + groupby de todo el panel, dos filtros con
+`.copy()`, `sval = datos_sem.copy()` + merge con cuatro columnas de geografía, `datos_sem` vivo hasta el final, y el
+costo por rubro de las seis canastas con la geografía pegada). Cambios, **sin tocar el caché en disco ni su clave
+(no relee el SEPA)**: sucursal como entero `suc` (`SUC_COD`, en el orden de las claves → mismo orden de filas);
+`semana`, `item` y `provincia` categóricos (diccionario ya en Arrow, mes por mes); la mediana de las semanas
+partidas entre dos meses solo sobre esas semanas; filtros de semanas en una pasada; `sval` sin copia y solo con la
+provincia; costo por sucursal sumado canasta por canasta antes de pegar la geografía; se liberan `datos_sem` y `sval`.
+Medido con el código real (vieja vs nueva) sobre un panel sintético de 31 M de filas: **pico 9,3 GB → 3,4 GB**, RAM
+que queda después de la CELDA 8 6,6 → 1,0 GB, 387 s → 81 s. Extrapolado a 85 M: ~25 GB → ~8-9 GB (entra en los
+12,7 GB del Colab gratuito). Salidas **idénticas** (`datos_sem`, `nac_item`, `nac_wide`, `N_SUC_ITEM_SEMANA`,
+`costo_suc` con el mismo orden de filas; el costo difiere en 1 ulp, 2e-16, por el orden de la suma). Script:
+`docs/auditoria/scripts_v514/bench_ram.py`. Única diferencia posible: una sucursal del caché que ya no esté en el
+maestro cuenta en `n_suc` (antes no); el notebook lo avisa.
+
 ## 🟢 Cambios y fixes 2026-09
 
 ### 🟣 nb07 v5.13 — frescos por TPD, nivel fijo, cobertura mínima y filtro estacional (2026-09-24, lista para correr)

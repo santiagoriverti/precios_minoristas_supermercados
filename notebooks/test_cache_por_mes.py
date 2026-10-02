@@ -77,6 +77,7 @@ def correr(cache_dir, use_cache, cortar_en=None):
     LEIDOS.clear(); CORTAR_EN[0] = cortar_en
     g = dict(pd=pd, np=np, os=os, gc=gc, tqdm=tqdm, _SKR=_SKR, _mes_de_semana=_mes_de_semana,
              _leer_mes=_leer_mes, _colapsar=_colapsar, _EAN_NAC=[], USE_CACHE=use_cache,
+             SUC_COD={('1', '1', str(s)): s for s in range(3)},
              _meses_disp=MESES, _mes_actual=MESES[-1],
              _cache_dir_sem=cache_dir / 'sem_k_v5', _cache_dir_ean=cache_dir / 'ean_k_v5')
     globals()['_EAN_NAC'] = g['_EAN_NAC']
@@ -127,7 +128,9 @@ with tempfile.TemporaryDirectory() as tmp:
     sem2, ean2, leidos2 = correr(tmp, use_cache=True)
     chequear(leidos2 == [], f'no relee nada: {leidos2}')
     chequear(norm(sem2).equals(norm(ref_sem)) and norm(ean2).equals(norm(ref_ean)), 'mismo panel')
-    chequear(list(sem2.dtypes.astype(str)) == ['object'] * 5 + ['float64'], f'tipos: {list(sem2.dtypes.astype(str))}')
+    # v5.14: en memoria el panel es compacto (codigo entero de sucursal); en disco, las tres claves
+    chequear(list(sem2.columns) == ['suc', 'semana', 'item', 'price'] and
+             list(sem2.dtypes.astype(str)) == ['int32', 'category', 'category', 'float64'], f'tipos: {dict(sem2.dtypes.astype(str))}')
 
     print('\n=== 5) mes con `sem` y sin `ean` -> error explicito ===')
     (tmp / 'ean_k_v5' / '2023-03.parquet').unlink()

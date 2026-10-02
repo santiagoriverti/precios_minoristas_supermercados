@@ -21,7 +21,7 @@ Comprueba que:
 
     python test_costo_sucursal.py     -> RESULTADO: OK / FALLA
 """
-import io, pathlib, datetime as _dt, numpy as np, pandas as pd
+import io, gc, pathlib, datetime as _dt, numpy as np, pandas as pd
 
 SRC = pathlib.Path(__file__).with_name('gen_nb07.py')
 src = io.open(SRC, encoding='utf-8').read()
@@ -32,6 +32,7 @@ def bloque(ini, fin):
 
 B_MES = bloque('def _mes_de_semana(', '\ndef _sem_anterior(')
 B_FACTOR = bloque('def _factor_nivel(', '\nFACTOR_NIVEL_FRESCO = {}')
+_n = {'pd': pd}; exec(src[src.index('def _sin_cat('):src.index('\ndef _contar_semanas(')], _n); SIN_CAT = _n['_sin_cat']
 B_COSTO = bloque('# ── Precios POR SUCURSAL de los tipos con nivel anclado', "\n''' ))")
 print(f'bloques extraidos: _mes_de_semana {len(B_MES)} | _factor_nivel {len(B_FACTOR)} | costo {len(B_COSTO)} chars\n')
 
@@ -72,11 +73,16 @@ sucursal('VEA', ['e1', 'e2', 'e3', 'e4', 'e5'], 1.00)   # sin Pollo ni Verduras:
 sucursal('PARC', ['e1', 'e2', 'e3', 'e4', 'Papa'], 1.00)  # le falta e5 (rubro Limpieza parcial) y Pollo
 sucursal('POCA', ['e1', 'e2', 'Pollo', 'Papa'], 1.00)   # 2 de 5 empaquetados: bajo la cobertura minima
 sval = pd.DataFrame(filas, columns=SK + ['semana', 'item', 'price'])
+# v5.14: el panel lleva la sucursal como codigo entero (SUC_COD, en el orden de las claves ordenadas)
+SUC_COD = {k: i for i, k in enumerate(sorted(set(zip(sval['id_comercio'], sval['id_bandera'], sval['id_sucursal']))))}
+sval['suc'] = [SUC_COD[k] for k in zip(sval['id_comercio'], sval['id_bandera'], sval['id_sucursal'])]
+sval = sval[['suc', 'semana', 'item', 'price']]
 suc_geo = pd.DataFrame({'id_comercio': ['A', 'VEA', 'PARC', 'POCA'], 'id_bandera': '1', 'id_sucursal': '1',
                         'cadena': ['A', 'Vea', 'Parcial', 'Poca'], 'provincia': 'X', 'region': 'R'})
 suc_geo['suc_id'] = suc_geo['id_comercio'] + '|1|1'
+suc_geo['suc'] = [SUC_COD[k] for k in zip(suc_geo['id_comercio'], suc_geo['id_bandera'], suc_geo['id_sucursal'])]
 
-ns = {'pd': pd, 'np': np, '_dt': _dt}
+ns = {'pd': pd, 'np': np, '_dt': _dt, 'gc': gc, '_sin_cat': SIN_CAT}
 exec(B_MES, ns)
 ns.update({'sval': sval.copy(), 'nac_ff_long': nac_ff_long, 'RECETAS': {'X': REC}, 'CANASTAS_ACTIVAS': ['X'],
            'FRAC_PRODUCTOS_MIN': 0.8, 'FACTOR_NIVEL_FRESCO': dict(FACTOR), '_SK': SK, 'suc_geo': suc_geo})
@@ -105,7 +111,7 @@ print('\n=== 4) cobertura minima de empaquetados ===')
 chequear('Poca' not in cs.index, 'la sucursal con 2 de 5 empaquetados queda afuera')
 
 print('\n=== 5) reescalado del precio por sucursal de un tipo anclado ===')
-ns2 = {'pd': pd, 'np': np, '_dt': _dt}
+ns2 = {'pd': pd, 'np': np, '_dt': _dt, 'gc': gc, '_sin_cat': SIN_CAT}
 exec(B_MES, ns2)
 ns2.update({'sval': sval.copy(), 'nac_ff_long': nac_ff_long, 'RECETAS': {'X': REC}, 'CANASTAS_ACTIVAS': ['X'],
             'FRAC_PRODUCTOS_MIN': 0.8, 'FACTOR_NIVEL_FRESCO': {}, '_SK': SK, 'suc_geo': suc_geo})

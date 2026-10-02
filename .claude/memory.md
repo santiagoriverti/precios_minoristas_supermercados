@@ -6,7 +6,16 @@ Autor: Santiago Riverti — investigador independiente
 
 ---
 
-## 🟢 ESTADO ACTUAL / HANDOFF [2026-09-24 · cierre] — v5.13 LISTA PARA CORRER (RELEE el SEPA) — leer esto primero
+## 🟢 ESTADO ACTUAL / HANDOFF [2026-10-02] — v5.14 = v5.13 que entra en el Colab GRATUITO — leer esto primero
+
+El usuario perdio Colab Pro: el nb07 solo corria con "RAM amplia". **v5.14**: mismo calculo y mismas salidas que la
+v5.13, pico de RAM ÷3 (medido 9,3 -> 3,4 GB sobre 31 M de filas; ~25 -> ~8-9 GB extrapolado a las 85 M reales).
+No cambia el cache ni su clave. Detalle en BUGS_Y_MEJORAS (2026-10) y en CLAUDE.md (regla de categoricos).
+Todo lo de abajo (v5.13: correr, auditar, pendientes) sigue vigente; donde dice v5.13 en el REPORTE ahora dice v5.14.
+Si igual se queda sin RAM en Colab gratis: pedir en que CELDA murio y el `Observaciones (sucursal x item x semana)`;
+medir con `docs/auditoria/scripts_v514/bench_ram.py` (etapas A-D) antes de tocar codigo.
+
+## 🟡 HANDOFF ANTERIOR [2026-09-24 · cierre] — v5.13 LISTA PARA CORRER (RELEE el SEPA)
 
 ### En que estamos
 

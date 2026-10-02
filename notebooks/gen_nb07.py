@@ -66,6 +66,13 @@ v5.13 (2026-09-24, revision docs/AUDITORIA_2026-09-24_v512.md) - RELEE EL SEPA (
 23. RATIO_FRESCO estacional: Naranja 0,85, Tomate 1,45, Limon 1,01 (la v5.11/v5.12 los habia calibrado
     con UN mes y cortaban la temporada).
 Y en el Excel de canasta: ronda 2 de reemplazos (15 items con historia flaca o sin historia).
+
+v5.14 (2026-10-02) - RAM: corre en el Colab GRATUITO (~12,7 GB). NO relee el SEPA ni cambia resultados:
+24. El panel semanal (~85 M de filas sucursal x item x semana) lleva la sucursal como codigo entero
+    (`suc`, SUC_COD) en lugar de tres columnas de texto; la mediana de las semanas partidas entre dos
+    meses se calcula solo sobre esas semanas; los filtros de semanas no copian el panel; `sval` no
+    copia `datos_sem` ni le pega la geografia (solo la provincia); el costo por sucursal se suma
+    canasta por canasta antes de pegarle la geografia. El cache en disco no cambia (misma clave).
 """
 import json, os, hashlib
 
@@ -935,6 +942,12 @@ suc_pais = maestro_suc[
     (maestro_suc['sucursales_latitud'].between(-55, -22)) &
     (maestro_suc['sucursales_longitud'].between(-73, -53))].copy()
 IDS_PAIS = set(zip(suc_pais['id_comercio'], suc_pais['id_bandera'], suc_pais['id_sucursal']))
+# Codigo ENTERO de sucursal (v5.14, RAM). El panel semanal tiene ~85 M de filas: con las tres claves
+# de sucursal como texto (y sus copias) no entraba en la RAM del Colab gratuito (~12,7 GB). Los
+# codigos siguen el orden de las claves ordenadas, asi que agrupar por `suc` ordena igual que
+# agrupar por (id_comercio, id_bandera, id_sucursal). Una sucursal que aparezca en el cache y no en
+# el maestro (cache viejo con un maestro nuevo) recibe un codigo nuevo al final.
+SUC_COD = {_k: _i for _i, _k in enumerate(sorted(IDS_PAIS))}
 print(f'  Sucursales validas: {len(suc_pais):,}')
 
 NOMBRES_COMPUESTOS = {
@@ -1329,19 +1342,83 @@ def _guardar_mes(_tabla, _dir, _lbl):
 def _meses_guardados(_dir):
     return {_p.stem for _p in _dir.glob('*.parquet')} if _dir.exists() else set()
 
+# PANEL COMPACTO (v5.14, RAM). En memoria, el panel por sucursal lleva UNA columna entera `suc`
+# (ver SUC_COD en la CELDA 4) en lugar de las tres claves de texto: con ~85 M de filas eran ~2 GB
+# de punteros por columna, y cada copia (concat, groupby, filtros, merge) las duplicaba. El cache
+# en disco NO cambia (sigue con las tres claves): los caches de corridas anteriores sirven igual.
+_SCH_SUC = pa.schema([('suc', pa.int32()), ('semana', pa.string()), ('item', pa.string()),
+                      ('price', pa.float64())])
+_SUC_STR = ['|'.join(_k) for _k in sorted(SUC_COD, key=SUC_COD.get)]   # clave unida, en orden de codigo
+_SEM_FUENTES = {}   # semana -> cantidad de fuentes (meses) que la traen: >1 = semana partida
+
+def _suc_tabla(_t):
+    # Reemplaza las tres claves de sucursal por el codigo entero, en Arrow (sin pasar por pandas).
+    if _t.num_rows == 0:
+        return _SCH_SUC.empty_table()
+    _k = pc.binary_join_element_wise(_t.column('id_comercio'), _t.column('id_bandera'),
+                                     _t.column('id_sucursal'), '|')
+    _nuevas = [_s for _s in pc.unique(_k).to_pylist() if _s not in _SUC_POS]
+    for _s in _nuevas:
+        SUC_COD[tuple(_s.split('|'))] = len(_SUC_STR)
+        _SUC_POS[_s] = len(_SUC_STR)
+        _SUC_STR.append(_s)
+    _cod = pc.index_in(_k, value_set=pa.array(_SUC_STR, type=pa.string())).cast(pa.int32())
+    del _k
+    return pa.table([_cod, _t.column('semana'), _t.column('item'), _t.column('price')], schema=_SCH_SUC)
+_SUC_POS = {_s: _i for _i, _s in enumerate(_SUC_STR)}
+
+def _categorias(_dfs, _cols=('semana', 'item')):
+    # `semana` e `item` van como CATEGORICOS (2 bytes por fila en lugar de un puntero de 8; ~140
+    # semanas y ~360 items). Todas las partes comparten las MISMAS categorias, ordenadas: asi el
+    # concat no vuelve a texto y agrupar ordena igual que con texto. OJO: todo groupby sobre el panel
+    # lleva observed=True, y los resultados chicos vuelven a texto con `_sin_cat`.
+    for _c in _cols:
+        _u = set()
+        for _d in _dfs:
+            _u |= set(_d[_c].cat.categories if isinstance(_d[_c].dtype, pd.CategoricalDtype) else _d[_c].unique())
+        _tipo = pd.CategoricalDtype(sorted(_u))
+        for _d in _dfs:
+            _d[_c] = _d[_c].astype(_tipo)
+    return _dfs
+
+def _sin_cat(_df):
+    # Claves categoricas de un resultado CHICO -> texto, para que el resto del notebook no cambie.
+    for _c in _df.columns:
+        if isinstance(_df[_c].dtype, pd.CategoricalDtype):
+            _df[_c] = _df[_c].astype(object)
+    return _df
+
+def _contar_semanas(_t):
+    for _w in pc.unique(_t.column('semana')).to_pylist():
+        _SEM_FUENTES[_w] = _SEM_FUENTES.get(_w, 0) + 1
+
 def _cargar_meses(_dir, _sch, _meses):
     # Lee los meses pedidos y descarta las semanas cuyo mes dueno es el mes en curso (se leen de
     # nuevo mas abajo, con el mes completo). El filtro se hace en Arrow, antes de pasar a pandas,
     # y to_pandas(self_destruct) libera cada columna de Arrow a medida que la convierte.
-    _tabs = [pq.read_table(str(_dir / f'{_m}.parquet'), schema=_sch) for _m in sorted(_meses)]
+    # El panel por sucursal se compacta MES POR MES (codigo de sucursal), antes de juntar los meses.
+    _tabs = []
+    for _m in sorted(_meses):
+        _t = pq.read_table(str(_dir / f'{_m}.parquet'), schema=_sch)
+        _su = _t.column('semana').unique().to_pylist()
+        _ok = [_w for _w in _su if _mes_de_semana(_w) < _mes_actual]
+        if len(_ok) < len(_su):
+            _t = _t.filter(pc.is_in(_t.column('semana'), value_set=pa.array(_ok, type=pa.string())))
+        if 'id_comercio' in _t.column_names:
+            _t = _suc_tabla(_t)
+            _contar_semanas(_t)
+            # semana e item como diccionario ya en Arrow: el mes juntado ocupa indices, no texto
+            for _c in ('semana', 'item'):
+                _t = _t.set_column(_t.schema.get_field_index(_c), _c, pc.dictionary_encode(_t.column(_c)))
+        _tabs.append(_t)
+    _suc = 'id_comercio' in _sch.names
     if not _tabs:
-        return _sch.empty_table().to_pandas()
+        _df = (_SCH_SUC if _suc else _sch).empty_table().to_pandas()
+        return _categorias([_df])[0] if _suc else _df
     _t = pa.concat_tables(_tabs); del _tabs
-    _su = _t.column('semana').unique().to_pylist()
-    _ok = [_w for _w in _su if _mes_de_semana(_w) < _mes_actual]
-    if len(_ok) < len(_su):
-        _t = _t.filter(pc.is_in(_t.column('semana'), value_set=pa.array(_ok, type=pa.string())))
-    _df = _t.to_pandas(split_blocks=True, self_destruct=True); del _t
+    _df = _t.to_pandas(split_blocks=True, self_destruct=True, strings_to_categorical=_suc); del _t
+    if _suc:
+        _categorias([_df])
     gc.collect()
     return _df
 
@@ -1378,9 +1455,14 @@ else:
     def _de_memoria(_tabs, _sch):
         _t = pa.concat_tables(_tabs) if _tabs else _sch.empty_table()
         return _t.to_pandas()
-    _cache = _de_memoria(_mem_sem, _SCH_SEM)
+    _mem_sem = [_t.filter(pc.is_in(_t.column('semana'), value_set=pa.array(
+                    [_w for _w in _t.column('semana').unique().to_pylist() if _mes_de_semana(_w) < _mes_actual],
+                    type=pa.string()))) for _t in _mem_sem]
+    _mem_sem = [_suc_tabla(_t) for _t in _mem_sem]
+    for _t in _mem_sem:
+        _contar_semanas(_t)
+    _cache = _categorias([_de_memoria(_mem_sem, _SCH_SUC)])[0]
     _ean_cerrados = _de_memoria(_mem_ean, _SCH_EAN)
-    _cache = _cache[_cache['semana'].map(_mes_de_semana) < _mes_actual]
     _ean_cerrados = _ean_cerrados[_ean_cerrados['semana'].map(_mes_de_semana) < _mes_actual]
 del _mem_sem, _mem_ean
 _EAN_NAC.clear(); gc.collect()
@@ -1392,16 +1474,31 @@ datos_ult_raw = _leer_mes(_mes_actual)
 if datos_ult_raw is not None:
     datos_ult_raw['mes'] = _mes_actual
 _actual = _colapsar(datos_ult_raw)
+if _actual is not None and len(_actual):
+    _actual = _suc_tabla(_a_tabla(_actual, _SCH_SEM))
+    _contar_semanas(_actual)
+    _actual = _actual.to_pandas()
+    _categorias([_cache, _actual])
 # El concat sostiene entrada y salida a la vez: soltar los nombres ANTES deja que pandas libere
 # cada parte apenas la copia, en vez de mantener dos paneles completos hasta el final.
-_partes = [_cache] + ([_actual] if _actual is not None else [])
+_partes = [_cache] + ([_actual] if _actual is not None and len(_actual) else [])
 del _cache, _actual; gc.collect()
 datos_sem = pd.concat(_partes, ignore_index=True)
 _partes.clear(); del _partes; gc.collect()
 if len(datos_sem) == 0:
     raise RuntimeError('Sin datos para los EANs configurados. Revisa las canastas y los frescos.')
-datos_sem = datos_sem.groupby(_SKR + ['item','semana'], as_index=False)['price'].median()
-datos_sem['mes'] = datos_sem['semana'].map(_mes_de_semana)
+# Una semana que cruza el cambio de mes viene de DOS fuentes (los dos meses): su precio por
+# (sucursal, item) es la mediana de las dos. Cada fuente ya trae una sola fila por clave, asi que
+# solo hay duplicados en esas semanas: se agrupan SOLO ellas (~1 de cada 4 semanas) en vez de las
+# 85 M de filas. Mismo resultado que el groupby sobre todo el panel, sin su pico de RAM.
+_sem_dup = [_w for _w, _n in _SEM_FUENTES.items() if _n > 1]
+if _sem_dup:
+    _md = datos_sem['semana'].isin(_sem_dup).to_numpy()
+    _dd = datos_sem.loc[_md]
+    _dd = _dd.assign(price=_dd.groupby(['suc','item','semana'], sort=False, observed=True)['price'].transform('median'))
+    _dd = _dd[~_dd.duplicated(['suc','item','semana'])]
+    datos_sem = pd.concat([datos_sem.loc[~_md], _dd], ignore_index=True)
+    del _md, _dd; gc.collect()
 
 # Panel nacional por EAN = meses cerrados (cache) + mes en curso (recien leido).
 ean_nac = pd.concat([_ean_cerrados] + _EAN_NAC, ignore_index=True) if len(_EAN_NAC) else _ean_cerrados
@@ -1417,24 +1514,28 @@ else:
     # guardado por `len(ean_nac)`) y el nacional queda con el estimador anterior, en vez de
     # que reviente un groupby sobre un frame vacio a la hora y media de lectura.
     print('AVISO: panel por EAN vacio -> los frescos quedan con el estimador anterior')
-datos_sem = datos_sem[datos_sem['mes'] >= MES_INICIO_HISTORICO].copy()
-
 # La ULTIMA semana solo vale si esta COMPLETA: su jueves de cierre tiene que estar cubierto por
 # los datos. Si el SEPA llega, por ejemplo, hasta el 31/08 y la semana cierra el 03/09, esa semana
 # tiene 4 de 7 dias y no se puede publicar como si estuviera cerrada.
+# Los dos filtros (inicio historico y semanas incompletas) se aplican en UNA sola pasada y sin
+# .copy(): cada copia del panel son ~2-3 GB.
 FECHA_MAX_DATOS = max(_FECHAS_MAX).date() if _FECHAS_MAX else None
-_SEMANAS = sorted(datos_sem['semana'].unique())
+_SEMANAS = sorted(_w for _w in datos_sem['semana'].unique() if _mes_de_semana(_w) >= MES_INICIO_HISTORICO)
+_incompletas = []
 if FECHA_MAX_DATOS is not None:
     _incompletas = [w for w in _SEMANAS if _dt.date.fromisoformat(w) > FECHA_MAX_DATOS]
     if _incompletas:
         print(f'Ultimo dato del SEPA: {FECHA_MAX_DATOS}. Semanas INCOMPLETAS descartadas: {_incompletas}')
-        datos_sem = datos_sem[~datos_sem['semana'].isin(_incompletas)].copy()
-        _SEMANAS = sorted(datos_sem['semana'].unique())
+        _SEMANAS = [w for w in _SEMANAS if w not in _incompletas]
+if datos_sem['semana'].nunique() > len(_SEMANAS):
+    datos_sem = datos_sem[datos_sem['semana'].isin(_SEMANAS)]
+    datos_sem['semana'] = datos_sem['semana'].cat.remove_unused_categories()
+    gc.collect()
 ULTIMA_SEMANA = _SEMANAS[-1]
 _TIPOS_FR = set(FRESCO_INFO)
 print(f'Observaciones (sucursal x item x semana): {len(datos_sem):,}')
 print(f'Semanas: {_SEMANAS[0]} -> {_SEMANAS[-1]} ({len(_SEMANAS)} semanas, cierran jueves)')
-print(f'Sucursales: {datos_sem.groupby(_SKR).ngroups:,}')
+print(f'Sucursales: {datos_sem["suc"].nunique():,}')
 print(f'Items con datos: empaquetados {datos_sem[datos_sem["item"].isin(EANS_EMP)]["item"].nunique()}/{len(EANS_EMP)} - '
       f'tipos frescos {datos_sem[datos_sem["item"].isin(_TIPOS_FR)]["item"].nunique()}/{len(_TIPOS_FR)}')
 ''' ))
@@ -1458,7 +1559,9 @@ cells.append(cell_code(r'''# ===================================================
 #  4. NIVEL reportado = costo de la canasta COMPLETA en la semana ancla (cobertura >=95%),
 #     retropolado con el indice encadenado. Queda interpretable en $ y sin saltos.
 _SK = ['id_comercio','id_bandera','id_sucursal']
-sval = datos_sem[~datos_sem['id_comercio'].isin(CADENAS_FILTRAR)].copy()
+if 'datos_sem' not in globals():
+    raise RuntimeError('La CELDA 8 libera el panel semanal para ahorrar RAM: para volver a correrla, '
+                       'correr antes la CELDA 7 (con el cache tarda unos minutos).')
 
 # Geografia de sucursales
 _sg = suc_pais[_SK + ['PROVINCIA']].copy()
@@ -1467,21 +1570,38 @@ _sg['provincia'] = _sg['PROVINCIA'].map(norm_prov)
 _sg['region']    = _sg['provincia'].map(REGION_PROV).fillna('Otras')
 _sg['suc_id']    = _sg['id_comercio'] + '|' + _sg['id_bandera'] + '|' + _sg['id_sucursal']
 suc_geo = _sg.drop_duplicates(_SK)[_SK + ['cadena','provincia','region','suc_id']]
+suc_geo['suc'] = [SUC_COD[_k] for _k in zip(suc_geo['id_comercio'], suc_geo['id_bandera'], suc_geo['id_sucursal'])]
+suc_geo['suc'] = suc_geo['suc'].astype('int32')
 _n_otras = int((suc_geo['region'] == 'Otras').sum())
 if _n_otras:
     print(f'AVISO: {_n_otras} sucursales sin region asignada -> ' +
           str(sorted(suc_geo.loc[suc_geo["region"]=="Otras","provincia"].unique())[:8]))
 
-sval = sval.merge(suc_geo, on=_SK, how='left')
-sval['provincia'] = sval['provincia'].fillna('Otras')
-sval['region']    = sval['region'].fillna('Otras')
+# Panel de sucursales VALIDAS (v5.14, RAM): `sval` toma el panel semanal SIN copiarlo y le agrega
+# solo la provincia (lo unico de la geografia que usa esta celda; cadena y region se agregan al
+# costo por sucursal, que es mucho mas chico). La sucursal es el codigo entero `suc`.
+_suc_tab = pd.DataFrame([(_c, _k[0]) for _k, _c in SUC_COD.items()], columns=['suc', 'id_comercio'])
+_suc_fuera = _suc_tab.loc[_suc_tab['id_comercio'].isin(CADENAS_FILTRAR), 'suc']
+sval = datos_sem[~datos_sem['suc'].isin(_suc_fuera)] if len(_suc_fuera) else datos_sem
+del datos_sem; gc.collect()
+_n_sin_maestro = int(sval.loc[~sval['suc'].isin(suc_geo['suc']), 'suc'].nunique())
+if _n_sin_maestro:
+    print(f'AVISO: {_n_sin_maestro} sucursales del cache no estan en el maestro (provincia "Otras")')
+# provincia como categorico, por codigo de sucursal (sin materializar 85 M de textos)
+_prov_s = suc_geo.set_index('suc')['provincia'].fillna('Otras')
+_prov_cats = sorted(set(_prov_s) | {'Otras'})
+_prov_lk = np.full(len(SUC_COD), _prov_cats.index('Otras'), dtype='int8')
+_prov_lk[_prov_s.index.to_numpy()] = [_prov_cats.index(_p) for _p in _prov_s]
+sval['provincia'] = pd.Categorical.from_codes(_prov_lk[sval['suc'].to_numpy()], categories=_prov_cats)
+del _prov_s, _prov_lk
 
 # ── 1. Precio nacional ponderado por poblacion ────────────────────────────────
 # Mediana simple entre sucursales: sirve de respaldo cuando ninguna provincia califica.
-_simple = sval.groupby(['item','semana'], as_index=False)['price'].median().rename(columns={'price':'nac_simple'})
+_simple = _sin_cat(sval.groupby(['item','semana'], as_index=False, observed=True)['price'].median()
+                   .rename(columns={'price':'nac_simple'}))
 if AGG_NACIONAL == 'poblacion':
-    _pi = sval.groupby(['item','semana','provincia'], as_index=False).agg(
-        price=('price','median'), n_suc=('suc_id','nunique'))
+    _pi = _sin_cat(sval.groupby(['item','semana','provincia'], as_index=False, observed=True).agg(
+        price=('price','median'), n_suc=('suc','nunique')))
     _n0 = len(_pi)
     # (a) la provincia necesita un minimo de sucursales para ese item-semana. Sin este filtro,
     #     una provincia con 2 sucursales entra al promedio con TODO su peso poblacional y su
@@ -1511,7 +1631,8 @@ else:
 nac_wide = nac_item.pivot(index='semana', columns='item', values='nac').sort_index()
 
 # ── 1b. Cobertura minima de los EMPAQUETADOS por semana (v5.13, ver MIN_SUC_ITEM_SEMANA) ──────
-_nsuc_is = (sval.groupby(['item','semana'])['suc_id'].nunique().unstack('item')
+_nsuc_is = (_sin_cat(sval.groupby(['item','semana'], observed=True)['suc'].nunique().reset_index())
+            .set_index(['item','semana'])['suc'].unstack('item')
             .reindex(index=nac_wide.index))
 _emp_c = [c for c in nac_wide.columns if c in EANS_EMP_LECT and c in _nsuc_is.columns]
 N_SUC_ITEM_SEMANA = _nsuc_is[_emp_c]
@@ -1900,7 +2021,7 @@ else:
 # entre las dos escalas (con Pollo, 2,5x) y no por su precio. Se aplica el mismo factor: el precio
 # relativo sucursal/nacional -lo unico que usan las aperturas- queda igual que antes del anclaje.
 if FACTOR_NIVEL_FRESCO:
-    _fk = sval['item'].map(FACTOR_NIVEL_FRESCO)
+    _fk = sval['item'].map(FACTOR_NIVEL_FRESCO).astype('float64')
     _mk = _fk.notna()
     sval.loc[_mk, 'price'] = sval.loc[_mk, 'price'] * _fk[_mk]
     del _fk, _mk
@@ -1928,39 +2049,49 @@ def _costo_por_rubro(_name):
     _av['val'] = _av['nac'] * _av['qty']
     _all = _av.groupby(['semana','rubro'], as_index=False)['val'].sum().rename(columns={'val':'val_all'})
     del _av
-    _pv = sval[_SK + ['semana','item','price']].merge(_rec, on='item', how='inner')
+    # Las claves del panel son categoricas: _rec y nac_ff_long se pasan a las MISMAS categorias
+    # para unir sin convertir el panel a texto (un item fuera de las categorias queda NaN y no une).
+    _pv = sval[['suc','semana','item','price']].merge(_rec.astype({'item': sval['item'].dtype}), on='item', how='inner')
     # Cobertura: sobre lo que la sucursal PUBLICA, tenga o no precio nacional esa semana.
     _pv['_e'] = (_pv['kind'] == 'emp').astype('int32')
-    _cov = _pv.groupby(_SK + ['semana'], as_index=False)['_e'].sum()
-    _ok = _cov.loc[_cov['_e'] / max(_n_emp, 1) >= FRAC_PRODUCTOS_MIN, _SK + ['semana']]
+    _cov = _sin_cat(_pv.groupby(['suc','semana'], as_index=False, observed=True)['_e'].sum())
+    _ok = _cov.loc[_cov['_e'] / max(_n_emp, 1) >= FRAC_PRODUCTOS_MIN, ['suc','semana']]
     del _cov
     # Desvio de la sucursal: solo items con precio nacional esa semana (si no, no hay contra que).
-    _pv = _pv.merge(nac_ff_long, on=['item','semana'], how='inner')
+    _pv = _pv.merge(nac_ff_long.astype({'item': _pv['item'].dtype, 'semana': _pv['semana'].dtype}),
+                    on=['item','semana'], how='inner')
     _pv['dif'] = (_pv['price'] - _pv['nac']) * _pv['qty']
     _pv['obs'] = _pv['nac'] * _pv['qty']
-    _d = _pv.groupby(_SK + ['semana','rubro'], as_index=False)[['dif','obs']].sum()
+    _d = _sin_cat(_pv.groupby(['suc','semana','rubro'], as_index=False, observed=True)[['dif','obs']].sum())
     del _pv
     _g = _ok.merge(_all, on='semana', how='inner')          # grilla: sucursal-semana x todos los rubros
-    _g = _g.merge(_d, on=_SK + ['semana','rubro'], how='left')
+    _g = _g.merge(_d, on=['suc','semana','rubro'], how='left')
     _g[['dif','obs']] = _g[['dif','obs']].fillna(0.0)
     _g['costo'] = _g['val_all'] + _g['dif']
     _g['imputado'] = _g['val_all'] - _g['obs']
+    # Se suma por sucursal-semana ACA, canasta por canasta (v5.14, RAM): el detalle por rubro de
+    # las seis canastas juntas, con la geografia pegada, eran decenas de millones de filas.
+    _g = _g.groupby(['suc','semana'], as_index=False).agg(
+        costo=('costo','sum'), imputado=('imputado','sum'), costo_nac=('val_all','sum'))
     _g['canasta'] = _name
     return _g
 
-costo_rubro = pd.concat([_costo_por_rubro(n) for n in CANASTAS_ACTIVAS], ignore_index=True)
-costo_rubro['mes'] = costo_rubro['semana'].map(_mes_de_semana)
-costo_rubro = costo_rubro.merge(suc_geo, on=_SK, how='left')
-costo_rubro['provincia'] = costo_rubro['provincia'].fillna('Otras')
-costo_rubro['region']    = costo_rubro['region'].fillna('Otras')
-costo_suc = (costo_rubro.groupby(['canasta'] + _SK + ['semana','mes','cadena','provincia','region','suc_id'],
-                                 as_index=False)
-             .agg(costo=('costo','sum'), imputado=('imputado','sum'), costo_nac=('val_all','sum')))
+costo_suc = pd.concat([_costo_por_rubro(n) for n in CANASTAS_ACTIVAS], ignore_index=True)
+# Una sucursal que no esta en el maestro queda afuera (antes salia del groupby por su cadena NaN).
+costo_suc = costo_suc.merge(suc_geo, on='suc', how='inner')
+costo_suc['mes'] = costo_suc['semana'].map(_mes_de_semana)
+costo_suc['provincia'] = costo_suc['provincia'].fillna('Otras')
+costo_suc['region']    = costo_suc['region'].fillna('Otras')
+costo_suc = (costo_suc.sort_values(['canasta','suc','semana'], kind='mergesort')
+             [['canasta'] + _SK + ['semana','mes','cadena','provincia','region','suc_id',
+                                   'costo','imputado','costo_nac']].reset_index(drop=True))
 costo_suc['pct_imputado'] = (costo_suc['imputado'] / costo_suc['costo_nac'] * 100).round(1)
 print(f'Costo por sucursal-semana: {len(costo_suc):,} filas | '
       f'sucursales {costo_suc["suc_id"].nunique():,} (cobertura minima {FRAC_PRODUCTOS_MIN:.0%})')
 print('  % del costo valuado a precio nacional (lo que la sucursal no publica), mediana: '
       + ' | '.join(f'{n} {v:.0f}%' for n, v in costo_suc.groupby('canasta')['pct_imputado'].median().items()))
+# El panel por sucursal ya no se usa: liberarlo deja la RAM para las celdas de graficos y exportacion.
+del sval; gc.collect()
 ''' ))
 
 # ── CELL 9 — RUBROS ───────────────────────────────────────────────────────────
@@ -2450,7 +2581,7 @@ with pd.ExcelWriter(_xlsx, engine='openpyxl') as _w:
         {'parametro':'Frescos - indice','valor':(f'TPD multilateral sin ponderar por EAN, ventana movil de {FRESCO_TPD_VENTANA} semanas con empalme de movimiento' if FRESCO_METODO == 'tpd' else 'encadenado de EANs apareados (media geometrica)') + '; hoja Frescos_metodos compara los dos'},
         {'parametro':'Frescos - nivel','valor':f'mediana estimador/indice en los {FRESCO_NIVEL_MESES} ultimos meses con cobertura normal hasta {globals().get("FRESCO_MES_NIVEL") or "el mes de NIVEL_REFERENCIA_FRESCO"} (no se revisa semana a semana); un mes con menos del {FRESCO_NIVEL_COB_MIN:.0%} de la cobertura tipica no cuenta. De otros meses: ' + (', '.join(f'{k} {v}' for k, v in globals().get('FRESCO_MES_NIVEL_TIPO', {}).items()) or 'ninguno')},
         {'parametro':'Cobertura minima empaquetados','valor':f'precio nacional de un item-semana con menos de min({MIN_SUC_ITEM_SEMANA}, {FRAC_SUC_ITEM_TIPICA:.0%} de su cobertura tipica) sucursales = faltante (fuera de la muestra apareada, sin arrastre)'},
-        {'parametro':'Version','valor':'nb07 v5.13'},
+        {'parametro':'Version','valor':'nb07 v5.14'},
     ]).to_excel(_w, 'Metodologia', index=False)
     _res = []
     for _name in CANASTAS_ACTIVAS:
@@ -2546,7 +2677,7 @@ cells.append(cell_code(r'''# ===================================================
 # CELDA 15 - REPORTE PARA CLAUDE (copia y pega TODO el bloque)
 # ============================================================
 print('='*72)
-print('REPORTE PARA CLAUDE - canastas alternativas nb07 v5.13')
+print('REPORTE PARA CLAUDE - canastas alternativas nb07 v5.14')
 print('='*72)
 print(f'Ultima semana (cierra jueves): {ULTIMA_SEMANA} | Ultimo mes: {_ult_mes}')
 print(f'Canastas activas: {CANASTAS_ACTIVAS}')

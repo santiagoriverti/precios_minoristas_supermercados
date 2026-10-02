@@ -3,7 +3,8 @@
 Pipeline sobre el **SEPA** (precios de supermercados de Argentina): 7 notebooks de Colab (nb01–nb07).
 El que se trabaja hoy es el **nb07** (`notebooks/07_evolucion_canastas_alternativas.ipynb`), motor del
 informe semanal: 6 canastas, índice encadenado, comparación con el IPC y aperturas por cadena/región.
-Versión vigente: **nb07 v5.13** (frescos por índice multilateral TPD, nivel fijo, cobertura mínima de empaquetados).
+Versión vigente: **nb07 v5.14** (= v5.13 en método y resultados; v5.14 baja el pico de RAM para correr en el
+Colab GRATUITO: frescos por índice multilateral TPD, nivel fijo, cobertura mínima de empaquetados).
 
 ## Al empezar una sesión
 
@@ -58,6 +59,13 @@ Versión vigente: **nb07 v5.13** (frescos por índice multilateral TPD, nivel fi
 - **"Meses con dato" no alcanza para juzgar la historia de un producto**: un mes cuenta aunque el
   producto esté en UNA sucursal (Raid 370: 97% de meses con dato y 1 sucursal en 2025). Antes de elegir
   un reemplazo, contar sucursales por mes (auditor con `--cache`, bloque 7b: ≥300 en 28 de 32 meses).
+
+- **RAM (v5.14)**: el panel semanal (~85 M de filas) lleva la sucursal como entero `suc` (`SUC_COD`) e `item`,
+  `semana` y `provincia` como **categóricos**. Todo `groupby` sobre `datos_sem`/`sval`/`_pv` va con
+  `observed=True` (sin eso, un categórico arma el producto cartesiano) y los resultados chicos vuelven a texto
+  con `_sin_cat`. Para unir con un frame de texto, pasarlo a las mismas categorías (`astype(sval['item'].dtype)`).
+  Nada de `.copy()` del panel. La CELDA 8 libera `datos_sem` y `sval`: re-correrla exige re-correr la 7.
+  Medición: `docs/auditoria/scripts_v514/bench_ram.py` (código real, vieja vs nueva).
 
 ## Git
 
