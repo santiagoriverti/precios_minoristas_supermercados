@@ -233,6 +233,77 @@ Todos los cálculos del Notebook 02 (y del Notebook 05) se hacen por partida dob
 
 Por qué tener ambos: para las canastas (muchos productos) mediana ≈ promedio, y la media sirve de chequeo de robustez. Para productos individuales con precio de lista "pegajoso" (que se cuantiza a valores redondos), la mediana escalona y da variaciones 0% espurias, mientras que el promedio captura mejor la trayectoria mensual. El IPC del INDEC, para contraste, no usa mediana: es una canasta fija ponderada por gasto (ENGHo) con promedios de relativos de precio sobre una muestra relevada.
 
+### Desagregación de la variación mensual (CELDA 19b, desde 2026-10)
+
+Pedido: cuando se publica "la canasta Media subió X% en el mes", poder decir **qué productos, qué cadenas y qué
+regiones** explican esa suba. La CELDA 19b reparte la variación mensual oficial de cada canasta de
+`DESAGREGAR_CANASTAS` (CELDA 1; default `['cantidad_03']`, la Media) y la agrega como hojas nuevas a
+`canasta_analisis_{PERIODO}.xlsx`. Es el script ad hoc `desagregar_variacion_canasta.py` de octubre de 2026 portado
+al notebook, con la misma lógica.
+
+**Serie oficial** (CELDA 9): `canasta(m) = Σ_i qty_i × mediana_i(m)`, con la mediana sobre **todas** las
+observaciones sucursal × día del mes, sin filtro de cadena ni de geografía. Variación = `canasta(m)/canasta(m-1) − 1`.
+
+1. **Por producto** (hojas `Productos`, `Rubros`, `Grupos`): la variación es una suma de productos, así que se reparte
+   exacto:
+   ```
+   aporte_oficial_pp(i) = qty_i × (mediana_i(m) − mediana_i(m−1)) / canasta(m−1) × 100
+   ```
+   Suma exactamente la variación oficial. Un producto con precio en un solo mes aporta su costo entero (la serie
+   oficial también lo suma en un mes y no en el otro): la suma sigue siendo exacta y la celda lo avisa.
+2. **Arrastre** (columnas `arrastre_pp` y `nuevo_pp`): la mediana del mes anterior es un promedio del mes; si los
+   precios subieron en su segunda quincena, el mes nuevo arranca más arriba aunque no haya subas nuevas. Con la mediana
+   de la **última semana** del mes anterior (`med_cierre_ant`, días N−6 a N):
+   ```
+   arrastre_pp(i) = qty_i × (med_cierre_ant_i − mediana_i(m−1)) / canasta(m−1) × 100
+   nuevo_pp(i)    = qty_i × (mediana_i(m) − med_cierre_ant_i)    / canasta(m−1) × 100
+   ```
+   `arrastre_pp + nuevo_pp = aporte_oficial_pp`, producto a producto (si falta uno de los tres precios, `nuevo_pp` es
+   el resto del aporte).
+3. **Por cadena, provincia, región y tipo de sucursal** (hojas `Cadenas`, `Provincias`, `Regiones`,
+   `Tipo_sucursal`): la mediana nacional **no se puede repartir entre grupos**. Se usa el **panel apareado**
+   sucursal × producto, con el precio mensual por sucursal de la CELDA 7 (mediana de los días), solo los pares con
+   precio en los dos meses y con `p(m)/p(m−1)` dentro de `[1/4, 4]`, y los **pesos oficiales** del mes anterior
+   `w_i = qty_i × mediana_i(m−1) / canasta(m−1)`:
+   ```
+   aporte(s,i) = w_i × (p_is(m) − p_is(m−1)) / Σ_s p_is(m−1) × 100
+   ```
+   Sumado sobre las sucursales da la variación "media de sucursales" del producto; sumado sobre todo, la **variación
+   del panel**. Es aditivo en cualquier corte: los grupos suman la variación del panel. Cada hoja trae además
+   `aporte_equiv_sobre_oficial_pp` (el aporte reescalado a la variación oficial con las mismas proporciones) y
+   `var_mediana_grupo_%` (control: el método oficial aplicado solo a las observaciones del grupo; no es aditivo).
+   `peso_base_pct` = cuánto pesan las sucursales del grupo en el costo base; `variacion_% = aporte / peso`.
+   Las sucursales pesan por igual dentro de cada producto, como en la mediana nacional (que pesa por cantidad de
+   observaciones): las cadenas con muchas sucursales pesan más.
+4. Otras hojas: `Aporte_prod_x_cadena` y `Var_prod_x_cadena` (las 12 cadenas que más aportan + Resto),
+   `Subas_y_bajas` (frecuencia e intensidad de los cambios de precio en el panel), `Mes_parcial` (ventanas de días:
+   mes anterior completo vs mes en curso = oficial, mismos días, períodos consecutivos, dentro del mes anterior, más
+   el arrastre), `Serie_diaria` (canasta con la mediana nacional de cada día) y `Resumen_variacion` (números clave y
+   notas). La Media lleva los nombres pelados; otra canasta, el sufijo `_<nombre corto>`.
+
+**Atributos de la sucursal**: cadena = `asignar_cadena` (CELDA 4), con las banderas de Carrefour fuera del diccionario
+como `Carrefour (bandera N)`; provincia = código ISO del archivo del SEPA; región = la del maestro (AMBA incluye el
+conurbano) y, fuera del maestro, por provincia (`Buenos Aires s/ubicar` si no se puede partir); tipo = el del maestro
+(`Sin dato en maestro` si no está).
+
+**Datos y RAM**: el nb02 solo tenía el mes en curso por sucursal (`datos`, CELDA 6), filtrado a sucursales con
+coordenadas y sin el día. La CELDA 19b relee del ZIP el mes anterior y el mes en curso **solo con los EANs de las
+canastas a desagregar**, sin filtro de sucursales (el universo de la CELDA 9), en formato compacto (sucursal y EAN como
+enteros, fecha `AAAAMMDD`, precio `float64`), y no toca `datos`. Pesos o centavos se deciden contra la mediana
+oficial. La celda controla que reproduce la mediana oficial de cada producto (`Resumen_variacion`, última fila).
+Medido con oct-26 (Media, 3,9 M observaciones = 71 MB): pico de **+357 MB** sobre la memoria previa (la CELDA 6 suma
++422 MB con el mismo archivo) y ~4 min en una PC local (relee el mes anterior completo y el mes en curso).
+
+**Diferencia oficial − panel**: la variación oficial es una mediana de observaciones; la del panel, una media de
+sucursales apareadas. Difieren por el efecto mediana (un producto con mediana sin cambio puede tener subas en muchas
+sucursales) y por composición (sucursales que entran o salen). Por eso los cortes geográficos se publican como
+proporciones (`pct_del_aumento`) o reescalados (`aporte_equiv_sobre_oficial_pp`), no como la variación oficial de cada
+grupo.
+
+**Primera corrida, Media oct-26 (al 15/10) vs sep-26**: oficial **+1,748%** ($673.534 → $685.307); panel apareado
++1,971% (2.927 sucursales, 91.650 pares); **arrastre +1,479 pp** y suba nueva +0,269 pp: casi todo el aumento ya
+estaba en los precios de la última semana de septiembre. Test: `python notebooks/test_desagregacion_variacion.py`.
+
 ---
 
 ## 5. Trazabilidad temporal como métrica de calidad

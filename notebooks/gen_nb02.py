@@ -30,7 +30,7 @@ un producto con cantidad > 0.
 **Estructura:** Config → Setup → Canastas desde Excel → Maestros → ZIPs → Mes actual →
 Canasta por sucursal → Análisis provincial → Serie histórica → IPC → Comparativa →
 Gráficos IPC → Cuadro por canasta → Mapas coropléticos → Cobertura → Rankings →
-Mapas Folium → Rankings CABA → Excel"""))
+Mapas Folium → Rankings CABA → Excel → Desagregación de la variación mensual"""))
 
 # ── CELL 1 — CONFIG ────────────────────────────────────────────────────────────
 cells.append(cell_code("""\
@@ -56,6 +56,11 @@ MIN_PRODUCTOS_PROPIOS = 15
 
 # Mínimo sucursales por cadena para aparecer en rankings
 MIN_SUCURSALES_RANKING = 10
+
+# Canastas cuya variación mensual se desagrega en el Excel (CELDA 19b: producto, arrastre,
+# cadena, provincia, región y tipo de sucursal). Relee del ZIP el mes anterior y el mes en
+# curso solo con sus EANs. [] = no se desagrega.
+DESAGREGAR_CANASTAS = ['cantidad_03']
 # Fondo del mapa Folium. 'auto' prueba varios proveedores y se queda con el primero
 # que responda desde la red de quien abre el mapa (en la red de INECO, por ejemplo,
 # tile.openstreetmap.org no responde). Se puede forzar uno: 'esri' (gris, con nombres
@@ -2111,6 +2116,524 @@ if MES_PARCIAL:
     print(f'\\n⚠️  {NOMBRE_MES_TITLE}: MES PARCIAL ({DIAS_CARGADOS}/{DIAS_MES} días).')
     print('    Los promedios son un snapshot al día; la VARIACIÓN mensual es PRELIMINAR')
     print('    (subestimada vs meses completos). Re-correr al cierre del mes para el dato final.')"""))
+
+# ── CELL 19b — DESAGREGACIÓN DE LA VARIACIÓN MENSUAL ──────────────────────────
+cells.append(cell_code(r'''# ============================================================
+# CELDA 19b — Desagregación de la variación mensual: producto, arrastre, cadena y geografía
+# ============================================================
+# Reparte la variación mensual oficial (CELDA 9) de cada canasta de DESAGREGAR_CANASTAS
+# (CELDA 1) y la agrega como hojas nuevas a canasta_analisis_{PERIODO}.xlsx.
+# Serie oficial: canasta(m) = suma de qty x mediana nacional de TODAS las observaciones
+# sucursal x día del mes, sin filtros de cadena ni de geografía.
+#   - Productos / Rubros / Grupos: aporte_oficial_pp = qty x (mediana del mes - mediana del
+#     mes anterior) / canasta del mes anterior. Suma EXACTA a la variación oficial.
+#   - Arrastre: mediana de la última semana del mes anterior. arrastre_pp + nuevo_pp = aporte,
+#     producto a producto (cuánto de la suba ya estaba en los precios de fin del mes anterior).
+#   - Cadenas / Provincias / Regiones / Tipo_sucursal: la mediana nacional no se reparte entre
+#     grupos. Panel apareado sucursal x producto (precio mensual = mediana de los días, como la
+#     CELDA 7) con los pesos oficiales del mes anterior:
+#         aporte = w_i x (p_is - p_is,ant) / suma_s p_is,ant     (w_i = qty_i x med_i,ant / canasta_ant)
+#     Es aditivo y suma la variación del panel. aporte_equiv_sobre_oficial_pp lo reescala a la
+#     variación oficial; var_mediana_grupo_% es el control con el método oficial dentro del grupo.
+# Relee del ZIP el mes anterior y el mes en curso por sucursal x día SOLO con los EANs de las
+# canastas a desagregar, en formato compacto (enteros + float64). No usa ni copia `datos` (la
+# CELDA 6 filtra sucursales y descarta el día): el universo es el de la CELDA 9.
+# Hojas (la Media va sin sufijo; otra canasta lleva _<nombre corto>): Resumen_variacion,
+# Productos, Grupos, Rubros, Cadenas, Provincias, Regiones, Tipo_sucursal, Aporte_prod_x_cadena,
+# Var_prod_x_cadena, Subas_y_bajas, Mes_parcial y Serie_diaria.
+import calendar as _cal
+
+_PAT_DIA = re.compile(r'^precio_(\d{8})$')
+_MES_ABR = {1: 'ene', 2: 'feb', 3: 'mar', 4: 'abr', 5: 'may', 6: 'jun',
+            7: 'jul', 8: 'ago', 9: 'sep', 10: 'oct', 11: 'nov', 12: 'dic'}
+# Provincia = código ISO del SEPA (columna sucursales_provincia del archivo de precios)
+_PROV_ISO = {'AR-B': 'Buenos Aires', 'AR-C': 'CABA', 'AR-K': 'Catamarca', 'AR-H': 'Chaco',
+             'AR-U': 'Chubut', 'AR-X': 'Córdoba', 'AR-W': 'Corrientes', 'AR-E': 'Entre Ríos',
+             'AR-P': 'Formosa', 'AR-Y': 'Jujuy', 'AR-L': 'La Pampa', 'AR-F': 'La Rioja',
+             'AR-M': 'Mendoza', 'AR-N': 'Misiones', 'AR-Q': 'Neuquén', 'AR-R': 'Río Negro',
+             'AR-A': 'Salta', 'AR-J': 'San Juan', 'AR-D': 'San Luis', 'AR-Z': 'Santa Cruz',
+             'AR-S': 'Santa Fe', 'AR-G': 'Santiago del Estero', 'AR-V': 'Tierra del Fuego',
+             'AR-T': 'Tucumán'}
+# Región = la del maestro (AMBA incluye el conurbano). Fuera del maestro, por provincia
+# (Buenos Aires sin coordenadas no se puede partir entre AMBA y Pampeana).
+_REGION_PROV = {'CABA': 'AMBA', 'Córdoba': 'Pampeana', 'Entre Ríos': 'Pampeana', 'La Pampa': 'Pampeana',
+                'Santa Fe': 'Pampeana', 'Catamarca': 'Noroeste', 'Jujuy': 'Noroeste',
+                'La Rioja': 'Noroeste', 'Salta': 'Noroeste', 'Santiago del Estero': 'Noroeste',
+                'Tucumán': 'Noroeste', 'Chaco': 'Noreste', 'Corrientes': 'Noreste',
+                'Formosa': 'Noreste', 'Misiones': 'Noreste', 'Mendoza': 'Cuyo', 'San Juan': 'Cuyo',
+                'San Luis': 'Cuyo', 'Chubut': 'Patagonia', 'Neuquén': 'Patagonia',
+                'Río Negro': 'Patagonia', 'Santa Cruz': 'Patagonia', 'Tierra del Fuego': 'Patagonia'}
+_GRUPOS_RUBRO = {
+    'Alimentos': ['Lácteos', 'Fiambrería', 'Carnicería', 'Hamburguesas', 'Galletitas', 'Conservas',
+                  'Papas Congeladas', 'Aceites', 'Alimentos Congelados', 'Golosinas', 'Harinas',
+                  'Infusiones', 'Arroz y Legumbres', 'Azúcar y Edulcorantes', 'Aderezos', 'Cereales',
+                  'Pastas Secas', 'Vegetales', 'Sopas Caldos y Puré', 'Snacks'],
+    'Bebidas': ['Gaseosas', 'Vinos y Espumantes', 'Isotónicas y Energizantes', 'Bebida Herbal',
+                'Cerveza', 'Jugos', 'Aguas'],
+    'Limpieza y papeles': ['Lavandina', 'Desodorante de Ambientes', 'Limpieza de Baño', 'Papeles',
+                           'Limpieza de Ropa', 'Limpieza de Cocina', 'Limpieza Piso y Muebles',
+                           'Accesorios de Limpieza'],
+    'Higiene y cuidado personal': ['Cuidado Corporal', 'Cuidado del Cabello', 'Protección Femenina',
+                                   'Cuidado Oral', 'Productos Farmacéuticos'],
+}
+_RUBRO_GRUPO = {_r: _g for _g, _rs in _GRUPOS_RUBRO.items() for _r in _rs}
+_HOJAS_DESAG = ['Resumen_variacion', 'Productos', 'Grupos', 'Rubros', 'Cadenas', 'Provincias',
+                'Regiones', 'Tipo_sucursal', 'Aporte_prod_x_cadena', 'Var_prod_x_cadena',
+                'Subas_y_bajas', 'Mes_parcial', 'Serie_diaria']
+
+
+def _hoja_desag(_base, _cid):
+    return _base if _cid == 'cantidad_03' else f'{_base}_{CANASTA_SHORT[_cid]}'[:31]
+
+
+def _cadena_desag(_com, _ban):
+    # Mismos nombres que asignar_cadena (CELDA 4); las banderas de Carrefour que no están en el
+    # diccionario se distinguen en vez de quedar todas como 'Cadena 10'.
+    _c = asignar_cadena({'id_comercio': _com, 'id_bandera': _ban})
+    return f'Carrefour (bandera {_ban})' if _c == 'Cadena 10' else _c
+
+
+def _lbl_mes(_ym):
+    return f'{_MES_ABR[_ym % 100]}-{str(_ym // 100)[2:]}'
+
+
+def _leer_mes_desag(_lbl):
+    # Observaciones sucursal x día del mes _lbl con los EANs de _EAN_COD, sin filtro de
+    # sucursales (como la CELDA 9): suc (int32, código de _SUC_COD), ean (int16, código de
+    # _EAN_COD), fecha AAAAMMDD (int32) y precio (float64). Registra las sucursales en _SUC_ATR.
+    _zip_path, _archs = _mapa_desag[_lbl]
+    _partes = []
+    for _archivo in sorted(_archs):
+        _tmp_p = TMP_DIR / Path(_archivo).name
+        with zipfile.ZipFile(_zip_path) as _zf:
+            with _zf.open(_archivo) as _s, open(_tmp_p, 'wb') as _d:
+                shutil.copyfileobj(_s, _d, length=4*1024*1024)
+        with gzip.open(_tmp_p, 'rt', encoding='utf-8', errors='replace') as _g:
+            for _ch in pd.read_csv(_g, dtype=str, chunksize=300_000, low_memory=False):
+                # normalizar_ean (CELDA 5), como las CELDAS 6 y 9. NO usar .str.strip().str.lstrip('0'):
+                # sobre el chunk de 300k filas lleva el pico de RAM de +0,2 a +2,1 GB (medido, oct-26).
+                _ean = _ch['id_producto'].apply(normalizar_ean)
+                _sel = _ean.isin(_EAN_SET)
+                if not _sel.any(): continue
+                _ch, _ean = _ch[_sel], _ean[_sel]
+                _cols_p = [c for c in _ch.columns if _PAT_DIA.match(c)]
+                if not _cols_p: continue
+                _k = (_ch['id_comercio'].astype(str) + '|' + _ch['id_bandera'].astype(str)
+                      + '|' + _ch['id_sucursal'].astype(str))
+                _pv = (_ch['sucursales_provincia'] if 'sucursales_provincia' in _ch.columns
+                       else pd.Series(np.nan, index=_ch.index))
+                for _kk, _p in (pd.DataFrame({'k': _k.values, 'p': _pv.values})
+                                .drop_duplicates().itertuples(index=False)):
+                    _c = _SUC_COD.get(_kk)
+                    if _c is None:
+                        _SUC_COD[_kk] = len(_SUC_ATR)
+                        _SUC_ATR.append(_kk.split('|') + [_p])
+                    elif pd.isna(_SUC_ATR[_c][3]) and not pd.isna(_p):
+                        _SUC_ATR[_c][3] = _p
+                _pr = _ch[_cols_p].apply(pd.to_numeric, errors='coerce').to_numpy(dtype='float64')
+                _fi, _ci = np.nonzero(_pr > 0)
+                _dias = np.array([int(c[7:]) for c in _cols_p], dtype='int32')
+                _partes.append(pd.DataFrame({
+                    'suc': _k.map(_SUC_COD).to_numpy(dtype='int32')[_fi],
+                    'ean': _ean.map(_EAN_COD).to_numpy(dtype='int16')[_fi],
+                    'fecha': _dias[_ci], 'precio': _pr[_fi, _ci]}))
+        _tmp_p.unlink(missing_ok=True)
+    if not _partes:
+        raise RuntimeError(f'Sin observaciones de las canastas a desagregar en {_lbl}')
+    _o = pd.concat(_partes, ignore_index=True)
+    del _partes
+    # Pesos o centavos: se sigue a la CELDA 9 (la mediana reproducida ~100x la oficial = centavos)
+    _rep = _o.groupby('ean')['precio'].median()
+    _ofi = pd.Series({_EAN_COD[e]: v for e, v in _MED_OFI[_lbl].items() if e in _EAN_COD})
+    _rat = (_rep / _ofi.reindex(_rep.index)).median()
+    if (_rat > 10) if pd.notna(_rat) else (_o['precio'].median() > 10_000):
+        _o['precio'] /= 100
+    print(f'  {_lbl}: {len(_o):,} observaciones sucursal x día | {_o["suc"].nunique():,} sucursales | '
+          f'{_o["ean"].nunique()} EANs')
+    return _o
+
+
+def _atributos_sucursal():
+    # Cadena, provincia, región y tipo de cada sucursal registrada (índice = código de _SUC_COD)
+    _s = pd.DataFrame(_SUC_ATR, columns=['id_comercio', 'id_bandera', 'id_sucursal', 'prov_iso'])
+    _k = _s['id_comercio'] + '|' + _s['id_bandera'] + '|' + _s['id_sucursal']
+    _ms = (maestro_suc.assign(_k=maestro_suc['id_comercio'] + '|' + maestro_suc['id_bandera']
+                              + '|' + maestro_suc['id_sucursal'])
+           .drop_duplicates('_k').set_index('_k'))
+    _s['cadena'] = [_cadena_desag(c, b) for c, b in zip(_s['id_comercio'], _s['id_bandera'])]
+    _s['provincia'] = _s['prov_iso'].astype(str).map(_PROV_ISO).fillna('Sin dato')
+    _reg = (_ms['REGION'].astype(str).str.replace('\xa0', '').str.strip()
+            if 'REGION' in _ms.columns else pd.Series(dtype=str))
+    _s['region'] = _k.map(_reg)
+    _falta = _s['region'].isna() | _s['region'].isin(['nan', ''])
+    _s.loc[_falta, 'region'] = (_s.loc[_falta, 'provincia'].map(_REGION_PROV)
+                                .fillna('Buenos Aires s/ubicar'))
+    _tipo = (_ms['sucursales_tipo'].astype(str).str.strip().str.title().replace(
+                 {'Tienda Fisica': 'Tienda física', 'Web': 'Web/virtual', 'Tienda Virtual': 'Web/virtual'})
+             if 'sucursales_tipo' in _ms.columns else pd.Series(dtype=str))
+    _s['tipo'] = _k.map(_tipo).fillna('Sin dato en maestro')
+    _s['en_maestro'] = _k.isin(_ms.index).values
+    return _s
+
+
+def _desagregar(_cid):
+    _name, _can = CANASTA_NAMES[_cid], CANASTAS[_cid]
+
+    # ── Canasta oficial (CELDA 9): mediana nacional por producto, mes anterior y mes en curso ──
+    _eans = [e for e in _can if e in _MED_OFI.index]
+    prod = pd.DataFrame({'descripcion': [_can[e][0] for e in _eans],
+                         'categoria': [_can[e][2] for e in _eans],
+                         'qty': [_can[e][1] for e in _eans],
+                         'med_ant': _MED_OFI.loc[_eans, _MES_ANT].values,
+                         'med_act': _MED_OFI.loc[_eans, PERIODO].values},
+                        index=pd.Index([e.zfill(13) for e in _eans], name='id_producto'))
+    _sin_grupo = sorted(set(prod.loc[~prod['categoria'].isin(list(_RUBRO_GRUPO)), 'categoria']))
+    if _sin_grupo:
+        print(f'  AVISO [{_name}]: rubros sin grupo, van a "Otros": {_sin_grupo}')
+    prod['grupo'] = prod['categoria'].map(_RUBRO_GRUPO).fillna('Otros')
+    prod['costo_ant'] = prod['qty'] * prod['med_ant']
+    prod['costo_act'] = prod['qty'] * prod['med_act']
+    T0, T1 = prod['costo_ant'].sum(), prod['costo_act'].sum()
+    V_OF = (T1 / T0 - 1) * 100
+    _sn = serie_nac_dict.get(_cid)
+    _v9 = (_sn.set_index('mes')['variacion_mensual_%'].get(PERIODO)
+           if _sn is not None and len(_sn) else None)
+    if _v9 is not None and pd.notna(_v9) and abs(_v9 - V_OF) > 1e-6:
+        print(f'  AVISO [{_name}]: variación recalculada {V_OF:+.4f}% distinta de la CELDA 9 ({_v9:+.4f}%)')
+    _incomp = int(prod[['med_ant', 'med_act']].isna().any(axis=1).sum())
+    if _incomp:
+        # El aporte de un producto con precio en un solo mes es su costo entero (la serie oficial
+        # también lo suma en un mes y no en el otro): la suma sigue siendo exacta.
+        print(f'  AVISO [{_name}]: {_incomp} productos con precio en un solo mes (efecto composición)')
+    prod['w'] = (prod['costo_ant'] / T0).fillna(0)
+    prod['peso_%'] = prod['w'] * 100
+    prod['var_mediana_%'] = (prod['med_act'] / prod['med_ant'] - 1) * 100
+    prod['aporte_oficial_pp'] = (prod['costo_act'].fillna(0) - prod['costo_ant'].fillna(0)) / T0 * 100
+
+    # ── Observaciones de la canasta (códigos de EAN -> id_producto) ──────────
+    _cod = np.array([_EAN_COD[e] for e in _eans], dtype='int16')
+    _id_de = pd.Series(prod.index.values, index=_cod)
+    _qty_de = pd.Series(prod['qty'].values, index=_cod)
+    _m = np.isin(_OBS['ean'].values, _cod)
+    o = _OBS if _m.all() else _OBS[_m]
+    _ym = o['fecha'].values // 100
+    _fc = o['fecha'].values
+
+    # Control: la mediana nacional se reproduce con estas observaciones
+    _rep = (o.groupby([o['ean'].values, _ym])['precio'].median().unstack()
+            .reindex(columns=[_YM_ANT, _YM_ACT]))
+    _rep.index = _id_de.reindex(_rep.index).values
+    _rep = _rep.reindex(prod.index)
+    _igual = pd.Series(True, index=prod.index)
+    for _yc, _mc in ((_YM_ANT, 'med_ant'), (_YM_ACT, 'med_act')):
+        _igual &= ((_rep[_yc] - prod[_mc]).abs() <= 0.005) | (_rep[_yc].isna() & prod[_mc].isna())
+    N_REP = int(_igual.sum())
+
+    # ── Arrastre: mediana de la última semana del mes anterior ───────────────
+    _N = _cal.monthrange(_YM_ANT // 100, _YM_ANT % 100)[1]
+    _D = int(_fc[_ym == _YM_ACT].max() % 100)
+    _ACT_COMPLETO = _D >= _cal.monthrange(_YM_ACT // 100, _YM_ACT % 100)[1]
+    _w = (_fc >= _YM_ANT * 100 + _N - 6) & (_fc <= _YM_ANT * 100 + _N)
+    _mcie = o['precio'][_w].groupby(o['ean'].values[_w]).median()
+    _mcie.index = _id_de.reindex(_mcie.index).values
+    prod['med_cierre_ant'] = _mcie.reindex(prod.index)
+    prod['arrastre_pp'] = (prod['qty'] * (prod['med_cierre_ant'] - prod['med_ant']) / T0 * 100).fillna(0)
+    prod['nuevo_pp'] = prod['qty'] * (prod['med_act'] - prod['med_cierre_ant']) / T0 * 100
+    _res = prod['nuevo_pp'].isna()      # sin precio en alguno de los tres tramos: el resto del aporte
+    prod.loc[_res, 'nuevo_pp'] = prod.loc[_res, 'aporte_oficial_pp'] - prod.loc[_res, 'arrastre_pp']
+    T_CIE = (prod['qty'] * prod['med_cierre_ant']).sum()
+    ARR, NUE = prod['arrastre_pp'].sum(), prod['nuevo_pp'].sum()
+
+    # ── Panel apareado sucursal x producto (precio mensual = mediana de los días) ──
+    _pm = (o.groupby([o['suc'].values, o['ean'].values, _ym])['precio'].median().unstack()
+           .reindex(columns=[_YM_ANT, _YM_ACT]))
+    _pm.columns = ['p_ant', 'p_act']
+    _pm.index.names = ['suc', 'ean']
+    N_PARES = len(_pm)
+    _pm = _pm.dropna()
+    _r = _pm['p_act'] / _pm['p_ant']
+    _fuera = (_r < 0.25) | (_r > 4)
+    N_FUERA = int(_fuera.sum())
+    p = _pm[~_fuera].reset_index()
+    del _pm, _r, _fuera
+    p['id_producto'] = _id_de.reindex(p['ean']).values
+    p = p.merge(prod[['w', 'qty', 'descripcion', 'categoria', 'grupo']],
+                left_on='id_producto', right_index=True)
+    for _c in ['cadena', 'provincia', 'region', 'tipo']:
+        p[_c] = _SUC[_c].values[p['suc'].values]
+    _S0 = p.groupby('id_producto')['p_ant'].transform('sum')
+    p['peso_par'] = p['w'] * p['p_ant'] / _S0 * 100              # suma 100 sobre el panel
+    p['aporte_pp'] = p['w'] * (p['p_act'] - p['p_ant']) / _S0 * 100
+    p['cambio'] = np.select([p['p_act'] > p['p_ant'], p['p_act'] < p['p_ant']], ['sube', 'baja'], 'igual')
+    V_PAN = p['aporte_pp'].sum()
+
+    def _var_mediana(_col):
+        # Método oficial (mediana de las observaciones) dentro del grupo; productos con dato en
+        # los dos meses. No es aditivo: es el control.
+        _cat = pd.Categorical(_SUC[_col])
+        _gk = _cat.codes[o['suc'].values]
+        _mg = (o.groupby([_gk, o['ean'].values, _ym])['precio'].median().unstack()
+               .reindex(columns=[_YM_ANT, _YM_ACT]).dropna())
+        _q = _qty_de.reindex(_mg.index.get_level_values(1)).values
+        _g = pd.DataFrame({'q0': _q * _mg[_YM_ANT].values, 'q1': _q * _mg[_YM_ACT].values},
+                          index=_mg.index.get_level_values(0))
+        _g = _g.groupby(level=0).agg(q0=('q0', 'sum'), q1=('q1', 'sum'), productos_apareados=('q0', 'size'))
+        _g['var_mediana_grupo_%'] = (_g['q1'] / _g['q0'] - 1) * 100
+        _g.index = _cat.categories[_g.index]
+        return _g[['var_mediana_grupo_%', 'productos_apareados']]
+
+    def _corte(_col):
+        _g = p.groupby(_col).agg(sucursales=('suc', 'nunique'), pares=('suc', 'size'),
+                                 peso_base_pct=('peso_par', 'sum'), aporte_pp=('aporte_pp', 'sum'))
+        _g['variacion_%'] = _g['aporte_pp'] / _g['peso_base_pct'] * 100
+        _g['pct_del_aumento'] = _g['aporte_pp'] / V_PAN * 100
+        _g['aporte_equiv_sobre_oficial_pp'] = _g['pct_del_aumento'] / 100 * V_OF
+        _sb = p.assign(sube=p['cambio'].eq('sube'), baja=p['cambio'].eq('baja'))
+        _g['pct_precios_suben'] = _sb.groupby(_col)['sube'].mean() * 100
+        _g['pct_precios_bajan'] = _sb.groupby(_col)['baja'].mean() * 100
+        _g = _g.join(_var_mediana(_col)).sort_values('aporte_pp', ascending=False)
+        # peso_base_pct del TOTAL = 100 salvo que algún producto no tenga pares (desapareció en el mes)
+        _tot = pd.DataFrame([{'sucursales': p['suc'].nunique(), 'pares': len(p), 'peso_base_pct': p['peso_par'].sum(),
+                              'aporte_pp': V_PAN, 'variacion_%': V_PAN, 'pct_del_aumento': 100.0,
+                              'aporte_equiv_sobre_oficial_pp': V_OF,
+                              'pct_precios_suben': p['cambio'].eq('sube').mean() * 100,
+                              'pct_precios_bajan': p['cambio'].eq('baja').mean() * 100,
+                              'var_mediana_grupo_%': V_OF, 'productos_apareados': len(prod)}],
+                            index=['TOTAL'])
+        return pd.concat([_g, _tot]).rename_axis(_col).reset_index()
+
+    cortes = {_c: _corte(_c) for _c in ['cadena', 'provincia', 'region', 'tipo']}
+
+    # ── Productos: oficial + panel ────────────────────────────────────────────
+    _pp = p.groupby('id_producto').agg(sucursales_apareadas=('suc', 'size'),
+                                       aporte_panel_pp=('aporte_pp', 'sum'),
+                                       pct_suben=('cambio', lambda s: (s == 'sube').mean() * 100),
+                                       pct_bajan=('cambio', lambda s: (s == 'baja').mean() * 100))
+    prod = prod.join(_pp)
+    prod['var_media_sucursales_%'] = prod['aporte_panel_pp'] / prod['peso_%'] * 100
+    prod['pct_del_aumento_oficial'] = prod['aporte_oficial_pp'] / V_OF * 100
+    prod = prod.sort_values('aporte_oficial_pp', ascending=False)
+
+    _agg = dict(productos=('qty', 'size'), peso_pct=('peso_%', 'sum'),
+                aporte_oficial_pp=('aporte_oficial_pp', 'sum'), aporte_panel_pp=('aporte_panel_pp', 'sum'))
+    rub = prod.groupby(['grupo', 'categoria']).agg(**_agg).reset_index()
+    rub['variacion_mediana_%'] = rub['aporte_oficial_pp'] / rub['peso_pct'] * 100
+    rub['pct_del_aumento'] = rub['aporte_oficial_pp'] / V_OF * 100
+    rub = rub.merge(prod.groupby('categoria')[['arrastre_pp', 'nuevo_pp']].sum(),
+                    left_on='categoria', right_index=True).sort_values('aporte_oficial_pp', ascending=False)
+    gru = prod.groupby('grupo').agg(**_agg).reset_index()
+    gru['variacion_mediana_%'] = gru['aporte_oficial_pp'] / gru['peso_pct'] * 100
+    gru['variacion_panel_%'] = gru['aporte_panel_pp'] / gru['peso_pct'] * 100
+    gru['pct_del_aumento'] = gru['aporte_oficial_pp'] / V_OF * 100
+    gru = gru.merge(prod.groupby('grupo')[['arrastre_pp', 'nuevo_pp']].sum(),
+                    left_on='grupo', right_index=True).sort_values('aporte_oficial_pp', ascending=False)
+
+    # ── Producto x cadena: aporte en el panel (pp) y variación media de sucursales (%) ──
+    _top = cortes['cadena'].query('cadena != "TOTAL"').head(12)['cadena'].tolist()
+    _pc = p.assign(cad=np.where(p['cadena'].isin(_top), p['cadena'], 'Resto'))
+    pxc = _pc.pivot_table(index='id_producto', columns='cad', values='aporte_pp', aggfunc='sum', fill_value=0)
+    pxc = pxc[[c for c in _top + ['Resto'] if c in pxc.columns]]
+    pxc['TOTAL'] = pxc.sum(axis=1)
+    pxc = prod[['descripcion']].join(pxc).fillna(0).sort_values('TOTAL', ascending=False)
+    vxc = (_pc.groupby(['id_producto', 'cad'])[['p_ant', 'p_act']].sum()
+           .pipe(lambda d: (d['p_act'] / d['p_ant'] - 1) * 100).unstack())
+    vxc = vxc[[c for c in _top + ['Resto'] if c in vxc.columns]]
+    vxc = prod[['descripcion', 'var_mediana_%']].join(vxc).loc[pxc.index]
+    del _pc
+
+    # ── Frecuencia e intensidad de los cambios ────────────────────────────────
+    fr = p.groupby('cambio').agg(pares=('suc', 'size'), peso_base_pct=('peso_par', 'sum'),
+                                 aporte_pp=('aporte_pp', 'sum'))
+    fr['pct_pares'] = fr['pares'] / len(p) * 100
+    _rel = (p['p_act'] / p['p_ant'] - 1) * 100
+    fr['cambio_medio_%'] = _rel.groupby(p['cambio']).mean()
+    fr['cambio_mediano_%'] = _rel.groupby(p['cambio']).median()
+    fr = fr.reindex(['sube', 'igual', 'baja']).rename_axis('cambio').reset_index()
+
+    # ── Mes parcial: ventanas de días y arrastre ──────────────────────────────
+    def _canasta_vent(_d0, _d1):
+        _v = (_fc >= _d0) & (_fc <= _d1)
+        _mv = o['precio'][_v].groupby(o['ean'].values[_v]).median()
+        _mv.index = _id_de.reindex(_mv.index).values
+        return (prod['qty'] * _mv).sum(), int(_mv.notna().sum())
+
+    _A, _B = _MES_ABR[_YM_ANT % 100].title(), _MES_ABR[_YM_ACT % 100].title()
+    _a0, _a1 = _YM_ANT * 100 + 1, _YM_ANT * 100 + _N
+    _c0, _c1 = _YM_ACT * 100 + 1, _YM_ACT * 100 + _D
+    _vents = [(f'{_A} completo (1-{_N}) vs {_B} 1-{_D}  [oficial nb02]', (_a0, _a1), (_c0, _c1))]
+    if _D < _N:
+        _vents += [(f'{_A} 1-{_D} vs {_B} 1-{_D}  [mismos dias, un mes]', (_a0, _a0 + _D - 1), (_c0, _c1)),
+                   (f'{_A} {_D + 1}-{_N} vs {_B} 1-{_D}  [periodos consecutivos]', (_a0 + _D, _a1), (_c0, _c1)),
+                   (f'{_A} 1-{_D} vs {_A} {_D + 1}-{_N}  [dentro de {_A}]', (_a0, _a0 + _D - 1), (_a0 + _D, _a1))]
+    vent = []
+    for _nom, _ini, _fin in _vents:
+        (_k0, _n0), (_k1, _n1) = _canasta_vent(*_ini), _canasta_vent(*_fin)
+        vent.append({'comparacion': _nom, 'canasta_inicio': _k0, 'canasta_fin': _k1,
+                     'variacion_%': (_k1 / _k0 - 1) * 100, 'productos': min(_n0, _n1)})
+    vent += [{'comparacion': f'Arrastre: {_A} completo vs ultima semana de {_A} ({_N - 6}-{_N})',
+              'canasta_inicio': T0, 'canasta_fin': T_CIE, 'variacion_%': ARR, 'productos': len(prod)},
+             {'comparacion': f'Suba nueva: ultima semana de {_A} ({_N - 6}-{_N}) vs {_B} 1-{_D}, '
+                             f'en pp sobre la canasta de {_A}',
+              'canasta_inicio': T_CIE, 'canasta_fin': T1, 'variacion_%': NUE, 'productos': len(prod)}]
+    vent = pd.DataFrame(vent)
+
+    # ── Serie diaria con el método oficial (mediana nacional del día) ─────────
+    _dd = o.groupby([_fc, o['ean'].values])['precio'].median().unstack()
+    _dd.columns = _id_de.reindex(_dd.columns).values
+    diaria = pd.DataFrame({'canasta': (_dd * prod['qty']).sum(axis=1),
+                           'productos_con_dato': _dd.notna().sum(axis=1),
+                           'observaciones': pd.Series(_fc).value_counts()}).sort_index()
+    diaria['indice_mes_ant_completo=100'] = diaria['canasta'] / T0 * 100
+    diaria.insert(0, 'dia', pd.to_datetime(diaria.index.astype(str), format='%Y%m%d'))
+    diaria = diaria.reset_index(drop=True)
+
+    # ── Resumen ───────────────────────────────────────────────────────────────
+    _m0 = _lbl_mes(_YM_ANT)
+    _m1 = _lbl_mes(_YM_ACT) + ('' if _ACT_COMPLETO else f' al {_D}/{_YM_ACT % 100}')
+    res = [
+        (f'Canasta {_name} {_m0} (nb02)', T0), (f'Canasta {_name} {_m1} (nb02)', T1),
+        ('Variacion oficial nb02 (%)', V_OF),
+        ('Variacion panel apareado, media de sucursales, pesos oficiales (%)', V_PAN),
+        ('Diferencia oficial - panel (efecto mediana / composicion, pp)', V_OF - V_PAN),
+        (f'Arrastre: suba ya presente en la ultima semana de {_m0} (pp)', ARR),
+        (f'Suba nueva entre fin de {_m0} y {_m1} (pp)', NUE),
+        ('Aporte en el panel de los productos con mediana sin cambio (pp)',
+         prod.loc[prod['var_mediana_%'] == 0, 'aporte_panel_pp'].sum()),
+        ('Productos en la canasta', len(prod)),
+        ('Productos con mediana sin cambio', int((prod['var_mediana_%'] == 0).sum())),
+        ('Productos con mediana en baja', int((prod['var_mediana_%'] < 0).sum())),
+        ('Aporte de los 5 productos que mas suman (pp)', prod.head(5)['aporte_oficial_pp'].sum()),
+        ('Aporte de los 10 productos que mas suman (pp)', prod.head(10)['aporte_oficial_pp'].sum()),
+        ('Sucursales en el panel', p['suc'].nunique()),
+        ('Pares sucursal-producto apareados', len(p)),
+        ('Pares descartados por banda [1/4, 4]', N_FUERA),
+        ('% de precios (sucursal-producto) que subieron', p['cambio'].eq('sube').mean() * 100),
+        ('% de precios que bajaron', p['cambio'].eq('baja').mean() * 100),
+        ('% de precios sin cambio', p['cambio'].eq('igual').mean() * 100),
+        ('Productos con la mediana de la CELDA 9 reproducida (control)', N_REP),
+    ]
+    resumen = pd.DataFrame(res, columns=['indicador', 'valor'])
+    notas = pd.DataFrame({'nota': [
+        f'Fuente: serie oficial del nb02 (CELDA 9, canasta {_name} = {_cid}) y observaciones sucursal x dia '
+        f'del SEPA de {_m0} y {_m1}.' + ('' if _ACT_COMPLETO else f' {_B} es PARCIAL (1-{_D}).'),
+        'Variacion oficial: la del nb02 (CELDA 9): suma de qty x mediana nacional de todas las observaciones '
+        'sucursal x dia del mes.',
+        'Productos y rubros: aporte_oficial_pp = qty x (mediana del mes - mediana del mes anterior) / canasta '
+        'del mes anterior. Suma exacta a la variacion oficial.',
+        'Cadenas, provincias, regiones y tipo: la mediana nacional no se puede repartir entre grupos. Se usa el '
+        'panel apareado sucursal x producto (precio mensual por sucursal = mediana de los dias, como la CELDA 7 '
+        'del nb02), con los pesos oficiales del mes anterior por producto. aporte = w_producto x (p_mes - p_ant) '
+        '/ suma de p_ant del producto en todas las sucursales. Es aditivo: los grupos suman la variacion del panel.',
+        f'pct_del_aumento = aporte del grupo / variacion del panel. aporte_equiv_sobre_oficial_pp reparte la '
+        f'variacion oficial ({V_OF:.2f}%) con esas proporciones.',
+        'peso_base_pct = participacion del grupo en el costo base (cuanto pesan sus sucursales). variacion_% = '
+        'aporte / peso: cuanto subio la canasta en ese grupo.',
+        'var_mediana_grupo_% = el metodo oficial aplicado solo a las observaciones del grupo (productos con dato '
+        'en ambos meses). No es aditivo, sirve de control.',
+        'Las sucursales pesan por igual dentro de cada producto (como la mediana nacional, que pesa por cantidad '
+        'de observaciones): las cadenas con muchas sucursales pesan mas.',
+        'Arrastre: la mediana del mes anterior es un promedio del mes; si los precios subieron en la segunda '
+        'quincena, el mes arranca mas arriba aunque no haya subas nuevas. arrastre_pp = qty x (mediana de la '
+        'ultima semana del mes anterior - mediana del mes anterior) / canasta del mes anterior; nuevo_pp = qty x '
+        '(mediana del mes - mediana de la ultima semana del mes anterior) / canasta del mes anterior. Suman el '
+        'aporte oficial producto a producto.',
+        'Region: la del maestro de sucursales (AMBA incluye el conurbano). Sucursales fuera del maestro: region '
+        'por provincia.',
+    ]})
+
+    _cols_prod = ['descripcion', 'grupo', 'categoria', 'qty', 'med_ant', 'med_act', 'var_mediana_%', 'peso_%',
+                  'aporte_oficial_pp', 'pct_del_aumento_oficial', 'med_cierre_ant', 'arrastre_pp', 'nuevo_pp',
+                  'sucursales_apareadas', 'pct_suben', 'pct_bajan', 'var_media_sucursales_%', 'aporte_panel_pp']
+    hojas = {'Productos': prod[_cols_prod].reset_index(), 'Grupos': gru, 'Rubros': rub,
+             'Cadenas': cortes['cadena'], 'Provincias': cortes['provincia'], 'Regiones': cortes['region'],
+             'Tipo_sucursal': cortes['tipo'], 'Aporte_prod_x_cadena': pxc.reset_index(),
+             'Var_prod_x_cadena': vxc.reset_index(), 'Subas_y_bajas': fr, 'Mes_parcial': vent,
+             'Serie_diaria': diaria}
+    tot = {'T0': T0, 'T1': T1, 'V_OF': V_OF, 'V_PAN': V_PAN, 'ARR': ARR, 'NUE': NUE, 'N_REP': N_REP,
+           'N_PROD': len(prod), 'N_SUC': p['suc'].nunique(), 'N_PARES': len(p), 'N_FUERA': N_FUERA,
+           'meses': (_m0, _m1)}
+    return {'resumen': resumen, 'notas': notas, 'hojas': hojas, 'totales': tot}
+
+
+def _fmt_desag(ws):
+    fmt_ws(ws)      # encabezado como el resto del Excel (CELDA 19)
+    for _col in ws.columns:
+        _ancho = max([len(str(_col[0].value or ''))] +
+                     [len(f'{c.value:.2f}') if isinstance(c.value, float) else len(str(c.value or ''))
+                      for c in _col[1:60]])
+        ws.column_dimensions[_col[0].column_letter].width = min(_ancho + 2, 60)
+        for c in _col[1:]:
+            if isinstance(c.value, float):
+                c.number_format = '#,##0' if abs(c.value) >= 1000 else '0.000'
+
+
+# ── Ejecución ─────────────────────────────────────────────────────────────────
+desag_dict = {}
+_DESAG = [c for c in DESAGREGAR_CANASTAS if c in CANASTAS]
+_MES_ANT = str(pd.Period(PERIODO, freq='M') - 1)
+_YM_ANT, _YM_ACT = int(_MES_ANT.replace('-', '')), int(PERIODO.replace('-', ''))
+_mapa_desag = {}
+for _zp, _an, _sm in detectar_semestres():
+    for (_am, _mm), _archs in archivos_por_mes(_zp).items():
+        _mapa_desag[f'{_am}-{_mm:02d}'] = (_zp, _archs)
+_MED_OFI = (df_hist_raw[df_hist_raw['anio_mes'].isin([_MES_ANT, PERIODO])]
+            .groupby(['ean_norm', 'anio_mes'])['precio_mediano'].first().unstack()
+            .reindex(columns=[_MES_ANT, PERIODO]))
+
+if not _DESAG:
+    print('DESAGREGAR_CANASTAS vacía o sin canastas activas: no se desagrega la variación.')
+elif _MES_ANT not in _mapa_desag or _MED_OFI[_MES_ANT].isna().all():
+    print(f'AVISO: falta el mes anterior ({_MES_ANT}) en los ZIPs o en la serie: no se desagrega la variación.')
+else:
+    _EAN_COD = {e: i for i, e in enumerate(sorted(set().union(*[set(CANASTAS[c]) for c in _DESAG])))}
+    _EAN_SET = set(_EAN_COD)
+    _SUC_COD, _SUC_ATR = {}, []
+    print(f'Desagregación {_lbl_mes(_YM_ANT)} -> {_lbl_mes(_YM_ACT)}: '
+          f'{", ".join(CANASTA_NAMES[c] for c in _DESAG)} ({len(_EAN_COD)} EANs)')
+    _OBS = pd.concat([_leer_mes_desag(_MES_ANT), _leer_mes_desag(PERIODO)], ignore_index=True)
+    _SUC = _atributos_sucursal()
+    print(f'  {len(_OBS):,} observaciones en memoria ({_OBS.memory_usage(deep=True).sum() / 1e6:,.0f} MB) | '
+          f'{len(_SUC):,} sucursales ({_SUC["en_maestro"].sum():,} en el maestro)')
+    for _cid in _DESAG:
+        desag_dict[_cid] = _desagregar(_cid)
+    del _OBS; gc.collect()
+
+    _out_desag = OUTPUT_DIR / f'canasta_analisis_{ULTIMO_MES}.xlsx'
+    _modo = dict(mode='a', if_sheet_exists='overlay') if _out_desag.exists() else dict(mode='w')
+    with pd.ExcelWriter(_out_desag, engine='openpyxl', **_modo) as _xw:
+        for _cid, _dz in desag_dict.items():
+            _nombres = {h: _hoja_desag(h, _cid) for h in _HOJAS_DESAG}
+            for _sh in _nombres.values():           # re-correr la celda reemplaza sus hojas
+                if _sh in _xw.book.sheetnames:
+                    del _xw.book[_sh]
+            _dz['resumen'].to_excel(_xw, sheet_name=_nombres['Resumen_variacion'], index=False)
+            _dz['notas'].to_excel(_xw, sheet_name=_nombres['Resumen_variacion'], index=False,
+                                  startrow=len(_dz['resumen']) + 2)
+            for _h, _df in _dz['hojas'].items():
+                _df.to_excel(_xw, sheet_name=_nombres[_h], index=False)
+            for _sh in _nombres.values():
+                _fmt_desag(_xw.book[_sh])
+            _xw.book[_nombres['Resumen_variacion']].column_dimensions['A'].width = 70
+    print(f'Hojas de la desagregación agregadas a: {_out_desag.name}')
+
+    for _cid, _dz in desag_dict.items():
+        _t, _hj = _dz['totales'], _dz['hojas']
+        print(f'\n=== {CANASTA_NAMES[_cid]}: {_t["meses"][0]} -> {_t["meses"][1]} ===')
+        print(f'  Oficial (CELDA 9): {_t["V_OF"]:+.3f}%  (${_t["T0"]:,.0f} -> ${_t["T1"]:,.0f}) | '
+              f'medianas reproducidas {_t["N_REP"]}/{_t["N_PROD"]}')
+        print(f'  Arrastre (ultima semana del mes anterior): {_t["ARR"]:+.3f} pp | suba nueva: {_t["NUE"]:+.3f} pp')
+        print(f'  Panel apareado (media de sucursales): {_t["V_PAN"]:+.3f}% | {_t["N_SUC"]:,} sucursales, '
+              f'{_t["N_PARES"]:,} pares ({_t["N_FUERA"]} fuera de banda)')
+        print('\n  Productos que más aportan (pp de la variación oficial):')
+        print(_hj['Productos'].head(10)[['descripcion', 'var_mediana_%', 'aporte_oficial_pp',
+                                         'arrastre_pp', 'nuevo_pp']].round(3).to_string(index=False))
+        print('\n  Grupos:')
+        print(_hj['Grupos'][['grupo', 'aporte_oficial_pp', 'arrastre_pp', 'nuevo_pp',
+                             'variacion_mediana_%']].round(3).to_string(index=False))
+        for _h, _c in (('Cadenas', 'cadena'), ('Regiones', 'region')):
+            print(f'\n  {_h} (panel; aporte_equiv = reescalado a la oficial):')
+            print(_hj[_h].head(10)[[_c, 'sucursales', 'aporte_pp', 'aporte_equiv_sobre_oficial_pp',
+                                    'variacion_%', 'var_mediana_grupo_%']].round(3).to_string(index=False))'''))
 
 # ── CELL 20 — VALORES PARA DOCUMENTO TÉCNICO ──────────────────────────────────
 cells.append(cell_code("""\

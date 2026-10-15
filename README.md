@@ -204,6 +204,7 @@ Se generan **dos** mapas: `mapa_interactivo_MMAAAA.html` (costo mediano) y `mapa
 | `Pinamar` | Sucursales relevadas en Pinamar (canasta media): cadena, nombre de sucursal y canasta. Una fila por sucursal, geolocalizadas por lat/lon. |
 | `costa` | Ranking de localidades de la Costa Atlántica bonaerense (canasta media): localidad, nº de sucursales, canasta promedio y desvío vs. promedio país. Geolocalizadas por lat/lon. |
 | `CABA` | Ranking de barrios de CABA (canasta media, barrios con ≥2 sucursales): barrio, nº de sucursales y canasta promedio, más promedio CABA y promedio país. Geolocalizados por lat/lon. |
+| `Resumen_variacion`, `Productos`, `Grupos`, `Rubros`, `Cadenas`, `Provincias`, `Regiones`, `Tipo_sucursal`, `Aporte_prod_x_cadena`, `Var_prod_x_cadena`, `Subas_y_bajas`, `Mes_parcial`, `Serie_diaria` | Desagregación de la variación mensual de la canasta Media (CELDA 19b; otras canastas con `DESAGREGAR_CANASTAS`, hojas con sufijo): aporte de cada producto (suma exacta a la variación oficial), arrastre del mes anterior, y aporte por cadena / provincia / región / tipo de sucursal con el panel apareado. Método en `docs/METODOLOGIA.md` §4. |
 
 ### LaTeX (`.tex`) — dos por cada canasta activa (mediana y `_prom`)
 

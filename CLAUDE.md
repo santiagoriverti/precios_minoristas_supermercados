@@ -20,6 +20,7 @@ Colab GRATUITO; v5.15: composición por rubro con faltantes imputados, candidato
    python notebooks/test_cache_por_mes.py
    python notebooks/test_costo_sucursal.py
    python notebooks/test_candidatos_reemplazo.py
+   python notebooks/test_desagregacion_variacion.py   # nb02 CELDA 19b
    ```
 3. Los datos (ZIPs del SEPA, caché, Excel de salida) **no están en el repo**: viven en el Drive del
    usuario (`MyDrive/carga/`). Para auditar una corrida, el usuario pasa el Excel del nb07 y los zips

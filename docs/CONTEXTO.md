@@ -1,6 +1,6 @@
 # Contexto del Proyecto — Precios Minoristas SEPA
 
-Última actualización: 2026-10-02 (nb07 v5.15: composición por rubro con faltantes imputados y Lavarropas BGH en la Tecnológica, relee el SEPA; corrida v5.14 al 2026-10-01 auditada y publicable. nb07 v5.14: el mismo cálculo que la v5.13 con un tercio de la RAM, corre en el Colab gratuito sin "RAM amplia"; no relee el SEPA. Antes, 2026-09-24: nb07 v5.13 lista para correr: frescos por TPD con nivel fijo, cobertura mínima de empaquetados, filtro estacional de frescos y ronda 2 de reemplazos —267 EANs—; ver el historial de cambios y `.claude/memory.md`. Antes, 2026-09-09: nb05/nb02: BUG-29 gráfico de barras con series de distinta longitud, BUG-30/32 mosaicos del mapa —CartoDB exige API key y OSM no responde desde la red de INECO— y BUG-31 el mapa pesaba 48 MB. Antes, 2026-09-07: nb07 v5.3, banda de plausibilidad anclada en frescos)
+Última actualización: 2026-10-15 (nb02: desagregación de la variación mensual de la canasta por producto, arrastre, cadena y región —CELDA 19b—. Antes, 2026-10-02: nb07 v5.15: composición por rubro con faltantes imputados y Lavarropas BGH en la Tecnológica, relee el SEPA; corrida v5.14 al 2026-10-01 auditada y publicable. nb07 v5.14: el mismo cálculo que la v5.13 con un tercio de la RAM, corre en el Colab gratuito sin "RAM amplia"; no relee el SEPA. Antes, 2026-09-24: nb07 v5.13 lista para correr: frescos por TPD con nivel fijo, cobertura mínima de empaquetados, filtro estacional de frescos y ronda 2 de reemplazos —267 EANs—; ver el historial de cambios y `.claude/memory.md`. Antes, 2026-09-09: nb05/nb02: BUG-29 gráfico de barras con series de distinta longitud, BUG-30/32 mosaicos del mapa —CartoDB exige API key y OSM no responde desde la red de INECO— y BUG-31 el mapa pesaba 48 MB. Antes, 2026-09-07: nb07 v5.3, banda de plausibilidad anclada en frescos)
 
 > **El proyecto tiene 7 herramientas (nb01–nb07).** Las descripciones detalladas por celda más
 > abajo en este archivo son **históricas** (describen la arquitectura previa de nb02); el estado
@@ -552,6 +552,16 @@ Los 4 reemplazos (Swift XL, Lavandina Anti-splash, Plusbelle, Listerine) están 
 ---
 
 ## Historial de cambios
+
+### 2026-10-15 — nb02: desagregación de la variación mensual (CELDA 19b)
+
+La canasta Media subió +1,75% en oct-26 (al 15/10) y se pidió explicar ese número por producto, geografía y cadena.
+Primero con un script ad hoc; ahora sale todos los meses del nb02: la CELDA 19b reparte la variación oficial por
+producto (suma exacta), separa el arrastre de la última semana del mes anterior y la reparte por cadena, provincia,
+región y tipo de sucursal con un panel apareado sucursal × producto (pesos oficiales). Agrega 13 hojas a
+`canasta_analisis_{PERIODO}.xlsx`. Relee del ZIP el mes anterior y el mes en curso solo con los EANs de la canasta
+(`DESAGREGAR_CANASTAS`, CELDA 1). Validada contra el script con los datos de oct-26 (oficial 1,748; panel 1,971;
+arrastre 1,479) y con `notebooks/test_desagregacion_variacion.py`. Método: `docs/METODOLOGIA.md` §4.
 
 ### 2026-10-02 — nb07 v5.14 (Colab gratuito), corrida al 2026-10-01 auditada, v5.15 lista
 

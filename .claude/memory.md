@@ -6,6 +6,37 @@ Autor: Santiago Riverti — investigador independiente
 
 ---
 
+## 🟢 nb02 — DESAGREGACIÓN DE LA VARIACIÓN MENSUAL (CELDA 19b) [2026-10-15] — lista, falta correrla en Colab
+
+- Pedido: la canasta Media subió **+1,75% en oct-26 (al 15/10)** y se quiso explicar por producto, geografía y
+  cadena. Se hizo con un script ad hoc (`C:\Users\sriverti\proyectos\desagregar_variacion_canasta.py` +
+  `extraer_obs_sepa.py`, resultado `desagregacion_canasta_media_2026-10.xlsx`) y después se portó ESA lógica al nb02.
+- **CELDA 19b** (`gen_nb02.py`, después de la CELDA 19 del Excel): para cada canasta de `DESAGREGAR_CANASTAS`
+  (CELDA 1, default `['cantidad_03']`) agrega 13 hojas a `canasta_analisis_{PERIODO}.xlsx`: `Resumen_variacion`,
+  `Productos`, `Grupos`, `Rubros`, `Cadenas`, `Provincias`, `Regiones`, `Tipo_sucursal`, `Aporte_prod_x_cadena`,
+  `Var_prod_x_cadena`, `Subas_y_bajas`, `Mes_parcial`, `Serie_diaria` (la Media sin sufijo; otra canasta con
+  `_<short>`, truncado a 31). Re-correrla reemplaza sus hojas. Método: `docs/METODOLOGIA.md` §4 (subsección nueva).
+  - Producto: `aporte = qty × Δmediana / canasta_ant` → suma EXACTA a la oficial (CELDA 9).
+  - Arrastre: mediana de la última semana del mes anterior; `arrastre_pp + nuevo_pp = aporte` producto a producto.
+  - Cadena/provincia/región/tipo: panel apareado sucursal × producto (mediana de los días, banda [1/4,4]) con pesos
+    oficiales; `aporte = w_i × Δp_is / Σ_s p_is,ant`; columna reescalada a la oficial + control `var_mediana_grupo_%`.
+- **Datos**: `datos` (CELDA 6) NO sirve (filtra a sucursales con coordenadas y descarta el día). La celda relee del
+  ZIP el mes anterior y el mes en curso solo con los EANs de las canastas a desagregar, sin filtro de sucursales
+  (universo CELDA 9), compacto (suc int32, ean int16, fecha int32, precio float64). No toca ni copia `datos`. Pesos vs
+  centavos: contra la mediana oficial. Controla que reproduce la mediana de la CELDA 9 producto a producto.
+- **Validada con oct-26** (2026B.zip + canasta_analisis_2026-10.xlsx, celda REAL): oficial 1,748; panel 1,971;
+  arrastre 1,479 (nuevo 0,269), medianas 69/69, 2.927 sucursales, 91.650 pares: todas las hojas iguales al prototipo.
+  Las únicas diferencias son de texto (meses genéricos en las etiquetas). Resumen_variacion trae una fila más (control).
+- **RAM (medida en local, oct-26)**: la celda suma **+357 MB de pico** sobre lo que haya (la CELDA 6 real suma +422 MB
+  con el mismo archivo), deja +144 MB y tarda ~4 min (relee sep completo + oct). `_OBS` = 3,9 M filas, 71 MB.
+  **Regla que muerde**: normalizar el EAN del chunk con `.apply(normalizar_ean)` como las CELDAS 6/9; con
+  `.str.strip().str.lstrip('0')` sobre el chunk de 300k filas el pico de la lectura pasaba de +0,2 a **+2,1 GB**.
+- Test: `python notebooks/test_desagregacion_variacion.py` (celdas reales 5, 9 y 19b sobre ZIPs sintéticos con el mes
+  anterior en otro semestre, dos canastas, pesos y centavos; verifica sumas y un cálculo independiente).
+- Casos borde resueltos que el prototipo no tenía: producto que desaparece en el mes (aporte = −su costo, la
+  suma sigue exacta; el peso del panel en la fila TOTAL ya no se fija en 100); rubro fuera del mapa → grupo `Otros`.
+- **Pendiente**: que el usuario corra el nb02 en Colab gratuito y confirme RAM/tiempo; publicar con las hojas nuevas.
+
 ## 🟢 ESTADO ACTUAL / HANDOFF [2026-10-02 · cierre] — v5.15 LISTA PARA CORRER (RELEE el SEPA) — leer esto primero
 
 ### En que estamos
