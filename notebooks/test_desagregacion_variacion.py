@@ -188,7 +188,8 @@ def correr(tmp, centavos):
            'SEPA_DIR': sepa, 'OUTPUT_DIR': out, 'CACHE_DIR': out, 'TMP_DIR': tdir, 'USE_CACHE': False,
            'MES_INICIO_HISTORICO': '2026-06', 'PERIODO': '2026-07', 'ULTIMO_MES': '2026-07',
            'maestro_suc': MAESTRO.copy(),
-           'DESAGREGAR_CANASTAS': ['cantidad_03', 'cantidad_02', 'cantidad_06']}   # la 06 no esta activa
+           'DESAGREGAR_CANASTAS': ['cantidad_03', 'cantidad_02', 'cantidad_06'],   # la 06 no esta activa
+           'DETALLE_CANASTA': None}           # la hoja analisis_detallado tiene su propio test
     exec(bloque(C3, 'CANT_COLS =', '# ── Construir CANASTAS'), env)
     env['CANASTAS'] = {cid: {e: (d[:50], q, c) for e, d, q, c in ps} for cid, ps in CAN.items()}
     env['CANASTAS_ACTIVAS'] = list(CAN)

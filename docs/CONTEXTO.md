@@ -1,6 +1,6 @@
 # Contexto del Proyecto — Precios Minoristas SEPA
 
-Última actualización: 2026-10-15 (nb02: desagregación de la variación mensual de la canasta por producto, arrastre, cadena y región —CELDA 19b—. Antes, 2026-10-02: nb07 v5.15: composición por rubro con faltantes imputados y Lavarropas BGH en la Tecnológica, relee el SEPA; corrida v5.14 al 2026-10-01 auditada y publicable. nb07 v5.14: el mismo cálculo que la v5.13 con un tercio de la RAM, corre en el Colab gratuito sin "RAM amplia"; no relee el SEPA. Antes, 2026-09-24: nb07 v5.13 lista para correr: frescos por TPD con nivel fijo, cobertura mínima de empaquetados, filtro estacional de frescos y ronda 2 de reemplazos —267 EANs—; ver el historial de cambios y `.claude/memory.md`. Antes, 2026-09-09: nb05/nb02: BUG-29 gráfico de barras con series de distinta longitud, BUG-30/32 mosaicos del mapa —CartoDB exige API key y OSM no responde desde la red de INECO— y BUG-31 el mapa pesaba 48 MB. Antes, 2026-09-07: nb07 v5.3, banda de plausibilidad anclada en frescos)
+Última actualización: 2026-10-15 (nb02: hoja `analisis_detallado` —la primera del Excel, CELDA 19c— con índices mensuales y semanales de la canasta Media por rubro, región, provincia, cadena y tipo de sucursal; y desagregación de la variación mensual por producto, arrastre, cadena y región —CELDA 19b—. Guía: `docs/NB02_ANALISIS_VARIACION.md`. Antes, 2026-10-02: nb07 v5.15: composición por rubro con faltantes imputados y Lavarropas BGH en la Tecnológica, relee el SEPA; corrida v5.14 al 2026-10-01 auditada y publicable. nb07 v5.14: el mismo cálculo que la v5.13 con un tercio de la RAM, corre en el Colab gratuito sin "RAM amplia"; no relee el SEPA. Antes, 2026-09-24: nb07 v5.13 lista para correr: frescos por TPD con nivel fijo, cobertura mínima de empaquetados, filtro estacional de frescos y ronda 2 de reemplazos —267 EANs—; ver el historial de cambios y `.claude/memory.md`. Antes, 2026-09-09: nb05/nb02: BUG-29 gráfico de barras con series de distinta longitud, BUG-30/32 mosaicos del mapa —CartoDB exige API key y OSM no responde desde la red de INECO— y BUG-31 el mapa pesaba 48 MB. Antes, 2026-09-07: nb07 v5.3, banda de plausibilidad anclada en frescos)
 
 > **El proyecto tiene 7 herramientas (nb01–nb07).** Las descripciones detalladas por celda más
 > abajo en este archivo son **históricas** (describen la arquitectura previa de nb02); el estado
@@ -67,10 +67,13 @@ python notebooks/test_quiebre_serie.py              # quiebre de serie del índi
 python notebooks/test_cache_por_mes.py              # caché por mes + compilan todas las celdas del nb07
 python notebooks/test_costo_sucursal.py             # costo por sucursal (BUG-37) + anclaje de nivel
 python notebooks/test_candidatos_reemplazo.py       # hoja Candidatos_trazabilidad (v5.11)
+python notebooks/test_desagregacion_variacion.py    # nb02 CELDA 19b (desagregación de la variación)
+python notebooks/test_analisis_detallado.py         # nb02 CELDA 19c (hoja analisis_detallado)
 ```
 
-**Por dónde empezar**: `CLAUDE.md` (raíz) y el bloque **ESTADO ACTUAL / HANDOFF** de
-`.claude/memory.md`, que dice en qué quedó el trabajo y qué hacer con los próximos resultados.
+**Por dónde empezar**: `CLAUDE.md` (raíz) y los bloques **ESTADO ACTUAL ... / HANDOFF** de
+`.claude/memory.md` (nb02 y nb07), que dicen en qué quedó el trabajo y qué hacer con los próximos resultados.
+Para el nb02 (análisis de la variación de la canasta): `docs/NB02_ANALISIS_VARIACION.md`.
 Para auditar una corrida del nb07 hacen falta el Excel de salida y las carpetas del caché del Drive
 (`_cache_nb07/sem_<clave>_v5` y `ean_<clave>_v5`, en zip); la planilla de precios promedio del INDEC
 está en `data/sh_ipc_precios_promedio_2026-08.xls` (bajar la nueva cuando se publique).
@@ -552,6 +555,20 @@ Los 4 reemplazos (Swift XL, Lavandina Anti-splash, Plusbelle, Listerine) están 
 ---
 
 ## Historial de cambios
+
+### 2026-10-15 — nb02: hoja `analisis_detallado` (CELDA 19c)
+
+Pedido: una pestaña al principio del Excel `canasta_analisis_{PERIODO}.xlsx`, "tipo informe", con la apertura de la
+"inflación" de la canasta Media por rubro, región, provincia, cadena y tipo de sucursal. La CELDA 19c la arma: filas
+Total (serie oficial), rubros SEPA (Almacén, Frescos, Perfumería, Limpieza, Bebidas, Congelados, de la columna `rubro`
+de la hoja Selección) con sus categorías, regiones, provincias, cadenas y tipos (≥10 sucursales); columnas los últimos
+12 meses (base = mes anterior al primero = 100), el mes en curso parcial y las semanas (1S-4S) del mes anterior y del
+mes en curso; bloques índice y variación %. Método: el de la CELDA 9 aplicado a cada fila (mediana de las
+observaciones del país o del grupo, eslabones con productos apareados). La 19b ahora deja sus observaciones para la
+19c; los meses viejos se leen del SEPA una vez y quedan en el caché `detalle_<clave>_v1.parquet` (primera corrida en
+Colab ~40-50 min). Validada con oct-26 (Total = oficial, rubros = Serie_precios, grupos = control de la 19b, semanas =
+observaciones del prototipo) y con `notebooks/test_analisis_detallado.py`. Prototipo y scripts de validación en
+`docs/auditoria/scripts_nb02_2026-10/`.
 
 ### 2026-10-15 — nb02: desagregación de la variación mensual (CELDA 19b)
 

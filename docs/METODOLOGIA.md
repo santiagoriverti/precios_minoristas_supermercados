@@ -304,6 +304,64 @@ grupo.
 +1,971% (2.927 sucursales, 91.650 pares); **arrastre +1,479 pp** y suba nueva +0,269 pp: casi todo el aumento ya
 estaba en los precios de la última semana de septiembre. Test: `python notebooks/test_desagregacion_variacion.py`.
 
+Nota: la hoja `Grupos` usa los 4 grandes grupos del script original (Alimentos, Bebidas, Limpieza y papeles, Higiene
+y cuidado personal), no los rubros SEPA. Los rubros SEPA están en la hoja `analisis_detallado` (abajo).
+
+### Hoja `analisis_detallado` (CELDA 19c, desde 2026-10)
+
+Pedido: un cuadro tipo informe, como **primera hoja** del Excel, que muestre cómo se abre la "inflación" de la canasta
+Media por rubro, región, provincia, cadena y tipo de sucursal, mes a mes y semana a semana. Guía de uso y lectura:
+`docs/NB02_ANALISIS_VARIACION.md`.
+
+**Filas**: Total; los **rubros SEPA** (columna `rubro` de la hoja Selección del Excel de canasta: Almacén, Frescos,
+Perfumería, Limpieza, Bebidas, Congelados; en la CELDA 3 queda en `RUBRO_EAN`) y debajo de cada uno sus categorías;
+regiones; provincias; cadenas (supermercados); tipos de sucursal. Se muestran los grupos con al menos
+`DETALLE_MIN_SUCURSALES` sucursales (default 10) en el último mes completo; los demás se listan en las notas.
+
+**Columnas**: los últimos `DETALLE_MESES` meses completos (default 12), el mes en curso si es parcial, y las semanas del
+mes anterior y del mes en curso: 1S = días 1-7, 2S = 8-14, 3S = 15-21, 4S = 22 a fin de mes; del mes en curso solo las
+semanas completas (se usan semanas del mes, no ISO, para que cada semana pertenezca a un mes). Dos bloques: **índice**
+(base = el mes anterior a la primera columna = 100; la columna del último mes completo menos 100 es la variación
+interanual) y **variación %** (mes contra mes anterior; semana contra semana anterior).
+
+**Método** — el de la serie oficial (CELDA 9) aplicado a cada fila. Para un conjunto de productos `I` y un conjunto de
+observaciones `G` (todo el país, o solo las sucursales del grupo), la canasta del período `t` es
+`C_G(t) = Σ_{i∈I} qty_i × mediana_{obs∈G,t}(p_i)`. Cada eslabón compara solo los productos con precio en los dos
+períodos (`I*`), y el índice se encadena:
+```
+eslabón(t−1 → t) = Σ_{i∈I*} qty_i × med_G,i(t) / Σ_{i∈I*} qty_i × med_G,i(t−1)
+índice(base) = 100;  índice(t) = índice(t−1) × eslabón(t−1 → t)
+```
+- **Total**: la serie oficial tal cual (`canasta_nacional_ponderada`): índice = canasta(t) / canasta(base) × 100.
+- **Rubros y categorías**: `G` = todo el país (las medianas nacionales de la CELDA 9), `I` = los productos del rubro.
+  **Pond** = participación del rubro en el costo de la canasta en el mes base. Con la canasta completa (en la Media
+  están los 69 productos todos los meses desde mar-24) el eslabón encadenado es el índice directo y
+  **Total = Σ Pond × índice del rubro / 100** exacto (la celda avisa si no se cumple).
+- **Regiones, provincias, cadenas y tipos**: `G` = las observaciones sucursal × día de las sucursales del grupo, `I` = la
+  canasta. Es la columna de control `var_mediana_grupo_%` de la CELDA 19b (en el último mes coinciden exactamente). No es
+  aditiva entre grupos: el aporte aditivo está en las hojas de la 19b.
+- **Semanas**: `índice(semana) = índice(mes anterior) × C_G(semana) / C_G(mes anterior)`, con las medianas de las
+  mismas observaciones (las que leyó la 19b). Variación semanal = contra la semana anterior.
+
+**Atributos de la sucursal**: los de la 19b (cadena = `asignar_cadena`; provincia = código ISO del archivo del SEPA;
+región = la del maestro, AMBA con el conurbano, y fuera del maestro por provincia; tipo = el del maestro).
+
+**Datos y caché**: el mes anterior y el mes en curso salen de las observaciones de la 19b. Los meses viejos de la
+ventana se leen del SEPA por sucursal solo con los EANs de la canasta (mismo lector que la 19b) y se guardan agregados
+(mediana y observaciones por dimensión × grupo × EAN, y sucursales por grupo) en
+`_cache/detalle_<clave>_v1.parquet`, solo meses cerrados. La clave es un hash de los EANs de la canasta, la región y
+el tipo de cada sucursal del maestro, los nombres de cadena y los mapas de provincia/región. La primera corrida lee hasta
+`DETALLE_MESES` meses (~2-2,5 min por mes en una PC); después, ninguno o el mes que se cerró. Pico de RAM medido con
+oct-26: +307 MB.
+
+**Validación (2026-10-15)**: test sintético con cálculo independiente (`python notebooks/test_analisis_detallado.py`)
+y corrida real con oct-26 (`docs/auditoria/scripts_nb02_2026-10/validar_analisis_detallado_19c.py`, ventana de 2
+meses porque localmente solo estaba el 2026B.zip): el Total es la serie oficial; los 6 rubros coinciden con la
+Serie_precios; la variación de octubre de los 51 grupos visibles es la columna de control de la 19b; las semanas del
+Total y de AMBA coinciden con las observaciones del prototipo. Media oct-26 al 15/10: Total +1,75%; Perfumería +2,69,
+Congelados +2,63, Limpieza +2,53, Frescos +1,39, Almacén +1,24, Bebidas +0,33; Cuyo +2,98, Noroeste +2,52, AMBA +1,64,
+Noreste +1,46, Pampeana +1,25, Patagonia +1,04.
+
 ---
 
 ## 5. Trazabilidad temporal como métrica de calidad
@@ -449,6 +507,10 @@ Correcciones aplicadas sobre v2:
 | `MIN_PRODUCTOS_PROPIOS` | 15 | Mínimo de productos propios para incluir una sucursal. Auto-ajusta a `N_CANASTA // 2` si la canasta tiene menos productos. |
 | `MIN_SUCURSALES_RANKING` | 10 | Mínimo de sucursales para aparecer en los rankings por cadena. |
 | `USE_CACHE` | `True` | Reutiliza parquet histórico si el hash de EANs no cambió. |
+| `DESAGREGAR_CANASTAS` | `['cantidad_03']` | nb02 CELDA 19b: canastas cuya variación mensual se desagrega (producto, arrastre, cadena, región...). `[]` = ninguna. |
+| `DETALLE_CANASTA` | `'cantidad_03'` | nb02 CELDA 19c: canasta de la hoja `analisis_detallado` (primera hoja del Excel). `None` = no se arma. |
+| `DETALLE_MESES` | 12 | nb02 CELDA 19c: meses completos en columnas; base = el mes anterior al primero = 100. |
+| `DETALLE_MIN_SUCURSALES` | 10 | nb02 CELDA 19c: mínimo de sucursales para mostrar una región, provincia, cadena o tipo. |
 | `score_cobertura >= 0.88` | — | Umbral mínimo recomendado para inclusión en canastas ENGHo |
 | `pct_trazabilidad >= 90%` | — | Umbral mínimo recomendado de estabilidad histórica |
 

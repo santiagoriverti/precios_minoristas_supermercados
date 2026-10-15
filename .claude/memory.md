@@ -6,38 +6,76 @@ Autor: Santiago Riverti — investigador independiente
 
 ---
 
-## 🟢 nb02 — DESAGREGACIÓN DE LA VARIACIÓN MENSUAL (CELDA 19b) [2026-10-15] — lista, falta correrla en Colab
+## 🟢 ESTADO ACTUAL nb02 / HANDOFF [2026-10-15] — análisis de la variación (CELDAS 19b y 19c) — leer esto primero
 
-- Pedido: la canasta Media subió **+1,75% en oct-26 (al 15/10)** y se quiso explicar por producto, geografía y
-  cadena. Se hizo con un script ad hoc (`C:\Users\sriverti\proyectos\desagregar_variacion_canasta.py` +
-  `extraer_obs_sepa.py`, resultado `desagregacion_canasta_media_2026-10.xlsx`) y después se portó ESA lógica al nb02.
-- **CELDA 19b** (`gen_nb02.py`, después de la CELDA 19 del Excel): para cada canasta de `DESAGREGAR_CANASTAS`
-  (CELDA 1, default `['cantidad_03']`) agrega 13 hojas a `canasta_analisis_{PERIODO}.xlsx`: `Resumen_variacion`,
-  `Productos`, `Grupos`, `Rubros`, `Cadenas`, `Provincias`, `Regiones`, `Tipo_sucursal`, `Aporte_prod_x_cadena`,
-  `Var_prod_x_cadena`, `Subas_y_bajas`, `Mes_parcial`, `Serie_diaria` (la Media sin sufijo; otra canasta con
-  `_<short>`, truncado a 31). Re-correrla reemplaza sus hojas. Método: `docs/METODOLOGIA.md` §4 (subsección nueva).
-  - Producto: `aporte = qty × Δmediana / canasta_ant` → suma EXACTA a la oficial (CELDA 9).
-  - Arrastre: mediana de la última semana del mes anterior; `arrastre_pp + nuevo_pp = aporte` producto a producto.
-  - Cadena/provincia/región/tipo: panel apareado sucursal × producto (mediana de los días, banda [1/4,4]) con pesos
-    oficiales; `aporte = w_i × Δp_is / Σ_s p_is,ant`; columna reescalada a la oficial + control `var_mediana_grupo_%`.
-- **Datos**: `datos` (CELDA 6) NO sirve (filtra a sucursales con coordenadas y descarta el día). La celda relee del
-  ZIP el mes anterior y el mes en curso solo con los EANs de las canastas a desagregar, sin filtro de sucursales
-  (universo CELDA 9), compacto (suc int32, ean int16, fecha int32, precio float64). No toca ni copia `datos`. Pesos vs
-  centavos: contra la mediana oficial. Controla que reproduce la mediana de la CELDA 9 producto a producto.
-- **Validada con oct-26** (2026B.zip + canasta_analisis_2026-10.xlsx, celda REAL): oficial 1,748; panel 1,971;
-  arrastre 1,479 (nuevo 0,269), medianas 69/69, 2.927 sucursales, 91.650 pares: todas las hojas iguales al prototipo.
-  Las únicas diferencias son de texto (meses genéricos en las etiquetas). Resumen_variacion trae una fila más (control).
-- **RAM (medida en local, oct-26)**: la celda suma **+357 MB de pico** sobre lo que haya (la CELDA 6 real suma +422 MB
-  con el mismo archivo), deja +144 MB y tarda ~4 min (relee sep completo + oct). `_OBS` = 3,9 M filas, 71 MB.
-  **Regla que muerde**: normalizar el EAN del chunk con `.apply(normalizar_ean)` como las CELDAS 6/9; con
-  `.str.strip().str.lstrip('0')` sobre el chunk de 300k filas el pico de la lectura pasaba de +0,2 a **+2,1 GB**.
-- Test: `python notebooks/test_desagregacion_variacion.py` (celdas reales 5, 9 y 19b sobre ZIPs sintéticos con el mes
-  anterior en otro semestre, dos canastas, pesos y centavos; verifica sumas y un cálculo independiente).
-- Casos borde resueltos que el prototipo no tenía: producto que desaparece en el mes (aporte = −su costo, la
-  suma sigue exacta; el peso del panel en la fila TOTAL ya no se fija en 100); rubro fuera del mapa → grupo `Otros`.
-- **Pendiente**: que el usuario corra el nb02 en Colab gratuito y confirme RAM/tiempo; publicar con las hojas nuevas.
+Hay dos líneas de trabajo vivas: **nb02** (este bloque, lo último) y **nb07** (bloque siguiente, sin cambios desde el
+2026-10-02). Guía práctica del nb02: **`docs/NB02_ANALISIS_VARIACION.md`**; método: `docs/METODOLOGIA.md` §4.
 
-## 🟢 ESTADO ACTUAL / HANDOFF [2026-10-02 · cierre] — v5.15 LISTA PARA CORRER (RELEE el SEPA) — leer esto primero
+### En qué estamos
+
+- Pedido 1 (2026-10-15): la canasta Media subió **+1,75% en oct-26 (al 15/10)**; explicar ese número por producto,
+  geografía y cadena, todos los meses dentro del nb02 → **CELDA 19b** (commit 40c89ba). Se portó un script ad hoc
+  validado (guardado en `docs/auditoria/scripts_nb02_2026-10/prototipo_*.py`).
+- Pedido 2 (2026-10-15): una pestaña **al principio** del Excel, `analisis_detallado`, "tipo informe" (filas Total,
+  rubros, regiones...; columnas meses y semanas), adaptada a los datos del SEPA → **CELDA 19c**.
+- **Las dos están listas, testeadas y validadas con datos reales de oct-26, pero NO se corrieron todavía en Colab.**
+
+### CELDA 19b — desagregación del último mes (13 hojas al final del Excel)
+
+- Config CELDA 1: `DESAGREGAR_CANASTAS = ['cantidad_03']`. Hojas: `Resumen_variacion`, `Productos`, `Grupos`,
+  `Rubros`, `Cadenas`, `Provincias`, `Regiones`, `Tipo_sucursal`, `Aporte_prod_x_cadena`, `Var_prod_x_cadena`,
+  `Subas_y_bajas`, `Mes_parcial`, `Serie_diaria` (Media sin sufijo; otra canasta con `_<short>`).
+- Producto: `aporte = qty × Δmediana / canasta_ant` (suma EXACTA a la oficial de la CELDA 9). Arrastre: mediana de la
+  última semana del mes anterior; `arrastre_pp + nuevo_pp = aporte`. Cadena/provincia/región/tipo: panel apareado
+  sucursal × producto con pesos oficiales (aditivo) + columna reescalada a la oficial + control `var_mediana_grupo_%`.
+- Validada contra el prototipo con oct-26: oficial 1,748; panel 1,971; arrastre 1,479 (nuevo 0,269); medianas 69/69;
+  2.927 sucursales; 91.650 pares; todas las hojas iguales (dif. rel. < 1e-15). RAM: pico **+357 MB**, ~3-4 min en PC.
+- `Grupos` = los 4 grandes grupos del prototipo (no son los rubros SEPA; los rubros SEPA están en la 19c).
+
+### CELDA 19c — hoja `analisis_detallado` (PRIMERA hoja del Excel)
+
+- Config CELDA 1: `DETALLE_CANASTA = 'cantidad_03'`, `DETALLE_MESES = 12`, `DETALLE_MIN_SUCURSALES = 10`.
+- Filas: Total (serie oficial), **rubros SEPA** (columna `rubro` de la hoja Selección → `RUBRO_EAN` en la CELDA 3:
+  Perfumería 21,8%, Frescos 20,0, Almacén 18,4, Bebidas 16,4, Limpieza 15,0, Congelados 8,4 en la Media) con sus
+  categorías, regiones, provincias, cadenas, tipos (grupos con ≥10 sucursales; el resto en las notas).
+- Columnas: 12 meses completos (base = mes anterior al primero = 100 → la última columna − 100 = interanual), el mes
+  en curso si es parcial, y semanas del mes anterior y del mes en curso (1S = 1-7, 2S = 8-14, 3S = 15-21, 4S = 22-fin;
+  del mes en curso solo las completas). Dos bloques: índice y variación % (mes/mes; semana/semana).
+- Método: el de la CELDA 9 en cada fila (mediana de las observaciones del país o del grupo, eslabón con productos
+  apareados). Total = Σ Pond × rubros. La variación del último mes de cada grupo = `var_mediana_grupo_%` de la 19b.
+- Usa las observaciones de la 19b (mes anterior + en curso; la 19b ahora lee también la canasta de la 19c y deja
+  `_OBS` vivo; la 19c lo libera). Meses viejos: los lee del SEPA (mismo lector) y los guarda agregados en
+  `_cache/detalle_<clave>_v1.parquet` (solo meses cerrados). **Primera corrida en Colab: hasta 12 meses a leer,
+  ~2-2,5 min por mes en una PC → calcular ~40-50 min en Colab, una sola vez.** Después, nada o el mes que se cerró.
+  La clave cambia con los EANs de la canasta, el maestro (región/tipo), los nombres de cadena (relee todo).
+- Validada con oct-26 (solo estaba el 2026B.zip localmente → ventana de 2 meses): Total = serie oficial; 6 rubros =
+  Serie_precios; 51 grupos: variación oct = control de la 19b; semanas de Total y AMBA = observaciones del prototipo.
+  RAM pico **+307 MB**. Números (oct-26 al 15/10 vs sep): Total +1,75; Perfumería +2,69, Congelados +2,63, Limpieza
+  +2,53, Frescos +1,39, Almacén +1,24, Bebidas +0,33; Cuyo +2,98, Noroeste +2,52, AMBA +1,64, Pampeana +1,25.
+
+### LO PRÓXIMO (nb02)
+
+1. El usuario abre el nb02 desde GitHub y corre todo en el Colab gratuito (la 19c tarda ~40-50 min la primera vez).
+   Pedirle: el Excel `canasta_analisis_2026-10.xlsx` (o el mes que toque) y la salida impresa de las CELDAS 19b y 19c.
+2. Revisar: la 19b imprime "medianas reproducidas 69/69" y la variación oficial; la 19c, "Hoja analisis_detallado
+   escrita como primera hoja" sin el AVISO de "Total vs suma ponderada de los rubros"; que la hoja sea la primera.
+3. Si el pico de RAM o el tiempo en Colab molestan: la mejora posible es prefiltrar las líneas del CSV por EAN antes de
+   `pd.read_csv` (~5x más rápido); validarla contra el lector actual con los scripts de
+   `docs/auditoria/scripts_nb02_2026-10/` antes de cambiarlo.
+4. `notebooks/03_consolidacion_ultimo_mes.py` tiene cambios del USUARIO sin commitear (no son de estas sesiones): no
+   tocarlos ni commitearlos; preguntarle.
+
+### Reglas que muerden (nb02)
+
+- Leer el SEPA con `.apply(normalizar_ean)` sobre el chunk, como las CELDAS 6/9: `.str.strip().str.lstrip('0')`
+  sobre un chunk de 300k filas llevó el pico de +0,2 a **+2,1 GB** (medido). Nada de textos por observación
+  (millones de strings): claves enteras (la 19c arma las semanas como AAAAMM*10+semana).
+- `datos` (CELDA 6) no sirve para la 19b/19c: filtra a sucursales con coordenadas y descarta el día.
+- Editar el generador con scripts en archivo o con la herramienta Edit: la shell se come las barras invertidas de los
+  heredocs (pasó en esta sesión: una barra-n de un script de edición llegó como salto de línea real).
+- Tests: `python notebooks/test_desagregacion_variacion.py` y `python notebooks/test_analisis_detallado.py`.
+
+## 🟢 ESTADO ACTUAL nb07 / HANDOFF [2026-10-02 · cierre] — v5.15 LISTA PARA CORRER (RELEE el SEPA)
 
 ### En que estamos
 

@@ -211,6 +211,13 @@ _cache_path = CACHE_DIR / f'hist_union_{_cache_key}.parquet'
 - **No invalida** cuando solo cambian las cantidades (mismo conjunto de EANs)
 - Después de una invalidación, el parquet viejo queda en `_cache/` → se puede borrar manualmente
 
+**Caché de la hoja `analisis_detallado` (nb02 CELDA 19c, desde 2026-10-15)**: `_cache/detalle_<clave>_v1.parquet`
+guarda, por mes CERRADO, la mediana de las observaciones sucursal × día por dimensión (nacional, región, provincia,
+cadena, tipo de sucursal) × grupo × EAN, más las sucursales de cada grupo (filas con `ean_norm == '*'`). La clave es un
+md5 de los EANs de `DETALLE_CANASTA`, la región y el tipo de cada sucursal del maestro, los nombres de cadena
+(`NOMBRES_COMPUESTOS`/`NOMBRES_SIMPLES`) y los mapas de provincia/región de la 19b: si cambia cualquiera, se releen los
+meses de la ventana (~2-2,5 min por mes en una PC). Las cantidades no entran en la clave.
+
 ### EAN format en SEPA — GS1, PLU codes y EAN-12
 
 **EAN-13 GS1 estándar** (prefijo 77-78 para Argentina, 789 para Brasil, 750 para México):
@@ -330,7 +337,20 @@ El código de cada celda está contenido en un string `"""\..."""`. Usar triple 
 
 ### Regiones del maestro de sucursales
 
-`AMBA`, `Pampeana`, `Patagonia`, `Noroeste`, `Cuyo`, `Noreste`
+`AMBA`, `Pampeana`, `Patagonia`, `Noroeste`, `Cuyo`, `Noreste` (algunas vienen con un espacio duro al final,
+`'Noroeste\xa0'`: limpiarlo antes de agrupar). Las sucursales que NO están en el maestro (~535 en oct-26) no tienen
+región: el nb02 (19b/19c) la asigna por provincia (código ISO de la columna `sucursales_provincia` del archivo de
+precios: `AR-B` Buenos Aires, `AR-C` CABA, ...) y deja `Buenos Aires s/ubicar` para las bonaerenses, que no se pueden
+partir entre AMBA y Pampeana sin coordenadas.
+
+### Leer el SEPA por sucursal solo para unos EANs (nb02 CELDAS 19b/19c)
+
+Mismo patrón que las CELDAS 6 y 9 (`pd.read_csv(dtype=str, chunksize=300_000)`), filtrando el chunk por EAN con
+**`chunk['id_producto'].apply(normalizar_ean)`**. Medido con oct-26: con `.str.strip().str.lstrip('0')` el pico de la
+lectura de un archivo es **+2,1 GB**; con `.apply` es **+0,2 GB** (`docs/auditoria/scripts_nb02_2026-10/bench_lectura_ean.py`).
+Después del filtro, guardar en formato compacto (sucursal y EAN como códigos enteros, fecha `AAAAMMDD` entera, precio
+float64) y nunca armar textos por observación. Casi todo el tiempo (~70 s por archivo en una PC) es parsear filas de
+productos que no se usan: prefiltrar las líneas por EAN antes de `read_csv` lo bajaría ~5x (no implementado).
 
 ---
 

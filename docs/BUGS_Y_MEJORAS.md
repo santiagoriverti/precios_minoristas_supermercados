@@ -1,6 +1,8 @@
 # Bugs Pendientes y Mejoras
 
-Última actualización: 2026-09-24 (cierre) — **nb07 v5.13 lista para correr** (relee el SEPA): frescos por TPD, nivel
+Última actualización: 2026-10-15 — **nb02**: desagregación de la variación mensual (CELDA 19b) y hoja
+`analisis_detallado` (CELDA 19c), listas y validadas con oct-26, falta correrlas en Colab; ver "Cambios y fixes 2026-10".
+Antes: 2026-09-24 (cierre) — **nb07 v5.13 lista para correr** (relee el SEPA): frescos por TPD, nivel
 de frescos fijo (3 meses con cobertura normal), cobertura mínima de empaquetados, filtro estacional de Naranja/Tomate/
 Limón; ronda 2 de reemplazos aplicada (267 EANs); BUG-40 y BUG-41 encontrados al simular y corregidos antes de publicar.
 Los defectos abiertos que resuelve quedan marcados abajo (se verifican con la corrida). Antes, 2026-09-24 (noche): corrida v5.12 revisada a fondo (`docs/AUDITORIA_2026-09-24_v512.md`): la brecha con el IPC sale de los frescos; dos defectos nuevos abiertos (filtro estacional de Naranja/Tomate/Limón, nivel de frescos revisado cada semana); ronda 2 propuesta. Antes: corrida v5.11 verificada (`docs/AUDITORIA_2026-09-22_v59.md` §11); 24 reemplazos de trazabilidad aplicados (270 EANs, no relee el SEPA); nb07 v5.11.1 (BUG-38); `aplicar_reemplazos.py` sin falsas alarmas (BUG-39); auditor con cobertura histórica (bloque 7b). nb07 **v5.12 lista** para correr (relee el SEPA: 65 candidatos nuevos, Naranja y Tomate recalibrados); `proponer_reemplazos.py`
@@ -204,6 +206,40 @@ de la Tecnológica** hasta que haya al menos dos cadenas con cobertura de durabl
 ---
 
 ## 🟢 Cambios y fixes 2026-10
+
+### 🟣 nb02 — hoja `analisis_detallado` (CELDA 19c, 2026-10-15) — lista, falta correrla en Colab
+
+Primera hoja del Excel: índices mensuales (12 meses, base = mes anterior al primero = 100) y semanales (1S-4S del mes
+anterior y del mes en curso) de la canasta Media por rubro SEPA y categoría, región, provincia, cadena y tipo de
+sucursal, con el método de la serie oficial en cada fila. Validada con oct-26 y con `test_analisis_detallado.py`. La
+primera corrida lee hasta 12 meses del SEPA por sucursal (~40-50 min en Colab) y los deja en caché. Detalle en
+`docs/NB02_ANALISIS_VARIACION.md` y `docs/METODOLOGIA.md` §4.
+
+### 🟣 nb02 — desagregación de la variación mensual (CELDA 19b, 2026-10-15) — lista, falta correrla en Colab
+
+13 hojas: aporte de cada producto (suma exacta a la variación oficial), arrastre de la última semana del mes anterior,
+aporte por cadena/provincia/región/tipo con el panel apareado. Portada de un script ad hoc y validada contra él con
+oct-26 (todas las hojas iguales). `test_desagregacion_variacion.py`.
+
+### 🔴 nb02 — la lectura por sucursal de la 19b pedía +2,1 GB por un `.str` sobre el chunk (2026-10-15) ✅ Resuelto antes de publicar
+
+Al medir la RAM de la CELDA 19b con oct-26 el pico daba +1,3 GB (la CELDA 6, que lee el mismo archivo, +0,4 GB).
+Causa: normalizar el EAN del chunk de 300k filas con `.str.strip().str.lstrip('0')` (+2,1 GB medido aislado) en vez
+de `.apply(normalizar_ean)` como las CELDAS 6 y 9 (+0,2 GB). Fix: usar `normalizar_ean`. Pico de la 19b: +357 MB, mismo
+resultado. Benchmark: `docs/auditoria/scripts_nb02_2026-10/bench_lectura_ean.py`.
+
+### 🟡 nb02 — abiertos / ideas (2026-10-15)
+
+- La hoja `Grupos` de la 19b usa los 4 grandes grupos del script original (Alimentos, Bebidas, Limpieza y papeles,
+  Higiene y cuidado personal) y la `analisis_detallado` los rubros SEPA (Almacén, Frescos, Perfumería, Limpieza,
+  Bebidas, Congelados). Las dos son correctas; si confunde, pasar `Grupos` a rubros SEPA (cambia una hoja validada).
+- Lectura del SEPA ~5x más rápida prefiltrando líneas por EAN antes de `read_csv` (la 19b y la primera corrida de la
+  19c pasarían de minutos a segundos por archivo). Validarla contra el lector actual antes de cambiarlo.
+- Confirmar en Colab gratuito la RAM y el tiempo de la primera corrida de la 19c (medido en una PC: +307 MB, ~2-2,5 min
+  por mes leído).
+- Menor, previo (CELDA 9): `pd.concat([df_cache] + _nuevos)` con `df_cache` vacío (columnas object) da un
+  FutureWarning de pandas 2.x (en Colab no se ve: la CELDA 2 silencia los warnings). Con un pandas futuro podría dejar
+  `precio_mediano` como object la primera vez que se arma el caché. Arreglo trivial: no concatenar el frame vacío.
 
 ### 🟣 nb07 v5.14 — corre en el Colab gratuito (2026-10-02) — mismo resultado, un tercio de la RAM
 

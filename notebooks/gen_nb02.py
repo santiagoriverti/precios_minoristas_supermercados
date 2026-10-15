@@ -30,7 +30,8 @@ un producto con cantidad > 0.
 **Estructura:** Config → Setup → Canastas desde Excel → Maestros → ZIPs → Mes actual →
 Canasta por sucursal → Análisis provincial → Serie histórica → IPC → Comparativa →
 Gráficos IPC → Cuadro por canasta → Mapas coropléticos → Cobertura → Rankings →
-Mapas Folium → Rankings CABA → Excel → Desagregación de la variación mensual"""))
+Mapas Folium → Rankings CABA → Excel → Desagregación de la variación mensual →
+Hoja analisis_detallado (primera del Excel: índices por rubro, región, provincia, cadena y semana)"""))
 
 # ── CELL 1 — CONFIG ────────────────────────────────────────────────────────────
 cells.append(cell_code("""\
@@ -61,6 +62,14 @@ MIN_SUCURSALES_RANKING = 10
 # cadena, provincia, región y tipo de sucursal). Relee del ZIP el mes anterior y el mes en
 # curso solo con sus EANs. [] = no se desagrega.
 DESAGREGAR_CANASTAS = ['cantidad_03']
+
+# Hoja 'analisis_detallado' (la primera del Excel, CELDA 19c): índices y variaciones mensuales y
+# semanales de una canasta por rubro, categoría, región, provincia, cadena y tipo de sucursal.
+# La primera corrida lee del SEPA por sucursal los DETALLE_MESES meses viejos de la ventana (~2-2,5 min
+# por mes en una PC; más en Colab); después usa el caché del Drive y lee solo el mes nuevo. None = no se arma.
+DETALLE_CANASTA = 'cantidad_03'
+DETALLE_MESES = 12                 # meses completos en columnas; base = el mes anterior al primero
+DETALLE_MIN_SUCURSALES = 10        # mínimo de sucursales para mostrar una región/provincia/cadena/tipo
 # Fondo del mapa Folium. 'auto' prueba varios proveedores y se queda con el primero
 # que responda desde la red de quien abre el mapa (en la red de INECO, por ejemplo,
 # tile.openstreetmap.org no responde). Se puede forzar uno: 'esri' (gris, con nombres
@@ -222,6 +231,10 @@ if not CANASTAS:
     )
 
 CANASTAS_ACTIVAS   = list(CANASTAS.keys())
+# Rubro SEPA por EAN (Almacén, Frescos, Perfumería, Limpieza, Bebidas, Congelados...): la hoja
+# analisis_detallado (CELDA 19c) agrupa las categorías en estos rubros.
+RUBRO_EAN = (dict(zip(sel['ean_norm'], sel['rubro'].fillna('Sin rubro').astype(str)))
+             if 'rubro' in sel.columns else {})
 CANASTA_EANS_NORM  = set().union(*[set(c.keys()) for c in CANASTAS.values()])
 CANASTA_EANS_ZFILL = {e.zfill(13) for e in CANASTA_EANS_NORM}
 N_EANS_TOTAL       = len(CANASTA_EANS_NORM)
@@ -2142,6 +2155,7 @@ cells.append(cell_code(r'''# ===================================================
 # Productos, Grupos, Rubros, Cadenas, Provincias, Regiones, Tipo_sucursal, Aporte_prod_x_cadena,
 # Var_prod_x_cadena, Subas_y_bajas, Mes_parcial y Serie_diaria.
 import calendar as _cal
+import contextlib
 
 _PAT_DIA = re.compile(r'^precio_(\d{8})$')
 _MES_ABR = {1: 'ene', 2: 'feb', 3: 'mar', 4: 'abr', 5: 'may', 6: 'jun',
@@ -2197,10 +2211,12 @@ def _lbl_mes(_ym):
     return f'{_MES_ABR[_ym % 100]}-{str(_ym // 100)[2:]}'
 
 
-def _leer_mes_desag(_lbl):
-    # Observaciones sucursal x día del mes _lbl con los EANs de _EAN_COD, sin filtro de
-    # sucursales (como la CELDA 9): suc (int32, código de _SUC_COD), ean (int16, código de
-    # _EAN_COD), fecha AAAAMMDD (int32) y precio (float64). Registra las sucursales en _SUC_ATR.
+def _leer_mes_desag(_lbl, _eans=None):
+    # Observaciones sucursal x día del mes _lbl con los EANs de _EAN_COD (o el subconjunto _eans),
+    # sin filtro de sucursales (como la CELDA 9): suc (int32, código de _SUC_COD), ean (int16,
+    # código de _EAN_COD), fecha AAAAMMDD (int32) y precio (float64). Registra las sucursales en
+    # _SUC_ATR. También lo usa la CELDA 19c para los meses viejos de la hoja analisis_detallado.
+    _filtro = _EAN_SET if _eans is None else set(_eans)
     _zip_path, _archs = _mapa_desag[_lbl]
     _partes = []
     for _archivo in sorted(_archs):
@@ -2213,7 +2229,7 @@ def _leer_mes_desag(_lbl):
                 # normalizar_ean (CELDA 5), como las CELDAS 6 y 9. NO usar .str.strip().str.lstrip('0'):
                 # sobre el chunk de 300k filas lleva el pico de RAM de +0,2 a +2,1 GB (medido, oct-26).
                 _ean = _ch['id_producto'].apply(normalizar_ean)
-                _sel = _ean.isin(_EAN_SET)
+                _sel = _ean.isin(_filtro)
                 if not _sel.any(): continue
                 _ch, _ean = _ch[_sel], _ean[_sel]
                 _cols_p = [c for c in _ch.columns if _PAT_DIA.match(c)]
@@ -2244,7 +2260,8 @@ def _leer_mes_desag(_lbl):
     del _partes
     # Pesos o centavos: se sigue a la CELDA 9 (la mediana reproducida ~100x la oficial = centavos)
     _rep = _o.groupby('ean')['precio'].median()
-    _ofi = pd.Series({_EAN_COD[e]: v for e, v in _MED_OFI[_lbl].items() if e in _EAN_COD})
+    _ofi = pd.Series({_EAN_COD[e]: v for e, v in (_MED_OFI[_lbl].items() if _lbl in _MED_OFI.columns else [])
+                      if e in _EAN_COD and pd.notna(v)}, dtype='float64')
     _rat = (_rep / _ofi.reindex(_rep.index)).median()
     if (_rat > 10) if pd.notna(_rat) else (_o['precio'].median() > 10_000):
         _o['precio'] /= 100
@@ -2280,7 +2297,8 @@ def _desagregar(_cid):
     _name, _can = CANASTA_NAMES[_cid], CANASTAS[_cid]
 
     # ── Canasta oficial (CELDA 9): mediana nacional por producto, mes anterior y mes en curso ──
-    _eans = [e for e in _can if e in _MED_OFI.index]
+    _dos = _MED_OFI[[_MES_ANT, PERIODO]].dropna(how='all')
+    _eans = [e for e in _can if e in _dos.index]
     prod = pd.DataFrame({'descripcion': [_can[e][0] for e in _eans],
                          'categoria': [_can[e][2] for e in _eans],
                          'qty': [_can[e][1] for e in _eans],
@@ -2569,38 +2587,45 @@ def _fmt_desag(ws):
 
 # ── Ejecución ─────────────────────────────────────────────────────────────────
 desag_dict = {}
+_OBS = None          # mes anterior + mes en curso por sucursal x día; lo usa también la CELDA 19c
 _DESAG = [c for c in DESAGREGAR_CANASTAS if c in CANASTAS]
+_DET = DETALLE_CANASTA if DETALLE_CANASTA in CANASTAS else None     # hoja analisis_detallado (19c)
+_LEER = _DESAG + ([_DET] if _DET and _DET not in _DESAG else [])
 _MES_ANT = str(pd.Period(PERIODO, freq='M') - 1)
 _YM_ANT, _YM_ACT = int(_MES_ANT.replace('-', '')), int(PERIODO.replace('-', ''))
 _mapa_desag = {}
 for _zp, _an, _sm in detectar_semestres():
     for (_am, _mm), _archs in archivos_por_mes(_zp).items():
         _mapa_desag[f'{_am}-{_mm:02d}'] = (_zp, _archs)
-_MED_OFI = (df_hist_raw[df_hist_raw['anio_mes'].isin([_MES_ANT, PERIODO])]
-            .groupby(['ean_norm', 'anio_mes'])['precio_mediano'].first().unstack()
-            .reindex(columns=[_MES_ANT, PERIODO]))
+# Mediana oficial (CELDA 9) por EAN x mes, todos los meses (la 19c usa los viejos)
+_MED_OFI = df_hist_raw.groupby(['ean_norm', 'anio_mes'])['precio_mediano'].first().unstack()
+for _c in (_MES_ANT, PERIODO):
+    if _c not in _MED_OFI.columns:
+        _MED_OFI[_c] = np.nan
 
-if not _DESAG:
-    print('DESAGREGAR_CANASTAS vacía o sin canastas activas: no se desagrega la variación.')
+if not _LEER:
+    print('DESAGREGAR_CANASTAS vacía y DETALLE_CANASTA sin canasta activa: no se desagrega la variación.')
 elif _MES_ANT not in _mapa_desag or _MED_OFI[_MES_ANT].isna().all():
     print(f'AVISO: falta el mes anterior ({_MES_ANT}) en los ZIPs o en la serie: no se desagrega la variación.')
 else:
-    _EAN_COD = {e: i for i, e in enumerate(sorted(set().union(*[set(CANASTAS[c]) for c in _DESAG])))}
+    _EAN_COD = {e: i for i, e in enumerate(sorted(set().union(*[set(CANASTAS[c]) for c in _LEER])))}
     _EAN_SET = set(_EAN_COD)
     _SUC_COD, _SUC_ATR = {}, []
     print(f'Desagregación {_lbl_mes(_YM_ANT)} -> {_lbl_mes(_YM_ACT)}: '
-          f'{", ".join(CANASTA_NAMES[c] for c in _DESAG)} ({len(_EAN_COD)} EANs)')
+          f'{", ".join(CANASTA_NAMES[c] for c in _LEER)} ({len(_EAN_COD)} EANs)')
     _OBS = pd.concat([_leer_mes_desag(_MES_ANT), _leer_mes_desag(PERIODO)], ignore_index=True)
     _SUC = _atributos_sucursal()
     print(f'  {len(_OBS):,} observaciones en memoria ({_OBS.memory_usage(deep=True).sum() / 1e6:,.0f} MB) | '
           f'{len(_SUC):,} sucursales ({_SUC["en_maestro"].sum():,} en el maestro)')
     for _cid in _DESAG:
         desag_dict[_cid] = _desagregar(_cid)
-    del _OBS; gc.collect()
+    if _DET is None:            # sin hoja analisis_detallado: se libera ya
+        _OBS = None
+    gc.collect()
 
     _out_desag = OUTPUT_DIR / f'canasta_analisis_{ULTIMO_MES}.xlsx'
     _modo = dict(mode='a', if_sheet_exists='overlay') if _out_desag.exists() else dict(mode='w')
-    with pd.ExcelWriter(_out_desag, engine='openpyxl', **_modo) as _xw:
+    with (pd.ExcelWriter(_out_desag, engine='openpyxl', **_modo) if desag_dict else contextlib.nullcontext()) as _xw:
         for _cid, _dz in desag_dict.items():
             _nombres = {h: _hoja_desag(h, _cid) for h in _HOJAS_DESAG}
             for _sh in _nombres.values():           # re-correr la celda reemplaza sus hojas
@@ -2614,7 +2639,8 @@ else:
             for _sh in _nombres.values():
                 _fmt_desag(_xw.book[_sh])
             _xw.book[_nombres['Resumen_variacion']].column_dimensions['A'].width = 70
-    print(f'Hojas de la desagregación agregadas a: {_out_desag.name}')
+    if desag_dict:
+        print(f'Hojas de la desagregación agregadas a: {_out_desag.name}')
 
     for _cid, _dz in desag_dict.items():
         _t, _hj = _dz['totales'], _dz['hojas']
@@ -2634,6 +2660,409 @@ else:
             print(f'\n  {_h} (panel; aporte_equiv = reescalado a la oficial):')
             print(_hj[_h].head(10)[[_c, 'sucursales', 'aporte_pp', 'aporte_equiv_sobre_oficial_pp',
                                     'variacion_%', 'var_mediana_grupo_%']].round(3).to_string(index=False))'''))
+
+# ── CELL 19c — HOJA analisis_detallado ────────────────────────────────────────
+cells.append(cell_code(r'''# ============================================================
+# CELDA 19c — Hoja 'analisis_detallado': índices y variaciones por rubro, región, provincia,
+#             cadena y tipo de sucursal (queda como PRIMERA hoja del Excel)
+# ============================================================
+# Para la canasta DETALLE_CANASTA (CELDA 1; default la Media) arma un cuadro tipo informe:
+#   filas    = Total, rubros SEPA (Almacén, Frescos, Perfumería...) con sus categorías, regiones,
+#              provincias, cadenas (supermercados) y tipos de sucursal;
+#   columnas = los últimos DETALLE_MESES meses completos (índice base = el mes anterior al primero
+#              = 100, así la última columna menos 100 es la variación interanual), el mes en curso
+#              si es parcial, y las semanas del mes anterior y del mes en curso (1S = días 1-7,
+#              2S = 8-14, 3S = 15-21, 4S = 22 a fin de mes; del mes en curso, solo las completas).
+# Debajo, el mismo cuadro en variación %: mes contra mes anterior, semana contra semana anterior.
+# Método (el de la serie oficial, CELDA 9, aplicado a cada fila):
+#   - Total: la serie oficial (suma de qty x mediana nacional de TODAS las observaciones del mes).
+#   - Rubros y categorías: las mismas medianas nacionales, solo con los productos de la fila.
+#   - Regiones, provincias, cadenas y tipos: la mediana de las observaciones sucursal x día del
+#     grupo, producto por producto (es la columna de control var_mediana_grupo_% de la CELDA 19b).
+#   - Cada eslabón compara solo los productos con precio en los dos períodos (índice encadenado).
+#     Con la canasta completa, Total = suma de Pond x índice de los rubros / 100 (Pond = participación
+#     en el costo del mes base).
+#   - Semana: nivel = índice del mes anterior x (canasta con las medianas de la semana / canasta con
+#     las medianas del mes anterior), con las mismas observaciones.
+# Datos: el mes anterior y el mes en curso salen de lo que leyó la CELDA 19b (_OBS). Los meses viejos
+# se leen del SEPA por sucursal (solo los EANs de la canasta) y se guardan agregados en el caché
+# (_cache/detalle_<clave>_v1.parquet): la primera corrida lee DETALLE_MESES + 1 meses, las
+# siguientes solo el mes nuevo. La clave cambia con los EANs de la canasta, el maestro de
+# sucursales y los nombres de cadena (entonces se relee todo).
+import time as _time
+from openpyxl import Workbook as _Workbook, load_workbook as _load_workbook
+from openpyxl.styles import Font as _Font, PatternFill as _Fill, Alignment as _Align
+from openpyxl.utils import get_column_letter as _col_letter
+
+_HOJA_DET = 'analisis_detallado'
+_DIMS_DET = [('region', 'Regiones'), ('provincia', 'Provincias'),
+             ('cadena', 'Cadenas (supermercados)'), ('tipo', 'Tipo de sucursal')]
+_ORDEN_REGION = ['AMBA', 'Pampeana', 'Noroeste', 'Noreste', 'Cuyo', 'Patagonia', 'Buenos Aires s/ubicar']
+
+
+def _firma_detalle(_eans):
+    # Clave del caché: EANs de la canasta + asignación de región/tipo (maestro) + nombres de cadena
+    _cols = ['id_comercio', 'id_bandera', 'id_sucursal'] + [c for c in ('REGION', 'sucursales_tipo')
+                                                           if c in maestro_suc.columns]
+    _txt = (maestro_suc[_cols].astype(str).sort_values(_cols).to_csv(index=False)
+            + repr(sorted(NOMBRES_COMPUESTOS.items())) + repr(sorted(NOMBRES_SIMPLES.items()))
+            + repr(sorted(_PROV_ISO.items())) + repr(sorted(_REGION_PROV.items()))
+            + '|'.join(sorted(_eans)) + '|detalle_v1')
+    return hashlib.md5(_txt.encode('utf-8')).hexdigest()[:8]
+
+
+def _agg_grupos_mes(_o):
+    # Mediana por (dimensión, grupo, EAN) de las observaciones de UN mes, y sucursales del grupo
+    # (fila con ean_norm '*'). La dimensión 'nacional' (grupo 'Total') reproduce la CELDA 9.
+    _ean_de = np.array(list(_EAN_COD))          # código -> ean_norm
+    _suc = _o['suc'].values
+    _res = []
+    for _dim in ['nacional'] + [d for d, _ in _DIMS_DET]:
+        _cat = pd.Categorical(np.full(len(_SUC), 'Total') if _dim == 'nacional' else _SUC[_dim])
+        _gk = _cat.codes[_suc]
+        _g = _o.groupby([_gk, _o['ean'].values])['precio'].agg(['median', 'size'])
+        _gi, _ei = _g.index.get_level_values(0), _g.index.get_level_values(1)
+        _res.append(pd.DataFrame({'dim': _dim, 'grupo': np.asarray(_cat.categories)[_gi],
+                                  'ean_norm': _ean_de[_ei], 'mediana': _g['median'].values,
+                                  'n_obs': _g['size'].values}))
+        _ns = pd.Series(_suc).groupby(_gk).nunique()
+        _res.append(pd.DataFrame({'dim': _dim, 'grupo': np.asarray(_cat.categories)[_ns.index.values],
+                                  'ean_norm': '*', 'mediana': np.nan, 'n_obs': _ns.values}))
+    return pd.concat(_res, ignore_index=True)
+
+
+def _enlace(_a, _b, _q):
+    # Canasta con las medianas _b / canasta con las medianas _a, solo productos con precio en ambas
+    _m = _a.notna() & _b.notna()
+    if not _m.any():
+        return np.nan
+    return (_q[_m] * _b[_m]).sum() / (_q[_m] * _a[_m]).sum()
+
+
+def _serie_det(_Mm, _Mw, _q):
+    # _Mm: medianas EAN x _PER_M (meses: base, columnas y mes parcial); _Mw: EAN x ['REF'] + _PER_W
+    # (semanas y, en REF, el mes anterior con las mismas observaciones). Devuelve índice y variación %.
+    _idx, _var, _ult = {}, {}, None
+    for _k, _p in enumerate(_PER_M):
+        if _k == 0:
+            _idx[_p] = 100.0 if _Mm[_p].notna().any() else np.nan
+            _var[_p] = np.nan
+        else:
+            _l = _enlace(_Mm[_PER_M[_k - 1]], _Mm[_p], _q)
+            _var[_p] = (_l - 1) * 100
+            if _ult is None:
+                _idx[_p] = np.nan
+            else:
+                _lu = _l if _ult == _PER_M[_k - 1] else _enlace(_Mm[_ult], _Mm[_p], _q)
+                _idx[_p] = _idx[_ult] * _lu
+        if pd.notna(_idx[_p]):
+            _ult = _p
+    _r_ant = np.nan
+    for _w in _PER_W:
+        _r = _enlace(_Mw['REF'], _Mw[_w], _q)
+        _idx[_w] = _idx.get(_MES_ANT, np.nan) * _r
+        _var[_w] = (_r / _r_ant - 1) * 100
+        _r_ant = _r
+    return _idx, _var
+
+
+def _escribir_hoja_detalle(_ruta, _filas, _cols_m, _cols_w, _titulo, _sub, _notas, _titulo_bloque, _lab_pond):
+    _wb = _load_workbook(_ruta) if _ruta.exists() else _Workbook()
+    if not _ruta.exists():
+        _wb.remove(_wb.active)
+    if _HOJA_DET in _wb.sheetnames:
+        del _wb[_HOJA_DET]
+    _ws = _wb.create_sheet(_HOJA_DET, 0)
+    for _w in _wb.worksheets:                  # una sola pestaña seleccionada (si no, Excel las agrupa)
+        _w.sheet_view.tabSelected = False
+    _ws.sheet_view.tabSelected = True
+    _wb.active = 0
+    _f_tit, _f_neg = _Font(bold=True, size=13), _Font(bold=True)
+    _f_sec = _Font(bold=True, color='FFFFFF')
+    _rell_sec, _rell_hdr = _Fill('solid', start_color='1F4E79'), _Fill('solid', start_color='D9E1F2')
+    _ws.cell(1, 1, _titulo).font = _f_tit
+    for _i, _t in enumerate(_sub):
+        _ws.cell(2 + _i, 1, _t)
+    _c0 = 5                                     # primera columna de períodos
+    _col_de = {}
+    for _i, (_p, _lab) in enumerate(_cols_m):
+        _col_de[_p] = (_c0 + _i, _lab)
+    for _i, (_p, _lab) in enumerate(_cols_w):
+        _col_de[_p] = (_c0 + len(_cols_m) + 1 + _i, _lab)     # una columna vacía antes de las semanas
+    _ult_col = _c0 + len(_cols_m) + len(_cols_w)
+    _fila = 3 + len(_sub)
+    _primera_hdr = None
+    for _bloque, _clave, _fmt in (('ÍNDICE', 'idx', '0.0'),
+                                  ('VARIACIÓN % (meses: contra el mes anterior; semanas: contra la semana anterior)',
+                                   'var', '+0.00;-0.00;0.00')):
+        _ws.cell(_fila, 1, _bloque).font = _f_tit
+        _fila += 1
+        _hdr = {1: _titulo_bloque[_clave], 2: _lab_pond, 3: 'Sucursales', 4: 'Productos'}
+        _hdr.update({c: lab for c, lab in _col_de.values()})
+        for _c, _v in _hdr.items():
+            _x = _ws.cell(_fila, _c, _v)
+            _x.font, _x.fill = _f_neg, _rell_hdr
+            _x.alignment = _Align(horizontal='center', vertical='center', wrap_text=True)
+        if _primera_hdr is None:
+            _primera_hdr = _fila
+        _fila += 1
+        for _r in _filas:
+            if _r['tipo'] == 'seccion':
+                for _c in range(1, _ult_col + 1):
+                    _ws.cell(_fila, _c).fill = _rell_sec
+                _ws.cell(_fila, 1, _r['label']).font = _f_sec
+                _fila += 1
+                continue
+            _ws.cell(_fila, 1, _r['label'])
+            if _r['tipo'] in ('total', 'rubro'):
+                _ws.cell(_fila, 1).font = _f_neg
+            for _c, _k, _nf in ((2, 'pond', '0.0'), (3, 'suc', '#,##0'), (4, 'prod', '0')):
+                if pd.notna(_r.get(_k, np.nan)):
+                    _ws.cell(_fila, _c, float(_r[_k]) if _k == 'pond' else int(_r[_k])).number_format = _nf
+            for _p, (_c, _lab) in _col_de.items():
+                _v = _r[_clave].get(_p, np.nan)
+                if pd.notna(_v) and np.isfinite(_v):
+                    _x = _ws.cell(_fila, _c, round(float(_v), 6))
+                    _x.number_format = _fmt
+                    if _r['tipo'] in ('total', 'rubro'):
+                        _x.font = _f_neg
+            _fila += 1
+        _fila += 2
+    for _i, _t in enumerate(_notas):
+        _ws.cell(_fila + _i, 1, _t)
+    _ws.column_dimensions['A'].width = 40
+    for _c in range(2, _ult_col + 1):
+        _ws.column_dimensions[_col_letter(_c)].width = 10 if _c <= 4 else 9.5
+    _ws.row_dimensions[_primera_hdr].height = 30
+    _ws.freeze_panes = _ws.cell(_primera_hdr + 1, _c0)
+    _wb.save(_ruta)
+
+
+# ── Ejecución ─────────────────────────────────────────────────────────────────
+detalle_long = None
+if DETALLE_CANASTA is None:
+    print('DETALLE_CANASTA = None: no se arma la hoja analisis_detallado.')
+elif DETALLE_CANASTA not in CANASTAS:
+    print(f'AVISO: DETALLE_CANASTA = {DETALLE_CANASTA!r} no es una canasta activa: no se arma la hoja analisis_detallado.')
+elif globals().get('_OBS') is None or globals().get('_DET') != DETALLE_CANASTA:
+    print('AVISO: faltan las observaciones de la CELDA 19b (correrla justo antes que esta; esta celda las libera '
+          'al terminar): no se arma la hoja analisis_detallado.')
+else:
+    _t0 = _time.time()
+    _cid = DETALLE_CANASTA
+    _can, _name = CANASTAS[_cid], CANASTA_NAMES[_cid]
+    _eans_det = sorted(e for e in _can if e in _EAN_COD)
+    _cod_det = np.array([_EAN_COD[e] for e in _eans_det], dtype='int16')
+    _qty = pd.Series({e: float(_can[e][1]) for e in _eans_det})
+    _rubro_de = pd.Series({e: RUBRO_EAN.get(e, 'Sin rubro') for e in _eans_det})
+    _categ_de = pd.Series({e: _can[e][2] for e in _eans_det})
+    _m = np.isin(_OBS['ean'].values, _cod_det)
+    _o_det = _OBS if _m.all() else _OBS[_m]
+    _fc_d = _o_det['fecha'].values
+    _ym_d = _fc_d // 100
+
+    # ── Períodos ──────────────────────────────────────────────────────────────
+    _D = int(_fc_d[_ym_d == _YM_ACT].max() % 100)
+    _N_ACT = _cal.monthrange(_YM_ACT // 100, _YM_ACT % 100)[1]
+    _ACT_COMPLETO = _D >= _N_ACT
+    _L = pd.Period(PERIODO if _ACT_COMPLETO else _MES_ANT, freq='M')     # último mes completo
+    _NM = max(1, int(DETALLE_MESES))
+    _MESES_COL = [str(_L - k) for k in range(_NM - 1, -1, -1)]
+    _BASE = str(_L - _NM)
+    _PER_M = [_BASE] + _MESES_COL + ([] if _ACT_COMPLETO else [PERIODO])
+    _sem_d = np.minimum((_fc_d % 100 - 1) // 7, 3)
+    _fin_sem = [7, 14, 21, _N_ACT]
+    _PER_W = ([f'{_MES_ANT}-S{k + 1}' for k in range(4)]
+              + [f'{PERIODO}-S{k + 1}' for k in range(4) if _D >= _fin_sem[k]])
+    _ym_lbl = lambda _p: int(_p[:7].replace('-', ''))
+    _cols_m = [(p, _lbl_mes(_ym_lbl(p))) for p in _MESES_COL]
+    if not _ACT_COMPLETO:
+        _cols_m.append((PERIODO, f'{_lbl_mes(_YM_ACT)} (al {_D}/{_YM_ACT % 100})'))
+    _cols_w = [(w, f'{w[-1]}S {_MES_ABR[_ym_lbl(w) % 100]}') for w in _PER_W]
+    print(f'Hoja analisis_detallado — {_name}: meses {_MESES_COL[0]} a {_MESES_COL[-1]} (base {_BASE} = 100)'
+          + ('' if _ACT_COMPLETO else f', {PERIODO} parcial al día {_D}') + f'; {len(_PER_W)} semanas')
+
+    # ── Medianas por grupo y mes: caché + meses de la 19b + meses viejos del SEPA ──
+    _clave_det = _firma_detalle(_eans_det)
+    _cache_det = CACHE_DIR / f'detalle_{_clave_det}_v1.parquet'
+    _agg = {}
+    for _mx in (_MES_ANT, PERIODO):
+        if _mx in _PER_M:
+            _agg[_mx] = _agg_grupos_mes(_o_det[_ym_d == _ym_lbl(_mx)])
+    _cdf = pd.read_parquet(_cache_det) if (USE_CACHE and _cache_det.exists()) else pd.DataFrame()
+    for _mx in _PER_M:
+        if _mx not in _agg and len(_cdf) and (_cdf['mes'] == _mx).any():
+            _agg[_mx] = _cdf[_cdf['mes'] == _mx].drop(columns='mes').reset_index(drop=True)
+    _falt = [m for m in _PER_M if m not in _agg]
+    print(f'  medianas por grupo: {len(_PER_M) - len(_falt)} meses listos (caché {_cache_det.name} o 19b), '
+          f'{len(_falt)} a leer del SEPA')
+    for _mx in _falt:
+        if _mx not in _mapa_desag:
+            print(f'  AVISO: {_mx} no está en los ZIPs: columna vacía para regiones, provincias, cadenas y tipos')
+            continue
+        _t1 = _time.time()
+        _om = _leer_mes_desag(_mx, _eans_det)
+        _SUC = _atributos_sucursal()            # sucursales nuevas de los meses viejos
+        _agg[_mx] = _agg_grupos_mes(_om)
+        del _om
+        gc.collect()
+        print(f'    {_mx} agregado en {_time.time() - _t1:,.0f} s')
+    _nuevos = [m for m in _agg if m < PERIODO and (not len(_cdf) or not (_cdf['mes'] == m).any())]
+    if USE_CACHE and _nuevos:
+        _cdf = pd.concat(([_cdf] if len(_cdf) else []) + [_agg[m].assign(mes=m) for m in _nuevos],
+                         ignore_index=True)
+        _cdf.to_parquet(_cache_det, compression='snappy', index=False)
+        print(f'  caché actualizado: {_cache_det.name} ({_cdf["mes"].nunique()} meses)')
+
+    _A = pd.concat([d.assign(mes=m) for m, d in _agg.items()], ignore_index=True)
+    _A_med = _A[_A['ean_norm'] != '*'].pivot_table(index=['dim', 'grupo', 'ean_norm'], columns='mes',
+                                                   values='mediana', aggfunc='first')
+    _A_suc = _A[_A['ean_norm'] == '*'].pivot_table(index=['dim', 'grupo'], columns='mes',
+                                                   values='n_obs', aggfunc='first')
+
+    # ── Medianas semanales por grupo (clave entera AAAAMM*10 + semana: nada de textos por observación) ──
+    _wk_key = _ym_d.astype('int64') * 10 + _sem_d + 1
+    _lbl_sem = lambda _k: f'{_k // 1000}-{(_k // 10) % 100:02d}-S{_k % 10}'
+    _W = []
+    for _dim in ['nacional'] + [d for d, _ in _DIMS_DET]:
+        _cat = pd.Categorical(np.full(len(_SUC), 'Total') if _dim == 'nacional' else _SUC[_dim])
+        _gk = _cat.codes[_o_det['suc'].values]
+        _g = _o_det.groupby([_gk, _o_det['ean'].values, _wk_key])['precio'].median()
+        _W.append(pd.DataFrame({'dim': _dim,
+                                'grupo': np.asarray(_cat.categories)[_g.index.get_level_values(0)],
+                                'ean_norm': np.array(list(_EAN_COD))[_g.index.get_level_values(1)],
+                                'per': [_lbl_sem(k) for k in _g.index.get_level_values(2)],
+                                'mediana': _g.values}))
+    del _wk_key, _sem_d
+    _W = pd.concat(_W, ignore_index=True)
+    _W = _W[_W['per'].isin(_PER_W)]
+    _W_med = _W.pivot_table(index=['dim', 'grupo', 'ean_norm'], columns='per', values='mediana', aggfunc='first')
+
+    def _mat(_tabla, _dim, _grupo, _cols, _eans):
+        # medianas EAN x períodos de un grupo (NaN donde no hay dato)
+        if (_dim, _grupo) in _tabla.index.droplevel(2):
+            _t = _tabla.xs((_dim, _grupo), level=(0, 1))
+        else:
+            _t = pd.DataFrame()
+        return _t.reindex(index=_eans, columns=_cols)
+
+    def _mw(_dim, _grupo, _eans):
+        _w = _mat(_W_med, _dim, _grupo, _PER_W, _eans)
+        _w.insert(0, 'REF', _mat(_A_med, _dim, _grupo, [_MES_ANT], _eans)[_MES_ANT])
+        return _w
+
+    # ── Filas ─────────────────────────────────────────────────────────────────
+    _ofi = _MED_OFI.reindex(index=_eans_det, columns=_PER_M)        # medianas oficiales (CELDA 9)
+    _costo_base = _qty * _ofi[_BASE]
+    _T_base = _costo_base.sum()
+    _ultimo = str(_L)
+    _filas = []
+
+    # Total: la serie oficial de la CELDA 9
+    _S = serie_nac_dict[_cid].set_index('mes')['canasta_nacional_ponderada']
+    _idx_t = {p: (_S.get(p, np.nan) / _S.get(_BASE, np.nan) * 100) for p in _PER_M}
+    _var_t = {p: ((_S.get(p, np.nan) / _S.get(_PER_M[k - 1], np.nan) - 1) * 100 if k else np.nan)
+              for k, p in enumerate(_PER_M)}
+    _mw_nac = _mw('nacional', 'Total', _eans_det)
+    _r_ant = np.nan
+    for _w in _PER_W:
+        _r = _enlace(_mw_nac['REF'], _mw_nac[_w], _qty)
+        _idx_t[_w] = _idx_t.get(_MES_ANT, np.nan) * _r
+        _var_t[_w] = (_r / _r_ant - 1) * 100
+        _r_ant = _r
+    _suc_L = lambda _dim, _g: (_A_suc.loc[(_dim, _g), _ultimo]
+                               if (_dim, _g) in _A_suc.index and _ultimo in _A_suc.columns else np.nan)
+    _filas.append({'tipo': 'total', 'label': f'Total {_name}', 'dim': 'nacional', 'grupo': 'Total',
+                   'pond': 100.0, 'suc': _suc_L('nacional', 'Total'), 'prod': int(_ofi[_ultimo].notna().sum()),
+                   'idx': _idx_t, 'var': _var_t})
+
+    # Rubros SEPA y sus categorías (medianas nacionales)
+    _filas.append({'tipo': 'seccion', 'label': 'Rubros (SEPA) y categorías'})
+    _pond = (_costo_base / _T_base * 100)
+    for _rub in _pond.groupby(_rubro_de).sum().sort_values(ascending=False).index:
+        _er = [e for e in _eans_det if _rubro_de[e] == _rub]
+        _i, _v = _serie_det(_ofi.loc[_er], _mw_nac.loc[_er], _qty[_er])
+        _filas.append({'tipo': 'rubro', 'label': _rub, 'dim': 'rubro', 'grupo': _rub, 'pond': _pond[_er].sum(),
+                       'prod': len(_er), 'idx': _i, 'var': _v})
+        _pc = _pond[_er].groupby(_categ_de[_er]).sum().sort_values(ascending=False)
+        for _cat_n in _pc.index:
+            _ec = [e for e in _er if _categ_de[e] == _cat_n]
+            _i, _v = _serie_det(_ofi.loc[_ec], _mw_nac.loc[_ec], _qty[_ec])
+            _filas.append({'tipo': 'categoria', 'label': '    ' + _cat_n, 'dim': 'categoria', 'grupo': _cat_n,
+                           'pond': _pond[_ec].sum(), 'prod': len(_ec), 'idx': _i, 'var': _v})
+
+    # Regiones, provincias, cadenas y tipos de sucursal (mediana dentro del grupo)
+    _omitidos = []
+    for _dim, _titulo in _DIMS_DET:
+        _grupos = [g for (d, g) in _A_suc.index if d == _dim]
+        _ns = {g: _suc_L(_dim, g) for g in _grupos}
+        _vis = [g for g in _grupos if pd.notna(_ns[g]) and _ns[g] >= DETALLE_MIN_SUCURSALES]
+        _omitidos += [f'{g} ({0 if pd.isna(_ns[g]) else int(_ns[g])})' for g in _grupos if g not in _vis]
+        if _dim == 'region':
+            _vis = [g for g in _ORDEN_REGION if g in _vis] + sorted(g for g in _vis if g not in _ORDEN_REGION)
+        elif _dim == 'provincia':
+            _vis = sorted(_vis)
+        else:
+            _vis = sorted(_vis, key=lambda g: -_ns[g])
+        _filas.append({'tipo': 'seccion', 'label': _titulo})
+        for _g in _vis:
+            _Mm = _mat(_A_med, _dim, _g, _PER_M, _eans_det)
+            _i, _v = _serie_det(_Mm, _mw(_dim, _g, _eans_det), _qty)
+            _filas.append({'tipo': 'grupo', 'label': _g, 'dim': _dim, 'grupo': _g, 'pond': np.nan,
+                           'suc': _ns[_g], 'prod': int(_Mm[_ultimo].notna().sum()), 'idx': _i, 'var': _v})
+
+    # Control: con la canasta completa, el Total es la suma ponderada de los rubros
+    _rubs = [f for f in _filas if f['tipo'] == 'rubro']
+    _dif = max((abs(sum(f['pond'] * f['idx'][p] for f in _rubs) / 100 - _filas[0]['idx'][p])
+                for p in _PER_M if pd.notna(_filas[0]['idx'][p])), default=0.0)
+    if _dif > 1e-6:
+        print(f'  AVISO: Total vs suma ponderada de los rubros difiere hasta {_dif:.4f} puntos '
+              f'(algún producto sin precio en algún mes de la ventana)')
+
+    # ── Excel: primera hoja ─────────────────────────────────────────────────────
+    _lab_pond = f'Pond. {_lbl_mes(_ym_lbl(_BASE))} %'
+    _titulo_bloque = {'idx': f'Índice base {_lbl_mes(_ym_lbl(_BASE))} = 100', 'var': 'Variación %'}
+    _titulo = (f'Canasta {_name} — análisis detallado de la variación de precios '
+               f'(SEPA, {_lbl_mes(_YM_ACT)}' + ('' if _ACT_COMPLETO else f' al {_D}/{_YM_ACT % 100}') + ')')
+    _sub = [f'Índice base {_lbl_mes(_ym_lbl(_BASE))} = 100: la columna {_lbl_mes(_ym_lbl(_ultimo))} menos 100 es la '
+            f'variación interanual. Total = serie oficial del nb02 (CELDA 9).',
+            'Rubros y categorías: medianas nacionales. Regiones, provincias, cadenas y tipos: mediana de las '
+            'observaciones del grupo (mismo método). Pond = participación en el costo de la canasta en el mes base.']
+    _notas = [
+        'Notas',
+        'Método: en cada fila, la canasta es la suma de qty x mediana de las observaciones sucursal x día del '
+        'período (todas las del país, o solo las del grupo). Cada eslabón compara solo los productos con precio '
+        'en los dos períodos (índice encadenado).',
+        f'Semanas: 1S = días 1-7, 2S = 8-14, 3S = 15-21, 4S = 22 a fin de mes. Del mes en curso solo las semanas '
+        f'completas. Nivel = índice de {_lbl_mes(_YM_ANT)} x (canasta de la semana / canasta de {_lbl_mes(_YM_ANT)}).',
+        'Variación % de las semanas: contra la semana anterior. La de las regiones, provincias, cadenas y tipos no '
+        'suma la del Total (es una mediana): el aporte aditivo de cada grupo está en las hojas Cadenas, Provincias, '
+        'Regiones y Tipo_sucursal (CELDA 19b), y el de cada producto en Productos.',
+        f'Sucursales y Productos: con precio en {_lbl_mes(_ym_lbl(_ultimo))}. Se muestran los grupos con al menos '
+        f'{DETALLE_MIN_SUCURSALES} sucursales (DETALLE_MIN_SUCURSALES).',
+        'Región: la del maestro de sucursales (AMBA incluye el conurbano); fuera del maestro, por provincia. '
+        'Provincia: la del archivo del SEPA.',
+    ]
+    if _omitidos:
+        _notas.append('Grupos con menos sucursales (no se muestran): ' + ', '.join(_omitidos))
+    _out_det = OUTPUT_DIR / f'canasta_analisis_{ULTIMO_MES}.xlsx'
+    _escribir_hoja_detalle(_out_det, _filas, _cols_m, _cols_w, _titulo, _sub, _notas, _titulo_bloque, _lab_pond)
+
+    detalle_long = pd.DataFrame([{'seccion': f['dim'], 'fila': f['label'].strip(), 'periodo': p,
+                                  'indice': f['idx'].get(p, np.nan), 'variacion_%': f['var'].get(p, np.nan),
+                                  'pond': f.get('pond', np.nan), 'sucursales': f.get('suc', np.nan),
+                                  'productos': f.get('prod', np.nan)}
+                                 for f in _filas if f['tipo'] != 'seccion' for p in _PER_M[1:] + _PER_W])
+    _OBS = None
+    del _o_det, _A, _W
+    gc.collect()
+    print(f'Hoja {_HOJA_DET} escrita como primera hoja de {_out_det.name} '
+          f'({len([f for f in _filas if f["tipo"] != "seccion"])} filas, {_time.time() - _t0:,.0f} s)')
+    _col_fin = PERIODO if not _ACT_COMPLETO else _ultimo
+    print(f'  Variación % {_col_fin} ' + ('(parcial) ' if not _ACT_COMPLETO else '') + 'contra el mes anterior:')
+    print(detalle_long[(detalle_long['periodo'] == _col_fin)
+                       & detalle_long['seccion'].isin(['nacional', 'rubro', 'region'])]
+          [['fila', 'pond', 'indice', 'variacion_%']].round(2).to_string(index=False))'''))
 
 # ── CELL 20 — VALORES PARA DOCUMENTO TÉCNICO ──────────────────────────────────
 cells.append(cell_code("""\

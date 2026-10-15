@@ -5,11 +5,16 @@ El que se trabaja hoy es el **nb07** (`notebooks/07_evolucion_canastas_alternati
 informe semanal: 6 canastas, índice encadenado, comparación con el IPC y aperturas por cadena/región.
 Versión vigente: **nb07 v5.15** (v5.13 en método: frescos por TPD, nivel fijo, cobertura mínima; v5.14: corre en el
 Colab GRATUITO; v5.15: composición por rubro con faltantes imputados, candidatos de la Tecnológica y Lavarropas BGH).
+También se trabaja el **nb02** (`notebooks/02_evolucion_canasta_representativa.ipynb`): desde 2026-10-15 explica la
+variación mensual de la canasta Media dentro de su Excel — CELDA 19b (aporte por producto, arrastre, cadena, región) y
+CELDA 19c (hoja `analisis_detallado`, la primera: índices mensuales y semanales por rubro, región, provincia, cadena y
+tipo de sucursal). Guía: `docs/NB02_ANALISIS_VARIACION.md`.
 
 ## Al empezar una sesión
 
-1. **Leer el bloque `ESTADO ACTUAL / HANDOFF` al principio de `.claude/memory.md`.** Ahí está en qué
-   quedó el trabajo, qué hay que hacer apenas el usuario pase resultados y los números vigentes.
+1. **Leer los bloques `ESTADO ACTUAL ... / HANDOFF` al principio de `.claude/memory.md`** (uno del nb02 y uno
+   del nb07). Ahí está en qué quedó el trabajo, qué hay que hacer apenas el usuario pase resultados y los números
+   vigentes.
 2. Correr los tests (`pip install -r requirements.txt` si es una PC nueva):
    ```bash
    python notebooks/test_celdas_graficos_y_mapa.py
@@ -21,6 +26,7 @@ Colab GRATUITO; v5.15: composición por rubro con faltantes imputados, candidato
    python notebooks/test_costo_sucursal.py
    python notebooks/test_candidatos_reemplazo.py
    python notebooks/test_desagregacion_variacion.py   # nb02 CELDA 19b
+   python notebooks/test_analisis_detallado.py        # nb02 CELDA 19c (hoja analisis_detallado)
    ```
 3. Los datos (ZIPs del SEPA, caché, Excel de salida) **no están en el repo**: viven en el Drive del
    usuario (`MyDrive/carga/`). Para auditar una corrida, el usuario pasa el Excel del nb07 y los zips
@@ -68,6 +74,15 @@ Colab GRATUITO; v5.15: composición por rubro con faltantes imputados, candidato
   con `_sin_cat`. Para unir con un frame de texto, pasarlo a las mismas categorías (`astype(sval['item'].dtype)`).
   Nada de `.copy()` del panel. La CELDA 8 libera `datos_sem` y `sval`: re-correrla exige re-correr la 7.
   Medición: `docs/auditoria/scripts_v514/bench_ram.py` (código real, vieja vs nueva).
+- **nb02, leer el SEPA por sucursal (19b/19c)**: normalizar el EAN del chunk con `.apply(normalizar_ean)` como las
+  CELDAS 6 y 9. Con `.str.strip().str.lstrip('0')` sobre el chunk de 300k filas el pico pasó de +0,2 a **+2,1 GB**
+  (`docs/auditoria/scripts_nb02_2026-10/bench_lectura_ean.py`). Nada de textos por observación: claves enteras.
+- **nb02, caché de la hoja `analisis_detallado`** (`_cache/detalle_<clave>_v1.parquet`): la clave cambia con los
+  EANs de la canasta, la región/tipo de las sucursales del maestro, los nombres de cadena (CELDA 4) y los mapas de
+  provincia/región de la 19b; cambiarla **relee los 12 meses de la ventana (~40-50 min en Colab)**. No la cambian las
+  cantidades ni `DETALLE_MESES` (un mes que falta se lee y se agrega).
+- **nb02, la 19c necesita la 19b justo antes** (usa sus observaciones y las libera). `datos` (CELDA 6) no sirve para
+  esto: filtra a sucursales con coordenadas y descarta el día.
 
 ## Git
 
@@ -83,9 +98,11 @@ Colab GRATUITO; v5.15: composición por rubro con faltantes imputados, candidato
 |---|---|
 | `.claude/memory.md` | **Estado y próximos pasos** (bloque de arriba) + handoffs históricos |
 | `docs/CONTEXTO.md` | Pipeline, puesta en marcha en otra máquina, historial de cambios |
-| `docs/METODOLOGIA.md` | Metodología; nb07 en §10 (§10.19 = v5.13; §10.20 = v5.14-v5.15, lo último) |
+| `docs/METODOLOGIA.md` | Metodología; nb02 en §4 (desagregación de la variación y hoja `analisis_detallado`, lo último); nb07 en §10 (§10.19 = v5.13; §10.20 = v5.14-v5.15) |
+| `docs/NB02_ANALISIS_VARIACION.md` | **nb02 CELDAS 19b y 19c**: cómo correrlas, cómo leer cada hoja, caché, validación con oct-26, trampas |
 | `docs/BUGS_Y_MEJORAS.md` | Defectos abiertos arriba; bugs resueltos con causa y fix |
 | `docs/SEPA_TECNICO.md` | Formato SEPA, cadenas, frescos por tipo, caché |
+| `docs/auditoria/scripts_nb02_2026-10/` | Prototipo ad hoc de la desagregación (oct-26) y scripts de validación de las CELDAS 19b/19c con datos reales |
 | `docs/AUDITORIA_2026-10-02_v514.md` | **Ultima corrida auditada** (v5.14 al 2026-10-01, Colab gratuito): numeros vigentes, volatilidad de Femenina/Tecnologica, Lavarropas y composicion por rubro (resueltos en la v5.15) |
 | `docs/AUDITORIA_2026-09-24_v512.md` | **Revisión de la v5.12**: la brecha con el IPC sale de los frescos, incertidumbre del acumulado, dos defectos (filtro estacional, nivel de frescos revisado cada semana), ronda 2. Sus decisiones (§7) están aplicadas en la v5.13 |
 | `docs/AUDITORIA_2026-09-22_v59.md` | Auditoría de la v5.9 + verificación de la v5.10 (§10) y de la v5.11 con los reemplazos de trazabilidad (§11) + PDF y scripts en `docs/auditoria/` |
