@@ -2,8 +2,9 @@
 """Test de la CELDA 19b del nb02: desagregacion de la variacion mensual de la canasta.
 
 Corre las celdas REALES del notebook generado (`02_evolucion_canasta_representativa.ipynb`): la
-CELDA 5 (lectura de ZIPs), la CELDA 9 (serie oficial), los nombres de la CELDA 3, `asignar_cadena`
-de la CELDA 4, `_pmean` de la CELDA 6, el formato de la CELDA 19 y la CELDA 19b entera, sobre dos
+CELDA 5 (lectura de ZIPs), la CELDA 9 (serie oficial), los nombres de la CELDA 3, `suc_pais`,
+`asignar_cadena` y `PROV_NORM` de la CELDA 4, `_pmean` de la CELDA 6, la geografia de la CELDA 7
+(`suc_geo_clean` con la columna `amba`, de donde sale la region), el formato de la CELDA 19 y la CELDA 19b entera, sobre dos
 ZIPs semestrales sinteticos: jun-26 completo en 2026A.zip y jul-26 al 15 en 2026B.zip (el mes
 anterior esta en otro semestre, como cada julio). No hay `datos` en el entorno: la celda no lo usa.
 
@@ -12,7 +13,10 @@ desaparece en julio, pares sucursal-producto sin el otro mes, un par fuera de la
 un par sucursal-producto sin la ultima semana de junio, un rubro fuera del mapa de grupos, un EAN que llega
 con ceros a la izquierda, una bandera de Carrefour fuera del diccionario, sucursales fuera del
 maestro, regiones con espacio duro (como el maestro real) y una cadena de CADENAS_FILTRAR (entra:
-el universo es el de la CELDA 9). Se desagregan dos canastas (Media y Popular) a la vez.
+el universo es el de la CELDA 9). Region por coordenadas (BUG-43): una sucursal que el maestro marca AMBA
+en Mar del Plata (va a Pampeana), una del maestro sin coordenadas (Buenos Aires s/ubicar), una con un
+codigo de provincia desconocido (Sin dato) y una de Neuquen capital que la CELDA 7 pasa a La Pampa por sus
+rectangulos (BUG-44): su region tiene que seguir siendo Patagonia. Se desagregan dos canastas (Media y Popular) a la vez.
 
 Comprueba que:
   1. la variacion oficial es la de la CELDA 9 y la de un calculo independiente, y la celda
@@ -29,7 +33,7 @@ Comprueba que:
 
     python notebooks/test_desagregacion_variacion.py     -> RESULTADO: OK / FALLA
 """
-import gc, gzip, hashlib, io, json, pathlib, re, shutil, statistics, tempfile, zipfile
+import gc, gzip, hashlib, io, json, math, pathlib, re, shutil, statistics, tempfile, zipfile
 from collections import defaultdict
 from pathlib import Path
 
@@ -52,6 +56,7 @@ def bloque(src, ini, fin):
 
 C3, C4, C5 = celda('# CELDA 3 —'), celda('# CELDA 4 —'), celda('# CELDA 5 —')
 C6, C9, C19, C19B = celda('# CELDA 6 —'), celda('# CELDA 9 —'), celda('# CELDA 19 —'), celda('# CELDA 19b —')
+C7 = celda('# CELDA 7 —')
 
 fallas = []
 
@@ -68,23 +73,52 @@ def cerca(a, b, tol=1e-9):
 
 # ── Datos sinteticos ──────────────────────────────────────────────────────────
 ANT, ACT, N_ANT, D_ACT = 202606, 202607, 30, 15
-# (comercio, bandera, sucursal, provincia ISO, (REGION, sucursales_tipo) del maestro o None)
-SUCS = [('9', '1', '1', 'AR-C', ('AMBA', 'Supermercado')),
-        ('9', '1', '2', 'AR-B', ('AMBA\xa0', 'SUPERMERCADO')),
-        ('9', '1', '3', 'AR-X', ('Pampeana', 'Hipermercado')),
-        ('15', '1', '1', 'AR-C', ('AMBA', 'Autoservicio')),
-        ('15', '1', '2', 'AR-X', ('Pampeana', 'autoservicio')),
-        ('15', '1', '3', 'AR-M', ('Cuyo\xa0', 'Autoservicio')),
-        ('12', '1', '1', 'AR-C', ('AMBA', 'Hipermercado')),
-        ('12', '1', '2', 'AR-B', ('AMBA', 'Tienda Fisica')),
-        ('10', '4', '1', 'AR-S', None),
-        ('99', '1', '1', 'AR-B', None),
-        ('19', '1', '1', 'AR-T', ('Noroeste', 'Supermercado'))]
+# (comercio, bandera, sucursal, provincia ISO, (REGION, sucursales_tipo) del maestro o None, (lat, lon) o None)
+# La region sale de las coordenadas (CELDA 7), no de la REGION del maestro: 12-1-2 figura AMBA en el maestro pero
+# esta en Mar del Plata (Pampeana, BUG-43); 20-1-1 esta en el maestro sin coordenadas (Buenos Aires s/ubicar).
+SUCS = [('9', '1', '1', 'AR-C', ('AMBA', 'Supermercado'), (-34.60, -58.42)),
+        ('9', '1', '2', 'AR-B', ('AMBA\xa0', 'SUPERMERCADO'), (-34.70, -58.58)),      # La Matanza
+        ('9', '1', '3', 'AR-X', ('Pampeana', 'Hipermercado'), (-31.42, -64.18)),
+        ('15', '1', '1', 'AR-C', ('AMBA', 'Autoservicio'), (-34.61, -58.44)),
+        ('15', '1', '2', 'AR-X', ('Pampeana', 'autoservicio'), (-31.40, -64.20)),
+        ('15', '1', '3', 'AR-M', ('Cuyo\xa0', 'Autoservicio'), (-32.89, -68.84)),
+        ('12', '1', '1', 'AR-C', ('AMBA', 'Hipermercado'), (-34.58, -58.43)),
+        ('12', '1', '2', 'AR-B', ('AMBA', 'Tienda Fisica'), (-38.00, -57.55)),       # Mar del Plata
+        ('10', '4', '1', 'AR-S', None, None),
+        ('99', '1', '1', 'AR-B', None, None),
+        ('19', '1', '1', 'AR-T', ('Noroeste', 'Supermercado'), (-26.83, -65.22)),
+        ('20', '1', '1', 'AR-B', ('AMBA', 'Supermercado'), None),                    # maestro sin coordenadas
+        ('21', '1', '9', 'AR-ZZ', None, None),                                       # provincia ISO desconocida
+        ('2', '1', '5', 'AR-Q', ('Patagonia', 'Supermercado'), (-38.95, -68.06))]    # Neuquen capital (BUG-44)
 CADENA_ESP = {('9', '1'): 'Vea', ('15', '1'): 'DIA', ('12', '1'): 'Coto',
-              ('10', '4'): 'Carrefour (bandera 4)', ('99', '1'): 'Cadena 99', ('19', '1'): 'Cadena 19'}
+              ('10', '4'): 'Carrefour (bandera 4)', ('99', '1'): 'Cadena 99', ('19', '1'): 'Cadena 19',
+              ('20', '1'): 'LAR', ('21', '1'): 'Toledo', ('2', '1'): 'La Anonima'}
 PROV_ESP = {'AR-C': 'CABA', 'AR-B': 'Buenos Aires', 'AR-X': 'Córdoba', 'AR-M': 'Mendoza',
-            'AR-S': 'Santa Fe', 'AR-T': 'Tucumán'}
-REGION_FUERA = {'AR-S': 'Pampeana', 'AR-B': 'Buenos Aires s/ubicar'}
+            'AR-S': 'Santa Fe', 'AR-T': 'Tucumán', 'AR-ZZ': 'Sin dato', 'AR-Q': 'Neuquén'}
+PROV_LARGA = {'AR-C': 'Ciudad Autónoma de Buenos Aires', 'AR-B': 'Provincia de Buenos Aires',
+              'AR-X': 'Provincia de Córdoba', 'AR-M': 'Provincia de Mendoza', 'AR-T': 'Provincia de Tucumán',
+              'AR-Q': 'Provincia del Neuquén'}
+# Region esperada fuera del AMBA: la de la provincia del ARCHIVO (ISO), no la reclasificada por la CELDA 7 (sus
+# rectangulos pasan Neuquen capital a La Pampa: BUG-44)
+REGION_PROV = {'CABA': 'AMBA', 'Buenos Aires': 'Pampeana', 'Córdoba': 'Pampeana', 'Mendoza': 'Cuyo',
+               'Tucumán': 'Noroeste', 'Neuquén': 'Patagonia'}
+REGION_FUERA = {'AR-S': 'Pampeana', 'AR-B': 'Buenos Aires s/ubicar', 'AR-ZZ': 'Sin dato'}
+
+
+def km_obelisco(lat, lon):
+    la0, lo0, la, lo = map(math.radians, (-34.6037, -58.3816, lat, lon))
+    a = math.sin((la - la0) / 2) ** 2 + math.cos(la0) * math.cos(la) * math.sin((lo - lo0) / 2) ** 2
+    return 2 * 6371 * math.asin(math.sqrt(a))
+
+
+def region_esp(s):
+    # En el maestro con coordenadas: AMBA = CABA o Buenos Aires a <= 90 km del Obelisco; si no, por provincia
+    if s[4] and s[5]:
+        prov = PROV_ESP[s[3]]
+        if prov == 'CABA' or (prov == 'Buenos Aires' and km_obelisco(*s[5]) <= 90):
+            return 'AMBA'
+        return REGION_PROV[prov]
+    return REGION_FUERA[s[3]]
 TIPO_ESP = {'Supermercado': 'Supermercado', 'SUPERMERCADO': 'Supermercado', 'Hipermercado': 'Hipermercado',
             'Autoservicio': 'Autoservicio', 'autoservicio': 'Autoservicio', 'Tienda Fisica': 'Tienda física'}
 
@@ -164,13 +198,18 @@ def escribir_zips(sepa_dir, centavos):
                 z.writestr(fn, b)
 
 
+def fila_maestro(s, region, tipo, coord):
+    return {'id_comercio': s[0], 'id_bandera': s[1], 'id_sucursal': s[2], 'REGION': region,
+            'sucursales_tipo': tipo, 'PROVINCIA': PROV_LARGA.get(s[3], 'Provincia de Mendoza'),
+            'sucursales_nombre': f'Suc {s[0]}-{s[2]}', 'sucursales_barrio': None, 'sucursales_localidad': 'X',
+            'sucursales_latitud': coord[0] if coord else np.nan,
+            'sucursales_longitud': coord[1] if coord else np.nan}
+
+
 MAESTRO = pd.DataFrame(
-    [{'id_comercio': s[0], 'id_bandera': s[1], 'id_sucursal': s[2], 'REGION': s[4][0],
-      'sucursales_tipo': s[4][1]} for s in SUCS if s[4]] +
-    [{'id_comercio': '9', 'id_bandera': '1', 'id_sucursal': '1', 'REGION': 'Patagonia',  # duplicado: gana el primero
-      'sucursales_tipo': 'Web'},
-     {'id_comercio': '50', 'id_bandera': '1', 'id_sucursal': '1', 'REGION': 'Cuyo',        # sin datos de precio
-      'sucursales_tipo': 'Supermercado'}])
+    [fila_maestro(s, s[4][0], s[4][1], s[5]) for s in SUCS if s[4]] +
+    [fila_maestro(('9', '1', '1', 'AR-C'), 'Patagonia', 'Web', None),         # duplicado: gana el primero
+     fila_maestro(('50', '1', '1', 'AR-M'), 'Cuyo', 'Supermercado', (-32.9, -68.8))])   # sin datos de precio
 
 
 def correr(tmp, centavos):
@@ -194,9 +233,11 @@ def correr(tmp, centavos):
     env['CANASTAS'] = {cid: {e: (d[:50], q, c) for e, d, q, c in ps} for cid, ps in CAN.items()}
     env['CANASTAS_ACTIVAS'] = list(CAN)
     env['CANASTA_EANS_NORM'] = set().union(*[set(c) for c in env['CANASTAS'].values()])
-    exec(bloque(C4, 'NOMBRES_COMPUESTOS = {', 'PROV_NORM = {'), env)
+    exec(bloque(C4, 'suc_pais = maestro_suc[', 'NOMBRES_COMPUESTOS = {'), env)
+    exec(bloque(C4, 'NOMBRES_COMPUESTOS = {', 'PESOS_POBLACION = {'), env)
     exec(C5, env)
     exec(bloque(C6, 'def _pmean(_s):', 'ref_e ='), env)
+    exec(bloque(C7, '# ── Bboxes y función de geocodificación', '# ── Calcular canasta por sucursal'), env)
     exec(C9, env)
     exec(bloque(C19, 'from openpyxl.styles', 'out_xls ='), env)
     exec(compile(C19B, '<CELDA 19b>', 'exec'), env)
@@ -236,7 +277,7 @@ def independiente(cid):
     for si, e, pa, pb in pares:
         a = qty[e] * med[(e, ANT)] / t0 * (pb - pa) / suma_ant[e] * 100
         s = SUCS[si]
-        region = s[4][0].replace('\xa0', '').strip() if s[4] else REGION_FUERA[s[3]]
+        region = region_esp(s)
         tipo = TIPO_ESP[s[4][1]] if s[4] else 'Sin dato en maestro'
         for atr, val in (('cadena', CADENA_ESP[(s[0], s[1])]), ('provincia', PROV_ESP[s[3]]),
                          ('region', region), ('tipo', tipo)):

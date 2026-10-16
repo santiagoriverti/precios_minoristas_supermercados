@@ -21,13 +21,13 @@ Comprueba, contra un calculo independiente hecho con listas y statistics.median,
   6. la hoja es la PRIMERA del Excel, la unica pestaña seleccionada, y las demas hojas siguen;
      sus celdas tienen los mismos numeros que `detalle_long`;
   7. la segunda corrida usa el cache (lee del SEPA solo lo que no esta) y da lo mismo; si cambia el
-     maestro de sucursales, la clave cambia y relee; con DESAGREGAR_CANASTAS vacio la hoja sale igual;
+     maestro de sucursales (una sucursal se muda fuera del AMBA), la clave cambia y relee; con DESAGREGAR_CANASTAS vacio la hoja sale igual;
   8. con el mes en curso COMPLETO (julio al 31) no hay columna parcial, van las 4 semanas de cada mes
      y el cache no guarda el mes en curso.
 
     python notebooks/test_analisis_detallado.py     -> RESULTADO: OK / FALLA
 """
-import calendar, gc, gzip, hashlib, json, pathlib, re, shutil, statistics, tempfile, zipfile
+import calendar, gc, gzip, hashlib, json, math, pathlib, re, shutil, statistics, tempfile, zipfile
 from collections import defaultdict
 from pathlib import Path
 
@@ -51,6 +51,7 @@ def bloque(src, ini, fin):
 
 C3, C4, C5, C6 = celda('# CELDA 3 —'), celda('# CELDA 4 —'), celda('# CELDA 5 —'), celda('# CELDA 6 —')
 C9, C19, C19B, C19C = celda('# CELDA 9 —'), celda('# CELDA 19 —'), celda('# CELDA 19b —'), celda('# CELDA 19c —')
+C7 = celda('# CELDA 7 —')
 
 fallas = []
 
@@ -89,24 +90,45 @@ def etiquetas():
     lab = [f'{ABR[int(m[5:])]}-26' for m in COLS_M] + ([] if COMPLETO else ['jul-26 (al 15/7)'])
     return lab + [f'{w[-1]}S {ABR[int(w[5:7])]}' for w in PER_W]
 MIN_SUC = 2
-SUCS = [('9', '1', '1', 'AR-C', ('AMBA', 'Supermercado')),
-        ('9', '1', '2', 'AR-B', ('AMBA\xa0', 'SUPERMERCADO')),
-        ('9', '1', '3', 'AR-X', ('Pampeana', 'Hipermercado')),
-        ('15', '1', '1', 'AR-C', ('AMBA', 'Autoservicio')),
-        ('15', '1', '2', 'AR-X', ('Pampeana', 'autoservicio')),
-        ('15', '1', '3', 'AR-M', ('Cuyo\xa0', 'Autoservicio')),
-        ('15', '1', '4', 'AR-M', ('Cuyo', 'Autoservicio')),
-        ('12', '1', '1', 'AR-C', ('AMBA', 'Hipermercado')),
-        ('12', '1', '2', 'AR-B', ('AMBA', 'Tienda Fisica')),
-        ('10', '4', '1', 'AR-S', None),
-        ('99', '1', '1', 'AR-B', None),
-        ('2', '1', '1', 'AR-R', ('Patagonia', 'Supermercado')),
-        ('2', '1', '2', 'AR-U', ('Patagonia', 'Supermercado'))]
+# (comercio, bandera, sucursal, provincia ISO, (REGION, tipo) del maestro o None, (lat, lon) o None).
+# La region sale de las coordenadas (CELDA 7): 12-1-2 figura AMBA en el maestro pero esta en Mar del Plata.
+SUCS = [('9', '1', '1', 'AR-C', ('AMBA', 'Supermercado'), (-34.60, -58.42)),
+        ('9', '1', '2', 'AR-B', ('AMBA\xa0', 'SUPERMERCADO'), (-34.70, -58.58)),     # La Matanza
+        ('9', '1', '3', 'AR-X', ('Pampeana', 'Hipermercado'), (-31.42, -64.18)),
+        ('15', '1', '1', 'AR-C', ('AMBA', 'Autoservicio'), (-34.61, -58.44)),
+        ('15', '1', '2', 'AR-X', ('Pampeana', 'autoservicio'), (-31.40, -64.20)),
+        ('15', '1', '3', 'AR-M', ('Cuyo\xa0', 'Autoservicio'), (-32.89, -68.84)),
+        ('15', '1', '4', 'AR-M', ('Cuyo', 'Autoservicio'), (-32.92, -68.85)),
+        ('12', '1', '1', 'AR-C', ('AMBA', 'Hipermercado'), (-34.58, -58.43)),
+        ('12', '1', '2', 'AR-B', ('AMBA', 'Tienda Fisica'), (-38.00, -57.55)),      # Mar del Plata
+        ('10', '4', '1', 'AR-S', None, None),
+        ('99', '1', '1', 'AR-B', None, None),
+        ('2', '1', '1', 'AR-R', ('Patagonia', 'Supermercado'), (-41.13, -71.30)),
+        ('2', '1', '2', 'AR-U', ('Patagonia', 'Supermercado'), (-45.86, -67.48))]
+MAR_DEL_PLATA = (-38.00, -57.55)
 CADENA_ESP = {('9', '1'): 'Vea', ('15', '1'): 'DIA', ('12', '1'): 'Coto', ('10', '4'): 'Carrefour (bandera 4)',
               ('99', '1'): 'Cadena 99', ('2', '1'): 'La Anonima'}
 PROV_ESP = {'AR-C': 'CABA', 'AR-B': 'Buenos Aires', 'AR-X': 'Córdoba', 'AR-M': 'Mendoza', 'AR-S': 'Santa Fe',
             'AR-R': 'Río Negro', 'AR-U': 'Chubut'}
 REGION_FUERA = {'AR-S': 'Pampeana', 'AR-B': 'Buenos Aires s/ubicar'}
+PROV_LARGA = {'AR-C': 'Ciudad Autónoma de Buenos Aires', 'AR-B': 'Provincia de Buenos Aires',
+              'AR-X': 'Provincia de Córdoba', 'AR-M': 'Provincia de Mendoza', 'AR-R': 'Provincia de Río Negro',
+              'AR-U': 'Provincia del Chubut'}
+REGION_PROV = {'CABA': 'AMBA', 'Buenos Aires': 'Pampeana', 'Córdoba': 'Pampeana', 'Mendoza': 'Cuyo',
+               'Río Negro': 'Patagonia', 'Chubut': 'Patagonia'}
+
+
+def km_obelisco(lat, lon):
+    la0, lo0, la, lo = map(math.radians, (-34.6037, -58.3816, lat, lon))
+    a = math.sin((la - la0) / 2) ** 2 + math.cos(la0) * math.cos(la) * math.sin((lo - lo0) / 2) ** 2
+    return 2 * 6371 * math.asin(math.sqrt(a))
+
+
+def coord_de(si, maestro_cambiado=False):
+    # maestro cambiado: la sucursal 9-1-2 se muda de La Matanza a Mar del Plata (AMBA -> Pampeana)
+    return MAR_DEL_PLATA if (maestro_cambiado and si == 1) else SUCS[si][5]
+
+
 TIPO_ESP = {'Supermercado': 'Supermercado', 'SUPERMERCADO': 'Supermercado', 'Hipermercado': 'Hipermercado',
             'Autoservicio': 'Autoservicio', 'autoservicio': 'Autoservicio', 'Tienda Fisica': 'Tienda física'}
 
@@ -180,10 +202,15 @@ def escribir_zips(sepa_dir):
 
 
 def maestro(cambiado=False):
-    filas = [{'id_comercio': s[0], 'id_bandera': s[1], 'id_sucursal': s[2], 'REGION': s[4][0],
-              'sucursales_tipo': s[4][1]} for s in SUCS if s[4]]
-    if cambiado:
-        filas[0]['REGION'] = 'Pampeana'
+    filas = []
+    for si, s in enumerate(SUCS):
+        if not s[4]:
+            continue
+        c = coord_de(si, cambiado)
+        filas.append({'id_comercio': s[0], 'id_bandera': s[1], 'id_sucursal': s[2], 'REGION': s[4][0],
+                      'sucursales_tipo': s[4][1], 'PROVINCIA': PROV_LARGA[s[3]],
+                      'sucursales_nombre': f'Suc {s[0]}-{s[2]}', 'sucursales_barrio': None,
+                      'sucursales_localidad': 'X', 'sucursales_latitud': c[0], 'sucursales_longitud': c[1]})
     return pd.DataFrame(filas)
 
 
@@ -206,9 +233,11 @@ def correr(tmp, nombre, desagregar, cache_dir, contar_lecturas=False, maestro_ca
     env['RUBRO_EAN'] = {e.lstrip('0'): r for e, _, _, _, r in MEDIA + POPULAR}
     env['CANASTAS_ACTIVAS'] = list(env['CANASTAS'])
     env['CANASTA_EANS_NORM'] = set().union(*[set(c) for c in env['CANASTAS'].values()])
-    exec(bloque(C4, 'NOMBRES_COMPUESTOS = {', 'PROV_NORM = {'), env)
+    exec(bloque(C4, 'suc_pais = maestro_suc[', 'NOMBRES_COMPUESTOS = {'), env)
+    exec(bloque(C4, 'NOMBRES_COMPUESTOS = {', 'PESOS_POBLACION = {'), env)
     exec(C5, env)
     exec(bloque(C6, 'def _pmean(_s):', 'ref_e ='), env)
+    exec(bloque(C7, '# ── Bboxes y función de geocodificación', '# ── Calcular canasta por sucursal'), env)
     exec(C9, env)
     exec(bloque(C19, 'from openpyxl.styles', 'out_xls ='), env)
     exec(compile(C19B, '<CELDA 19b>', 'exec'), env)
@@ -225,10 +254,15 @@ def correr(tmp, nombre, desagregar, cache_dir, contar_lecturas=False, maestro_ca
 
 # ── Calculo independiente ─────────────────────────────────────────────────────
 def atributos(si, maestro_cambiado=False):
+    # Region por coordenadas (CELDA 7): AMBA = CABA o Buenos Aires a <= 90 km del Obelisco; si no, por provincia
     s = SUCS[si]
-    reg = s[4][0].replace('\xa0', '').strip() if s[4] else REGION_FUERA[s[3]]
-    if maestro_cambiado and si == 0:
-        reg = 'Pampeana'
+    c = coord_de(si, maestro_cambiado)
+    if s[4] and c:
+        prov = PROV_ESP[s[3]]
+        amba = prov == 'CABA' or (prov == 'Buenos Aires' and km_obelisco(*c) <= 90)
+        reg = 'AMBA' if amba else REGION_PROV[prov]
+    else:
+        reg = REGION_FUERA[s[3]]
     return {'region': reg, 'provincia': PROV_ESP[s[3]], 'cadena': CADENA_ESP[(s[0], s[1])],
             'tipo': TIPO_ESP[s[4][1]] if s[4] else 'Sin dato en maestro'}
 
@@ -377,6 +411,19 @@ def verificar(env, xls, etiqueta, maestro_cambiado=False):
             vv = ws.cell(filas_a[1], lab[x]).value
             ok_x &= cerca(np.nan if vv is None else vv, t.loc[p, 'variacion_%'], 1e-5)
     chequear(ok_x, f'celdas del Excel = detalle_long (bloques indice y variacion, columnas {list(lab)[:6]}...)')
+    # Colores (2026-10-16): encabezado verde claro; filas de seccion y encabezados de las otras hojas verde oscuro;
+    # ningun azul (1F4E79 / D9E1F2) en ninguna hoja
+    rgb = lambda c: str(c.fill.fgColor.rgb)[-6:].upper() if c.fill and c.fill.fill_type == 'solid' else None
+    secc = [r for r in range(1, ws.max_row + 1) if ws.cell(r, 1).value == 'Regiones']
+    usados = {rgb(c) for w in wb.worksheets for fila_x in w.iter_rows() for c in fila_x} - {None}
+    otras = [w for w in wb.worksheets if w.title in env['_HOJAS_DESAG']]     # hojas de la 19b (fmt_ws, CELDA 19)
+    chequear(hdrs and all(rgb(ws.cell(h, c)) == env['VERDE_CLARO'] for h in hdrs for c in range(1, 5))
+             and secc and all(rgb(ws.cell(r, c)) == env['VERDE_OSCURO'] for r in secc for c in (1, 6))
+             and all(rgb(w.cell(1, 1)) == env['VERDE_OSCURO'] for w in otras if w.max_row > 1)
+             and env['VERDE_CLARO'] == '92D050' and env['VERDE_OSCURO'] == '375623'
+             and not usados & {'1F4E79', 'D9E1F2'},
+             f'colores: encabezado verde claro, secciones y encabezados de las otras hojas verde oscuro, sin azul '
+             f'(rellenos usados: {sorted(usados)})')
     notas = ' '.join(str(ws.cell(r, 1).value or '') for r in range(1, ws.max_row + 1))
     chequear(all(o in notas for o in omitidos) and 'Cadena 99 (1)' in omitidos,
              f'grupos omitidos en las notas: {omitidos}')
@@ -418,7 +465,8 @@ if __name__ == '__main__':
              'segunda corrida = primera')
 
     env3, xls3, lec3 = correr(tmp, 'r3', ['cantidad_03'], cache, contar_lecturas=True, maestro_cambiado=True)
-    verificar(env3, xls3, 'maestro cambiado (una sucursal de AMBA pasa a Pampeana)', maestro_cambiado=True)
+    verificar(env3, xls3, 'maestro cambiado (una sucursal se muda de La Matanza a Mar del Plata: AMBA -> Pampeana)',
+              maestro_cambiado=True)
     chequear(lec3 == ['2026-03', '2026-04', '2026-05'] and len(list(cache.glob('detalle_*_v1.parquet'))) == 2,
              f'maestro distinto -> clave nueva -> relee: {lec3}')
 

@@ -1908,7 +1908,14 @@ cells.append(cell_code("""\
 from openpyxl.styles import Font, PatternFill, Alignment
 from openpyxl.utils import get_column_letter
 
-HDR_FILL = PatternFill(start_color='1F4E79', end_color='1F4E79', fill_type='solid')
+# Colores del Excel (canasta_analisis_*.xlsx), los mismos en todas las hojas:
+#   VERDE_OSCURO: encabezados de las hojas y filas de sección de analisis_detallado (texto blanco encima).
+#                 Excel: "Verde, Énfasis 6, Oscuro 50%". Antes azul oscuro 1F4E79.
+#   VERDE_CLARO:  fila de encabezado de analisis_detallado (texto negro). Excel: "Verde claro" (colores
+#                 estándar). Antes azul claro D9E1F2.
+VERDE_OSCURO = '375623'
+VERDE_CLARO  = '92D050'
+HDR_FILL = PatternFill(start_color=VERDE_OSCURO, end_color=VERDE_OSCURO, fill_type='solid')
 HDR_FONT = Font(bold=True, color='FFFFFF', size=10)
 HDR_ALIG = Alignment(horizontal='center', wrap_text=True, vertical='center')
 
@@ -2192,8 +2199,10 @@ _PROV_ISO = {'AR-B': 'Buenos Aires', 'AR-C': 'CABA', 'AR-K': 'Catamarca', 'AR-H'
              'AR-A': 'Salta', 'AR-J': 'San Juan', 'AR-D': 'San Luis', 'AR-Z': 'Santa Cruz',
              'AR-S': 'Santa Fe', 'AR-G': 'Santiago del Estero', 'AR-V': 'Tierra del Fuego',
              'AR-T': 'Tucumán'}
-# Región = la del maestro (AMBA incluye el conurbano). Fuera del maestro, por provincia
-# (Buenos Aires sin coordenadas no se puede partir entre AMBA y Pampeana).
+# Región = AMBA por coordenadas, la columna amba de la CELDA 7 (CABA + Buenos Aires a <= AMBA_RADIO_KM del
+# Obelisco); el resto, por la provincia del archivo de precios (Buenos Aires fuera del AMBA = Pampeana). Sucursales
+# que la CELDA 7 no ubica (fuera del maestro, sin coordenadas, web): Buenos Aires no se puede partir entre AMBA y
+# Pampeana ('Buenos Aires s/ubicar'); un código de provincia desconocido queda 'Sin dato'.
 _REGION_PROV = {'CABA': 'AMBA', 'Córdoba': 'Pampeana', 'Entre Ríos': 'Pampeana', 'La Pampa': 'Pampeana',
                 'Santa Fe': 'Pampeana', 'Catamarca': 'Noroeste', 'Jujuy': 'Noroeste',
                 'La Rioja': 'Noroeste', 'Salta': 'Noroeste', 'Santiago del Estero': 'Noroeste',
@@ -2303,12 +2312,21 @@ def _atributos_sucursal():
            .drop_duplicates('_k').set_index('_k'))
     _s['cadena'] = [_cadena_desag(c, b) for c, b in zip(_s['id_comercio'], _s['id_bandera'])]
     _s['provincia'] = _s['prov_iso'].astype(str).map(_PROV_ISO).fillna('Sin dato')
-    _reg = (_ms['REGION'].astype(str).str.replace('\xa0', '').str.strip()
-            if 'REGION' in _ms.columns else pd.Series(dtype=str))
-    _s['region'] = _k.map(_reg)
-    _falta = _s['region'].isna() | _s['region'].isin(['nan', ''])
-    _s.loc[_falta, 'region'] = (_s.loc[_falta, 'provincia'].map(_REGION_PROV)
-                                .fillna('Buenos Aires s/ubicar'))
+    # Región (BUG-43): AMBA = columna amba de la CELDA 7 (CABA + Buenos Aires a <= AMBA_RADIO_KM del Obelisco),
+    # el mismo AMBA del Cuadro 1, los rankings y Valores_Documento. El resto, por la provincia del archivo de precios
+    # (la de la dimensión provincia de esta hoja; Buenos Aires fuera del AMBA = Pampeana). NO se usa la REGION del
+    # maestro (marca AMBA a ~100 DIA del interior bonaerense) ni la provincia reclasificada de la CELDA 7 (sus
+    # rectángulos pasan Neuquén capital a La Pampa y Paraná a Santa Fe, BUG-44). Sin coordenadas en la CELDA 7:
+    # Buenos Aires queda 'Buenos Aires s/ubicar'.
+    _geo = (suc_geo_clean.assign(_k=suc_geo_clean['id_comercio'] + '|' + suc_geo_clean['id_bandera']
+                                 + '|' + suc_geo_clean['id_sucursal'])
+            .drop_duplicates('_k').set_index('_k'))
+    _amba = _k.map(_geo['amba'])                  # True / False; NaN = la CELDA 7 no la ubica
+    _ubic, _en_amba = _amba.notna().values, _amba.eq(True).values
+    _s['region'] = _s['provincia'].map({**_REGION_PROV, 'Buenos Aires': 'Pampeana'}).fillna('Sin dato')
+    _s.loc[_ubic & _en_amba, 'region'] = 'AMBA'
+    _s.loc[_ubic & ~_en_amba & _s['region'].eq('AMBA').values, 'region'] = 'Pampeana'   # CABA en el archivo, ubicada fuera
+    _s.loc[~_ubic & _s['provincia'].eq('Buenos Aires').values, 'region'] = 'Buenos Aires s/ubicar'
     _tipo = (_ms['sucursales_tipo'].astype(str).str.strip().str.title().replace(
                  {'Tienda Fisica': 'Tienda física', 'Web': 'Web/virtual', 'Tienda Virtual': 'Web/virtual'})
              if 'sucursales_tipo' in _ms.columns else pd.Series(dtype=str))
@@ -2579,8 +2597,9 @@ def _desagregar(_cid):
         'ultima semana del mes anterior - mediana del mes anterior) / canasta del mes anterior; nuevo_pp = qty x '
         '(mediana del mes - mediana de la ultima semana del mes anterior) / canasta del mes anterior. Suman el '
         'aporte oficial producto a producto.',
-        'Region: la del maestro de sucursales (AMBA incluye el conurbano). Sucursales fuera del maestro: region '
-        'por provincia.',
+        'Region: AMBA = CABA + Buenos Aires a <= 90 km del Obelisco por coordenadas (columna amba de la CELDA 7, '
+        'la misma del Cuadro 1 y los rankings); el resto por la provincia del archivo de precios (Buenos Aires fuera '
+        'del AMBA: Pampeana; sin coordenadas: "Buenos Aires s/ubicar").',
     ]})
 
     _cols_prod = ['descripcion', 'grupo', 'categoria', 'qty', 'med_ant', 'med_act', 'var_mediana_%', 'peso_%',
@@ -2711,8 +2730,9 @@ cells.append(cell_code(r'''# ===================================================
 # Datos: el mes anterior y el mes en curso salen de lo que leyó la CELDA 19b (_OBS). Los meses viejos
 # se leen del SEPA por sucursal (solo los EANs de la canasta) y se guardan agregados en el caché
 # (_cache/detalle_<clave>_v1.parquet): la primera corrida lee DETALLE_MESES + 1 meses, las
-# siguientes solo el mes nuevo. La clave cambia con los EANs de la canasta, el maestro de
-# sucursales y los nombres de cadena (entonces se relee todo).
+# siguientes solo el mes nuevo. La clave cambia con los EANs de la canasta, la región de las
+# sucursales (provincia y AMBA de la CELDA 7), el tipo del maestro y los nombres de cadena
+# (entonces se relee todo).
 import time as _time
 from openpyxl import Workbook as _Workbook, load_workbook as _load_workbook
 from openpyxl.styles import Font as _Font, PatternFill as _Fill, Alignment as _Align
@@ -2721,17 +2741,21 @@ from openpyxl.utils import get_column_letter as _col_letter
 _HOJA_DET = 'analisis_detallado'
 _DIMS_DET = [('region', 'Regiones'), ('provincia', 'Provincias'),
              ('cadena', 'Cadenas (supermercados)'), ('tipo', 'Tipo de sucursal')]
-_ORDEN_REGION = ['AMBA', 'Pampeana', 'Noroeste', 'Noreste', 'Cuyo', 'Patagonia', 'Buenos Aires s/ubicar']
+_ORDEN_REGION = ['AMBA', 'Pampeana', 'Noroeste', 'Noreste', 'Cuyo', 'Patagonia', 'Buenos Aires s/ubicar',
+                 'Sin dato']
 
 
 def _firma_detalle(_eans):
-    # Clave del caché: EANs de la canasta + asignación de región/tipo (maestro) + nombres de cadena
-    _cols = ['id_comercio', 'id_bandera', 'id_sucursal'] + [c for c in ('REGION', 'sucursales_tipo')
+    # Clave del caché: EANs de la canasta + región (provincia y AMBA de la CELDA 7) + tipo (maestro) + nombres
+    # de cadena. Desde la región por coordenadas (2026-10-16) la REGION del maestro no entra.
+    _cols = ['id_comercio', 'id_bandera', 'id_sucursal'] + [c for c in ('sucursales_tipo',)
                                                            if c in maestro_suc.columns]
+    _geo = suc_geo_clean[['id_comercio', 'id_bandera', 'id_sucursal', 'PROVINCIA_NORM', 'amba']].astype(str)
     _txt = (maestro_suc[_cols].astype(str).sort_values(_cols).to_csv(index=False)
+            + _geo.sort_values(list(_geo.columns)).to_csv(index=False)
             + repr(sorted(NOMBRES_COMPUESTOS.items())) + repr(sorted(NOMBRES_SIMPLES.items()))
             + repr(sorted(_PROV_ISO.items())) + repr(sorted(_REGION_PROV.items()))
-            + '|'.join(sorted(_eans)) + '|detalle_v1')
+            + '|'.join(sorted(_eans)) + '|detalle_v1|region_coord')
     return hashlib.md5(_txt.encode('utf-8')).hexdigest()[:8]
 
 
@@ -2803,7 +2827,8 @@ def _escribir_hoja_detalle(_ruta, _filas, _cols_m, _cols_w, _titulo, _sub, _nota
     _wb.active = 0
     _f_tit, _f_neg = _Font(bold=True, size=13), _Font(bold=True)
     _f_sec = _Font(bold=True, color='FFFFFF')
-    _rell_sec, _rell_hdr = _Fill('solid', start_color='1F4E79'), _Fill('solid', start_color='D9E1F2')
+    # Colores de la CELDA 19: filas de sección verde oscuro, fila de encabezado verde claro
+    _rell_sec, _rell_hdr = _Fill('solid', start_color=VERDE_OSCURO), _Fill('solid', start_color=VERDE_CLARO)
     _ws.cell(1, 1, _titulo).font = _f_tit
     for _i, _t in enumerate(_sub):
         _ws.cell(2 + _i, 1, _t)
@@ -3064,8 +3089,9 @@ else:
         'Regiones y Tipo_sucursal (CELDA 19b), y el de cada producto en Productos.',
         f'Sucursales y Productos: con precio en {_lbl_mes(_ym_lbl(_ultimo))}. Se muestran los grupos con al menos '
         f'{DETALLE_MIN_SUCURSALES} sucursales (DETALLE_MIN_SUCURSALES).',
-        'Región: la del maestro de sucursales (AMBA incluye el conurbano); fuera del maestro, por provincia. '
-        'Provincia: la del archivo del SEPA.',
+        'Región: AMBA = CABA + Buenos Aires a <= 90 km del Obelisco por coordenadas (columna amba de la CELDA 7, '
+        'la misma del Cuadro 1 y los rankings); el resto por la provincia del archivo del SEPA (Buenos Aires fuera del '
+        'AMBA: Pampeana; sin coordenadas: "Buenos Aires s/ubicar"). Provincia: la del archivo del SEPA.',
     ]
     if _omitidos:
         _notas.append('Grupos con menos sucursales (no se muestran): ' + ', '.join(_omitidos))
