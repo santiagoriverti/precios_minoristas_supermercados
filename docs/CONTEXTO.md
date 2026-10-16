@@ -1,6 +1,6 @@
 # Contexto del Proyecto — Precios Minoristas SEPA
 
-Última actualización: 2026-10-15 (nb02: hoja `analisis_detallado` —la primera del Excel, CELDA 19c— con índices mensuales y semanales de la canasta Media por rubro, región, provincia, cadena y tipo de sucursal; y desagregación de la variación mensual por producto, arrastre, cadena y región —CELDA 19b—. Guía: `docs/NB02_ANALISIS_VARIACION.md`. Antes, 2026-10-02: nb07 v5.15: composición por rubro con faltantes imputados y Lavarropas BGH en la Tecnológica, relee el SEPA; corrida v5.14 al 2026-10-01 auditada y publicable. nb07 v5.14: el mismo cálculo que la v5.13 con un tercio de la RAM, corre en el Colab gratuito sin "RAM amplia"; no relee el SEPA. Antes, 2026-09-24: nb07 v5.13 lista para correr: frescos por TPD con nivel fijo, cobertura mínima de empaquetados, filtro estacional de frescos y ronda 2 de reemplazos —267 EANs—; ver el historial de cambios y `.claude/memory.md`. Antes, 2026-09-09: nb05/nb02: BUG-29 gráfico de barras con series de distinta longitud, BUG-30/32 mosaicos del mapa —CartoDB exige API key y OSM no responde desde la red de INECO— y BUG-31 el mapa pesaba 48 MB. Antes, 2026-09-07: nb07 v5.3, banda de plausibilidad anclada en frescos)
+Última actualización: 2026-10-16 (nb02: corrida de oct-26 en Colab revisada —19b y 19c OK— y BUG-42 corregido: AMBA por coordenadas, una sola referencia del país, acumulados contra el IPC en el mismo período, dispersión P5-P95 y formato del documento técnico; revisión en `docs/AUDITORIA_2026-10-16_nb02.md`. Script 03: acepta la carpeta de días y elige solo el zip semestral A/B. Antes, 2026-10-15: nb02: hoja `analisis_detallado` —la primera del Excel, CELDA 19c— con índices mensuales y semanales de la canasta Media por rubro, región, provincia, cadena y tipo de sucursal; y desagregación de la variación mensual por producto, arrastre, cadena y región —CELDA 19b—. Guía: `docs/NB02_ANALISIS_VARIACION.md`. Antes, 2026-10-02: nb07 v5.15: composición por rubro con faltantes imputados y Lavarropas BGH en la Tecnológica, relee el SEPA; corrida v5.14 al 2026-10-01 auditada y publicable. nb07 v5.14: el mismo cálculo que la v5.13 con un tercio de la RAM, corre en el Colab gratuito sin "RAM amplia"; no relee el SEPA. Antes, 2026-09-24: nb07 v5.13 lista para correr: frescos por TPD con nivel fijo, cobertura mínima de empaquetados, filtro estacional de frescos y ronda 2 de reemplazos —267 EANs—; ver el historial de cambios y `.claude/memory.md`. Antes, 2026-09-09: nb05/nb02: BUG-29 gráfico de barras con series de distinta longitud, BUG-30/32 mosaicos del mapa —CartoDB exige API key y OSM no responde desde la red de INECO— y BUG-31 el mapa pesaba 48 MB. Antes, 2026-09-07: nb07 v5.3, banda de plausibilidad anclada en frescos)
 
 > **El proyecto tiene 7 herramientas (nb01–nb07).** Las descripciones detalladas por celda más
 > abajo en este archivo son **históricas** (describen la arquitectura previa de nb02); el estado
@@ -69,11 +69,16 @@ python notebooks/test_costo_sucursal.py             # costo por sucursal (BUG-37
 python notebooks/test_candidatos_reemplazo.py       # hoja Candidatos_trazabilidad (v5.11)
 python notebooks/test_desagregacion_variacion.py    # nb02 CELDA 19b (desagregación de la variación)
 python notebooks/test_analisis_detallado.py         # nb02 CELDA 19c (hoja analisis_detallado)
+python notebooks/test_valores_documento.py          # nb02 CELDAS 7 (AMBA), 16, 18 y 20 (documento técnico)
 ```
+
+Los 11 tests tienen que terminar en OK (verificado el 2026-10-16 con Python 3.14, pandas 2.3, numpy 2.4).
 
 **Por dónde empezar**: `CLAUDE.md` (raíz) y los bloques **ESTADO ACTUAL ... / HANDOFF** de
 `.claude/memory.md` (nb02 y nb07), que dicen en qué quedó el trabajo y qué hacer con los próximos resultados.
-Para el nb02 (análisis de la variación de la canasta): `docs/NB02_ANALISIS_VARIACION.md`.
+Para el nb02 (análisis de la variación de la canasta): `docs/NB02_ANALISIS_VARIACION.md`; la última corrida revisada
+(qué se esperaba, qué salió, qué quedó abierto) está en `docs/AUDITORIA_2026-10-16_nb02.md`. Para revisar una corrida
+del nb02 hacen falta la salida impresa, `canasta_analisis_<mes>.xlsx` y un zip de `output_canasta/_cache/`.
 Para auditar una corrida del nb07 hacen falta el Excel de salida y las carpetas del caché del Drive
 (`_cache_nb07/sem_<clave>_v5` y `ean_<clave>_v5`, en zip); la planilla de precios promedio del INDEC
 está en `data/sh_ipc_precios_promedio_2026-08.xls` (bajar la nueva cuando se publique).
@@ -143,6 +148,9 @@ Este proyecto no existe en aislamiento. Hay múltiples notebooks en otros reposi
 ### 2b. `03_consolidacion_ultimo_mes` (Script 03 — este repo)
 **Propósito**: convertir el SEPA **diario** (`ultimo_mes.zip` ~7 GB) al formato **semestral wide**
 para adelantar el mes en curso. Corre **local** (Colab falla por el peso). Detalle: `SEPA_TECNICO.md`.
+Desde 2026-10 `ZIP_DIARIO` acepta el zip o la carpeta con los días ya descomprimidos y `CARGA_DIR` (carpeta de los
+semestrales) reemplaza a `SEMESTRE_ZIP_IN`: el script elige `YYYYA.zip` (ene-jun) o `YYYYB.zip` (jul-dic) y lo crea si
+no existe. Oct-26 salió así: `102026_pais_parte1COMPLETO.csv.gz` dentro de `2026B.zip`.
 
 ### 2c. `04_precios_seleccion` (notebook 04 — este repo)
 **Propósito**: Excel con precios diarios de los supermercados a ≤ X km de un punto (lat/lon).
@@ -566,7 +574,10 @@ la CELDA 20 usaba promedios por cadena y barrio; 3 caras y 1 barata; dispersión
 atípica); porcentajes con punto decimal y la prima celíaca con `abs()`. Arreglados: AMBA por coordenadas (≤ 90 km del
 Obelisco), referencia única del Cuadro 1, medianas, acumulados en el mismo período, P5-P95, formato. Test nuevo
 `notebooks/test_valores_documento.py` (falla en sus 19 chequeos con las celdas viejas). No relee nada: solo cambian
-las CELDAS 7 (columna `amba`), 16, 18, 19 (vs país de `Ranking_*` y columna `amba` en `Sucs_*`) y 20.
+las CELDAS 7 (columna `amba`), 16, 18, 19 (vs país de `Ranking_*` y columna `amba` en `Sucs_*`) y 20 (commit
+`d6e1f52`). Revisión completa, con los números antes/ahora simulados sobre los mismos datos, en
+`docs/AUDITORIA_2026-10-16_nb02.md`; scripts nuevos en `docs/auditoria/scripts_nb02_2026-10/`. Ese día también se
+commiteó el cambio del usuario al script 03 (carpeta de días y zip semestral A/B automático).
 
 ### 2026-10-15 — nb02: hoja `analisis_detallado` (CELDA 19c)
 

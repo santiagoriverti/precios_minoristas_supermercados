@@ -1,6 +1,6 @@
 # Metodología — ICR (Índice de Consumo Representativo)
 
-**Última actualización:** 2026-09-09 (limitación nueva en §6: los índices base 100 de series que arrancan en meses distintos no son comparables entre sí. Antes, 2026-09-07: nb07 v5.3, banda de plausibilidad anclada en frescos + cobertura nacional obligatoria; v5.2: filtro de régimen [BUG-24] y tripwire Alertas_precio_item — 287 empaquetados + 59 tipos de frescos)
+**Última actualización:** 2026-10-16 (§4: "Referencias, AMBA y valores del documento técnico" —una sola referencia del país, AMBA por coordenadas, acumulados contra el IPC en el mismo período, dispersión P5-P95—; antes, 2026-10-15: §4 desagregación de la variación mensual y hoja `analisis_detallado`. Antes, 2026-09-09: limitación nueva en §6: los índices base 100 de series que arrancan en meses distintos no son comparables entre sí. Antes, 2026-09-07: nb07 v5.3, banda de plausibilidad anclada en frescos + cobertura nacional obligatoria; v5.2: filtro de régimen [BUG-24] y tripwire Alertas_precio_item — 287 empaquetados + 59 tipos de frescos)
 **Período de referencia:** enero 2024 – agosto 2026
 
 ---

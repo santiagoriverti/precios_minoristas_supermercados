@@ -21,7 +21,7 @@ El proyecto responde tres preguntas:
 | Notebook | Descripción | Abrir |
 |----------|-------------|----------------|
 | `01_exploracion_productos` | Construye la canasta representativa. Detecta automáticamente el último mes disponible en los ZIPs del SEPA y genera `canasta_representativa_YYYY-MM.xlsx` con **cuatro hojas**, incluyendo la hoja `Selección` con **6 columnas de cantidad** para definir hasta 6 canastas distintas. | [![Abrir en Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/santiagoriverti/precios_minoristas_supermercados/blob/main/notebooks/01_exploracion_productos.ipynb) |
-| `02_evolucion_canasta_representativa` | Analiza la evolución del ICR para **hasta 6 canastas simultáneas**. Lee las columnas `cantidad_01`..`cantidad_06` de la hoja `Selección`, calcula el costo por sucursal y provincia para cada canasta activa, compara con el IPC INDEC, y genera gráficos, mapas y rankings independientes por canasta. Además exporta **`datos_econometria_{MES}.xlsx`** (formato tidy/long para series de tiempo): costo de las canastas + precio de productos elegidos (`PRODUCTOS_ECONOMETRIA`), **semanal y mensual**, a nivel **nacional / provincia / cadena**, con `valor_mediana` y `valor_promedio`. Ver [sección detallada](#excel-de-econometría--datos_econometria). **Desde 2026-10** explica la variación mensual de la canasta Media dentro de su Excel: hoja **`analisis_detallado`** (la primera: índices mensuales y semanales por rubro, región, provincia, cadena y tipo de sucursal) y hojas de aporte por producto, arrastre y cadena; ver `docs/NB02_ANALISIS_VARIACION.md`. | [![Abrir en Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/santiagoriverti/precios_minoristas_supermercados/blob/main/notebooks/02_evolucion_canasta_representativa.ipynb) |
+| `02_evolucion_canasta_representativa` | Analiza la evolución del ICR para **hasta 6 canastas simultáneas**. Lee las columnas `cantidad_01`..`cantidad_06` de la hoja `Selección`, calcula el costo por sucursal y provincia para cada canasta activa, compara con el IPC INDEC, y genera gráficos, mapas y rankings independientes por canasta. Además exporta **`datos_econometria_{MES}.xlsx`** (formato tidy/long para series de tiempo): costo de las canastas + precio de productos elegidos (`PRODUCTOS_ECONOMETRIA`), **semanal y mensual**, a nivel **nacional / provincia / cadena**, con `valor_mediana` y `valor_promedio`. Ver [sección detallada](#excel-de-econometría--datos_econometria). **Desde 2026-10** explica la variación mensual de la canasta Media dentro de su Excel: hoja **`analisis_detallado`** (la primera: índices mensuales y semanales por rubro, región, provincia, cadena y tipo de sucursal) y hojas de aporte por producto, arrastre y cadena; ver `docs/NB02_ANALISIS_VARIACION.md`. **Desde 2026-10-16** los números del documento técnico (`Valores_Documento`, rankings y barrios) usan **una sola referencia del país** (la del Cuadro 1), el **AMBA por coordenadas** (CABA + Buenos Aires a ≤ 90 km del Obelisco) y los **acumulados contra el IPC en el mismo período**; ver `docs/AUDITORIA_2026-10-16_nb02.md`. | [![Abrir en Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/santiagoriverti/precios_minoristas_supermercados/blob/main/notebooks/02_evolucion_canasta_representativa.ipynb) |
 | `03_consolidacion_ultimo_mes` | Convierte el SEPA **diario** al formato **semestral wide** para analizar el mes en curso sin esperar la consolidación oficial. Subís `ultimo_mes.zip` al entorno de Colab y te devuelve los dos `.csv.gz` para descargar. Ver [sección detallada](#adelantar-el-mes-en-curso--03_consolidacion_ultimo_mes). | [![Abrir en Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/santiagoriverti/precios_minoristas_supermercados/blob/main/notebooks/03_consolidacion_ultimo_mes.ipynb) |
 | `04_precios_seleccion` | Exporta un **Excel** con los precios diarios del último mes para todos los supermercados a menos de X km de un punto: una hoja por sucursal (productos × días) + una hoja general (producto × super, precio promedio). Ver [sección detallada](#precios-por-selección-geográfica--04_precios_seleccion). | [![Abrir en Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/santiagoriverti/precios_minoristas_supermercados/blob/main/notebooks/04_precios_seleccion.ipynb) |
 | `05_evolucion_productos_representativos` | Igual que el Notebook 02, pero para **productos individuales** en vez de canastas: evolución de precio, mapas provinciales, comparación con el IPC y rankings por cadena/barrio de cada EAN que se ingrese. Ver [sección detallada](#evolución-de-productos-individuales--05_evolucion_productos_representativos). | [![Abrir en Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/santiagoriverti/precios_minoristas_supermercados/blob/main/notebooks/05_evolucion_productos_representativos.ipynb) |
@@ -79,7 +79,7 @@ Solo se procesan las columnas con al menos un producto con cantidad > 0. Las col
                                        # (se auto-adapta si el mes no existe en la serie)
    ```
 3. Ejecutar las celdas en orden
-4. **Primera ejecución:** la CELDA 9 construye la serie histórica completa (~60 min). Las siguientes ejecuciones usan caché y son rápidas (~5 min).
+4. **Primera ejecución:** la CELDA 9 construye la serie histórica completa (~60 min), la CELDA 19c lee 12 meses del SEPA por sucursal (~35 min en el Colab gratuito, medido en oct-26) y la econometría arma su caché. Las siguientes ejecuciones usan caché y solo leen el mes en curso (y el que se cerró).
 
 > **El caché se invalida automáticamente** si cambiás qué EANs están en las canastas activas. Cambiar solo las cantidades no invalida el caché.
 
@@ -197,14 +197,14 @@ Se generan **dos** mapas: `mapa_interactivo_MMAAAA.html` (costo mediano) y `mapa
 | **`analisis_detallado`** (primera hoja) | Cuadro tipo informe de la canasta Media (CELDA 19c, `DETALLE_CANASTA`): filas Total, rubros SEPA (Almacén, Frescos, Perfumería, Limpieza, Bebidas, Congelados) con sus categorías, regiones, provincias, cadenas y tipos de sucursal; columnas los últimos 12 meses (índice base = el mes anterior al primero = 100), el mes en curso si es parcial y las semanas 1S-4S del mes anterior y del mes en curso. Bloques índice y variación %. La primera corrida lee 12 meses del SEPA (~40-50 min en Colab) y los deja en caché. Ver `docs/NB02_ANALISIS_VARIACION.md`. |
 | `Evolucion_IPC` | Serie mensual en formato ancho: todas las canastas + IPC General + IPC Alimentos |
 | `Prov_{canasta}` | Costo por provincia + desvío vs. promedio nacional — columnas `canasta_total`/`vs_promedio_%` (mediana) y `canasta_total_prom`/`vs_promedio_prom_%` (promedio) |
-| `Ranking_{canasta}` | Ranking de cadenas — columnas `canasta_mediana` y `canasta_prom` (con sus `vs_%`) |
-| `Sucs_{canasta}` | Costo por sucursal con cadena, provincia y coordenadas — columnas `canasta_total` y `canasta_total_prom` |
+| `Ranking_{canasta}` | Ranking de cadenas — columnas `canasta_mediana` y `canasta_prom` (con sus `vs_%` contra el país del Cuadro 1) |
+| `Sucs_{canasta}` | Costo por sucursal con cadena, provincia y coordenadas — columnas `canasta_total`, `canasta_total_prom`, `productos_propios` y `amba` (CABA + Buenos Aires a ≤ 90 km del Obelisco) |
 | `Serie_precios` | Precio mediano **y promedio** por canasta × producto × mes (`precio_mediano`/`costo_item` + `precio_prom`/`costo_item_prom`) |
-| `Valores_Documento` | Todos los valores del informe LaTeX listos para copiar (por sección) |
+| `Valores_Documento` | Todos los valores del informe LaTeX listos para copiar (por sección). Referencias únicas: país = Cuadro 1, CABA = su fila del Cuadro 1, AMBA = mediana de sus sucursales; cadenas y barrios por mediana con su "vs país"/"vs AMBA"/"vs CABA"; acumulados de canastas e IPC hasta el último mes con IPC (el mes en curso, aparte y marcado "no comparar"); dispersión entre sucursales P5-P95 (el mín-máx, con la sucursal que lo define y marcado "no publicar"); porcentajes con coma decimal |
 | `belgrano` | Cadenas presentes en el barrio de Belgrano (canasta media): cadena, nº de sucursales y canasta promedio. Sucursales geolocalizadas por lat/lon. |
 | `Pinamar` | Sucursales relevadas en Pinamar (canasta media): cadena, nombre de sucursal y canasta. Una fila por sucursal, geolocalizadas por lat/lon. |
 | `costa` | Ranking de localidades de la Costa Atlántica bonaerense (canasta media): localidad, nº de sucursales, canasta promedio y desvío vs. promedio país. Geolocalizadas por lat/lon. |
-| `CABA` | Ranking de barrios de CABA (canasta media, barrios con ≥2 sucursales): barrio, nº de sucursales y canasta promedio, más promedio CABA y promedio país. Geolocalizados por lat/lon. |
+| `CABA` | Ranking de barrios de CABA (canasta media, barrios con ≥2 sucursales): barrio, nº de sucursales, canasta mediana y promedio, más la fila CABA y el país del Cuadro 1. Barrios asignados por rectángulos lat/lon (aproximados: se superponen, ver `docs/BUGS_Y_MEJORAS.md`). |
 | `Resumen_variacion`, `Productos`, `Grupos`, `Rubros`, `Cadenas`, `Provincias`, `Regiones`, `Tipo_sucursal`, `Aporte_prod_x_cadena`, `Var_prod_x_cadena`, `Subas_y_bajas`, `Mes_parcial`, `Serie_diaria` | Desagregación de la variación mensual de la canasta Media (CELDA 19b; otras canastas con `DESAGREGAR_CANASTAS`, hojas con sufijo): aporte de cada producto (suma exacta a la variación oficial), arrastre del mes anterior, y aporte por cadena / provincia / región / tipo de sucursal con el panel apareado. Método en `docs/METODOLOGIA.md` §4. |
 
 ### LaTeX (`.tex`) — dos por cada canasta activa (mediana y `_prom`)
@@ -311,7 +311,9 @@ MyDrive/carga/
 ├── 2026A.zip     # Enero–junio 2026
 ├── 2026B.zip     # Julio–diciembre 2026 (se va completando mes a mes)
 ├── IPC.xlsx, ar.json, maestro_sepa_completo.csv.gz y los maestros de data/
-├── output_canasta/                     # canasta_representativa_YYYY-MM.xlsx (entrada del nb07)
+├── output_canasta/                     # canasta_representativa_YYYY-MM.xlsx (entrada del nb02 y del nb07)
+│   └── _cache/                         # cachés del nb02: hist_union_*, detalle_* (19c), econ_*, df_suc_<mes>
+│                                       #   (para revisar una corrida del nb02: zip de esta carpeta + el Excel)
 └── output_canasta_alternativa/         # salidas del nb07 + _cache_nb07/ (sem_<clave>_v5/, ean_<clave>_v5/)
 ```
 
@@ -336,7 +338,7 @@ El SEPA publica el archivo **semestral consolidado** de cada mes recién **una s
 4. Al terminar, el notebook **descarga automáticamente** los dos archivos:
    - `MMAAAA_pais_parte1COMPLETO.csv.gz` (días 01–15)
    - `MMAAAA_pais_parte2COMPLETO.csv.gz` (días 16–último)
-5. Subir esos `.csv.gz` al `2026A.zip` en Drive (`carga/`) y correr los notebooks 01 y 02.
+5. Subir esos `.csv.gz` al zip del semestre en Drive (`carga/2026A.zip` para ene-jun, `2026B.zip` para jul-dic) y correr los notebooks 01 y 02.
 
 Se puede correr **cualquier día del mes**: con 23 días disponibles arma parte1 (15 días) + parte2 (días 16–23); el día 30 toma el mes completo; el 1° de julio se sube el `ultimo_mes.zip` de julio y arranca el mes nuevo.
 
@@ -356,20 +358,22 @@ Se puede correr **cualquier día del mes**: con 23 días disponibles arma parte1
 
 ### Correrlo localmente (recomendado para el zip de ~7 GB)
 
-La subida de un `ultimo_mes.zip` de ~7 GB al entorno de Colab suele fallar (la transferencia del navegador no es resumible y se corta). En ese caso conviene correr la versión local `notebooks/03_consolidacion_ultimo_mes.py`, que hace **exactamente lo mismo** sin subir nada — procesa el `.zip` directo desde el disco — y además **empaqueta** los `.csv.gz` dentro de un `2026A.zip` actualizado, listo para subir a Drive.
+La subida de un `ultimo_mes.zip` de ~7 GB al entorno de Colab suele fallar (la transferencia del navegador no es resumible y se corta). En ese caso conviene correr la versión local `notebooks/03_consolidacion_ultimo_mes.py`, que hace **exactamente lo mismo** sin subir nada — procesa el `.zip` (o la carpeta de días ya descomprimida) directo desde el disco — y además **empaqueta** los `.csv.gz` dentro del zip del semestre (`YYYYA.zip` o `YYYYB.zip`, elegido según el mes) actualizado, listo para subir a Drive.
 
 **Requisitos**: Python 3 con `pandas` y `numpy` (si faltan: `pip install pandas numpy`).
 
 **Paso 1 — configurar las rutas.** Abrir `notebooks/03_consolidacion_ultimo_mes.py` y editar la sección `CONFIGURACIÓN`:
 
 ```python
-# Zip diario descargado del Ministerio (carpetas YYYY-MM-DD adentro)
-ZIP_DIARIO = Path(r"C:\...\sepa_diario_minoristas\ultimo_mes.zip")
+# SEPA diario descargado del Ministerio. Puede ser:
+#   - el zip del mes (ultimo_mes.zip, con carpetas YYYY-MM-DD adentro), o
+#   - la carpeta que contiene las carpetas YYYY-MM-DD ya descomprimidas.
+ZIP_DIARIO = Path(r"C:\...\sepa_diario_minoristas")
 
-# Zip semestral existente a actualizar (debe llamarse YYYYA.zip / YYYYB.zip).
-# El mes generado se inserta acá conservando los demás meses.
-# Poner None si solo querés los .csv.gz sueltos.
-SEMESTRE_ZIP_IN = Path(r"C:\...\carga\2026A.zip")
+# Carpeta con los zips semestrales (YYYYA.zip / YYYYB.zip). Se elige solo el que
+# corresponde al mes procesado (ene-jun -> A, jul-dic -> B); si no existe, se crea
+# uno nuevo solo con el mes. Poner None si solo querés los .csv.gz sueltos.
+CARGA_DIR = Path(r"C:\...\SEPA_Bases_Originales\carga")
 
 # Carpeta donde se escriben los .csv.gz y el zip semestral actualizado
 OUTPUT_DIR = Path(r"C:\...\salida_consolidada")
@@ -417,11 +421,11 @@ Comercios a procesar: 20 -> ['2', '3', '4', ...]
 
 **Paso 4 — resultado.** En `OUTPUT_DIR` quedan:
 - `MMAAAA_pais_parte1COMPLETO.csv.gz` (días 01–15) y `parte2` (16–último)
-- `2026A.zip` actualizado (mes nuevo insertado, meses previos conservados)
+- el zip del semestre actualizado (`YYYYA.zip` para ene-jun, `YYYYB.zip` para jul-dic): mes nuevo insertado, meses previos conservados. Al final el script imprime los meses que quedaron adentro.
 
-Subir ese `2026A.zip` a `carga/` en Drive (reemplaza el viejo) y correr los notebooks 01 y 02.
+Subir ese zip a `carga/` en Drive (reemplaza el viejo del mismo nombre) y correr los notebooks 01 y 02.
 
-> **Mes nuevo (julio, etc.)**: reemplazás el `ultimo_mes.zip` por el del mes nuevo y volvés a ejecutar. El mes se autodetecta.
+> **Mes nuevo (julio, etc.)**: reemplazás el diario (zip o carpeta) por el del mes nuevo y volvés a ejecutar. El mes y el semestre (A/B) se autodetectan.
 
 ---
 

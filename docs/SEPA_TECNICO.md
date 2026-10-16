@@ -1,6 +1,6 @@
 # SEPA — Referencia Técnica
 
-Última actualización: 2026-09-03 (nb07: lectura semanal + colapso de frescos a tipo [fix RAM] + selección de frescos por categoría; nb02: motor `datos_econometria`)
+Última actualización: 2026-10-16 (maestro de sucursales: la `REGION=AMBA` no es confiable en Buenos Aires —usar coordenadas—, provincia ISO vs maestro, comercios sin nombre; script 03 con carpeta de días y zip semestral A/B automático). Antes, 2026-09-03 (nb07: lectura semanal + colapso de frescos a tipo [fix RAM] + selección de frescos por categoría; nb02: motor `datos_econometria`)
 
 > **Cambio 2026-08-21 (nb02/nb05, CELDA 6/7)**: el precio por sucursal del mes reportado ahora se calcula sobre **todos los días del mes** —mediana de los días y media con outliers fuera— en vez de tomar solo el primer día (`drop_duplicates keep='first'`, eliminado). El promedio descarta valores fuera de `[mediana/4, mediana×4]` antes de promediar (helper `_pmean`, vectorizado en la CELDA 7). Esto DUPLICA los artefactos: análisis mediana (nombres base) y promedio (sufijo `_prom`). Detalle en `.claude/memory.md`.
 >
@@ -42,6 +42,10 @@ YYYY-MM-DD.zip
 - **Identidad de cadena**: string completo en `comercio_bandera_nombre`
 - **Cadenas visibles**: hasta 28 banners comerciales
 - Útil para ver los precios reales de cada banner, pero más difícil de consolidar en el tiempo
+- **Del diario al semestral**: `notebooks/03_consolidacion_ultimo_mes.py` (local) arma los `MMAAAA_pais_parteN` del mes
+  en curso y los mete en el zip del semestre. Desde 2026-10: `ZIP_DIARIO` = zip del mes o carpeta con las carpetas
+  `YYYY-MM-DD` ya descomprimidas; `CARGA_DIR` = carpeta de los semestrales, de la que elige `YYYYA.zip` (ene-jun) o
+  `YYYYB.zip` (jul-dic) y lo crea si no existe. Pasos en el README ("Correrlo localmente").
 
 ---
 
@@ -338,10 +342,29 @@ El código de cada celda está contenido en un string `"""\..."""`. Usar triple 
 ### Regiones del maestro de sucursales
 
 `AMBA`, `Pampeana`, `Patagonia`, `Noroeste`, `Cuyo`, `Noreste` (algunas vienen con un espacio duro al final,
-`'Noroeste\xa0'`: limpiarlo antes de agrupar). Las sucursales que NO están en el maestro (~535 en oct-26) no tienen
+`'Noroeste\xa0'`: limpiarlo antes de agrupar). Las sucursales que NO están en el maestro (~540 en oct-26) no tienen
 región: el nb02 (19b/19c) la asigna por provincia (código ISO de la columna `sucursales_provincia` del archivo de
 precios: `AR-B` Buenos Aires, `AR-C` CABA, ...) y deja `Buenos Aires s/ubicar` para las bonaerenses, que no se pueden
 partir entre AMBA y Pampeana sin coordenadas.
+
+**⚠️ La `REGION=AMBA` del maestro no es confiable en Buenos Aires (2026-10-16)**: ~100 sucursales de DIA del interior
+bonaerense (Mar del Plata, Tandil, Pergamino, Lobos, Mercedes...; todas con localidad `BUENOS AIRES`) figuran como AMBA,
+mientras otras cadenas en esos mismos pueblos figuran como Pampeana. Para el AMBA, usar coordenadas: CABA + sucursales de
+Buenos Aires a ≤ 90 km del Obelisco (-34.6037, -58.3816), que toma La Plata (55 km), Luján (67), Campana (72) y Zárate
+(81) y deja afuera Lobos, Navarro, Mercedes y Chascomús (92-114 km). Es la columna `amba` de la CELDA 7 del nb02 (BUG-42);
+la 19b/19c y el nb05 todavía no la usan. Verificación: `docs/auditoria/scripts_nb02_2026-10/validar_amba_maestro.py`.
+Tampoco usar `PROVINCIA in (CABA, Buenos Aires)` como AMBA: entra Toledo (Mar del Plata) y la Cooperativa Obrera
+(Bahía Blanca).
+
+**Provincia: dos fuentes distintas**. El maestro trae `PROVINCIA` (nombre largo, se normaliza con `PROV_NORM`) y el
+archivo de precios trae `sucursales_provincia` (ISO). El Cuadro 1 del nb02 usa el maestro con reclasificación por
+coordenadas y descarta las sucursales "CABA" fuera del rectángulo de CABA; la 19b/19c usan el ISO. En oct-26: CABA 834
+sucursales en el Cuadro 1 (canasta Media) y 1.131 en la 19c.
+
+**Comercios sin nombre en `NOMBRES_SIMPLES`/`NOMBRES_COMPUESTOS`** (CELDA 4 del nb02) salen como `Cadena <id>`. En
+oct-26: "Cadena 24" con 332 sucursales y solo 9 de los 69 productos de la Media (perfil de farmacia/perfumería),
+"Cadena 23" (53 sucursales, 3 productos), "Cadena 6" (26, 2). Ninguna está en el maestro de sucursales. Identificarlas
+con `comercio_bandera_nombre` del `comercio.csv` del SEPA diario antes de agregarlas a los diccionarios.
 
 ### Leer el SEPA por sucursal solo para unos EANs (nb02 CELDAS 19b/19c)
 

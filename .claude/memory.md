@@ -6,37 +6,36 @@ Autor: Santiago Riverti — investigador independiente
 
 ---
 
-## 🟢 ESTADO ACTUAL nb02 / HANDOFF [2026-10-16] — corrida de oct-26 revisada + BUG-42 (documento técnico) — leer esto primero
-
-### Novedad 2026-10-16
-
-- El usuario corrió el nb02 en Colab (oct-26 al 15/10) y pasó salida + Excel + caché: **19b y 19c OK** (oficial
-  +1,748%, medianas 69/69, `analisis_detallado` primera, sin AVISO; la 19c tardó 2.069 s la primera vez y dejó
-  `detalle_ea281ee7_v1.parquet` con 13 meses).
-- **BUG-42 resuelto (no corrido en Colab todavía)**: CELDAS 7 (columna `amba`), 16, 18, 19 y 20. AMBA por coordenadas
-  (CABA + Buenos Aires a ≤ 90 km del Obelisco), país = Cuadro 1 en todo "vs país", cadenas/barrios por mediana,
-  acumulados en el mismo período que el IPC, 3 caras/3 baratas, dispersión P5-P95, coma decimal y signo. Test
-  `notebooks/test_valores_documento.py`. Simulado con los datos reales de oct-26 (Excel reconstruido): AMBA Media 1.405
-  sucursales (sin Toledo/Coop. Obrera/La Anónima); Media +162,8% vs IPC Alim +166,4% (ene-24 → sep-26); P5-P95 6,5%.
-- Lectura de los datos: **Vea bajó precios en jul-26** (19 de 67 productos −10 a −28%, sostenido en agosto): explica la
-  caída de Cuyo/NOA en jul-26 en `analisis_detallado` y el rebote de oct (Vea +4,3%, el mayor aporte por cadena).
-- Abiertos nuevos (BUGS_Y_MEJORAS, "nb02 — abiertos"): región del maestro en la 19b/19c (DIA del interior como AMBA),
-  ~540 sucursales fuera del maestro ("Cadena 24": 332), cadenas con 2-9 productos en la 19c, barrios por rectángulos,
-  y el mismo AMBA mal definido en el nb05.
-- **Siguiente**: el usuario re-corre el nb02 (las CELDAS 7 a 20 alcanzan; no relee el SEPA) y se revisa la salida de
-  la CELDA 20 contra la simulación.
+## 🟢 ESTADO ACTUAL nb02 / HANDOFF [2026-10-16 · cierre] — corrida de oct-26 revisada + BUG-42 — leer esto primero
 
 Hay dos líneas de trabajo vivas: **nb02** (este bloque, lo último) y **nb07** (bloque siguiente, sin cambios desde el
-2026-10-02). Guía práctica del nb02: **`docs/NB02_ANALISIS_VARIACION.md`**; método: `docs/METODOLOGIA.md` §4.
+2026-10-02). Guía práctica del nb02: **`docs/NB02_ANALISIS_VARIACION.md`**; método: `docs/METODOLOGIA.md` §4; última
+revisión de una corrida: **`docs/AUDITORIA_2026-10-16_nb02.md`**. Repo al día en `main` (sin cambios sin commitear).
 
 ### En qué estamos
 
-- Pedido 1 (2026-10-15): la canasta Media subió **+1,75% en oct-26 (al 15/10)**; explicar ese número por producto,
-  geografía y cadena, todos los meses dentro del nb02 → **CELDA 19b** (commit 40c89ba). Se portó un script ad hoc
-  validado (guardado en `docs/auditoria/scripts_nb02_2026-10/prototipo_*.py`).
-- Pedido 2 (2026-10-15): una pestaña **al principio** del Excel, `analisis_detallado`, "tipo informe" (filas Total,
-  rubros, regiones...; columnas meses y semanas), adaptada a los datos del SEPA → **CELDA 19c**.
-- **Las dos están listas, testeadas y validadas con datos reales de oct-26, pero NO se corrieron todavía en Colab.**
+- Pedidos del 2026-10-15: explicar la variación mensual de la Media (+1,75% en oct-26 al 15/10) por producto,
+  geografía y cadena → **CELDA 19b**; y una pestaña "tipo informe" al principio del Excel → **CELDA 19c**
+  (`analisis_detallado`). Las dos están descritas abajo.
+- **2026-10-16: el usuario corrió el nb02 en Colab (oct-26 al 15/10) y la 19b y la 19c dieron lo validado**: oficial
+  +1,748%, medianas 69/69, arrastre +1,479 pp, panel +1,971%; `analisis_detallado` primera de 39 hojas, sin AVISO; la
+  19c tardó 2.069 s la primera vez y dejó `_cache/detalle_ea281ee7_v1.parquet` con 13 meses (2025-09 → 2026-09).
+- La revisión encontró defectos PREVIOS en los números del documento técnico (CELDAS 16, 18, 20) → **BUG-42, resuelto
+  el 2026-10-16 (commit d6e1f52), NO corrido en Colab todavía**: AMBA = columna `amba` de la CELDA 7 (CABA + Buenos
+  Aires a ≤ 90 km del Obelisco; antes CABA + toda la provincia, con Toledo y la Cooperativa Obrera adentro); un solo
+  "país" = Cuadro 1 en las CELDAS 16, 18, 19 (`Ranking_*`) y 20; cadenas y barrios por mediana en la CELDA 20;
+  acumulados de canastas e IPC en el mismo período (el mes sin IPC, aparte); 3 caras / 3 baratas; dispersión P5-P95;
+  coma decimal y signo. Test `notebooks/test_valores_documento.py`.
+- Simulado con los datos reales de oct-26 (`docs/auditoria/scripts_nb02_2026-10/simular_valores_documento.py`): AMBA de
+  la Media 1.405 sucursales (antes 1.655); acumulados ene-24 → sep-26 Media **+162,77%** vs IPC Alimentos **+166,35%**
+  (la corrida decía +167,36% a oct contra el IPC a sep: parecía arriba); P5-P95 6,5% (el mín-máx daba 38,8%).
+- Lectura de los datos: **Vea bajó precios en jul-26** (19 de 67 productos −10 a −28%, sostenido en agosto): explica la
+  caída de Cuyo/NOA en jul-26 en `analisis_detallado` y el rebote de oct (Vea +4,05%, el mayor aporte por cadena).
+- Abiertos nuevos (BUGS_Y_MEJORAS, "nb02 — abiertos"; AUDITORIA_2026-10-16_nb02 §5): región del maestro en la 19b/19c
+  (DIA del interior como AMBA), ~540 sucursales fuera del maestro ("Cadena 24": 332), cadenas con 2-9 productos en la
+  19c, barrios por rectángulos superpuestos, y el mismo AMBA mal definido en el nb05 (tarjeta de sesión propuesta).
+- 2026-10-16: se commiteó el cambio del USUARIO en `notebooks/03_consolidacion_ultimo_mes.py` (pidió "commitear todo"):
+  `ZIP_DIARIO` acepta el zip o la carpeta de días; `CARGA_DIR` elige solo el `YYYYA/B.zip` del semestre.
 
 ### CELDA 19b — desagregación del último mes (13 hojas al final del Excel)
 
@@ -63,8 +62,8 @@ Hay dos líneas de trabajo vivas: **nb02** (este bloque, lo último) y **nb07** 
   apareados). Total = Σ Pond × rubros. La variación del último mes de cada grupo = `var_mediana_grupo_%` de la 19b.
 - Usa las observaciones de la 19b (mes anterior + en curso; la 19b ahora lee también la canasta de la 19c y deja
   `_OBS` vivo; la 19c lo libera). Meses viejos: los lee del SEPA (mismo lector) y los guarda agregados en
-  `_cache/detalle_<clave>_v1.parquet` (solo meses cerrados). **Primera corrida en Colab: hasta 12 meses a leer,
-  ~2-2,5 min por mes en una PC → calcular ~40-50 min en Colab, una sola vez.** Después, nada o el mes que se cerró.
+  `_cache/detalle_<clave>_v1.parquet` (solo meses cerrados). **Primera corrida en Colab (medida el 2026-10-16): 12
+  meses leídos en 2.069 s (~35 min, 158-182 s por mes), una sola vez.** Después, nada o el mes que se cerró.
   La clave cambia con los EANs de la canasta, el maestro (región/tipo), los nombres de cadena (relee todo).
 - Validada con oct-26 (solo estaba el 2026B.zip localmente → ventana de 2 meses): Total = serie oficial; 6 rubros =
   Serie_precios; 51 grupos: variación oct = control de la 19b; semanas de Total y AMBA = observaciones del prototipo.
@@ -73,15 +72,17 @@ Hay dos líneas de trabajo vivas: **nb02** (este bloque, lo último) y **nb07** 
 
 ### LO PRÓXIMO (nb02)
 
-1. El usuario abre el nb02 desde GitHub y corre todo en el Colab gratuito (la 19c tarda ~40-50 min la primera vez).
-   Pedirle: el Excel `canasta_analisis_2026-10.xlsx` (o el mes que toque) y la salida impresa de las CELDAS 19b y 19c.
-2. Revisar: la 19b imprime "medianas reproducidas 69/69" y la variación oficial; la 19c, "Hoja analisis_detallado
-   escrita como primera hoja" sin el AVISO de "Total vs suma ponderada de los rubros"; que la hoja sea la primera.
-3. Si el pico de RAM o el tiempo en Colab molestan: la mejora posible es prefiltrar las líneas del CSV por EAN antes de
-   `pd.read_csv` (~5x más rápido); validarla contra el lector actual con los scripts de
-   `docs/auditoria/scripts_nb02_2026-10/` antes de cambiarlo.
-4. `notebooks/03_consolidacion_ultimo_mes.py` tiene cambios del USUARIO sin commitear (no son de estas sesiones): no
-   tocarlos ni commitearlos; preguntarle.
+1. El usuario re-corre el nb02 en Colab ("Ejecutar todo": la serie, la 19c y la econometría tienen caché al día; no
+   relee el histórico). Pedirle la salida de las CELDAS 7, 16, 18 y 20 y el Excel `canasta_analisis_<mes>.xlsx`.
+2. Revisar contra `docs/AUDITORIA_2026-10-16_nb02.md` §3: la CELDA 7 imprime "AMBA (CABA + Buenos Aires a <= 90 km del
+   Obelisco): N sucursales"; el ranking AMBA sin Toledo/Cooperativa Obrera/La Anónima; Item 6 "acumulados 2024-01 ->
+   <último mes con IPC>" con el mes sin IPC aparte; 3 caras y 3 baratas; P5-P95; porcentajes con coma. Si el mes ya
+   cerró, los números cambian pero las comprobaciones son las mismas. La econometría tiene que decir "en cache: 33".
+3. Elegir con el usuario el siguiente abierto: (a) región por coordenadas también en la 19b/19c (cambia la clave del
+   caché de la 19c: relee 12 meses ~35 min una vez); (b) identificar "Cadena 24" y actualizar el maestro de sucursales
+   (~540 fuera); (c) mínimo de productos para las cadenas de la 19c; (d) barrios con polígonos oficiales; (e) nb05.
+4. Si el tiempo de la 19c molesta: prefiltrar las líneas del CSV por EAN antes de `pd.read_csv` (~5x más rápido);
+   validarlo contra el lector actual con los scripts de `docs/auditoria/scripts_nb02_2026-10/`.
 
 ### Reglas que muerden (nb02)
 
@@ -90,8 +91,17 @@ Hay dos líneas de trabajo vivas: **nb02** (este bloque, lo último) y **nb07** 
   (millones de strings): claves enteras (la 19c arma las semanas como AAAAMM*10+semana).
 - `datos` (CELDA 6) no sirve para la 19b/19c: filtra a sucursales con coordenadas y descarta el día.
 - Editar el generador con scripts en archivo o con la herramienta Edit: la shell se come las barras invertidas de los
-  heredocs (pasó en esta sesión: una barra-n de un script de edición llegó como salto de línea real).
-- Tests: `python notebooks/test_desagregacion_variacion.py` y `python notebooks/test_analisis_detallado.py`.
+  heredocs (pasó el 2026-10-15 y otra vez el 2026-10-16 con un script de reemplazo: escribirlo con Write).
+- **Una sola referencia del país (BUG-42)**: todo "vs país" contra `prom_nac_dict`/`prom_nac_prom_dict` (Cuadro 1);
+  CABA = su fila del Cuadro 1; cadenas y barrios por mediana en el análisis [mediana]; AMBA = columna `amba` de la
+  CELDA 7, nunca `PROVINCIA_NORM in (CABA, Buenos Aires)` ni la `REGION` del maestro; acumulados contra el IPC en el
+  mismo período. El nivel de la canasta es el del Cuadro 1 ($682.699 en oct-26) y la variación la de la serie de la
+  CELDA 9 ($673.534 → $685.307): son estadísticos distintos, no mezclarlos en una misma cuenta.
+- La provincia de la 19b/19c es el código ISO del archivo de precios (CABA 1.131 sucursales en oct-26); la del Cuadro 1,
+  el maestro con reclasificación (CABA 834). No comparar cantidades de sucursales entre esas hojas.
+- Tests: `test_desagregacion_variacion.py` (19b), `test_analisis_detallado.py` (19c), `test_valores_documento.py`
+  (CELDAS 7 AMBA, 16, 18, 20). Antes de dar por buena una regla nueva, correrla sobre datos reales con los scripts de
+  `docs/auditoria/scripts_nb02_2026-10/` (simular_valores_documento.py rehace la CELDA 20 desde el Excel de una corrida).
 
 ## 🟢 ESTADO ACTUAL nb07 / HANDOFF [2026-10-02 · cierre] — v5.15 LISTA PARA CORRER (RELEE el SEPA)
 
@@ -1820,7 +1830,7 @@ Con el nb02 ejecutado para el nuevo mes:
 
 **Esquema diario (pipe `|`):** `productos.csv` = id_comercio|id_bandera|id_sucursal|id_producto|productos_ean|…|productos_precio_lista(idx9)|…  ·  `sucursales.csv` trae `sucursales_provincia` (AR-X, igual que `maestro-provincias.xlsx`).
 
-**Config del script:** `ZIP_DIARIO`, `SEMESTRE_ZIP_IN` (2026A.zip a actualizar), `OUTPUT_DIR`, `MES_FORZADO`, `LIMITE_COMERCIOS`/`LIMITE_DIAS` (debug). Rutas locales: diario en `...\SEPA\sepa_diario_minoristas\ultimo_mes.zip`; semestrales en `...\SEPA\SEPA_Bases_Originales\carga\`.
+**Config del script (desde 2026-10, cambio del usuario commiteado el 2026-10-16):** `ZIP_DIARIO` = el zip del mes O la carpeta con las carpetas `YYYY-MM-DD` ya descomprimidas (clase `CarpetaDiaria`); `CARGA_DIR` = carpeta de los semestrales: elige solo `YYYYA.zip` (ene-jun) o `YYYYB.zip` (jul-dic) y si no existe crea uno nuevo con el mes; `OUTPUT_DIR`, `MES_FORZADO`, `LIMITE_COMERCIOS`/`LIMITE_DIAS` (debug). Antes era `SEMESTRE_ZIP_IN` (2026A.zip fijo). Rutas locales: diario en `...\SEPA\sepa_diario_minoristas\`; semestrales en `...\SEPA\SEPA_Bases_Originales\carga\`. Al final imprime los meses que quedaron adentro del zip.
 
 **Dos formas de correrlo:**
 - **`03_consolidacion_ultimo_mes.ipynb`** (Colab, el que usa el usuario): sube `ultimo_mes.zip` al entorno `/content/`, ejecuta todo, y `files.download()` devuelve los dos `.csv.gz`. NO monta Drive ni empaqueta el zip — el usuario sube los `.csv.gz` al `2026A.zip` a mano. Generado desde el `.py` extrayendo el bloque de funciones (de `_COLS_PROD` hasta `escribir_parte`).
@@ -1828,7 +1838,7 @@ Con el nb02 ejecutado para el nuevo mes:
 
 **⚠️ Colab NO sirve para este zip**: la subida de `ultimo_mes.zip` (~7 GB) al panel de Colab falla (la rueda se pone roja; la transferencia navegador→runtime no es resumible y se corta con archivos grandes). **Vía recomendada: el `.py` LOCAL** — no sube nada, procesa el zip del disco. El notebook .ipynb queda igual en el repo por si en el futuro el zip es chico o se sube por Drive (resumible) + mount.
 
-**Cómo corre el usuario el `.py` local** (documentado paso a paso en README, sección "Correrlo localmente"): entorno ya tiene Python 3.14.5 + pandas 2.3.3 + numpy 2.4.6 (no instalar nada). Editar `CONFIGURACIÓN` (ZIP_DIARIO, SEMESTRE_ZIP_IN=2026A.zip, OUTPUT_DIR) y `python notebooks/03_consolidacion_ultimo_mes.py`. Salida: dos `.csv.gz` + `2026A.zip` actualizado in-place.
+**Cómo corre el usuario el `.py` local** (documentado paso a paso en README, sección "Correrlo localmente"): entorno ya tiene Python 3.14.5 + pandas 2.3.3 + numpy 2.4.6 (no instalar nada). Editar `CONFIGURACIÓN` (ZIP_DIARIO, CARGA_DIR, OUTPUT_DIR) y `python notebooks/03_consolidacion_ultimo_mes.py`. Salida: dos `.csv.gz` + el `YYYYA/B.zip` del semestre actualizado en `OUTPUT_DIR` (oct-26: 2026B.zip con `102026_pais_parte1COMPLETO.csv.gz`).
 
 **Estado [2026-06-23]:** ambos commiteados + linkeados en README. Validados: .py en subconjunto, .ipynb con smoke-test. Join maestro 99–100%.
 
@@ -2186,6 +2196,8 @@ atribución de Claude en commits (van solo con Santiago Riverti).
 
 **Cantidades de canastas nb07**: `docs/canastas_alternativas/` — `cargar_en_productos_unicos.py`
 (loader Colab, 130 EAN, cantidad_01..05, editable), `cantidades_*.csv`, `cantidades_dict.py`, README.
+> HISTÓRICO: ese loader ya no existe (reemplazado en el commit 097ecac); el vigente es
+> `docs/canastas_alternativas/cargar_canastas_v5.py` (267 EANs). Ver el bloque ESTADO ACTUAL nb07 arriba.
 Builders (scratchpad, no en repo): `build_real2.py` (empaquetados), lógica de frescos en gen_nb07 CELDA 1/5.
 
 **Insumos en Drive** (`/content/drive/MyDrive/carga/`): ZIPs SEPA `YYYYA/B.zip`, `IPC.xlsx`,

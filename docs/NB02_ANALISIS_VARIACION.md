@@ -3,7 +3,8 @@
 Guía práctica para correr, leer, validar y seguir desarrollando el análisis de la variación de precios de
 la canasta del nb02 (`notebooks/02_evolucion_canasta_representativa.ipynb`, fuente `notebooks/gen_nb02.py`).
 El método formal está en `docs/METODOLOGIA.md` §4 ("Desagregación de la variación mensual" y "Hoja
-analisis_detallado"). Estado y pendientes: bloque de arriba de `.claude/memory.md`.
+analisis_detallado"). Estado y pendientes: bloque de arriba de `.claude/memory.md`. Última corrida revisada (oct-26 al
+15/10, primera en Colab): `docs/AUDITORIA_2026-10-16_nb02.md`.
 
 ## Qué es
 
@@ -39,11 +40,15 @@ hojas con el sufijo `_<nombre corto>` (truncado a 31 caracteres).
    - **19b**: relee del ZIP el mes anterior completo y el mes en curso, solo con los EANs de las canastas
      (~3-4 min en una PC). Pico de RAM medido: **+357 MB** (la CELDA 6 suma +422 MB con el mismo archivo).
    - **19c, primera corrida**: lee del SEPA por sucursal los meses viejos de la ventana (hasta 12 con
-     la configuración default; **~2-2,5 min por mes en una PC, más en Colab: calcular ~40-50 min una sola
-     vez**). Los guarda agregados en el caché del Drive (`output_canasta/_cache/detalle_<clave>_v1.parquet`).
+     la configuración default). **Medido en el Colab gratuito el 2026-10-16: 12 meses en 2.069 s (~35 min,
+     158-182 s por mes), una sola vez.** Los guarda agregados en el caché del Drive
+     (`output_canasta/_cache/detalle_<clave>_v1.parquet`; oct-26 dejó `detalle_ea281ee7_v1.parquet` con 13 meses).
    - **19c, corridas siguientes**: usa el caché y no lee nada nuevo del SEPA salvo un mes que falte
      (el mes que se cerró). Pico de RAM medido: **+307 MB**.
-3. La CELDA 20 (Valores_Documento) agrega su hoja al final; `analisis_detallado` queda primera.
+3. La CELDA 20 (Valores_Documento) agrega su hoja al final; `analisis_detallado` queda primera. Desde el
+   2026-10-16 (BUG-42) esa hoja usa el país del Cuadro 1 como única referencia, el AMBA por coordenadas y los
+   acumulados contra el IPC en el mismo período (`docs/METODOLOGIA.md` §4, "Referencias, AMBA y valores del
+   documento técnico"). **Ojo**: el AMBA de la 19b/19c todavía es la `REGION` del maestro (ver trampas abajo).
 
 **La clave del caché de la 19c** cambia (y entonces se releen los 12 meses) si cambian: los EANs de la
 canasta, la región o el tipo de alguna sucursal en `maestro_sucursales_completo.xlsx`, los nombres de
@@ -113,6 +118,21 @@ DETALLE_MESES = 2, base jul-26):
 | Cuyo | +0,77 | +2,98 | +0,81 | +1,50 |
 | Patagonia | +1,63 | +1,04 | +0,18 | +0,48 |
 
+## Primera corrida en Colab: oct-26 al 15/10 (2026-10-16)
+
+Dio exactamente lo validado: oficial +1,748%, medianas 69/69, arrastre +1,479 pp, panel +1,971% (2.927 sucursales,
+91.650 pares); `analisis_detallado` primera de 39 hojas, sin AVISO. Con la ventana completa (base sep-25 = 100):
+
+- Pond. (mes base sep-25): Perfumería 21,55, Frescos 19,92, Almacén 19,71, Bebidas 15,80, Limpieza 14,61,
+  Congelados 8,41. Cambian con el mes base (con base jul-26 daban 21,8/20,0/18,4/16,4/15,0/8,4).
+- Interanual a sep-26 (columna sep-26 − 100): Total +26,5; Bebidas +30,5; Perfumería +29,6; Limpieza +28,7;
+  Frescos +27,2; Congelados +24,2; Almacén +18,8. AMBA +28,5; Cuyo +19,9; Noroeste +20,6.
+- **Vea bajó precios en jul-26** (19 de 67 productos −10 a −28%, sostenido en agosto): por eso Cuyo, el Noroeste y sus
+  provincias caen en jul-26 y Vea rebota +4,05% en oct (mayor aporte por cadena, 0,40 pp del panel). Para ver qué
+  productos mueven un grupo en un mes: `docs/auditoria/scripts_nb02_2026-10/productos_que_mueven_grupo.py` sobre el
+  caché `detalle_*.parquet`.
+- La suba de octubre es casi toda arrastre: 1,48 de los 1,75 pp ya estaban en la última semana de septiembre.
+
 ## Validación y tests
 
 - `python notebooks/test_desagregacion_variacion.py` — 19b sobre ZIPs sintéticos (sumas exactas, cálculo
@@ -142,3 +162,13 @@ DETALLE_MESES = 2, base jul-26):
 - Mejora posible (no hecha): leer el CSV prefiltrando las líneas por EAN antes de `pd.read_csv` bajaría la
   lectura ~5x (la 19c tarda casi todo en parsear filas de productos que no usa). Validar contra el lector
   actual antes de cambiarlo.
+- **AMBA de la 19b/19c = `REGION` del maestro**, que marca AMBA a ~100 sucursales de DIA del interior bonaerense
+  (localidad "BUENOS AIRES": Mar del Plata, Tandil, Pergamino). El AMBA de oct-26 (1.819 sucursales) las incluye.
+  Las CELDAS 16/20 ya usan coordenadas (BUG-42); pasar la 19b/19c a coordenadas cambia la clave del caché de la 19c
+  (relee 12 meses una vez). `docs/auditoria/scripts_nb02_2026-10/validar_amba_maestro.py` muestra el problema.
+- **Provincia**: la 19b/19c usan el código ISO del archivo de precios (CABA 1.131 sucursales en oct-26); el Cuadro 1,
+  el maestro con reclasificación por coordenadas (CABA 834). Las cantidades de sucursales no se comparan entre hojas.
+- **~540 sucursales fuera del maestro** (2.959 en el panel, 2.419 en el maestro) entran a la 19b/19c pero no al
+  Cuadro 1: "Cadena 24" (332 sucursales, 9 de 69 productos, sin identificar), parte de Carrefour Express (511 contra
+  386) y de Toledo (27 contra 13). Las cadenas de 2-9 productos de la 19c (Cadena 24, 23, 6) no representan la
+  canasta: falta un mínimo de productos además de `DETALLE_MIN_SUCURSALES`.
