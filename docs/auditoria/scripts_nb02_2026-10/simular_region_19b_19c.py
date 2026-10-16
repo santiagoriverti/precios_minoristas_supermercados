@@ -47,7 +47,8 @@ exec(bloque(celda('# CELDA 3 —'), 'CANT_COLS =', '# ── Construir CANASTAS'
 exec(celda('# CELDA 4 —'), env)
 exec(celda('# CELDA 5 —'), env)
 C7 = celda('# CELDA 7 —')
-exec(bloque(C7, '# ── Bboxes y función de geocodificación', '# ── Calcular canasta por sucursal'), env)
+env['GEOJSON_PATH'] = Path(os.environ.get('AR_JSON', str(ZIPDIR / 'ar.json')))   # poligonos de provincias
+exec(bloque(C7, '# ── Provincia por coordenadas', '# ── Calcular canasta por sucursal'), env)
 exec(bloque(celda('# CELDA 19 —'), 'from openpyxl.styles', 'out_xls ='), env)
 
 sp = pd.read_excel(XLS, sheet_name='Serie_precios', dtype={'id_producto': str})

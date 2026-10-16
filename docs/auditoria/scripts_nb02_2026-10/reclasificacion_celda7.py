@@ -1,10 +1,11 @@
-# Corre la geografia REAL de la CELDA 7 del nb02 (CELDA 4 + bloque de bboxes, reclasificacion y AMBA) sobre el maestro
-# de sucursales y tabula las sucursales que la CELDA 7 cambia de provincia (declarada en el maestro -> por coordenadas)
-# y las que descarta (CABA declarada con coordenadas fuera de CABA).
-# Uso: python -I docs/auditoria/scripts_nb02_2026-10/reclasificacion_celda7.py <repo>
-# Resultado del 2026-10-16 (BUG-44, abierto): el rectangulo de Neuquen termina en -68,5 de longitud y deja afuera la
-# ciudad de Neuquen (-68,06), Centenario y Plottier: esas sucursales pasan a La Pampa. Otras reclasificaciones son
-# correctas (p. ej. 6 DIA de Jujuy declarados San Juan).
+# Corre la geografia REAL de la CELDA 7 del nb02 (CELDA 4 + provincia por coordenadas con los poligonos de ar.json +
+# AMBA) sobre el maestro de sucursales y tabula las sucursales que la CELDA 7 cambia de provincia (declarada en el
+# maestro -> por coordenadas) y las que descarta (web y CABA declarada con coordenadas fuera de CABA).
+# Uso: python -I docs/auditoria/scripts_nb02_2026-10/reclasificacion_celda7.py <repo> <ar.json>
+# Historia (BUG-44, 2026-10-16): con los rectangulos de antes la CELDA 7 reclasificaba 121 sucursales, la mayoria mal
+# (Neuquen capital -> La Pampa 47, Parana -> Santa Fe 40, San Nicolas -> Entre Rios 10). Con los poligonos y
+# RECLASIF_TOL_KM = 100 reclasifica 12, todas a mas de 180 km de su provincia declarada (6 DIA de Jujuy declarados
+# San Juan, 2 de Posadas declaradas Mendoza, ...).
 import json, re, sys
 from pathlib import Path
 
@@ -13,7 +14,7 @@ import pandas as pd
 
 sys.stdout.reconfigure(encoding='utf-8')
 pd.set_option('display.width', 250)
-REPO = Path(sys.argv[1])
+REPO, GEO = Path(sys.argv[1]), Path(sys.argv[2])
 import os
 os.chdir(REPO)
 CELDAS = [''.join(c['source']) for c in json.load(open(REPO / 'notebooks/02_evolucion_canasta_representativa.ipynb',
@@ -22,7 +23,8 @@ celda = lambda t: next(c for c in CELDAS if t in c[:300])
 bloque = lambda s, a, b: s[s.index(a):s.index(b, s.index(a))]
 env = {'np': np, 'pd': pd, 're': re, 'Path': Path, 'SEPA_DIR': '.'}
 exec(celda('# CELDA 4 —'), env)
-exec(bloque(celda('# CELDA 7 —'), '# ── Bboxes y función de geocodificación', '# ── Calcular canasta por sucursal'), env)
+env['GEOJSON_PATH'] = GEO
+exec(bloque(celda('# CELDA 7 —'), '# ── Provincia por coordenadas', '# ── Calcular canasta por sucursal'), env)
 sp, sg = env['suc_pais'].copy(), env['suc_geo_clean']
 sp['declarada'] = sp['PROVINCIA'].map(env['PROV_NORM']).fillna(sp['PROVINCIA'])
 k = ['id_comercio', 'id_bandera', 'id_sucursal']

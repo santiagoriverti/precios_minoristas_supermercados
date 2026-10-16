@@ -237,7 +237,8 @@ def correr(tmp, nombre, desagregar, cache_dir, contar_lecturas=False, maestro_ca
     exec(bloque(C4, 'NOMBRES_COMPUESTOS = {', 'PESOS_POBLACION = {'), env)
     exec(C5, env)
     exec(bloque(C6, 'def _pmean(_s):', 'ref_e ='), env)
-    exec(bloque(C7, '# ── Bboxes y función de geocodificación', '# ── Calcular canasta por sucursal'), env)
+    env['GEOJSON_PATH'] = Path('sin_ar.json')        # sin poligonos: la CELDA 7 no reclasifica
+    exec(bloque(C7, '# ── Provincia por coordenadas', '# ── Calcular canasta por sucursal'), env)
     exec(C9, env)
     exec(bloque(C19, 'from openpyxl.styles', 'out_xls ='), env)
     exec(compile(C19B, '<CELDA 19b>', 'exec'), env)

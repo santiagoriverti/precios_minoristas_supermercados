@@ -547,40 +547,62 @@ precio_mes = precio_mes[~precio_mes['id_comercio'].isin(CADENAS_FILTRAR)].copy()
 precio_med_nac  = precio_mes.groupby('ean_norm')['precio_mediana'].median().to_dict()
 precio_prom_nac = precio_mes.groupby('ean_norm')['precio_prom'].agg(_pmean).to_dict()
 
-# ── Bboxes y función de geocodificación ─────────────────────────────────────
-_PROV_BBOX = {
-    'CABA':                (-34.72,-34.52,-58.54,-58.33),
-    'Tucumán':             (-28.0, -26.0, -66.5, -64.5),
-    'Jujuy':               (-24.5, -21.5, -67.5, -63.5),
-    'Misiones':            (-28.5, -25.5, -56.5, -53.0),
-    'Chaco':               (-27.5, -24.0, -63.0, -57.5),
-    'Formosa':             (-26.5, -22.0, -62.5, -58.0),
-    'Corrientes':          (-30.5, -27.0, -60.0, -55.5),
-    'Entre Ríos':          (-34.0, -30.0, -60.5, -57.5),
-    'San Luis':            (-36.0, -32.5, -68.5, -65.0),
-    'San Juan':            (-34.5, -27.5, -71.0, -65.0),
-    'La Rioja':            (-32.5, -27.0, -70.0, -65.0),
-    'Catamarca':           (-29.5, -25.0, -70.5, -64.5),
-    'Salta':               (-26.5, -21.5, -68.5, -62.5),
-    'Santiago del Estero': (-30.0, -25.5, -65.5, -61.5),
-    'Mendoza':             (-37.5, -32.0, -70.5, -66.5),
-    'Neuquén':             (-40.5, -36.0, -71.5, -68.5),
-    'La Pampa':            (-40.0, -35.0, -68.5, -63.5),
-    'Santa Fe':            (-34.5, -28.5, -62.5, -59.0),
-    'Córdoba':             (-39.0, -29.5, -67.0, -62.0),
-    'Río Negro':           (-42.5, -38.5, -71.5, -62.5),
-    'Chubut':              (-46.5, -41.0, -72.5, -63.0),
-    'Buenos Aires':        (-42.5, -33.5, -63.5, -56.5),
-    'Santa Cruz':          (-52.5, -46.0, -72.5, -65.5),
-    'Tierra del Fuego':    (-55.5, -51.0, -70.5, -63.5),
-}
+# ── Provincia por coordenadas: polígonos de ar.json con tolerancia (BUG-44) ──
+# Una sucursal cambia de provincia SOLO si sus coordenadas caen a más de RECLASIF_TOL_KM del polígono de su
+# provincia declarada y dentro del polígono de otra: errores groseros de carga (DIA de Jujuy declarados San Juan,
+# sucursales de Posadas declaradas Mendoza). Cerca de un borde manda la provincia declarada: los polígonos
+# simplificados de ar.json no alcanzan para decidir y una ciudad de borde queda a pocos km del lado equivocado.
+# Hasta el 2026-10-16 se usaban rectángulos y la primera provincia que contenía el punto: pasaban Neuquén capital a
+# La Pampa, Paraná a Santa Fe y San Nicolás a Entre Ríos (121 reclasificadas, la mayoría mal). CABA se trata aparte
+# (filtro por rectángulo, abajo). Sin ar.json no se reclasifica nada.
+import json as _json
+from matplotlib.path import Path as _MPath
 
-def _geocodif(lat, lon):
-    # Primera provincia cuyo bbox contiene (lat, lon)
-    if pd.isna(lat) or pd.isna(lon): return None
-    for p, (la0, la1, lo0, lo1) in _PROV_BBOX.items():
-        if la0 <= lat <= la1 and lo0 <= lon <= lo1: return p
-    return None
+RECLASIF_TOL_KM = 100
+# id de ar.json (simplemaps: 'AR' + letra del código ISO 3166-2) -> provincia
+_GEO_ID_PROV = {'ARB': 'Buenos Aires', 'ARC': 'CABA', 'ARK': 'Catamarca', 'ARH': 'Chaco', 'ARU': 'Chubut',
+                'ARX': 'Córdoba', 'ARW': 'Corrientes', 'ARE': 'Entre Ríos', 'ARP': 'Formosa', 'ARY': 'Jujuy',
+                'ARL': 'La Pampa', 'ARF': 'La Rioja', 'ARM': 'Mendoza', 'ARN': 'Misiones', 'ARQ': 'Neuquén',
+                'ARR': 'Río Negro', 'ARA': 'Salta', 'ARJ': 'San Juan', 'ARD': 'San Luis', 'ARZ': 'Santa Cruz',
+                'ARS': 'Santa Fe', 'ARG': 'Santiago del Estero', 'ARV': 'Tierra del Fuego', 'ART': 'Tucumán'}
+
+def _poligonos_provincias(_ruta):
+    # provincia -> lista de polígonos; cada polígono, lista de anillos [lon, lat] (el primero es el exterior)
+    with open(_ruta, 'r', encoding='utf-8') as _f:
+        _g = _json.load(_f)
+    _pol = {}
+    for _ft in _g['features']:
+        _prov = _GEO_ID_PROV.get(_ft['properties'].get('id'))
+        if _prov is None:
+            continue
+        _geo = _ft['geometry']
+        _ps = _geo['coordinates'] if _geo['type'] == 'MultiPolygon' else [_geo['coordinates']]
+        _pol.setdefault(_prov, []).extend([[np.asarray(_r, dtype=float) for _r in _p] for _p in _ps])
+    return _pol
+
+def _dentro_poligono(_pols, _lon, _lat):
+    # True si el punto está dentro de alguno de los polígonos (y fuera de sus agujeros)
+    _pts = np.column_stack([_lon, _lat])
+    _res = np.zeros(len(_pts), bool)
+    for _p in _pols:
+        _en = _MPath(_p[0]).contains_points(_pts)
+        for _h in _p[1:]:
+            _en &= ~_MPath(_h).contains_points(_pts)
+        _res |= _en
+    return _res
+
+def _km_al_poligono(_pols, _lon, _lat):
+    # Distancia (km) de cada punto al borde más cercano de los polígonos (proyección equirectangular local)
+    _segs = np.concatenate([np.column_stack([_r[:-1], _r[1:]]) for _p in _pols for _r in _p])
+    _out = np.empty(len(_lon))
+    for _i, (_x, _y) in enumerate(zip(_lon, _lat)):
+        _kx = 111.32 * np.cos(np.radians(_y))
+        _x1, _y1 = (_segs[:, 0] - _x) * _kx, (_segs[:, 1] - _y) * 110.57
+        _x2, _y2 = (_segs[:, 2] - _x) * _kx, (_segs[:, 3] - _y) * 110.57
+        _dx, _dy = _x2 - _x1, _y2 - _y1
+        _t = np.clip(-(_x1 * _dx + _y1 * _dy) / np.maximum(_dx * _dx + _dy * _dy, 1e-12), 0, 1)
+        _out[_i] = np.sqrt((_x1 + _t * _dx) ** 2 + (_y1 + _t * _dy) ** 2).min()
+    return _out
 
 # ── Pre-limpiar geografía (ONCE para todas las canastas) ─────────────────────
 _cols_suc = ['id_comercio','id_bandera','id_sucursal',
@@ -602,19 +624,30 @@ _mask_caba = (
         (suc_geo_clean['sucursales_longitud'] < -58.53) |
         (suc_geo_clean['sucursales_longitud'] > -58.34)))
 suc_geo_clean = suc_geo_clean[~_mask_caba].copy()
-_n_reclasif = 0
-for _idx, _row in suc_geo_clean.iterrows():
-    _p = _row['PROVINCIA_NORM']
-    if _p not in _PROV_BBOX: continue
-    _la0,_la1,_lo0,_lo1 = _PROV_BBOX[_p]
-    _lat,_lon = _row['sucursales_latitud'],_row['sucursales_longitud']
-    if _la0<=_lat<=_la1 and _lo0<=_lon<=_lo1: continue
-    _nueva = _geocodif(_lat,_lon)
-    if _nueva and _nueva != _p:
-        suc_geo_clean.at[_idx,'PROVINCIA_NORM'] = _nueva
-        _n_reclasif += 1
-if _n_reclasif:
-    print(f'  Reclasificadas {_n_reclasif} sucursales por coordenadas')
+
+_POL_PROV = _poligonos_provincias(GEOJSON_PATH) if GEOJSON_PATH.exists() else {}
+if not _POL_PROV:
+    print(f'  AVISO: no está {GEOJSON_PATH.name}: no se reclasifica la provincia de ninguna sucursal')
+_lon = suc_geo_clean['sucursales_longitud'].to_numpy(dtype=float)
+_lat = suc_geo_clean['sucursales_latitud'].to_numpy(dtype=float)
+_decl = suc_geo_clean['PROVINCIA_NORM'].to_numpy(dtype=object)
+_dentro_de = {_p: _dentro_poligono(_pl, _lon, _lat) for _p, _pl in _POL_PROV.items()}
+_nueva = _decl.copy()
+for _p in sorted((set(_decl) & set(_POL_PROV)) - {'CABA'}):
+    _idx = np.where((_decl == _p) & ~_dentro_de[_p])[0]
+    if len(_idx) == 0:
+        continue
+    _lejos = _idx[_km_al_poligono(_POL_PROV[_p], _lon[_idx], _lat[_idx]) > RECLASIF_TOL_KM]
+    for _i in _lejos:
+        _q = next((_o for _o in _POL_PROV if _o != _p and _dentro_de[_o][_i]), None)
+        if _q is not None:
+            _nueva[_i] = _q
+_cambio = _nueva != _decl
+suc_geo_clean['PROVINCIA_NORM'] = _nueva
+if _cambio.any():
+    _det = pd.Series([f'{_a} -> {_b}' for _a, _b in zip(_decl[_cambio], _nueva[_cambio])]).value_counts()
+    print(f'  Reclasificadas {int(_cambio.sum())} sucursales por coordenadas (a más de {RECLASIF_TOL_KM} km de su '
+          f'provincia declarada): ' + ', '.join(f'{_k} ({_v})' for _k, _v in _det.items()))
 
 # ── AMBA por coordenadas (rankings de cadenas AMBA, CELDAS 16 y 20) ──────────
 # AMBA = CABA + sucursales de Buenos Aires a <= AMBA_RADIO_KM del Obelisco. NO es toda la
@@ -3812,7 +3845,11 @@ def _agg_desde_diario(_d):
                                        'n_sucursales','valor_mediana','valor_promedio'])
 
 # ── Recorrer historia con caché (meses cerrados) + mes en curso fresco ──────────
-_econ_key = hashlib.md5(('|'.join(sorted(EANS_ECON)) + '|econv1').encode()).hexdigest()[:8]
+# Clave: EANs + provincia y cadena de cada sucursal (CELDA 7). Si cambia la geografía (BUG-44, 2026-10-16: provincia
+# por polígonos) los meses guardados tendrían la provincia vieja y la serie se cortaría en el mes nuevo: se releen.
+_geo_econ = suc_geo_clean[['id_comercio', 'id_bandera', 'id_sucursal', 'PROVINCIA_NORM', 'cadena']].astype(str)
+_econ_key = hashlib.md5(('|'.join(sorted(EANS_ECON)) + '|econv1|'
+                         + _geo_econ.sort_values(list(_geo_econ.columns)).to_csv(index=False)).encode()).hexdigest()[:8]
 _econ_cache = CACHE_DIR / f'econ_{_econ_key}.parquet'
 _econ_mes_actual = _meses_disp[-1]
 

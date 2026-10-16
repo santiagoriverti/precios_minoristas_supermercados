@@ -15,8 +15,8 @@ con ceros a la izquierda, una bandera de Carrefour fuera del diccionario, sucurs
 maestro, regiones con espacio duro (como el maestro real) y una cadena de CADENAS_FILTRAR (entra:
 el universo es el de la CELDA 9). Region por coordenadas (BUG-43): una sucursal que el maestro marca AMBA
 en Mar del Plata (va a Pampeana), una del maestro sin coordenadas (Buenos Aires s/ubicar), una con un
-codigo de provincia desconocido (Sin dato) y una de Neuquen capital que la CELDA 7 pasa a La Pampa por sus
-rectangulos (BUG-44): su region tiene que seguir siendo Patagonia. Se desagregan dos canastas (Media y Popular) a la vez.
+codigo de provincia desconocido (Sin dato) y una de Neuquen capital (la que los rectangulos viejos de la CELDA 7
+pasaban a La Pampa, BUG-44): su region tiene que ser Patagonia. Se desagregan dos canastas (Media y Popular) a la vez.
 
 Comprueba que:
   1. la variacion oficial es la de la CELDA 9 y la de un calculo independiente, y la celda
@@ -89,7 +89,7 @@ SUCS = [('9', '1', '1', 'AR-C', ('AMBA', 'Supermercado'), (-34.60, -58.42)),
         ('19', '1', '1', 'AR-T', ('Noroeste', 'Supermercado'), (-26.83, -65.22)),
         ('20', '1', '1', 'AR-B', ('AMBA', 'Supermercado'), None),                    # maestro sin coordenadas
         ('21', '1', '9', 'AR-ZZ', None, None),                                       # provincia ISO desconocida
-        ('2', '1', '5', 'AR-Q', ('Patagonia', 'Supermercado'), (-38.95, -68.06))]    # Neuquen capital (BUG-44)
+        ('2', '1', '5', 'AR-Q', ('Patagonia', 'Supermercado'), (-38.95, -68.06))]    # Neuquen capital
 CADENA_ESP = {('9', '1'): 'Vea', ('15', '1'): 'DIA', ('12', '1'): 'Coto',
               ('10', '4'): 'Carrefour (bandera 4)', ('99', '1'): 'Cadena 99', ('19', '1'): 'Cadena 19',
               ('20', '1'): 'LAR', ('21', '1'): 'Toledo', ('2', '1'): 'La Anonima'}
@@ -98,8 +98,8 @@ PROV_ESP = {'AR-C': 'CABA', 'AR-B': 'Buenos Aires', 'AR-X': 'Córdoba', 'AR-M': 
 PROV_LARGA = {'AR-C': 'Ciudad Autónoma de Buenos Aires', 'AR-B': 'Provincia de Buenos Aires',
               'AR-X': 'Provincia de Córdoba', 'AR-M': 'Provincia de Mendoza', 'AR-T': 'Provincia de Tucumán',
               'AR-Q': 'Provincia del Neuquén'}
-# Region esperada fuera del AMBA: la de la provincia del ARCHIVO (ISO), no la reclasificada por la CELDA 7 (sus
-# rectangulos pasan Neuquen capital a La Pampa: BUG-44)
+# Region esperada fuera del AMBA: la de la provincia del ARCHIVO (ISO), no la de la CELDA 7 (hasta el BUG-44 sus
+# rectangulos pasaban Neuquen capital a La Pampa)
 REGION_PROV = {'CABA': 'AMBA', 'Buenos Aires': 'Pampeana', 'Córdoba': 'Pampeana', 'Mendoza': 'Cuyo',
                'Tucumán': 'Noroeste', 'Neuquén': 'Patagonia'}
 REGION_FUERA = {'AR-S': 'Pampeana', 'AR-B': 'Buenos Aires s/ubicar', 'AR-ZZ': 'Sin dato'}
@@ -237,7 +237,8 @@ def correr(tmp, centavos):
     exec(bloque(C4, 'NOMBRES_COMPUESTOS = {', 'PESOS_POBLACION = {'), env)
     exec(C5, env)
     exec(bloque(C6, 'def _pmean(_s):', 'ref_e ='), env)
-    exec(bloque(C7, '# ── Bboxes y función de geocodificación', '# ── Calcular canasta por sucursal'), env)
+    env['GEOJSON_PATH'] = Path('sin_ar.json')        # sin poligonos: la CELDA 7 no reclasifica
+    exec(bloque(C7, '# ── Provincia por coordenadas', '# ── Calcular canasta por sucursal'), env)
     exec(C9, env)
     exec(bloque(C19, 'from openpyxl.styles', 'out_xls ='), env)
     exec(compile(C19B, '<CELDA 19b>', 'exec'), env)
