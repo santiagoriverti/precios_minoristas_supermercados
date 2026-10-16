@@ -36,9 +36,12 @@ SALIDA  (formato semestral, idéntico al oficial del SEPA)
               El diario también viene en pesos, así que NO se multiplica.
     - Faltante: 'NA'
 
-Además, si SEMESTRE_ZIP_IN apunta a un 2026A.zip existente, genera una copia
-actualizada (2026A.zip) que reemplaza los archivos viejos del mes por los
-nuevos y conserva el resto de los meses. Ese zip es el que se sube a Drive.
+Además, si CARGA_DIR tiene el zip semestral del mes (YYYYA.zip para ene-jun,
+YYYYB.zip para jul-dic), genera una copia actualizada que reemplaza los
+archivos viejos del mes por los nuevos y conserva el resto de los meses. Ese
+zip es el que se sube a Drive.
+
+La entrada puede ser el zip diario o la carpeta con los días ya descomprimidos.
 
 ------------------------------------------------------------------------------
 NOTAS DE COMPATIBILIDAD (verificadas contra los archivos oficiales)
@@ -82,13 +85,16 @@ except Exception:
 # CONFIGURACIÓN — modificar según tu PC
 # ============================================================================
 
-# Zip diario descargado del Ministerio (carpetas YYYY-MM-DD adentro)
-ZIP_DIARIO = Path(r"C:\Users\sriverti\Desktop\INECO\SEPA\sepa_diario_minoristas\ultimo_mes.zip")
+# SEPA diario descargado del Ministerio. Puede ser:
+#   - el zip del mes (ultimo_mes.zip, con carpetas YYYY-MM-DD adentro), o
+#   - la carpeta que contiene las carpetas YYYY-MM-DD ya descomprimidas.
+ZIP_DIARIO = Path(r"C:\Users\sriverti\Desktop\INECO\SEPA\sepa_diario_minoristas")
 
-# Zip semestral existente a actualizar (debe llamarse YYYYA.zip / YYYYB.zip).
-# El mes generado se inserta acá conservando los demás meses.
-# Poner None para generar solo los .csv.gz sueltos sin empaquetar.
-SEMESTRE_ZIP_IN = Path(r"C:\Users\sriverti\Desktop\INECO\SEPA\SEPA_Bases_Originales\carga\2026A.zip")
+# Carpeta con los zips semestrales (YYYYA.zip / YYYYB.zip). Se elige solo el que
+# corresponde al mes procesado (ene-jun -> A, jul-dic -> B) y el mes generado se
+# inserta ahí conservando los demás meses. Si ese zip no existe, se crea uno
+# nuevo solo con el mes. Poner None para generar solo los .csv.gz sueltos.
+CARGA_DIR = Path(r"C:\Users\sriverti\Desktop\INECO\SEPA\SEPA_Bases_Originales\carga")
 
 # Carpeta donde se escriben los .csv.gz y el zip semestral actualizado
 OUTPUT_DIR = Path(r"C:\Users\sriverti\Desktop\INECO\SEPA\salida_consolidada")
@@ -130,6 +136,44 @@ def _norm_suc(serie: pd.Series) -> pd.Series:
     quitar los ceros para que el join geográfico de los notebooks matchee.
     """
     return serie.astype(str).str.strip().str.lstrip("0").replace("", "0")
+
+
+class CarpetaDiaria:
+    """
+    Expone una carpeta con subcarpetas YYYY-MM-DD/ (el diario ya descomprimido)
+    con la misma interfaz que zipfile.ZipFile que usa este script
+    (namelist / read / close), para que el resto del código no cambie.
+    """
+
+    def __init__(self, raiz: Path):
+        self.raiz = raiz
+
+    def namelist(self):
+        return [
+            p.relative_to(self.raiz).as_posix()
+            for d in self.raiz.iterdir() if d.is_dir() and _RE_DIA.match(d.name)
+            for p in d.iterdir() if p.is_file()
+        ]
+
+    def read(self, nombre: str) -> bytes:
+        return (self.raiz / nombre).read_bytes()
+
+    def close(self):
+        pass
+
+
+def abrir_diario(ruta: Path):
+    """Devuelve (lector, tamaño en bytes) para un zip diario o una carpeta de días."""
+    if ruta.is_dir():
+        lector = CarpetaDiaria(ruta)
+        tam = sum((ruta / n).stat().st_size for n in lector.namelist())
+        return lector, tam
+    if ruta.is_file():
+        return zipfile.ZipFile(ruta, "r"), ruta.stat().st_size
+    raise FileNotFoundError(
+        f"No existe {ruta}. ZIP_DIARIO debe ser el zip del mes o la carpeta que "
+        f"contiene las carpetas YYYY-MM-DD."
+    )
 
 
 # ============================================================================
@@ -360,10 +404,10 @@ def actualizar_zip_semestre(zip_in: Path, zip_out: Path, archivos_mes: dict, mes
 def main():
     t0 = time.time()
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
-    print(f"Zip diario : {ZIP_DIARIO}  ({ZIP_DIARIO.stat().st_size/1024**3:.2f} GB)")
+    zf, tam = abrir_diario(ZIP_DIARIO)
+    print(f"Diario     : {ZIP_DIARIO}  ({tam/1024**3:.2f} GB)")
     print(f"Salida     : {OUTPUT_DIR}")
 
-    zf = zipfile.ZipFile(ZIP_DIARIO, "r")
     dias, anio, mes = detectar_dias(zf)
     mmaaaa = f"{mes:02d}{anio}"
     print(f"Mes detectado: {anio}-{mes:02d}  |  {len(dias)} días: {dias[0]} … {dias[-1]}")
@@ -438,15 +482,23 @@ def main():
         print("  (sin parte2: el mes aún no tiene días ≥ 16)")
 
     # --- Empaquetar en el zip semestral ---
-    if SEMESTRE_ZIP_IN is not None:
+    if CARGA_DIR is not None:
+        semestre_zip_in = CARGA_DIR / f"{anio}{'A' if mes <= 6 else 'B'}.zip"
         archivos_mes = {f1.name: f1}
         if h2 is not None:
             archivos_mes[f2.name] = f2
-        zip_out = OUTPUT_DIR / SEMESTRE_ZIP_IN.name
-        print(f"Actualizando {SEMESTRE_ZIP_IN.name} (reemplazando mes {mmaaaa}_)…")
-        actualizar_zip_semestre(SEMESTRE_ZIP_IN, zip_out, archivos_mes, f"{mmaaaa}_")
+        zip_out = OUTPUT_DIR / semestre_zip_in.name
+        if semestre_zip_in.exists():
+            print(f"Actualizando {semestre_zip_in.name} (reemplazando mes {mmaaaa}_)…")
+        else:
+            print(f"⚠️  No existe {semestre_zip_in}: se crea {zip_out.name} solo con {mmaaaa}.")
+        actualizar_zip_semestre(semestre_zip_in, zip_out, archivos_mes, f"{mmaaaa}_")
+        with zipfile.ZipFile(zip_out) as _z:
+            meses_zip = sorted({Path(n).name[:6] for n in _z.namelist()},
+                               key=lambda m: (m[2:], m[:2]))
         print(f"  -> {zip_out}  ({zip_out.stat().st_size/1024**3:.2f} GB)")
-        print(f"  Subir ESTE zip a Drive (carga/{SEMESTRE_ZIP_IN.name}) y correr los notebooks.")
+        print(f"     Meses adentro: {', '.join(meses_zip)}")
+        print(f"  Subir ESTE zip a Drive (carga/{semestre_zip_in.name}) y correr los notebooks.")
 
     print(f"Listo en {(time.time()-t0)/60:.1f} min.")
 
