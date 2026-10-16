@@ -95,8 +95,12 @@ Reglas del repo que conviene saber antes de tocar nada:
 3. Los notebooks corren en **Colab** (badges en el README), no localmente: necesitan los ZIPs del
    SEPA en `MyDrive/carga/`. El nb07 corre en el **Colab gratuito** desde la v5.14 (antes pedía "RAM
    amplia" de Colab Pro); una relectura completa del SEPA tarda ~2h10m ahí y retoma por mes si se corta.
-4. Los maestros se buscan **primero en el Drive y después en GitHub** — el repo es privado y
-   `raw.githubusercontent` devuelve 404 (commit `502581a`).
+4. Los maestros se buscan **primero en el Drive y después en GitHub** (commit `502581a`). Hoy el repo es público
+   (verificado el 2026-10-16) y Colab los baja de GitHub; si se pone privado, `raw.githubusercontent` da 404 y hay
+   que copiar los maestros de `data/` al Drive (README, "Repositorio privado").
+5. **Datos para simular o auditar en una PC** (no están en el repo): los zips semestrales del SEPA y `ar.json`
+   (`MyDrive/carga/`), el Excel de la corrida y el zip de `output_canasta/_cache/`. Los scripts de
+   `docs/auditoria/scripts_nb02_2026-10/` dicen en su encabezado qué necesita cada uno.
 
 ---
 
@@ -577,7 +581,7 @@ corrida relee los 33 meses de la econometría y los 12 de la 19c, una vez**. Tes
 scripts `reclasificacion_celda7.py` y `cuadro1_reclasificacion.py`; detalle en `docs/AUDITORIA_2026-10-16_nb02.md` §9 y
 §11. El nb05 conserva los rectángulos (pendiente).
 
-### 2026-10-16 (tarde) — nb02: región de la 19b/19c por coordenadas (BUG-43), Excel en verde, BUG-44 abierto
+### 2026-10-16 (tarde) — nb02: región de la 19b/19c por coordenadas (BUG-43), Excel en verde, BUG-44 abierto (resuelto al cierre)
 
 Pedido: la región de las CELDAS 19b y 19c con el AMBA por coordenadas, como la CELDA 7. Hecho: AMBA = columna `amba` de
 la CELDA 7 y el resto por la provincia del archivo de precios. Simulado con las celdas reales sobre los zips locales
@@ -616,7 +620,7 @@ de la hoja Selección) con sus categorías, regiones, provincias, cadenas y tipo
 mes en curso; bloques índice y variación %. Método: el de la CELDA 9 aplicado a cada fila (mediana de las
 observaciones del país o del grupo, eslabones con productos apareados). La 19b ahora deja sus observaciones para la
 19c; los meses viejos se leen del SEPA una vez y quedan en el caché `detalle_<clave>_v1.parquet` (primera corrida en
-Colab ~40-50 min). Validada con oct-26 (Total = oficial, rubros = Serie_precios, grupos = control de la 19b, semanas =
+Colab ~40-50 min; medido el 2026-10-16: ~35 min). Validada con oct-26 (Total = oficial, rubros = Serie_precios, grupos = control de la 19b, semanas =
 observaciones del prototipo) y con `notebooks/test_analisis_detallado.py`. Prototipo y scripts de validación en
 `docs/auditoria/scripts_nb02_2026-10/`.
 

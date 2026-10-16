@@ -19,6 +19,9 @@ Autor: Santiago Riverti — investigador independiente
 - **Excel en verde (pedido del usuario)**: `VERDE_OSCURO = '375623'` (encabezados de todas las hojas y secciones de
   `analisis_detallado`) y `VERDE_CLARO = '92D050'` (fila de encabezado de `analisis_detallado`), CELDA 19. El Excel de
   oct-26 se recoloreó aparte y se le pasó al usuario (`C:\Users\sriverti\proyectos\canasta_analisis_2026-10.xlsx`).
+  Quedan en verde oscuro los encabezados de 37 de las 39 hojas (CELDA 19 y 19b, vía `fmt_ws`); `analisis_detallado`
+  tiene su formato propio y `Valores_Documento` encabezado en negrita sin relleno (nunca fue azul; si el usuario lo
+  quiere parejo, es un cambio chico en la CELDA 20).
 - **BUG-44 resuelto (NO corrido en Colab)**, con el OK del usuario: la provincia de la CELDA 7 sale de los polígonos
   de `ar.json` (`GEOJSON_PATH`, el GeoJSON del mapa, en el Drive) con tolerancia `RECLASIF_TOL_KM = 100`: solo se
   reclasifica lo que cae a más de 100 km de la provincia declarada. Antes, rectángulos: 121 reclasificadas, la mayoría
@@ -574,8 +577,8 @@ python notebooks/test_candidatos_reemplazo.py     # hoja Candidatos_trazabilidad
 - **Los `.ipynb` NO se editan a mano**: `python notebooks/gen_nb07.py` reescribe el nb07. Commitear
   generador + `.ipynb` juntos.
 - Colab necesita en `MyDrive/carga/`: los ZIPs SEPA semestrales (`2024A` ... `2026B`), `IPC.xlsx`,
-  `ar.json`, `maestro_sepa_completo.csv.gz`, los maestros de `data/` (el repo es privado: GitHub raw da
-  404) y `output_canasta/canasta_representativa_YYYY-MM.xlsx` (nb01 + `cargar_canastas_v5.py`; un solo
+  `ar.json`, `maestro_sepa_completo.csv.gz`, los maestros de `data/` (solo si el repo está privado: GitHub raw da
+  404; el 2026-10-16 es público) y `output_canasta/canasta_representativa_YYYY-MM.xlsx` (nb01 + `cargar_canastas_v5.py`; un solo
   archivo con ese patron en la carpeta: el nb07 toma el de nombre mas alto).
 - Cache del nb07: `MyDrive/carga/output_canasta_alternativa/_cache_nb07/sem_<clave>_v5/<mes>.parquet` y
   `ean_<clave>_v5/<mes>.parquet`. Para auditar localmente, el usuario baja esas dos carpetas en zip.
@@ -684,8 +687,8 @@ python notebooks/test_cache_por_mes.py            # cache por mes + compila toda
   `2024A.zip 2024B.zip 2025A.zip 2025B.zip 2026A.zip 2026B.zip` (SEPA semestral), `IPC.xlsx`,
   `ar.json` y `output_canasta/canasta_representativa_YYYY-MM.xlsx` (salida del nb01 + el script
   `docs/canastas_alternativas/cargar_canastas_v5.py` corrido encima).
-- Los maestros se buscan **primero en el Drive y despues en GitHub**: el repo es privado y
-  `raw.githubusercontent` devuelve 404 (commit `502581a`).
+- Los maestros se buscan **primero en el Drive y despues en GitHub** (commit `502581a`). El 2026-10-16 el repo es
+  PÚBLICO (raw responde y el nb02 bajó el maestro de GitHub); si se pone privado, raw da 404: copiar `data/` al Drive.
 - El cache del nb07 vive en `MyDrive/carga/output_canasta_alternativa/_cache_nb07/` como
   `sem_<key>_v5/<mes>.parquet` y `ean_<key>_v5/<mes>.parquet`. Los archivos sueltos
   `sem_<key>_v5.parquet` del formato viejo ya no se leen: se pueden borrar.

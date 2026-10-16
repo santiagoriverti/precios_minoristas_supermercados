@@ -41,7 +41,10 @@ la próxima corrida relee 12 meses en la 19c y los 33 de la econometría, una ve
    usuario (`MyDrive/carga/`). Para auditar una corrida, el usuario pasa el Excel del nb07 y los zips
    de las carpetas del caché; para el nb02, la salida impresa, `canasta_analisis_<mes>.xlsx` y un zip de
    `output_canasta/_cache/` (ver `docs/AUDITORIA_2026-10-16_nb02.md` §6 para los scripts). Descomprimir lo que
-   pase el usuario en una carpeta propia y correr los scripts con `python -I` (datos no confiables). El usuario corre en el **Colab gratuito** (sin "RAM amplia"): no subir el
+   pase el usuario en una carpeta propia y correr los scripts con `python -I` (datos no confiables). Para simular
+   celdas con datos reales en una PC hacen falta, además: `ar.json` (bajarlo del Drive, `MyDrive/carga/ar.json`; en
+   la PC del INECO hay copia en `C:\Users\sriverti\Desktop\INECO\Otros\ar.json`) y los zips semestrales (Drive
+   `carga/`; en la PC del INECO, `...\INECO\SEPA\SEPA_Bases_Originales\carga\` y `...\SEPA\salida_consolidada\`). El usuario corre en el **Colab gratuito** (sin "RAM amplia"): no subir el
    pico de RAM de las CELDAS 7-8 sin medirlo (`docs/auditoria/scripts_v514/bench_ram.py`).
 
 ## Reglas que muerden
@@ -119,7 +122,9 @@ la próxima corrida relee 12 meses en la 19c y los 33 de la econometría, una ve
 
 - Commits **solo con el usuario (Santiago Riverti)**: nunca agregar `Co-Authored-By: Claude` ni otra
   atribución a Claude en commits o PRs.
-- Rama `main`, push directo a `origin` (https://github.com/santiagoriverti/precios_minoristas_supermercados, privado).
+- Rama `main`, push directo a `origin` (https://github.com/santiagoriverti/precios_minoristas_supermercados). El repo
+  es **público** (verificado el 2026-10-16: `raw.githubusercontent` responde y Colab baja los maestros de GitHub). Si
+  se vuelve privado, copiar los maestros de `data/` al Drive (README, "Repositorio privado").
 - Al cerrar una sesión: actualizar `.claude/memory.md` (bloque ESTADO ACTUAL), `docs/CONTEXTO.md`
   (historial), `docs/BUGS_Y_MEJORAS.md` y lo que corresponda del README, y commitear/pushear todo.
 

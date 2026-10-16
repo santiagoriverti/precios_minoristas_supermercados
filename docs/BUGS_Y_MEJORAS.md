@@ -302,7 +302,8 @@ filas); solo cambiaron `Ranking_*` (vs país) y `Sucs_*` (columna `amba`); el re
 Primera hoja del Excel: índices mensuales (12 meses, base = mes anterior al primero = 100) y semanales (1S-4S del mes
 anterior y del mes en curso) de la canasta Media por rubro SEPA y categoría, región, provincia, cadena y tipo de
 sucursal, con el método de la serie oficial en cada fila. Validada con oct-26 y con `test_analisis_detallado.py`. La
-primera corrida lee hasta 12 meses del SEPA por sucursal (~40-50 min en Colab) y los deja en caché. Detalle en
+primera corrida lee hasta 12 meses del SEPA por sucursal (~40-50 min estimado; medido el 2026-10-16 en el Colab
+gratuito: ~35 min) y los deja en caché. Detalle en
 `docs/NB02_ANALISIS_VARIACION.md` y `docs/METODOLOGIA.md` §4.
 
 ### 🟣 nb02 — desagregación de la variación mensual (CELDA 19b, 2026-10-15) — corrida en Colab con oct-26 ✅ (69/69, +1,748%)

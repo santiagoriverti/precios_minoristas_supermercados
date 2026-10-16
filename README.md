@@ -195,7 +195,9 @@ Se generan **dos** mapas: `mapa_interactivo_MMAAAA.html` (costo mediano) y `mapa
 Colores (desde 2026-10-16): encabezados de las hojas y filas de sección de `analisis_detallado` en **verde oscuro**
 (`375623`, "Verde, Énfasis 6, Oscuro 50%" de Excel) con texto blanco; fila de encabezado de `analisis_detallado` en
 **verde claro** (`92D050`, "Verde claro" de los colores estándar). Se cambian en la CELDA 19 (`VERDE_OSCURO`,
-`VERDE_CLARO`); antes eran azules (`1F4E79`, `D9E1F2`).
+`VERDE_CLARO`); antes eran azules (`1F4E79`, `D9E1F2`). Quedan con encabezado verde oscuro las 37 hojas que escriben
+la CELDA 19 y la 19b; `analisis_detallado` tiene su propio formato (verde claro y verde oscuro) y `Valores_Documento`
+lleva el encabezado en negrita sin relleno (nunca fue azul).
 
 | Hoja | Contenido |
 |------|-----------|
@@ -691,6 +693,8 @@ lectura: si cambia, se relee todo el SEPA (~1h20m).
 > semana, esa semana se descarta automáticamente (no se publica una semana con 4 de 7 días).
 
 ### Repositorio privado — maestros en el Drive
+
+> Hoy (verificado el 2026-10-16) el repositorio es **público** y esto no hace falta: Colab baja los maestros de GitHub.
 
 Los notebooks bajan `maestro_sucursales_completo.xlsx` y `Maestro de Productos Interno.xlsx`
 desde `raw.githubusercontent.com`. **Eso solo funciona con el repositorio público**: si está en
