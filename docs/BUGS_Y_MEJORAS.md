@@ -209,7 +209,7 @@ de la Tecnológica** hasta que haya al menos dos cadenas con cobertura de durabl
 
 ## 🟢 Cambios y fixes 2026-10
 
-### 🔴 BUG-42 — nb02: los números del documento técnico mezclaban referencias y regiones (2026-10-16) ✅ Resuelto
+### 🔴 BUG-42 — nb02: los números del documento técnico mezclaban referencias y regiones (2026-10-16) ✅ Resuelto y verificado en Colab
 
 Encontrado al revisar la corrida de oct-26 (CELDAS 16, 18 y 20; previos a la 19b/19c):
 
@@ -231,6 +231,9 @@ Encontrado al revisar la corrida de oct-26 (CELDAS 16, 18 y 20; previos a la 19b
    Fix: coma decimal y signo en todos los porcentajes. Re-correr la celda ya no crea `Valores_Documento1`.
 
 Test: `notebooks/test_valores_documento.py` (20 chequeos; con las celdas viejas fallan 19).
+**Verificado en Colab el 2026-10-16** (segunda corrida con oct-26): `Valores_Documento` idéntica a la simulación (223
+filas); solo cambiaron `Ranking_*` (vs país) y `Sucs_*` (columna `amba`); el resto de las hojas, igual. Detalle:
+`docs/AUDITORIA_2026-10-16_nb02.md` §7.
 
 ### 🟣 nb02 — hoja `analisis_detallado` (CELDA 19c, 2026-10-15) — corrida en Colab con oct-26 ✅ (2.069 s la primera vez)
 

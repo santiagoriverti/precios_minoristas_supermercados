@@ -104,12 +104,26 @@ Scripts en `docs/auditoria/scripts_nb02_2026-10/` (los insumos no están en el r
 python -I docs/auditoria/scripts_nb02_2026-10/simular_valores_documento.py . <canasta_analisis_2026-10.xlsx> <carpeta>
 python -I docs/auditoria/scripts_nb02_2026-10/validar_amba_maestro.py data/maestro_sucursales_completo.xlsx
 python -I docs/auditoria/scripts_nb02_2026-10/productos_que_mueven_grupo.py <detalle_ea281ee7_v1.parquet> cadena Vea 2026-06 2026-07
+python -I docs/auditoria/scripts_nb02_2026-10/comparar_corridas.py <Excel nuevo> <Excel anterior o simulado>
 python notebooks/test_valores_documento.py
 ```
 
-## 7. Próximo paso
+## 7. Verificación en Colab (segunda corrida, 2026-10-16) ✅
 
-Re-correr el nb02 en Colab ("Ejecutar todo": los cachés de la serie, de la 19c y de econometría están al día, no relee
-el histórico) y comparar la salida de la CELDA 20 con el §3. Si el mes ya cerró, los números cambian (mes completo) pero
-las comprobaciones son las mismas: AMBA sin Toledo/Cooperativa Obrera, acumulados hasta el último mes con IPC, P5-P95,
-porcentajes con coma.
+El usuario re-corrió el nb02 con el commit `d6e1f52` (mismos datos: oct-26 al 15/10) y pasó la salida de las CELDAS 7,
+16, 18 y 20, el Excel y el caché. Comparado contra la corrida anterior y contra la simulación del §3:
+
+- **`Valores_Documento`**: 223 filas, **idénticas a la simulación** (la única diferencia es el rótulo del mes, que la
+  simulación escribe como `2026-10`). La hoja aparece una sola vez.
+- Cambiaron solo las hojas esperadas: `Ranking_*` (las columnas `vs_mediana_%` y `vs_prom_%`, ahora contra el Cuadro
+  1: Jumbo +4,06% en la Media) y `Sucs_*` (columna `amba` nueva; el resto de las columnas, igual). Las otras 33 hojas
+  —`analisis_detallado`, las 13 de la 19b, `Prov_*`, `Evolucion_IPC`, `Serie_precios`, `CABA`, `costa`...— son
+  idénticas a las de la primera corrida.
+- `amba` = 1.405 sucursales en cada canasta (1.406 en la Vulnerable): toda CABA (834) y 571 de las 821 bonaerenses.
+  La CELDA 7 imprime 1.974: es el universo del maestro con coordenadas, antes de exigir cobertura de la canasta.
+- CELDA 18: "Pais (Cuadro 1, ponderado)" = el promedio del Cuadro 1 de cada canasta ($288.714 la Vulnerable, $682.699
+  la Media); con esa referencia todos los barrios de CABA quedan arriba del país salvo en la Media Alta.
+- Cachés sin cambios (`hist_union_d452a45b_v2m`, `detalle_ea281ee7_v1`, `econ_7c7bf6d7` byte a byte iguales): no releyó
+  nada, como se esperaba (la 19b/19c no se tocaron).
+
+Pendiente: elegir el siguiente abierto del §5.

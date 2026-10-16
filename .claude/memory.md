@@ -21,7 +21,8 @@ revisión de una corrida: **`docs/AUDITORIA_2026-10-16_nb02.md`**. Repo al día 
   +1,748%, medianas 69/69, arrastre +1,479 pp, panel +1,971%; `analisis_detallado` primera de 39 hojas, sin AVISO; la
   19c tardó 2.069 s la primera vez y dejó `_cache/detalle_ea281ee7_v1.parquet` con 13 meses (2025-09 → 2026-09).
 - La revisión encontró defectos PREVIOS en los números del documento técnico (CELDAS 16, 18, 20) → **BUG-42, resuelto
-  el 2026-10-16 (commit d6e1f52), NO corrido en Colab todavía**: AMBA = columna `amba` de la CELDA 7 (CABA + Buenos
+  el 2026-10-16 (commit d6e1f52) y VERIFICADO en Colab el mismo día** (segunda corrida: `Valores_Documento` idéntica a
+  la simulación, solo cambiaron `Ranking_*` y `Sucs_*`; AUDITORIA_2026-10-16_nb02 §7): AMBA = columna `amba` de la CELDA 7 (CABA + Buenos
   Aires a ≤ 90 km del Obelisco; antes CABA + toda la provincia, con Toledo y la Cooperativa Obrera adentro); un solo
   "país" = Cuadro 1 en las CELDAS 16, 18, 19 (`Ranking_*`) y 20; cadenas y barrios por mediana en la CELDA 20;
   acumulados de canastas e IPC en el mismo período (el mes sin IPC, aparte); 3 caras / 3 baratas; dispersión P5-P95;
@@ -72,12 +73,13 @@ revisión de una corrida: **`docs/AUDITORIA_2026-10-16_nb02.md`**. Repo al día 
 
 ### LO PRÓXIMO (nb02)
 
-1. El usuario re-corre el nb02 en Colab ("Ejecutar todo": la serie, la 19c y la econometría tienen caché al día; no
-   relee el histórico). Pedirle la salida de las CELDAS 7, 16, 18 y 20 y el Excel `canasta_analisis_<mes>.xlsx`.
-2. Revisar contra `docs/AUDITORIA_2026-10-16_nb02.md` §3: la CELDA 7 imprime "AMBA (CABA + Buenos Aires a <= 90 km del
-   Obelisco): N sucursales"; el ranking AMBA sin Toledo/Cooperativa Obrera/La Anónima; Item 6 "acumulados 2024-01 ->
-   <último mes con IPC>" con el mes sin IPC aparte; 3 caras y 3 baratas; P5-P95; porcentajes con coma. Si el mes ya
-   cerró, los números cambian pero las comprobaciones son las mismas. La econometría tiene que decir "en cache: 33".
+1. ✅ (2026-10-16) Re-corrida con BUG-42 verificada: igual a la simulación. Para las corridas siguientes (mes nuevo o
+   cierre de octubre), los mismos controles de `docs/AUDITORIA_2026-10-16_nb02.md` §7: AMBA sin Toledo/Cooperativa
+   Obrera/La Anónima, Item 6 hasta el último mes con IPC y el mes sin IPC aparte, 3 caras y 3 baratas, P5-P95,
+   porcentajes con coma. La CELDA 7 imprime el AMBA del maestro entero (1.974); el de cada canasta (~1.405) está en
+   la columna `amba` de `Sucs_*`. Cuando se cierre octubre la 19c lee solo ese mes y la econometría lo agrega.
+2. Para comparar dos corridas hoja por hoja: `docs/auditoria/scripts_nb02_2026-10/comparar_corridas.py <nuevo> <anterior>`;
+   `simular_valores_documento.py` rehace la CELDA 20 desde el Excel (sirve de "anterior" si se cambia la celda).
 3. Elegir con el usuario el siguiente abierto: (a) región por coordenadas también en la 19b/19c (cambia la clave del
    caché de la 19c: relee 12 meses ~35 min una vez); (b) identificar "Cadena 24" y actualizar el maestro de sucursales
    (~540 fuera); (c) mínimo de productos para las cadenas de la 19c; (d) barrios con polígonos oficiales; (e) nb05.

@@ -577,7 +577,9 @@ Obelisco), referencia única del Cuadro 1, medianas, acumulados en el mismo per�
 las CELDAS 7 (columna `amba`), 16, 18, 19 (vs país de `Ranking_*` y columna `amba` en `Sucs_*`) y 20 (commit
 `d6e1f52`). Revisión completa, con los números antes/ahora simulados sobre los mismos datos, en
 `docs/AUDITORIA_2026-10-16_nb02.md`; scripts nuevos en `docs/auditoria/scripts_nb02_2026-10/`. Ese día también se
-commiteó el cambio del usuario al script 03 (carpeta de días y zip semestral A/B automático).
+commiteó el cambio del usuario al script 03 (carpeta de días y zip semestral A/B automático). **Verificado en Colab el
+mismo día** con una segunda corrida: `Valores_Documento` idéntica a la simulación y solo cambiaron `Ranking_*` y
+`Sucs_*` (`comparar_corridas.py`; AUDITORIA §7).
 
 ### 2026-10-15 — nb02: hoja `analisis_detallado` (CELDA 19c)
 

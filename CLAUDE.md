@@ -10,8 +10,8 @@ variación mensual de la canasta Media dentro de su Excel — CELDA 19b (aporte 
 CELDA 19c (hoja `analisis_detallado`, la primera: índices mensuales y semanales por rubro, región, provincia, cadena y
 tipo de sucursal). Guía: `docs/NB02_ANALISIS_VARIACION.md`. Las dos corrieron bien en Colab con oct-26 (2026-10-16);
 ese día se corrigieron los números del documento técnico (BUG-42: AMBA por coordenadas, una sola referencia del país,
-acumulados en el mismo período que el IPC, P5-P95): falta re-correr el nb02 para verlo. Revisión de la corrida:
-`docs/AUDITORIA_2026-10-16_nb02.md`.
+acumulados en el mismo período que el IPC, P5-P95) y se verificó en Colab con una segunda corrida. Revisión de las
+dos corridas: `docs/AUDITORIA_2026-10-16_nb02.md`.
 
 ## Al empezar una sesión
 
@@ -117,7 +117,7 @@ acumulados en el mismo período que el IPC, P5-P95): falta re-correr el nb02 par
 | `docs/BUGS_Y_MEJORAS.md` | Defectos abiertos arriba; bugs resueltos con causa y fix |
 | `docs/SEPA_TECNICO.md` | Formato SEPA, cadenas, frescos por tipo, caché |
 | `docs/AUDITORIA_2026-10-16_nb02.md` | **Última corrida del nb02 revisada** (oct-26 al 15/10): 19b/19c OK, BUG-42 (antes/ahora con los mismos datos), lecturas (Vea en jul-26), abiertos |
-| `docs/auditoria/scripts_nb02_2026-10/` | Prototipo ad hoc de la desagregación (oct-26), validación de las CELDAS 19b/19c con datos reales, `simular_valores_documento.py` (rehace la CELDA 20 desde el Excel de una corrida), `validar_amba_maestro.py`, `productos_que_mueven_grupo.py` |
+| `docs/auditoria/scripts_nb02_2026-10/` | Prototipo ad hoc de la desagregación (oct-26), validación de las CELDAS 19b/19c con datos reales, `simular_valores_documento.py` (rehace la CELDA 20 desde el Excel de una corrida), `comparar_corridas.py` (dos Excel hoja por hoja), `validar_amba_maestro.py`, `productos_que_mueven_grupo.py` |
 | `docs/AUDITORIA_2026-10-02_v514.md` | **Ultima corrida auditada** (v5.14 al 2026-10-01, Colab gratuito): numeros vigentes, volatilidad de Femenina/Tecnologica, Lavarropas y composicion por rubro (resueltos en la v5.15) |
 | `docs/AUDITORIA_2026-09-24_v512.md` | **Revisión de la v5.12**: la brecha con el IPC sale de los frescos, incertidumbre del acumulado, dos defectos (filtro estacional, nivel de frescos revisado cada semana), ronda 2. Sus decisiones (§7) están aplicadas en la v5.13 |
 | `docs/AUDITORIA_2026-09-22_v59.md` | Auditoría de la v5.9 + verificación de la v5.10 (§10) y de la v5.11 con los reemplazos de trazabilidad (§11) + PDF y scripts en `docs/auditoria/` |
