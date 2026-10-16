@@ -556,6 +556,18 @@ Los 4 reemplazos (Swift XL, Lavandina Anti-splash, Plusbelle, Listerine) están 
 
 ## Historial de cambios
 
+### 2026-10-16 — nb02: corrida de oct-26 revisada; AMBA, referencias y acumulados del documento técnico (BUG-42)
+
+El usuario corrió el nb02 en Colab (oct-26 al 15/10). Las CELDAS 19b y 19c dieron lo validado (oficial +1,748%, medianas
+69/69, `analisis_detallado` primera, 2.069 s la primera vez). La revisión encontró defectos previos en las CELDAS 16, 18
+y 20, que alimentan el documento técnico: el "AMBA" de los rankings de cadenas era CABA + toda la provincia; los
+acumulados comparaban la canasta a oct-26 (parcial) con el IPC a sep-26; había cuatro referencias de "país" distintas y
+la CELDA 20 usaba promedios por cadena y barrio; 3 caras y 1 barata; dispersión mín-máx (38,8% por una sucursal
+atípica); porcentajes con punto decimal y la prima celíaca con `abs()`. Arreglados: AMBA por coordenadas (≤ 90 km del
+Obelisco), referencia única del Cuadro 1, medianas, acumulados en el mismo período, P5-P95, formato. Test nuevo
+`notebooks/test_valores_documento.py` (falla en sus 19 chequeos con las celdas viejas). No relee nada: solo cambian
+las CELDAS 7 (columna `amba`), 16, 18, 19 (vs país de `Ranking_*` y columna `amba` en `Sucs_*`) y 20.
+
 ### 2026-10-15 — nb02: hoja `analisis_detallado` (CELDA 19c)
 
 Pedido: una pestaña al principio del Excel `canasta_analisis_{PERIODO}.xlsx`, "tipo informe", con la apertura de la

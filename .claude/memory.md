@@ -6,7 +6,25 @@ Autor: Santiago Riverti — investigador independiente
 
 ---
 
-## 🟢 ESTADO ACTUAL nb02 / HANDOFF [2026-10-15] — análisis de la variación (CELDAS 19b y 19c) — leer esto primero
+## 🟢 ESTADO ACTUAL nb02 / HANDOFF [2026-10-16] — corrida de oct-26 revisada + BUG-42 (documento técnico) — leer esto primero
+
+### Novedad 2026-10-16
+
+- El usuario corrió el nb02 en Colab (oct-26 al 15/10) y pasó salida + Excel + caché: **19b y 19c OK** (oficial
+  +1,748%, medianas 69/69, `analisis_detallado` primera, sin AVISO; la 19c tardó 2.069 s la primera vez y dejó
+  `detalle_ea281ee7_v1.parquet` con 13 meses).
+- **BUG-42 resuelto (no corrido en Colab todavía)**: CELDAS 7 (columna `amba`), 16, 18, 19 y 20. AMBA por coordenadas
+  (CABA + Buenos Aires a ≤ 90 km del Obelisco), país = Cuadro 1 en todo "vs país", cadenas/barrios por mediana,
+  acumulados en el mismo período que el IPC, 3 caras/3 baratas, dispersión P5-P95, coma decimal y signo. Test
+  `notebooks/test_valores_documento.py`. Simulado con los datos reales de oct-26 (Excel reconstruido): AMBA Media 1.405
+  sucursales (sin Toledo/Coop. Obrera/La Anónima); Media +162,8% vs IPC Alim +166,4% (ene-24 → sep-26); P5-P95 6,5%.
+- Lectura de los datos: **Vea bajó precios en jul-26** (19 de 67 productos −10 a −28%, sostenido en agosto): explica la
+  caída de Cuyo/NOA en jul-26 en `analisis_detallado` y el rebote de oct (Vea +4,3%, el mayor aporte por cadena).
+- Abiertos nuevos (BUGS_Y_MEJORAS, "nb02 — abiertos"): región del maestro en la 19b/19c (DIA del interior como AMBA),
+  ~540 sucursales fuera del maestro ("Cadena 24": 332), cadenas con 2-9 productos en la 19c, barrios por rectángulos,
+  y el mismo AMBA mal definido en el nb05.
+- **Siguiente**: el usuario re-corre el nb02 (las CELDAS 7 a 20 alcanzan; no relee el SEPA) y se revisa la salida de
+  la CELDA 20 contra la simulación.
 
 Hay dos líneas de trabajo vivas: **nb02** (este bloque, lo último) y **nb07** (bloque siguiente, sin cambios desde el
 2026-10-02). Guía práctica del nb02: **`docs/NB02_ANALISIS_VARIACION.md`**; método: `docs/METODOLOGIA.md` §4.

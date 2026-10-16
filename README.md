@@ -173,7 +173,7 @@ Donde `{canasta}` es `vulnerable`, `popular`, `media`, `media_alta`, `canasta05`
 |---------|-----------|
 | `mapa_canasta_{canasta}_YYYY-MM.png` | Mapa coroplético con el costo mediano por provincia |
 | `ranking_cadenas_nacional_MMAAAA_{canasta}.png` | Ranking de cadenas por costo promedio (nacional) |
-| `ranking_cadenas_amba_MMAAAA_{canasta}.png` | Ídem para AMBA (Buenos Aires + CABA) |
+| `ranking_cadenas_amba_MMAAAA_{canasta}.png` | Ídem para AMBA (CABA + Buenos Aires a ≤ 90 km del Obelisco; en el nb05, CABA + provincia) |
 
 ### Mapa interactivo (`.html`) — un único mapa con todas las canastas
 

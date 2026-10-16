@@ -233,6 +233,27 @@ Todos los cálculos del Notebook 02 (y del Notebook 05) se hacen por partida dob
 
 Por qué tener ambos: para las canastas (muchos productos) mediana ≈ promedio, y la media sirve de chequeo de robustez. Para productos individuales con precio de lista "pegajoso" (que se cuantiza a valores redondos), la mediana escalona y da variaciones 0% espurias, mientras que el promedio captura mejor la trayectoria mensual. El IPC del INDEC, para contraste, no usa mediana: es una canasta fija ponderada por gasto (ENGHo) con promedios de relativos de precio sobre una muestra relevada.
 
+### Referencias, AMBA y valores del documento técnico (CELDAS 16, 18 y 20, desde 2026-10-16)
+
+- **Una sola referencia del país**: el promedio nacional ponderado por población del Cuadro 1 (CELDA 8). Todo "vs país"
+  (rankings de cadenas, barrios, hoja `Ranking_*`, `Valores_Documento`) se mide contra ese número; **CABA** es su fila
+  del Cuadro 1 (mediana de sus sucursales). Antes convivían cuatro "país" (Cuadro 1, mediana de sucursales, media de
+  sucursales y la serie mensual): en oct-26 iban de $682.699 a $687.009 para la Media.
+- **Nivel y variación**: el valor de la canasta es el del Cuadro 1; la variación mensual, la de la serie (CELDA 9: suma
+  de qty × mediana nacional por producto). `Valores_Documento` trae los dos extremos de la serie para que no se mezclen.
+- **AMBA = CABA + sucursales de Buenos Aires a ≤ 90 km del Obelisco** (`AMBA_RADIO_KM`, CELDA 7), por coordenadas. No es
+  toda la provincia (así entraban Toledo de Mar del Plata y la Cooperativa Obrera de Bahía Blanca) ni la `REGION` del
+  maestro, que marca AMBA a ~100 sucursales de DIA del interior bonaerense (localidad "BUENOS AIRES"). 90 km toma La
+  Plata (55 km), Luján (67), Campana (72) y Zárate (81) y deja afuera Lobos, Navarro, Mercedes y Chascomús (92-114 km).
+- **Cadenas y barrios en `Valores_Documento`**: mediana de sus sucursales (la misma cifra que los rankings [mediana]);
+  tantas caras como baratas en el resumen.
+- **Acumulados**: canastas e IPC en el **mismo período** (desde `MES_INICIO_GRAFICO` hasta el último mes con IPC
+  publicado). El acumulado hasta el mes en curso, sin IPC, va aparte y marcado "no comparar". En oct-26 la diferencia
+  cambiaba la lectura: la Media daba +167,4% (a oct, parcial) contra +166,4% del IPC Alimentos (a sep); en el mismo
+  período, +162,8% contra +166,4%.
+- **Dispersión entre sucursales**: P5-P95. El mín-máx se informa con la sucursal que lo define y marcado "no
+  publicar": en oct-26 daba 38,8% por una sucursal 20% abajo; el P5-P95, 6,5%.
+
 ### Desagregación de la variación mensual (CELDA 19b, desde 2026-10)
 
 Pedido: cuando se publica "la canasta Media subió X% en el mes", poder decir **qué productos, qué cadenas y qué

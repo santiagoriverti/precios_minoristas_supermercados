@@ -1,7 +1,9 @@
 # Bugs Pendientes y Mejoras
 
-Última actualización: 2026-10-15 — **nb02**: desagregación de la variación mensual (CELDA 19b) y hoja
-`analisis_detallado` (CELDA 19c), listas y validadas con oct-26, falta correrlas en Colab; ver "Cambios y fixes 2026-10".
+Última actualización: 2026-10-16 — **nb02**: corrida de oct-26 revisada (19b/19c OK en Colab) y BUG-42 resuelto
+(AMBA, referencia única del país, acumulados en el mismo período, P5-P95 y formato del documento técnico).
+Antes, 2026-10-15 — **nb02**: desagregación de la variación mensual (CELDA 19b) y hoja
+`analisis_detallado` (CELDA 19c), listas y validadas con oct-26; ver "Cambios y fixes 2026-10".
 Antes: 2026-09-24 (cierre) — **nb07 v5.13 lista para correr** (relee el SEPA): frescos por TPD, nivel
 de frescos fijo (3 meses con cobertura normal), cobertura mínima de empaquetados, filtro estacional de Naranja/Tomate/
 Limón; ronda 2 de reemplazos aplicada (267 EANs); BUG-40 y BUG-41 encontrados al simular y corregidos antes de publicar.
@@ -207,7 +209,30 @@ de la Tecnológica** hasta que haya al menos dos cadenas con cobertura de durabl
 
 ## 🟢 Cambios y fixes 2026-10
 
-### 🟣 nb02 — hoja `analisis_detallado` (CELDA 19c, 2026-10-15) — lista, falta correrla en Colab
+### 🔴 BUG-42 — nb02: los números del documento técnico mezclaban referencias y regiones (2026-10-16) ✅ Resuelto
+
+Encontrado al revisar la corrida de oct-26 (CELDAS 16, 18 y 20; previos a la 19b/19c):
+
+1. **"AMBA" = CABA + toda la provincia de Buenos Aires** en los rankings de cadenas (CELDAS 16 y 20): entraban Toledo
+   (Mar del Plata), la Cooperativa Obrera (Bahía Blanca) y La Anónima. La `REGION` del maestro tampoco sirve (marca AMBA
+   a ~100 DIA del interior). Fix: columna `amba` en la CELDA 7 = CABA + Buenos Aires a ≤ `AMBA_RADIO_KM` (90) km del
+   Obelisco. Con oct-26 el AMBA de la Media pasa de 1.655 a 1.405 sucursales.
+2. **Acumulados en períodos distintos**: canasta a oct-26 (parcial) contra IPC a sep-26. La Media parecía arriba del IPC
+   Alimentos (+167,4% vs +166,4%) y en el mismo período está abajo (+162,8%). Fix: ventana común hasta el último mes con
+   IPC; el mes sin IPC va aparte, marcado "no comparar".
+3. **Cuatro "país"**: Cuadro 1 ($682.699), mediana de sucursales ($684.682: barrios y línea del gráfico de cadenas),
+   media de sucursales ($687.009: "vs nacional" de cadenas en la CELDA 20) y la serie ($685.307). La CELDA 20 además
+   usaba promedios por cadena y barrio (ChangoMas: media $687.798, mediana $682.835) y su "Promedio CABA" no era la fila
+   CABA del Cuadro 1. Fix: país = Cuadro 1 en las CELDAS 16, 18, 19 (`Ranking_*`) y 20; cadenas y barrios por mediana.
+4. **3 caras y 1 barata** (nacional) y 1/1 (AMBA). Fix: las mismas de cada lado (3, o la mitad si hay menos cadenas).
+5. **Dispersión entre sucursales mín-máx 38,8%** por una sucursal 20% abajo (Hiper ChangoMas San Martín). Fix: P5-P95
+   (6,5% en oct-26); el mín-máx queda con la sucursal que lo define y marcado "no publicar".
+6. **Formato**: "+8.7%", "240.1%", "38.8%" con punto, y la prima celíaca con `abs()` (una prima negativa salía "+").
+   Fix: coma decimal y signo en todos los porcentajes. Re-correr la celda ya no crea `Valores_Documento1`.
+
+Test: `notebooks/test_valores_documento.py` (20 chequeos; con las celdas viejas fallan 19).
+
+### 🟣 nb02 — hoja `analisis_detallado` (CELDA 19c, 2026-10-15) — corrida en Colab con oct-26 ✅ (2.069 s la primera vez)
 
 Primera hoja del Excel: índices mensuales (12 meses, base = mes anterior al primero = 100) y semanales (1S-4S del mes
 anterior y del mes en curso) de la canasta Media por rubro SEPA y categoría, región, provincia, cadena y tipo de
@@ -215,7 +240,7 @@ sucursal, con el método de la serie oficial en cada fila. Validada con oct-26 y
 primera corrida lee hasta 12 meses del SEPA por sucursal (~40-50 min en Colab) y los deja en caché. Detalle en
 `docs/NB02_ANALISIS_VARIACION.md` y `docs/METODOLOGIA.md` §4.
 
-### 🟣 nb02 — desagregación de la variación mensual (CELDA 19b, 2026-10-15) — lista, falta correrla en Colab
+### 🟣 nb02 — desagregación de la variación mensual (CELDA 19b, 2026-10-15) — corrida en Colab con oct-26 ✅ (69/69, +1,748%)
 
 13 hojas: aporte de cada producto (suma exacta a la variación oficial), arrastre de la última semana del mes anterior,
 aporte por cadena/provincia/región/tipo con el panel apareado. Portada de un script ad hoc y validada contra él con
@@ -237,6 +262,17 @@ resultado. Benchmark: `docs/auditoria/scripts_nb02_2026-10/bench_lectura_ean.py`
   19c pasarían de minutos a segundos por archivo). Validarla contra el lector actual antes de cambiarlo.
 - Confirmar en Colab gratuito la RAM y el tiempo de la primera corrida de la 19c (medido en una PC: +307 MB, ~2-2,5 min
   por mes leído).
+- (2026-10-16) La `REGION` del maestro marca AMBA a ~100 sucursales de DIA del interior bonaerense (Mar del Plata,
+  Tandil, Pergamino: localidad "BUENOS AIRES"). Las CELDAS 16/20 ya usan coordenadas (BUG-42), pero la 19b/19c siguen
+  con la `REGION` del maestro: su AMBA (1.819 sucursales en oct-26) incluye esas DIA. Arreglo: región por coordenadas
+  también ahí (cambia la clave del caché de la 19c: relee 12 meses una vez) o corregir el maestro.
+- (2026-10-16) Unas 540 sucursales con precios (18% del panel de la 19b) no están en el maestro y no entran al Cuadro 1,
+  mapas ni rankings; la mayor es "Cadena 24" (332 sucursales, 9 de 69 productos). Identificarla y actualizar el maestro.
+- (2026-10-16) La 19c muestra cadenas con 2-9 productos de 69 (Cadena 24, 23, 6): agregar un mínimo de productos.
+- (2026-10-16) Barrios de CABA por rectángulos que se superponen (gana el primero del diccionario): Palermo, Belgrano y
+  Recoleta absorben vecinos y Colegiales/Retiro quedan casi vacíos. Arreglo: polígonos oficiales de barrios. Con la
+  mediana, además, ~20 barrios empatan en el precio de DIA: el "bottom 3" es arbitrario (el [promedio] los separa).
+- (2026-10-16) El nb05 tiene el mismo AMBA = CABA + provincia en su ranking de cadenas (`gen_nb05.py`, CELDA de rankings).
 - Menor, previo (CELDA 9): `pd.concat([df_cache] + _nuevos)` con `df_cache` vacío (columnas object) da un
   FutureWarning de pandas 2.x (en Colab no se ve: la CELDA 2 silencia los warnings). Con un pandas futuro podría dejar
   `precio_mediano` como object la primera vez que se arma el caché. Arreglo trivial: no concatenar el frame vacío.

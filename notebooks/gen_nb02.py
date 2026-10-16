@@ -616,6 +616,28 @@ for _idx, _row in suc_geo_clean.iterrows():
 if _n_reclasif:
     print(f'  Reclasificadas {_n_reclasif} sucursales por coordenadas')
 
+# ── AMBA por coordenadas (rankings de cadenas AMBA, CELDAS 16 y 20) ──────────
+# AMBA = CABA + sucursales de Buenos Aires a <= AMBA_RADIO_KM del Obelisco. NO es toda la
+# provincia (asi entraban Toledo de Mar del Plata y la Cooperativa Obrera de Bahia Blanca) ni la
+# REGION del maestro, que marca AMBA a ~100 sucursales de DIA del interior bonaerense (localidad
+# 'BUENOS AIRES': Mar del Plata, Tandil, Pergamino). 90 km toma La Plata (55), Lujan (67),
+# Campana (72) y Zarate (81) y deja afuera Lobos, Navarro, Mercedes y Chascomus (92-114 km).
+AMBA_RADIO_KM = 90
+_OBELISCO = (-34.6037, -58.3816)
+
+def _km_obelisco(lat, lon):
+    _la, _lo = np.radians(lat), np.radians(lon)
+    _la0, _lo0 = np.radians(_OBELISCO[0]), np.radians(_OBELISCO[1])
+    _a = np.sin((_la - _la0) / 2) ** 2 + np.cos(_la0) * np.cos(_la) * np.sin((_lo - _lo0) / 2) ** 2
+    return 2 * 6371 * np.arcsin(np.sqrt(_a))
+
+suc_geo_clean['amba'] = (suc_geo_clean['PROVINCIA_NORM'].eq('CABA') |
+                         (suc_geo_clean['PROVINCIA_NORM'].eq('Buenos Aires') &
+                          (_km_obelisco(suc_geo_clean['sucursales_latitud'],
+                                        suc_geo_clean['sucursales_longitud']) <= AMBA_RADIO_KM)))
+print(f'  AMBA (CABA + Buenos Aires a <= {AMBA_RADIO_KM} km del Obelisco): '
+      f'{int(suc_geo_clean["amba"].sum()):,} sucursales')
+
 # ── Calcular canasta por sucursal para CADA canasta activa ───────────────────
 canasta_geo_dict = {}
 
@@ -1380,18 +1402,19 @@ for _col_id in CANASTAS_ACTIVAS:
                    .agg(n_sucursales=(_VCOL,'count'), valor=(_VCOL,_AGG))
                    .round(0).reset_index())
         _rk_nac = _rk_nac[_rk_nac['n_sucursales'] >= MIN_SUCURSALES_RANKING].sort_values('valor')
-        _prom_nac_rk = (_cgf[_VCOL].median() if _SFX == '' else _pmean(_cgf[_VCOL]))
+        # Referencia del pais = la del Cuadro 1 (CELDA 8), la misma en todo el informe
+        _prom_nac_rk = (prom_nac_dict[_col_id] if _SFX == '' else prom_nac_prom_dict[_col_id])
 
-        _amba = _cgf[_cgf['PROVINCIA_NORM'].isin(['Buenos Aires','CABA'])]
+        _amba = _cgf[_cgf['amba']]      # CABA + conurbano por coordenadas (CELDA 7)
         _rk_amba = (_amba.groupby('cadena')
                     .agg(n_sucursales=(_VCOL,'count'), valor=(_VCOL,_AGG))
                     .round(0).reset_index())
         _rk_amba = _rk_amba[_rk_amba['n_sucursales'] >= MIN_SUCURSALES_RANKING].sort_values('valor')
         _prom_amba_rk = ((_amba[_VCOL].median() if _SFX == '' else _pmean(_amba[_VCOL])) if len(_amba) > 0 else 0)
 
-        for (_rk, _prom_r, _titulo, _out_name) in [
-            (_rk_nac,  _prom_nac_rk,  f'Ranking nacional [{_name}/{_TIT}]',  f'ranking_cadenas_nacional_{MES}_{_short}{_SFX}'),
-            (_rk_amba, _prom_amba_rk, f'Ranking AMBA [{_name}/{_TIT}]',      f'ranking_cadenas_amba_{MES}_{_short}{_SFX}'),
+        for (_rk, _prom_r, _lbl_r, _titulo, _out_name) in [
+            (_rk_nac,  _prom_nac_rk,  'Nacional (Cuadro 1)', f'Ranking nacional [{_name}/{_TIT}]',  f'ranking_cadenas_nacional_{MES}_{_short}{_SFX}'),
+            (_rk_amba, _prom_amba_rk, 'AMBA',                f'Ranking AMBA [{_name}/{_TIT}]',      f'ranking_cadenas_amba_{MES}_{_short}{_SFX}'),
         ]:
             if len(_rk) == 0:
                 print(f'  Sin datos para {_titulo}'); continue
@@ -1405,7 +1428,7 @@ for _col_id in CANASTAS_ACTIVAS:
                         bar.get_y()+bar.get_height()/2,
                         f'${fmtn(val)}', va='center', fontsize=9, fontweight='bold')
             ax.axvline(_prom_r, color='#666', linestyle='--', linewidth=1.5,
-                       label=f'Nacional: ${fmtn(_prom_r)}')
+                       label=f'{_lbl_r}: ${fmtn(_prom_r)}')
             ax.set_xlabel(f'Canasta por cadena (ARS) — {_TIT}', fontsize=11)
             ax.set_title(_titulo, fontsize=11, fontweight='bold')
             ax.set_xlim(_rk['valor'].min()*0.95, _rk['valor'].max()*1.07)
@@ -1858,8 +1881,9 @@ for _col_id in CANASTAS_ACTIVAS:
                  .agg(n_sucs=(_VCOL,'count'), valor=(_VCOL,_AGG))
                  .round(0).sort_values('valor'))
         _rk_b_fil = _rk_b[_rk_b['n_sucs'] >= 2]
+        # CABA = la fila CABA del Cuadro 1; pais = el promedio ponderado del Cuadro 1 (CELDA 8)
         _pc = (_caba[_VCOL].median() if _TIT == 'mediana' else _pmean(_caba[_VCOL]))
-        _pp = (_cgf[_VCOL].median()  if _TIT == 'mediana' else _pmean(_cgf[_VCOL]))
+        _pp = (prom_nac_dict[_col_id] if _TIT == 'mediana' else prom_nac_prom_dict[_col_id])
 
         print(f'\\n{"="*78}')
         print(f'  RANKING BARRIOS CABA [{_name.upper()}/{_TIT}] — {NOMBRE_MES_TITLE}')
@@ -1871,7 +1895,7 @@ for _col_id in CANASTAS_ACTIVAS:
             vp = (r["valor"]/max(_pp,1)-1)*100
             print(f'  {i:<3} {b:<22} {int(r["n_sucs"]):<7} {fmtb(r["valor"]):<13} {vc:+.2f}%  {vp:+.2f}%')
         print(f'  {"-"*70}')
-        print(f'  [{_TIT}] Promedio CABA: {fmtb(_pc)}   Promedio pais: {fmtb(_pp)}')
+        print(f'  [{_TIT}] CABA (Cuadro 1): {fmtb(_pc)}   Pais (Cuadro 1, ponderado): {fmtb(_pp)}')
         _sin = set(BARRIOS_BBOX.keys()) - set(_rk_b.index)
         if _sin:
             print(f'  Sin sucursales ({len(_sin)}): {", ".join(sorted(_sin))}')"""))
@@ -1953,8 +1977,8 @@ with pd.ExcelWriter(out_xls, engine='openpyxl') as writer:
         _rk['canasta_mediana'] = _rk['canasta_mediana'].round(0)
         _rk['canasta_prom']    = _rk['canasta_prom'].round(0)
         _rk = _rk.sort_values('canasta_mediana', ascending=False)
-        _rk['vs_mediana_%'] = ((_rk['canasta_mediana'] / _cgf['canasta_total'].median()) - 1) * 100
-        _rk['vs_prom_%']    = ((_rk['canasta_prom'] / _pmean(_cgf['canasta_total_prom'])) - 1) * 100
+        _rk['vs_mediana_%'] = ((_rk['canasta_mediana'] / _prom) - 1) * 100       # vs pais del Cuadro 1
+        _rk['vs_prom_%']    = ((_rk['canasta_prom'] / _prom_prom) - 1) * 100
         _rk = _rk[['cadena','n_sucursales','canasta_mediana','vs_mediana_%','canasta_prom','vs_prom_%']]
         _rk.to_excel(writer, sheet_name=f'Ranking_{_short}', index=False)
 
@@ -1962,7 +1986,7 @@ with pd.ExcelWriter(out_xls, engine='openpyxl') as writer:
             'id_comercio','id_bandera','id_sucursal','cadena','PROVINCIA_NORM',
             'sucursales_nombre','sucursales_localidad','sucursales_barrio',
             'sucursales_latitud','sucursales_longitud','sucursales_tipo',
-            'canasta_total','canasta_total_prom','productos_propios'
+            'canasta_total','canasta_total_prom','productos_propios','amba'
         ]].sort_values(['PROVINCIA_NORM','cadena','canasta_total']).copy()
         _suc_exp.to_excel(writer, sheet_name=f'Sucs_{_short}', index=False)
 
@@ -3079,9 +3103,18 @@ cells.append(cell_code("""\
 def _ar(x): return f"${int(round(x)):,}".replace(",", ".")
 def _pp(x, dec=2):
     s = "+" if x >= 0 else ""; return f"{s}{x:.{dec}f}%".replace(".", ",")
+def _pct(x, dec=1):      # porcentaje sin signo y con coma decimal (brechas y dispersiones)
+    return f"{x:.{dec}f}%".replace(".", ",")
 
 _MEDIA_ID = 'cantidad_03'
 _POP_ID   = 'cantidad_02'
+_N_EXTREMOS = 3          # caras y baratas del resumen: las mismas de cada lado
+
+# Referencias UNICAS en toda la celda (las del Cuadro 1, CELDA 8):
+#   pais = promedio de las medianas provinciales ponderado por poblacion (prom_nac_dict);
+#   CABA = mediana de sus sucursales (su fila del Cuadro 1);
+#   AMBA = mediana de las sucursales del AMBA (CELDA 7: CABA + conurbano por coordenadas).
+# Cadenas y barrios: mediana de sus sucursales, como los rankings [mediana] de las CELDAS 16 y 18.
 
 # ── 1. Valores por canasta ────────────────────────────────────────────────────
 _vals = {c: prom_nac_dict[c] for c in CANASTAS_ACTIVAS}
@@ -3108,58 +3141,95 @@ _prov_min = _spv.loc[_spv['canasta_total'].idxmin()]
 _prov_max = _spv.loc[_spv['canasta_total'].idxmax()]
 _disp_prov = (_prov_max['canasta_total'] - _prov_min['canasta_total']) / _prov_min['canasta_total'] * 100
 
-# ── 3. Rango sucursales (canasta media) ───────────────────────────────────────
+# Serie mensual de la Media (CELDA 9): de ahí sale la variación; el nivel es el del Cuadro 1
+_sn_media = serie_nac_dict[_MEDIA_ID]
+_serie_ant = _sn_media['canasta_nacional_ponderada'].iloc[-2] if len(_sn_media) >= 2 else None
+_serie_act = _sn_media['canasta_nacional_ponderada'].iloc[-1] if len(_sn_media) >= 1 else None
+
+# ── 3. Dispersión entre sucursales (canasta media) ────────────────────────────
+# Se publica P5-P95: el mín-máx lo mueven una o dos sucursales atípicas (oct-26: una con la
+# canasta 20% abajo y tres de una cadena con 41 de 69 productos con precio propio).
 _cgf_m = canasta_geo_dict[_MEDIA_ID]
-_suc_min, _suc_max = _cgf_m['canasta_total'].min(), _cgf_m['canasta_total'].max()
-_p25, _p75 = _cgf_m['canasta_total'].quantile(0.25), _cgf_m['canasta_total'].quantile(0.75)
-_disp_suc = (_suc_max - _suc_min) / _suc_min * 100
+_vsuc = _cgf_m['canasta_total']
+_suc_min, _suc_max = _vsuc.min(), _vsuc.max()
+_p05, _p25, _p75, _p95 = (_vsuc.quantile(q) for q in (0.05, 0.25, 0.75, 0.95))
+_disp_suc = (_p95 - _p05) / _p05 * 100
+_disp_suc_mm = (_suc_max - _suc_min) / _suc_min * 100
+_n_prod_media = len(CANASTAS[_MEDIA_ID])
+
+def _quien(r):
+    return (f"{r['cadena']} {r['sucursales_nombre']} ({r['PROVINCIA_NORM']}; "
+            f"{int(r['productos_propios'])}/{_n_prod_media} productos con precio propio)")
+
+_suc_min_q = _quien(_cgf_m.loc[_vsuc.idxmin()])
+_suc_max_q = _quien(_cgf_m.loc[_vsuc.idxmax()])
+
+def _ranking(_df, _col):
+    return (_df.groupby(_col)
+            .agg(n=('canasta_total', 'count'), valor=('canasta_total', 'median'))
+            .reset_index())
+
+def _disp(_s):
+    return (_s.max() - _s.min()) / _s.min() * 100 if len(_s) >= 2 else 0
 
 # ── 4. Cadenas nacionales (canasta media) ─────────────────────────────────────
-_rk_nac = (_cgf_m.groupby('cadena')
-            .agg(n=('canasta_total','count'), prom=('canasta_total','mean'))
-            .reset_index())
-_rk_nac = _rk_nac[_rk_nac['n'] >= MIN_SUCURSALES_RANKING].sort_values('prom', ascending=False)
-_disp_cad_nac = (_rk_nac['prom'].max() - _rk_nac['prom'].min()) / _rk_nac['prom'].min() * 100
+_rk_nac = _ranking(_cgf_m, 'cadena')
+_rk_nac = _rk_nac[_rk_nac['n'] >= MIN_SUCURSALES_RANKING].sort_values('valor', ascending=False)
+_rk_nac['vs_pais_%'] = (_rk_nac['valor'] / _v_media - 1) * 100
+_disp_cad_nac = _disp(_rk_nac['valor'])
 
 # ── 5. Cadenas AMBA (canasta media) ───────────────────────────────────────────
-_cgf_amba = _cgf_m[_cgf_m['PROVINCIA_NORM'].isin(['Buenos Aires','CABA'])].copy()
-_rk_amba = (_cgf_amba.groupby('cadena')
-             .agg(n=('canasta_total','count'), prom=('canasta_total','mean'))
-             .reset_index())
-_rk_amba = _rk_amba[_rk_amba['n'] >= MIN_SUCURSALES_RANKING].sort_values('prom', ascending=False)
-_disp_cad_amba = (_rk_amba['prom'].max() - _rk_amba['prom'].min()) / _rk_amba['prom'].min() * 100 if len(_rk_amba) >= 2 else 0
+_cgf_amba = _cgf_m[_cgf_m['amba']]
+_v_amba = _cgf_amba['canasta_total'].median() if len(_cgf_amba) else float('nan')
+_rk_amba = _ranking(_cgf_amba, 'cadena')
+_rk_amba = _rk_amba[_rk_amba['n'] >= MIN_SUCURSALES_RANKING].sort_values('valor', ascending=False)
+_rk_amba['vs_amba_%'] = (_rk_amba['valor'] / _v_amba - 1) * 100
+_rk_amba['vs_pais_%'] = (_rk_amba['valor'] / _v_media - 1) * 100
+_disp_cad_amba = _disp(_rk_amba['valor'])
 
 # ── 6. Barrios CABA (canasta media) ───────────────────────────────────────────
 _cgf_caba = _cgf_m[_cgf_m['PROVINCIA_NORM'] == 'CABA'].copy()
-_cgf_caba['barrio'] = _cgf_caba.apply(
-    lambda r: det_barrio(r['sucursales_latitud'], r['sucursales_longitud']), axis=1)
-_brk = (_cgf_caba[_cgf_caba['barrio'] != 'Sin clasificar']
-         .groupby('barrio')['canasta_total']
-         .agg(['mean','count'])
-         .reset_index()
-         .rename(columns={'mean':'prom','count':'n'}))
-_brk = _brk[_brk['n'] >= 2].sort_values('prom', ascending=False).reset_index(drop=True)
-_prom_caba = _cgf_caba['canasta_total'].mean()
-_disp_bar = (_brk['prom'].max() - _brk['prom'].min()) / _brk['prom'].min() * 100 if len(_brk) >= 2 else 0
+_cgf_caba['barrio'] = [det_barrio(_la, _lo) for _la, _lo in
+                       zip(_cgf_caba['sucursales_latitud'], _cgf_caba['sucursales_longitud'])]
+_brk = _ranking(_cgf_caba[_cgf_caba['barrio'] != 'Sin clasificar'], 'barrio')
+_brk = _brk[_brk['n'] >= 2].sort_values('valor', ascending=False).reset_index(drop=True)
+_v_caba = _cgf_caba['canasta_total'].median() if len(_cgf_caba) else float('nan')
+_brk['vs_caba_%'] = (_brk['valor'] / _v_caba - 1) * 100
+_brk['vs_pais_%'] = (_brk['valor'] / _v_media - 1) * 100
+_disp_bar = _disp(_brk['valor'])
 
 # ── 7. Canastas especiales ────────────────────────────────────────────────────
-_prima_cel  = ((_vals.get('cantidad_05', _v_media) / _v_media) - 1) * 100 if 'cantidad_05' in _vals else None
-_ahorro_veg = ((_vals.get('cantidad_06', _vals.get(_POP_ID, 1)) / _vals.get(_POP_ID, 1)) - 1) * 100 if 'cantidad_06' in _vals and _POP_ID in _vals else None
+_prima_cel  = ((_vals['cantidad_05'] / _v_media) - 1) * 100 if 'cantidad_05' in _vals else None
+_ahorro_veg = ((_vals['cantidad_06'] / _vals[_POP_ID]) - 1) * 100 if 'cantidad_06' in _vals and _POP_ID in _vals else None
 
-# ── 8. Acumulados desde MES_INICIO_GRAFICO ────────────────────────────────────
-_acum = {}
-for c in CANASTAS_ACTIVAS:
-    _sn = serie_nac_dict[c]
-    _mg = MES_INICIO_GRAFICO if MES_INICIO_GRAFICO in _sn['mes'].values else (_sn['mes'].min() if len(_sn) > 0 else None)
-    if _mg and len(_sn) >= 2:
-        _dg = _sn[_sn['mes'] >= _mg].reset_index(drop=True)
-        if len(_dg) >= 2:
-            _acum[c] = (_dg['canasta_nacional_ponderada'].iloc[-1] / _dg['canasta_nacional_ponderada'].iloc[0] - 1) * 100
+# ── 8. Acumulados: canasta e IPC en el MISMO período ──────────────────────────
+# Desde MES_INICIO_GRAFICO (o el primer mes que tengan todas las series) hasta el último mes con
+# IPC publicado. El mes en curso, sin IPC todavía, va aparte y no se compara con el IPC.
+def _acum_entre(_s, _m0, _m1):
+    # Variación % de la serie _s (índice = mes) entre _m0 y _m1; None si falta un extremo
+    if _m0 in _s.index and _m1 in _s.index and pd.notna(_s[_m0]) and pd.notna(_s[_m1]) and _s[_m0] > 0:
+        return (_s[_m1] / _s[_m0] - 1) * 100
+    return None
 
-_ipc_b = ipc[ipc['mes'] == MES_INICIO_GRAFICO] if MES_INICIO_GRAFICO in ipc['mes'].values else ipc.iloc[[0]]
-_ipc_l = ipc.iloc[-1]
-_acum_ipc_gen = (_ipc_l['ipc_general'] / _ipc_b['ipc_general'].values[0] - 1) * 100
-_acum_ipc_ali = (_ipc_l['ipc_alimentos'] / _ipc_b['ipc_alimentos'].values[0] - 1) * 100 if _ipc_b['ipc_alimentos'].notna().all() else None
+_ipc_idx = ipc.set_index('mes')
+_ipc_gen = _ipc_idx['ipc_general'].dropna()
+_ipc_ali = _ipc_idx['ipc_alimentos'].dropna()
+_series_acum = {c: serie_nac_dict[c].set_index('mes')['canasta_nacional_ponderada'].dropna()
+                for c in CANASTAS_ACTIVAS if len(serie_nac_dict[c]) >= 2}
+_M0_ACUM = max([MES_INICIO_GRAFICO] + [_s.index.min() for _s in _series_acum.values()]
+               + ([_ipc_gen.index.min()] if len(_ipc_gen) else []))
+_M1_ACUM = min([_s.index.max() for _s in _series_acum.values()]
+               + ([_ipc_gen.index.max()] if len(_ipc_gen) else []) or [PERIODO])
+_acum = {c: _acum_entre(_s, _M0_ACUM, _M1_ACUM) for c, _s in _series_acum.items()}
+_acum = {c: v for c, v in _acum.items() if v is not None}
+_acum_ult = {}           # hasta el último mes de la serie cuando el IPC todavía no lo publicó
+for c, _s in _series_acum.items():
+    if _s.index.max() > _M1_ACUM:
+        _v = _acum_entre(_s, _M0_ACUM, _s.index.max())
+        if _v is not None:
+            _acum_ult[c] = (_s.index.max(), _v)
+_acum_ipc_gen = _acum_entre(_ipc_gen, _M0_ACUM, _M1_ACUM)
+_acum_ipc_ali = _acum_entre(_ipc_ali, _M0_ACUM, _M1_ACUM)
 
 # ── 9. Variaciones últimos 3 meses ────────────────────────────────────────────
 _var3_canastas = {}
@@ -3176,60 +3246,73 @@ _ipc_tail3 = ipc[['mes','ipc_general_var_%','ipc_alimentos_var_%']].tail(3)
 print("=" * 72)
 print(f"  VALORES PARA DOCUMENTO TÉCNICO — {NOMBRE_MES_TITLE.upper()}")
 print("=" * 72)
+print("  Referencias: país = Cuadro 1 (medianas provinciales ponderadas por población);")
+print("  cadenas y barrios = mediana de sus sucursales; AMBA = CABA + conurbano por coordenadas.")
 
 print("\\n[PORTADA / TÍTULO]")
 print(f"  Mes:                 {NOMBRE_MES_TITLE}{SUFIJO_PARCIAL}")
-print(f"  Canasta media:       {_ar(_v_media)}")
-print(f"  Var. mensual media:  {_pp(_vars.get(_MEDIA_ID, float('nan')))}" + ('  ⚠️ PRELIMINAR (mes parcial)' if MES_PARCIAL else ''))
+print(f"  Canasta media:       {_ar(_v_media)}  (Cuadro 1)")
+_txt_serie = (f"  (serie mensual: {_ar(_serie_ant)} -> {_ar(_serie_act)})" if _serie_ant is not None else '')
+print(f"  Var. mensual media:  {_pp(_vars.get(_MEDIA_ID, float('nan')))}{_txt_serie}" + ('  ⚠️ PRELIMINAR (mes parcial)' if MES_PARCIAL else ''))
 
 print("\\n[RESUMEN EJECUTIVO — Item 1: valores y variaciones por canasta]")
 for c in _sorted_ids:
     _nm = CANASTA_NAMES[c]
     print(f"  {_nm:<22} {_ar(_vals[c]):>12}   var.mensual: {_pp(_vars.get(c, float('nan')))}")
 print(f"  Brecha absoluta:       {_ar(_brecha_abs)}")
-print(f"  Brecha relativa:       {_brecha_pct:.1f}%  ({CANASTA_NAMES[_min_id]} a {CANASTA_NAMES[_max_id]})")
+print(f"  Brecha relativa:       {_pct(_brecha_pct)}  ({CANASTA_NAMES[_min_id]} a {CANASTA_NAMES[_max_id]})")
 
 print("\\n[RESUMEN EJECUTIVO — Item 2: patrón provincial]")
 print(f"  Prov. más barata:  {_prov_min['provincia']:<25} {_ar(_prov_min['canasta_total'])}  ({_pp(_prov_min['vs_%'])})")
 print(f"  Prov. más cara:    {_prov_max['provincia']:<25} {_ar(_prov_max['canasta_total'])}  ({_pp(_prov_max['vs_%'])})")
-print(f"  Dispersión prov.:  {_disp_prov:.1f}%")
+print(f"  Dispersión prov.:  {_pct(_disp_prov)}")
 
-print("\\n[RESUMEN EJECUTIVO — Item 3: barrios CABA (top 3 / bottom 3)]")
-for _, r in _brk.head(3).iterrows():
-    print(f"  CARO   {r['barrio']:<25} {_ar(r['prom'])}  ({_pp((r['prom']/_prom_caba-1)*100)})")
-for _, r in _brk.tail(3).sort_values('prom').iterrows():
-    print(f"  BARATO {r['barrio']:<25} {_ar(r['prom'])}  ({_pp((r['prom']/_prom_caba-1)*100)})")
-print(f"  Dispersión CABA:   {_disp_bar:.2f}%")
-print(f"  Promedio CABA:     {_ar(_prom_caba)}")
+print(f"\\n[RESUMEN EJECUTIVO — Item 3: barrios CABA (top {_N_EXTREMOS} / bottom {_N_EXTREMOS})]")
+_n_ext_b = min(_N_EXTREMOS, len(_brk) // 2)
+for _, r in _brk.head(_n_ext_b).iterrows():
+    print(f"  CARO   {r['barrio']:<25} {_ar(r['valor'])}  ({_pp(r['vs_caba_%'])})")
+for _, r in _brk.tail(_n_ext_b).sort_values('valor').iterrows():
+    print(f"  BARATO {r['barrio']:<25} {_ar(r['valor'])}  ({_pp(r['vs_caba_%'])})")
+print(f"  Dispersión CABA:   {_pct(_disp_bar, 2)}")
+print(f"  CABA (Cuadro 1):   {_ar(_v_caba)}")
 
-print("\\n[RESUMEN EJECUTIVO — Item 4: cadenas nacionales y AMBA]")
-print("  Nacional:")
-for _, r in _rk_nac.sort_values('prom', ascending=False).head(3).iterrows():
-    print(f"    CARA   {r['cadena']:<28} {_ar(r['prom'])}")
-for _, r in _rk_nac.sort_values('prom').head(1).iterrows():
-    print(f"    BARATA {r['cadena']:<28} {_ar(r['prom'])}")
-print(f"  Dispersión nacional: {_disp_cad_nac:.1f}%")
+print("\\n[RESUMEN EJECUTIVO — Item 4: cadenas nacionales y AMBA (mediana por cadena)]")
+print("  Nacional (vs país):")
+_n_ext = min(_N_EXTREMOS, len(_rk_nac) // 2)
+for _, r in _rk_nac.head(_n_ext).iterrows():
+    print(f"    CARA   {r['cadena']:<28} {_ar(r['valor'])}  ({_pp(r['vs_pais_%'])})")
+for _, r in _rk_nac.tail(_n_ext).sort_values('valor').iterrows():
+    print(f"    BARATA {r['cadena']:<28} {_ar(r['valor'])}  ({_pp(r['vs_pais_%'])})")
+print(f"  Dispersión nacional: {_pct(_disp_cad_nac)}")
 if len(_rk_amba) >= 2:
-    print("  AMBA:")
-    for _, r in _rk_amba.head(1).iterrows():
-        print(f"    CARA   {r['cadena']:<28} {_ar(r['prom'])}")
-    for _, r in _rk_amba.tail(1).iterrows():
-        print(f"    BARATA {r['cadena']:<28} {_ar(r['prom'])}")
-    print(f"  Dispersión AMBA:     {_disp_cad_amba:.1f}%")
+    print(f"  AMBA (vs AMBA = {_ar(_v_amba)}):")
+    _n_ext_a = min(_N_EXTREMOS, len(_rk_amba) // 2)
+    for _, r in _rk_amba.head(_n_ext_a).iterrows():
+        print(f"    CARA   {r['cadena']:<28} {_ar(r['valor'])}  ({_pp(r['vs_amba_%'])})")
+    for _, r in _rk_amba.tail(_n_ext_a).sort_values('valor').iterrows():
+        print(f"    BARATA {r['cadena']:<28} {_ar(r['valor'])}  ({_pp(r['vs_amba_%'])})")
+    print(f"  Dispersión AMBA:     {_pct(_disp_cad_amba)}")
 
 print("\\n[RESUMEN EJECUTIVO — Item 5: canastas especiales]")
 if _prima_cel is not None:
-    print(f"  Prima celíaca:   +{abs(_prima_cel):.1f}%   ({_ar(_vals['cantidad_05'])} vs {_ar(_v_media)})")
+    print(f"  Prima celíaca:   {_pp(_prima_cel)}   ({_ar(_vals['cantidad_05'])} vs {_ar(_v_media)})")
 if _ahorro_veg is not None:
     print(f"  Ahorro vegano:   {_pp(_ahorro_veg)}   ({_ar(_vals['cantidad_06'])} vs {_ar(_vals[_POP_ID])})")
 
-print(f"\\n[RESUMEN EJECUTIVO — Item 6: acumulados desde {MES_INICIO_GRAFICO}]")
+print(f"\\n[RESUMEN EJECUTIVO — Item 6: acumulados {_M0_ACUM} -> {_M1_ACUM} (mismo período que el IPC)]")
 for c in _sorted_ids:
     if c in _acum:
         print(f"  {CANASTA_NAMES[c]:<22} {_pp(_acum[c])}")
-print(f"  {'IPC Nivel General':<22} {_pp(_acum_ipc_gen)}")
-if _acum_ipc_ali:
+if _acum_ipc_gen is not None:
+    print(f"  {'IPC Nivel General':<22} {_pp(_acum_ipc_gen)}")
+if _acum_ipc_ali is not None:
     print(f"  {'IPC Alimentos':<22} {_pp(_acum_ipc_ali)}")
+if _acum_ult:
+    _m_ult = max(m for m, _ in _acum_ult.values())
+    print(f"  Hasta {_m_ult}{' (mes parcial)' if MES_PARCIAL else ''}, sin IPC publicado (no comparar con el IPC):")
+    for c in _sorted_ids:
+        if c in _acum_ult:
+            print(f"    {CANASTA_NAMES[c]:<20} {_pp(_acum_ult[c][1])}")
 
 print("\\n[SECCIÓN EVOLUCIÓN — Variaciones últimos 3 meses]")
 print(f"  {'Mes':<10}  {'IPC Gral':>10}  {'IPC Ali':>10}")
@@ -3242,30 +3325,26 @@ for c in CANASTAS_ACTIVAS:
         _ms = [v[0] for v in _var3_canastas[c]]
         print(f"  {_nm:<22}  " + "  ".join(f"{m}: {v}" for m, v in zip(_ms, _vs)))
 
-print("\\n[SECCIÓN PROVINCIAL — Dispersión sucursales (canasta media)]")
-print(f"  Sucursal mínima:  {_ar(_suc_min)}")
-print(f"  Sucursal máxima:  {_ar(_suc_max)}")
-print(f"  Dispersión:       {_disp_suc:.1f}%")
-print(f"  P25:              {_ar(_p25)}")
-print(f"  P75:              {_ar(_p75)}")
+print("\\n[SECCIÓN PROVINCIAL — Dispersión entre sucursales (canasta media)]")
+print(f"  Dispersión P5-P95: {_pct(_disp_suc)}   (P5 {_ar(_p05)} - P95 {_ar(_p95)})")
+print(f"  P25:               {_ar(_p25)}")
+print(f"  P75:               {_ar(_p75)}")
+print(f"  Mín-máx:           {_pct(_disp_suc_mm)}   (no publicar: lo mueven sucursales atípicas)")
+print(f"    mínima {_ar(_suc_min)}: {_suc_min_q}")
+print(f"    máxima {_ar(_suc_max)}: {_suc_max_q}")
 
-print("\\n[SECCIÓN CADENAS — Ranking nacional completo (canasta media)]")
-for _, r in _rk_nac.sort_values('prom', ascending=False).iterrows():
-    _vs_nac = (r['prom'] / _cgf_m['canasta_total'].mean() - 1) * 100
-    print(f"  {r['cadena']:<28} {int(r['n']):>4} sucs   {_ar(r['prom'])}  ({_pp(_vs_nac)})")
+print(f"\\n[SECCIÓN CADENAS — Ranking nacional completo (canasta media; vs país = {_ar(_v_media)})]")
+for _, r in _rk_nac.iterrows():
+    print(f"  {r['cadena']:<28} {int(r['n']):>4} sucs   {_ar(r['valor'])}  ({_pp(r['vs_pais_%'])})")
 
 if len(_rk_amba) >= 2:
-    print("\\n[SECCIÓN CADENAS — Ranking AMBA completo (canasta media)]")
-    _prom_amba = _cgf_amba['canasta_total'].mean()
-    for _, r in _rk_amba.sort_values('prom', ascending=False).iterrows():
-        _vs_amba = (r['prom'] / _prom_amba - 1) * 100
-        print(f"  {r['cadena']:<28} {int(r['n']):>4} sucs   {_ar(r['prom'])}  ({_pp(_vs_amba)})")
+    print(f"\\n[SECCIÓN CADENAS — Ranking AMBA completo (canasta media; AMBA = {_ar(_v_amba)})]")
+    for _, r in _rk_amba.iterrows():
+        print(f"  {r['cadena']:<28} {int(r['n']):>4} sucs   {_ar(r['valor'])}  vs AMBA: {_pp(r['vs_amba_%'])}  vs país: {_pp(r['vs_pais_%'])}")
 
-print("\\n[SECCIÓN BARRIOS CABA — Ranking completo (canasta media)]")
+print(f"\\n[SECCIÓN BARRIOS CABA — Ranking completo (canasta media; CABA = {_ar(_v_caba)})]")
 for i, r in _brk.iterrows():
-    _vs_c = (r['prom'] / _prom_caba - 1) * 100
-    _vs_p = (r['prom'] / _v_media - 1) * 100
-    print(f"  {str(i+1):>2}. {r['barrio']:<25} {int(r['n']):>3} sucs   {_ar(r['prom'])}  vs CABA: {_pp(_vs_c)}  vs país: {_pp(_vs_p)}")
+    print(f"  {str(i+1):>2}. {r['barrio']:<25} {int(r['n']):>3} sucs   {_ar(r['valor'])}  vs CABA: {_pp(r['vs_caba_%'])}  vs país: {_pp(r['vs_pais_%'])}")
 print("=" * 72)
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -3275,6 +3354,8 @@ import openpyxl as _opxl
 _xls_path = OUTPUT_DIR / f'canasta_analisis_{PERIODO}.xlsx'
 try:
     _wb = _opxl.load_workbook(_xls_path)
+    if 'Valores_Documento' in _wb.sheetnames:      # re-correr la celda la reemplaza
+        del _wb['Valores_Documento']
     _ws = _wb.create_sheet('Valores_Documento')
 
     # Cabecera
@@ -3289,6 +3370,9 @@ try:
     _rows_doc.append(['Portada', 'Canasta media valor', _ar(_v_media), round(_v_media, 0)])
     _rows_doc.append(['Portada', 'Canasta media valor (prom)', _ar(_v_media_prom), round(_v_media_prom, 0)])
     _rows_doc.append(['Portada', 'Canasta media var.mensual', _pp(_vars.get(_MEDIA_ID, 0)), round(_vars.get(_MEDIA_ID, 0), 2)])
+    if _serie_ant is not None:
+        _rows_doc.append(['Portada', 'Canasta media serie mensual mes anterior (base de la var.)', _ar(_serie_ant), round(_serie_ant, 0)])
+        _rows_doc.append(['Portada', 'Canasta media serie mensual mes actual (base de la var.)', _ar(_serie_act), round(_serie_act, 0)])
     # Canastas (valor y var.mensual: MEDIANA y su gemela MEDIA recortada)
     for c in _sorted_ids:
         _nm = CANASTA_NAMES[c]
@@ -3297,46 +3381,62 @@ try:
         _rows_doc.append(['Canastas', f'{_nm} — var.mensual', _pp(_vars.get(c, 0)), round(_vars.get(c, 0), 2)])
         _rows_doc.append(['Canastas', f'{_nm} — var.mensual (prom)', _pp(_vars_prom.get(c, 0)), round(_vars_prom.get(c, 0), 2)])
     _rows_doc.append(['Canastas', 'Brecha absoluta', _ar(_brecha_abs), round(_brecha_abs, 0)])
-    _rows_doc.append(['Canastas', 'Brecha relativa (%)', f'{_brecha_pct:.1f}%', round(_brecha_pct, 1)])
+    _rows_doc.append(['Canastas', 'Brecha relativa (%)', _pct(_brecha_pct), round(_brecha_pct, 1)])
     # Provincias
+    _rows_doc.append(['Provincias', 'País (Cuadro 1)', _ar(_v_media), round(_v_media, 0)])
     _rows_doc.append(['Provincias', 'Prov. más barata (nombre)', _prov_min['provincia'], _prov_min['provincia']])
     _rows_doc.append(['Provincias', 'Prov. más barata (valor)', _ar(_prov_min['canasta_total']), round(_prov_min['canasta_total'], 0)])
     _rows_doc.append(['Provincias', 'Prov. más barata (vs. prom.)', _pp(_prov_min['vs_%']), round(_prov_min['vs_%'], 2)])
     _rows_doc.append(['Provincias', 'Prov. más cara (nombre)', _prov_max['provincia'], _prov_max['provincia']])
     _rows_doc.append(['Provincias', 'Prov. más cara (valor)', _ar(_prov_max['canasta_total']), round(_prov_max['canasta_total'], 0)])
     _rows_doc.append(['Provincias', 'Prov. más cara (vs. prom.)', _pp(_prov_max['vs_%']), round(_prov_max['vs_%'], 2)])
-    _rows_doc.append(['Provincias', 'Dispersión interprovincial (%)', f'{_disp_prov:.1f}%', round(_disp_prov, 1)])
-    _rows_doc.append(['Provincias', 'Sucursal más barata', _ar(_suc_min), round(_suc_min, 0)])
-    _rows_doc.append(['Provincias', 'Sucursal más cara', _ar(_suc_max), round(_suc_max, 0)])
-    _rows_doc.append(['Provincias', 'Dispersión inter-sucursal (%)', f'{_disp_suc:.1f}%', round(_disp_suc, 1)])
+    _rows_doc.append(['Provincias', 'Dispersión interprovincial (%)', _pct(_disp_prov), round(_disp_prov, 1)])
+    _rows_doc.append(['Provincias', 'Dispersión inter-sucursal P5-P95 (%)', _pct(_disp_suc), round(_disp_suc, 1)])
+    _rows_doc.append(['Provincias', 'P5 sucursales', _ar(_p05), round(_p05, 0)])
     _rows_doc.append(['Provincias', 'P25 sucursales', _ar(_p25), round(_p25, 0)])
     _rows_doc.append(['Provincias', 'P75 sucursales', _ar(_p75), round(_p75, 0)])
-    # Cadenas nacionales
-    for _, r in _rk_nac.sort_values('prom', ascending=False).iterrows():
-        _rows_doc.append(['Cadenas_Nacional', r['cadena'], _ar(r['prom']), round(r['prom'], 0)])
-    _rows_doc.append(['Cadenas_Nacional', 'Dispersión (%)', f'{_disp_cad_nac:.1f}%', round(_disp_cad_nac, 1)])
-    # Cadenas AMBA
-    for _, r in _rk_amba.sort_values('prom', ascending=False).iterrows():
-        _rows_doc.append(['Cadenas_AMBA', r['cadena'], _ar(r['prom']), round(r['prom'], 0)])
+    _rows_doc.append(['Provincias', 'P95 sucursales', _ar(_p95), round(_p95, 0)])
+    _rows_doc.append(['Provincias', 'Dispersión inter-sucursal mín-máx (%) — no publicar', _pct(_disp_suc_mm), round(_disp_suc_mm, 1)])
+    _rows_doc.append(['Provincias', 'Sucursal más barata', _ar(_suc_min), round(_suc_min, 0)])
+    _rows_doc.append(['Provincias', 'Sucursal más barata (cuál)', _suc_min_q, _suc_min_q])
+    _rows_doc.append(['Provincias', 'Sucursal más cara', _ar(_suc_max), round(_suc_max, 0)])
+    _rows_doc.append(['Provincias', 'Sucursal más cara (cuál)', _suc_max_q, _suc_max_q])
+    # Cadenas nacionales (mediana por cadena, vs país del Cuadro 1)
+    for _, r in _rk_nac.iterrows():
+        _rows_doc.append(['Cadenas_Nacional', r['cadena'], _ar(r['valor']), round(r['valor'], 0)])
+        _rows_doc.append(['Cadenas_Nacional', f"{r['cadena']} — vs país", _pp(r['vs_pais_%']), round(r['vs_pais_%'], 2)])
+    _rows_doc.append(['Cadenas_Nacional', 'Dispersión (%)', _pct(_disp_cad_nac), round(_disp_cad_nac, 1)])
+    # Cadenas AMBA (mediana por cadena, vs mediana del AMBA)
+    if len(_rk_amba):
+        _rows_doc.append(['Cadenas_AMBA', 'AMBA (mediana de sucursales)', _ar(_v_amba), round(_v_amba, 0)])
+    for _, r in _rk_amba.iterrows():
+        _rows_doc.append(['Cadenas_AMBA', r['cadena'], _ar(r['valor']), round(r['valor'], 0)])
+        _rows_doc.append(['Cadenas_AMBA', f"{r['cadena']} — vs AMBA", _pp(r['vs_amba_%']), round(r['vs_amba_%'], 2)])
     if len(_rk_amba) >= 2:
-        _rows_doc.append(['Cadenas_AMBA', 'Dispersión (%)', f'{_disp_cad_amba:.1f}%', round(_disp_cad_amba, 1)])
-    # Barrios CABA
+        _rows_doc.append(['Cadenas_AMBA', 'Dispersión (%)', _pct(_disp_cad_amba), round(_disp_cad_amba, 1)])
+    # Barrios CABA (mediana por barrio, vs CABA del Cuadro 1)
     for i, r in _brk.iterrows():
-        _rows_doc.append(['Barrios_CABA', r['barrio'], _ar(r['prom']), round(r['prom'], 0)])
-    _rows_doc.append(['Barrios_CABA', 'Promedio CABA', _ar(_prom_caba), round(_prom_caba, 0)])
-    _rows_doc.append(['Barrios_CABA', 'Dispersión barrios (%)', f'{_disp_bar:.2f}%', round(_disp_bar, 2)])
+        _rows_doc.append(['Barrios_CABA', r['barrio'], _ar(r['valor']), round(r['valor'], 0)])
+        _rows_doc.append(['Barrios_CABA', f"{r['barrio']} — vs CABA", _pp(r['vs_caba_%']), round(r['vs_caba_%'], 2)])
+    _rows_doc.append(['Barrios_CABA', 'CABA (Cuadro 1)', _ar(_v_caba), round(_v_caba, 0)])
+    _rows_doc.append(['Barrios_CABA', 'Dispersión barrios (%)', _pct(_disp_bar, 2), round(_disp_bar, 2)])
     # Canastas especiales
     if _prima_cel is not None:
-        _rows_doc.append(['Especiales', 'Prima celíaca (%)', f'+{abs(_prima_cel):.1f}%', round(_prima_cel, 1)])
+        _rows_doc.append(['Especiales', 'Prima celíaca (%)', _pp(_prima_cel), round(_prima_cel, 2)])
     if _ahorro_veg is not None:
-        _rows_doc.append(['Especiales', 'Ahorro vegano (%)', _pp(_ahorro_veg), round(_ahorro_veg, 1)])
-    # Acumulados
+        _rows_doc.append(['Especiales', 'Ahorro vegano (%)', _pp(_ahorro_veg), round(_ahorro_veg, 2)])
+    # Acumulados (mismo período que el IPC; el mes sin IPC, aparte)
     for c in _sorted_ids:
         if c in _acum:
-            _rows_doc.append(['Acumulados', f'{CANASTA_NAMES[c]} desde {MES_INICIO_GRAFICO}', _pp(_acum[c]), round(_acum[c], 1)])
-    _rows_doc.append(['Acumulados', f'IPC Nivel General desde {MES_INICIO_GRAFICO}', _pp(_acum_ipc_gen), round(_acum_ipc_gen, 1)])
-    if _acum_ipc_ali:
-        _rows_doc.append(['Acumulados', f'IPC Alimentos desde {MES_INICIO_GRAFICO}', _pp(_acum_ipc_ali), round(_acum_ipc_ali, 1)])
+            _rows_doc.append(['Acumulados', f'{CANASTA_NAMES[c]} {_M0_ACUM} a {_M1_ACUM}', _pp(_acum[c]), round(_acum[c], 2)])
+    if _acum_ipc_gen is not None:
+        _rows_doc.append(['Acumulados', f'IPC Nivel General {_M0_ACUM} a {_M1_ACUM}', _pp(_acum_ipc_gen), round(_acum_ipc_gen, 2)])
+    if _acum_ipc_ali is not None:
+        _rows_doc.append(['Acumulados', f'IPC Alimentos {_M0_ACUM} a {_M1_ACUM}', _pp(_acum_ipc_ali), round(_acum_ipc_ali, 2)])
+    for c in _sorted_ids:
+        if c in _acum_ult:
+            _m, _v = _acum_ult[c]
+            _rows_doc.append(['Acumulados', f'{CANASTA_NAMES[c]} {_M0_ACUM} a {_m} (sin IPC; no comparar)', _pp(_v), round(_v, 2)])
     # Variaciones últimos 3 meses
     for _, r in _ipc_tail3.iterrows():
         _rows_doc.append(['Var_3meses', f'IPC General {r["mes"]}', _pp(r['ipc_general_var_%']), round(r['ipc_general_var_%'], 2)])
@@ -3351,7 +3451,7 @@ try:
 
     # Ancho de columnas
     _ws.column_dimensions['A'].width = 20
-    _ws.column_dimensions['B'].width = 40
+    _ws.column_dimensions['B'].width = 52
     _ws.column_dimensions['C'].width = 18
     _ws.column_dimensions['D'].width = 16
 

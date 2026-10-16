@@ -27,6 +27,7 @@ tipo de sucursal). Guía: `docs/NB02_ANALISIS_VARIACION.md`.
    python notebooks/test_candidatos_reemplazo.py
    python notebooks/test_desagregacion_variacion.py   # nb02 CELDA 19b
    python notebooks/test_analisis_detallado.py        # nb02 CELDA 19c (hoja analisis_detallado)
+   python notebooks/test_valores_documento.py         # nb02 CELDAS 7 (AMBA), 16, 18 y 20 (documento técnico)
    ```
 3. Los datos (ZIPs del SEPA, caché, Excel de salida) **no están en el repo**: viven en el Drive del
    usuario (`MyDrive/carga/`). Para auditar una corrida, el usuario pasa el Excel del nb07 y los zips
@@ -83,6 +84,10 @@ tipo de sucursal). Guía: `docs/NB02_ANALISIS_VARIACION.md`.
   cantidades ni `DETALLE_MESES` (un mes que falta se lee y se agrega).
 - **nb02, la 19c necesita la 19b justo antes** (usa sus observaciones y las libera). `datos` (CELDA 6) no sirve para
   esto: filtra a sucursales con coordenadas y descarta el día.
+- **nb02, una sola referencia del país** (BUG-42): todo "vs país" es el promedio ponderado del Cuadro 1
+  (`prom_nac_dict`), CABA es su fila del Cuadro 1, cadenas y barrios van por mediana en el análisis [mediana], y el AMBA
+  es la columna `amba` de la CELDA 7 (CABA + Buenos Aires a ≤ 90 km del Obelisco), nunca `PROVINCIA in (CABA, Buenos
+  Aires)` ni la `REGION` del maestro. Los acumulados contra el IPC, siempre en el mismo período.
 
 ## Git
 
