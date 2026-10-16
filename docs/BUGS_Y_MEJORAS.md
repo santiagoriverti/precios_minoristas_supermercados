@@ -1,9 +1,11 @@
 # Bugs Pendientes y Mejoras
 
-Última actualización: 2026-10-16 (cierre) — **nb02**: BUG-43 resuelto (región de la 19b/19c = AMBA por coordenadas),
-**BUG-44 abierto** (la reclasificación por rectángulos de la CELDA 7 mueve el Cuadro 1: Neuquén capital → La Pampa,
-Paraná → Santa Fe) y Excel en verde. Antes ese día: corrida de oct-26 revisada (19b/19c OK en Colab) y BUG-42 resuelto
-(AMBA, referencia única del país, acumulados en el mismo período, P5-P95 y formato del documento técnico).
+Última actualización: 2026-10-16 (cierre) — **nb02**: BUG-44 resuelto (provincia de la CELDA 7 por polígonos de
+ar.json con tolerancia de 100 km: Neuquén capital, Paraná y San Nicolás vuelven a su provincia; caché de econometría con
+la geografía en la clave), BUG-43 resuelto (región de la 19b/19c = AMBA por coordenadas) y Excel en verde. Falta
+correrlos en Colab (la próxima corrida relee 12 meses en la 19c y los 33 de la econometría, una vez). Antes ese día:
+corrida de oct-26 revisada (19b/19c OK en Colab) y BUG-42 resuelto (AMBA, referencia única del país, acumulados en el
+mismo período, P5-P95 y formato del documento técnico).
 Antes, 2026-10-15 — **nb02**: desagregación de la variación mensual (CELDA 19b) y hoja
 `analisis_detallado` (CELDA 19c), listas y validadas con oct-26; ver "Cambios y fixes 2026-10".
 Antes: 2026-09-24 (cierre) — **nb07 v5.13 lista para correr** (relee el SEPA): frescos por TPD, nivel
@@ -21,27 +23,10 @@ Los defectos abiertos que resuelve quedan marcados abajo (se verifican con la co
 
 ## 🟡 Defectos abiertos
 
-### 🔴 BUG-44 — nb02 CELDA 7: la reclasificación de provincia por rectángulos se equivoca en los bordes (2026-10-16) — ABIERTO
-
-Si las coordenadas de una sucursal caen fuera del rectángulo de su provincia declarada, la CELDA 7 la pasa a la primera
-provincia cuyo rectángulo las contiene (`_PROV_BBOX` + `_geocodif`). Los rectángulos son gruesos y cortan ciudades de
-borde. De las 121 reclasificadas del maestro (`docs/auditoria/scripts_nb02_2026-10/reclasificacion_celda7.py`):
-
-| Declarada → reclasificada | Sucursales | ¿Correcto? |
-|---|---:|---|
-| Neuquén → La Pampa | 47 | No: Neuquén capital, Centenario, Plottier (el rectángulo de Neuquén termina en −68,5°; la ciudad está en −68,06°) |
-| Entre Ríos → Santa Fe | 40 | No: Paraná |
-| Buenos Aires → Entre Ríos | 10 | No: San Nicolás de los Arroyos |
-| Río Negro → La Pampa / Chubut | 4 + 3 | No: Catriel, El Bolsón |
-| San Juan → Jujuy | 6 | **Sí**: DIA de Jujuy que el SEPA y el maestro declaran San Juan |
-| otras | 11 | revisar una por una |
-
-**Afecta** el Cuadro 1 (provincias), los mapas, los rankings provinciales y `Valores_Documento` (provincia más barata/
-cara). En oct-26 la canasta Media tenía 55 sucursales en "La Pampa", 36 de ellas de la zona de Neuquén; Neuquén, 24.
-**No afecta** el AMBA (todo está dentro del rectángulo de Buenos Aires) ni la región de la 19b/19c (usa la provincia
-del archivo de precios, BUG-43). **Arreglo propuesto**: reclasificar solo cuando las coordenadas caen fuera de un margen
-amplio de la provincia declarada (o usar polígonos de provincias) y conservar los aciertos (DIA de Jujuy); simularlo
-sobre el maestro con el script de arriba y medir cuánto cambia el Cuadro 1 antes de publicarlo.
+- **nb05: misma reclasificación por rectángulos que tenía el nb02 (BUG-44)** — `gen_nb05.py` (bloque "Bboxes y función
+  de geocodificación") pasa Neuquén capital a La Pampa y Paraná a Santa Fe en los cuadros provinciales de productos.
+  Arreglo: portar la provincia por polígonos de la CELDA 7 del nb02 (y su test). Junto con el AMBA del nb05 (tarjeta
+  de sesión propuesta el 2026-10-16).
 
 ### nb07: la composición por rubro deja afuera un ítem sin precio en el mes (2026-10-02) — RESUELTO en v5.15
 
@@ -232,6 +217,39 @@ de la Tecnológica** hasta que haya al menos dos cadenas con cobertura de durabl
 ---
 
 ## 🟢 Cambios y fixes 2026-10
+
+### 🔴 BUG-44 — nb02 CELDA 7: la reclasificación de provincia por rectángulos se equivocaba en los bordes (2026-10-16) ✅ Resuelto (falta Colab)
+
+Si las coordenadas de una sucursal caían fuera del rectángulo de su provincia declarada, la CELDA 7 la pasaba a la
+primera provincia cuyo rectángulo las contenía (`_PROV_BBOX` + `_geocodif`). Los rectángulos cortaban ciudades de
+borde: de las 121 reclasificadas del maestro, Neuquén → La Pampa 47 (Neuquén capital, Centenario, Plottier: el
+rectángulo de Neuquén terminaba en −68,5°; la ciudad está en −68,06°), Entre Ríos → Santa Fe 40 (Paraná), Buenos Aires
+→ Entre Ríos 10 (San Nicolás), Río Negro → La Pampa/Chubut 7 (Catriel, El Bolsón); acertaba en 6 DIA de Jujuy que el
+SEPA y el maestro declaran San Juan. Movía el Cuadro 1, los mapas, los rankings provinciales y la econometría
+provincial (en oct-26 "La Pampa" de la Media tenía 55 sucursales, 36 de la zona de Neuquén).
+
+**Fix**: polígonos de provincias de `ar.json` (el GeoJSON del mapa, ya en el Drive) con tolerancia. Una sucursal cambia
+de provincia solo si está a más de `RECLASIF_TOL_KM` (100) km del polígono de su provincia declarada y dentro del de
+otra; cerca de un borde manda la declarada (los polígonos simplificados no alcanzan para decidir). CABA sigue con su
+filtro por rectángulo. Sin `ar.json` no reclasifica y avisa. Sobre el maestro: **12 reclasificadas**, todas a más de 180
+km (6 DIA de Jujuy, 2 de Posadas declaradas Mendoza, TEC Paraná declarada Río Negro, Libertad "Dark Store Mendoza"
+declarada Córdoba, una web con coordenadas en Santa Fe, una "Gualeguaychú" con coordenadas en el sur de Córdoba —dudosa—); el
+AMBA no cambia (1.974). Tolerancia elegida con la simulación: con 5-20 km pasaban sucursales de borde (Arroyo Seco,
+Viedma, conurbano dentro del polígono grueso de CABA); con 50 km, un DIA "Baradero" con coordenadas 55 km dentro de
+Entre Ríos.
+
+**La econometría** (CELDA 22) usa la provincia y la cadena de la CELDA 7 y guardaba los meses con una clave que solo
+dependía de los EANs: ahora la clave incluye la geografía. **La próxima corrida relee los 33 meses de la econometría y
+los 12 de la 19c (una vez).**
+
+**Cuadro 1 de oct-26** (CELDA 8 real con las sucursales de la corrida; con la provincia de antes reproduce las hojas
+`Prov_*` exactas): país de la Media $682.699 → $682.768 (+0,01%); Neuquén 24 → 58 sucursales, $707.498 → $701.607
+(−0,83%); La Pampa 55 → 19, $697.799 → $694.601 (−0,46%); Santa Fe 65 → 37, $681.225 → $684.304 (+0,45%); Entre Ríos 58 →
+82 (sin cambio de valor). Provincia más barata y más cara: iguales en 5 canastas; en la Vegana Básica la más cara pasa de
+Neuquén a Chubut (dispersión 8,3% → 7,0%). Detalle: `docs/AUDITORIA_2026-10-16_nb02.md` §9 y §11.
+
+Test: `notebooks/test_reclasificacion_provincia.py` (con la regla vieja fallan 4 de sus casos, entre ellos Neuquén
+capital). Scripts: `reclasificacion_celda7.py`, `cuadro1_reclasificacion.py`.
 
 ### 🟣 nb02 — el Excel pasa de azul a verde (2026-10-16, pedido del usuario)
 

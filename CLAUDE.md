@@ -11,9 +11,11 @@ CELDA 19c (hoja `analisis_detallado`, la primera: índices mensuales y semanales
 tipo de sucursal). Guía: `docs/NB02_ANALISIS_VARIACION.md`. Las dos corrieron bien en Colab con oct-26 (2026-10-16);
 ese día se corrigieron los números del documento técnico (BUG-42: AMBA por coordenadas, una sola referencia del país,
 acumulados en el mismo período que el IPC, P5-P95) y se verificó en Colab con una segunda corrida. Después, el mismo
-día: la región de la 19b/19c pasó al AMBA por coordenadas (BUG-43, simulado con datos reales; la próxima corrida relee
-12 meses una vez, ~35 min), el Excel pasó de azul a verde, y quedó **abierto el BUG-44** (la reclasificación de
-provincia de la CELDA 7 mueve el Cuadro 1). Revisión de todo: `docs/AUDITORIA_2026-10-16_nb02.md`.
+día: la región de la 19b/19c pasó al AMBA por coordenadas (BUG-43), el Excel pasó de azul a verde y la provincia de la
+CELDA 7 pasó de rectángulos a polígonos de `ar.json` con tolerancia (BUG-44: Neuquén capital, Paraná y San Nicolás
+vuelven a su provincia; mueve el Cuadro 1 hasta ~1%). Los tres simulados con datos reales, **falta correrlos en Colab:
+la próxima corrida relee 12 meses en la 19c y los 33 de la econometría, una vez**. Revisión de todo:
+`docs/AUDITORIA_2026-10-16_nb02.md`.
 
 ## Al empezar una sesión
 
@@ -33,6 +35,7 @@ provincia de la CELDA 7 mueve el Cuadro 1). Revisión de todo: `docs/AUDITORIA_2
    python notebooks/test_desagregacion_variacion.py   # nb02 CELDA 19b
    python notebooks/test_analisis_detallado.py        # nb02 CELDA 19c (hoja analisis_detallado)
    python notebooks/test_valores_documento.py         # nb02 CELDAS 7 (AMBA), 16, 18 y 20 (documento técnico)
+   python notebooks/test_reclasificacion_provincia.py # nb02 CELDA 7 (provincia por polígonos, BUG-44)
    ```
 3. Los datos (ZIPs del SEPA, caché, Excel de salida) **no están en el repo**: viven en el Drive del
    usuario (`MyDrive/carga/`). Para auditar una corrida, el usuario pasa el Excel del nb07 y los zips
@@ -98,9 +101,12 @@ provincia de la CELDA 7 mueve el Cuadro 1). Revisión de todo: `docs/AUDITORIA_2
   de los semestrales (elige `YYYYA.zip` o `YYYYB.zip` según el mes). El zip que deja en `OUTPUT_DIR` se sube a
   `MyDrive/carga/` y recién ahí se corren los notebooks. Detalle: README, "Correrlo localmente".
 - **nb02, región de la 19b/19c (BUG-43)**: AMBA = columna `amba` de la CELDA 7; el resto por la provincia del archivo
-  de precios (ISO). NO usar la `REGION` del maestro ni la `PROVINCIA_NORM` reclasificada de la CELDA 7: sus rectángulos
-  pasan Neuquén capital a La Pampa y Paraná a Santa Fe (**BUG-44, abierto**: mueve el Cuadro 1; arreglarlo con el OK
-  del usuario y simulando con `reclasificacion_celda7.py`).
+  de precios (ISO), que es la de la dimensión provincia de esas hojas. NO usar la `REGION` del maestro.
+- **nb02, provincia de la CELDA 7 (BUG-44)**: polígonos de `ar.json` (`GEOJSON_PATH`, Drive) con tolerancia
+  `RECLASIF_TOL_KM = 100`: solo se reclasifica lo que cae a más de 100 km de la provincia declarada (12 sucursales del
+  maestro). Nada de rectángulos (pasaban Neuquén capital a La Pampa). Sin `ar.json` no reclasifica y avisa. Cambiar la
+  provincia o la cadena de alguna sucursal cambia las claves de los cachés de la 19c y de la econometría (relee).
+  Antes de tocar la regla: `reclasificacion_celda7.py` (maestro) y `cuadro1_reclasificacion.py` (Cuadro 1 de una corrida).
 - **nb02, colores del Excel**: `VERDE_OSCURO = '375623'` (encabezados de todas las hojas y filas de sección de
   `analisis_detallado`, texto blanco) y `VERDE_CLARO = '92D050'` (fila de encabezado de `analisis_detallado`), en la
   CELDA 19; la 19c los usa. Pedido del usuario del 2026-10-16 (antes azules `1F4E79`/`D9E1F2`). No volver a azul.
@@ -127,8 +133,8 @@ provincia de la CELDA 7 mueve el Cuadro 1). Revisión de todo: `docs/AUDITORIA_2
 | `docs/NB02_ANALISIS_VARIACION.md` | **nb02 CELDAS 19b y 19c**: cómo correrlas, cómo leer cada hoja, caché, validación con oct-26, trampas |
 | `docs/BUGS_Y_MEJORAS.md` | Defectos abiertos arriba; bugs resueltos con causa y fix |
 | `docs/SEPA_TECNICO.md` | Formato SEPA, cadenas, frescos por tipo, caché |
-| `docs/AUDITORIA_2026-10-16_nb02.md` | **Última corrida del nb02 revisada** (oct-26 al 15/10): 19b/19c OK, BUG-42 (antes/ahora con los mismos datos, verificado en Colab), lecturas (Vea en jul-26), abiertos, §8 región por coordenadas (BUG-43, simulación), §9 BUG-44, §10 colores |
-| `docs/auditoria/scripts_nb02_2026-10/` | Prototipo ad hoc de la desagregación (oct-26), validación de las CELDAS 19b/19c con datos reales, `simular_valores_documento.py` (rehace la CELDA 20 desde el Excel de una corrida), `comparar_corridas.py` (dos Excel hoja por hoja), `simular_region_19b_19c.py` + `comparar_region_19b_19c.py` (19b/19c reales sobre zips locales, código viejo vs nuevo), `reclasificacion_celda7.py` (BUG-44), `validar_amba_maestro.py`, `productos_que_mueven_grupo.py` |
+| `docs/AUDITORIA_2026-10-16_nb02.md` | **Última corrida del nb02 revisada** (oct-26 al 15/10): 19b/19c OK, BUG-42 (antes/ahora con los mismos datos, verificado en Colab), lecturas (Vea en jul-26), abiertos, §8 región por coordenadas (BUG-43, simulación), §9 provincia por polígonos (BUG-44), §10 colores, §11 Cuadro 1 de oct-26 antes/después |
+| `docs/auditoria/scripts_nb02_2026-10/` | Prototipo ad hoc de la desagregación (oct-26), validación de las CELDAS 19b/19c con datos reales, `simular_valores_documento.py` (rehace la CELDA 20 desde el Excel de una corrida), `comparar_corridas.py` (dos Excel hoja por hoja), `simular_region_19b_19c.py` + `comparar_region_19b_19c.py` (19b/19c reales sobre zips locales, código viejo vs nuevo), `reclasificacion_celda7.py` (la CELDA 7 real sobre el maestro, BUG-44), `cuadro1_reclasificacion.py` (Cuadro 1 de una corrida con la provincia de antes y la de ahora), `validar_amba_maestro.py`, `productos_que_mueven_grupo.py` |
 | `docs/AUDITORIA_2026-10-02_v514.md` | **Ultima corrida auditada** (v5.14 al 2026-10-01, Colab gratuito): numeros vigentes, volatilidad de Femenina/Tecnologica, Lavarropas y composicion por rubro (resueltos en la v5.15) |
 | `docs/AUDITORIA_2026-09-24_v512.md` | **Revisión de la v5.12**: la brecha con el IPC sale de los frescos, incertidumbre del acumulado, dos defectos (filtro estacional, nivel de frescos revisado cada semana), ronda 2. Sus decisiones (§7) están aplicadas en la v5.13 |
 | `docs/AUDITORIA_2026-09-22_v59.md` | Auditoría de la v5.9 + verificación de la v5.10 (§10) y de la v5.11 con los reemplazos de trazabilidad (§11) + PDF y scripts en `docs/auditoria/` |

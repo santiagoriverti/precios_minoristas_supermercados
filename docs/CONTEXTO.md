@@ -1,6 +1,6 @@
 # Contexto del Proyecto — Precios Minoristas SEPA
 
-Última actualización: 2026-10-16 cierre (nb02: región de la 19b/19c por coordenadas —BUG-43, simulado con datos reales, la próxima corrida relee 12 meses una vez—, Excel de azul a verde, **BUG-44 abierto**: la reclasificación de provincia de la CELDA 7 mueve el Cuadro 1. Antes ese día: corrida de oct-26 en Colab revisada —19b y 19c OK— y BUG-42 corregido: AMBA por coordenadas, una sola referencia del país, acumulados contra el IPC en el mismo período, dispersión P5-P95 y formato del documento técnico; revisión en `docs/AUDITORIA_2026-10-16_nb02.md`. Script 03: acepta la carpeta de días y elige solo el zip semestral A/B. Antes, 2026-10-15: nb02: hoja `analisis_detallado` —la primera del Excel, CELDA 19c— con índices mensuales y semanales de la canasta Media por rubro, región, provincia, cadena y tipo de sucursal; y desagregación de la variación mensual por producto, arrastre, cadena y región —CELDA 19b—. Guía: `docs/NB02_ANALISIS_VARIACION.md`. Antes, 2026-10-02: nb07 v5.15: composición por rubro con faltantes imputados y Lavarropas BGH en la Tecnológica, relee el SEPA; corrida v5.14 al 2026-10-01 auditada y publicable. nb07 v5.14: el mismo cálculo que la v5.13 con un tercio de la RAM, corre en el Colab gratuito sin "RAM amplia"; no relee el SEPA. Antes, 2026-09-24: nb07 v5.13 lista para correr: frescos por TPD con nivel fijo, cobertura mínima de empaquetados, filtro estacional de frescos y ronda 2 de reemplazos —267 EANs—; ver el historial de cambios y `.claude/memory.md`. Antes, 2026-09-09: nb05/nb02: BUG-29 gráfico de barras con series de distinta longitud, BUG-30/32 mosaicos del mapa —CartoDB exige API key y OSM no responde desde la red de INECO— y BUG-31 el mapa pesaba 48 MB. Antes, 2026-09-07: nb07 v5.3, banda de plausibilidad anclada en frescos)
+Última actualización: 2026-10-16 cierre (nb02: provincia de la CELDA 7 por polígonos de ar.json con tolerancia —BUG-44, resuelto: Neuquén capital, Paraná y San Nicolás vuelven a su provincia; la próxima corrida relee 12 meses en la 19c y 33 en la econometría, una vez—; región de la 19b/19c por coordenadas —BUG-43, simulado con datos reales, la próxima corrida relee 12 meses una vez—, Excel de azul a verde. Antes ese día: corrida de oct-26 en Colab revisada —19b y 19c OK— y BUG-42 corregido: AMBA por coordenadas, una sola referencia del país, acumulados contra el IPC en el mismo período, dispersión P5-P95 y formato del documento técnico; revisión en `docs/AUDITORIA_2026-10-16_nb02.md`. Script 03: acepta la carpeta de días y elige solo el zip semestral A/B. Antes, 2026-10-15: nb02: hoja `analisis_detallado` —la primera del Excel, CELDA 19c— con índices mensuales y semanales de la canasta Media por rubro, región, provincia, cadena y tipo de sucursal; y desagregación de la variación mensual por producto, arrastre, cadena y región —CELDA 19b—. Guía: `docs/NB02_ANALISIS_VARIACION.md`. Antes, 2026-10-02: nb07 v5.15: composición por rubro con faltantes imputados y Lavarropas BGH en la Tecnológica, relee el SEPA; corrida v5.14 al 2026-10-01 auditada y publicable. nb07 v5.14: el mismo cálculo que la v5.13 con un tercio de la RAM, corre en el Colab gratuito sin "RAM amplia"; no relee el SEPA. Antes, 2026-09-24: nb07 v5.13 lista para correr: frescos por TPD con nivel fijo, cobertura mínima de empaquetados, filtro estacional de frescos y ronda 2 de reemplazos —267 EANs—; ver el historial de cambios y `.claude/memory.md`. Antes, 2026-09-09: nb05/nb02: BUG-29 gráfico de barras con series de distinta longitud, BUG-30/32 mosaicos del mapa —CartoDB exige API key y OSM no responde desde la red de INECO— y BUG-31 el mapa pesaba 48 MB. Antes, 2026-09-07: nb07 v5.3, banda de plausibilidad anclada en frescos)
 
 > **El proyecto tiene 7 herramientas (nb01–nb07).** Las descripciones detalladas por celda más
 > abajo en este archivo son **históricas** (describen la arquitectura previa de nb02); el estado
@@ -70,9 +70,10 @@ python notebooks/test_candidatos_reemplazo.py       # hoja Candidatos_trazabilid
 python notebooks/test_desagregacion_variacion.py    # nb02 CELDA 19b (desagregación de la variación)
 python notebooks/test_analisis_detallado.py         # nb02 CELDA 19c (hoja analisis_detallado)
 python notebooks/test_valores_documento.py          # nb02 CELDAS 7 (AMBA), 16, 18 y 20 (documento técnico)
+python notebooks/test_reclasificacion_provincia.py  # nb02 CELDA 7 (provincia por polígonos de ar.json, BUG-44)
 ```
 
-Los 11 tests tienen que terminar en OK (verificado el 2026-10-16 con Python 3.14, pandas 2.3, numpy 2.4).
+Los 12 tests tienen que terminar en OK (verificado el 2026-10-16 con Python 3.14, pandas 2.3, numpy 2.4).
 
 **Por dónde empezar**: `CLAUDE.md` (raíz) y los bloques **ESTADO ACTUAL ... / HANDOFF** de
 `.claude/memory.md` (nb02 y nb07), que dicen en qué quedó el trabajo y qué hacer con los próximos resultados.
@@ -563,6 +564,18 @@ Los 4 reemplazos (Swift XL, Lavandina Anti-splash, Plusbelle, Listerine) están 
 ---
 
 ## Historial de cambios
+
+### 2026-10-16 (cierre) — nb02: provincia de la CELDA 7 por polígonos (BUG-44 resuelto)
+
+Pedido del usuario (con su OK al BUG-44): reclasificar la provincia sin los errores de borde. La CELDA 7 ahora usa los
+polígonos de `ar.json` (el GeoJSON del mapa, en el Drive) con tolerancia `RECLASIF_TOL_KM = 100`: una sucursal cambia de
+provincia solo si está a más de 100 km de la declarada y dentro del polígono de otra. Sobre el maestro: 12 reclasificadas
+(antes 121, la mayoría mal), todas errores groseros de carga; el AMBA no cambia. Cuadro 1 de oct-26 recalculado con la
+CELDA 8 real: país de la Media +0,01%; Neuquén 24 → 58 sucursales (−0,83%), La Pampa 55 → 19, Santa Fe 65 → 37
+(+0,45%). La clave del caché de la econometría incluye ahora la provincia y la cadena de cada sucursal: **la próxima
+corrida relee los 33 meses de la econometría y los 12 de la 19c, una vez**. Test `test_reclasificacion_provincia.py`;
+scripts `reclasificacion_celda7.py` y `cuadro1_reclasificacion.py`; detalle en `docs/AUDITORIA_2026-10-16_nb02.md` §9 y
+§11. El nb05 conserva los rectángulos (pendiente).
 
 ### 2026-10-16 (tarde) — nb02: región de la 19b/19c por coordenadas (BUG-43), Excel en verde, BUG-44 abierto
 

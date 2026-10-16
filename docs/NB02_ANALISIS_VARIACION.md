@@ -55,7 +55,9 @@ hojas con el sufijo `_<nombre corto>` (truncado a 31 caracteres).
 canasta, la provincia o el AMBA de alguna sucursal en la CELDA 7 (coordenadas o provincia del maestro,
 `AMBA_RADIO_KM`), el tipo de alguna sucursal en `maestro_sucursales_completo.xlsx`, los nombres de
 cadena de la CELDA 4 (`NOMBRES_COMPUESTOS`/`NOMBRES_SIMPLES`) o los mapas de provincia/región de la 19b. La
-`REGION` del maestro ya no entra (BUG-43, 2026-10-16: esa corrida relee los 12 meses una vez, ~35 min).
+`REGION` del maestro ya no entra (BUG-43, 2026-10-16: esa corrida relee los 12 meses una vez, ~35 min). Desde el mismo
+día la provincia de la CELDA 7 sale de polígonos (BUG-44), así que la primera corrida después de esos cambios relee
+también los 33 meses de la econometría (su clave incluye ahora la provincia y la cadena de cada sucursal).
 Cambiar solo las cantidades NO cambia la clave (las medianas no dependen de las cantidades). Borrar el
 `.parquet` fuerza la relectura.
 

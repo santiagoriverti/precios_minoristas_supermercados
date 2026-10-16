@@ -6,7 +6,7 @@ Autor: Santiago Riverti — investigador independiente
 
 ---
 
-## 🟢 ESTADO ACTUAL nb02 / HANDOFF [2026-10-16 · cierre] — BUG-42 verificado, BUG-43 + Excel verde listos (falta Colab), BUG-44 abierto — leer esto primero
+## 🟢 ESTADO ACTUAL nb02 / HANDOFF [2026-10-16 · cierre] — BUG-42 verificado; BUG-43, BUG-44 y Excel verde listos (falta Colab) — leer esto primero
 
 ### Novedad 2026-10-16 (tarde) — lo último
 
@@ -19,14 +19,20 @@ Autor: Santiago Riverti — investigador independiente
 - **Excel en verde (pedido del usuario)**: `VERDE_OSCURO = '375623'` (encabezados de todas las hojas y secciones de
   `analisis_detallado`) y `VERDE_CLARO = '92D050'` (fila de encabezado de `analisis_detallado`), CELDA 19. El Excel de
   oct-26 se recoloreó aparte y se le pasó al usuario (`C:\Users\sriverti\proyectos\canasta_analisis_2026-10.xlsx`).
-- **BUG-44 ABIERTO (decidir con el usuario)**: la reclasificación de provincia por rectángulos de la CELDA 7 se equivoca
-  (Neuquén capital → La Pampa 47, Paraná → Santa Fe 40, San Nicolás → Entre Ríos 10...; acierta en 6 DIA de Jujuy
-  declarados San Juan). Mueve el Cuadro 1 (La Pampa de la Media: 55 sucursales, 36 de la zona de Neuquén). No afecta
-  el AMBA ni la región de la 19b/19c. `reclasificacion_celda7.py`; BUGS_Y_MEJORAS (arriba de todo) y AUDITORIA §9.
-- **Siguiente**: (1) el usuario re-corre el nb02 en Colab (la 19c relee ~35 min) y se revisa: AMBA de `Regiones` y de
-  `analisis_detallado` ~1.800 sucursales (antes 1.819-1.878), Pampeana más grande, colores verdes, nada azul; comparar
-  con `comparar_corridas.py` contra el Excel anterior (solo deben cambiar las filas de región, `Regiones` y colores).
-  (2) Preguntarle por el BUG-44. (3) El resto de los abiertos.
+- **BUG-44 resuelto (NO corrido en Colab)**, con el OK del usuario: la provincia de la CELDA 7 sale de los polígonos
+  de `ar.json` (`GEOJSON_PATH`, el GeoJSON del mapa, en el Drive) con tolerancia `RECLASIF_TOL_KM = 100`: solo se
+  reclasifica lo que cae a más de 100 km de la provincia declarada. Antes, rectángulos: 121 reclasificadas, la mayoría
+  mal (Neuquén capital → La Pampa 47, Paraná → Santa Fe 40, San Nicolás → Entre Ríos 10). Ahora 12, todas errores
+  groseros (6 DIA de Jujuy declarados San Juan, 2 de Posadas declaradas Mendoza...). AMBA igual (1.974). Cuadro 1 de
+  oct-26 (CELDA 8 real con las sucursales de la corrida): país de la Media +0,01%; Neuquén 24 → 58 sucursales (−0,83%),
+  La Pampa 55 → 19 (−0,46%), Santa Fe 65 → 37 (+0,45%); en la Vegana la más cara pasa de Neuquén a Chubut. La clave del
+  caché de la econometría incluye ahora la provincia y la cadena de cada sucursal. AUDITORIA §9 y §11.
+- **Siguiente**: (1) el usuario re-corre el nb02 en Colab. **Relee 12 meses en la 19c (~35 min) y los 33 de la
+  econometría, una vez** (las claves cambiaron). Revisar: la CELDA 7 imprime "Reclasificadas 12 sucursales por
+  coordenadas (a más de 100 km...)" y el AMBA 1.974; el Cuadro 1 como en AUDITORIA §11 (Neuquén ~58 sucursales); la
+  región de `Regiones`/`analisis_detallado` (AMBA ~1.800 sucursales, Pampeana más grande, §8); colores verdes y nada
+  azul; `comparar_corridas.py` contra el Excel anterior (cambian Prov_*, Sucs_*, rankings, mapas, regiones y colores; la
+  serie y la 19b por producto no). (2) Portar al nb05 la provincia por polígonos y el AMBA. (3) El resto de los abiertos.
 
 Hay dos líneas de trabajo vivas: **nb02** (este bloque, lo último) y **nb07** (bloque siguiente, sin cambios desde el
 2026-10-02). Guía práctica del nb02: **`docs/NB02_ANALISIS_VARIACION.md`**; método: `docs/METODOLOGIA.md` §4; última
@@ -54,7 +60,8 @@ revisión de una corrida: **`docs/AUDITORIA_2026-10-16_nb02.md`**. Repo al día 
   caída de Cuyo/NOA en jul-26 en `analisis_detallado` y el rebote de oct (Vea +4,05%, el mayor aporte por cadena).
 - Abiertos nuevos (BUGS_Y_MEJORAS, "nb02 — abiertos"; AUDITORIA_2026-10-16_nb02 §5): ~540 sucursales fuera del
   maestro ("Cadena 24": 332), cadenas con 2-9 productos en la 19c, barrios por rectángulos superpuestos, el mismo AMBA
-  mal definido en el nb05 (tarjeta de sesión propuesta) y BUG-44. (La región del maestro en la 19b/19c: resuelta, BUG-43.)
+  mal definido en el nb05 (tarjeta de sesión propuesta). Resueltos el mismo día: región del maestro en la 19b/19c
+  (BUG-43) y provincia por rectángulos de la CELDA 7 (BUG-44).
 - 2026-10-16: se commiteó el cambio del USUARIO en `notebooks/03_consolidacion_ultimo_mes.py` (pidió "commitear todo"):
   `ZIP_DIARIO` acepta el zip o la carpeta de días; `CARGA_DIR` elige solo el `YYYYA/B.zip` del semestre.
 
@@ -100,13 +107,13 @@ revisión de una corrida: **`docs/AUDITORIA_2026-10-16_nb02.md`**. Repo al día 
    Obrera/La Anónima, Item 6 hasta el último mes con IPC y el mes sin IPC aparte, 3 caras y 3 baratas, P5-P95,
    porcentajes con coma. La CELDA 7 imprime el AMBA del maestro entero (1.974); el de cada canasta (~1.405) está en
    la columna `amba` de `Sucs_*`. Cuando se cierre octubre la 19c lee solo ese mes y la econometría lo agrega.
-   **La próxima corrida es la primera con BUG-43**: la 19c relee 12 meses (~35 min) por la clave nueva; revisar la
-   región y los colores (ver "Novedad 2026-10-16 (tarde)" arriba).
+   **La próxima corrida es la primera con BUG-43 y BUG-44**: la 19c relee 12 meses (~35 min) y la econometría sus 33
+   meses (claves nuevas); revisar provincia, región y colores (ver "Novedad 2026-10-16 (tarde)" arriba).
 2. Para comparar dos corridas hoja por hoja: `docs/auditoria/scripts_nb02_2026-10/comparar_corridas.py <nuevo> <anterior>`;
    `simular_valores_documento.py` rehace la CELDA 20 desde el Excel (sirve de "anterior" si se cambia la celda);
    `simular_region_19b_19c.py` + `comparar_region_19b_19c.py` corren la 19b/19c reales sobre zips locales (viejo vs nuevo).
-3. Elegir con el usuario el siguiente abierto: (a) ✅ región por coordenadas en la 19b/19c (BUG-43, hecho); (b) BUG-44,
-   la reclasificación de provincia de la CELDA 7 (mueve el Cuadro 1); (c) identificar "Cadena 24" y actualizar el
+3. Elegir con el usuario el siguiente abierto: (a) ✅ región por coordenadas en la 19b/19c (BUG-43, hecho); (b) ✅ BUG-44,
+   provincia por polígonos en la CELDA 7 (hecho; el nb05 sigue con rectángulos); (c) identificar "Cadena 24" y actualizar el
    maestro de sucursales (~540 fuera); (d) mínimo de productos para las cadenas de la 19c; (e) barrios con polígonos
    oficiales; (f) nb05 (mismo AMBA que tenía el nb02).
 4. Si el tiempo de la 19c molesta: prefiltrar las líneas del CSV por EAN antes de `pd.read_csv` (~5x más rápido);
@@ -132,8 +139,11 @@ revisión de una corrida: **`docs/AUDITORIA_2026-10-16_nb02.md`**. Repo al día 
   de dar por buena una regla nueva, correrla sobre datos reales con los scripts de `docs/auditoria/scripts_nb02_2026-10/`
   (simular_valores_documento.py rehace la CELDA 20 desde el Excel de una corrida; simular_region_19b_19c.py corre la
   19b/19c reales sobre zips locales). La simulación de la región encontró el BUG-44 que el test sintético no veía.
-- **Región de la 19b/19c (BUG-43)**: AMBA = `amba` de la CELDA 7; el resto por la provincia ISO del archivo. NO usar la
-  provincia reclasificada de la CELDA 7 (BUG-44) ni la `REGION` del maestro.
+- **Región de la 19b/19c (BUG-43)**: AMBA = `amba` de la CELDA 7; el resto por la provincia ISO del archivo (la de la
+  dimensión provincia de esas hojas). NO usar la `REGION` del maestro.
+- **Provincia de la CELDA 7 (BUG-44)**: polígonos de `ar.json` + `RECLASIF_TOL_KM = 100`; nunca rectángulos. Probar
+  cualquier cambio con `reclasificacion_celda7.py` (maestro) y `cuadro1_reclasificacion.py` (Cuadro 1 de una corrida).
+  Cambiar provincia o cadena de alguna sucursal cambia las claves de los cachés de la 19c y de la econometría.
 - **Colores del Excel**: verde (`VERDE_OSCURO` 375623, `VERDE_CLARO` 92D050, CELDA 19). Pedido del usuario: no volver a azul.
 
 ## 🟢 ESTADO ACTUAL nb07 / HANDOFF [2026-10-02 · cierre] — v5.15 LISTA PARA CORRER (RELEE el SEPA)

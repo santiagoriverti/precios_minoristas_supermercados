@@ -155,15 +155,37 @@ puede simular oct-26), `PERIODO = 2026-07`, `DETALLE_MESES = 6` (feb-jul, base e
 
 **Una primera versión** tomaba también la provincia reclasificada de la CELDA 7 para las regiones fuera del AMBA: la
 simulación mostró 37 sucursales de Neuquén/Río Negro pasando de Patagonia a Pampeana. Así apareció el BUG-44 (§9) y se
-pasó a la provincia del archivo.
+pasó a la provincia del archivo (que además es la de la dimensión provincia de esas hojas).
 
-## 9. BUG-44 (abierto): la reclasificación de provincia de la CELDA 7
+## 9. BUG-44: la reclasificación de provincia de la CELDA 7 — resuelto (falta Colab)
 
-`reclasificacion_celda7.py`: de las 121 sucursales del maestro que la CELDA 7 cambia de provincia por coordenadas, la
-mayoría son errores de sus rectángulos — Neuquén → La Pampa 47 (Neuquén capital, Centenario, Plottier), Entre Ríos →
-Santa Fe 40 (Paraná), Buenos Aires → Entre Ríos 10 (San Nicolás), Río Negro → La Pampa/Chubut 7 — y algunas aciertos
-(6 DIA de Jujuy declarados San Juan). Mueve el Cuadro 1: en oct-26 "La Pampa" (Media) tenía 55 sucursales, 36 de la
-zona de Neuquén. No afecta el AMBA ni la región de la 19b/19c. Detalle y arreglo propuesto en `docs/BUGS_Y_MEJORAS.md`.
+**El defecto**: con rectángulos y "la primera provincia cuyo rectángulo contiene el punto", la CELDA 7 reclasificaba 121
+sucursales del maestro, la mayoría mal — Neuquén → La Pampa 47 (Neuquén capital, Centenario, Plottier), Entre Ríos →
+Santa Fe 40 (Paraná), Buenos Aires → Entre Ríos 10 (San Nicolás), Río Negro → La Pampa/Chubut 7 (Catriel, El Bolsón) —
+con algunos aciertos (6 DIA de Jujuy declarados San Juan en el SEPA y en el maestro).
+
+**El fix**: polígonos de provincias de `ar.json` (simplemaps, el del mapa coroplético; el id `AR` + letra ISO da la
+provincia). Una sucursal cambia de provincia solo si está a más de `RECLASIF_TOL_KM` (100) km del polígono de su
+provincia declarada y dentro del de otra. CABA sigue con su filtro por rectángulo; sin `ar.json` no se reclasifica.
+
+**Elección de la tolerancia** (prototipo sobre el maestro): 164 sucursales caen fuera del polígono declarado, 146 a menos
+de 10 km (bordes y el polígono de CABA de 18 vértices, que se come parte del conurbano). Reclasificadas según la
+tolerancia: 0 km 143 (109 del conurbano a CABA), 5 km 19, 10 km 15, 20 km 14, 50 km 13, **100 km 12**. Entre 20 y 100
+km solo quedaban Viedma II (30 km, coordenadas al norte de Viedma) y un DIA "Baradero" con coordenadas 55 km dentro de
+Entre Ríos: en los dos el nombre contradice a las coordenadas, así que se quedan en su provincia declarada.
+
+**Con 100 km** (`reclasificacion_celda7.py` corre la CELDA 7 real): 12 reclasificadas, todas a más de 180 km de su
+provincia — San Juan → Jujuy 6 (DIA), Mendoza → Misiones 2 (Posadas), Río Negro → Entre Ríos 1 (TEC Paraná), Córdoba →
+Mendoza 1 (Libertad "Dark Store Mendoza"), Buenos Aires → Santa Fe 1 (una tienda web), Entre Ríos → Córdoba 1 (una
+"Gualeguaychú" con coordenadas en el sur de Córdoba: dudosa, el nombre dice otra cosa). El AMBA no cambia (1.974).
+
+**Efecto colateral corregido**: la econometría (CELDA 22) agrega por la provincia y la cadena de la CELDA 7 y guardaba
+los meses con una clave que solo dependía de los EANs: la serie provincial habría mezclado la provincia vieja (33 meses
+del caché) con la nueva (el mes en curso). La clave ahora incluye la geografía: **la próxima corrida relee los 33 meses
+de la econometría**, además de los 12 de la 19c (BUG-43). La serie de la CELDA 9 no usa provincias (su caché no cambia).
+
+Test: `test_reclasificacion_provincia.py` (borde, error grosero, umbral de 100 km, agujero de Buenos Aires, AMBA después
+de reclasificar, CABA, sin `ar.json`); con la regla vieja fallan 4 de sus casos.
 
 ## 10. Colores del Excel (pedido del 2026-10-16)
 
@@ -173,5 +195,33 @@ Azul → verde en todo `canasta_analisis_*.xlsx`: encabezados de todas las hojas
 `test_analisis_detallado.py` controla que no quede azul. El Excel de oct-26 se recoloreó aparte (644 celdas, valores
 idénticos); las próximas corridas salen en verde.
 
-Pendiente: re-correr el nb02 en Colab (relee 12 meses por la clave nueva de la 19c) y revisar la región y los colores;
-decidir el BUG-44 con el usuario; el resto de los abiertos del §5.
+## 11. Cuadro 1 de oct-26 con la provincia nueva (BUG-44)
+
+`cuadro1_reclasificacion.py`: la CELDA 8 real con las sucursales de la corrida (hojas `Sucs_*`), con la provincia de
+entonces (reproduce las hojas `Prov_*` exactas) y con la de la CELDA 7 vigente. En la canasta Vulnerable cambian de
+provincia 74 sucursales: La Pampa → Neuquén 34, Santa Fe → Entre Ríos 29, Entre Ríos → Buenos Aires 5, Chubut → Río
+Negro 2, La Pampa → Río Negro 2, Córdoba → Santa Fe 1, Chaco → Formosa 1 (las 12 reclasificaciones de la regla nueva
+ya estaban o no están en la canasta).
+
+Canasta Media (filas que cambian; país del Cuadro 1 $682.699 → $682.768, +0,01%):
+
+| Provincia | Sucursales antes → ahora | Canasta antes | Canasta ahora | Cambio | vs país antes → ahora |
+|---|---|---:|---:|---:|---|
+| Neuquén | 24 → 58 | $707.498 | $701.607 | −0,83% | +3,63% → +2,76% |
+| La Pampa | 55 → 19 | $697.799 | $694.601 | −0,46% | +2,21% → +1,73% |
+| Santa Fe | 65 → 37 | $681.225 | $684.304 | +0,45% | −0,22% → +0,23% |
+| Entre Ríos | 58 → 82 | $678.525 | $678.525 | 0 | −0,61% → −0,62% |
+| Formosa | 4 → 5 | $677.994 | $681.565 | +0,53% | −0,69% → −0,18% |
+| Chaco | 4 → 3 | $677.462 | $673.358 | −0,61% | −0,77% → −1,38% |
+| Buenos Aires | 821 → 826 | $684.682 | $684.682 | 0 | +0,29% → +0,28% |
+| Río Negro / Chubut / Córdoba | ±1-4 | — | — | ≤ 0,02% | — |
+
+Otras canastas (país antes → ahora): Vulnerable $288.714 → $288.878 (+0,06%), Popular $505.982 → $505.894 (−0,02%),
+Media Alta $981.879 → $982.596 (+0,07%), Celíaca Media $741.843 → $741.872 (+0,00%), Vegana Básica $468.810 →
+$469.096 (+0,06%). En todas Neuquén baja 0,7-1,2% y Santa Fe sube hasta 1,2%. La provincia más barata y la más cara
+no cambian, salvo en la Vegana Básica: la más cara pasa de Neuquén ($487.007) a Chubut ($481.050) y la dispersión
+interprovincial de 8,3% a 7,0%. En `Valores_Documento` cambian levemente todos los "vs país" (el país se mueve ≤ 0,07%).
+
+Pendiente: re-correr el nb02 en Colab —relee 12 meses en la 19c y los 33 de la econometría, una vez— y revisar la
+provincia (Cuadro 1 como en este §11), la región (§8) y los colores (§10); el resto de los abiertos del §5; portar la
+provincia por polígonos y el AMBA al nb05.

@@ -79,7 +79,7 @@ Solo se procesan las columnas con al menos un producto con cantidad > 0. Las col
                                        # (se auto-adapta si el mes no existe en la serie)
    ```
 3. Ejecutar las celdas en orden
-4. **Primera ejecución:** la CELDA 9 construye la serie histórica completa (~60 min), la CELDA 19c lee 12 meses del SEPA por sucursal (~35 min en el Colab gratuito, medido en oct-26) y la econometría arma su caché. Las siguientes ejecuciones usan caché y solo leen el mes en curso (y el que se cerró).
+4. **Primera ejecución:** la CELDA 9 construye la serie histórica completa (~60 min), la CELDA 19c lee 12 meses del SEPA por sucursal (~35 min en el Colab gratuito, medido en oct-26) y la econometría arma su caché. Las siguientes ejecuciones usan caché y solo leen el mes en curso (y el que se cerró). Si cambia la provincia, la región o la cadena de alguna sucursal (maestro, `ar.json`, reglas de la CELDA 7), la 19c y la econometría vuelven a leer todo una vez (pasó con los cambios del 2026-10-16).
 
 > **El caché se invalida automáticamente** si cambiás qué EANs están en las canastas activas. Cambiar solo las cantidades no invalida el caché.
 
@@ -92,7 +92,7 @@ Solo se procesan las columnas con al menos un producto con cantidad > 0. Las col
 | Archivo | Ubicación en Drive | Descripción |
 |---------|--------------------|-------------|
 | `IPC.xlsx` | `carga/IPC.xlsx` | IPC INDEC mensual desde 2017. Columna `date` (datetime), `Nivel general` (float), `Alimentos y bebidas no alcohólicas` (float) + 11 categorías más |
-| `ar.json` | `carga/ar.json` | GeoJSON de las 24 provincias argentinas (simplemaps.com) |
+| `ar.json` | `carga/ar.json` | GeoJSON de las 24 provincias argentinas (simplemaps.com). Lo usan el mapa coroplético y, desde 2026-10-16, la CELDA 7 para corregir la provincia de una sucursal por coordenadas (solo si cae a más de 100 km de la declarada; sin el archivo no corrige y avisa) |
 | `canasta_representativa_YYYY-MM.xlsx` | `carga/output_canasta/` | Generado por el Notebook 01. El Notebook 02 toma automáticamente el más reciente |
 
 ---

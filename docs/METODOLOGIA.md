@@ -1,6 +1,6 @@
 # Metodología — ICR (Índice de Consumo Representativo)
 
-**Última actualización:** 2026-10-16 (§4: región de la 19b/19c = AMBA por coordenadas y el resto por la provincia del archivo —BUG-43—; "Referencias, AMBA y valores del documento técnico" —una sola referencia del país, AMBA por coordenadas, acumulados contra el IPC en el mismo período, dispersión P5-P95—; antes, 2026-10-15: §4 desagregación de la variación mensual y hoja `analisis_detallado`. Antes, 2026-09-09: limitación nueva en §6: los índices base 100 de series que arrancan en meses distintos no son comparables entre sí. Antes, 2026-09-07: nb07 v5.3, banda de plausibilidad anclada en frescos + cobertura nacional obligatoria; v5.2: filtro de régimen [BUG-24] y tripwire Alertas_precio_item — 287 empaquetados + 59 tipos de frescos)
+**Última actualización:** 2026-10-16 (§4: provincia de cada sucursal por polígonos de ar.json con tolerancia de 100 km —BUG-44—; región de la 19b/19c = AMBA por coordenadas y el resto por la provincia del archivo —BUG-43—; "Referencias, AMBA y valores del documento técnico" —una sola referencia del país, AMBA por coordenadas, acumulados contra el IPC en el mismo período, dispersión P5-P95—; antes, 2026-10-15: §4 desagregación de la variación mensual y hoja `analisis_detallado`. Antes, 2026-09-09: limitación nueva en §6: los índices base 100 de series que arrancan en meses distintos no son comparables entre sí. Antes, 2026-09-07: nb07 v5.3, banda de plausibilidad anclada en frescos + cobertura nacional obligatoria; v5.2: filtro de régimen [BUG-24] y tripwire Alertas_precio_item — 287 empaquetados + 59 tipos de frescos)
 **Período de referencia:** enero 2024 – agosto 2026
 
 ---
@@ -213,6 +213,17 @@ Los gráficos de evolución normalizan a base = 100 en el mes configurado como `
 
 El IPC INDEC se carga desde `IPC.xlsx` (columna `Nivel general` y `Alimentos y bebidas no alcohólicas`). Ambas series se indexan a la misma base para comparación directa.
 
+### Provincia de cada sucursal (CELDA 7, desde 2026-10-16)
+
+La provincia del Cuadro 1, los mapas, los rankings provinciales y la econometría es la del maestro de sucursales,
+corregida por coordenadas solo ante errores groseros: una sucursal cambia de provincia si está a más de
+`RECLASIF_TOL_KM` (100) km del polígono de su provincia declarada (`ar.json`, el GeoJSON del mapa) y dentro del
+polígono de otra. Cerca de un borde manda la provincia declarada: los polígonos simplificados no alcanzan para decidir.
+Sobre el maestro reclasifica 12 sucursales (6 DIA de Jujuy declarados San Juan, 2 de Posadas declaradas Mendoza...).
+Hasta el 2026-10-16 se usaban rectángulos y la primera provincia que contenía el punto: pasaban Neuquén capital a La
+Pampa, Paraná a Santa Fe y San Nicolás a Entre Ríos (BUG-44; en oct-26 Neuquén de la Media 24 → 58 sucursales,
+−0,83%). Las sucursales declaradas CABA con coordenadas fuera del rectángulo de CABA se descartan.
+
 ### Promedio nacional ponderado por población
 
 El promedio nacional del costo de canasta se calcula ponderando por la población de cada provincia (Censo 2022, 45.9M habitantes):
@@ -308,8 +319,8 @@ como `Carrefour (bandera N)`; provincia = código ISO del archivo del SEPA; regi
 la provincia del archivo, la misma de la dimensión provincia (Buenos Aires fuera del AMBA = Pampeana; sin coordenadas en
 la CELDA 7 = `Buenos Aires s/ubicar`; `Sin dato` si el código no se reconoce); tipo = el del maestro (`Sin dato en
 maestro` si no está). Hasta el 2026-10-16 la región era la `REGION` del maestro, que marca AMBA a ~100 DIA del interior
-bonaerense (BUG-43). No se usa la provincia reclasificada de la CELDA 7: sus rectángulos pasan Neuquén capital a La
-Pampa y Paraná a Santa Fe (BUG-44, abierto).
+bonaerense (BUG-43). La región fuera del AMBA sale de la provincia del archivo (la misma de la dimensión provincia),
+no de la provincia de la CELDA 7.
 
 **Datos y RAM**: el nb02 solo tenía el mes en curso por sucursal (`datos`, CELDA 6), filtrado a sucursales con
 coordenadas y sin el día. La CELDA 19b relee del ZIP el mes anterior y el mes en curso **solo con los EANs de las
