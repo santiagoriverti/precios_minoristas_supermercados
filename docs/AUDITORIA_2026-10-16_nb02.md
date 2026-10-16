@@ -80,10 +80,9 @@ Test: `notebooks/test_valores_documento.py` (20 chequeos; con las CELDAS 16/18/2
 
 ## 5. Abiertos (no corregidos; en `docs/BUGS_Y_MEJORAS.md`, "nb02 — abiertos")
 
-- **Región de la 19b/19c = `REGION` del maestro**, que marca AMBA a ~100 sucursales de DIA del interior bonaerense (Mar
-  del Plata, Tandil, Pergamino; localidad "BUENOS AIRES"): el AMBA de `analisis_detallado` (1.819 sucursales) las
-  incluye. Arreglarlo cambia la clave del caché de la 19c (relee 12 meses, ~35 min una vez). Ver
-  `validar_amba_maestro.py`.
+- ✅ **Región de la 19b/19c = `REGION` del maestro**, que marca AMBA a ~100 sucursales de DIA del interior bonaerense
+  (Mar del Plata, Tandil, Pergamino; localidad "BUENOS AIRES"): el AMBA de `analisis_detallado` (1.819 sucursales) las
+  incluía. **Resuelto el mismo día (BUG-43, §8)**.
 - **~540 sucursales fuera del maestro** (2.959 en el panel de la 19b, 2.419 en el maestro): no entran al Cuadro 1, mapas
   ni rankings. La mayor es "Cadena 24" (332 sucursales, 9 de 69 productos: perfil de farmacia/perfumería, sin
   identificar); Carrefour Express tiene 511 sucursales en la 19c y 386 en el Cuadro 1; Toledo 27 y 13.
@@ -126,4 +125,53 @@ El usuario re-corrió el nb02 con el commit `d6e1f52` (mismos datos: oct-26 al 1
 - Cachés sin cambios (`hist_union_d452a45b_v2m`, `detalle_ea281ee7_v1`, `econ_7c7bf6d7` byte a byte iguales): no releyó
   nada, como se esperaba (la 19b/19c no se tocaron).
 
-Pendiente: elegir el siguiente abierto del §5.
+## 8. Región de la 19b/19c por coordenadas (BUG-43, 2026-10-16) — simulado con datos reales, falta Colab
+
+**Cambio**: AMBA = columna `amba` de la CELDA 7 (el mismo AMBA del Cuadro 1, los rankings y `Valores_Documento`); el
+resto de las regiones, por la provincia del archivo de precios (la de la dimensión provincia de esas hojas). Antes: la
+`REGION` del maestro. Sin coordenadas en la CELDA 7 (fuera del maestro, web, "CABA" fuera de CABA): Buenos Aires →
+`Buenos Aires s/ubicar`; código desconocido → `Sin dato`. La clave del caché de la 19c cambia: **la próxima corrida en
+Colab relee los 12 meses una vez (~35 min)**.
+
+**Simulación** (`simular_region_19b_19c.py` dos veces, código viejo y nuevo, + `comparar_region_19b_19c.py`): CELDAS
+19b y 19c reales sobre los zips locales (2026A.zip ene-jun, 2026B.zip jul; no hay ago/sep localmente, así que no se
+puede simular oct-26), `PERIODO = 2026-07`, `DETALLE_MESES = 6` (feb-jul, base ene-26).
+
+- **Validación**: las dimensiones que no son región (nacional, provincia, cadena, tipo) del caché simulado son
+  **idénticas** al caché de la corrida real de Colab (`detalle_ea281ee7_v1`) en ene-jun 2026: 18.862 medianas, 0
+  diferencias. Y entre código viejo y nuevo, las 1.260 celdas de `analisis_detallado` que no son región son idénticas.
+- **Sucursales que cambian de región**: 96 de 3.106. **91 DIA del interior bonaerense AMBA → Pampeana** (el defecto);
+  Carrefour Market Chilavert (San Martín, GBA) Pampeana → AMBA (el maestro estaba mal); La Anónima web y ChangoMas
+  Moreno (declarada CABA en el maestro, la CELDA 7 la descarta) AMBA → `Buenos Aires s/ubicar`; 2 de "Cadena 19" que el
+  archivo de precios declara Buenos Aires pero están en Mendoza y Resistencia: Cuyo/Noreste → Pampeana (error de carga
+  del SEPA; esa cadena está en `CADENAS_FILTRAR` del Cuadro 1). Patagonia, Cuyo, Noroeste y Noreste no cambian.
+- **Efecto** (índice ene-26 = 100 a jul-26): AMBA 114,45 → 114,59; Pampeana 112,85 → 112,74; Buenos Aires s/ubicar
+  112,26 → 112,18; el resto igual. Variación mensual de Pampeana hasta 0,33 pp (may +2,45 → +2,69; jun +1,58 → +1,25);
+  AMBA hasta 0,13 pp (jul +2,04 → +2,17). Hoja `Regiones` de la 19b (jun → jul): AMBA 1.878 → 1.788 sucursales, control 2,04% → 2,17%;
+  Pampeana 570 → 660, 1,74% → 1,65%.
+- Tests: `test_desagregacion_variacion.py` (casos: AMBA del maestro en Mar del Plata, maestro sin coordenadas, código
+  de provincia desconocido, Neuquén capital) y `test_analisis_detallado.py` (una sucursal que se muda fuera del AMBA
+  cambia la clave del caché y relee); con las celdas viejas, los dos fallan.
+
+**Una primera versión** tomaba también la provincia reclasificada de la CELDA 7 para las regiones fuera del AMBA: la
+simulación mostró 37 sucursales de Neuquén/Río Negro pasando de Patagonia a Pampeana. Así apareció el BUG-44 (§9) y se
+pasó a la provincia del archivo.
+
+## 9. BUG-44 (abierto): la reclasificación de provincia de la CELDA 7
+
+`reclasificacion_celda7.py`: de las 121 sucursales del maestro que la CELDA 7 cambia de provincia por coordenadas, la
+mayoría son errores de sus rectángulos — Neuquén → La Pampa 47 (Neuquén capital, Centenario, Plottier), Entre Ríos →
+Santa Fe 40 (Paraná), Buenos Aires → Entre Ríos 10 (San Nicolás), Río Negro → La Pampa/Chubut 7 — y algunas aciertos
+(6 DIA de Jujuy declarados San Juan). Mueve el Cuadro 1: en oct-26 "La Pampa" (Media) tenía 55 sucursales, 36 de la
+zona de Neuquén. No afecta el AMBA ni la región de la 19b/19c. Detalle y arreglo propuesto en `docs/BUGS_Y_MEJORAS.md`.
+
+## 10. Colores del Excel (pedido del 2026-10-16)
+
+Azul → verde en todo `canasta_analisis_*.xlsx`: encabezados de todas las hojas y filas de sección de
+`analisis_detallado` `1F4E79` → **`375623`** (verde oscuro, "Verde, Énfasis 6, Oscuro 50%"); fila de encabezado de
+`analisis_detallado` `D9E1F2` → **`92D050`** ("Verde claro"). Constantes `VERDE_OSCURO`/`VERDE_CLARO` de la CELDA 19;
+`test_analisis_detallado.py` controla que no quede azul. El Excel de oct-26 se recoloreó aparte (644 celdas, valores
+idénticos); las próximas corridas salen en verde.
+
+Pendiente: re-correr el nb02 en Colab (relee 12 meses por la clave nueva de la 19c) y revisar la región y los colores;
+decidir el BUG-44 con el usuario; el resto de los abiertos del §5.

@@ -10,8 +10,10 @@ variación mensual de la canasta Media dentro de su Excel — CELDA 19b (aporte 
 CELDA 19c (hoja `analisis_detallado`, la primera: índices mensuales y semanales por rubro, región, provincia, cadena y
 tipo de sucursal). Guía: `docs/NB02_ANALISIS_VARIACION.md`. Las dos corrieron bien en Colab con oct-26 (2026-10-16);
 ese día se corrigieron los números del documento técnico (BUG-42: AMBA por coordenadas, una sola referencia del país,
-acumulados en el mismo período que el IPC, P5-P95) y se verificó en Colab con una segunda corrida. Revisión de las
-dos corridas: `docs/AUDITORIA_2026-10-16_nb02.md`.
+acumulados en el mismo período que el IPC, P5-P95) y se verificó en Colab con una segunda corrida. Después, el mismo
+día: la región de la 19b/19c pasó al AMBA por coordenadas (BUG-43, simulado con datos reales; la próxima corrida relee
+12 meses una vez, ~35 min), el Excel pasó de azul a verde, y quedó **abierto el BUG-44** (la reclasificación de
+provincia de la CELDA 7 mueve el Cuadro 1). Revisión de todo: `docs/AUDITORIA_2026-10-16_nb02.md`.
 
 ## Al empezar una sesión
 
@@ -84,15 +86,24 @@ dos corridas: `docs/AUDITORIA_2026-10-16_nb02.md`.
   CELDAS 6 y 9. Con `.str.strip().str.lstrip('0')` sobre el chunk de 300k filas el pico pasó de +0,2 a **+2,1 GB**
   (`docs/auditoria/scripts_nb02_2026-10/bench_lectura_ean.py`). Nada de textos por observación: claves enteras.
 - **nb02, caché de la hoja `analisis_detallado`** (`_cache/detalle_<clave>_v1.parquet`): la clave cambia con los
-  EANs de la canasta, la región/tipo de las sucursales del maestro, los nombres de cadena (CELDA 4) y los mapas de
-  provincia/región de la 19b; cambiarla **relee los 12 meses de la ventana (~40-50 min en Colab)**. No la cambian las
-  cantidades ni `DETALLE_MESES` (un mes que falta se lee y se agrega).
-- **nb02, la 19c necesita la 19b justo antes** (usa sus observaciones y las libera). `datos` (CELDA 6) no sirve para
-  esto: filtra a sucursales con coordenadas y descarta el día.
+  EANs de la canasta, la provincia y el AMBA de las sucursales en la CELDA 7 (coordenadas, `AMBA_RADIO_KM`), el tipo
+  del maestro, los nombres de cadena (CELDA 4) y los mapas de provincia/región de la 19b; cambiarla **relee los 12
+  meses de la ventana (~35 min en el Colab gratuito)**. No la cambian las cantidades ni `DETALLE_MESES` (un mes que
+  falta se lee y se agrega). La `REGION` del maestro ya no entra (BUG-43).
+- **nb02, la 19c necesita la 19b justo antes** (usa sus observaciones y las libera), y **la 19b necesita la CELDA 7**
+  (toma la región de la columna `amba` de `suc_geo_clean`, BUG-43). `datos` (CELDA 6) no sirve para esto: filtra a
+  sucursales con coordenadas y descarta el día.
 - **nb03 (adelantar el mes en curso)**: se corre LOCAL (`python notebooks/03_consolidacion_ultimo_mes.py`; en Colab
   el zip diario de ~7 GB no sube). `ZIP_DIARIO` = zip del mes o carpeta con los días `YYYY-MM-DD`; `CARGA_DIR` = carpeta
   de los semestrales (elige `YYYYA.zip` o `YYYYB.zip` según el mes). El zip que deja en `OUTPUT_DIR` se sube a
   `MyDrive/carga/` y recién ahí se corren los notebooks. Detalle: README, "Correrlo localmente".
+- **nb02, región de la 19b/19c (BUG-43)**: AMBA = columna `amba` de la CELDA 7; el resto por la provincia del archivo
+  de precios (ISO). NO usar la `REGION` del maestro ni la `PROVINCIA_NORM` reclasificada de la CELDA 7: sus rectángulos
+  pasan Neuquén capital a La Pampa y Paraná a Santa Fe (**BUG-44, abierto**: mueve el Cuadro 1; arreglarlo con el OK
+  del usuario y simulando con `reclasificacion_celda7.py`).
+- **nb02, colores del Excel**: `VERDE_OSCURO = '375623'` (encabezados de todas las hojas y filas de sección de
+  `analisis_detallado`, texto blanco) y `VERDE_CLARO = '92D050'` (fila de encabezado de `analisis_detallado`), en la
+  CELDA 19; la 19c los usa. Pedido del usuario del 2026-10-16 (antes azules `1F4E79`/`D9E1F2`). No volver a azul.
 - **nb02, una sola referencia del país** (BUG-42): todo "vs país" es el promedio ponderado del Cuadro 1
   (`prom_nac_dict`), CABA es su fila del Cuadro 1, cadenas y barrios van por mediana en el análisis [mediana], y el AMBA
   es la columna `amba` de la CELDA 7 (CABA + Buenos Aires a ≤ 90 km del Obelisco), nunca `PROVINCIA in (CABA, Buenos
@@ -116,8 +127,8 @@ dos corridas: `docs/AUDITORIA_2026-10-16_nb02.md`.
 | `docs/NB02_ANALISIS_VARIACION.md` | **nb02 CELDAS 19b y 19c**: cómo correrlas, cómo leer cada hoja, caché, validación con oct-26, trampas |
 | `docs/BUGS_Y_MEJORAS.md` | Defectos abiertos arriba; bugs resueltos con causa y fix |
 | `docs/SEPA_TECNICO.md` | Formato SEPA, cadenas, frescos por tipo, caché |
-| `docs/AUDITORIA_2026-10-16_nb02.md` | **Última corrida del nb02 revisada** (oct-26 al 15/10): 19b/19c OK, BUG-42 (antes/ahora con los mismos datos), lecturas (Vea en jul-26), abiertos |
-| `docs/auditoria/scripts_nb02_2026-10/` | Prototipo ad hoc de la desagregación (oct-26), validación de las CELDAS 19b/19c con datos reales, `simular_valores_documento.py` (rehace la CELDA 20 desde el Excel de una corrida), `comparar_corridas.py` (dos Excel hoja por hoja), `validar_amba_maestro.py`, `productos_que_mueven_grupo.py` |
+| `docs/AUDITORIA_2026-10-16_nb02.md` | **Última corrida del nb02 revisada** (oct-26 al 15/10): 19b/19c OK, BUG-42 (antes/ahora con los mismos datos, verificado en Colab), lecturas (Vea en jul-26), abiertos, §8 región por coordenadas (BUG-43, simulación), §9 BUG-44, §10 colores |
+| `docs/auditoria/scripts_nb02_2026-10/` | Prototipo ad hoc de la desagregación (oct-26), validación de las CELDAS 19b/19c con datos reales, `simular_valores_documento.py` (rehace la CELDA 20 desde el Excel de una corrida), `comparar_corridas.py` (dos Excel hoja por hoja), `simular_region_19b_19c.py` + `comparar_region_19b_19c.py` (19b/19c reales sobre zips locales, código viejo vs nuevo), `reclasificacion_celda7.py` (BUG-44), `validar_amba_maestro.py`, `productos_que_mueven_grupo.py` |
 | `docs/AUDITORIA_2026-10-02_v514.md` | **Ultima corrida auditada** (v5.14 al 2026-10-01, Colab gratuito): numeros vigentes, volatilidad de Femenina/Tecnologica, Lavarropas y composicion por rubro (resueltos en la v5.15) |
 | `docs/AUDITORIA_2026-09-24_v512.md` | **Revisión de la v5.12**: la brecha con el IPC sale de los frescos, incertidumbre del acumulado, dos defectos (filtro estacional, nivel de frescos revisado cada semana), ronda 2. Sus decisiones (§7) están aplicadas en la v5.13 |
 | `docs/AUDITORIA_2026-09-22_v59.md` | Auditoría de la v5.9 + verificación de la v5.10 (§10) y de la v5.11 con los reemplazos de trazabilidad (§11) + PDF y scripts en `docs/auditoria/` |

@@ -6,7 +6,27 @@ Autor: Santiago Riverti — investigador independiente
 
 ---
 
-## 🟢 ESTADO ACTUAL nb02 / HANDOFF [2026-10-16 · cierre] — corrida de oct-26 revisada + BUG-42 — leer esto primero
+## 🟢 ESTADO ACTUAL nb02 / HANDOFF [2026-10-16 · cierre] — BUG-42 verificado, BUG-43 + Excel verde listos (falta Colab), BUG-44 abierto — leer esto primero
+
+### Novedad 2026-10-16 (tarde) — lo último
+
+- **BUG-43 resuelto (NO corrido en Colab)**: la región de la 19b/19c = AMBA por la columna `amba` de la CELDA 7 y el
+  resto por la provincia del archivo de precios (antes la `REGION` del maestro, con ~100 DIA del interior en AMBA). La
+  19b ahora necesita la CELDA 7 (`suc_geo_clean`). Cambia la clave del caché de la 19c → **la próxima corrida en Colab
+  relee 12 meses una vez (~35 min)**. Simulado con datos reales (ene-jul 2026, zips locales; no hay ago/sep locales):
+  cambian 96 de 3.106 sucursales (91 DIA AMBA → Pampeana); lo que no es región, idéntico al caché de Colab; AMBA a
+  jul-26 114,45 → 114,59 (ene = 100). AUDITORIA_2026-10-16_nb02 §8.
+- **Excel en verde (pedido del usuario)**: `VERDE_OSCURO = '375623'` (encabezados de todas las hojas y secciones de
+  `analisis_detallado`) y `VERDE_CLARO = '92D050'` (fila de encabezado de `analisis_detallado`), CELDA 19. El Excel de
+  oct-26 se recoloreó aparte y se le pasó al usuario (`C:\Users\sriverti\proyectos\canasta_analisis_2026-10.xlsx`).
+- **BUG-44 ABIERTO (decidir con el usuario)**: la reclasificación de provincia por rectángulos de la CELDA 7 se equivoca
+  (Neuquén capital → La Pampa 47, Paraná → Santa Fe 40, San Nicolás → Entre Ríos 10...; acierta en 6 DIA de Jujuy
+  declarados San Juan). Mueve el Cuadro 1 (La Pampa de la Media: 55 sucursales, 36 de la zona de Neuquén). No afecta
+  el AMBA ni la región de la 19b/19c. `reclasificacion_celda7.py`; BUGS_Y_MEJORAS (arriba de todo) y AUDITORIA §9.
+- **Siguiente**: (1) el usuario re-corre el nb02 en Colab (la 19c relee ~35 min) y se revisa: AMBA de `Regiones` y de
+  `analisis_detallado` ~1.800 sucursales (antes 1.819-1.878), Pampeana más grande, colores verdes, nada azul; comparar
+  con `comparar_corridas.py` contra el Excel anterior (solo deben cambiar las filas de región, `Regiones` y colores).
+  (2) Preguntarle por el BUG-44. (3) El resto de los abiertos.
 
 Hay dos líneas de trabajo vivas: **nb02** (este bloque, lo último) y **nb07** (bloque siguiente, sin cambios desde el
 2026-10-02). Guía práctica del nb02: **`docs/NB02_ANALISIS_VARIACION.md`**; método: `docs/METODOLOGIA.md` §4; última
@@ -32,9 +52,9 @@ revisión de una corrida: **`docs/AUDITORIA_2026-10-16_nb02.md`**. Repo al día 
   (la corrida decía +167,36% a oct contra el IPC a sep: parecía arriba); P5-P95 6,5% (el mín-máx daba 38,8%).
 - Lectura de los datos: **Vea bajó precios en jul-26** (19 de 67 productos −10 a −28%, sostenido en agosto): explica la
   caída de Cuyo/NOA en jul-26 en `analisis_detallado` y el rebote de oct (Vea +4,05%, el mayor aporte por cadena).
-- Abiertos nuevos (BUGS_Y_MEJORAS, "nb02 — abiertos"; AUDITORIA_2026-10-16_nb02 §5): región del maestro en la 19b/19c
-  (DIA del interior como AMBA), ~540 sucursales fuera del maestro ("Cadena 24": 332), cadenas con 2-9 productos en la
-  19c, barrios por rectángulos superpuestos, y el mismo AMBA mal definido en el nb05 (tarjeta de sesión propuesta).
+- Abiertos nuevos (BUGS_Y_MEJORAS, "nb02 — abiertos"; AUDITORIA_2026-10-16_nb02 §5): ~540 sucursales fuera del
+  maestro ("Cadena 24": 332), cadenas con 2-9 productos en la 19c, barrios por rectángulos superpuestos, el mismo AMBA
+  mal definido en el nb05 (tarjeta de sesión propuesta) y BUG-44. (La región del maestro en la 19b/19c: resuelta, BUG-43.)
 - 2026-10-16: se commiteó el cambio del USUARIO en `notebooks/03_consolidacion_ultimo_mes.py` (pidió "commitear todo"):
   `ZIP_DIARIO` acepta el zip o la carpeta de días; `CARGA_DIR` elige solo el `YYYYA/B.zip` del semestre.
 
@@ -65,7 +85,9 @@ revisión de una corrida: **`docs/AUDITORIA_2026-10-16_nb02.md`**. Repo al día 
   `_OBS` vivo; la 19c lo libera). Meses viejos: los lee del SEPA (mismo lector) y los guarda agregados en
   `_cache/detalle_<clave>_v1.parquet` (solo meses cerrados). **Primera corrida en Colab (medida el 2026-10-16): 12
   meses leídos en 2.069 s (~35 min, 158-182 s por mes), una sola vez.** Después, nada o el mes que se cerró.
-  La clave cambia con los EANs de la canasta, el maestro (región/tipo), los nombres de cadena (relee todo).
+  La clave cambia con los EANs de la canasta, la provincia/AMBA de la CELDA 7 y el tipo del maestro, los nombres de
+  cadena (relee todo). Desde BUG-43 (2026-10-16) la región es el AMBA por coordenadas de la CELDA 7, no la `REGION`
+  del maestro: esa versión relee los 12 meses una vez.
 - Validada con oct-26 (solo estaba el 2026B.zip localmente → ventana de 2 meses): Total = serie oficial; 6 rubros =
   Serie_precios; 51 grupos: variación oct = control de la 19b; semanas de Total y AMBA = observaciones del prototipo.
   RAM pico **+307 MB**. Números (oct-26 al 15/10 vs sep): Total +1,75; Perfumería +2,69, Congelados +2,63, Limpieza
@@ -78,11 +100,15 @@ revisión de una corrida: **`docs/AUDITORIA_2026-10-16_nb02.md`**. Repo al día 
    Obrera/La Anónima, Item 6 hasta el último mes con IPC y el mes sin IPC aparte, 3 caras y 3 baratas, P5-P95,
    porcentajes con coma. La CELDA 7 imprime el AMBA del maestro entero (1.974); el de cada canasta (~1.405) está en
    la columna `amba` de `Sucs_*`. Cuando se cierre octubre la 19c lee solo ese mes y la econometría lo agrega.
+   **La próxima corrida es la primera con BUG-43**: la 19c relee 12 meses (~35 min) por la clave nueva; revisar la
+   región y los colores (ver "Novedad 2026-10-16 (tarde)" arriba).
 2. Para comparar dos corridas hoja por hoja: `docs/auditoria/scripts_nb02_2026-10/comparar_corridas.py <nuevo> <anterior>`;
-   `simular_valores_documento.py` rehace la CELDA 20 desde el Excel (sirve de "anterior" si se cambia la celda).
-3. Elegir con el usuario el siguiente abierto: (a) región por coordenadas también en la 19b/19c (cambia la clave del
-   caché de la 19c: relee 12 meses ~35 min una vez); (b) identificar "Cadena 24" y actualizar el maestro de sucursales
-   (~540 fuera); (c) mínimo de productos para las cadenas de la 19c; (d) barrios con polígonos oficiales; (e) nb05.
+   `simular_valores_documento.py` rehace la CELDA 20 desde el Excel (sirve de "anterior" si se cambia la celda);
+   `simular_region_19b_19c.py` + `comparar_region_19b_19c.py` corren la 19b/19c reales sobre zips locales (viejo vs nuevo).
+3. Elegir con el usuario el siguiente abierto: (a) ✅ región por coordenadas en la 19b/19c (BUG-43, hecho); (b) BUG-44,
+   la reclasificación de provincia de la CELDA 7 (mueve el Cuadro 1); (c) identificar "Cadena 24" y actualizar el
+   maestro de sucursales (~540 fuera); (d) mínimo de productos para las cadenas de la 19c; (e) barrios con polígonos
+   oficiales; (f) nb05 (mismo AMBA que tenía el nb02).
 4. Si el tiempo de la 19c molesta: prefiltrar las líneas del CSV por EAN antes de `pd.read_csv` (~5x más rápido);
    validarlo contra el lector actual con los scripts de `docs/auditoria/scripts_nb02_2026-10/`.
 
@@ -101,9 +127,14 @@ revisión de una corrida: **`docs/AUDITORIA_2026-10-16_nb02.md`**. Repo al día 
   CELDA 9 ($673.534 → $685.307): son estadísticos distintos, no mezclarlos en una misma cuenta.
 - La provincia de la 19b/19c es el código ISO del archivo de precios (CABA 1.131 sucursales en oct-26); la del Cuadro 1,
   el maestro con reclasificación (CABA 834). No comparar cantidades de sucursales entre esas hojas.
-- Tests: `test_desagregacion_variacion.py` (19b), `test_analisis_detallado.py` (19c), `test_valores_documento.py`
-  (CELDAS 7 AMBA, 16, 18, 20). Antes de dar por buena una regla nueva, correrla sobre datos reales con los scripts de
-  `docs/auditoria/scripts_nb02_2026-10/` (simular_valores_documento.py rehace la CELDA 20 desde el Excel de una corrida).
+- Tests: `test_desagregacion_variacion.py` (19b, incluye la región por coordenadas), `test_analisis_detallado.py` (19c,
+  incluye clave del caché por región y colores verdes), `test_valores_documento.py` (CELDAS 7 AMBA, 16, 18, 20). Antes
+  de dar por buena una regla nueva, correrla sobre datos reales con los scripts de `docs/auditoria/scripts_nb02_2026-10/`
+  (simular_valores_documento.py rehace la CELDA 20 desde el Excel de una corrida; simular_region_19b_19c.py corre la
+  19b/19c reales sobre zips locales). La simulación de la región encontró el BUG-44 que el test sintético no veía.
+- **Región de la 19b/19c (BUG-43)**: AMBA = `amba` de la CELDA 7; el resto por la provincia ISO del archivo. NO usar la
+  provincia reclasificada de la CELDA 7 (BUG-44) ni la `REGION` del maestro.
+- **Colores del Excel**: verde (`VERDE_OSCURO` 375623, `VERDE_CLARO` 92D050, CELDA 19). Pedido del usuario: no volver a azul.
 
 ## 🟢 ESTADO ACTUAL nb07 / HANDOFF [2026-10-02 · cierre] — v5.15 LISTA PARA CORRER (RELEE el SEPA)
 

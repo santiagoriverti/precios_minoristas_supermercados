@@ -1,6 +1,6 @@
 # SEPA — Referencia Técnica
 
-Última actualización: 2026-10-16 (maestro de sucursales: la `REGION=AMBA` no es confiable en Buenos Aires —usar coordenadas—, provincia ISO vs maestro, comercios sin nombre; script 03 con carpeta de días y zip semestral A/B automático). Antes, 2026-09-03 (nb07: lectura semanal + colapso de frescos a tipo [fix RAM] + selección de frescos por categoría; nb02: motor `datos_econometria`)
+Última actualización: 2026-10-16 (la reclasificación de provincia por rectángulos de la CELDA 7 se equivoca en los bordes —BUG-44—; maestro de sucursales: la `REGION=AMBA` no es confiable en Buenos Aires —usar coordenadas—, provincia ISO vs maestro, comercios sin nombre; script 03 con carpeta de días y zip semestral A/B automático). Antes, 2026-09-03 (nb07: lectura semanal + colapso de frescos a tipo [fix RAM] + selección de frescos por categoría; nb02: motor `datos_econometria`)
 
 > **Cambio 2026-08-21 (nb02/nb05, CELDA 6/7)**: el precio por sucursal del mes reportado ahora se calcula sobre **todos los días del mes** —mediana de los días y media con outliers fuera— en vez de tomar solo el primer día (`drop_duplicates keep='first'`, eliminado). El promedio descarta valores fuera de `[mediana/4, mediana×4]` antes de promediar (helper `_pmean`, vectorizado en la CELDA 7). Esto DUPLICA los artefactos: análisis mediana (nombres base) y promedio (sufijo `_prom`). Detalle en `.claude/memory.md`.
 >
@@ -352,7 +352,7 @@ bonaerense (Mar del Plata, Tandil, Pergamino, Lobos, Mercedes...; todas con loca
 mientras otras cadenas en esos mismos pueblos figuran como Pampeana. Para el AMBA, usar coordenadas: CABA + sucursales de
 Buenos Aires a ≤ 90 km del Obelisco (-34.6037, -58.3816), que toma La Plata (55 km), Luján (67), Campana (72) y Zárate
 (81) y deja afuera Lobos, Navarro, Mercedes y Chascomús (92-114 km). Es la columna `amba` de la CELDA 7 del nb02 (BUG-42);
-la 19b/19c y el nb05 todavía no la usan. Verificación: `docs/auditoria/scripts_nb02_2026-10/validar_amba_maestro.py`.
+desde el mismo día también la región de la 19b/19c (BUG-43); el nb05 todavía no la usa. Verificación: `docs/auditoria/scripts_nb02_2026-10/validar_amba_maestro.py`.
 Tampoco usar `PROVINCIA in (CABA, Buenos Aires)` como AMBA: entra Toledo (Mar del Plata) y la Cooperativa Obrera
 (Bahía Blanca).
 
@@ -360,6 +360,16 @@ Tampoco usar `PROVINCIA in (CABA, Buenos Aires)` como AMBA: entra Toledo (Mar de
 archivo de precios trae `sucursales_provincia` (ISO). El Cuadro 1 del nb02 usa el maestro con reclasificación por
 coordenadas y descarta las sucursales "CABA" fuera del rectángulo de CABA; la 19b/19c usan el ISO. En oct-26: CABA 834
 sucursales en el Cuadro 1 (canasta Media) y 1.131 en la 19c.
+
+**⚠️ La reclasificación por rectángulos de la CELDA 7 se equivoca en los bordes (BUG-44, abierto, 2026-10-16)**. Si las
+coordenadas caen fuera del rectángulo de la provincia declarada, la sucursal pasa a la primera provincia cuyo rectángulo
+las contiene. Los rectángulos son gruesos: de las 121 reclasificadas del maestro, la mayoría son errores — Neuquén → La
+Pampa 47 (Neuquén capital, Centenario, Plottier: el rectángulo de Neuquén termina en −68,5° y la ciudad está en
+−68,06°), Entre Ríos → Santa Fe 40 (Paraná), Buenos Aires → Entre Ríos 10 (San Nicolás), Río Negro → La Pampa/Chubut 7
+(Catriel, El Bolsón). Algunas son aciertos: 6 DIA de Jujuy que el SEPA y el maestro declaran San Juan. Afecta el
+Cuadro 1, los mapas y los rankings provinciales (La Pampa de la Media tenía 55 sucursales en oct-26, 36 de la zona de
+Neuquén). El AMBA no se ve afectado (todo el AMBA está dentro del rectángulo de Buenos Aires) y la región de la 19b/19c
+no usa esta provincia. Tabla completa: `docs/auditoria/scripts_nb02_2026-10/reclasificacion_celda7.py`.
 
 **Comercios sin nombre en `NOMBRES_SIMPLES`/`NOMBRES_COMPUESTOS`** (CELDA 4 del nb02) salen como `Cadena <id>`. En
 oct-26: "Cadena 24" con 332 sucursales y solo 9 de los 69 productos de la Media (perfil de farmacia/perfumería),

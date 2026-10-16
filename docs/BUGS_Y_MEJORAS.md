@@ -1,6 +1,8 @@
 # Bugs Pendientes y Mejoras
 
-Última actualización: 2026-10-16 — **nb02**: corrida de oct-26 revisada (19b/19c OK en Colab) y BUG-42 resuelto
+Última actualización: 2026-10-16 (cierre) — **nb02**: BUG-43 resuelto (región de la 19b/19c = AMBA por coordenadas),
+**BUG-44 abierto** (la reclasificación por rectángulos de la CELDA 7 mueve el Cuadro 1: Neuquén capital → La Pampa,
+Paraná → Santa Fe) y Excel en verde. Antes ese día: corrida de oct-26 revisada (19b/19c OK en Colab) y BUG-42 resuelto
 (AMBA, referencia única del país, acumulados en el mismo período, P5-P95 y formato del documento técnico).
 Antes, 2026-10-15 — **nb02**: desagregación de la variación mensual (CELDA 19b) y hoja
 `analisis_detallado` (CELDA 19c), listas y validadas con oct-26; ver "Cambios y fixes 2026-10".
@@ -18,6 +20,28 @@ Los defectos abiertos que resuelve quedan marcados abajo (se verifican con la co
 ---
 
 ## 🟡 Defectos abiertos
+
+### 🔴 BUG-44 — nb02 CELDA 7: la reclasificación de provincia por rectángulos se equivoca en los bordes (2026-10-16) — ABIERTO
+
+Si las coordenadas de una sucursal caen fuera del rectángulo de su provincia declarada, la CELDA 7 la pasa a la primera
+provincia cuyo rectángulo las contiene (`_PROV_BBOX` + `_geocodif`). Los rectángulos son gruesos y cortan ciudades de
+borde. De las 121 reclasificadas del maestro (`docs/auditoria/scripts_nb02_2026-10/reclasificacion_celda7.py`):
+
+| Declarada → reclasificada | Sucursales | ¿Correcto? |
+|---|---:|---|
+| Neuquén → La Pampa | 47 | No: Neuquén capital, Centenario, Plottier (el rectángulo de Neuquén termina en −68,5°; la ciudad está en −68,06°) |
+| Entre Ríos → Santa Fe | 40 | No: Paraná |
+| Buenos Aires → Entre Ríos | 10 | No: San Nicolás de los Arroyos |
+| Río Negro → La Pampa / Chubut | 4 + 3 | No: Catriel, El Bolsón |
+| San Juan → Jujuy | 6 | **Sí**: DIA de Jujuy que el SEPA y el maestro declaran San Juan |
+| otras | 11 | revisar una por una |
+
+**Afecta** el Cuadro 1 (provincias), los mapas, los rankings provinciales y `Valores_Documento` (provincia más barata/
+cara). En oct-26 la canasta Media tenía 55 sucursales en "La Pampa", 36 de ellas de la zona de Neuquén; Neuquén, 24.
+**No afecta** el AMBA (todo está dentro del rectángulo de Buenos Aires) ni la región de la 19b/19c (usa la provincia
+del archivo de precios, BUG-43). **Arreglo propuesto**: reclasificar solo cuando las coordenadas caen fuera de un margen
+amplio de la provincia declarada (o usar polígonos de provincias) y conservar los aciertos (DIA de Jujuy); simularlo
+sobre el maestro con el script de arriba y medir cuánto cambia el Cuadro 1 antes de publicarlo.
 
 ### nb07: la composición por rubro deja afuera un ítem sin precio en el mes (2026-10-02) — RESUELTO en v5.15
 
@@ -209,6 +233,26 @@ de la Tecnológica** hasta que haya al menos dos cadenas con cobertura de durabl
 
 ## 🟢 Cambios y fixes 2026-10
 
+### 🟣 nb02 — el Excel pasa de azul a verde (2026-10-16, pedido del usuario)
+
+Encabezados de todas las hojas de `canasta_analisis_*.xlsx` y filas de sección de `analisis_detallado`: `1F4E79` →
+`375623` (verde oscuro, "Verde, Énfasis 6, Oscuro 50%"), texto blanco. Fila de encabezado de `analisis_detallado`:
+`D9E1F2` → `92D050` ("Verde claro"). Constantes `VERDE_OSCURO`/`VERDE_CLARO` en la CELDA 19 (la 19c las usa);
+`test_analisis_detallado.py` controla que no quede ningún azul.
+
+### 🔴 BUG-43 — nb02 CELDAS 19b/19c: la región salía de la `REGION` del maestro (2026-10-16) ✅ Resuelto (falta Colab)
+
+La `REGION` del maestro marca AMBA a ~100 sucursales de DIA del interior bonaerense (localidad "BUENOS AIRES": Mar del
+Plata, Tandil, Pergamino): el AMBA de `analisis_detallado` y de la hoja `Regiones` las incluía (1.819 sucursales en
+oct-26), mientras el Cuadro 1 y los rankings ya usaban coordenadas (BUG-42). **Fix**: AMBA = columna `amba` de la CELDA
+7; el resto por la provincia del archivo de precios (no la reclasificada de la CELDA 7: BUG-44); sin coordenadas,
+`Buenos Aires s/ubicar`; código desconocido, `Sin dato` (antes caía en `Buenos Aires s/ubicar`). La clave del caché de
+la 19c usa la provincia/AMBA de la CELDA 7 en vez de la `REGION` del maestro: **la próxima corrida relee 12 meses una
+vez (~35 min)**. Simulado con datos reales (ene-jul 2026, celdas reales, viejo vs nuevo): cambian 96 de 3.106 sucursales
+(91 DIA AMBA → Pampeana); lo que no es región, idéntico al caché de Colab; AMBA a jul-26 114,45 → 114,59 (ene = 100),
+Pampeana 112,85 → 112,74. Detalle: `docs/AUDITORIA_2026-10-16_nb02.md` §8. Tests: `test_desagregacion_variacion.py`,
+`test_analisis_detallado.py` (fallan con las celdas viejas).
+
 ### 🔴 BUG-42 — nb02: los números del documento técnico mezclaban referencias y regiones (2026-10-16) ✅ Resuelto y verificado en Colab
 
 Encontrado al revisar la corrida de oct-26 (CELDAS 16, 18 y 20; previos a la 19b/19c):
@@ -265,10 +309,8 @@ resultado. Benchmark: `docs/auditoria/scripts_nb02_2026-10/bench_lectura_ean.py`
   19c pasarían de minutos a segundos por archivo). Validarla contra el lector actual antes de cambiarlo.
 - Confirmar en Colab gratuito la RAM y el tiempo de la primera corrida de la 19c (medido en una PC: +307 MB, ~2-2,5 min
   por mes leído).
-- (2026-10-16) La `REGION` del maestro marca AMBA a ~100 sucursales de DIA del interior bonaerense (Mar del Plata,
-  Tandil, Pergamino: localidad "BUENOS AIRES"). Las CELDAS 16/20 ya usan coordenadas (BUG-42), pero la 19b/19c siguen
-  con la `REGION` del maestro: su AMBA (1.819 sucursales en oct-26) incluye esas DIA. Arreglo: región por coordenadas
-  también ahí (cambia la clave del caché de la 19c: relee 12 meses una vez) o corregir el maestro.
+- ✅ (2026-10-16) La región de la 19b/19c salía de la `REGION` del maestro (AMBA con ~100 DIA del interior): resuelto
+  en BUG-43 (AMBA por coordenadas de la CELDA 7).
 - (2026-10-16) Unas 540 sucursales con precios (18% del panel de la 19b) no están en el maestro y no entran al Cuadro 1,
   mapas ni rankings; la mayor es "Cadena 24" (332 sucursales, 9 de 69 productos). Identificarla y actualizar el maestro.
 - (2026-10-16) La 19c muestra cadenas con 2-9 productos de 69 (Cadena 24, 23, 6): agregar un mínimo de productos.

@@ -1,6 +1,6 @@
 # Contexto del Proyecto — Precios Minoristas SEPA
 
-Última actualización: 2026-10-16 (nb02: corrida de oct-26 en Colab revisada —19b y 19c OK— y BUG-42 corregido: AMBA por coordenadas, una sola referencia del país, acumulados contra el IPC en el mismo período, dispersión P5-P95 y formato del documento técnico; revisión en `docs/AUDITORIA_2026-10-16_nb02.md`. Script 03: acepta la carpeta de días y elige solo el zip semestral A/B. Antes, 2026-10-15: nb02: hoja `analisis_detallado` —la primera del Excel, CELDA 19c— con índices mensuales y semanales de la canasta Media por rubro, región, provincia, cadena y tipo de sucursal; y desagregación de la variación mensual por producto, arrastre, cadena y región —CELDA 19b—. Guía: `docs/NB02_ANALISIS_VARIACION.md`. Antes, 2026-10-02: nb07 v5.15: composición por rubro con faltantes imputados y Lavarropas BGH en la Tecnológica, relee el SEPA; corrida v5.14 al 2026-10-01 auditada y publicable. nb07 v5.14: el mismo cálculo que la v5.13 con un tercio de la RAM, corre en el Colab gratuito sin "RAM amplia"; no relee el SEPA. Antes, 2026-09-24: nb07 v5.13 lista para correr: frescos por TPD con nivel fijo, cobertura mínima de empaquetados, filtro estacional de frescos y ronda 2 de reemplazos —267 EANs—; ver el historial de cambios y `.claude/memory.md`. Antes, 2026-09-09: nb05/nb02: BUG-29 gráfico de barras con series de distinta longitud, BUG-30/32 mosaicos del mapa —CartoDB exige API key y OSM no responde desde la red de INECO— y BUG-31 el mapa pesaba 48 MB. Antes, 2026-09-07: nb07 v5.3, banda de plausibilidad anclada en frescos)
+Última actualización: 2026-10-16 cierre (nb02: región de la 19b/19c por coordenadas —BUG-43, simulado con datos reales, la próxima corrida relee 12 meses una vez—, Excel de azul a verde, **BUG-44 abierto**: la reclasificación de provincia de la CELDA 7 mueve el Cuadro 1. Antes ese día: corrida de oct-26 en Colab revisada —19b y 19c OK— y BUG-42 corregido: AMBA por coordenadas, una sola referencia del país, acumulados contra el IPC en el mismo período, dispersión P5-P95 y formato del documento técnico; revisión en `docs/AUDITORIA_2026-10-16_nb02.md`. Script 03: acepta la carpeta de días y elige solo el zip semestral A/B. Antes, 2026-10-15: nb02: hoja `analisis_detallado` —la primera del Excel, CELDA 19c— con índices mensuales y semanales de la canasta Media por rubro, región, provincia, cadena y tipo de sucursal; y desagregación de la variación mensual por producto, arrastre, cadena y región —CELDA 19b—. Guía: `docs/NB02_ANALISIS_VARIACION.md`. Antes, 2026-10-02: nb07 v5.15: composición por rubro con faltantes imputados y Lavarropas BGH en la Tecnológica, relee el SEPA; corrida v5.14 al 2026-10-01 auditada y publicable. nb07 v5.14: el mismo cálculo que la v5.13 con un tercio de la RAM, corre en el Colab gratuito sin "RAM amplia"; no relee el SEPA. Antes, 2026-09-24: nb07 v5.13 lista para correr: frescos por TPD con nivel fijo, cobertura mínima de empaquetados, filtro estacional de frescos y ronda 2 de reemplazos —267 EANs—; ver el historial de cambios y `.claude/memory.md`. Antes, 2026-09-09: nb05/nb02: BUG-29 gráfico de barras con series de distinta longitud, BUG-30/32 mosaicos del mapa —CartoDB exige API key y OSM no responde desde la red de INECO— y BUG-31 el mapa pesaba 48 MB. Antes, 2026-09-07: nb07 v5.3, banda de plausibilidad anclada en frescos)
 
 > **El proyecto tiene 7 herramientas (nb01–nb07).** Las descripciones detalladas por celda más
 > abajo en este archivo son **históricas** (describen la arquitectura previa de nb02); el estado
@@ -563,6 +563,18 @@ Los 4 reemplazos (Swift XL, Lavandina Anti-splash, Plusbelle, Listerine) están 
 ---
 
 ## Historial de cambios
+
+### 2026-10-16 (tarde) — nb02: región de la 19b/19c por coordenadas (BUG-43), Excel en verde, BUG-44 abierto
+
+Pedido: la región de las CELDAS 19b y 19c con el AMBA por coordenadas, como la CELDA 7. Hecho: AMBA = columna `amba` de
+la CELDA 7 y el resto por la provincia del archivo de precios. Simulado con las celdas reales sobre los zips locales
+(ene-jul 2026) con el código viejo y el nuevo: 91 DIA del interior pasan de AMBA a Pampeana; todo lo que no es región,
+idéntico al caché de la corrida de Colab. La primera versión usaba la provincia reclasificada de la CELDA 7 y la
+simulación mostró que sus rectángulos pasan Neuquén capital a La Pampa y Paraná a Santa Fe: **BUG-44, abierto** (mueve
+el Cuadro 1; no se tocó sin el OK del usuario). Pedido 2: el Excel `canasta_analisis` de azul a verde (`375623` y
+`92D050`, CELDA 19); el Excel de oct-26 se recoloreó aparte. La próxima corrida relee 12 meses en la 19c (~35 min, una
+vez). Scripts: `simular_region_19b_19c.py`, `comparar_region_19b_19c.py`, `reclasificacion_celda7.py`. Detalle en
+`docs/AUDITORIA_2026-10-16_nb02.md` §8-10.
 
 ### 2026-10-16 — nb02: corrida de oct-26 revisada; AMBA, referencias y acumulados del documento técnico (BUG-42)
 

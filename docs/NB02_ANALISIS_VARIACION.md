@@ -48,15 +48,22 @@ hojas con el sufijo `_<nombre corto>` (truncado a 31 caracteres).
 3. La CELDA 20 (Valores_Documento) agrega su hoja al final; `analisis_detallado` queda primera. Desde el
    2026-10-16 (BUG-42) esa hoja usa el país del Cuadro 1 como única referencia, el AMBA por coordenadas y los
    acumulados contra el IPC en el mismo período (`docs/METODOLOGIA.md` §4, "Referencias, AMBA y valores del
-   documento técnico"). **Ojo**: el AMBA de la 19b/19c todavía es la `REGION` del maestro (ver trampas abajo).
+   documento técnico"). Desde el mismo día (BUG-43) la región de la 19b/19c es la misma: AMBA por coordenadas
+   (columna `amba` de la CELDA 7). La 19b necesita haber corrido la CELDA 7 (usa `suc_geo_clean`).
 
 **La clave del caché de la 19c** cambia (y entonces se releen los 12 meses) si cambian: los EANs de la
-canasta, la región o el tipo de alguna sucursal en `maestro_sucursales_completo.xlsx`, los nombres de
-cadena de la CELDA 4 (`NOMBRES_COMPUESTOS`/`NOMBRES_SIMPLES`) o los mapas de provincia/región de la 19b.
+canasta, la provincia o el AMBA de alguna sucursal en la CELDA 7 (coordenadas o provincia del maestro,
+`AMBA_RADIO_KM`), el tipo de alguna sucursal en `maestro_sucursales_completo.xlsx`, los nombres de
+cadena de la CELDA 4 (`NOMBRES_COMPUESTOS`/`NOMBRES_SIMPLES`) o los mapas de provincia/región de la 19b. La
+`REGION` del maestro ya no entra (BUG-43, 2026-10-16: esa corrida relee los 12 meses una vez, ~35 min).
 Cambiar solo las cantidades NO cambia la clave (las medianas no dependen de las cantidades). Borrar el
 `.parquet` fuerza la relectura.
 
 ## Cómo leer la hoja `analisis_detallado`
+
+- **Colores** (desde 2026-10-16): fila de encabezado de cada bloque en verde claro (`92D050`), filas de sección
+  ("Rubros (SEPA) y categorías", "Regiones", ...) en verde oscuro (`375623`) con texto blanco, como los encabezados
+  del resto del Excel. Constantes `VERDE_CLARO` y `VERDE_OSCURO` de la CELDA 19 (antes azul `D9E1F2` y `1F4E79`).
 
 - **Columnas**: los últimos 12 meses completos (si hoy es 15/10: oct-25 a sep-26), el mes en curso si es
   parcial (`oct-26 (al 15/10)`), una columna vacía y las semanas: 1S = días 1-7, 2S = 8-14, 3S = 15-21,
@@ -73,8 +80,9 @@ Cambiar solo las cantidades NO cambia la clave (las medianas no dependen de las 
 - **Sucursales / Productos**: con precio en el último mes completo. Se muestran los grupos con al menos
   `DETALLE_MIN_SUCURSALES` sucursales; los demás quedan listados en las notas al pie.
 - **Filas**: Total (serie oficial); rubros SEPA (columna `rubro` de la hoja Selección: Almacén, Frescos,
-  Perfumería, Limpieza, Bebidas, Congelados) con sus categorías; regiones (AMBA, Pampeana, Noroeste,
-  Noreste, Cuyo, Patagonia y "Buenos Aires s/ubicar" = sucursales bonaerenses fuera del maestro);
+  Perfumería, Limpieza, Bebidas, Congelados) con sus categorías; regiones (AMBA por coordenadas = CABA + Buenos
+  Aires a ≤ 90 km del Obelisco, Pampeana, Noroeste, Noreste, Cuyo, Patagonia por la provincia del archivo, "Buenos
+  Aires s/ubicar" = bonaerenses sin coordenadas en la CELDA 7 y "Sin dato" = código de provincia desconocido);
   provincias; cadenas ordenadas por cantidad de sucursales; tipo de sucursal.
 - **Ojo**: la variación de una región/cadena es una mediana (como la oficial) y no se suma a la del Total.
   El aporte aditivo de cada grupo está en las hojas `Cadenas`, `Regiones`, etc. de la 19b (columna
@@ -162,10 +170,11 @@ Dio exactamente lo validado: oficial +1,748%, medianas 69/69, arrastre +1,479 pp
 - Mejora posible (no hecha): leer el CSV prefiltrando las líneas por EAN antes de `pd.read_csv` bajaría la
   lectura ~5x (la 19c tarda casi todo en parsear filas de productos que no usa). Validar contra el lector
   actual antes de cambiarlo.
-- **AMBA de la 19b/19c = `REGION` del maestro**, que marca AMBA a ~100 sucursales de DIA del interior bonaerense
-  (localidad "BUENOS AIRES": Mar del Plata, Tandil, Pergamino). El AMBA de oct-26 (1.819 sucursales) las incluye.
-  Las CELDAS 16/20 ya usan coordenadas (BUG-42); pasar la 19b/19c a coordenadas cambia la clave del caché de la 19c
-  (relee 12 meses una vez). `docs/auditoria/scripts_nb02_2026-10/validar_amba_maestro.py` muestra el problema.
+- **Región = AMBA por coordenadas desde el 2026-10-16 (BUG-43)**. Antes era la `REGION` del maestro, que marca AMBA
+  a ~100 sucursales de DIA del interior bonaerense (localidad "BUENOS AIRES": Mar del Plata, Tandil, Pergamino): el
+  AMBA de la corrida de oct-26 (1.819 sucursales) las incluía. Ahora la 19b toma la columna `amba` de la CELDA 7
+  (`suc_geo_clean`): si se corre la 19b en una sesión nueva, correr antes la CELDA 7. Efecto medido con datos reales en
+  `docs/AUDITORIA_2026-10-16_nb02.md` §8; `validar_amba_maestro.py` muestra el problema del maestro.
 - **Provincia**: la 19b/19c usan el código ISO del archivo de precios (CABA 1.131 sucursales en oct-26); el Cuadro 1,
   el maestro con reclasificación por coordenadas (CABA 834). Las cantidades de sucursales no se comparan entre hojas.
 - **~540 sucursales fuera del maestro** (2.959 en el panel, 2.419 en el maestro) entran a la 19b/19c pero no al

@@ -1,6 +1,6 @@
 # Metodología — ICR (Índice de Consumo Representativo)
 
-**Última actualización:** 2026-10-16 (§4: "Referencias, AMBA y valores del documento técnico" —una sola referencia del país, AMBA por coordenadas, acumulados contra el IPC en el mismo período, dispersión P5-P95—; antes, 2026-10-15: §4 desagregación de la variación mensual y hoja `analisis_detallado`. Antes, 2026-09-09: limitación nueva en §6: los índices base 100 de series que arrancan en meses distintos no son comparables entre sí. Antes, 2026-09-07: nb07 v5.3, banda de plausibilidad anclada en frescos + cobertura nacional obligatoria; v5.2: filtro de régimen [BUG-24] y tripwire Alertas_precio_item — 287 empaquetados + 59 tipos de frescos)
+**Última actualización:** 2026-10-16 (§4: región de la 19b/19c = AMBA por coordenadas y el resto por la provincia del archivo —BUG-43—; "Referencias, AMBA y valores del documento técnico" —una sola referencia del país, AMBA por coordenadas, acumulados contra el IPC en el mismo período, dispersión P5-P95—; antes, 2026-10-15: §4 desagregación de la variación mensual y hoja `analisis_detallado`. Antes, 2026-09-09: limitación nueva en §6: los índices base 100 de series que arrancan en meses distintos no son comparables entre sí. Antes, 2026-09-07: nb07 v5.3, banda de plausibilidad anclada en frescos + cobertura nacional obligatoria; v5.2: filtro de régimen [BUG-24] y tripwire Alertas_precio_item — 287 empaquetados + 59 tipos de frescos)
 **Período de referencia:** enero 2024 – agosto 2026
 
 ---
@@ -303,9 +303,13 @@ observaciones sucursal × día del mes, sin filtro de cadena ni de geografía. V
    notas). La Media lleva los nombres pelados; otra canasta, el sufijo `_<nombre corto>`.
 
 **Atributos de la sucursal**: cadena = `asignar_cadena` (CELDA 4), con las banderas de Carrefour fuera del diccionario
-como `Carrefour (bandera N)`; provincia = código ISO del archivo del SEPA; región = la del maestro (AMBA incluye el
-conurbano) y, fuera del maestro, por provincia (`Buenos Aires s/ubicar` si no se puede partir); tipo = el del maestro
-(`Sin dato en maestro` si no está).
+como `Carrefour (bandera N)`; provincia = código ISO del archivo del SEPA; región = **AMBA por coordenadas** (columna
+`amba` de la CELDA 7: CABA + Buenos Aires a ≤ 90 km del Obelisco, la misma del Cuadro 1 y los rankings) y el resto por
+la provincia del archivo, la misma de la dimensión provincia (Buenos Aires fuera del AMBA = Pampeana; sin coordenadas en
+la CELDA 7 = `Buenos Aires s/ubicar`; `Sin dato` si el código no se reconoce); tipo = el del maestro (`Sin dato en
+maestro` si no está). Hasta el 2026-10-16 la región era la `REGION` del maestro, que marca AMBA a ~100 DIA del interior
+bonaerense (BUG-43). No se usa la provincia reclasificada de la CELDA 7: sus rectángulos pasan Neuquén capital a La
+Pampa y Paraná a Santa Fe (BUG-44, abierto).
 
 **Datos y RAM**: el nb02 solo tenía el mes en curso por sucursal (`datos`, CELDA 6), filtrado a sucursales con
 coordenadas y sin el día. La CELDA 19b relee del ZIP el mes anterior y el mes en curso **solo con los EANs de las
@@ -365,7 +369,7 @@ eslabón(t−1 → t) = Σ_{i∈I*} qty_i × med_G,i(t) / Σ_{i∈I*} qty_i × m
   mismas observaciones (las que leyó la 19b). Variación semanal = contra la semana anterior.
 
 **Atributos de la sucursal**: los de la 19b (cadena = `asignar_cadena`; provincia = código ISO del archivo del SEPA;
-región = la del maestro, AMBA con el conurbano, y fuera del maestro por provincia; tipo = el del maestro).
+región = AMBA por coordenadas como la CELDA 7 y el resto por la provincia del archivo; tipo = el del maestro).
 
 **Datos y caché**: el mes anterior y el mes en curso salen de las observaciones de la 19b. Los meses viejos de la
 ventana se leen del SEPA por sucursal solo con los EANs de la canasta (mismo lector que la 19b) y se guardan agregados
