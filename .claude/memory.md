@@ -6,6 +6,32 @@ Autor: Santiago Riverti — investigador independiente
 
 ---
 
+## 🟢 nb09 — trazabilidad de todos los productos [2026-10-20 noche]
+
+- Pedido: ranking de representatividad (temporal, sucursal, comercial, regional y otros) de TODOS los productos del
+  SEPA desde 2022, en Excel. El usuario aceptó todas las recomendaciones: cuota diaria de sucursales (y total
+  histórico), comercio y bandera, departamentos por Georef, regiones INDEC + AMBA por coordenadas, todos los comercios
+  (columna `en_universo_nb02`), códigos internos marcados (`es_ean`), Colab, día útil ≥ 100 suc y ≥ 5%, puntaje =
+  media geométrica de pct_dias, pct_suc_diaria_prom, pct_comercios, pct_provincias; solo zips semestrales.
+- Hecho: `notebooks/gen_nb09.py` → `09_trazabilidad_productos.ipynb` (8 celdas) + `test_trazabilidad_productos.py`
+  (SEPA sintético, todas las métricas contra fuerza bruta, segunda corrida desde caché igual: OK).
+  Fase 1 (CELDA 4) resume cada archivo en `output_trazabilidad/_cache_nb09/v1/<AAAA-MM>_p<N>__{ean_dia,ean_suc,suc,dia}.parquet`
+  ('dia' se escribe último = completo; el último mes se relee siempre). Fase 2 (CELDA 5) agrega en orden de fechas
+  (acumuladores por producto + `S` dispersa producto × sucursal); CELDA 6 métricas; CELDA 7 Excel (xlsxwriter) +
+  parquet + csv.gz + panel mensual. Maestros: `maestro_sucursales_completo.xlsx` (coords, localidad), Georef (caché
+  `_cache_nb09/georef_sucursales.parquet`), `Maestro de Productos Interno.xlsx` (176 mil: descripción, marca, rubro,
+  categoría, proveedor, blacklist, `producto_ean`).
+- RAM: primera versión 9,7 GB de pico en la lectura (archivos de 2026 de ~16 M filas) → IDs como diccionario + precios
+  float32 + soltar columnas + promedio en el lugar = 4,1 GB (5,2 GB al ordenar producto × sucursal), resúmenes idénticos (comparados). Celdas 5-6 ~4,5-5,9 GB
+  RSS con 3 meses (S de 18 M pares); con 58 meses se estima S de ~30-40 M pares.
+- Prueba real local may-jul 2026 (zips del INECO): 104.201 productos, 28.559 con precio todos los días, 7.556 con
+  todos los días útiles, puntaje mediano 13,5; tiempo ~40 s/archivo fase 1, ~15 s/archivo fase 2, Excel ~2 min.
+- **Siguiente**: el usuario lo corre en Colab (2022-01 → hoy, ~2-3 h la primera vez, ~3 GB de caché). Revisar:
+  meses sin faltantes, factor de precio por archivo (`dia.factor_precio`: la regla mediana > 10.000 = centavos se
+  aplica a TODOS los productos del archivo; verificar que 2022-2023 den el factor correcto), RAM de las celdas 5-6
+  con todo el período, y la hoja `Continuos_periodo` para la canasta de pass-through (reemplaza la búsqueda de
+  reemplazos pendiente del nb08).
+
 ## 🟢 nb08 — valor diario de una canasta [2026-10-20]
 
 - Pedido: canasta `cantidad_01` (Vulnerable) del `canasta_representativa_*.xlsx`, valor **diario** desde 2022 en un

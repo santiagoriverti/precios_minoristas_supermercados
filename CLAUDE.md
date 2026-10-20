@@ -20,6 +20,9 @@ la próxima corrida relee 12 meses en la 19c y los 33 de la econometría, una ve
 **Nuevo (2026-10-20): nb08** (`notebooks/08_canasta_diaria.ipynb`, fuente `gen_nb08.py`): valor diario de una canasta
 (`CANASTA_COL`, default `cantidad_01`) desde 2022 con encadenado de productos apareados; validado local, falta Colab.
 
+**Nuevo (2026-10-20): nb09** (`notebooks/09_trazabilidad_productos.ipynb`, fuente `gen_nb09.py`): ranking de
+representatividad de todos los productos del SEPA desde 2022; probado local (may-jul 2026), falta Colab.
+
 ## Al empezar una sesión
 
 1. **Leer los bloques `ESTADO ACTUAL ... / HANDOFF` al principio de `.claude/memory.md`** (uno del nb02 y uno
@@ -39,6 +42,7 @@ la próxima corrida relee 12 meses en la 19c y los 33 de la econometría, una ve
    python notebooks/test_analisis_detallado.py        # nb02 CELDA 19c (hoja analisis_detallado)
    python notebooks/test_valores_documento.py         # nb02 CELDAS 7 (AMBA), 16, 18 y 20 (documento técnico)
    python notebooks/test_reclasificacion_provincia.py # nb02 CELDA 7 (provincia por polígonos, BUG-44)
+   python notebooks/test_trazabilidad_productos.py    # nb09 (SEPA sintético contra fuerza bruta)
    ```
 3. Los datos (ZIPs del SEPA, caché, Excel de salida) **no están en el repo**: viven en el Drive del
    usuario (`MyDrive/carga/`). Para auditar una corrida, el usuario pasa el Excel del nb07 y los zips
@@ -116,6 +120,9 @@ la próxima corrida relee 12 meses en la 19c y los 33 de la econometría, una ve
 - **nb02, colores del Excel**: `VERDE_OSCURO = '375623'` (encabezados de todas las hojas y filas de sección de
   `analisis_detallado`, texto blanco) y `VERDE_CLARO = '92D050'` (fila de encabezado de `analisis_detallado`), en la
   CELDA 19; la 19c los usa. Pedido del usuario del 2026-10-16 (antes azules `1F4E79`/`D9E1F2`). No volver a azul.
+- **nb09, RAM de la lectura**: leer los IDs como `pa.dictionary` y limpiar solo el diccionario (`_codigos`); precios
+  `float32`; soltar cada columna al copiarla. Con textos por fila el pico era 9,7 GB (Colab gratuito tiene ~12,7);
+  así, 4,1 GB. Cambiar el formato de los resúmenes exige subir la versión (`RES_DIR = CACHE_DIR / 'v1'`), que relee todo.
 - **nb02, una sola referencia del país** (BUG-42): todo "vs país" es el promedio ponderado del Cuadro 1
   (`prom_nac_dict`), CABA es su fila del Cuadro 1, cadenas y barrios van por mediana en el análisis [mediana], y el AMBA
   es la columna `amba` de la CELDA 7 (CABA + Buenos Aires a ≤ 90 km del Obelisco), nunca `PROVINCIA in (CABA, Buenos

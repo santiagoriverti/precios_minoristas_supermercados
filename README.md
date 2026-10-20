@@ -28,6 +28,7 @@ El proyecto responde tres preguntas:
 | `06_evolucion_brecha_celiaca` | Mide la **brecha celíaca** (canasta sin-TACC vs. base con TACC) y su evolución **diaria, semanal y mensual**, usando solo tipos de producto con dicotomía celíaca (2–3 EANs representativos por lado, promediados). Brecha **intra-sucursal**, desagregada por provincia, cadena y concentración de comercios. Ver [sección detallada](#brecha-celíaca--06_evolucion_brecha_celiaca). | [![Abrir en Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/santiagoriverti/precios_minoristas_supermercados/blob/main/notebooks/06_evolucion_brecha_celiaca.ipynb) |
 | `07_evolucion_canastas_alternativas` | **Motor del informe semanal.** Costo de **6 canastas** (**Popular / Media / Ejecutiva / Tecnológica / Representativa / Femenina**) con **semana que cierra el jueves**, comparado con el **IPC**, desagregado por **rubro**, **provincia**, **región** y **cadena**. **Índice encadenado de muestra apareada** (sin saltos por altas/bajas), **nacional ponderado por población** y **provincia controlando por cadena**. Composición: **267 empaquetados** por EAN (`cantidad_01..06`) + **59 tipos de frescos** por nombre (índice multilateral **TPD** por EAN). Exporta `Presencia_items`, `Alertas_reemplazo`, `Alertas_quiebre`, `Candidatos_trazabilidad` y `Frescos_metodos`. **v5.15** (2026-10-02: composición por rubro con faltantes imputados, Lavarropas BGH en la Tecnológica; v5.14: corre en el **Colab gratuito**, pico de RAM ÷3 con el mismo resultado) sobre la **v5.13** (frescos por TPD con nivel fijo, cobertura mínima de empaquetados, filtro estacional y ronda 2 de reemplazos). Ver [sección detallada](#canastas-alternativas--07_evolucion_canastas_alternativas). | [![Abrir en Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/santiagoriverti/precios_minoristas_supermercados/blob/main/notebooks/07_evolucion_canastas_alternativas.ipynb) |
 | `08_canasta_diaria` | **Valor diario de una canasta desde 2022.** Toma una columna de la hoja `Selección` (por defecto `cantidad_01`, Vulnerable) y exporta `canasta_diaria_<canasta>_<desde>_<hasta>.xlsx`: valor día por día (mediana nacional por producto, índice encadenado con productos apareados llevado a pesos), resumen mensual y precios diarios por producto. Caché por mes. Ver [sección detallada](#valor-diario-de-una-canasta--08_canasta_diaria). | [![Abrir en Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/santiagoriverti/precios_minoristas_supermercados/blob/main/notebooks/08_canasta_diaria.ipynb) |
+| `09_trazabilidad_productos` | **Representatividad de TODOS los productos del SEPA desde 2022.** Lee todos los archivos de los ZIPs semestrales (con caché por archivo) y arma un ranking: % de días con precio, cuota diaria de sucursales, comercios/banderas, provincias, regiones, departamentos (Georef), continuidad y precio. Ver [sección detallada](#trazabilidad-de-productos--09_trazabilidad_productos). | [![Abrir en Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/santiagoriverti/precios_minoristas_supermercados/blob/main/notebooks/09_trazabilidad_productos.ipynb) |
 
 > **¿Ves una versión vieja en Colab?** El badge siempre apunta a la última versión en GitHub, pero Colab puede mostrar una copia cacheada de tu Drive. Para forzar la actualización: eliminá el notebook de `Mi unidad/Colab Notebooks/` en Google Drive y volvé a hacer clic en el badge.
 
@@ -751,6 +752,53 @@ mensual del nb02; con el producto más pesado faltando un mes, el encadenado se 
 
 ---
 
+## Trazabilidad de productos — `09_trazabilidad_productos`
+
+Para cada producto (`id_producto`) que alguna vez reportó precio en el SEPA desde `FECHA_INICIO` (2022-01-01): qué tan
+representativo es en el tiempo, por sucursal, por cadena y por región. Sirve para elegir productos de canastas (por
+ejemplo, una canasta fija para series diarias) y para saber qué cubre cada producto.
+
+### Cómo funciona
+
+1. **Fase 1 — lectura (CELDA 4)**: cada archivo `MMAAAA_pais_parteN` de los ZIPs semestrales se lee entero con pyarrow
+   (IDs como diccionario, precios float32: pico ~4-5 GB con los archivos de 2026, de ~16 M de filas) y se resume en
+   4 tablas que quedan en `output_trazabilidad/_cache_nb09/v1/` (~25 MB por archivo, ~3 GB en total): producto × día
+   (sucursales, comercios y provincias con precio), producto × sucursal (días con precio y precio promedio), sucursales
+   y días (denominadores). Un archivo resumido no se relee; el último mes se relee siempre. ~40 s por archivo en una PC.
+2. **Fase 2 — agregación (CELDA 5)**: junta los resúmenes en orden de fechas (acumuladores por producto y una matriz
+   dispersa producto × sucursal). No relee el SEPA.
+3. **Métricas y ranking (CELDA 6)** y **exportación (CELDA 7)**.
+
+### Config (CELDA 1)
+
+`FECHA_INICIO`, `FECHA_FIN`, `MIN_SUC_DIA_UTIL` (100) y `MIN_PCT_DIA_UTIL` (5%) para los días "útiles", `USAR_GEOREF`
+(departamento y municipio de cada sucursal del maestro con coordenadas, API Georef de datos.gob.ar; una sola consulta
+por sucursal, en caché), `AMBA_RADIO_KM` (90), `CADENAS_FILTRAR_NB02`, `TOP_POR_CATEGORIA`.
+
+### Métricas (hoja `Diccionario` del Excel)
+
+- **Temporal**: días del período (días con dato del SEPA), días con precio, `pct_dias`, primer/último día, % desde que
+  aparece, días desde el último, meses, racha y hueco más largos, días útiles, % de días del último año y de 90 días.
+- **Sucursal**: sucursales distintas sobre todas las que alguna vez reportaron y **cuota diaria** (sucursales con precio
+  / sucursales activas ese día; no castiga por sucursales que todavía no existían), promedio y mínimo diario.
+- **Comercial**: comercios (empresa) y banderas, cuota diaria de comercios, cadena principal, su cuota y HHI, lista de
+  cadenas, si está en el universo del nb02.
+- **Regional**: provincias (del archivo de precios), regiones INDEC con GBA = AMBA por coordenadas, presencia en AMBA,
+  departamentos y localidades (sucursales del maestro), provincias presentes o faltantes.
+- **Precio**: mediana entre sucursales del último mes y coeficiente de variación.
+- **Puntaje 0-100** = media geométrica de `pct_dias`, `pct_suc_diaria_prom`, `pct_comercios` y `pct_provincias`.
+  Identificación desde `data/Maestro de Productos Interno.xlsx`; `es_ean` = EAN real (maestro o dígito verificador
+  GTIN) o código interno de un comercio.
+
+### Qué genera (en `output_trazabilidad/`)
+
+`trazabilidad_productos_<desde>_<hasta>.xlsx` (Resumen, Ranking, Continuos_periodo, Por_categoria, Cadenas,
+Provincias, Diccionario), el ranking en `.parquet` y `.csv.gz`, y `panel_mensual_productos_<...>.parquet`
+(producto × mes: días con precio y sucursales diarias promedio). Test: `notebooks/test_trazabilidad_productos.py`
+(SEPA sintético contra fuerza bruta).
+
+---
+
 ## Excel de econometría — `datos_econometria`
 
 El Notebook 02 exporta, además del análisis clásico, **`datos_econometria_{MES}.xlsx`** en `carga/output_canasta/`: un insumo **tidy/long** para análisis de series de tiempo (materia "Econometría avanzada").
@@ -784,12 +832,15 @@ precios_minoristas_supermercados/
 │   ├── 06_evolucion_brecha_celiaca.ipynb        # Notebook 6 — brecha celíaca (TACC vs sin-TACC), diaria/semanal/mensual
 │   ├── 07_evolucion_canastas_alternativas.ipynb # Notebook 7 — canastas Popular/Media/Ejecutiva semanales + frescos, vs IPC
 │   ├── 08_canasta_diaria.ipynb                  # Notebook 8 — valor diario de una canasta desde 2022
+│   ├── 09_trazabilidad_productos.ipynb          # Notebook 9 — representatividad de todos los productos del SEPA
 │   ├── gen_nb02.py                               # Script fuente que genera el Notebook 2
 │   ├── gen_nb04.py                               # Script fuente que genera el Notebook 4
 │   ├── gen_nb05.py                               # Script fuente que genera el Notebook 5
 │   ├── gen_nb06.py                               # Script fuente que genera el Notebook 6
 │   ├── gen_nb07.py                               # Script fuente que genera el Notebook 7
 │   ├── gen_nb08.py                               # Script fuente que genera el Notebook 8
+│   ├── gen_nb09.py                               # Script fuente que genera el Notebook 9
+│   ├── test_trazabilidad_productos.py            # Test: nb09 sobre un SEPA sintético contra fuerza bruta
 │   ├── auditar_salida_nb07.py                    # Audita una salida del nb07 (réplica del índice, quiebres, trazabilidad, IPC, aperturas, INDEC)
 │   ├── test_celdas_graficos_y_mapa.py            # Tests: gráficos (CELDA 12) y mapa (CELDA 17) de nb05/nb02
 │   ├── test_encadenado_frescos.py                # Tests: índice de frescos de nb07 (argumento encadenado | tpd)

@@ -278,6 +278,11 @@ nacional por producto y día, índice encadenado con productos apareados llevado
 Lee los zips semestrales de `carga/` (2022A en adelante) con caché por mes en `output_canasta/_cache/diaria_<clave>/`.
 Fuente: `notebooks/gen_nb08.py`. Detalle en el README (sección `08_canasta_diaria`).
 
+### 2h. `09_trazabilidad_productos` (notebook 09 — este repo)
+Representatividad de todos los productos del SEPA desde 2022 (temporal, sucursal, comercial, regional, precio y
+puntaje). Fase 1 resume cada archivo de los zips semestrales en `output_trazabilidad/_cache_nb09/v1/`; fase 2 agrega.
+Fuente: `notebooks/gen_nb09.py`; test `notebooks/test_trazabilidad_productos.py`. Detalle en el README.
+
 ### 3. `analisis_SEPA_evolucion.ipynb`
 **Propósito**: evolución mensual de precios con canasta fija de 30 EANs.
 **Enfoque**: procesa múltiples semestres (2022A–2026A), autodetecta FACTOR_PRECIO, calcula serie diaria nacional.
@@ -574,6 +579,24 @@ Los 4 reemplazos (Swift XL, Lavandina Anti-splash, Plusbelle, Listerine) están 
 ---
 
 ## Historial de cambios
+
+### 2026-10-20 (noche) — nb09: trazabilidad de todos los productos del SEPA
+
+Pedido del usuario: un notebook que analice todos los productos únicos del SEPA desde 2022 y genere un ranking de
+representatividad temporal, por sucursal, comercial y regional. Decisiones (las recomendadas, aceptadas por el
+usuario): cuota diaria de sucursales como denominador principal (y también el total histórico); comercio y bandera;
+departamentos por Georef; regiones INDEC con GBA = AMBA por coordenadas; todos los comercios (columna del universo
+nb02); códigos internos incluidos y marcados; Colab; día útil = ≥ 100 sucursales y ≥ 5%; puntaje = media geométrica de
+4 componentes iguales; solo zips semestrales.
+- Medido: un archivo de medio mes de 2024 tiene 10,5 M de filas (60 mil productos, 3.150 sucursales); uno de 2026,
+  ~16 M de filas (~90 mil productos/día, ~3.400 sucursales). pyarrow lo lee entero en 7-40 s.
+- Primera versión: pico de RAM 9,7 GB en la lectura → IDs como diccionario (limpiar el diccionario, no las filas),
+  precios float32, columnas liberadas al copiarlas, promedio en el lugar: **4,1 GB** (5,2 con el orden por producto) y resúmenes idénticos. Ordenar
+  producto × sucursal por producto: parquet de 64 a 26 MB por archivo.
+- Prueba real local may-jul 2026: 104.201 productos (95.285 EAN, 8.916 códigos internos, 76.473 en el maestro), 3.429
+  sucursales, 26 comercios, 35 banderas, 25 provincias; 28.559 con precio todos los días; 7.556 con todos los días
+  útiles; arriba Powerade, Saladix, Cindor, Aquarius, Celusal. Fase 1 ~40 s/archivo, fase 2 ~15 s/archivo.
+- **Falta correrlo en Colab con 2022-2026** (estimado ~2-3 h la primera vez, ~3 GB de caché en el Drive).
 
 ### 2026-10-20 (tarde) — nb08: corrida de la Media revisada
 
