@@ -18,8 +18,26 @@ Autor: Santiago Riverti — investigador independiente
   Serie_diaria, Resumen_mensual, Composicion, Precios_diarios, Notas (encabezados verde 375623).
 - Validado local (zips nov-25 → jul-26, Media en cantidad_01 como prueba): mensual vs nb02 −0,42%/+0,11%; huecos del
   producto más pesado → encadenado ≤ 0,23% (directo −4,7%); mes en centavos detectado y corregido.
-- **Siguiente**: el usuario lo corre en Colab. Revisar que los meses arranquen en 2022-01 sin faltantes, los productos
-  que "aparecen después del primer mes" (EANs de 2026 que no existían en 2022) y los avisos de saltos > ±15%. No hay
+- **2026-10-20: corrida en Colab con la Media (`CANASTA_COL = 'cantidad_03'`) revisada** (Excel
+  `canasta_diaria_media_20220101_20261015.xlsx` + caché `diaria_45cf0e5b/`): 58 meses (2022-01 → 2026-10 al 15/10),
+  lectura 2.467 s (~42 s/mes), sin avisos de unidades ni saltos > ±15%; 2 días sin dato (31/10/2023, 10/05/2026).
+  Ancla 15/10/2026 = $689.886; 01/01/2022 = $38.748 (valor de los 69 productos; los que faltan, por el encadenado).
+  - Cobertura: ene-22 37/69 productos (54-61% del valor), 2023 ~74%, 69/69 desde el 27/03/2024. Los 32 que entran
+    tarde son sobre todo perfumería, limpieza, congelados y sin TACC: en 2022-23 la serie es almacén/bebidas/lácteos.
+  - Encadenado diario vs encadenado MENSUAL con productos apareados (desde el caché): ≤ +0,88% en todo el período
+    (casi todo en ene-abr 2024, cuando entran los últimos productos).
+  - vs nb02 (Serie_precios, Media): desde abr-24 entre −0,4% y +0,4% (feb-25 −1,55%, sep-25 −0,91%: promedio de
+    medianas diarias vs mediana del mes); ene-mar 2024 +2 a +6% (el nb02 suma solo los 66 con dato).
+  - vs IPC nacional (datos.gob.ar `148.3_INIVELNAL_DICI_M_26`, bienes `147.3_IBIENESNAL_DICI_T_19`, alimentos
+    `146.3_IALIMENNAL_DICI_M_45`; promedios mensuales): 2022 +78,8% (IPC +87,5, alimentos +85,8); 2023 +166,5%
+    (+211,4 / +251,3); 2024 +140,8% (+117,8 / +94,7); 2025 +26,5% (+31,5 / +32,2); ene-22 → ago-26 +1.597% (+1.929 /
+    +1.952); abr-24 → ago-26 +80% (bienes +86, alimentos +99). Atraso en 2023 y salto en dic-23/ene-24 (+33,9% y
+    +41,4% mensual vs IPC +25,5 y +20,6): lectura no verificada = precios acordados (Precios Justos) en productos de
+    marca de supermercado liberados con la devaluación; además la canasta no tiene frescos.
+  - Scripts de la revisión: `revisar.py` (desvío, volatilidad, cobertura) y `comparar.py` (IPC, nb02, encadenado
+    mensual) en el scratchpad de la sesión (no en el repo). No hizo falta tocar el notebook.
+- **Siguiente**: corrido y revisado con la Media (arriba). Falta la Vulnerable (`cantidad_01`, el default) si el
+  usuario la pide: misma revisión (meses desde 2022-01, productos tardíos, avisos de saltos > ±15%). No hay
   zips 2022/2023 en la PC del INECO (solo 2024A → 2026B en `SEPA_Bases_Originales\carga`).
 
 ## 🟢 ESTADO ACTUAL nb02 / HANDOFF [2026-10-16 · cierre] — BUG-42 verificado; BUG-43, BUG-44 y Excel verde listos (falta Colab) — leer esto primero
