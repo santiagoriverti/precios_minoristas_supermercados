@@ -123,9 +123,11 @@ desc_col = next((c for c in ['descripcion','descripcion_producto','nombre'] if c
 cat_col  = next((c for c in ['categoria','rubro'] if c in sel.columns), None)
 
 CANASTA_NAMES = {'cantidad_01': 'Vulnerable', 'cantidad_02': 'Popular', 'cantidad_03': 'Media',
-                 'cantidad_04': 'Media Alta', 'cantidad_05': 'Celíaca Media', 'cantidad_06': 'Vegana Básica'}
+                 'cantidad_04': 'Media Alta', 'cantidad_05': 'Celíaca Media', 'cantidad_06': 'Vegana Básica',
+                 'cantidad_07': 'Continua 2022'}   # 28 productos con dato todos los días desde 01/01/2022
 CANASTA_SHORT = {'cantidad_01': 'vulnerable', 'cantidad_02': 'popular', 'cantidad_03': 'media',
-                 'cantidad_04': 'media_alta', 'cantidad_05': 'celiaca_media', 'cantidad_06': 'vegana_basica'}
+                 'cantidad_04': 'media_alta', 'cantidad_05': 'celiaca_media', 'cantidad_06': 'vegana_basica',
+                 'cantidad_07': 'continua_2022'}
 NOMBRE_CANASTA = CANASTA_NAMES.get(CANASTA_COL, CANASTA_COL)
 SHORT_CANASTA  = CANASTA_SHORT.get(CANASTA_COL, CANASTA_COL)
 

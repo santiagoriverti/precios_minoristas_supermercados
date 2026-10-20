@@ -36,6 +36,22 @@ Autor: Santiago Riverti — investigador independiente
     marca de supermercado liberados con la devaluación; además la canasta no tiene frescos.
   - Scripts de la revisión: `revisar.py` (desvío, volatilidad, cobertura) y `comparar.py` (IPC, nb02, encadenado
     mensual) en el scratchpad de la sesión (no en el repo). No hizo falta tocar el notebook.
+- **2026-10-20: canasta fija para pass-through (`cantidad_07`, "Continua 2022")**. Objetivo del usuario: estimar el
+  pass-through del dólar con datos diarios, con la MISMA canasta del 01/01/2022 al último día. La Media no sirve (32
+  productos entran entre mar-22 y mar-24, y 8 de los 37 iniciales tienen 1-30 sucursales/día en 2022). Criterio:
+  dato todos los días del caché (1.732 días, 2022-01 → 2026-09) y ≥ 100 sucursales todos los días de 2022 → **28
+  productos** (no 29: se dijo mal una vez), cantidades de la Media, 73 unidades; $14.611 (01/01/2022) → $288.888
+  (30/09/2026). Archivo entregado: `C:\Users\sriverti\proyectos\canasta_continua_cantidad_07.xlsx` (hoja `Selección`
+  con `cantidad_07` + sucursales mín./mediana, días con < 100 sucursales, peso). Se usa pegando la columna en la
+  `Selección` del `canasta_representativa_*.xlsx` o con `CANASTA_EXCEL` apuntando a ese archivo; `CANASTA_COL =
+  'cantidad_07'`. El nb08 la nombra "Continua 2022" (`canasta_diaria_continua_2022_...xlsx`). nb02/nb07 leen solo
+  01..06: no les afecta. Seis productos con caídas de sucursales en 2023-24 (propias del producto, no del SEPA):
+  Lucchetti (43 días < 100, mín. 16), Rollo Elegante (39), Heineken (29), Shampoo Capilatis (28), Los Haroldos (16),
+  Bolsas Asurín (13); versión estricta = esos en 0 (22 productos). La canasta pierde lácteos, aceites, congelados y
+  frescos. Pendientes propuestos: (a) búsqueda de reemplazos con cobertura continua desde 2022 (barrer los EANs de
+  `Selección` en los 58 meses, ~40-50 min en Colab) manteniendo el peso por categoría; (b) serie con panel fijo de
+  sucursales (las obs. diarias pasan de ~31 mil en 2022 a ~88 mil en 2026: la mediana puede moverse por entrada de
+  cadenas), requiere guardar precio por sucursal.
 - **Siguiente**: corrido y revisado con la Media (arriba). Falta la Vulnerable (`cantidad_01`, el default) si el
   usuario la pide: misma revisión (meses desde 2022-01, productos tardíos, avisos de saltos > ±15%). No hay
   zips 2022/2023 en la PC del INECO (solo 2024A → 2026B en `SEPA_Bases_Originales\carga`).
