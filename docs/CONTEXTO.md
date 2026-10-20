@@ -272,6 +272,12 @@ vigente**: el constructor corrido con el Excel de otro mes elige otros productos
 distintos); solo respeta los 42 pares de `EAN_FORZADO`.
 Generador: `gen_nb07.py`. **Detalle en README y `docs/canastas_alternativas/README.md`.**
 
+### 2g. `08_canasta_diaria` (notebook 08 — este repo)
+Valor **diario** de una canasta de la hoja `Selección` (default `cantidad_01`, Vulnerable) desde 2022-01-01: mediana
+nacional por producto y día, índice encadenado con productos apareados llevado a pesos con el último día completo.
+Lee los zips semestrales de `carga/` (2022A en adelante) con caché por mes en `output_canasta/_cache/diaria_<clave>/`.
+Fuente: `notebooks/gen_nb08.py`. Detalle en el README (sección `08_canasta_diaria`).
+
 ### 3. `analisis_SEPA_evolucion.ipynb`
 **Propósito**: evolución mensual de precios con canasta fija de 30 EANs.
 **Enfoque**: procesa múltiples semestres (2022A–2026A), autodetecta FACTOR_PRECIO, calcula serie diaria nacional.
@@ -568,6 +574,16 @@ Los 4 reemplazos (Swift XL, Lavandina Anti-splash, Plusbelle, Listerine) están 
 ---
 
 ## Historial de cambios
+
+### 2026-10-20 — nb08: valor diario de una canasta desde 2022
+
+Pedido del usuario: tomar la canasta `cantidad_01` del Excel `canasta_representativa` y devolver un Excel con su valor
+diario de 2022 en adelante (subió `2022A/B.zip` y `2023A/B.zip` a `carga/`). Nuevo `notebooks/gen_nb08.py` →
+`08_canasta_diaria.ipynb`. Método: mediana nacional por producto y día (universo de la CELDA 9 del nb02),
+`valor_directo` y `valor_canasta` encadenado con productos apareados anclado en el último día completo; corrección de
+unidades entre meses; caché por mes. Validado localmente con los zips de nov-25 → jul-26 (la Media como canasta de
+prueba): promedios mensuales entre −0,42% y +0,11% de la serie del nb02; prueba de huecos (encadenado ≤ 0,23%) y de un
+mes en centavos (detectado y corregido). **Falta correrlo en Colab con 2022-2023** (~1-1,5 h la primera vez).
 
 ### 2026-10-16 (cierre) — nb02: provincia de la CELDA 7 por polígonos (BUG-44 resuelto)
 

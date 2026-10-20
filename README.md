@@ -27,6 +27,7 @@ El proyecto responde tres preguntas:
 | `05_evolucion_productos_representativos` | Igual que el Notebook 02, pero para **productos individuales** en vez de canastas: evolución de precio, mapas provinciales, comparación con el IPC y rankings por cadena/barrio de cada EAN que se ingrese. Ver [sección detallada](#evolución-de-productos-individuales--05_evolucion_productos_representativos). | [![Abrir en Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/santiagoriverti/precios_minoristas_supermercados/blob/main/notebooks/05_evolucion_productos_representativos.ipynb) |
 | `06_evolucion_brecha_celiaca` | Mide la **brecha celíaca** (canasta sin-TACC vs. base con TACC) y su evolución **diaria, semanal y mensual**, usando solo tipos de producto con dicotomía celíaca (2–3 EANs representativos por lado, promediados). Brecha **intra-sucursal**, desagregada por provincia, cadena y concentración de comercios. Ver [sección detallada](#brecha-celíaca--06_evolucion_brecha_celiaca). | [![Abrir en Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/santiagoriverti/precios_minoristas_supermercados/blob/main/notebooks/06_evolucion_brecha_celiaca.ipynb) |
 | `07_evolucion_canastas_alternativas` | **Motor del informe semanal.** Costo de **6 canastas** (**Popular / Media / Ejecutiva / Tecnológica / Representativa / Femenina**) con **semana que cierra el jueves**, comparado con el **IPC**, desagregado por **rubro**, **provincia**, **región** y **cadena**. **Índice encadenado de muestra apareada** (sin saltos por altas/bajas), **nacional ponderado por población** y **provincia controlando por cadena**. Composición: **267 empaquetados** por EAN (`cantidad_01..06`) + **59 tipos de frescos** por nombre (índice multilateral **TPD** por EAN). Exporta `Presencia_items`, `Alertas_reemplazo`, `Alertas_quiebre`, `Candidatos_trazabilidad` y `Frescos_metodos`. **v5.15** (2026-10-02: composición por rubro con faltantes imputados, Lavarropas BGH en la Tecnológica; v5.14: corre en el **Colab gratuito**, pico de RAM ÷3 con el mismo resultado) sobre la **v5.13** (frescos por TPD con nivel fijo, cobertura mínima de empaquetados, filtro estacional y ronda 2 de reemplazos). Ver [sección detallada](#canastas-alternativas--07_evolucion_canastas_alternativas). | [![Abrir en Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/santiagoriverti/precios_minoristas_supermercados/blob/main/notebooks/07_evolucion_canastas_alternativas.ipynb) |
+| `08_canasta_diaria` | **Valor diario de una canasta desde 2022.** Toma una columna de la hoja `Selección` (por defecto `cantidad_01`, Vulnerable) y exporta `canasta_diaria_<canasta>_<desde>_<hasta>.xlsx`: valor día por día (mediana nacional por producto, índice encadenado con productos apareados llevado a pesos), resumen mensual y precios diarios por producto. Caché por mes. Ver [sección detallada](#valor-diario-de-una-canasta--08_canasta_diaria). | [![Abrir en Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/santiagoriverti/precios_minoristas_supermercados/blob/main/notebooks/08_canasta_diaria.ipynb) |
 
 > **¿Ves una versión vieja en Colab?** El badge siempre apunta a la última versión en GitHub, pero Colab puede mostrar una copia cacheada de tu Drive. Para forzar la actualización: eliminá el notebook de `Mi unidad/Colab Notebooks/` en Google Drive y volvé a hacer clic en el badge.
 
@@ -714,6 +715,42 @@ Para abrir los notebooks desde los badges con el repo privado hay que autorizar 
 
 ---
 
+## Valor diario de una canasta — `08_canasta_diaria`
+
+Devuelve el valor de **una** canasta con frecuencia **diaria** desde `FECHA_INICIO` (2022-01-01) hasta el último día
+de los ZIPs semestrales de `MyDrive/carga/` (`2022A.zip` ... `2026B.zip`).
+
+### Config (CELDA 1)
+
+`CANASTA_COL` (`'cantidad_01'`, Vulnerable), `CANASTA_EXCEL` (`None` = el `canasta_representativa_*.xlsx` más nuevo de
+`output_canasta/`), `FECHA_INICIO`, `USE_CACHE`, `ALERTA_ESLABON` (aviso si un día se mueve más de ±15%).
+
+### Método
+
+- Precio de un producto en un día = **mediana nacional** de todas las observaciones (sucursales) de ese día, sin filtro
+  de sucursales (el universo de la serie oficial del nb02, CELDA 9).
+- `valor_directo` = Σ cantidad × mediana, solo con los productos con dato ese día (baja si falta un producto).
+- `valor_canasta` (principal) = índice **encadenado día a día con productos apareados** (Σ q·p_t / Σ q·p_{t-1} sobre los
+  productos con dato los dos días), llevado a pesos con el `valor_directo` del día ancla (el último día con todos los
+  productos). Un producto que falta unos días, o que todavía no existía en 2022, no hace saltar la serie.
+- Pesos/centavos: regla del nb02 por mes (mediana > 10.000 → ÷100) y, además, se corrige un mes entero si el eslabón
+  de su primer día da > 30 o < 1/30.
+- Los días calendario sin dato en el SEPA no se completan: se listan en `Notas`.
+
+### Qué genera (en `output_canasta/`)
+
+`canasta_diaria_<canasta>_<AAAAMMDD>_<AAAAMMDD>.xlsx` con las hojas `Serie_diaria`, `Resumen_mensual` (promedio de
+los días del mes y punta a punta), `Composicion`, `Precios_diarios` (mediana por producto y día) y `Notas`.
+
+### Caché y tiempos
+
+Cada mes cerrado se guarda en `output_canasta/_cache/diaria_<clave>/AAAA-MM.parquet` (clave = EANs de la canasta;
+cambiar cantidades no relee). El último mes se relee siempre. Las líneas del CSV se filtran por EAN antes de parsear:
+~45 s por mes en una PC (validado 2026-10-20 con nov-25 → jul-26: promedios mensuales a −0,42%/+0,11% de la serie
+mensual del nb02; con el producto más pesado faltando un mes, el encadenado se aparta ≤ 0,23% y el directo −4,7%).
+
+---
+
 ## Excel de econometría — `datos_econometria`
 
 El Notebook 02 exporta, además del análisis clásico, **`datos_econometria_{MES}.xlsx`** en `carga/output_canasta/`: un insumo **tidy/long** para análisis de series de tiempo (materia "Econometría avanzada").
@@ -746,11 +783,13 @@ precios_minoristas_supermercados/
 │   ├── 05_evolucion_productos_representativos.ipynb # Notebook 5 — análisis tipo Notebook 2 por producto individual (EAN)
 │   ├── 06_evolucion_brecha_celiaca.ipynb        # Notebook 6 — brecha celíaca (TACC vs sin-TACC), diaria/semanal/mensual
 │   ├── 07_evolucion_canastas_alternativas.ipynb # Notebook 7 — canastas Popular/Media/Ejecutiva semanales + frescos, vs IPC
+│   ├── 08_canasta_diaria.ipynb                  # Notebook 8 — valor diario de una canasta desde 2022
 │   ├── gen_nb02.py                               # Script fuente que genera el Notebook 2
 │   ├── gen_nb04.py                               # Script fuente que genera el Notebook 4
 │   ├── gen_nb05.py                               # Script fuente que genera el Notebook 5
 │   ├── gen_nb06.py                               # Script fuente que genera el Notebook 6
 │   ├── gen_nb07.py                               # Script fuente que genera el Notebook 7
+│   ├── gen_nb08.py                               # Script fuente que genera el Notebook 8
 │   ├── auditar_salida_nb07.py                    # Audita una salida del nb07 (réplica del índice, quiebres, trazabilidad, IPC, aperturas, INDEC)
 │   ├── test_celdas_graficos_y_mapa.py            # Tests: gráficos (CELDA 12) y mapa (CELDA 17) de nb05/nb02
 │   ├── test_encadenado_frescos.py                # Tests: índice de frescos de nb07 (argumento encadenado | tpd)

@@ -17,6 +17,9 @@ vuelven a su provincia; mueve el Cuadro 1 hasta ~1%). Los tres simulados con dat
 la próxima corrida relee 12 meses en la 19c y los 33 de la econometría, una vez**. Revisión de todo:
 `docs/AUDITORIA_2026-10-16_nb02.md`.
 
+**Nuevo (2026-10-20): nb08** (`notebooks/08_canasta_diaria.ipynb`, fuente `gen_nb08.py`): valor diario de una canasta
+(`CANASTA_COL`, default `cantidad_01`) desde 2022 con encadenado de productos apareados; validado local, falta Colab.
+
 ## Al empezar una sesión
 
 1. **Leer los bloques `ESTADO ACTUAL ... / HANDOFF` al principio de `.claude/memory.md`** (uno del nb02 y uno

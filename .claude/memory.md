@@ -6,6 +6,22 @@ Autor: Santiago Riverti — investigador independiente
 
 ---
 
+## 🟢 nb08 — valor diario de una canasta [2026-10-20]
+
+- Pedido: canasta `cantidad_01` (Vulnerable) del `canasta_representativa_*.xlsx`, valor **diario** desde 2022 en un
+  Excel. El usuario subió `2022A.zip`, `2022B.zip`, `2023A.zip`, `2023B.zip` a `MyDrive/carga/`.
+- Hecho: `notebooks/gen_nb08.py` → `08_canasta_diaria.ipynb` (8 celdas). Mediana nacional por producto y día (sin
+  filtro de sucursales, como la CELDA 9 del nb02); `valor_directo` y `valor_canasta` = encadenado día a día con
+  productos apareados, anclado en pesos en el último día con todos los productos; corrección de unidades por mes
+  (eslabón > 30 o < 1/30); caché `output_canasta/_cache/diaria_<md5 EANs>/AAAA-MM.parquet`; lector con prefiltro de
+  líneas por EAN (~45 s/mes en PC, 5x el lector del nb02). Excel `canasta_diaria_<short>_<desde>_<hasta>.xlsx`:
+  Serie_diaria, Resumen_mensual, Composicion, Precios_diarios, Notas (encabezados verde 375623).
+- Validado local (zips nov-25 → jul-26, Media en cantidad_01 como prueba): mensual vs nb02 −0,42%/+0,11%; huecos del
+  producto más pesado → encadenado ≤ 0,23% (directo −4,7%); mes en centavos detectado y corregido.
+- **Siguiente**: el usuario lo corre en Colab. Revisar que los meses arranquen en 2022-01 sin faltantes, los productos
+  que "aparecen después del primer mes" (EANs de 2026 que no existían en 2022) y los avisos de saltos > ±15%. No hay
+  zips 2022/2023 en la PC del INECO (solo 2024A → 2026B en `SEPA_Bases_Originales\carga`).
+
 ## 🟢 ESTADO ACTUAL nb02 / HANDOFF [2026-10-16 · cierre] — BUG-42 verificado; BUG-43, BUG-44 y Excel verde listos (falta Colab) — leer esto primero
 
 ### Novedad 2026-10-16 (tarde) — lo último
