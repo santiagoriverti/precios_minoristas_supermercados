@@ -6,6 +6,23 @@ Autor: Santiago Riverti — investigador independiente
 
 ---
 
+## 🟢 nb09 — versión 2: errores de la primera corrida corregidos [2026-10-21 tarde] — leer esto primero
+
+- La corrida completa del usuario en Colab funcionó (115 archivos, RAM estable). Revisión: lo temporal y de sucursales
+  validado contra el nb08 (exacto en 97 productos); 6 errores (BUG-45 en BUGS_Y_MEJORAS): HHI int32 desbordado, 27
+  "provincias", sucursal × producto repetidos (Cadena 2011 ene-feb 2024), parte de mes repetida (ago-2024), `es_ean`
+  (guiones y balanza), nombres/formato. Corregidos + puntaje con `pct_com_diaria_prom` (pedido del usuario).
+- Versión 2 del lector (`LECTOR_VERSION = 2`): la CELDA 4 revisa el caché viejo (`_motivo_releer`) y relee lo que
+  hace falta; en el SEPA real es casi todo (sucursal de DIA con 'Buenos Aires' en todos los archivos 2024-2026):
+  ~1,5-2 h una vez. `RELEER_CACHE_VIEJO = False` = ~10 min (queda mal solo `pct_prov_diaria_prom` y las repetidas).
+- Probado: test sintético con todos esos defectos contra fuerza bruta (OK); real local ene-feb 2024 (repetidas
+  1/892/874/1 = escaneo), ago-2024 (elige COMPLETOb; con el nb08 descontando su doble conteo, igual), actualización del
+  caché v1 de may-jul 2026. Puntaje reproducible a ±0,006 desde las columnas.
+- **Siguiente**: el usuario corre la versión 2 en Colab. Revisar: la lista de "se releen" de la CELDA 4, que
+  `provincias_total` sea 24, `hhi_cadenas` en [1/comercios, 1], 0 productos con `suc_diarias_prom > sucursales_distintas`,
+  y el ranking nuevo (scripts de la revisión: scratchpad de la sesión, `rev09/r2_consistencia.py`, `r13_valida_v2.py`).
+  Pendiente aparte (tarjeta): el nb02 y el nb08 suman los dos archivos de la primera quincena de ago-2024.
+
 ## 🟢 nb09 — versión robusta para el Colab gratuito [2026-10-21] — leer esto primero
 
 - La primera corrida en Colab se cayó por RAM. Reescrito sin cambiar números: lector = script aparte

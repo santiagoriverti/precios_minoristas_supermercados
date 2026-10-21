@@ -580,6 +580,28 @@ Los 4 reemplazos (Swift XL, Lavandina Anti-splash, Plusbelle, Listerine) están 
 
 ## Historial de cambios
 
+### 2026-10-21 (tarde) — nb09: primera corrida completa revisada y versión 2
+
+El usuario corrió el nb09 completo en Colab (115 archivos, 2022-01 → 15/10/2026, lectura 93 min, RAM estable: lector
+~1,6 GB, ~11,8 GB libres) y pidió revisar los datos a fondo.
+- **Validado contra el nb08** (cachés diarios de la Media y la Continua 2022, código independiente): días con precio por
+  mes 3.366/3.366 y 1.596/1.596, primer día y mínimo diario iguales en los 97 productos; sucursales por día iguales
+  salvo agosto 2024, donde el que se equivoca es el nb08 (suma dos archivos de la misma quincena). Precio del último mes
+  igual a la mediana diaria del nb08 en 18 de 28 productos y a < 3% en casi todos los demás.
+- **Errores encontrados y corregidos (versión 2)**: (1) HHI desbordado (int32) en 13.914 productos, 18.609 negativos;
+  (2) 27 "provincias" (vacías y escritas con el nombre): el componente regional del puntaje quedaba mal en todos;
+  (3) sucursal × producto repetidos en el SEPA (Cadena 2011 ene-feb 2024) contados dos veces; (4) dos archivos para la
+  misma quincena (ago-2024): el nb09 eligió el bueno por el orden del zip, ahora por los días; (5) `es_ean` marcaba como
+  EAN 221 códigos con guiones y 9.616 de balanza (EAN-13 que empiezan con 2); (6) nombres de comercios equivocados
+  (47, 23, 4, 3...), coma dentro de "Cencosud (Vea, Disco, Jumbo)", rubros con variantes de mayúsculas, % con 2
+  decimales. Además, por decisión del usuario, el componente comercial del puntaje pasa a la cuota diaria de comercios
+  (los 50 comercios del período incluyen cadenas de pocos días y locales repetidos con otro código: 44/45/46, 49/50).
+- **Probado**: test sintético con esos defectos contra fuerza bruta (OK); real local ene-feb 2024 (repetidas 1/892/874/1
+  = las del escaneo de los zips), ago-2024 (elige `COMPLETOb`; con el nb08 corregido por su doble conteo, iguales) y la
+  actualización del caché v1 de may-jul 2026. El puntaje se reproduce desde las columnas a ±0,006.
+- **Escaneo de los 63 archivos locales 2024-2026**: 23 con filas repetidas, los 63 con la sucursal de DIA 'Buenos
+  Aires': la próxima corrida en Colab relee casi todo (~1,5-2 h, una vez).
+
 ### 2026-10-21 — nb09: robusto para el Colab gratuito (la primera corrida colapsó la RAM)
 
 El usuario corrió el nb09 en Colab y la sesión se cayó por falta de RAM; pidió que no pase en el Colab no premium

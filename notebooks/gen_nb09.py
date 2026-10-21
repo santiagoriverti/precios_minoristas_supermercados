@@ -25,10 +25,12 @@ armar, para cada producto (`id_producto`) que alguna vez reportó precio, qué t
   (con ≥ `MIN_SUC_DIA_UTIL` sucursales y ≥ `MIN_PCT_DIA_UTIL` % de las sucursales activas ese día).
 - **Sucursal:** sucursales distintas sobre el total histórico y **cuota diaria** (sucursales con precio / sucursales
   activas ese día), que no castiga a un producto por sucursales que todavía no existían.
-- **Comercial:** comercios (empresa) y banderas distintos, cuota diaria de comercios, concentración en la cadena principal.
+- **Comercial:** comercios (empresa) y banderas distintos, **cuota diaria** de comercios, concentración en la cadena
+  principal.
 - **Regional:** provincias, regiones INDEC (+ AMBA por coordenadas), departamentos y localidades (Georef).
 - **Precio:** mediana y dispersión entre sucursales del último mes.
-- **Puntaje 0-100:** media geométrica de temporal, sucursal (cuota diaria), comercial y regional.
+- **Puntaje 0-100:** media geométrica de temporal, sucursal (cuota diaria), comercial (cuota diaria de comercios) y
+  regional (provincias con código ISO: las escritas con el nombre se corrigen, las vacías no cuentan).
 
 **Dos fases:**
 1. **Lectura** (la pesada): cada archivo `MMAAAA_pais_parteN` se lee **por bloques** (`BLOQUE_MB`) con un **script
@@ -80,7 +82,13 @@ BLOQUE_MB = 32
 # Cambiarlo NO relee el SEPA (los resúmenes se reorganizan solos la primera vez).
 N_GRUPOS = 16
 # Cada archivo lo lee un script aparte (python nb09_lector.py): al terminar, el sistema libera toda su memoria.
-PROCESO_APARTE = True"""))
+PROCESO_APARTE = True
+# Resúmenes guardados por la versión 1 del lector (antes del 21/10/2026): se revisan y se releen los que lo necesitan
+# (sucursal x producto repetidos, provincias escritas con el nombre o vacías, otro archivo para la misma parte). En el
+# SEPA real eso es casi todo (una sucursal de DIA viene con 'Buenos Aires' en todos los archivos): ~1,5-2 h en Colab.
+# False = usarlos así (~10 min): todo queda corregido salvo la cuota diaria de provincias (pct_prov_diaria_prom, que
+# no entra en el puntaje) y las filas repetidas de esos archivos (~900 por quincena en ene-feb 2024).
+RELEER_CACHE_VIEJO = True"""))
 
 # ── CELL 2 — SETUP ─────────────────────────────────────────────────────────────
 cells.append(cell_code(r"""# ============================================================
@@ -163,15 +171,22 @@ REGION_PROV = {'CABA': 'GBA (AMBA)', 'Córdoba': 'Pampeana', 'Santa Fe': 'Pampea
                'Río Negro': 'Patagonia', 'Chubut': 'Patagonia', 'Santa Cruz': 'Patagonia', 'Tierra del Fuego': 'Patagonia'}
 # Buenos Aires: GBA (AMBA) si está a <= AMBA_RADIO_KM del Obelisco, Pampeana si no; sin coordenadas, sin región.
 
-# ── Nombres de comercio (empresa) y bandera (los del nb02, CELDA 4) ──
-NOMBRE_COMERCIO = {'2': 'La Anonima', '3': 'Cadena 3', '5': 'Hipermercado Misiones', '8': 'Cadena 8 (Cordoba)',
-                   '9': 'Cencosud (Vea, Disco, Jumbo)', '10': 'Carrefour', '11': 'ChangoMas', '12': 'Coto',
-                   '13': 'Cooperativa Obrera', '15': 'DIA', '16': 'Libertad', '20': 'LAR', '21': 'Toledo',
-                   '23': 'Cadena 23', '47': 'Pasamonte'}
-NOMBRE_BANDERA = {('9', '1'): 'Vea', ('9', '2'): 'Disco', ('9', '3'): 'Jumbo', ('10', '1'): 'Carrefour',
-                  ('10', '2'): 'Carrefour Market', ('10', '3'): 'Carrefour Express', ('11', '2'): 'ChangoMas',
-                  ('11', '4'): 'Hiper ChangoMas', ('11', '5'): 'Mi ChangoMas', ('16', '1'): 'Hipermercado Libertad',
-                  ('16', '2'): 'Mini Libertad'}
+# ── Nombres de comercio (empresa) y bandera ──
+# Del comercio.csv del SEPA diario (01/10/2026: comercio_razon_social / comercio_bandera_nombre), en versión corta y
+# sin comas (las listas de cadenas se separan con '; '). Libertad (16) ya no publica en 2026: nombre del nb02. Los
+# comercios que dejaron de publicar antes (24, 1000-3001, 44-50...) quedan como 'Cadena N'.
+NOMBRE_COMERCIO = {'2': 'La Anónima', '3': 'Deheza', '4': 'Estación Lima', '5': 'California Supermercados',
+                   '6': 'Comodín', '8': 'Mariano Max', '9': 'Cencosud (Vea/Disco/Jumbo)', '10': 'Carrefour',
+                   '11': 'ChangoMas', '12': 'Coto', '13': 'Cooperativa Obrera', '15': 'DIA', '16': 'Libertad',
+                   '20': 'La Agrícola Regional', '21': 'Toledo', '23': 'Axion Energy',
+                   '47': 'Unicoop (Patagones y Viedma)'}
+FUENTE_NOMBRE = {c: ('nb02' if c == '16' else 'SEPA (comercio.csv, 01/10/2026)') for c in NOMBRE_COMERCIO}
+NOMBRE_BANDERA = {('2', '1'): 'La Anónima', ('2', '2'): 'Topsy', ('2', '3'): 'Bomba', ('6', '1'): 'Comodín',
+                  ('6', '2'): 'Maxi Comodín', ('9', '1'): 'Vea', ('9', '2'): 'Disco', ('9', '3'): 'Jumbo',
+                  ('10', '1'): 'Hipermercado Carrefour', ('10', '2'): 'Carrefour Market',
+                  ('10', '3'): 'Carrefour Express', ('10', '4'): 'Carrefour Maxi', ('11', '1'): 'SuperChangomas',
+                  ('11', '2'): 'Changomas', ('11', '3'): 'SuperChangomas (3)', ('11', '4'): 'SuperChangomas (4)',
+                  ('11', '5'): 'HiperChangomas', ('16', '1'): 'Hipermercado Libertad', ('16', '2'): 'Mini Libertad'}
 
 def nombre_comercio(c):
     return NOMBRE_COMERCIO.get(str(c), f'Cadena {c}')
@@ -247,14 +262,35 @@ maestro_prod = (maestro_prod.drop_duplicates('id').set_index('id')
                                  'producto_blacklist': 'blacklist', 'producto_ean': 'ean_maestro'})
                 [['descripcion', 'marca', 'presentacion', 'rubro', 'categoria', 'subcategoria', 'proveedor',
                   'blacklist', 'ean_maestro']])
-print(f'  Maestro de productos: {len(maestro_prod):,} productos')
+# Rubro, categoría y subcategoría con una sola forma de escribirse (el maestro trae 'ABERTURAS' y 'Aberturas',
+# 'Limpieza ' y 'Limpieza'): para cada variante sin tildes ni mayúsculas, la forma más usada que no esté en mayúsculas
+import unicodedata
+def _clave_txt(v):
+    return unicodedata.normalize('NFKD', str(v)).encode('ascii', 'ignore').decode().lower().strip()
+for _c in ('rubro', 'categoria', 'subcategoria'):
+    _s = maestro_prod[_c].astype(object).where(maestro_prod[_c].notna())
+    _s = _s.map(lambda v: ' '.join(str(v).split()) if isinstance(v, str) and v.strip() else None)
+    _k = _s.map(lambda v: _clave_txt(v) if v else None)
+    _t = pd.DataFrame({'s': _s, 'k': _k}).dropna()
+    _n = _t.groupby(['k', 's']).size().rename('n').reset_index()
+    _n['mayus'] = _n['s'].str.isupper()
+    _pref = _n.sort_values(['k', 'mayus', 'n'], ascending=[True, True, False]).drop_duplicates('k').set_index('k')['s']
+    maestro_prod[_c] = _k.map(_pref)
+print(f'  Maestro de productos: {len(maestro_prod):,} productos | rubros {maestro_prod["rubro"].nunique()} | '
+      f'categorías {maestro_prod["categoria"].nunique()}')
 
-def gtin_valido(s):
-    # Dígito verificador GTIN-8/12/13/14
-    if not s.isdigit() or len(s) not in (8, 12, 13, 14):
+def es_ean(x, flag=None):
+    # EAN/GTIN real: solo dígitos, de 8 a 14 sin los ceros de la izquierda, dígito verificador válido (sobre el código
+    # completado a 14), fuera de los rangos de circulación restringida (balanza o uso interno de cada local: EAN-13 y
+    # EAN-8 que empiezan con 2, UPC-A de sistema 2 o 4) y que el maestro no lo marque como no EAN (producto_ean = 0).
+    x = str(x)
+    if not x.isdigit() or not 8 <= len(x) <= 14 or flag == '0':
         return False
-    d = [int(x) for x in s[:-1]][::-1]
-    return (10 - sum(x * (3 if i % 2 == 0 else 1) for i, x in enumerate(d)) % 10) % 10 == int(s[-1])
+    if (len(x) in (8, 13) and x[0] == '2') or (len(x) == 12 and x[0] in '24'):
+        return False
+    z = x.zfill(14)
+    d = [int(c) for c in z[:-1]][::-1]
+    return (10 - sum(v * (3 if i % 2 == 0 else 1) for i, v in enumerate(d)) % 10) % 10 == int(z[-1])
 print('Maestros OK')"""))
 
 # ── CELL 4 — FASE 1 ────────────────────────────────────────────────────────────
@@ -271,11 +307,12 @@ cells.append(cell_code(r"""# ===================================================
 # 'dia' se escribe último: si existe, el archivo está completo.
 # El lector es un script aparte (nb09_lector.py, lo escribe esta celda) que se ejecuta con `python` para cada archivo:
 # al terminar, el sistema operativo recupera TODA su memoria (sin esto la RAM crecía archivo a archivo hasta colapsar
-# la sesión). Verificado: el SEPA no repite sucursal x producto dentro de un archivo, así que sumar bloques es exacto.
+# la sesión). Si el SEPA repite una sucursal x producto dentro de un archivo (pasa, p. ej. 'Cadena 2011' en ene-feb
+# 2024), se cuenta una vez con la unión de sus días.
 import importlib, tempfile
 
 LECTOR_SRC = r'''
-import gzip, json, os, re, sys, time, traceback, zipfile, zlib
+import gzip, json, os, re, sys, time, traceback, unicodedata, zipfile, zlib
 from pathlib import Path
 import numpy as np
 import pandas as pd
@@ -286,6 +323,30 @@ import pyarrow.parquet as pq
 
 PAT_FECHA = re.compile(r'^precio_(\d{8})$')
 ID_COLS = ['id_comercio', 'id_bandera', 'id_sucursal', 'sucursales_provincia', 'id_producto']
+# v2 (2026-10-21): provincias normalizadas (nombres -> código ISO; vacías no cuentan como provincia) y sucursal x
+# producto repetidos dentro de un archivo contados una sola vez (unión de sus días).
+LECTOR_VERSION = 2
+ISO_PROV_OK = ('AR-A AR-B AR-C AR-D AR-E AR-F AR-G AR-H AR-J AR-K AR-L AR-M AR-N AR-P AR-Q AR-R AR-S AR-T AR-U '
+               'AR-V AR-W AR-X AR-Y AR-Z').split()
+NOMBRE_ISO = {'caba': 'AR-C', 'ciudad autonoma de buenos aires': 'AR-C', 'capital federal': 'AR-C',
+              'buenos aires': 'AR-B', 'catamarca': 'AR-K', 'chaco': 'AR-H', 'chubut': 'AR-U', 'cordoba': 'AR-X',
+              'corrientes': 'AR-W', 'entre rios': 'AR-E', 'formosa': 'AR-P', 'jujuy': 'AR-Y', 'la pampa': 'AR-L',
+              'la rioja': 'AR-F', 'mendoza': 'AR-M', 'misiones': 'AR-N', 'neuquen': 'AR-Q', 'rio negro': 'AR-R',
+              'salta': 'AR-A', 'san juan': 'AR-J', 'san luis': 'AR-D', 'santa cruz': 'AR-Z', 'santa fe': 'AR-S',
+              'santiago del estero': 'AR-G', 'tierra del fuego': 'AR-V', 'tucuman': 'AR-T'}
+
+def iso_provincia(v):
+    # código ISO 3166-2:AR de una provincia escrita como código ('AR-S') o como nombre ('Santa Fe', 'Provincia de
+    # Córdoba'); '' si está vacía o no se reconoce (esa sucursal no cuenta como provincia)
+    if v is None:
+        return ''
+    v = str(v).strip()
+    if v.upper() in ISO_PROV_OK:
+        return v.upper()
+    k = unicodedata.normalize('NFKD', v).encode('ascii', 'ignore').decode().lower()
+    k = re.sub(r'\s+', ' ', re.sub(r',.*$', '', k)).strip()
+    k = re.sub(r'^provincia (de |del )?', '', k)
+    return NOMBRE_ISO.get(k, '')
 
 def clave_suc(c, b, s):
     return f'{c}|{b}|{s}'
@@ -297,15 +358,15 @@ def grupo_de(eans, n_grupos):
 class Codigos:
     # texto -> código entero estable dentro de un archivo. Se limpia solo el diccionario de cada bloque (miles de
     # valores), nunca un texto por fila.
-    def __init__(self, ean=False):
-        self.mapa, self.ean = {}, ean
+    def __init__(self, ean=False, normalizar=None):
+        self.mapa, self.ean, self.normalizar = {}, ean, normalizar
     def __call__(self, arr):
         if not pa.types.is_dictionary(arr.type):
             arr = pac.cast(arr, pa.string()).dictionary_encode()
         vals = arr.dictionary.to_pylist() + [None]
         m = np.empty(len(vals), np.int64)
         for i, v in enumerate(vals):
-            v = '' if v is None else str(v).strip()
+            v = self.normalizar(v) if self.normalizar else ('' if v is None else str(v).strip())
             if self.ean:
                 v = v.lstrip('0') or '0'
             c = self.mapa.get(v)
@@ -345,15 +406,19 @@ def resumir(zip_path, nombre, f_ini, f_fin, bloque_mb, n_grupos, precios_texto=F
         nd = len(cols_p)
         tipos = {c: pa.dictionary(pa.int32(), pa.string()) for c in ID_COLS}
         tipos.update({c: (pa.string() if precios_texto else pa.float64()) for c in cols_p})
-        cod_e, cod_c, cod_b, cod_s, cod_p = Codigos(ean=True), Codigos(), Codigos(), Codigos(), Codigos()
+        cod_e, cod_c, cod_b, cod_s = Codigos(ean=True), Codigos(), Codigos(), Codigos()
+        cod_p = Codigos(normalizar=iso_provincia)       # provincias como código ISO ('' = sin dato)
+        cod_pr = Codigos()                              # provincia tal como viene en el archivo (para el informe)
+        tipo_m = np.uint32 if nd <= 32 else np.uint64   # días con precio de cada fila, como máscara de bits
+        bits_dia = np.arange(nd, dtype=tipo_m)
         suc_mapa = {}                                   # (c, b, s) -> código de sucursal del archivo
-        suc_cbs, suc_prv = [], []                       # comercio/bandera/sucursal y provincia por sucursal
+        suc_cbs, suc_prv, suc_prv_orig = [], [], []     # comercio/bandera/sucursal y provincia por sucursal
         n_suc = np.zeros((1024, nd), np.int32)          # producto x día: sucursales con precio
         a_com = np.zeros((1024, 8, nd), bool)           # producto x comercio x día
         a_prv = np.zeros((1024, 8, nd), bool)           # producto x provincia x día
         s_dia = np.zeros((256, nd), bool)               # sucursal x día activa
         s_fil = np.zeros(256, np.int64)                 # filas con algún precio por sucursal
-        es_e, es_s, es_n, es_p = [], [], [], []
+        es_e, es_s, es_n, es_p, es_m = [], [], [], [], []
         with zf.open(nombre) as s0, pa.CompressedInputStream(pa.PythonFile(s0, mode='r'), 'gzip') as s:
             lector = pacsv.open_csv(s, read_options=pacsv.ReadOptions(block_size=max(int(bloque_mb * 2 ** 20), 1024)),
                                     convert_options=pacsv.ConvertOptions(
@@ -365,6 +430,7 @@ def resumir(zip_path, nombre, f_ini, f_fin, bloque_mb, n_grupos, precios_texto=F
                 e = cod_e(bl.column('id_producto'))
                 c = cod_c(bl.column('id_comercio')); b = cod_b(bl.column('id_bandera'))
                 si = cod_s(bl.column('id_sucursal')); pv = cod_p(bl.column('sucursales_provincia'))
+                pr = cod_pr(bl.column('sucursales_provincia'))
                 k = (c << 42) | (b << 21) | si
                 uk, prim, inv = np.unique(k, return_index=True, return_inverse=True)
                 st_u = np.empty(len(uk), np.int64)
@@ -374,6 +440,7 @@ def resumir(zip_path, nombre, f_ini, f_fin, bloque_mb, n_grupos, precios_texto=F
                         j = int(prim[i])
                         y = suc_mapa[int(x)] = len(suc_mapa)
                         suc_cbs.append((int(c[j]), int(b[j]), int(si[j]))); suc_prv.append(int(pv[j]))
+                        suc_prv_orig.append(int(pr[j]))
                     st_u[i] = y
                 st = st_u[inv.ravel()]
                 P = np.empty((bl.num_rows, nd), np.float32)
@@ -387,13 +454,15 @@ def resumir(zip_path, nombre, f_ini, f_fin, bloque_mb, n_grupos, precios_texto=F
                 a_prv = crecer(crecer(a_prv, ne), len(cod_p.mapa), 1)
                 com_f = np.array([x[0] for x in suc_cbs])[st]           # comercio de cada fila (código del archivo)
                 prv_f = np.array(suc_prv)[st]
+                prv_ok = prv_f != cod_p.mapa.get('', -1)                # sin provincia: no cuenta como provincia
                 for j in range(nd):
                     v = V[:, j]
                     if not v.any():
                         continue
                     n_suc[:, j] += np.bincount(e[v], minlength=n_suc.shape[0]).astype(np.int32)
                     a_com[e[v], com_f[v], j] = True
-                    a_prv[e[v], prv_f[v], j] = True
+                    vp = v & prv_ok
+                    a_prv[e[vp], prv_f[vp], j] = True
                     s_dia[st[v], j] = True
                 n = V.sum(axis=1)
                 np.add.at(s_fil, st[n > 0], 1)
@@ -401,6 +470,7 @@ def resumir(zip_path, nombre, f_ini, f_fin, bloque_mb, n_grupos, precios_texto=F
                 m = n > 0
                 es_e.append(e[m].astype(np.int32)); es_s.append(st[m].astype(np.int32)); es_n.append(n[m].astype(np.int16))
                 es_p.append(P.sum(axis=1, dtype=np.float64)[m])
+                es_m.append((V[m].astype(tipo_m) << bits_dia).sum(axis=1, dtype=tipo_m))
                 del P, V, e, st, k, inv
     ne, ns = len(cod_e.mapa), len(suc_mapa)
     eans = cod_e.valores()
@@ -412,9 +482,43 @@ def resumir(zip_path, nombre, f_ini, f_fin, bloque_mb, n_grupos, precios_texto=F
     suc_b = np.array([bv[x[1]] for x in suc_cbs], dtype=object)
     suc_s = np.array([sv[x[2]] for x in suc_cbs], dtype=object)
     suc_p = np.array([pvv[x] for x in suc_prv], dtype=object)
+    prv_orig = cod_pr.valores()
+    suc_po = np.array([prv_orig[x] for x in suc_prv_orig], dtype=object)
     sucs = np.array([clave_suc(a, b, c) for a, b, c in zip(suc_c, suc_b, suc_s)], dtype=object)
 
-    # producto x día
+    # producto x sucursal
+    e = np.concatenate(es_e); st = np.concatenate(es_s); n = np.concatenate(es_n)
+    psum = np.concatenate(es_p); msk = np.concatenate(es_m)
+    del es_e, es_s, es_n, es_p, es_m
+    # Sucursal x producto repetido en el archivo (pasa: 'Cadena 2011' en ene-feb 2024): se cuenta una sola vez, con la
+    # unión de sus días; el precio es el promedio de todas sus observaciones. Se corrigen las sucursales por día.
+    clave = st.astype(np.int64) * max(ne, 1) + e
+    o = np.argsort(clave, kind='stable')
+    cs = clave[o]
+    extra = np.zeros(len(cs), bool); extra[1:] = cs[1:] == cs[:-1]        # repetida de la anterior (orden estable)
+    n_dup = int(extra.sum())
+    if n_dup:
+        gid = np.cumsum(~extra) - 1
+        con_dup = np.bincount(gid, weights=extra, minlength=int(gid[-1]) + 1) > 0
+        sel = con_dup[gid]
+        filas, g_sel = o[sel], gid[sel]
+        ini = np.flatnonzero(np.r_[True, g_sel[1:] != g_sel[:-1]])        # primera fila de cada grupo repetido
+        bits = ((msk[filas][:, None] >> bits_dia) & 1).astype(np.int32)
+        suma = np.add.reduceat(bits, ini, axis=0)
+        union = (suma > 0).astype(np.int32)
+        primera = filas[ini]
+        np.subtract.at(n_suc, (np.repeat(e[primera], nd), np.tile(np.arange(nd), len(primera))), (suma - union).ravel())
+        np.subtract.at(s_fil, st[primera], np.diff(np.r_[ini, len(filas)]) - 1)
+        n_union = union.sum(axis=1)
+        p_media = np.add.reduceat(psum[filas], ini) / np.add.reduceat(n[filas].astype(np.float64), ini)
+        n[primera] = n_union; psum[primera] = p_media * n_union
+        quedan = np.ones(len(e), bool); quedan[o[extra]] = False
+        e, st, n, psum = e[quedan], st[quedan], n[quedan], psum[quedan]
+    del clave, o, cs, extra, msk
+    precio = (psum / n).astype(np.float32)
+    del psum
+
+    # producto x día (sucursales ya sin repetidos)
     n_com, n_prv = a_com.sum(axis=1), a_prv.sum(axis=1)
     del a_com, a_prv
     ed = []
@@ -426,17 +530,16 @@ def resumir(zip_path, nombre, f_ini, f_fin, bloque_mb, n_grupos, precios_texto=F
     ean_dia = pd.concat(ed, ignore_index=True)
     ean_dia['ean'] = pd.Categorical.from_codes(ean_dia.pop('e'), categories=eans).remove_unused_categories()
 
-    # días (denominadores)
+    # días (denominadores); las sucursales sin provincia no suman provincias
     ban = np.array([f'{a}|{b}' for a, b in zip(suc_c, suc_b)])
     dia = pd.DataFrame([{'fecha': f, 'n_suc': int(s_dia[:, j].sum()), 'n_com': int(len(set(suc_c[s_dia[:, j]]))),
-                         'n_ban': int(len(set(ban[s_dia[:, j]]))), 'n_prov': int(len(set(suc_p[s_dia[:, j]]))),
+                         'n_ban': int(len(set(ban[s_dia[:, j]]))),
+                         'n_prov': int(len(set(suc_p[s_dia[:, j]]) - {''})),
                          'n_productos': int((n_suc[:, j] > 0).sum()), 'n_precios': int(n_suc[:, j].sum())}
                         for j, f in enumerate(fechas) if s_dia[:, j].any()])
+    dia['duplicados'] = n_dup
 
     # producto x sucursal, ordenado por grupo y producto
-    e = np.concatenate(es_e); st = np.concatenate(es_s); n = np.concatenate(es_n)
-    precio = (np.concatenate(es_p) / n).astype(np.float32)
-    del es_e, es_s, es_n, es_p
     fac = 100.0 if np.median(precio) > 10_000 else 1.0           # pesos o centavos: regla del nb02
     dia['factor_precio'] = fac
     precio /= fac
@@ -444,7 +547,8 @@ def resumir(zip_path, nombre, f_ini, f_fin, bloque_mb, n_grupos, precios_texto=F
     o = np.lexsort((st, e, g))
     e, st, n, precio, g = e[o], st[o], n[o], precio[o], g[o]
     suc = pd.DataFrame({'suc': sucs, 'id_comercio': suc_c, 'id_bandera': suc_b, 'id_sucursal': suc_s,
-                        'provincia_iso': suc_p, 'dias_activa': s_dia.sum(axis=1).astype(np.int16),
+                        'provincia_iso': suc_p, 'provincia_original': suc_po,
+                        'dias_activa': s_dia.sum(axis=1).astype(np.int16),
                         'filas_con_precio': s_fil.astype(np.int32)})
     return {'ean_dia': ean_dia, 'ean_suc': (eans, sucs, e, st, n, precio, g), 'suc': suc, 'dia': dia}
 
@@ -504,7 +608,9 @@ def procesar_y_guardar(a):
         print(f'  AVISO {a["nombre"]}: precios no numéricos ({str(ex)[:80]}); se relee convirtiendo', flush=True)
         r = resumir(a['zip'], a['nombre'], f_ini, f_fin, a['bloque_mb'], a['n_grupos'], precios_texto=True)
     if r is None:
-        return {'tag': a['tag'], 'vacio': True}
+        info = {'tag': a['tag'], 'vacio': True, 'version': LECTOR_VERSION}
+        Path(a['res_dir'], f"{a['tag']}__info.json").write_text(json.dumps(info))
+        return info
     r['ean_dia'].to_parquet(ruta(a['res_dir'], a['tag'], 'ean_dia'), index=False, compression='zstd')
     escribir_ean_suc(ruta(a['res_dir'], a['tag'], 'ean_suc'), *r['ean_suc'], a['n_grupos'])
     r['suc'].to_parquet(ruta(a['res_dir'], a['tag'], 'suc'), index=False, compression='zstd')
@@ -515,20 +621,23 @@ def procesar_y_guardar(a):
         pico = round(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1e6, 2)   # Linux: KB -> GB
     except ImportError:
         pass
-    info = {'tag': a['tag'], 'vacio': False, 'dias': len(d), 'productos': int(d['n_productos'].max()),
-            'sucursales': int(d['n_suc'].max()), 'pares': int(len(r['ean_suc'][2])),
+    info = {'tag': a['tag'], 'vacio': False, 'version': LECTOR_VERSION, 'nombre': a['nombre'], 'dias': len(d),
+            'productos': int(d['n_productos'].max()), 'sucursales': int(d['n_suc'].max()),
+            'pares': int(len(r['ean_suc'][2])), 'duplicados': int(d['duplicados'].iat[0]),
             'factor': float(d['factor_precio'].iat[0]), 'seg': round(time.time() - t), 'pico_gb': pico}
     d.to_parquet(ruta(a['res_dir'], a['tag'], 'dia'), index=False, compression='zstd')    # último = completo
+    Path(a['res_dir'], f"{a['tag']}__info.json").write_text(json.dumps(info))
     return info
 
 if __name__ == '__main__':
     a = json.loads(sys.argv[1])
     try:
-        info = procesar_y_guardar(a)
+        procesar_y_guardar(a)
     except BaseException:
-        info = {'tag': a['tag'], 'error': traceback.format_exc()[-3000:]}
-    Path(a['res_dir'], f"{a['tag']}__info.json").write_text(json.dumps(info))
-    sys.exit(1 if 'error' in info else 0)
+        Path(a['res_dir'], f"{a['tag']}__info.json").write_text(
+            json.dumps({'tag': a['tag'], 'error': traceback.format_exc()[-3000:]}))
+        sys.exit(1)
+    sys.exit(0)
 '''
 
 LECTOR_DIR = Path(tempfile.gettempdir()) / 'nb09'
@@ -545,25 +654,45 @@ _PAT_ARC = re.compile(r'^(\d{2})(\d{4})_pais_parte(\d+).*COMPLETO.*\.csv\.gz$', 
 F_INI = pd.Timestamp(FECHA_INICIO)
 F_FIN = pd.Timestamp(FECHA_FIN) if FECHA_FIN else pd.Timestamp('2100-01-01')
 
+def _dias_archivo(z, n):
+    # días (columnas precio_AAAAMMDD) del encabezado de un archivo
+    with zipfile.ZipFile(z) as zf, zf.open(n) as s0, gzip.open(s0, 'rt', encoding='utf-8', errors='replace') as g:
+        return sum(1 for c in g.readline().split(',') if c.strip().startswith('precio_'))
+
 def listar_archivos():
-    # {tag: (zip, nombre, 'AAAA-MM')}; si un mes está en dos zips, gana el último (orden alfabético)
-    out = {}
+    # {tag: (zip, nombre, 'AAAA-MM')}. Si hay más de un archivo para la misma parte de un mes (pasa: 2024B.zip trae
+    # 082024_pais_parte1COMPLETO.csv.gz, solo del 1 al 5, y ...COMPLETOb.csv.gz, del 1 al 15 y con los mismos precios),
+    # se usa el que cubre más días; si empatan, el más grande; si empatan, el del último zip. Nunca se suman.
+    cand = {}
     for z in sorted(SEPA_DIR.glob('*.zip')):
         if not _PAT_SEM.match(z.stem):
             continue
         with zipfile.ZipFile(z) as zf:
-            for n in zf.namelist():
-                m = _PAT_ARC.match(Path(n).name)
+            for i in zf.infolist():
+                m = _PAT_ARC.match(Path(i.filename).name)
                 if m:
                     mes = f'{m.group(2)}-{m.group(1)}'
-                    out[f'{mes}_p{int(m.group(3))}'] = (z, n, mes)
-    return dict(sorted(out.items()))
+                    cand.setdefault(f'{mes}_p{int(m.group(3))}', []).append((z, i.filename, mes, i.file_size))
+    out, repetidos = {}, []
+    for tag, c in cand.items():
+        if len(c) > 1:
+            dias = {(x[0], x[1]): _dias_archivo(x[0], x[1]) for x in c}
+            elegido = max(enumerate(c), key=lambda ix: (dias[(ix[1][0], ix[1][1])], ix[1][3], ix[0]))[1]
+            repetidos.append((tag, [f'{x[0].name}/{x[1]} ({dias[(x[0], x[1])]} días)' for x in c],
+                              f'{elegido[0].name}/{elegido[1]}'))
+        else:
+            elegido = c[0]
+        out[tag] = elegido[:3]
+    return dict(sorted(out.items())), repetidos
 
 def _ruta(tag, tipo):
     return L.ruta(RES_DIR, tag, tipo)
 
-ARCHIVOS = listar_archivos()
+ARCHIVOS, ARCHIVOS_REPETIDOS = listar_archivos()
 ARCHIVOS = {t: v for t, v in ARCHIVOS.items() if F_INI.strftime('%Y-%m') <= v[2] <= F_FIN.strftime('%Y-%m')}
+ARCHIVOS_REPETIDOS = [x for x in ARCHIVOS_REPETIDOS if x[0] in ARCHIVOS]
+for _tag, _todos, _elegido in ARCHIVOS_REPETIDOS:
+    print(f'  AVISO {_tag}: hay {len(_todos)} archivos para la misma parte ({"; ".join(_todos)}); se usa {_elegido}')
 if not ARCHIVOS:
     raise RuntimeError(f'No hay archivos de los ZIPs semestrales en {SEPA_DIR} para el período')
 MES_ULTIMO = max(v[2] for v in ARCHIVOS.values())
@@ -575,10 +704,50 @@ if _falta:
 print(f'Lector: {LECTOR_PY} | {"un proceso por archivo" if PROCESO_APARTE else "en este proceso"} | '
       f'bloques de {BLOQUE_MB} MB | {ram()}')
 
+def _info_de(tag):
+    p = RES_DIR / f'{tag}__info.json'
+    return json.loads(p.read_text()) if p.exists() else {}
+
+def _motivo_releer(tag, nombre):
+    # Resumen de una versión anterior del lector: se relee si está hecho con otro archivo (parte repetida), si tiene
+    # sucursal x producto repetidos o provincias sin código ISO. Si está bien, se marca como versión actual.
+    info = _info_de(tag)
+    if info.get('version', 1) >= L.LECTOR_VERSION:
+        return ''
+    _nom = info.get('nombre')
+    if (_nom and _nom != nombre) or (not _nom and tag in {x[0] for x in ARCHIVOS_REPETIDOS}):
+        return 'hay más de un archivo para esa parte: se relee con el elegido'
+    _s = pd.read_parquet(_ruta(tag, 'suc'), columns=['provincia_iso', 'dias_activa'])
+    prv = _s.loc[_s['dias_activa'] > 0, 'provincia_iso'].fillna('')       # las sucursales sin precios no cuentan
+    if not prv.isin(L.ISO_PROV_OK).all():
+        return 'provincias sin código ISO: ' + ', '.join(sorted(set(prv[~prv.isin(L.ISO_PROV_OK)]) - {''} | ({'(vacía)'} if (prv == '').any() else set())))
+    es = pd.read_parquet(_ruta(tag, 'ean_suc'), columns=['ean', 'suc'])
+    k = es['suc'].cat.codes.to_numpy(np.int64) * max(len(es['ean'].cat.categories), 1) + es['ean'].cat.codes.to_numpy(np.int64)
+    n_rep = len(k) - len(np.unique(k))
+    del es, k
+    if n_rep:
+        return f'{n_rep:,} sucursal x producto repetidos'
+    info.update({'tag': tag, 'version': L.LECTOR_VERSION, 'verificado': True, 'duplicados': 0, 'nombre': nombre})
+    (RES_DIR / f'{tag}__info.json').write_text(json.dumps(info))
+    return ''
+
 _t0 = time.time()
 _n_leidos = 0
+_releer = {}
+if RELEER_CACHE_VIEJO:
+    _viejos = [t for t, v in ARCHIVOS.items() if v[2] != MES_ULTIMO and _ruta(t, 'dia').exists()
+               and _info_de(t).get('version', 1) < L.LECTOR_VERSION]
+    if _viejos:
+        print(f'Verificando {len(_viejos)} resúmenes de una versión anterior del lector...', flush=True)
+    for _tag in _viejos:
+        _m = _motivo_releer(_tag, ARCHIVOS[_tag][1])
+        if _m:
+            _releer[_tag] = _m
+    gc.collect()
+    print(f'  {len(_viejos) - len(_releer)} siguen sirviendo; {len(_releer)} se releen'
+          + (':' if _releer else '') + ''.join(f'\n    {t}: {m}' for t, m in _releer.items()), flush=True)
 for _tag, (_z, _n, _mes) in ARCHIVOS.items():
-    if _mes != MES_ULTIMO and _ruta(_tag, 'dia').exists():
+    if _mes != MES_ULTIMO and _ruta(_tag, 'dia').exists() and _tag not in _releer:
         continue
     _ruta(_tag, 'dia').unlink(missing_ok=True)
     _inf = RES_DIR / f'{_tag}__info.json'
@@ -600,6 +769,8 @@ for _tag, (_z, _n, _mes) in ARCHIVOS.items():
     else:
         _info = L.procesar_y_guardar(_args)
         gc.collect(); pa.default_memory_pool().release_unused()
+    if _info.get('duplicados'):
+        print(f'  {_tag}: {_info["duplicados"]:,} filas sucursal x producto repetidas (contadas una vez)')
     if _info.get('vacio'):
         print(f'  {_tag}: sin días en el período')
         continue
@@ -635,12 +806,34 @@ _fac = DIA.groupby('factor_precio').size()
 print(f'Factor de precio (100 = el archivo venía en centavos): {_fac.to_dict()} días')
 
 # ── Sucursales (todas las que alguna vez reportaron) ──
-SUC = (pd.concat([pd.read_parquet(_ruta(t, 'suc')) for t in TAGS], ignore_index=True)
-       .groupby('suc', sort=True)
+# Provincia: el código ISO del archivo de precios. Si viene escrita con el nombre ('Santa Fe', 'Buenos Aires') se pasa
+# a código; si viene vacía en todos los archivos, la del maestro de sucursales; si tampoco, queda sin dato y NO cuenta
+# como provincia (antes aparecían 3 "provincias" de más: 'Sin provincia ()', '(Santa Fe)' y '(Buenos Aires)').
+_suc_filas = pd.concat([pd.read_parquet(_ruta(t, 'suc')).assign(mes=ARCHIVOS[t][2]) for t in TAGS], ignore_index=True)
+_suc_filas['iso'] = _suc_filas['provincia_iso'].map(L.iso_provincia)
+# la provincia como venía en el archivo (los resúmenes de la versión 1 del lector guardaban esa en provincia_iso)
+_suc_filas['prov_orig'] = (_suc_filas['provincia_original'] if 'provincia_original' in _suc_filas
+                           else pd.Series(np.nan, index=_suc_filas.index)).fillna(_suc_filas['provincia_iso']).fillna('')
+
+def _moda_valida(x):
+    x = x[x != '']
+    return x.mode().iat[0] if len(x) else ''
+
+SUC = (_suc_filas.groupby('suc', sort=True)
        .agg(id_comercio=('id_comercio', 'first'), id_bandera=('id_bandera', 'first'),
-            id_sucursal=('id_sucursal', 'first'), provincia_iso=('provincia_iso', lambda s: s.mode().iat[0]),
-            dias_activa=('dias_activa', 'sum')))
-SUC['provincia'] = SUC['provincia_iso'].map(ISO_PROV).fillna('Sin provincia (' + SUC['provincia_iso'].astype(str) + ')')
+            id_sucursal=('id_sucursal', 'first'), provincia_iso=('iso', _moda_valida),
+            provincia_archivo=('prov_orig', lambda x: x.mode().iat[0]),
+            dias_activa=('dias_activa', 'sum'), primer_mes=('mes', 'min'), ultimo_mes=('mes', 'max')))
+del _suc_filas
+SUC = SUC[SUC['dias_activa'] > 0]          # solo las sucursales que alguna vez informaron un precio
+_sin = SUC['provincia_iso'] == ''
+SUC.loc[_sin, 'provincia_iso'] = (maestro_suc['sucursales_provincia'].map(L.iso_provincia)
+                                  .reindex(SUC.index[_sin]).fillna('').to_numpy())
+SUC['provincia_fuente'] = np.select(
+    [~_sin & SUC['provincia_archivo'].isin(L.ISO_PROV_OK), ~_sin, SUC['provincia_iso'] != ''],
+    ['archivo', 'archivo (nombre pasado a código)', 'maestro de sucursales'], 'sin dato')
+SUC['provincia'] = SUC['provincia_iso'].map(ISO_PROV)      # NaN = sin dato
+print('Provincia de las sucursales:', SUC['provincia_fuente'].value_counts().to_dict())
 SUC = SUC.join(maestro_suc[['lat', 'lon', 'dist_obelisco_km', 'sucursales_localidad', 'sucursales_tipo',
                             'departamento_id', 'departamento', 'municipio']], how='left')
 SUC['amba'] = (SUC['provincia'] == 'CABA') | ((SUC['provincia'] == 'Buenos Aires') &
@@ -650,6 +843,7 @@ _ba = SUC['provincia'] == 'Buenos Aires'
 SUC.loc[_ba & SUC['amba'], 'region'] = 'GBA (AMBA)'
 SUC.loc[_ba & ~SUC['amba'] & SUC['dist_obelisco_km'].notna(), 'region'] = 'Pampeana'
 SUC['comercio'] = SUC['id_comercio'].map(nombre_comercio)
+SUC['bandera_id'] = SUC['id_comercio'].astype(str) + '|' + SUC['id_bandera'].astype(str)    # banderas se cuentan por id
 SUC['bandera'] = [nombre_bandera(c, b) for c, b in zip(SUC['id_comercio'], SUC['id_bandera'])]
 SUC['localidad'] = (SUC['provincia'] + ' | ' + SUC['sucursales_localidad'].astype(str).str.strip().str.upper()
                     ).where(SUC['sucursales_localidad'].notna())
@@ -658,7 +852,8 @@ NS = len(SUC)
 POS_SUC = pd.Series(np.arange(NS), index=SUC.index)
 print(f'Sucursales: {NS:,} ({SUC["lat"].notna().sum():,} en el maestro con coordenadas, '
       f'{SUC["depto"].notna().sum():,} con departamento) | comercios {SUC["id_comercio"].nunique()} | '
-      f'banderas {SUC["bandera"].nunique()} | provincias {SUC["provincia"].nunique()}')
+      f'banderas {SUC["bandera_id"].nunique()} | provincias {SUC["provincia"].nunique()} '
+      f'({int(SUC["provincia"].isna().sum())} sucursales sin provincia)')
 
 # ── Productos: unión de todos los archivos ──
 _cats = set()
@@ -737,12 +932,12 @@ def indicadora(codigos, ng):
     return sp.csr_matrix((np.ones(k.sum(), np.int32), (np.nonzero(k)[0], codigos[k])), shape=(NS, max(ng, 1)))
 
 DIMS = {}
-for _col in ('id_comercio', 'bandera', 'provincia', 'region', 'depto', 'localidad'):
+for _col in ('id_comercio', 'bandera_id', 'provincia', 'region', 'depto', 'localidad'):
     _cat = pd.Categorical(SUC[_col])
     DIMS[_col] = (indicadora(_cat.codes, len(_cat.categories)), np.asarray(_cat.categories, dtype=object))
 CAT_COM, CAT_PRV = DIMS['id_comercio'][1], DIMS['provincia'][1]
 T_COM, T_BAN, T_PRV, T_REG, T_DEP, T_LOC = (len(DIMS[c][1]) for c in
-                                            ('id_comercio', 'bandera', 'provincia', 'region', 'depto', 'localidad'))
+                                            ('id_comercio', 'bandera_id', 'provincia', 'region', 'depto', 'localidad'))
 AMBA_V = SUC['amba'].to_numpy(np.int32)
 _fuera_nb02 = np.nonzero(np.array([c not in CADENAS_FILTRAR_NB02 for c in CAT_COM]))[0]
 _nom_com = np.array([nombre_comercio(c) for c in CAT_COM], dtype=object)
@@ -785,19 +980,20 @@ for k in range(N_GRUPOS):
         n_dim[c][gi] = M.getnnz(axis=1)
         if c == 'id_comercio':
             prod_por_com += M.getnnz(axis=0)
-            cadenas_txt[gi] = [', '.join(sorted(_nom_com[j] for j in M.indices[M.indptr[i]:M.indptr[i + 1]]))
+            cadenas_txt[gi] = ['; '.join(sorted(_nom_com[j] for j in M.indices[M.indptr[i]:M.indptr[i + 1]]))
                                for i in range(len(gi))]
         if c == 'provincia':
             prod_por_prv += M.getnnz(axis=0)
             for i in range(len(gi)):
                 pr = _filas_txt(M, cats, i)
                 if len(pr) <= T_PRV / 2:
-                    prov_pres[gi[i]] = ', '.join(sorted(pr))
+                    prov_pres[gi[i]] = '; '.join(sorted(pr))
                 else:
-                    prov_falt[gi[i]] = ', '.join(sorted(_todas_prv - set(pr)))
+                    prov_falt[gi[i]] = '; '.join(sorted(_todas_prv - set(pr)))
         del M
     en_amba[gi] = (B @ AMBA_V) > 0
-    SD = (S @ DIMS['id_comercio'][0]).tocsr()            # sucursal-días por comercio
+    # sucursal-días por comercio, en float: al cuadrado (HHI) un int32 se desbordaba desde 46.341 sucursal-días
+    SD = (S @ DIMS['id_comercio'][0]).tocsr().astype(np.float64)
     _tot = np.asarray(SD.sum(axis=1)).ravel().astype(float)
     _max = np.asarray(SD.max(axis=1).todense()).ravel().astype(float)
     _cuad = np.asarray(SD.multiply(SD).sum(axis=1)).ravel().astype(float)
@@ -827,8 +1023,7 @@ R = pd.DataFrame({'id_producto': EANS})
 _mp = maestro_prod.reindex(EANS)
 for c in ['descripcion', 'marca', 'presentacion', 'rubro', 'categoria', 'subcategoria', 'proveedor']:
     R[c] = _mp[c].to_numpy()
-R['es_ean'] = np.where(_mp['ean_maestro'].notna(), _mp['ean_maestro'].to_numpy() == '1',
-                       [gtin_valido(x) for x in EANS])
+R['es_ean'] = [es_ean(x, f) for x, f in zip(EANS, _mp['ean_maestro'].to_numpy())]
 R['en_maestro'] = _mp['descripcion'].notna().to_numpy()
 R['blacklist'] = (_mp['blacklist'] == '1').to_numpy()
 del _mp
@@ -864,8 +1059,8 @@ R['comercios'] = n_dim['id_comercio']
 R['pct_comercios'] = n_dim['id_comercio'] / T_COM * 100
 R['pct_com_diaria_prom'] = np.where(dias_precio > 0, sh_com / np.maximum(dias_precio, 1) * 100, 0)
 R['banderas_total'] = T_BAN
-R['banderas'] = n_dim['bandera']
-R['pct_banderas'] = n_dim['bandera'] / T_BAN * 100
+R['banderas'] = n_dim['bandera_id']
+R['pct_banderas'] = n_dim['bandera_id'] / T_BAN * 100
 R['cadena_principal'] = cad_pri
 R['pct_cadena_principal'] = pct_pri
 R['hhi_cadenas'] = hhi
@@ -892,13 +1087,15 @@ R['cv_precio_ultimo_mes_%'] = precio_cv
 # Continuidad y puntaje
 R['continuo_periodo'] = R['dias_con_precio'] == ND
 R['continuo_util'] = R['dias_utiles'] == ND
-_comp = np.column_stack([R['pct_dias'], R['pct_suc_diaria_prom'], R['pct_comercios'], R['pct_provincias']]) / 100
+# Componente comercial = cuota diaria de comercios: los comercios distintos del período (50) incluyen cadenas que
+# reportaron pocos días (Cadena 17: 12) y locales que parecen repetidos con otro código (44/45/46, 49/50).
+_comp = np.column_stack([R['pct_dias'], R['pct_suc_diaria_prom'], R['pct_com_diaria_prom'], R['pct_provincias']]) / 100
 R['puntaje'] = np.prod(np.clip(_comp, 0, 1), axis=1) ** 0.25 * 100
 R = R.sort_values(['puntaje', 'sucursal_dias'], ascending=False).reset_index(drop=True)
 R.insert(0, 'ranking', np.arange(1, len(R) + 1))
 for c in [c for c in R.columns if c.startswith('pct_') or c in ('puntaje', 'suc_diarias_prom', 'hhi_cadenas',
                                                                     'cv_precio_ultimo_mes_%')]:
-    R[c] = R[c].astype(float).round(4 if c == 'hhi_cadenas' else 2)
+    R[c] = R[c].astype(float).round(4 if (c.startswith('pct_') or c == 'hhi_cadenas') else 2)
 gc.collect()
 
 print(f'\nFase 2b: {time.time() - _t0:.0f} s | {ram()}')
@@ -935,14 +1132,17 @@ _cont = R[R['continuo_periodo']].sort_values(['suc_diarias_min', 'puntaje'], asc
 _cat = (R[R['es_ean'] & R['categoria'].notna()].sort_values('puntaje', ascending=False)
         .groupby(['rubro', 'categoria'], dropna=False, sort=True).head(TOP_POR_CATEGORIA)
         .sort_values(['rubro', 'categoria', 'puntaje'], ascending=[True, True, False]))
-_sd = SUC.groupby('id_comercio').agg(comercio=('comercio', 'first'), banderas=('bandera', 'nunique'),
-                                     sucursales=('bandera', 'size'), provincias=('provincia', 'nunique'),
-                                     dias_activa_max=('dias_activa', 'max'))
+_sd = SUC.groupby('id_comercio').agg(comercio=('comercio', 'first'), banderas=('bandera_id', 'nunique'),
+                                     sucursales=('bandera_id', 'size'), provincias=('provincia', 'nunique'),
+                                     dias_activa_max=('dias_activa', 'max'), primer_mes=('primer_mes', 'min'),
+                                     ultimo_mes=('ultimo_mes', 'max'))
 _sd['productos_distintos'] = pd.Series(prod_por_com, index=CAT_COM).reindex(_sd.index)
+_sd['fuente_nombre'] = [FUENTE_NOMBRE.get(str(c), '') for c in _sd.index]
 cadenas = _sd.sort_values('sucursales', ascending=False).reset_index()
-_pv = SUC.groupby('provincia').agg(region=('region', lambda s: s.mode().iat[0] if s.notna().any() else ''),
-                                   sucursales=('bandera', 'size'), comercios=('id_comercio', 'nunique'),
-                                   departamentos=('depto', 'nunique'))
+_pv = (SUC.assign(provincia=SUC['provincia'].fillna('Sin dato (no cuenta como provincia)'))
+       .groupby('provincia').agg(region=('region', lambda s: s.mode().iat[0] if s.notna().any() else ''),
+                                 sucursales=('bandera_id', 'size'), comercios=('id_comercio', 'nunique'),
+                                 departamentos=('depto', 'nunique')))
 _pv['productos_distintos'] = pd.Series(prod_por_prv, index=CAT_PRV).reindex(_pv.index)
 provincias = _pv.sort_values('sucursales', ascending=False).reset_index()
 
@@ -966,6 +1166,15 @@ resumen = pd.DataFrame([
     ('Productos con >= 90% de los días', int((R['pct_dias'] >= 90).sum())),
     ('Productos con puntaje >= 50 / >= 75', f'{int((R["puntaje"] >= 50).sum())} / {int((R["puntaje"] >= 75).sum())}'),
     ('Factor de precio por día (100 = centavos)', str(DIA.groupby('factor_precio').size().to_dict())),
+    ('Filas sucursal x producto repetidas en el SEPA (contadas una vez, con la unión de sus días)',
+     int(sum((_info_de(t).get('duplicados') or 0) for t in TAGS))),
+    ('Archivos repetidos para la misma parte de un mes (se usa el que cubre más días)',
+     '; '.join(f'{t}: {e}' for t, _, e in ARCHIVOS_REPETIDOS) or 'ninguno'),
+    ('Provincia de las sucursales (archivo / nombre pasado a código / maestro / sin dato)',
+     ' / '.join(str(int((SUC['provincia_fuente'] == f).sum())) for f in
+                ('archivo', 'archivo (nombre pasado a código)', 'maestro de sucursales', 'sin dato'))),
+    ('Comercios que reportaron menos de 30 días', int((SUC.groupby('id_comercio')['dias_activa'].max() < 30).sum())),
+    ('Puntaje', 'media geométrica de pct_dias, pct_suc_diaria_prom, pct_com_diaria_prom y pct_provincias'),
     ('Días calendario sin dato', ', '.join(d.strftime('%d/%m/%Y') for d in DIAS_CAL_SIN_DATO[:80])),
 ], columns=['concepto', 'valor'])
 
@@ -973,8 +1182,10 @@ diccionario = pd.DataFrame([
     ('ranking', 'Posición por puntaje (desempate: sucursal-días)'),
     ('id_producto', 'Código del SEPA sin ceros a la izquierda'),
     ('descripcion ... proveedor', 'Del Maestro de Productos Interno (data/); vacío si el código no está'),
-    ('es_ean', 'EAN real (maestro: producto_ean = 1; si no está, dígito verificador GTIN válido). False = código interno '
-               'de un comercio: el mismo número puede ser productos distintos en cadenas distintas'),
+    ('es_ean', 'EAN/GTIN real: solo dígitos, 8 a 14 sin ceros a la izquierda, dígito verificador válido, fuera de los '
+               'rangos de circulación restringida (balanza o uso interno: EAN-13/EAN-8 que empiezan con 2, UPC-A de '
+               'sistema 2 o 4) y que el maestro no lo marque como no EAN. False = código interno: el mismo número puede '
+               'ser productos distintos en cadenas distintas'),
     ('dias_periodo / dias_con_precio / pct_dias', 'Días con dato del SEPA en el período; días en que al menos una sucursal '
                                                   'informó precio; porcentaje'),
     ('pct_dias_desde_aparicion', 'Días con precio sobre los días desde su primer día'),
@@ -986,19 +1197,25 @@ diccionario = pd.DataFrame([
     ('pct_suc_diaria_prom', 'Promedio, en los días con precio, de sucursales con precio / sucursales activas ese día (componente sucursal del puntaje)'),
     ('pct_suc_diaria_periodo', 'Lo mismo promediado sobre todos los días del período (0 en los días sin precio)'),
     ('suc_diarias_prom / suc_diarias_min / sucursal_dias', 'Sucursales por día (promedio y mínimo en días con precio) y total de sucursal-días'),
-    ('comercios / pct_comercios', 'Comercios (empresa, id_comercio) donde apareció alguna vez, sobre el total (componente comercial)'),
-    ('pct_com_diaria_prom', 'Promedio diario de comercios con precio / comercios activos'),
-    ('banderas', 'Banderas (Vea, Disco, Jumbo... por separado)'),
+    ('comercios / pct_comercios', 'Comercios (empresa, id_comercio) donde apareció alguna vez, sobre el total del período '
+                                  '(incluye comercios que reportaron pocos días o que parecen el mismo local con otro código)'),
+    ('pct_com_diaria_prom', 'Promedio, en los días con precio, de comercios con precio / comercios activos ese día '
+                            '(componente comercial del puntaje)'),
+    ('banderas', 'Banderas (Vea, Disco, Jumbo... por separado), contadas por id de comercio y bandera'),
+    ('cadenas', 'Comercios donde apareció, separados por punto y coma'),
     ('cadena_principal / pct_cadena_principal / hhi_cadenas', 'Comercio con más sucursal-días, su cuota y el índice de concentración (1 = una sola cadena)'),
     ('en_universo_nb02', 'Tiene precios en comercios que el nb02 no filtra (19, 2013, 3001, 4)'),
-    ('provincias / pct_provincias', 'Provincias (del archivo de precios) donde apareció, sobre el total (componente regional)'),
+    ('provincias / pct_provincias', 'Provincias donde apareció, sobre el total (componente regional). Código ISO del '
+                                    'archivo de precios; las escritas con el nombre se pasan a código, las vacías toman '
+                                    'la del maestro de sucursales y, si no está, no cuentan'),
     ('regiones', 'Regiones INDEC: GBA (AMBA por coordenadas: CABA + Buenos Aires a <= AMBA_RADIO_KM km del Obelisco), Pampeana, '
                  'Noroeste, Noreste, Cuyo, Patagonia. Las sucursales de Buenos Aires sin coordenadas no tienen región'),
     ('departamentos / localidades', 'De las sucursales del maestro con coordenadas (Georef de datos.gob.ar) y su localidad'),
-    ('provincias_presentes / provincias_faltantes', 'Se lista la más corta de las dos'),
+    ('provincias_presentes / provincias_faltantes', 'Se lista la más corta de las dos, separadas por punto y coma'),
     ('precio_mediano_ultimo_mes / cv_precio_ultimo_mes_%', 'Mediana entre sucursales del precio promedio de cada sucursal en el último mes (pesos) y coeficiente de variación'),
     ('continuo_periodo / continuo_util', 'Precio todos los días del período / todos los días útiles'),
-    ('puntaje', 'Media geométrica de pct_dias, pct_suc_diaria_prom, pct_comercios y pct_provincias (0-100)'),
+    ('puntaje', 'Media geométrica de pct_dias, pct_suc_diaria_prom, pct_com_diaria_prom y pct_provincias (0-100). Los '
+                '% se guardan con 4 decimales: el puntaje se puede recalcular desde las columnas'),
 ], columns=['columna', 'definicion'])
 
 _cols_cont = ['ranking', 'id_producto', 'descripcion', 'marca', 'rubro', 'categoria', 'puntaje', 'dias_con_precio',

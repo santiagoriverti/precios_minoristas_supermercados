@@ -1,6 +1,10 @@
 # Bugs Pendientes y Mejoras
 
-Última actualización: 2026-10-16 (cierre) — **nb02**: BUG-44 resuelto (provincia de la CELDA 7 por polígonos de
+Última actualización: 2026-10-21 — **nb09**: BUG-45 resuelto (6 errores de la primera corrida completa: HHI
+desbordado, 27 "provincias", sucursal × producto repetidos, parte de mes repetida, `es_ean`, nombres) y puntaje con la
+cuota diaria de comercios; falta la corrida en Colab (relee casi todo una vez). Abierto: el nb02 y el nb08 suman los dos
+archivos de la primera quincena de agosto 2024.
+Antes, 2026-10-16 (cierre) — **nb02**: BUG-44 resuelto (provincia de la CELDA 7 por polígonos de
 ar.json con tolerancia de 100 km: Neuquén capital, Paraná y San Nicolás vuelven a su provincia; caché de econometría con
 la geografía en la clave), BUG-43 resuelto (región de la 19b/19c = AMBA por coordenadas) y Excel en verde. Falta
 correrlos en Colab (la próxima corrida relee 12 meses en la 19c y los 33 de la econometría, una vez). Antes ese día:
@@ -22,6 +26,19 @@ Los defectos abiertos que resuelve quedan marcados abajo (se verifican con la co
 ---
 
 ## 🟡 Defectos abiertos
+
+- **nb02 / nb08: suman los dos archivos de la primera quincena de agosto 2024** (2026-10-21) — `2024B.zip` trae
+  `082024_pais_parte1COMPLETO.csv.gz` (días 1-5, 3.048 sucursales) y `082024_pais_parte1COMPLETOb.csv.gz` (días 1-15,
+  3.376 sucursales, superconjunto con los mismos precios). `archivos_por_mes` (nb02 CELDA 5 y 9, nb08 CELDA 4) junta
+  los dos: el nb08 cuenta dos veces las observaciones del 1 al 5 (la mediana diaria no cambia) y el nb02 pondera doble
+  esos días en la mediana de agosto 2024. Arreglo: el del nb09 (`listar_archivos`: el que cubre más días). Tarjeta de
+  sesión propuesta el 2026-10-21. Revisar también nb05/nb06/nb07/03.
+- **Nombres de comercio del nb02 (CELDA 4)** (2026-10-21) — según el comercio.csv del SEPA, el 47 es "Unicoop
+  (Cooperativa de Patagones y Viedma)", no Pasamonte; el 5 es "California Supermercados", no Hipermercado Misiones; el 23
+  es Axion Energy; el 4 Estación Lima; el 3 Deheza; el 6 Comodín; el 8 Mariano Max. El nb09 ya usa los oficiales.
+- **Comercios que parecen el mismo local con otro código** (2026-10-21) — 44, 45 y 46 (una sucursal cada uno, ~445
+  días) comparten 12.735 productos y cada uno tiene 882 propios; 49 y 50 comparten 16.968. Inflan los comercios
+  distintos (por eso el puntaje del nb09 usa la cuota diaria). Sin nombres en el SEPA de 2026: no se fusionan.
 
 - **nb05: misma reclasificación por rectángulos que tenía el nb02 (BUG-44)** — `gen_nb05.py` (bloque "Bboxes y función
   de geocodificación") pasa Neuquén capital a La Pampa y Paraná a Santa Fe en los cuadros provinciales de productos.
@@ -217,6 +234,30 @@ de la Tecnológica** hasta que haya al menos dos cadenas con cobertura de durabl
 ---
 
 ## 🟢 Cambios y fixes 2026-10
+
+### 🔴 BUG-45 — nb09: errores de la primera corrida completa (2026-10-21) ✅ Resuelto (falta Colab)
+
+Revisión de la corrida del usuario (237.894 productos, 2022-01 → 15/10/2026) contra reglas de consistencia y contra los
+cachés diarios del nb08. Seis errores, todos corregidos en la versión 2 (lector `LECTOR_VERSION = 2`):
+1. **HHI desbordado**: `S @ G` en int32 elevado al cuadrado; mal desde 46.341 sucursal-días (13.914 productos, 18.609
+   negativos). Fix: float64.
+2. **27 "provincias"**: 'Sin provincia ()' (36 sucursales sin código), '(Santa Fe)' y '(Buenos Aires)' (escritas con el
+   nombre). Entraban en el denominador y en los 100 primeros del ranking. Fix: `iso_provincia` (lector y fase 2a); las
+   vacías toman la del maestro o no cuentan.
+3. **Sucursal × producto repetidos en el SEPA**: 'Cadena 2011', sucursal 322, ~880 productos por quincena en ene-feb
+   2024 (y 1 fila del comercio 35 en casi todos los archivos). La lectura por bloques los sumaba dos veces (28 productos
+   con más sucursales promedio que distintas). Fix: unión de días, una vez.
+4. **Dos archivos para la misma parte** (ago-2024): el nb09 se quedaba con el último del zip (por suerte el completo).
+   Fix: el que cubre más días, con aviso.
+5. **`es_ean`**: 221 códigos con guiones (internos) y 9.616 de balanza (EAN-13 que empiezan con 2) marcados como EAN.
+   Fix: solo dígitos, dígito verificador sobre 14, fuera de los rangos de circulación restringida, y maestro ≠ 0.
+6. **Formato y nombres**: comercios con nombres equivocados (47, 23, 4, 3, 5, 6, 8), coma dentro de 'Cencosud (Vea,
+   Disco, Jumbo)' en una lista separada por comas, rubros 'ABERTURAS'/'Aberturas', % con 2 decimales (el puntaje no se
+   podía recalcular), sucursales sin ningún precio en el total. Fix: nombres del comercio.csv del SEPA, listas con '; ',
+   rubros unificados, 4 decimales, solo sucursales con algún precio.
+Cambio de método (decisión del usuario): componente comercial del puntaje = `pct_com_diaria_prom`.
+Test: `test_trazabilidad_productos.py` (con esos defectos en el SEPA sintético). Real: ene-feb y ago-2024 y la
+actualización del caché de may-jul 2026 (ver CONTEXTO 2026-10-21 tarde).
 
 ### 🔴 BUG-44 — nb02 CELDA 7: la reclasificación de provincia por rectángulos se equivocaba en los bordes (2026-10-16) ✅ Resuelto (falta Colab)
 

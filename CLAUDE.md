@@ -20,8 +20,10 @@ la próxima corrida relee 12 meses en la 19c y los 33 de la econometría, una ve
 **Nuevo (2026-10-20): nb08** (`notebooks/08_canasta_diaria.ipynb`, fuente `gen_nb08.py`): valor diario de una canasta
 (`CANASTA_COL`, default `cantidad_01`) desde 2022 con encadenado de productos apareados; validado local, falta Colab.
 
-**Nuevo (2026-10-20): nb09** (`notebooks/09_trazabilidad_productos.ipynb`, fuente `gen_nb09.py`): ranking de
-representatividad de todos los productos del SEPA desde 2022; probado local (may-jul 2026), falta Colab.
+**nb09** (`notebooks/09_trazabilidad_productos.ipynb`, fuente `gen_nb09.py`): ranking de representatividad de todos
+los productos del SEPA desde 2022. Corrió completo en Colab (2026-10-21, 237.894 productos); la revisión encontró 6
+errores, corregidos en la **versión 2 del lector** (mismo día, probada local con datos reales): **falta la corrida en
+Colab, que relee casi todo el caché una vez (~1,5-2 h)**.
 
 ## Al empezar una sesión
 
@@ -125,8 +127,17 @@ representatividad de todos los productos del SEPA desde 2022; probado local (may
   terminar), lee **por bloques** (`pacsv.open_csv`, `BLOQUE_MB`) con IDs como diccionario (se limpia solo el
   diccionario), y la fase 2b arma producto × sucursal **de a un grupo de productos** (`N_GRUPOS`, row groups del
   parquet). Medido: lector 1,7 GB, notebook < 1 GB (archivos de 16 M filas). Nada de `fork` (pyarrow no es fork-safe).
-  El SEPA no repite sucursal × producto en un archivo (verificado): sumar bloques es exacto. Un cambio de formato de los
-  resúmenes exige subir la versión (`RES_DIR = CACHE_DIR / 'v1'`), salvo `ean_suc`, que `leer_grupo` reorganiza solo.
+  Un cambio de formato de los resúmenes exige subir la versión (`RES_DIR = CACHE_DIR / 'v1'`), salvo `ean_suc`, que
+  `leer_grupo` reorganiza solo; un cambio de lo que calcula el lector sube `LECTOR_VERSION` y la CELDA 4 relee solo
+  los resúmenes viejos que lo necesitan (`_motivo_releer`).
+- **nb09, el SEPA trae defectos (versión 2 del lector, 2026-10-21)**: sucursal × producto **repetidos** en un archivo
+  ('Cadena 2011' ene-feb 2024, ~880 por quincena; comercio 35, 1 fila en casi todos): unión de días, una sola vez.
+  **Provincias** escritas con el nombre ('Buenos Aires' en una sucursal de DIA en todos los archivos 2024-2026, 'Santa
+  Fe' en 3 del comercio 1001) o vacías (36 sucursales en 2022-2023): `iso_provincia` del lector; las vacías toman la
+  del maestro o no cuentan. **Dos archivos para la misma parte** (`2024B.zip`, agosto, `COMPLETO` días 1-5 y
+  `COMPLETOb` días 1-15): `listar_archivos` usa el que cubre más días; el nb02 y el nb08 los SUMAN (tarea aparte).
+  Cualquier conteo con enteros al cuadrado, en float (el HHI se desbordaba). Comercios: nombres del comercio.csv del
+  SEPA (el 47 es Unicoop, no Pasamonte; el 23 Axion; el 4 Estación Lima); banderas por id.
 - **nb02, una sola referencia del país** (BUG-42): todo "vs país" es el promedio ponderado del Cuadro 1
   (`prom_nac_dict`), CABA es su fila del Cuadro 1, cadenas y barrios van por mediana en el análisis [mediana], y el AMBA
   es la columna `amba` de la CELDA 7 (CABA + Buenos Aires a ≤ 90 km del Obelisco), nunca `PROVINCIA in (CABA, Buenos

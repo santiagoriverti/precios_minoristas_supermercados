@@ -776,10 +776,27 @@ Ninguna etapa carga el período entero: la memoria no crece con la cantidad de m
 sin RAM en la lectura, la celda lo dice: se baja `BLOQUE_MB` (16, 8) y se vuelve a ejecutar; lo ya leído queda en el
 caché. Cambiar `N_GRUPOS` no relee el SEPA (los resúmenes se reorganizan solos).
 
+### Versión 2 (2026-10-21, después de revisar la primera corrida completa)
+
+- **Sucursal × producto repetidos** dentro de un archivo (el SEPA los trae: ~880 por quincena de la "Cadena 2011" en
+  ene-feb 2024 y una fila del comercio 35 en casi todos los archivos): se cuentan una vez, con la unión de sus días.
+- **Provincias**: las escritas con el nombre ('Buenos Aires' en una sucursal de DIA en todos los archivos, 'Santa Fe' en
+  3 del comercio 1001) se pasan a código ISO; las vacías toman la del maestro de sucursales o quedan sin dato y no
+  cuentan. Antes había 27 "provincias".
+- **Dos archivos para la misma parte de un mes** (`2024B.zip`: `082024_pais_parte1COMPLETO` con los días 1-5 y
+  `...COMPLETOb` con los días 1-15): se usa el que cubre más días y se avisa; nunca se suman.
+- **Caché de la versión 1**: la CELDA 4 lo revisa y relee lo que hace falta (`RELEER_CACHE_VIEJO`). En el SEPA real
+  es casi todo (por la sucursal de DIA), ~1,5-2 h en Colab una vez; con `False` usa el caché así (~10 min) y todo queda
+  corregido salvo `pct_prov_diaria_prom` y las filas repetidas de esos archivos.
+- En la agregación: HHI en float (se desbordaba un int32 desde 46.341 sucursal-días), `es_ean` sin códigos internos
+  con guiones ni de balanza, nombres oficiales de los comercios (comercio.csv del SEPA), banderas contadas por id,
+  listas separadas con `; `, rubros sin variantes de mayúsculas, % con 4 decimales y **puntaje con la cuota diaria de
+  comercios**.
+
 ### Config (CELDA 1)
 
 `FECHA_INICIO`, `FECHA_FIN`, `MIN_SUC_DIA_UTIL` (100) y `MIN_PCT_DIA_UTIL` (5%) para los días "útiles", `BLOQUE_MB`
-(32), `N_GRUPOS` (16), `PROCESO_APARTE` (True), `USAR_GEOREF`
+(32), `N_GRUPOS` (16), `PROCESO_APARTE` (True), `RELEER_CACHE_VIEJO` (True), `USAR_GEOREF`
 (departamento y municipio de cada sucursal del maestro con coordenadas, API Georef de datos.gob.ar; una sola consulta
 por sucursal, en caché), `AMBA_RADIO_KM` (90), `CADENAS_FILTRAR_NB02`, `TOP_POR_CATEGORIA`.
 
@@ -789,22 +806,27 @@ por sucursal, en caché), `AMBA_RADIO_KM` (90), `CADENAS_FILTRAR_NB02`, `TOP_POR
   aparece, días desde el último, meses, racha y hueco más largos, días útiles, % de días del último año y de 90 días.
 - **Sucursal**: sucursales distintas sobre todas las que alguna vez reportaron y **cuota diaria** (sucursales con precio
   / sucursales activas ese día; no castiga por sucursales que todavía no existían), promedio y mínimo diario.
-- **Comercial**: comercios (empresa) y banderas, cuota diaria de comercios, cadena principal, su cuota y HHI, lista de
-  cadenas, si está en el universo del nb02.
-- **Regional**: provincias (del archivo de precios), regiones INDEC con GBA = AMBA por coordenadas, presencia en AMBA,
-  departamentos y localidades (sucursales del maestro), provincias presentes o faltantes.
+- **Comercial**: comercios (empresa) y banderas, **cuota diaria de comercios** (comercios con precio / comercios
+  activos ese día), cadena principal, su cuota y HHI, lista de cadenas, si está en el universo del nb02. Los comercios
+  distintos del período (50) incluyen cadenas que reportaron pocos días y locales que parecen repetidos con otro código
+  (44/45/46, 49/50): por eso el puntaje usa la cuota diaria.
+- **Regional**: provincias (código ISO del archivo de precios, con los nombres pasados a código; las vacías toman la del
+  maestro o no cuentan), regiones INDEC con GBA = AMBA por coordenadas, presencia en AMBA, departamentos y localidades
+  (sucursales del maestro), provincias presentes o faltantes.
 - **Precio**: mediana entre sucursales del último mes y coeficiente de variación.
-- **Puntaje 0-100** = media geométrica de `pct_dias`, `pct_suc_diaria_prom`, `pct_comercios` y `pct_provincias`.
-  Identificación desde `data/Maestro de Productos Interno.xlsx`; `es_ean` = EAN real (maestro o dígito verificador
-  GTIN) o código interno de un comercio.
+- **Puntaje 0-100** = media geométrica de `pct_dias`, `pct_suc_diaria_prom`, `pct_com_diaria_prom` y `pct_provincias`
+  (los % van con 4 decimales: se puede recalcular). Identificación desde `data/Maestro de Productos Interno.xlsx`;
+  `es_ean` = EAN/GTIN real (solo dígitos, dígito verificador válido, fuera de los rangos de balanza o uso interno, y no
+  marcado como no-EAN en el maestro) o código interno de un comercio.
 
 ### Qué genera (en `output_trazabilidad/`)
 
 `trazabilidad_productos_<desde>_<hasta>.xlsx` (Resumen, Ranking, Continuos_periodo, Por_categoria, Cadenas,
 Provincias, Diccionario), el ranking en `.parquet` y `.csv.gz`, y `panel_mensual_productos_<...>.parquet`
 (producto × mes: días con precio y sucursales diarias promedio). Test: `notebooks/test_trazabilidad_productos.py`
-(SEPA sintético contra fuerza bruta; también bloques diminutos, otra cantidad de grupos, caché reorganizado y lector en
-el mismo proceso: todo da igual).
+(SEPA sintético contra fuerza bruta, con filas repetidas, provincias vacías o con nombre, una parte de mes repetida y
+códigos no EAN; también bloques diminutos, otra cantidad de grupos, caché reorganizado, caché de la versión 1 y lector
+en el mismo proceso: todo da igual).
 
 ---
 
