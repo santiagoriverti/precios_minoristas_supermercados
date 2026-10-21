@@ -62,11 +62,11 @@ with zipfile.ZipFile(sepa / '2026A.zip', 'w') as zf:
 cells = [''.join(c['source']) for c in json.load(open(NB, encoding='utf-8'))['cells'] if c['cell_type'] == 'code']
 os.chdir(REPO)
 
-def correr():
+def correr(out='out', **extra):
     g = {}
     exec(cells[0], g)
-    g.update(SEPA_DIR=str(sepa), OUTPUT_DIR=str(tmp / 'out'), FECHA_INICIO='2026-01-01', USAR_GEOREF=False,
-             MIN_SUC_DIA_UTIL=3, MIN_PCT_DIA_UTIL=50.0)
+    g.update(SEPA_DIR=str(sepa), OUTPUT_DIR=str(tmp / out), FECHA_INICIO='2026-01-01', USAR_GEOREF=False,
+             MIN_SUC_DIA_UTIL=3, MIN_PCT_DIA_UTIL=50.0, **extra)
     for c in cells[1:]:
         exec(c, g)
     return g
@@ -140,10 +140,24 @@ chk('hojas Excel', x.sheet_names == ['Resumen', 'Ranking', 'Continuos_periodo', 
                                     'Provincias', 'Diccionario'], True)
 chk('filas Ranking', len(pd.read_excel(x, 'Ranking')), len(R))
 
+cols = [c for c in R.columns if c != 'ranking']
+
+def igual(nombre, R2):
+    a, b = R[cols].sort_index(), R2[cols].sort_index()
+    ok = a.index.equals(b.index) and all(
+        (a[c].fillna(-1) == b[c].fillna(-1)).all() if a[c].dtype == object or a[c].dtype == bool
+        else np.allclose(a[c].astype(float), b[c].astype(float), equal_nan=True, rtol=1e-6) if pd.api.types.is_numeric_dtype(a[c])
+        else a[c].equals(b[c]) for c in cols)
+    chk(nombre, ok, True)
+
 # Segunda corrida: enero desde el caché, febrero (último mes) releído; mismo resultado
-R2 = correr()['R'].set_index('id_producto')
-cols = ['dias_con_precio', 'sucursales_distintas', 'pct_suc_diaria_prom', 'puntaje', 'racha_max_dias']
-chk('segunda corrida igual', bool(R2[cols].sort_index().equals(R[cols].sort_index())), True)
+igual('segunda corrida igual', correr()['R'].set_index('id_producto'))
+# Lectura en bloques diminutos (muchos bloques por archivo) y 3 grupos de productos: mismo resultado
+igual('bloques chicos y 3 grupos', correr('out_bloques', BLOQUE_MB=0.002, N_GRUPOS=3)['R'].set_index('id_producto'))
+# Cambiar N_GRUPOS con el caché hecho: los resúmenes producto x sucursal se reorganizan solos, mismo resultado
+igual('caché reorganizado a 5 grupos', correr('out_bloques', BLOQUE_MB=0.002, N_GRUPOS=5)['R'].set_index('id_producto'))
+# Lector en este proceso (sin subproceso): mismo resultado
+igual('sin proceso aparte', correr('out_mismo', PROCESO_APARTE=False)['R'].set_index('id_producto'))
 
 shutil.rmtree(tmp, ignore_errors=True)
 if errores:

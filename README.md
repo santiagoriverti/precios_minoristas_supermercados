@@ -758,20 +758,28 @@ Para cada producto (`id_producto`) que alguna vez reportó precio en el SEPA des
 representativo es en el tiempo, por sucursal, por cadena y por región. Sirve para elegir productos de canastas (por
 ejemplo, una canasta fija para series diarias) y para saber qué cubre cada producto.
 
-### Cómo funciona
+### Cómo funciona (pensado para el Colab gratuito)
 
-1. **Fase 1 — lectura (CELDA 4)**: cada archivo `MMAAAA_pais_parteN` de los ZIPs semestrales se lee entero con pyarrow
-   (IDs como diccionario, precios float32: pico ~4-5 GB con los archivos de 2026, de ~16 M de filas) y se resume en
-   4 tablas que quedan en `output_trazabilidad/_cache_nb09/v1/` (~25 MB por archivo, ~3 GB en total): producto × día
-   (sucursales, comercios y provincias con precio), producto × sucursal (días con precio y precio promedio), sucursales
-   y días (denominadores). Un archivo resumido no se relee; el último mes se relee siempre. ~40 s por archivo en una PC.
-2. **Fase 2 — agregación (CELDA 5)**: junta los resúmenes en orden de fechas (acumuladores por producto y una matriz
-   dispersa producto × sucursal). No relee el SEPA.
-3. **Métricas y ranking (CELDA 6)** y **exportación (CELDA 7)**.
+1. **Fase 1 — lectura (CELDA 4)**: cada archivo `MMAAAA_pais_parteN` lo lee un **script aparte** (`nb09_lector.py`, que
+   la celda escribe en una carpeta temporal y ejecuta con `python`, un proceso por archivo) **en bloques** de
+   `BLOQUE_MB`. Al terminar cada archivo, el sistema libera toda la memoria del lector. Lo resume en 4 tablas en
+   `output_trazabilidad/_cache_nb09/v1/` (~20-25 MB por archivo, ~3 GB en total): producto × día (sucursales,
+   comercios y provincias con precio), producto × sucursal (días con precio y precio promedio; un row group por grupo
+   de productos), sucursales y días (denominadores). Un archivo resumido no se relee; el último mes se relee siempre.
+   Medido con los archivos de 2026 (~16 M de filas): **lector 1,7 GB de pico, notebook < 1 GB**, ~60 s por archivo.
+2. **Fase 2a (CELDA 5)**: recorre los resúmenes día por día con unos pocos vectores por producto.
+3. **Fase 2b (CELDA 6)**: sucursales, cadenas, regiones, departamentos y precio, de a un grupo de productos por vez
+   (`N_GRUPOS`, 1/16 de los productos): la matriz producto × sucursal de todo el período nunca está entera en memoria.
+4. **Exportación (CELDA 7)**: el Excel se escribe fila a fila (xlsxwriter `constant_memory`).
+
+Ninguna etapa carga el período entero: la memoria no crece con la cantidad de meses. Si aun así una sesión se queda
+sin RAM en la lectura, la celda lo dice: se baja `BLOQUE_MB` (16, 8) y se vuelve a ejecutar; lo ya leído queda en el
+caché. Cambiar `N_GRUPOS` no relee el SEPA (los resúmenes se reorganizan solos).
 
 ### Config (CELDA 1)
 
-`FECHA_INICIO`, `FECHA_FIN`, `MIN_SUC_DIA_UTIL` (100) y `MIN_PCT_DIA_UTIL` (5%) para los días "útiles", `USAR_GEOREF`
+`FECHA_INICIO`, `FECHA_FIN`, `MIN_SUC_DIA_UTIL` (100) y `MIN_PCT_DIA_UTIL` (5%) para los días "útiles", `BLOQUE_MB`
+(32), `N_GRUPOS` (16), `PROCESO_APARTE` (True), `USAR_GEOREF`
 (departamento y municipio de cada sucursal del maestro con coordenadas, API Georef de datos.gob.ar; una sola consulta
 por sucursal, en caché), `AMBA_RADIO_KM` (90), `CADENAS_FILTRAR_NB02`, `TOP_POR_CATEGORIA`.
 
@@ -795,7 +803,8 @@ por sucursal, en caché), `AMBA_RADIO_KM` (90), `CADENAS_FILTRAR_NB02`, `TOP_POR
 `trazabilidad_productos_<desde>_<hasta>.xlsx` (Resumen, Ranking, Continuos_periodo, Por_categoria, Cadenas,
 Provincias, Diccionario), el ranking en `.parquet` y `.csv.gz`, y `panel_mensual_productos_<...>.parquet`
 (producto × mes: días con precio y sucursales diarias promedio). Test: `notebooks/test_trazabilidad_productos.py`
-(SEPA sintético contra fuerza bruta).
+(SEPA sintético contra fuerza bruta; también bloques diminutos, otra cantidad de grupos, caché reorganizado y lector en
+el mismo proceso: todo da igual).
 
 ---
 

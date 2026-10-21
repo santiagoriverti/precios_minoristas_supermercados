@@ -31,17 +31,20 @@ armar, para cada producto (`id_producto`) que alguna vez reportó precio, qué t
 - **Puntaje 0-100:** media geométrica de temporal, sucursal (cuota diaria), comercial y regional.
 
 **Dos fases:**
-1. **Lectura** (la pesada): cada archivo `MMAAAA_pais_parteN` se lee entero con pyarrow y se resume en 4 tablas chicas
-   que se guardan en `output_trazabilidad/_cache_nb09/`. Un archivo ya resumido no se vuelve a leer (el último mes,
-   que puede estar en curso, se relee siempre). Si Colab se corta, se vuelve a ejecutar y sigue donde quedó.
-2. **Agregación:** junta todos los resúmenes y arma el ranking. No relee el SEPA.
+1. **Lectura** (la pesada): cada archivo `MMAAAA_pais_parteN` se lee **por bloques** (`BLOQUE_MB`) con un **script
+   aparte** (`nb09_lector.py`, un proceso por archivo) y se resume en 4 tablas chicas que se guardan en `output_trazabilidad/_cache_nb09/`. Un archivo ya resumido
+   no se vuelve a leer (el último mes, que puede estar en curso, se relee siempre). Si Colab se corta, se vuelve a
+   ejecutar y sigue donde quedó.
+2. **Agregación:** junta los resúmenes día por día y, para sucursales/cadenas/regiones, de a un grupo de productos por
+   vez (`N_GRUPOS`). No relee el SEPA. Ninguna etapa carga todo el período junto: la memoria no crece con los años.
+3. **Excel** escrito fila a fila (memoria constante).
 
 **Salidas** (en `output_trazabilidad/`): `trazabilidad_productos_<desde>_<hasta>.xlsx` (Resumen, Ranking,
 Continuos_periodo, Por_categoria, Cadenas, Provincias, Diccionario), el mismo ranking en `.parquet` y `.csv.gz`, y el
 panel mensual producto × mes en `.parquet`.
 
-**Estructura:** Config → Setup → Maestros (sucursales, Georef, productos) → Fase 1 (lectura) → Fase 2 (agregación) →
-Métricas y ranking → Exportación"""))
+**Estructura:** Config → Setup → Maestros (sucursales, Georef, productos) → Fase 1 (lectura) → Fase 2a (días) →
+Fase 2b (sucursales, cadenas, regiones) y ranking → Exportación. Cada celda imprime la RAM usada y la libre."""))
 
 # ── CELL 1 — CONFIG ────────────────────────────────────────────────────────────
 cells.append(cell_code(r"""# ===========================================================
@@ -67,7 +70,17 @@ AMBA_RADIO_KM = 90
 # Comercios que filtra el nb02 (CELDA 6): se marca si el producto está fuera de ellos (columna en_universo_nb02)
 CADENAS_FILTRAR_NB02 = {'19', '2013', '3001', '4'}
 
-TOP_POR_CATEGORIA = 10            # productos por categoría en la hoja Por_categoria"""))
+TOP_POR_CATEGORIA = 10            # productos por categoría en la hoja Por_categoria
+
+# ── Memoria (Colab gratuito, ~12,7 GB) ──
+# Cada archivo se lee en bloques de BLOQUE_MB (texto CSV): ~1 GB de pico por archivo con 32. Si la sesión se queda sin
+# RAM, bajarlo (16, 8): tarda un poco más, no cambia el resultado.
+BLOQUE_MB = 32
+# La fase 2 arma la matriz producto x sucursal de a 1/N_GRUPOS de los productos. Más grupos = menos RAM, más tiempo.
+# Cambiarlo NO relee el SEPA (los resúmenes se reorganizan solos la primera vez).
+N_GRUPOS = 16
+# Cada archivo lo lee un script aparte (python nb09_lector.py): al terminar, el sistema libera toda su memoria.
+PROCESO_APARTE = True"""))
 
 # ── CELL 2 — SETUP ─────────────────────────────────────────────────────────────
 cells.append(cell_code(r"""# ============================================================
@@ -82,9 +95,10 @@ except ImportError:
     print('Entorno local')
 
 import subprocess, sys
-subprocess.run([sys.executable, '-m', 'pip', 'install', 'pyarrow', 'xlsxwriter', 'openpyxl', 'scipy', '-q'], check=False)
+subprocess.run([sys.executable, '-m', 'pip', 'install', 'pyarrow', 'xlsxwriter', 'openpyxl', 'scipy', 'psutil', '-q'],
+               check=False)
 
-import zipfile, gzip, re, gc, time, json, warnings, urllib.request
+import os, zipfile, gzip, re, gc, time, json, warnings, urllib.request
 from pathlib import Path
 warnings.filterwarnings('ignore')
 
@@ -93,6 +107,8 @@ import pandas as pd
 import pyarrow as pa
 import pyarrow.csv as pacsv
 import pyarrow.compute as pac
+import pyarrow.parquet as pq
+import psutil
 import scipy.sparse as sp
 
 pd.set_option('display.max_columns', 60)
@@ -105,8 +121,14 @@ CACHE_DIR  = OUTPUT_DIR / '_cache_nb09'
 RES_DIR    = CACHE_DIR / 'v1'          # resúmenes por archivo (fase 1); cambiar la versión relee todo
 RES_DIR.mkdir(parents=True, exist_ok=True)
 
+def ram():
+    # memoria del proceso y la que le queda a la máquina (para seguir el consumo en Colab)
+    return (f'RAM: proceso {psutil.Process().memory_info().rss / 1e9:.1f} GB, '
+            f'libre {psutil.virtual_memory().available / 1e9:.1f} GB')
+
 print(f'SEPA_DIR:   {SEPA_DIR}')
-print(f'OUTPUT_DIR: {OUTPUT_DIR}')"""))
+print(f'OUTPUT_DIR: {OUTPUT_DIR}')
+print(ram())"""))
 
 # ── CELL 3 — MAESTROS ──────────────────────────────────────────────────────────
 cells.append(cell_code(r"""# ============================================================
@@ -237,18 +259,289 @@ print('Maestros OK')"""))
 
 # ── CELL 4 — FASE 1 ────────────────────────────────────────────────────────────
 cells.append(cell_code(r"""# ============================================================
-# CELDA 4 — Fase 1: lectura de cada archivo del SEPA y resumen (con caché por archivo)
+# CELDA 4 — Fase 1: lectura de cada archivo del SEPA POR BLOQUES, en un proceso aparte (con caché por archivo)
 # ============================================================
-# Cada archivo MMAAAA_pais_parteN (una fila por sucursal x producto, una columna precio_AAAAMMDD por día) se resume en:
+# Cada archivo MMAAAA_pais_parteN (una fila por sucursal x producto, una columna precio_AAAAMMDD por día) se lee en
+# bloques de BLOQUE_MB y se resume en:
 #   ean_dia : producto x día -> sucursales, comercios y provincias con precio
-#   ean_suc : producto x sucursal -> días con precio y precio promedio de esos días (pesos)
+#   ean_suc : producto x sucursal -> días con precio y precio promedio de esos días (pesos), partido en N_GRUPOS grupos
+#             de productos (un row group del parquet por grupo: la fase 2 lee un grupo por vez)
 #   suc     : sucursales del archivo (comercio, bandera, sucursal, provincia) y días con algún precio
 #   dia     : día -> sucursales, comercios, banderas y provincias activas, productos con precio (denominadores)
-# El resumen de 'dia' se escribe último: si existe, el archivo está completo.
+# 'dia' se escribe último: si existe, el archivo está completo.
+# El lector es un script aparte (nb09_lector.py, lo escribe esta celda) que se ejecuta con `python` para cada archivo:
+# al terminar, el sistema operativo recupera TODA su memoria (sin esto la RAM crecía archivo a archivo hasta colapsar
+# la sesión). Verificado: el SEPA no repite sucursal x producto dentro de un archivo, así que sumar bloques es exacto.
+import importlib, tempfile
+
+LECTOR_SRC = r'''
+import gzip, json, os, re, sys, time, traceback, zipfile, zlib
+from pathlib import Path
+import numpy as np
+import pandas as pd
+import pyarrow as pa
+import pyarrow.csv as pacsv
+import pyarrow.compute as pac
+import pyarrow.parquet as pq
+
+PAT_FECHA = re.compile(r'^precio_(\d{8})$')
+ID_COLS = ['id_comercio', 'id_bandera', 'id_sucursal', 'sucursales_provincia', 'id_producto']
+
+def clave_suc(c, b, s):
+    return f'{c}|{b}|{s}'
+
+def grupo_de(eans, n_grupos):
+    # grupo estable de cada producto (crc32 del código): el mismo en todos los archivos y corridas
+    return np.array([zlib.crc32(str(x).encode()) % n_grupos for x in eans], dtype=np.int16)
+
+class Codigos:
+    # texto -> código entero estable dentro de un archivo. Se limpia solo el diccionario de cada bloque (miles de
+    # valores), nunca un texto por fila.
+    def __init__(self, ean=False):
+        self.mapa, self.ean = {}, ean
+    def __call__(self, arr):
+        if not pa.types.is_dictionary(arr.type):
+            arr = pac.cast(arr, pa.string()).dictionary_encode()
+        vals = arr.dictionary.to_pylist() + [None]
+        m = np.empty(len(vals), np.int64)
+        for i, v in enumerate(vals):
+            v = '' if v is None else str(v).strip()
+            if self.ean:
+                v = v.lstrip('0') or '0'
+            c = self.mapa.get(v)
+            if c is None:
+                c = self.mapa[v] = len(self.mapa)
+            m[i] = c
+        idx = pac.fill_null(arr.indices, len(vals) - 1).to_numpy(zero_copy_only=False)
+        return m[idx]
+    def valores(self):
+        out = np.empty(len(self.mapa), dtype=object)
+        for v, c in self.mapa.items():
+            out[c] = v
+        return out
+
+def crecer(a, n, eje=0):
+    # agranda un acumulador (con margen) cuando aparecen códigos nuevos
+    if a.shape[eje] >= n:
+        return a
+    forma = list(a.shape); forma[eje] = max(n, int(a.shape[eje] * 1.5) + 16)
+    b = np.zeros(forma, a.dtype)
+    b[tuple(slice(0, s) for s in a.shape)] = a
+    return b
+
+def a_float32(col):
+    if pa.types.is_string(col.type) or pa.types.is_large_string(col.type):
+        return pd.to_numeric(col.to_pandas(), errors='coerce').to_numpy(np.float32)
+    return pac.fill_null(pac.cast(col, pa.float32()), np.nan).to_numpy(zero_copy_only=False)
+
+def resumir(zip_path, nombre, f_ini, f_fin, bloque_mb, n_grupos, precios_texto=False):
+    with zipfile.ZipFile(zip_path) as zf:
+        with zf.open(nombre) as s0, gzip.open(s0, 'rt', encoding='utf-8', errors='replace') as g:
+            hdr = [c.strip() for c in g.readline().split(',')]
+        cols_p = [c for c in hdr if PAT_FECHA.match(c) and f_ini <= pd.Timestamp(c[-8:]) <= f_fin]
+        if not cols_p:
+            return None
+        fechas = pd.to_datetime([c[-8:] for c in cols_p], format='%Y%m%d')
+        nd = len(cols_p)
+        tipos = {c: pa.dictionary(pa.int32(), pa.string()) for c in ID_COLS}
+        tipos.update({c: (pa.string() if precios_texto else pa.float64()) for c in cols_p})
+        cod_e, cod_c, cod_b, cod_s, cod_p = Codigos(ean=True), Codigos(), Codigos(), Codigos(), Codigos()
+        suc_mapa = {}                                   # (c, b, s) -> código de sucursal del archivo
+        suc_cbs, suc_prv = [], []                       # comercio/bandera/sucursal y provincia por sucursal
+        n_suc = np.zeros((1024, nd), np.int32)          # producto x día: sucursales con precio
+        a_com = np.zeros((1024, 8, nd), bool)           # producto x comercio x día
+        a_prv = np.zeros((1024, 8, nd), bool)           # producto x provincia x día
+        s_dia = np.zeros((256, nd), bool)               # sucursal x día activa
+        s_fil = np.zeros(256, np.int64)                 # filas con algún precio por sucursal
+        es_e, es_s, es_n, es_p = [], [], [], []
+        with zf.open(nombre) as s0, pa.CompressedInputStream(pa.PythonFile(s0, mode='r'), 'gzip') as s:
+            lector = pacsv.open_csv(s, read_options=pacsv.ReadOptions(block_size=max(int(bloque_mb * 2 ** 20), 1024)),
+                                    convert_options=pacsv.ConvertOptions(
+                                        column_types=tipos, include_columns=ID_COLS + cols_p,
+                                        null_values=['NA', ''], strings_can_be_null=True))
+            for bl in lector:
+                if bl.num_rows == 0:
+                    continue
+                e = cod_e(bl.column('id_producto'))
+                c = cod_c(bl.column('id_comercio')); b = cod_b(bl.column('id_bandera'))
+                si = cod_s(bl.column('id_sucursal')); pv = cod_p(bl.column('sucursales_provincia'))
+                k = (c << 42) | (b << 21) | si
+                uk, prim, inv = np.unique(k, return_index=True, return_inverse=True)
+                st_u = np.empty(len(uk), np.int64)
+                for i, x in enumerate(uk):
+                    y = suc_mapa.get(int(x))
+                    if y is None:
+                        j = int(prim[i])
+                        y = suc_mapa[int(x)] = len(suc_mapa)
+                        suc_cbs.append((int(c[j]), int(b[j]), int(si[j]))); suc_prv.append(int(pv[j]))
+                    st_u[i] = y
+                st = st_u[inv.ravel()]
+                P = np.empty((bl.num_rows, nd), np.float32)
+                for j, col in enumerate(cols_p):
+                    P[:, j] = a_float32(bl.column(col))
+                del bl
+                V = np.isfinite(P) & (P > 0)
+                ne, ns = len(cod_e.mapa), len(suc_mapa)
+                n_suc = crecer(n_suc, ne); s_dia = crecer(s_dia, ns); s_fil = crecer(s_fil, ns)
+                a_com = crecer(crecer(a_com, ne), len(cod_c.mapa), 1)
+                a_prv = crecer(crecer(a_prv, ne), len(cod_p.mapa), 1)
+                com_f = np.array([x[0] for x in suc_cbs])[st]           # comercio de cada fila (código del archivo)
+                prv_f = np.array(suc_prv)[st]
+                for j in range(nd):
+                    v = V[:, j]
+                    if not v.any():
+                        continue
+                    n_suc[:, j] += np.bincount(e[v], minlength=n_suc.shape[0]).astype(np.int32)
+                    a_com[e[v], com_f[v], j] = True
+                    a_prv[e[v], prv_f[v], j] = True
+                    s_dia[st[v], j] = True
+                n = V.sum(axis=1)
+                np.add.at(s_fil, st[n > 0], 1)
+                np.putmask(P, ~V, 0)
+                m = n > 0
+                es_e.append(e[m].astype(np.int32)); es_s.append(st[m].astype(np.int32)); es_n.append(n[m].astype(np.int16))
+                es_p.append(P.sum(axis=1, dtype=np.float64)[m])
+                del P, V, e, st, k, inv
+    ne, ns = len(cod_e.mapa), len(suc_mapa)
+    eans = cod_e.valores()
+    n_suc, a_com, a_prv, s_dia, s_fil = n_suc[:ne], a_com[:ne], a_prv[:ne], s_dia[:ns], s_fil[:ns]
+    if not s_dia.any():
+        return None
+    cv, bv, sv, pvv = cod_c.valores(), cod_b.valores(), cod_s.valores(), cod_p.valores()
+    suc_c = np.array([cv[x[0]] for x in suc_cbs], dtype=object)
+    suc_b = np.array([bv[x[1]] for x in suc_cbs], dtype=object)
+    suc_s = np.array([sv[x[2]] for x in suc_cbs], dtype=object)
+    suc_p = np.array([pvv[x] for x in suc_prv], dtype=object)
+    sucs = np.array([clave_suc(a, b, c) for a, b, c in zip(suc_c, suc_b, suc_s)], dtype=object)
+
+    # producto x día
+    n_com, n_prv = a_com.sum(axis=1), a_prv.sum(axis=1)
+    del a_com, a_prv
+    ed = []
+    for j, f in enumerate(fechas):
+        k = np.nonzero(n_suc[:, j])[0]
+        if len(k):
+            ed.append(pd.DataFrame({'e': k.astype(np.int32), 'fecha': f, 'n_suc': n_suc[k, j],
+                                    'n_com': n_com[k, j].astype(np.int16), 'n_prov': n_prv[k, j].astype(np.int16)}))
+    ean_dia = pd.concat(ed, ignore_index=True)
+    ean_dia['ean'] = pd.Categorical.from_codes(ean_dia.pop('e'), categories=eans).remove_unused_categories()
+
+    # días (denominadores)
+    ban = np.array([f'{a}|{b}' for a, b in zip(suc_c, suc_b)])
+    dia = pd.DataFrame([{'fecha': f, 'n_suc': int(s_dia[:, j].sum()), 'n_com': int(len(set(suc_c[s_dia[:, j]]))),
+                         'n_ban': int(len(set(ban[s_dia[:, j]]))), 'n_prov': int(len(set(suc_p[s_dia[:, j]]))),
+                         'n_productos': int((n_suc[:, j] > 0).sum()), 'n_precios': int(n_suc[:, j].sum())}
+                        for j, f in enumerate(fechas) if s_dia[:, j].any()])
+
+    # producto x sucursal, ordenado por grupo y producto
+    e = np.concatenate(es_e); st = np.concatenate(es_s); n = np.concatenate(es_n)
+    precio = (np.concatenate(es_p) / n).astype(np.float32)
+    del es_e, es_s, es_n, es_p
+    fac = 100.0 if np.median(precio) > 10_000 else 1.0           # pesos o centavos: regla del nb02
+    dia['factor_precio'] = fac
+    precio /= fac
+    g = grupo_de(eans, n_grupos)[e]
+    o = np.lexsort((st, e, g))
+    e, st, n, precio, g = e[o], st[o], n[o], precio[o], g[o]
+    suc = pd.DataFrame({'suc': sucs, 'id_comercio': suc_c, 'id_bandera': suc_b, 'id_sucursal': suc_s,
+                        'provincia_iso': suc_p, 'dias_activa': s_dia.sum(axis=1).astype(np.int16),
+                        'filas_con_precio': s_fil.astype(np.int32)})
+    return {'ean_dia': ean_dia, 'ean_suc': (eans, sucs, e, st, n, precio, g), 'suc': suc, 'dia': dia}
+
+def escribir_ean_suc(ruta, eans, sucs, e, st, n, precio, g, n_grupos):
+    # un row group por grupo de productos (filas ya ordenadas por grupo); el mapa grupo -> row group va en los
+    # metadatos del parquet. Se escribe a un temporal y se renombra: nunca queda un archivo a medias.
+    cortes = np.searchsorted(g, np.arange(n_grupos + 1))
+    no_vacios = [k for k in range(n_grupos) if cortes[k] < cortes[k + 1]]
+    dic = pa.dictionary(pa.int32(), pa.string())
+    esquema = pa.schema([('ean', dic), ('suc', dic), ('n_dias', pa.int16()), ('precio', pa.float32())],
+                        metadata={'nb09_grupos': json.dumps({str(k): i for i, k in enumerate(no_vacios)}),
+                                  'nb09_n_grupos': str(n_grupos)})
+    tmp = str(ruta) + '.tmp'
+    with pq.ParquetWriter(tmp, esquema, compression='zstd') as w:
+        for k in no_vacios:
+            a, b = cortes[k], cortes[k + 1]
+            ue, ie = np.unique(e[a:b], return_inverse=True)
+            us, is_ = np.unique(st[a:b], return_inverse=True)
+            t = pa.table({'ean': pa.DictionaryArray.from_arrays(pa.array(ie.ravel().astype(np.int32)),
+                                                                pa.array(list(eans[ue]), pa.string())),
+                          'suc': pa.DictionaryArray.from_arrays(pa.array(is_.ravel().astype(np.int32)),
+                                                                pa.array(list(sucs[us]), pa.string())),
+                          'n_dias': pa.array(n[a:b], pa.int16()), 'precio': pa.array(precio[a:b], pa.float32())},
+                         schema=esquema)
+            w.write_table(t, row_group_size=len(t) + 1)
+    os.replace(tmp, ruta)
+
+def leer_grupo(ruta, k, n_grupos):
+    # filas del grupo de productos k de un ean_suc. Uno con otro formato (sin grupos o con otro N_GRUPOS) se
+    # reorganiza una vez, sin releer el SEPA.
+    pf = pq.ParquetFile(str(ruta))
+    md = pf.schema_arrow.metadata or {}
+    if b'nb09_grupos' not in md or int(md.get(b'nb09_n_grupos', b'0')) != n_grupos:
+        d = pf.read().to_pandas()
+        del pf
+        eans = np.asarray(d['ean'].cat.categories, dtype=object); sucs = np.asarray(d['suc'].cat.categories, dtype=object)
+        e = d['ean'].cat.codes.to_numpy(np.int64); st = d['suc'].cat.codes.to_numpy(np.int64)
+        g = grupo_de(eans, n_grupos)[e]; o = np.lexsort((st, e, g))
+        escribir_ean_suc(ruta, eans, sucs, e[o], st[o], d['n_dias'].to_numpy(np.int16)[o],
+                         d['precio'].to_numpy(np.float32)[o], g[o], n_grupos)
+        del d
+        pf = pq.ParquetFile(str(ruta)); md = pf.schema_arrow.metadata
+    mapa = json.loads(md[b'nb09_grupos'])
+    if str(k) not in mapa:
+        return None
+    return pf.read_row_group(mapa[str(k)]).to_pandas()
+
+def ruta(res_dir, tag, tipo):
+    return Path(res_dir) / f'{tag}__{tipo}.parquet'
+
+def procesar_y_guardar(a):
+    t = time.time()
+    f_ini, f_fin = pd.Timestamp(a['f_ini']), pd.Timestamp(a['f_fin'])
+    try:
+        r = resumir(a['zip'], a['nombre'], f_ini, f_fin, a['bloque_mb'], a['n_grupos'])
+    except pa.ArrowInvalid as ex:
+        print(f'  AVISO {a["nombre"]}: precios no numéricos ({str(ex)[:80]}); se relee convirtiendo', flush=True)
+        r = resumir(a['zip'], a['nombre'], f_ini, f_fin, a['bloque_mb'], a['n_grupos'], precios_texto=True)
+    if r is None:
+        return {'tag': a['tag'], 'vacio': True}
+    r['ean_dia'].to_parquet(ruta(a['res_dir'], a['tag'], 'ean_dia'), index=False, compression='zstd')
+    escribir_ean_suc(ruta(a['res_dir'], a['tag'], 'ean_suc'), *r['ean_suc'], a['n_grupos'])
+    r['suc'].to_parquet(ruta(a['res_dir'], a['tag'], 'suc'), index=False, compression='zstd')
+    d = r['dia']
+    pico = None
+    try:
+        import resource
+        pico = round(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1e6, 2)   # Linux: KB -> GB
+    except ImportError:
+        pass
+    info = {'tag': a['tag'], 'vacio': False, 'dias': len(d), 'productos': int(d['n_productos'].max()),
+            'sucursales': int(d['n_suc'].max()), 'pares': int(len(r['ean_suc'][2])),
+            'factor': float(d['factor_precio'].iat[0]), 'seg': round(time.time() - t), 'pico_gb': pico}
+    d.to_parquet(ruta(a['res_dir'], a['tag'], 'dia'), index=False, compression='zstd')    # último = completo
+    return info
+
+if __name__ == '__main__':
+    a = json.loads(sys.argv[1])
+    try:
+        info = procesar_y_guardar(a)
+    except BaseException:
+        info = {'tag': a['tag'], 'error': traceback.format_exc()[-3000:]}
+    Path(a['res_dir'], f"{a['tag']}__info.json").write_text(json.dumps(info))
+    sys.exit(1 if 'error' in info else 0)
+'''
+
+LECTOR_DIR = Path(tempfile.gettempdir()) / 'nb09'
+LECTOR_DIR.mkdir(exist_ok=True)
+LECTOR_PY = LECTOR_DIR / 'nb09_lector.py'
+LECTOR_PY.write_text(LECTOR_SRC, encoding='utf-8')
+if str(LECTOR_DIR) not in sys.path:
+    sys.path.insert(0, str(LECTOR_DIR))
+import nb09_lector as L
+L = importlib.reload(L)
+
 _PAT_SEM = re.compile(r'^(\d{4})(A|B)$', re.IGNORECASE)
 _PAT_ARC = re.compile(r'^(\d{2})(\d{4})_pais_parte(\d+).*COMPLETO.*\.csv\.gz$', re.IGNORECASE)
-_PAT_FECHA = re.compile(r'^precio_(\d{8})$')
-ID_COLS = ['id_comercio', 'id_bandera', 'id_sucursal', 'sucursales_provincia', 'id_producto']
 F_INI = pd.Timestamp(FECHA_INICIO)
 F_FIN = pd.Timestamp(FECHA_FIN) if FECHA_FIN else pd.Timestamp('2100-01-01')
 
@@ -266,142 +559,8 @@ def listar_archivos():
                     out[f'{mes}_p{int(m.group(3))}'] = (z, n, mes)
     return dict(sorted(out.items()))
 
-def _codigos(col, ean=False):
-    # Columna diccionario de pyarrow -> (código entero por fila, valores únicos limpios). Se limpia solo el
-    # diccionario (miles de valores), nunca un texto por fila: con 16 M de filas eso eran varios GB.
-    a = col.combine_chunks()
-    if not pa.types.is_dictionary(a.type):
-        a = pac.cast(a, pa.string()).dictionary_encode()
-    dic = pd.Series(a.dictionary.to_pylist(), dtype=object).fillna('').astype(str).str.strip()
-    if ean:
-        dic = dic.str.lstrip('0').replace('', '0')
-    dic = pd.concat([dic, pd.Series([''])], ignore_index=True)              # último lugar = nulo
-    idx = pac.fill_null(a.indices, len(dic) - 1).to_numpy(zero_copy_only=False).astype(np.int64)
-    uniq, inv = np.unique(dic.to_numpy(dtype=object).astype(str), return_inverse=True)   # '0123' y '123' = uno
-    return inv.ravel()[idx], uniq.astype(object)
-
-def _leer_tabla(zip_path, nombre):
-    with zipfile.ZipFile(zip_path) as zf:
-        with zf.open(nombre) as s0, gzip.open(s0, 'rt', encoding='utf-8', errors='replace') as g:
-            hdr = [c.strip() for c in g.readline().split(',')]
-        cols_p = [c for c in hdr if _PAT_FECHA.match(c) and F_INI <= pd.Timestamp(c[-8:]) <= F_FIN]
-        if not cols_p:
-            return None, []
-        tipos = {c: pa.dictionary(pa.int32(), pa.string()) for c in ID_COLS}
-        for intento in ('float32', 'inferido'):
-            if intento == 'float32':
-                tipos.update({c: pa.float32() for c in cols_p})
-            else:
-                print(f'  AVISO {nombre}: precios no numéricos, se leen como texto y se convierten')
-                tipos = {c: tipos[c] for c in ID_COLS}
-            try:
-                with zf.open(nombre) as s0, pa.CompressedInputStream(pa.PythonFile(s0, mode='r'), 'gzip') as s:
-                    tb = pacsv.read_csv(s, read_options=pacsv.ReadOptions(block_size=32 << 20),
-                                        convert_options=pacsv.ConvertOptions(
-                                            column_types=tipos, include_columns=ID_COLS + cols_p,
-                                            null_values=['NA', ''], strings_can_be_null=True))
-                return tb, cols_p
-            except pa.ArrowInvalid:
-                if intento == 'inferido':
-                    raise
-
-def resumir_archivo(zip_path, nombre):
-    tb, cols_p = _leer_tabla(zip_path, nombre)
-    if tb is None:
-        return None
-    fechas = pd.to_datetime([c[-8:] for c in cols_p], format='%Y%m%d')
-
-    # Códigos enteros de producto y sucursal (nada de textos por fila)
-    e, eans = _codigos(tb['id_producto'], ean=True)
-    e = e.astype(np.int32)
-    _cod = [_codigos(tb[c]) for c in ['id_comercio', 'id_bandera', 'id_sucursal', 'sucursales_provincia']]
-    tb = tb.drop_columns(ID_COLS)
-    (ci, cd), (bi, bd), (si, sd), (pi, pdic) = _cod
-    _k = (ci << 42) | (bi << 21) | si
-    _uk, _first, st = np.unique(_k, return_index=True, return_inverse=True)
-    st = st.astype(np.int32).ravel()
-    suc_c, suc_b, suc_s = cd[ci[_first]], bd[bi[_first]], sd[si[_first]]
-    suc_p = pdic[pi[_first]]
-    ns, ne = len(_uk), len(eans)
-
-    # Precios (float32) y máscara de precio válido
-    P = np.empty((tb.num_rows, len(cols_p)), dtype=np.float32)
-    for j, c in enumerate(cols_p):
-        _col = tb[c]
-        try:
-            _col = pac.cast(_col, pa.float32())
-        except Exception:
-            _col = pa.array(pd.to_numeric(_col.to_pandas(), errors='coerce'), type=pa.float32())
-        P[:, j] = pac.fill_null(_col, np.nan).to_numpy(zero_copy_only=False)
-        tb = tb.drop_columns([c])                                    # libera la columna ya copiada
-        del _col
-    del tb; gc.collect()
-    V = np.isfinite(P) & (P > 0)
-
-    # Una fila por sucursal x producto (si hubiera duplicadas, la primera)
-    _ke = st.astype(np.int64) * ne + e
-    _u, _idx = np.unique(_ke, return_index=True)
-    if len(_u) < len(_ke):
-        _idx.sort()
-        e, st, P, V = e[_idx], st[_idx], P[_idx], V[_idx]
-    del _ke, _u, _idx
-
-    # Comercio, bandera y provincia de cada fila, como códigos
-    _cu, s_com = np.unique(suc_c, return_inverse=True)
-    _bu, s_ban = np.unique(np.char.add(np.char.add(suc_c.astype(str), '|'), suc_b.astype(str)), return_inverse=True)
-    _pu, s_prv = np.unique(suc_p.astype(str), return_inverse=True)
-    r_com, r_prv = s_com[st], s_prv[st]
-    # pares producto-comercio y producto-provincia (para contar distintos por día sin np.unique por día)
-    _pc, pc_inv = np.unique(e.astype(np.int64) * len(_cu) + r_com, return_inverse=True)
-    _pp, pp_inv = np.unique(e.astype(np.int64) * len(_pu) + r_prv, return_inverse=True)
-    pc_e, pp_e = (_pc // len(_cu)).astype(np.int32), (_pp // len(_pu)).astype(np.int32)
-
-    ed, dias = [], []
-    for j, f in enumerate(fechas):
-        v = V[:, j]
-        if not v.any():
-            continue
-        n_suc = np.bincount(e[v], minlength=ne)
-        m = np.zeros(len(_pc), bool); m[pc_inv[v]] = True
-        n_com = np.bincount(pc_e[m], minlength=ne)
-        m = np.zeros(len(_pp), bool); m[pp_inv[v]] = True
-        n_prv = np.bincount(pp_e[m], minlength=ne)
-        k = np.nonzero(n_suc)[0]
-        ed.append(pd.DataFrame({'e': k.astype(np.int32), 'fecha': f, 'n_suc': n_suc[k].astype(np.int32),
-                                'n_com': n_com[k].astype(np.int16), 'n_prov': n_prv[k].astype(np.int16)}))
-        sa = np.zeros(ns, bool); sa[st[v]] = True
-        dias.append({'fecha': f, 'n_suc': int(sa.sum()), 'n_com': int(len(np.unique(s_com[sa]))),
-                     'n_ban': int(len(np.unique(s_ban[sa]))), 'n_prov': int(len(np.unique(s_prv[sa]))),
-                     'n_productos': int(len(k)), 'n_precios': int(v.sum())})
-    if not dias:
-        return None
-    ean_dia = pd.concat(ed, ignore_index=True)
-    ean_dia['ean'] = pd.Categorical.from_codes(ean_dia.pop('e'), categories=eans).remove_unused_categories()
-
-    # Producto x sucursal: días con precio y promedio de esos días
-    nd = V.sum(axis=1)
-    k = nd > 0
-    np.putmask(P, ~V, 0)                                             # en el lugar: sin copiar la matriz
-    with np.errstate(all='ignore'):
-        precio = (P.sum(axis=1, dtype=np.float64)[k] / nd[k]).astype(np.float32)
-    del P
-    # Pesos o centavos: regla del nb02 (mediana > 10.000 -> centavos)
-    fac = 100.0 if np.nanmedian(precio) > 10_000 else 1.0
-    sucs = np.array([clave_suc(c, b, s) for c, b, s in zip(suc_c, suc_b, suc_s)], dtype=object)
-    o = np.lexsort((st[k], e[k]))                  # ordenado por producto: el parquet pesa ~2,5 veces menos
-    ean_suc = pd.DataFrame({'ean': pd.Categorical.from_codes(e[k][o], categories=eans),
-                            'suc': pd.Categorical.from_codes(st[k][o], categories=sucs),
-                            'n_dias': nd[k][o].astype(np.int16), 'precio': (precio / fac)[o]})
-    sa_d = np.bincount(st, weights=V.any(axis=1), minlength=ns)       # filas con algún precio por sucursal
-    suc_dias = np.zeros(ns, np.int16)
-    for j in range(V.shape[1]):
-        sa = np.zeros(ns, bool); sa[st[V[:, j]]] = True
-        suc_dias += sa
-    suc = pd.DataFrame({'suc': sucs, 'id_comercio': suc_c, 'id_bandera': suc_b, 'id_sucursal': suc_s,
-                        'provincia_iso': suc_p, 'dias_activa': suc_dias, 'filas_con_precio': sa_d.astype(np.int32)})
-    dia = pd.DataFrame(dias)
-    dia['factor_precio'] = fac
-    return {'ean_dia': ean_dia, 'ean_suc': ean_suc, 'suc': suc, 'dia': dia}
+def _ruta(tag, tipo):
+    return L.ruta(RES_DIR, tag, tipo)
 
 ARCHIVOS = listar_archivos()
 ARCHIVOS = {t: v for t, v in ARCHIVOS.items() if F_INI.strftime('%Y-%m') <= v[2] <= F_FIN.strftime('%Y-%m')}
@@ -413,33 +572,47 @@ print(f'Archivos: {len(ARCHIVOS)} | meses {_meses[0]} -> {_meses[-1]} ({len(_mes
 _falta = [m for m in pd.period_range(_meses[0], _meses[-1], freq='M').astype(str) if m not in _meses]
 if _falta:
     print(f'  AVISO: faltan meses en los ZIPs: {_falta}')
-
-def _ruta(tag, tipo):
-    return RES_DIR / f'{tag}__{tipo}.parquet'
+print(f'Lector: {LECTOR_PY} | {"un proceso por archivo" if PROCESO_APARTE else "en este proceso"} | '
+      f'bloques de {BLOQUE_MB} MB | {ram()}')
 
 _t0 = time.time()
 _n_leidos = 0
 for _tag, (_z, _n, _mes) in ARCHIVOS.items():
     if _mes != MES_ULTIMO and _ruta(_tag, 'dia').exists():
         continue
-    _t = time.time()
-    _r = resumir_archivo(_z, _n)
-    if _r is None:
+    _ruta(_tag, 'dia').unlink(missing_ok=True)
+    _inf = RES_DIR / f'{_tag}__info.json'
+    _inf.unlink(missing_ok=True)
+    _args = {'tag': _tag, 'zip': str(_z), 'nombre': _n, 'res_dir': str(RES_DIR), 'f_ini': str(F_INI.date()),
+             'f_fin': str(F_FIN.date()), 'bloque_mb': BLOQUE_MB, 'n_grupos': N_GRUPOS}
+    if PROCESO_APARTE:
+        _r = subprocess.run([sys.executable, str(LECTOR_PY), json.dumps(_args)], capture_output=True, text=True)
+        if _r.stdout.strip():
+            print(_r.stdout.strip())
+        if _r.returncode != 0:
+            if _inf.exists() and 'error' in json.loads(_inf.read_text()):
+                raise RuntimeError(f'{_tag}: error en la lectura\n' + json.loads(_inf.read_text())['error'])
+            raise RuntimeError(
+                f'{_tag}: el lector terminó con código {_r.returncode}' +
+                (' — SIN MEMORIA: bajar BLOQUE_MB en la CELDA 1 (16, 8) y volver a ejecutar desde la CELDA 1; lo ya '
+                 'leído queda en el caché' if _r.returncode in (-9, 137) else '') + '\n' + _r.stderr[-2000:])
+        _info = json.loads(_inf.read_text())
+    else:
+        _info = L.procesar_y_guardar(_args)
+        gc.collect(); pa.default_memory_pool().release_unused()
+    if _info.get('vacio'):
         print(f'  {_tag}: sin días en el período')
         continue
-    for _tipo in ('ean_dia', 'ean_suc', 'suc', 'dia'):          # 'dia' al final = archivo completo
-        _r[_tipo].to_parquet(_ruta(_tag, _tipo), index=False, compression='zstd')
-    _d = _r['dia']
-    print(f'  {_tag}: {len(_d)} días, {_d["n_productos"].max():,} productos/día, {_d["n_suc"].max():,} sucursales, '
-          f'{len(_r["ean_suc"]):,} pares producto-sucursal ({time.time() - _t:.0f} s)')
     _n_leidos += 1
-    del _r; gc.collect()
+    print(f'  {_tag}: {_info["dias"]} días, {_info["productos"]:,} productos/día, {_info["sucursales"]:,} sucursales, '
+          f'{_info["pares"]:,} pares producto-sucursal, factor {_info["factor"]:g} ({_info["seg"]} s'
+          + (f', pico del lector {_info["pico_gb"]} GB' if _info.get('pico_gb') else '') + f') | {ram()}', flush=True)
 print(f'\nFase 1: {_n_leidos} archivos leídos en {(time.time() - _t0) / 60:.1f} min; '
       f'{len(ARCHIVOS) - _n_leidos} desde el caché ({RES_DIR})')"""))
 
-# ── CELL 5 — FASE 2 ────────────────────────────────────────────────────────────
+# ── CELL 5 — FASE 2a ───────────────────────────────────────────────────────────
 cells.append(cell_code(r"""# ============================================================
-# CELDA 5 — Fase 2: agregación de todos los resúmenes (no relee el SEPA)
+# CELDA 5 — Fase 2a: días, sucursales y recorrido diario por producto (no relee el SEPA)
 # ============================================================
 _t0 = time.time()
 TAGS = [t for t in ARCHIVOS if _ruta(t, 'dia').exists()]
@@ -458,6 +631,8 @@ F_DESDE, F_HASTA = FECHAS[0], FECHAS[-1]
 DIAS_CAL_SIN_DATO = pd.date_range(F_DESDE, F_HASTA).difference(FECHAS)
 print(f'Período: {F_DESDE:%d/%m/%Y} -> {F_HASTA:%d/%m/%Y} | {ND:,} días con dato '
       f'({len(DIAS_CAL_SIN_DATO)} días calendario sin dato)')
+_fac = DIA.groupby('factor_precio').size()
+print(f'Factor de precio (100 = el archivo venía en centavos): {_fac.to_dict()} días')
 
 # ── Sucursales (todas las que alguna vez reportaron) ──
 SUC = (pd.concat([pd.read_parquet(_ruta(t, 'suc')) for t in TAGS], ignore_index=True)
@@ -491,9 +666,11 @@ for t in TAGS:
     _cats.update(pd.read_parquet(_ruta(t, 'ean_dia'), columns=['ean'])['ean'].cat.categories)
 EANS = pd.Index(sorted(_cats))
 NE = len(EANS)
-print(f'Productos distintos con algún precio: {NE:,}')
+GRUPO = L.grupo_de(EANS, N_GRUPOS)
+del _cats; gc.collect()
+print(f'Productos distintos con algún precio: {NE:,} | {ram()}')
 
-# ── Acumuladores por producto (recorrido en orden de fechas) ──
+# ── Acumuladores por producto (recorrido en orden de fechas; memoria = unos pocos vectores de NE) ──
 dias_precio = np.zeros(NE, np.int32); dias_util = np.zeros(NE, np.int32)
 sh_suc = np.zeros(NE); sh_com = np.zeros(NE); sh_prv = np.zeros(NE)
 suc_obs = np.zeros(NE, np.int64)                     # sucursal-días con precio
@@ -505,21 +682,24 @@ MESES = sorted({f.strftime('%Y-%m') for f in FECHAS})
 POS_MES = {m: i for i, m in enumerate(MESES)}
 mes_dias = np.zeros((len(MESES), NE), np.int16)       # panel mensual: días con precio
 mes_suc = np.zeros((len(MESES), NE), np.float32)      # panel mensual: suma diaria de sucursales
-S = sp.csr_matrix((NE, NS), dtype=np.int32)           # producto x sucursal: días con precio
-_ult_mes = []
+_u365 = FECHAS >= F_HASTA - pd.Timedelta(days=364)
+_u90 = FECHAS >= F_HASTA - pd.Timedelta(days=89)
+c365 = np.zeros(NE, np.int32); c90 = np.zeros(NE, np.int32)
 
 _orden = sorted(TAGS, key=lambda t: pd.read_parquet(_ruta(t, 'dia'), columns=['fecha'])['fecha'].min())
 for _i, t in enumerate(_orden):
     ed = pd.read_parquet(_ruta(t, 'ean_dia'))
     ed = ed[ed['fecha'].map(TAG_FECHA).eq(t).to_numpy()]
-    _e = EANS.get_indexer(ed['ean'].astype(str))
+    _e = EANS.get_indexer(ed['ean'].cat.categories)[ed['ean'].cat.codes.to_numpy()]
     _d = POS_DIA.reindex(ed['fecha']).to_numpy()
+    _ns, _nc, _np = ed['n_suc'].to_numpy(), ed['n_com'].to_numpy(), ed['n_prov'].to_numpy()
+    del ed
     for d in np.unique(_d):                              # días del archivo, en orden
         m = _d == d
         ee = _e[m]
-        n_s = np.zeros(NE, np.int64); n_s[ee] = ed['n_suc'].to_numpy()[m]
-        n_c = np.zeros(NE); n_c[ee] = ed['n_com'].to_numpy()[m]
-        n_p = np.zeros(NE); n_p[ee] = ed['n_prov'].to_numpy()[m]
+        n_s = np.zeros(NE, np.int64); n_s[ee] = _ns[m]
+        n_c = np.zeros(NE); n_c[ee] = _nc[m]
+        n_p = np.zeros(NE); n_p[ee] = _np[m]
         pres = n_s > 0
         dias_precio += pres
         suc_obs += n_s
@@ -533,84 +713,116 @@ for _i, t in enumerate(_orden):
         mi = POS_MES[FECHAS[d].strftime('%Y-%m')]
         mes_dias[mi] += pres
         mes_suc[mi] += n_s
-    del ed
-    es = pd.read_parquet(_ruta(t, 'ean_suc'))
-    _er = EANS.get_indexer(es['ean'].astype(str)); _sr = POS_SUC.reindex(es['suc'].astype(str)).to_numpy()
-    S = S + sp.csr_matrix((es['n_dias'].to_numpy(np.int32), (_er, _sr)), shape=(NE, NS))
-    if ARCHIVOS[t][2] == MES_ULTIMO:
-        _ult_mes.append(es.assign(e=_er))
-    del es; gc.collect()
+        if _u365[d]:
+            c365 += pres
+        if _u90[d]:
+            c90 += pres
     if (_i + 1) % 12 == 0:
-        print(f'  {_i + 1}/{len(_orden)} archivos agregados ({time.time() - _t0:.0f} s, {S.nnz:,} pares producto-sucursal)')
-S.sum_duplicates()
-print(f'Fase 2: {len(_orden)} archivos en {time.time() - _t0:.0f} s | {S.nnz:,} pares producto-sucursal distintos')"""))
+        print(f'  {_i + 1}/{len(_orden)} archivos ({time.time() - _t0:.0f} s) | {ram()}', flush=True)
+gc.collect()
+print(f'Fase 2a: {len(_orden)} archivos en {time.time() - _t0:.0f} s | {ram()}')"""))
 
-# ── CELL 6 — MÉTRICAS ──────────────────────────────────────────────────────────
+# ── CELL 6 — FASE 2b + MÉTRICAS ────────────────────────────────────────────────
 cells.append(cell_code(r"""# ============================================================
-# CELDA 6 — Métricas por producto, puntaje y ranking
+# CELDA 6 — Fase 2b: sucursales, cadenas y regiones por grupos de productos + métricas y ranking
 # ============================================================
-B = S.copy(); B.data = np.ones_like(B.data)          # producto x sucursal: 1 si tuvo precio alguna vez
+# La matriz producto x sucursal de todo el período no se arma nunca entera: se arma la de un grupo de productos
+# (1/N_GRUPOS del total) leyendo solo ese row group de cada archivo, se calculan sus métricas y se libera.
+_t0 = time.time()
 
-def indicadora(codigos):
+def indicadora(codigos, ng):
     # sucursal x grupo (los códigos < 0 = sin dato, no cuentan)
     codigos = np.asarray(codigos)
     k = codigos >= 0
-    return sp.csr_matrix((np.ones(k.sum(), np.int32), (np.nonzero(k)[0], codigos[k])),
-                         shape=(NS, max(codigos.max() + 1, 1)))
+    return sp.csr_matrix((np.ones(k.sum(), np.int32), (np.nonzero(k)[0], codigos[k])), shape=(NS, max(ng, 1)))
 
-def distintos(col):
-    cats = pd.Categorical(SUC[col])
-    G = indicadora(cats.codes)
-    M = (B @ G).tocsr()
-    M.eliminate_zeros()
-    return M, np.asarray(cats.categories), len(cats.categories)
+DIMS = {}
+for _col in ('id_comercio', 'bandera', 'provincia', 'region', 'depto', 'localidad'):
+    _cat = pd.Categorical(SUC[_col])
+    DIMS[_col] = (indicadora(_cat.codes, len(_cat.categories)), np.asarray(_cat.categories, dtype=object))
+CAT_COM, CAT_PRV = DIMS['id_comercio'][1], DIMS['provincia'][1]
+T_COM, T_BAN, T_PRV, T_REG, T_DEP, T_LOC = (len(DIMS[c][1]) for c in
+                                            ('id_comercio', 'bandera', 'provincia', 'region', 'depto', 'localidad'))
+AMBA_V = SUC['amba'].to_numpy(np.int32)
+_fuera_nb02 = np.nonzero(np.array([c not in CADENAS_FILTRAR_NB02 for c in CAT_COM]))[0]
+_nom_com = np.array([nombre_comercio(c) for c in CAT_COM], dtype=object)
 
-M_com, CAT_COM, T_COM = distintos('id_comercio')
-M_ban, _, T_BAN = distintos('bandera')
-M_prv, CAT_PRV, T_PRV = distintos('provincia')
-M_reg, CAT_REG, T_REG = distintos('region')
-M_dep, _, T_DEP = distintos('depto')
-M_loc, _, T_LOC = distintos('localidad')
-_amba = (B @ SUC['amba'].to_numpy(np.int32)) > 0
+suc_dist = np.zeros(NE, np.int32)
+n_dim = {c: np.zeros(NE, np.int32) for c in DIMS}
+en_amba = np.zeros(NE, bool); en_nb02 = np.zeros(NE, bool)
+cad_pri = np.full(NE, '', dtype=object); pct_pri = np.full(NE, np.nan); hhi = np.full(NE, np.nan)
+cadenas_txt = np.full(NE, '', dtype=object); prov_pres = np.full(NE, '', dtype=object); prov_falt = np.full(NE, '', dtype=object)
+precio_med = np.full(NE, np.nan); precio_cv = np.full(NE, np.nan); suc_um = np.zeros(NE, np.int32)
+prod_por_com = np.zeros(T_COM, np.int64); prod_por_prv = np.zeros(T_PRV, np.int64)
+_tags_um = [t for t in TAGS if ARCHIVOS[t][2] == MES_ULTIMO]
+_todas_prv = set(CAT_PRV)
 
-# Concentración: sucursal-días por comercio
-SD_com = (S @ indicadora(pd.Categorical(SUC['id_comercio'], categories=CAT_COM).codes)).tocsr()
-_tot = np.asarray(SD_com.sum(axis=1)).ravel().astype(float)
-_max = np.asarray(SD_com.max(axis=1).todense()).ravel().astype(float)
-_cuad = np.asarray(SD_com.multiply(SD_com).sum(axis=1)).ravel().astype(float)
-_arg = np.asarray(SD_com.argmax(axis=1)).ravel()
-_fuera_nb02 = np.array([c not in CADENAS_FILTRAR_NB02 for c in CAT_COM])
-_en_nb02 = np.asarray(SD_com[:, np.nonzero(_fuera_nb02)[0]].sum(axis=1)).ravel() > 0
+def _filas_txt(M, nombres, i):
+    return [nombres[j] for j in M.indices[M.indptr[i]:M.indptr[i + 1]]]
 
-def listas(M, cats, nombres=None):
-    out = []
-    for i in range(M.shape[0]):
-        idx = M.indices[M.indptr[i]:M.indptr[i + 1]]
-        out.append(', '.join(sorted(nombres[cats[j]] if nombres else cats[j] for j in idx)))
-    return out
+for k in range(N_GRUPOS):
+    gi = np.nonzero(GRUPO == k)[0]                     # productos del grupo (índices globales)
+    if not len(gi):
+        continue
+    loc = np.full(NE, -1, np.int64); loc[gi] = np.arange(len(gi))
+    S = sp.csr_matrix((len(gi), NS), dtype=np.int32)
+    _um = []
+    for t in TAGS:
+        es = L.leer_grupo(_ruta(t, 'ean_suc'), k, N_GRUPOS)
+        if es is None or not len(es):
+            continue
+        _er = loc[EANS.get_indexer(es['ean'].cat.categories)[es['ean'].cat.codes.to_numpy()]]
+        _sr = POS_SUC.reindex(es['suc'].cat.categories).to_numpy()[es['suc'].cat.codes.to_numpy()]
+        S = S + sp.csr_matrix((es['n_dias'].to_numpy(np.int32), (_er, _sr)), shape=(len(gi), NS))
+        if t in _tags_um:
+            _um.append(pd.DataFrame({'e': _er, 'suc': _sr, 'n_dias': es['n_dias'].to_numpy(), 'precio': es['precio'].to_numpy()}))
+        del es
+    S.sum_duplicates()
+    B = S.copy(); B.data[:] = 1
+    suc_dist[gi] = B.getnnz(axis=1)
+    for c, (G, cats) in DIMS.items():
+        M = (B @ G).tocsr(); M.eliminate_zeros()
+        n_dim[c][gi] = M.getnnz(axis=1)
+        if c == 'id_comercio':
+            prod_por_com += M.getnnz(axis=0)
+            cadenas_txt[gi] = [', '.join(sorted(_nom_com[j] for j in M.indices[M.indptr[i]:M.indptr[i + 1]]))
+                               for i in range(len(gi))]
+        if c == 'provincia':
+            prod_por_prv += M.getnnz(axis=0)
+            for i in range(len(gi)):
+                pr = _filas_txt(M, cats, i)
+                if len(pr) <= T_PRV / 2:
+                    prov_pres[gi[i]] = ', '.join(sorted(pr))
+                else:
+                    prov_falt[gi[i]] = ', '.join(sorted(_todas_prv - set(pr)))
+        del M
+    en_amba[gi] = (B @ AMBA_V) > 0
+    SD = (S @ DIMS['id_comercio'][0]).tocsr()            # sucursal-días por comercio
+    _tot = np.asarray(SD.sum(axis=1)).ravel().astype(float)
+    _max = np.asarray(SD.max(axis=1).todense()).ravel().astype(float)
+    _cuad = np.asarray(SD.multiply(SD).sum(axis=1)).ravel().astype(float)
+    _arg = np.asarray(SD.argmax(axis=1)).ravel()
+    _ok = _tot > 0
+    cad_pri[gi[_ok]] = _nom_com[_arg[_ok]]
+    pct_pri[gi[_ok]] = _max[_ok] / _tot[_ok] * 100
+    hhi[gi[_ok]] = _cuad[_ok] / _tot[_ok] ** 2
+    en_nb02[gi] = np.asarray(SD[:, _fuera_nb02].sum(axis=1)).ravel() > 0
+    if _um:
+        um = pd.concat(_um, ignore_index=True)
+        um['_pd'] = um['precio'].astype(float) * um['n_dias']
+        um = um.groupby(['e', 'suc'])[['_pd', 'n_dias']].sum()
+        um = (um['_pd'] / um['n_dias']).rename('precio').reset_index()
+        _pm = um.groupby('e')['precio'].agg(['median', 'mean', 'std', 'size'])
+        _ix = gi[_pm.index.to_numpy()]
+        precio_med[_ix] = _pm['median'].to_numpy(); precio_cv[_ix] = (_pm['std'] / _pm['mean'] * 100).to_numpy()
+        suc_um[_ix] = _pm['size'].to_numpy()
+        del um, _pm
+    del S, B, SD, _um; gc.collect()
+    print(f'  grupo {k + 1}/{N_GRUPOS}: {len(gi):,} productos ({time.time() - _t0:.0f} s) | {ram()}', flush=True)
 
-_nom_com = {c: nombre_comercio(c) for c in CAT_COM}
-_cadenas = listas(M_com, CAT_COM, _nom_com)
-_prov_pres = listas(M_prv, CAT_PRV)
-_n_prv = M_prv.getnnz(axis=1)
-_todas = set(CAT_PRV)
-_prov_falt = [', '.join(sorted(_todas - set(p.split(', ')))) if n > T_PRV / 2 else '' for p, n in zip(_prov_pres, _n_prv)]
-
-# Precio del último mes: mediana y dispersión entre sucursales
-_um = (pd.concat(_ult_mes, ignore_index=True) if _ult_mes
-       else pd.DataFrame({'e': [], 'suc': [], 'n_dias': [], 'precio': []}))
-# precio del mes por sucursal = promedio de las dos partes del mes ponderado por días
-_um['_pd'] = _um['precio'] * _um['n_dias']
-_um = _um.groupby(['e', _um['suc'].astype(str)])[['_pd', 'n_dias']].sum()
-_um = (_um['_pd'] / _um['n_dias']).rename('precio').reset_index()
-_pm = _um.groupby('e')['precio'].agg(['median', 'mean', 'std'])
-_su = _um.groupby('e')['suc'].nunique()
-
+# ── Tabla de productos ──
 fin = ND - 1
 _dias_vida = np.where(primer >= 0, fin - primer + 1, 0)
-_u365 = FECHAS >= F_HASTA - pd.Timedelta(days=364)
-_u90 = FECHAS >= F_HASTA - pd.Timedelta(days=89)
-
 R = pd.DataFrame({'id_producto': EANS})
 _mp = maestro_prod.reindex(EANS)
 for c in ['descripcion', 'marca', 'presentacion', 'rubro', 'categoria', 'subcategoria', 'proveedor']:
@@ -619,6 +831,7 @@ R['es_ean'] = np.where(_mp['ean_maestro'].notna(), _mp['ean_maestro'].to_numpy()
                        [gtin_valido(x) for x in EANS])
 R['en_maestro'] = _mp['descripcion'].notna().to_numpy()
 R['blacklist'] = (_mp['blacklist'] == '1').to_numpy()
+del _mp
 # Temporal
 R['dias_periodo'] = ND
 R['dias_con_precio'] = dias_precio
@@ -633,66 +846,49 @@ R['racha_max_dias'] = racha_max
 R['hueco_max_dias'] = hueco_max
 R['dias_utiles'] = dias_util
 R['pct_dias_utiles'] = dias_util / ND * 100
-R['pct_dias_ultimo_anio'] = np.nan            # se completan abajo
-R['pct_dias_ultimos_90'] = np.nan
+R['pct_dias_ultimo_anio'] = c365 / max(int(_u365.sum()), 1) * 100
+R['pct_dias_ultimos_90'] = c90 / max(int(_u90.sum()), 1) * 100
 # Sucursal
 R['sucursales_total'] = NS
-R['sucursales_distintas'] = B.getnnz(axis=1)
-R['pct_sucursales_distintas'] = R['sucursales_distintas'] / NS * 100
+R['sucursales_distintas'] = suc_dist
+R['pct_sucursales_distintas'] = suc_dist / NS * 100
 R['pct_suc_diaria_prom'] = np.where(dias_precio > 0, sh_suc / np.maximum(dias_precio, 1) * 100, 0)
 R['pct_suc_diaria_periodo'] = sh_suc / ND * 100
 R['suc_diarias_prom'] = np.where(dias_precio > 0, suc_obs / np.maximum(dias_precio, 1), 0)
 R['suc_diarias_min'] = np.where(dias_precio > 0, min_suc, 0)
 R['sucursal_dias'] = suc_obs
-R['sucursales_ultimo_mes'] = _su.reindex(range(NE)).fillna(0).astype(int).to_numpy()
+R['sucursales_ultimo_mes'] = suc_um
 # Comercial
 R['comercios_total'] = T_COM
-R['comercios'] = M_com.getnnz(axis=1)
-R['pct_comercios'] = R['comercios'] / T_COM * 100
+R['comercios'] = n_dim['id_comercio']
+R['pct_comercios'] = n_dim['id_comercio'] / T_COM * 100
 R['pct_com_diaria_prom'] = np.where(dias_precio > 0, sh_com / np.maximum(dias_precio, 1) * 100, 0)
 R['banderas_total'] = T_BAN
-R['banderas'] = M_ban.getnnz(axis=1)
-R['pct_banderas'] = R['banderas'] / T_BAN * 100
-R['cadena_principal'] = [_nom_com[CAT_COM[j]] if t > 0 else '' for j, t in zip(_arg, _tot)]
-R['pct_cadena_principal'] = np.where(_tot > 0, _max / np.maximum(_tot, 1) * 100, np.nan)
-R['hhi_cadenas'] = np.where(_tot > 0, _cuad / np.maximum(_tot, 1) ** 2, np.nan)
-R['cadenas'] = _cadenas
-R['en_universo_nb02'] = _en_nb02
+R['banderas'] = n_dim['bandera']
+R['pct_banderas'] = n_dim['bandera'] / T_BAN * 100
+R['cadena_principal'] = cad_pri
+R['pct_cadena_principal'] = pct_pri
+R['hhi_cadenas'] = hhi
+R['cadenas'] = cadenas_txt
+R['en_universo_nb02'] = en_nb02
 # Regional
 R['provincias_total'] = T_PRV
-R['provincias'] = _n_prv
-R['pct_provincias'] = _n_prv / T_PRV * 100
+R['provincias'] = n_dim['provincia']
+R['pct_provincias'] = n_dim['provincia'] / T_PRV * 100
 R['pct_prov_diaria_prom'] = np.where(dias_precio > 0, sh_prv / np.maximum(dias_precio, 1) * 100, 0)
 R['regiones_total'] = T_REG
-R['regiones'] = M_reg.getnnz(axis=1)
-R['en_amba'] = _amba
+R['regiones'] = n_dim['region']
+R['en_amba'] = en_amba
 R['departamentos_total'] = T_DEP
-R['departamentos'] = M_dep.getnnz(axis=1)
-R['pct_departamentos'] = R['departamentos'] / max(T_DEP, 1) * 100
+R['departamentos'] = n_dim['depto']
+R['pct_departamentos'] = n_dim['depto'] / max(T_DEP, 1) * 100
 R['localidades_total'] = T_LOC
-R['localidades'] = M_loc.getnnz(axis=1)
-R['provincias_presentes'] = [p if n <= T_PRV / 2 else '' for p, n in zip(_prov_pres, _n_prv)]
-R['provincias_faltantes'] = _prov_falt
+R['localidades'] = n_dim['localidad']
+R['provincias_presentes'] = prov_pres
+R['provincias_faltantes'] = prov_falt
 # Precio (último mes)
-R['precio_mediano_ultimo_mes'] = _pm['median'].reindex(range(NE)).to_numpy()
-R['cv_precio_ultimo_mes_%'] = (_pm['std'] / _pm['mean'] * 100).reindex(range(NE)).to_numpy()
-
-# Ventanas recientes (últimos 365 y 90 días): segundo recorrido liviano, solo los archivos de la ventana
-_d365 = int(_u365.sum()); _d90 = int(_u90.sum())
-_ini365 = int(np.argmax(_u365)); _ini90 = int(np.argmax(_u90))
-_c365 = np.zeros(NE, np.int32); _c90 = np.zeros(NE, np.int32)
-for t in TAGS:
-    _fx = pd.read_parquet(_ruta(t, 'dia'), columns=['fecha'])['fecha']
-    if _fx.max() < FECHAS[_ini365]:
-        continue
-    ed = pd.read_parquet(_ruta(t, 'ean_dia'), columns=['ean', 'fecha'])
-    ed = ed[ed['fecha'].map(TAG_FECHA).eq(t).to_numpy()]
-    _d = POS_DIA.reindex(ed['fecha']).to_numpy(); _e = EANS.get_indexer(ed['ean'].astype(str))
-    np.add.at(_c365, _e[_d >= _ini365], 1)
-    np.add.at(_c90, _e[_d >= _ini90], 1)
-R['pct_dias_ultimo_anio'] = _c365 / max(_d365, 1) * 100
-R['pct_dias_ultimos_90'] = _c90 / max(_d90, 1) * 100
-
+R['precio_mediano_ultimo_mes'] = precio_med
+R['cv_precio_ultimo_mes_%'] = precio_cv
 # Continuidad y puntaje
 R['continuo_periodo'] = R['dias_con_precio'] == ND
 R['continuo_util'] = R['dias_utiles'] == ND
@@ -703,7 +899,9 @@ R.insert(0, 'ranking', np.arange(1, len(R) + 1))
 for c in [c for c in R.columns if c.startswith('pct_') or c in ('puntaje', 'suc_diarias_prom', 'hhi_cadenas',
                                                                     'cv_precio_ultimo_mes_%')]:
     R[c] = R[c].astype(float).round(4 if c == 'hhi_cadenas' else 2)
+gc.collect()
 
+print(f'\nFase 2b: {time.time() - _t0:.0f} s | {ram()}')
 print(f'Productos: {len(R):,} | EAN {int(R["es_ean"].sum()):,} | códigos internos {int((~R["es_ean"]).sum()):,} | '
       f'en el maestro {int(R["en_maestro"].sum()):,}')
 print(f'Con precio todos los días: {int(R["continuo_periodo"].sum()):,} | todos los días útiles '
@@ -715,8 +913,10 @@ print(R[['ranking', 'id_producto', 'descripcion', 'puntaje', 'pct_dias', 'pct_su
 
 # ── CELL 7 — EXPORT ────────────────────────────────────────────────────────────
 cells.append(cell_code(r"""# ============================================================
-# CELDA 7 — Exportación: Excel + parquet + csv.gz + panel mensual
+# CELDA 7 — Exportación: Excel (fila a fila, memoria constante) + parquet + csv.gz + panel mensual
 # ============================================================
+import datetime as _dt
+import xlsxwriter
 _suf = f'{F_DESDE:%Y%m%d}_{F_HASTA:%Y%m%d}'
 _base = OUTPUT_DIR / f'trazabilidad_productos_{_suf}'
 
@@ -725,6 +925,8 @@ _mi, _ei = np.nonzero(mes_dias)
 panel = pd.DataFrame({'id_producto': EANS[_ei], 'mes': np.array(MESES)[_mi], 'dias_con_precio': mes_dias[_mi, _ei],
                       'suc_diarias_prom': (mes_suc[_mi, _ei] / mes_dias[_mi, _ei]).round(1)})
 panel.to_parquet(OUTPUT_DIR / f'panel_mensual_productos_{_suf}.parquet', index=False)
+_n_panel = len(panel)
+del panel, _mi, _ei; gc.collect()
 R.to_parquet(f'{_base}.parquet', index=False)
 R.to_csv(f'{_base}.csv.gz', index=False, compression='gzip')
 
@@ -736,12 +938,12 @@ _cat = (R[R['es_ean'] & R['categoria'].notna()].sort_values('puntaje', ascending
 _sd = SUC.groupby('id_comercio').agg(comercio=('comercio', 'first'), banderas=('bandera', 'nunique'),
                                      sucursales=('bandera', 'size'), provincias=('provincia', 'nunique'),
                                      dias_activa_max=('dias_activa', 'max'))
-_sd['productos_distintos'] = pd.Series(np.asarray((M_com > 0).sum(axis=0)).ravel(), index=CAT_COM).reindex(_sd.index)
+_sd['productos_distintos'] = pd.Series(prod_por_com, index=CAT_COM).reindex(_sd.index)
 cadenas = _sd.sort_values('sucursales', ascending=False).reset_index()
 _pv = SUC.groupby('provincia').agg(region=('region', lambda s: s.mode().iat[0] if s.notna().any() else ''),
                                    sucursales=('bandera', 'size'), comercios=('id_comercio', 'nunique'),
                                    departamentos=('depto', 'nunique'))
-_pv['productos_distintos'] = pd.Series(np.asarray((M_prv > 0).sum(axis=0)).ravel(), index=CAT_PRV).reindex(_pv.index)
+_pv['productos_distintos'] = pd.Series(prod_por_prv, index=CAT_PRV).reindex(_pv.index)
 provincias = _pv.sort_values('sucursales', ascending=False).reset_index()
 
 resumen = pd.DataFrame([
@@ -763,6 +965,7 @@ resumen = pd.DataFrame([
     (f'Productos con todos los días útiles (>= {MIN_SUC_DIA_UTIL} sucursales y >= {MIN_PCT_DIA_UTIL}%)', int(R['continuo_util'].sum())),
     ('Productos con >= 90% de los días', int((R['pct_dias'] >= 90).sum())),
     ('Productos con puntaje >= 50 / >= 75', f'{int((R["puntaje"] >= 50).sum())} / {int((R["puntaje"] >= 75).sum())}'),
+    ('Factor de precio por día (100 = centavos)', str(DIA.groupby('factor_precio').size().to_dict())),
     ('Días calendario sin dato', ', '.join(d.strftime('%d/%m/%Y') for d in DIAS_CAL_SIN_DATO[:80])),
 ], columns=['concepto', 'valor'])
 
@@ -804,31 +1007,49 @@ _cols_cont = ['ranking', 'id_producto', 'descripcion', 'marca', 'rubro', 'catego
 _hojas = [('Resumen', resumen), ('Ranking', R), ('Continuos_periodo', _cont[_cols_cont]),
           ('Por_categoria', _cat[_cols_cont]), ('Cadenas', cadenas), ('Provincias', provincias),
           ('Diccionario', diccionario)]
+
+def _valor(v):
+    if v is None or (isinstance(v, float) and np.isnan(v)) or v is pd.NaT:
+        return None
+    if isinstance(v, pd.Timestamp):
+        return v.to_pydatetime()
+    if isinstance(v, np.generic):
+        return v.item()
+    return v
+
 out_xls = f'{_base}.xlsx'
-with pd.ExcelWriter(out_xls, engine='xlsxwriter', datetime_format='dd/mm/yyyy') as w:
-    wb = w.book
-    f_hdr = wb.add_format({'bold': True, 'font_color': 'white', 'bg_color': '#375623', 'text_wrap': True,
-                           'valign': 'vcenter', 'align': 'center', 'font_size': 10})
-    f_pct = wb.add_format({'num_format': '0.0'}); f_num = wb.add_format({'num_format': '#,##0'})
-    f_pes = wb.add_format({'num_format': '#,##0.00'})
-    for nombre, df in _hojas:
-        df.to_excel(w, sheet_name=nombre, index=False)
-        ws = w.sheets[nombre]
-        for j, c in enumerate(df.columns):
-            ws.write(0, j, c, f_hdr)
-            fmt = (f_pct if (c.startswith('pct_') or c in ('puntaje', 'cv_precio_ultimo_mes_%')) else
-                   f_pes if 'precio' in c else f_num if pd.api.types.is_integer_dtype(df[c]) else None)
-            ancho = (60 if c in ('descripcion', 'cadenas', 'provincias_presentes', 'provincias_faltantes', 'definicion',
-                                 'valor') else 34 if c in ('concepto', 'columna') else
-                     16 if c in ('id_producto', 'proveedor', 'comercio') else 12)
-            ws.set_column(j, j, ancho, fmt)
-        ws.set_row(0, 32)
-        ws.freeze_panes(1, 3 if nombre in ('Ranking', 'Continuos_periodo', 'Por_categoria') else 1)
-        if len(df) > 1 and nombre != 'Resumen':
-            ws.autofilter(0, 0, len(df), len(df.columns) - 1)
+wb = xlsxwriter.Workbook(out_xls, {'constant_memory': True, 'nan_inf_to_errors': True})
+f_hdr = wb.add_format({'bold': True, 'font_color': 'white', 'bg_color': '#375623', 'text_wrap': True,
+                       'valign': 'vcenter', 'align': 'center', 'font_size': 10})
+f_pct = wb.add_format({'num_format': '0.0'}); f_num = wb.add_format({'num_format': '#,##0'})
+f_pes = wb.add_format({'num_format': '#,##0.00'}); f_fec = wb.add_format({'num_format': 'dd/mm/yyyy'})
+for nombre, df in _hojas:
+    ws = wb.add_worksheet(nombre)
+    fmts = []
+    for j, c in enumerate(df.columns):
+        fmt = (f_pct if (c.startswith('pct_') or c in ('puntaje', 'cv_precio_ultimo_mes_%')) else
+               f_pes if 'precio' in c else f_fec if pd.api.types.is_datetime64_any_dtype(df[c]) else
+               f_num if pd.api.types.is_integer_dtype(df[c]) else None)
+        ancho = (60 if c in ('descripcion', 'cadenas', 'provincias_presentes', 'provincias_faltantes', 'definicion',
+                             'valor') else 34 if c in ('concepto', 'columna') else
+                 16 if c in ('id_producto', 'proveedor', 'comercio') else 12)
+        ws.set_column(j, j, ancho, fmt); fmts.append(fmt)
+    ws.set_row(0, 32)
+    ws.freeze_panes(1, 3 if nombre in ('Ranking', 'Continuos_periodo', 'Por_categoria') else 1)
+    ws.write_row(0, 0, list(df.columns), f_hdr)
+    for a in range(0, len(df), 20_000):                  # de a 20 mil filas: nunca el Excel entero en memoria
+        for i, fila in enumerate(df.iloc[a:a + 20_000].itertuples(index=False, name=None), start=a + 1):
+            for j, v in enumerate(fila):
+                v = _valor(v)
+                if v is None:
+                    continue
+                ws.write(i, j, v, fmts[j])
+    if len(df) > 1 and nombre != 'Resumen':
+        ws.autofilter(0, 0, len(df), len(df.columns) - 1)
+wb.close()
 print(f'Excel:   {out_xls}')
 print(f'Parquet: {_base}.parquet  |  CSV: {_base}.csv.gz')
-print(f'Panel mensual: panel_mensual_productos_{_suf}.parquet ({len(panel):,} filas)')"""))
+print(f'Panel mensual: panel_mensual_productos_{_suf}.parquet ({_n_panel:,} filas) | {ram()}')"""))
 
 # ── Write notebook ──────────────────────────────────────────────────────────────
 nb = {

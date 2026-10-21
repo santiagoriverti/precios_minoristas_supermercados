@@ -580,6 +580,26 @@ Los 4 reemplazos (Swift XL, Lavandina Anti-splash, Plusbelle, Listerine) están 
 
 ## Historial de cambios
 
+### 2026-10-21 — nb09: robusto para el Colab gratuito (la primera corrida colapsó la RAM)
+
+El usuario corrió el nb09 en Colab y la sesión se cayó por falta de RAM; pidió que no pase en el Colab no premium
+aunque tarde más. Cambios (sin cambiar ningún número):
+- **Lector en un script aparte** (`nb09_lector.py`, escrito por la CELDA 4) ejecutado con `subprocess` por archivo:
+  al terminar cada archivo el sistema libera toda su memoria (en un solo proceso la RAM crecía archivo a archivo). Se
+  descartó `fork` porque pyarrow no es fork-safe.
+- **Lectura por bloques** (`pacsv.open_csv`, `BLOQUE_MB = 32`): acumuladores producto × día, producto × comercio × día y
+  producto × provincia × día que crecen con los códigos. Verificado en dos archivos reales que no hay sucursal ×
+  producto repetidos (0 en 10,5 M y en 15,7 M de filas): sumar bloques es exacto.
+- **Fase 2b por grupos de productos** (`N_GRUPOS = 16`, crc32 del código): `ean_suc` se escribe con un row group por
+  grupo; la matriz producto × sucursal de todo el período nunca está entera. Un `ean_suc` del formato anterior se
+  reorganiza solo la primera vez (no relee el SEPA).
+- **Excel fila a fila** (xlsxwriter `constant_memory`). Cada celda imprime la RAM del proceso y la libre.
+- Medido: archivos de julio 2026 (13-16 M filas): **lector 1,7 GB de pico, notebook 0,4-0,8 GB** (antes 5-10 GB);
+  resúmenes idénticos a los de la versión anterior. May-jul 2026 con el caché viejo reorganizado: ranking idéntico en
+  las 104.201 filas (salvo un redondeo de 0,01 en un CV); pico 2 GB (la reorganización).
+- Test ampliado: bloques diminutos, 3 y 5 grupos, caché reorganizado, lector en el mismo proceso: todo igual a la
+  fuerza bruta.
+
 ### 2026-10-20 (noche) — nb09: trazabilidad de todos los productos del SEPA
 
 Pedido del usuario: un notebook que analice todos los productos únicos del SEPA desde 2022 y genere un ranking de

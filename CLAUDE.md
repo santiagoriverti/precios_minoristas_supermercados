@@ -120,9 +120,13 @@ representatividad de todos los productos del SEPA desde 2022; probado local (may
 - **nb02, colores del Excel**: `VERDE_OSCURO = '375623'` (encabezados de todas las hojas y filas de sección de
   `analisis_detallado`, texto blanco) y `VERDE_CLARO = '92D050'` (fila de encabezado de `analisis_detallado`), en la
   CELDA 19; la 19c los usa. Pedido del usuario del 2026-10-16 (antes azules `1F4E79`/`D9E1F2`). No volver a azul.
-- **nb09, RAM de la lectura**: leer los IDs como `pa.dictionary` y limpiar solo el diccionario (`_codigos`); precios
-  `float32`; soltar cada columna al copiarla. Con textos por fila el pico era 9,7 GB (Colab gratuito tiene ~12,7);
-  así, 4,1 GB. Cambiar el formato de los resúmenes exige subir la versión (`RES_DIR = CACHE_DIR / 'v1'`), que relee todo.
+- **nb09, RAM (Colab gratuito)**: la primera versión colapsó la sesión en Colab (2026-10-21). Ahora: el lector es un
+  script aparte (`LECTOR_SRC` en la CELDA 4 -> `nb09_lector.py`, un `subprocess` por archivo: el SO libera todo al
+  terminar), lee **por bloques** (`pacsv.open_csv`, `BLOQUE_MB`) con IDs como diccionario (se limpia solo el
+  diccionario), y la fase 2b arma producto × sucursal **de a un grupo de productos** (`N_GRUPOS`, row groups del
+  parquet). Medido: lector 1,7 GB, notebook < 1 GB (archivos de 16 M filas). Nada de `fork` (pyarrow no es fork-safe).
+  El SEPA no repite sucursal × producto en un archivo (verificado): sumar bloques es exacto. Un cambio de formato de los
+  resúmenes exige subir la versión (`RES_DIR = CACHE_DIR / 'v1'`), salvo `ean_suc`, que `leer_grupo` reorganiza solo.
 - **nb02, una sola referencia del país** (BUG-42): todo "vs país" es el promedio ponderado del Cuadro 1
   (`prom_nac_dict`), CABA es su fila del Cuadro 1, cadenas y barrios van por mediana en el análisis [mediana], y el AMBA
   es la columna `amba` de la CELDA 7 (CABA + Buenos Aires a ≤ 90 km del Obelisco), nunca `PROVINCIA in (CABA, Buenos

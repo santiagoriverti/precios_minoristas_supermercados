@@ -6,6 +6,18 @@ Autor: Santiago Riverti — investigador independiente
 
 ---
 
+## 🟢 nb09 — versión robusta para el Colab gratuito [2026-10-21] — leer esto primero
+
+- La primera corrida en Colab se cayó por RAM. Reescrito sin cambiar números: lector = script aparte
+  (`nb09_lector.py`, `subprocess` por archivo, NO fork), lectura por bloques (`BLOQUE_MB` 32), fase 2b por grupos de
+  productos (`N_GRUPOS` 16, row groups de `ean_suc`), Excel con `constant_memory`. Medido: lector 1,7 GB, notebook
+  < 1 GB con archivos de 16 M filas; resúmenes y ranking idénticos a la versión anterior (comparados).
+- Si vuelve a faltar RAM en la lectura: bajar `BLOQUE_MB` (16, 8) y reejecutar desde la CELDA 1; el caché se conserva.
+  Si falta en la fase 2b: subir `N_GRUPOS` (no relee el SEPA). Un caché `v1` viejo (antes de los grupos) se
+  reorganiza solo en la primera pasada de la fase 2b.
+- **Siguiente**: el usuario lo vuelve a correr en Colab. Revisar en la salida: la RAM libre que imprime cada archivo
+  (no debería bajar con los meses), el factor de precio de 2022-2023, y luego el Excel.
+
 ## 🟢 nb09 — trazabilidad de todos los productos [2026-10-20 noche]
 
 - Pedido: ranking de representatividad (temporal, sucursal, comercial, regional y otros) de TODOS los productos del
