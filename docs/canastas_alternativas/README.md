@@ -2,6 +2,10 @@
 
 Insumo del notebook **`07_evolucion_canastas_alternativas`**, que produce el informe semanal.
 
+> Esta carpeta también tiene la **canasta fija para el pass-through diario** (775 productos, nb08): ver la
+> [sección al final](#canasta-fija-para-el-pass-through-diario-2026-10-22) y la guía de trabajo
+> [`docs/PASS_THROUGH.md`](../PASS_THROUGH.md).
+
 > **v5 (2026-09-07)** rehízo la composición desde cero. Antes de tocar nada, leé
 > "[Por qué se rehizo](#por-qué-se-rehizo)": las canastas v4 se movían casi idénticas entre sí
 > y la causa era la construcción, no el ruido de los datos.
@@ -497,7 +501,8 @@ la salida del constructor, que lista las necesidades que quedaron fuera de cada 
 
 Para estimar cuánto y qué tan rápido pasa el tipo de cambio a los precios, con datos **diarios** del 01/01/2022 al
 20/10/2026 y la **misma canasta todos los días**. No es una de las 6 canastas del nb07: es una lista de productos con
-grupos para desagregar el efecto.
+grupos para desagregar el efecto. **Guía de trabajo (estado, cómo correr el nb08, qué revisar, próximos pasos):
+[`docs/PASS_THROUGH.md`](../PASS_THROUGH.md)**; método: `docs/METODOLOGIA.md` §14.
 
 - **Script**: `canasta_pass_through.py` (reglas fijas, se reproduce desde las salidas del nb09: ranking, panel mensual
   y hoja `Dias`). **Selección vigente**: `canasta_pass_through_20220101_20261020.csv` (775 productos; con el nb09 al

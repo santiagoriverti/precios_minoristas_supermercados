@@ -1,11 +1,17 @@
 # Dependencias para correr LOCALMENTE los tests, el auditor y los scripts de docs/.
 # Los notebooks corren en Colab, que instala lo suyo (ver CELDA 2 de cada notebook).
 #   pip install -r requirements.txt
+# Probado el 2026-10-22 con Python 3.14 y: pandas 2.3.3, numpy 2.4.6, pyarrow 24.0.0, openpyxl 3.1.5, xlrd 2.0.2,
+# matplotlib 3.10.9, folium 0.20.0, tqdm 4.68.2, xlsxwriter 3.2.9, scipy 1.17.1, psutil 7.2.2, python-calamine 0.8.2.
 pandas
 numpy
 pyarrow
 openpyxl
-xlrd          # la planilla de precios promedio del INDEC es .xls (auditar_salida_nb07.py --indec)
-matplotlib    # test_celdas_graficos_y_mapa.py
-folium        # test_celdas_graficos_y_mapa.py (mapa)
-tqdm          # test_cache_por_mes.py
+xlrd             # la planilla de precios promedio del INDEC es .xls (auditar_salida_nb07.py --indec)
+matplotlib       # test_celdas_graficos_y_mapa.py
+folium           # test_celdas_graficos_y_mapa.py (mapa)
+tqdm             # test_cache_por_mes.py
+xlsxwriter       # Excel del nb08 y del nb09 (test_canasta_diaria.py, test_trazabilidad_productos.py)
+scipy            # nb09, producto x sucursal disperso (test_trazabilidad_productos.py)
+psutil           # RAM que imprimen el nb08 y el nb09 (sus tests)
+python-calamine  # engine='calamine' de pandas: canasta_pass_through.py y docs/auditoria/scripts_nb09_2026-10/

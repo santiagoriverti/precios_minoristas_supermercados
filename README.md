@@ -14,6 +14,8 @@ El proyecto responde tres preguntas:
 2. **¿Cómo evolucionó el costo de esas canastas y cómo se comparan con el IPC?** → Notebook 02 calcula el costo mensual por sucursal para cada canasta definida, las agrega por provincia y cadena, y genera comparativas, mapas y rankings.
 3. **¿Cómo evolucionó el precio de un producto puntual (Coca-Cola, Fernet, etc.), sin agruparlo en una canasta?** → Notebook 05 hace el mismo análisis que el 02 (provincias, IPC, mapas, rankings) pero para una lista de productos individuales que se define por código EAN, sin límite de cantidad.
 
+Además: el **Notebook 07** es el motor del informe semanal (6 canastas alternativas contra el IPC); el **Notebook 08** da el valor **diario** de una canasta fija desde 2022 (por defecto, la canasta de 775 productos para estudiar el **pass-through del tipo de cambio**, ver [`docs/PASS_THROUGH.md`](docs/PASS_THROUGH.md)); y el **Notebook 09** mide la representatividad de **todos** los productos del SEPA desde 2022 (de ahí salió esa canasta).
+
 ---
 
 ## Notebooks
@@ -313,22 +315,32 @@ Estructura esperada en Google Drive:
 
 ```
 MyDrive/carga/
+├── 2022A.zip, 2022B.zip, 2023A.zip, 2023B.zip   # 2022-2023: los usan el nb08 y el nb09 (series desde 2022)
 ├── 2024A.zip     # Enero–junio 2024
 ├── 2024B.zip     # Julio–diciembre 2024
 ├── 2025A.zip     # Enero–junio 2025
 ├── 2025B.zip     # Julio–diciembre 2025
 ├── 2026A.zip     # Enero–junio 2026
-├── 2026B.zip     # Julio–diciembre 2026 (se va completando mes a mes)
+├── 2026B.zip     # Julio–diciembre 2026 (se va completando mes a mes; desde ago-26, con el script 03)
 ├── IPC.xlsx, ar.json, maestro_sepa_completo.csv.gz y los maestros de data/
-├── output_canasta/                     # canasta_representativa_YYYY-MM.xlsx (entrada del nb02 y del nb07)
-│   └── _cache/                         # cachés del nb02: hist_union_*, detalle_* (19c), econ_*, df_suc_<mes>
-│                                       #   (para revisar una corrida del nb02: zip de esta carpeta + el Excel)
-└── output_canasta_alternativa/         # salidas del nb07 + _cache_nb07/ (sem_<clave>_v5/, ean_<clave>_v5/)
+├── output_canasta/                     # canasta_representativa_YYYY-MM.xlsx (entrada del nb02 y del nb07),
+│   │                                   #   canasta_pass_through_YYYY-MM.xlsx (entrada del nb08) y salidas del nb08
+│   └── _cache/                         # cachés del nb02: hist_union_*, detalle_* (19c), econ_*, df_suc_<mes>;
+│                                       #   del nb08: diaria_v2_<clave>/ (para revisar una corrida del nb02: zip
+│                                       #   de esta carpeta + el Excel)
+├── output_canasta_alternativa/         # salidas del nb07 + _cache_nb07/ (sem_<clave>_v5/, ean_<clave>_v5/)
+└── output_trazabilidad/                # salidas del nb09 + _cache_nb09/ (v1/ por archivo, georef_sucursales.parquet)
 ```
+
+Desde el 01/08/2026 los meses en curso salen del SEPA **diario** vía el script 03, que no trae 8 comercios; cuando el
+SEPA publique el semestral oficial, reemplazar el zip y borrar esos meses de los cachés (ningún caché mira si cambió
+el zip). Defectos conocidos de la fuente 2022-2026: [`docs/SEPA_TECNICO.md`](docs/SEPA_TECNICO.md), "Defectos y
+cambios de la fuente 2022-2026".
 
 Cada ZIP contiene archivos `MMAAAA_pais_parteNCOMPLETO.csv.gz` — formato wide con una columna de precio por día del período. Los notebooks **detectan automáticamente el último mes disponible** escaneando todos los ZIPs: cuando se agregue mayo o junio a `2026A.zip`, o se cree `2026B.zip`, ambos notebooks lo toman sin ningún cambio de código.
 
 Los datos de **2025B en adelante ya vienen en pesos** (factor = 1). Los notebooks autodetectan el factor de conversión.
+Medido el 2026-10-22 con el nb09: los semestrales que hay hoy en el Drive (2022A → 2026B) están **todos** en pesos.
 
 ---
 
@@ -929,12 +941,16 @@ precios_minoristas_supermercados/
 │   ├── test_costo_sucursal.py                    # Tests: costo por sucursal con rubros ausentes (BUG-37) y anclaje de nivel
 │   ├── test_candidatos_reemplazo.py              # Tests: trazabilidad de los candidatos a reemplazo (v5.11)
 │   ├── test_desagregacion_variacion.py           # Tests: nb02 CELDA 19b, desagregación de la variación mensual
-│   └── test_analisis_detallado.py                # Tests: nb02 CELDA 19c, hoja analisis_detallado (índices por rubro/región/cadena)
+│   ├── test_analisis_detallado.py                # Tests: nb02 CELDA 19c, hoja analisis_detallado (índices por rubro/región/cadena)
+│   ├── test_valores_documento.py                 # Tests: nb02 CELDAS 7 (AMBA), 16, 18 y 20 (números del documento técnico)
+│   └── test_reclasificacion_provincia.py         # Tests: nb02 CELDA 7, provincia por polígonos de ar.json (BUG-44)
 ├── data/                                # Maestros de referencia (se descargan automáticamente)
 │   ├── Maestro de Productos Interno.xlsx    # ~176K productos con rubro/categoría/subcategoría
 │   ├── maestro_sucursales_completo.xlsx     # 3.611 sucursales con cadena, provincia, región
 │   ├── maestro-provincias.xlsx              # Códigos SEPA → nombres de provincia
-│   └── sh_ipc_precios_promedio_2026-08.xls  # INDEC: precios promedio GBA hasta ago-26 (auditor --indec)
+│   ├── sh_ipc_precios_promedio_2026-08.xls  # INDEC: precios promedio GBA hasta ago-26 (auditor --indec)
+│   ├── anexo_6201340_2.pdf                  # Anexo II de la normativa del SEPA: procedimiento y especificaciones técnicas
+│   └── base_precios_sepa.pdf                # Documento técnico para procesar la base SEPA
 └── docs/                                # Documentación técnica
     ├── METODOLOGIA.md                   # Metodología ICR, canastas ENGHo, doble análisis media/mediana
     ├── CONTEXTO.md                      # Arquitectura, pipeline detallado, puesta en marcha, historial
@@ -942,13 +958,16 @@ precios_minoristas_supermercados/
     ├── BRECHA_CELIACA.md               # Notebook 06 — brecha TACC vs sin-TACC (metodología completa)
     ├── BUGS_Y_MEJORAS.md               # Bugs resueltos y defectos abiertos, con causa raíz y fix
     ├── NB02_ANALISIS_VARIACION.md      # nb02 CELDAS 19b/19c: desagregación de la variación y hoja analisis_detallado (uso, lectura, caché, validación)
+    ├── PASS_THROUGH.md                 # Pass-through del tipo de cambio: canasta fija de 775 productos, cómo correr el nb08, variable de precio, advertencias, próximos pasos
     ├── AUDITORIA_2026-09-22.md         # Auditoría de la corrida 2026-09-17 del nb07 (v5.8)
     ├── AUDITORIA_2026-09-22_v59.md     # Auditoría de la re-corrida con la v5.9 (BUG-37, frescos vs INDEC)
     ├── AUDITORIA_2026-09-24_v512.md    # Revisión de la v5.12: brecha con el IPC, incertidumbre, dos defectos (aplicada en la v5.13)
-    ├── AUDITORIA_2026-10-02_v514.md    # Última corrida auditada (v5.14 al 2026-10-01, Colab gratuito): números vigentes
-    ├── auditoria/                      # Informes HTML/PDF + scripts_v59/, v512/, v513/ (simulación), v514/ (benchmark de RAM) y scripts_nb02_2026-10/ (prototipo y validación de las CELDAS 19b/19c)
-    └── canastas_alternativas/           # Notebook 07 — composición de las 6 canastas alternativas
-        ├── README.md                    #   diseño, flujo de trabajo, cambios posteriores a v5
+    ├── AUDITORIA_2026-10-02_v514.md    # Última corrida auditada del nb07 (v5.14 al 2026-10-01, Colab gratuito): números vigentes
+    ├── AUDITORIA_2026-10-16_nb02.md    # Última corrida revisada del nb02 (oct-26): 19b/19c, BUG-42, región por coordenadas (BUG-43), provincia por polígonos (BUG-44)
+    ├── AUDITORIA_2026-10-22_nb09.md    # Corrida del nb09 v2 revisada: controles, panel contra el SEPA crudo, hallazgos de método y de fuente
+    ├── auditoria/                      # Informes HTML/PDF + scripts_v59/, v512/, v513/ (simulación), v514/ (benchmark de RAM), scripts_nb02_2026-10/ (prototipo y validación de las CELDAS 19b/19c, simulación de las CELDAS 7 y 20 con datos reales, comparación de corridas), scripts_nb08_2026-10/ (validar_real.py: nb08 v2 contra el lector anterior) y scripts_nb09_2026-10/ (r1-r8: revisión de las corridas del nb09)
+    └── canastas_alternativas/           # Notebook 07 — composición de las 6 canastas alternativas (+ canasta de pass-through)
+        ├── README.md                    #   diseño, flujo de trabajo, cambios posteriores a v5, canasta de pass-through
         ├── construir_canastas_v5.py     #   constructor (local): elige productos y genera el cargador
         ├── cargar_canastas_v5.py        #   cargador (se pega en Colab): escribe cantidad_01..06
         ├── aplicar_reemplazos.py        #   reemplazos puntuales con las reglas del constructor
@@ -956,7 +975,11 @@ precios_minoristas_supermercados/
         ├── reemplazos_2026-09-24.csv    #   ronda 1 aplicada (24 reemplazos de trazabilidad)
         ├── ronda2_propuesta_2026-09-24.csv  # ronda 2 aplicada (15 reemplazos, historia flaca)
         ├── canastas_v5_detalle.csv      #   por qué se eligió cada producto (corrida del constructor)
-        └── frescos_v5_qty.txt           #   cantidades de frescos para TIPOS_FRESCOS
+        ├── frescos_v5_qty.txt           #   cantidades de frescos para TIPOS_FRESCOS
+        ├── canasta_pass_through.py      #   selección de la canasta de pass-through (local, sobre las salidas del nb09)
+        ├── canasta_pass_through_20220101_20261020.csv  # la canasta vigente: 775 productos, grupos del IPC, pesos, cantidad_08
+        ├── marcar_canasta_pass_through_colab.py         # script de Colab: pone la canasta en cantidad_01 → canasta_pass_through_AAAA-MM.xlsx
+        └── cargar_canastas_v4.py, canastas_v4_detalle.csv  # v4 (histórico)
 ```
 
 > **¿Retomás el proyecto después de un tiempo, o en otra máquina?** Empezá por `CLAUDE.md` y el bloque
@@ -987,6 +1010,14 @@ y se commitean juntos el generador y el `.ipynb`.
 | `notebooks/test_cache_por_mes.py` | Caché por mes del nb07: corte a mitad de la lectura, reanudación, identidad contra una corrida sin caché, y que **todas** las celdas del `.ipynb` compilen (BUG-34, BUG-35) |
 | `notebooks/test_costo_sucursal.py` | Costo por sucursal del nb07: una sucursal sin rubros enteros cuesta lo mismo que el nacional (no menos), rubro parcial, cobertura mínima, reescalado de los tipos con nivel anclado y `_factor_nivel` (BUG-37, v5.10) |
 | `notebooks/test_candidatos_reemplazo.py` | Hoja `Candidatos_trazabilidad` del nb07: meses con dato, ítem actual vs candidatos, candidato que nunca apareció (v5.11), necesidad con " / " en el nombre (BUG-38, v5.11.1) |
+| `notebooks/test_desagregacion_variacion.py` | nb02 CELDA 19b (desagregación de la variación mensual) sobre zips sintéticos de jun-jul 2026: suba a mitad de mes (arrastre), producto que desaparece, pares sin el otro mes o fuera de [1/4, 4], EAN con ceros, región por la columna `amba` de la CELDA 7 |
+| `notebooks/test_analisis_detallado.py` | nb02 CELDA 19c (hoja `analisis_detallado`): Total = serie oficial de la CELDA 9, rubros y categorías, regiones, provincias, cadenas y semanas contra un cálculo independiente; clave del caché y colores |
+| `notebooks/test_valores_documento.py` | nb02 CELDAS 7 (AMBA a ≤ 90 km del Obelisco), 16, 18 y 20: una sola referencia del país, acumulados contra el IPC en el mismo período, mes sin IPC aparte, formato (BUG-42) |
+| `notebooks/test_reclasificacion_provincia.py` | nb02 CELDA 7: provincia por polígonos de `ar.json` con tolerancia `RECLASIF_TOL_KM` (bordes como Neuquén capital se quedan, errores groseros se reclasifican) (BUG-44) |
+| `notebooks/test_trazabilidad_productos.py` | nb09 sobre un SEPA sintético contra fuerza bruta: filas repetidas, provincias vacías o con nombre, dos archivos para la misma parte, códigos no EAN, código con texto mal codificado, comercio que deja de publicar, precio simbólico, hoja `Dias`; bloques, grupos y cachés distintos dan lo mismo (~6 min) |
+| `notebooks/test_canasta_diaria.py` | nb08 v2 sobre un SEPA sintético contra fuerza bruta: medianas, `n_obs`, promedios y relativos apareados con imputación; el índice apareado = la tendencia verdadera aunque la mediana salte en un hueco; archivo y filas repetidas, mes en centavos, cobertura incompleta, día ancla, caché con meses y estados borrados |
+
+Los 14 dieron OK el 2026-10-22 (Python 3.14, versiones de `requirements.txt`).
 
 ### Auditar una salida del nb07
 
@@ -1056,8 +1087,14 @@ El Notebook 02 usa dos estrategias para manejar la complejidad de múltiples can
 | [`docs/SEPA_TECNICO.md`](docs/SEPA_TECNICO.md) | Formato semestral vs. diario, autodetección de FACTOR_PRECIO, diccionario de cadenas, maestros de referencia, arquitectura anti-OOM, trampas conocidas en la selección de grupos, patrones técnicos del Notebook 02 |
 | [`docs/BRECHA_CELIACA.md`](docs/BRECHA_CELIACA.md) | **Notebook 06 — brecha celíaca (TACC vs sin-TACC)**: metodología (decisiones con los investigadores), definición de canastas y brecha intra-sucursal, resolución diaria/semanal/mensual, plantilla curada de tipos/EANs, outputs, limitaciones |
 | [`docs/BUGS_Y_MEJORAS.md`](docs/BUGS_Y_MEJORAS.md) | Bugs resueltos y **defectos abiertos**, con causa raíz, evidencia y fix aplicado |
-| [`docs/canastas_alternativas/README.md`](docs/canastas_alternativas/README.md) | **Notebook 07** — composición de las 6 canastas alternativas (empaquetados por EAN + frescos por tipo) |
+| [`docs/canastas_alternativas/README.md`](docs/canastas_alternativas/README.md) | **Notebook 07** — composición de las 6 canastas alternativas (empaquetados por EAN + frescos por tipo); canasta fija para el pass-through diario |
+| [`docs/PASS_THROUGH.md`](docs/PASS_THROUGH.md) | **Pass-through del tipo de cambio**: estado, cómo correr el nb08 con la canasta de 775 productos, qué revisar, cómo rehacer la canasta, variable de precio, advertencias y próximos pasos |
+| [`docs/NB02_ANALISIS_VARIACION.md`](docs/NB02_ANALISIS_VARIACION.md) | **Notebook 02, CELDAS 19b y 19c**: desagregación de la variación mensual y hoja `analisis_detallado` (uso, lectura, caché, validación) |
+| [`docs/AUDITORIA_2026-10-22_nb09.md`](docs/AUDITORIA_2026-10-22_nb09.md) | Revisión de la corrida del **nb09** v2: controles, panel contra el SEPA crudo, hallazgos de método y de fuente |
+| [`docs/AUDITORIA_2026-10-16_nb02.md`](docs/AUDITORIA_2026-10-16_nb02.md) | Revisión de la última corrida del **nb02** (oct-26) y de los cambios BUG-42/43/44 |
+| [`docs/AUDITORIA_2026-10-02_v514.md`](docs/AUDITORIA_2026-10-02_v514.md) | Última corrida auditada del **nb07** (v5.14 al 2026-10-01): números vigentes |
 | [`.claude/memory.md`](.claude/memory.md) | **Punto de entrada para retomar**: estado actual, pendientes en orden, handoffs anteriores en orden cronológico inverso |
+| [`CLAUDE.md`](CLAUDE.md) | Entrada para sesiones de Claude Code: qué leer primero, tests, dónde están los datos, reglas que muerden, git |
 
 ---
 

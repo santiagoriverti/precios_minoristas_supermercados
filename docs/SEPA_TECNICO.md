@@ -1,6 +1,6 @@
 # SEPA — Referencia Técnica
 
-Última actualización: 2026-10-16 (provincia por coordenadas con polígonos de ar.json y tolerancia de 100 km en vez de rectángulos —BUG-44—; maestro de sucursales: la `REGION=AMBA` no es confiable en Buenos Aires —usar coordenadas—, provincia ISO vs maestro, comercios sin nombre; script 03 con carpeta de días y zip semestral A/B automático). Antes, 2026-09-03 (nb07: lectura semanal + colapso de frescos a tipo [fix RAM] + selección de frescos por categoría; nb02: motor `datos_econometria`)
+Última actualización: 2026-10-22 (sección nueva "Defectos y cambios de la fuente 2022-2026": días con la mitad de los comercios, corte de la fuente desde ago-2026, comercios que se van y huecos temporales, archivos y filas repetidas, provincias con nombre o vacías, códigos con basura de codificación, precios simbólicos, nombres de comercio; FACTOR_PRECIO: los semestrales 2022-2026 del Drive están todos en pesos y la regla de centavos vence hacia 2029). Antes, 2026-10-16 (provincia por coordenadas con polígonos de ar.json y tolerancia de 100 km en vez de rectángulos —BUG-44—; maestro de sucursales: la `REGION=AMBA` no es confiable en Buenos Aires —usar coordenadas—, provincia ISO vs maestro, comercios sin nombre; script 03 con carpeta de días y zip semestral A/B automático). Antes, 2026-09-03 (nb07: lectura semanal + colapso de frescos a tipo [fix RAM] + selección de frescos por categoría; nb02: motor `datos_econometria`)
 
 > **Cambio 2026-08-21 (nb02/nb05, CELDA 6/7)**: el precio por sucursal del mes reportado ahora se calcula sobre **todos los días del mes** —mediana de los días y media con outliers fuera— en vez de tomar solo el primer día (`drop_duplicates keep='first'`, eliminado). El promedio descarta valores fuera de `[mediana/4, mediana×4]` antes de promediar (helper `_pmean`, vectorizado en la CELDA 7). Esto DUPLICA los artefactos: análisis mediana (nombres base) y promedio (sufijo `_prom`). Detalle en `.claude/memory.md`.
 >
@@ -49,11 +49,45 @@ YYYY-MM-DD.zip
 
 ---
 
+## Defectos y cambios de la fuente 2022-2026 (medidos con el nb09, 2026-10)
+
+Medidos sobre los zips semestrales del Drive (`2022A.zip` → `2026B.zip`; 115 archivos y 1.747 días con dato al
+15/10/2026, 116 y 1.754 al 22/10/2026) por el nb09 y su revisión (`docs/AUDITORIA_2026-10-22_nb09.md`, con los scripts
+en `docs/auditoria/scripts_nb09_2026-10/`). Cualquier lectura por sucursal o por día tiene que tenerlos en cuenta.
+
+| Qué | Dónde / cuánto | Cómo se trata |
+|---|---|---|
+| Días calendario sin dato | 31/10/2023 y 10/05/2026 | No se completan (nb08, nb09) |
+| Días con la mitad de los comercios | **16-28/07/2023**: 16-18 de 35 comercios, ~1.450 sucursales (870 el 20/07/2023). 28 días con < 2.000 sucursales; los demás son sueltos (20-21/06/2022, 01-04/04/2025, 27 y 30/07/2025, 01/08/2026...) | Denominadores diarios (nb09, hoja `Dias`); marcados en la serie (nb08, `cobertura_incompleta`); el índice de sucursales apareadas no salta |
+| Corte de la fuente desde el 01/08/2026 | ago-oct 2026 salen del SEPA diario (script 03), que no trae los comercios 19, 1000, 2000, 2002, 2005, 2007, 2013 y 3001: las sucursales activas pasan de ~3.400 a ~3.030 y algunas vienen sin provincia | Reemplazar por el semestral oficial cuando salga y **borrar del caché** esos meses (nb08: `_cache/diaria_v2_<clave>/2026-08.parquet`, `estado_2026-08.parquet` y los de los meses siguientes; nb09: `_cache_nb09/v1/2026-08_p*` y siguientes; nb02/nb07: sus cachés por mes): ningún caché mira si cambió el zip |
+| Comercios que dejan de publicar | 33 sin precios en oct-26 desde 2022 (8 en 2022, 8 en 2023, 4 en 2024, 4 en 2025, 9 en 2026: los 8 del corte y **Libertad, último día 02/09/2026**) | nb09: `solo_en_comercios_que_dejaron_de_publicar` y `mes_baja_comercios` |
+| Huecos temporales de un comercio | ChangoMas, Cadena 2002 y Mariano Max sin precios en todo sep-2024 (vuelven después) | No confundir con bajas |
+| Dos archivos para la misma parte | `2024B.zip`: `082024_pais_parte1COMPLETO.csv.gz` (días 1-5, 3.048 sucursales) y `...COMPLETOb.csv.gz` (días 1-15, 3.376, superconjunto con los mismos precios) | Usar el que cubre más días (nb08 y nb09); **el nb02 todavía los suma** (BUGS_Y_MEJORAS) |
+| Filas sucursal × producto repetidas | 141.020: 2022-05_p2 111.651 (sin mirar: no hay zip 2022 en la PC), 2025-08_p1 24.890 (una sucursal de ChangoMas, cada producto en dos filas con días distintos), 2022-11_p2 1.222, 2024-01_p2 892 (891 de la Cadena 2011, copias exactas), 2024-02_p1 874, 2022-10_p1 645, 2023-03_p1 341, 2022-07_p2 267, 2025-07_p2 88, y 1 fila del comercio 35 en casi todos los archivos hasta 2024-10 | Contar una vez con la unión de días (nb09); promedio de las repetidas para los relativos (nb08) |
+| Provincias con el nombre o vacías | ene-may 2022 casi todas con nombre (19-21 nombres, 'Santa fe' incluida); jun-22 → jul-23 'Santa Fe'; ago-23 → sep-26 'Buenos Aires' en una sucursal de DIA; vacías en 36 sucursales de 2022-2023 y en ago-sep 2026 | Pasar a código ISO (`iso_provincia` del lector del nb09); las vacías toman la del maestro o no cuentan |
+| Códigos con texto mal codificado pegado | 14 de la "Cadena 2003" en feb y jul 2022: tablets Samsung `8806094046892` y `8806094046908` con hasta 132.130 caracteres de más (2 no entran en una celda de Excel) | Unir a su EAN (nb09, `limpiar_codigo`) |
+| Precios simbólicos | Panadería y verdura por kilo de DIA a $5-95, comidas de ChangoMas a $4-10, bolsas "por millar" a $75 | nb09: `precio_simbolico` (≤ 1,25% de la mediana del último mes) |
+| Comercios que parecen el mismo local | 44, 45 y 46 (una sucursal cada uno, comparten 12.735 productos); 49 y 50 (comparten 16.968) | No se fusionan (sin nombres en 2026); por eso el puntaje del nb09 usa cuotas diarias |
+| Nombres de comercio | Según el `comercio.csv` del SEPA: 47 Unicoop (no Pasamonte), 5 California, 23 Axion Energy, 4 Estación Lima, 3 Deheza, 6 Comodín, 8 Mariano Max, 2013 Mercado Libre | El nb09 usa los oficiales; el nb02 (CELDA 4) tiene nombres viejos |
+| Saltos de catálogo | jul-26: 73 mil productos por día hasta el 16, 89 mil desde el 17 (un comercio sumó ~16 mil productos) | Está en el crudo; las cuotas diarias no se ven afectadas |
+| Colapsos de cobertura de marcas líderes | Fideos y arroz de Molinos (Lucchetti, Matarazzo, Gallo, Ala), azúcar Ledesma, harinas Morixe y Pureza 0000: de ~1.500 a 10-200 sucursales entre dic-2023 y abr-2024 | Fuera de las canastas fijas desde 2022 (regla de estabilidad de la canasta de pass-through) |
+| Unidades | Factor 1 en los 1.747 días (2022-01 → 2026-10 al 15/10): los semestrales publicados hoy están todos en pesos | Ver la sección siguiente |
+
+---
+
 ## FACTOR_PRECIO — crítico para precios correctos
 
 Los datos semestral cambiaron de unidad a lo largo del tiempo:
 - **Hasta ~2024**: precios en centavos → dividir /100
 - **2025B en adelante**: precios ya en pesos → FACTOR = 1 (NO dividir)
+
+> **Medido el 2026-10-22** (nb09): en los zips que hay hoy en el Drive (2022A → 2026B) el factor dio 1 en todos los días,
+> o sea que los semestrales se republicaron en pesos. La regla "mediana > $10.000 → ÷100" (nb09 por archivo con todos los
+> productos; nb02 CELDA 9 y nb08 por mes con las observaciones de la canasta) se mantiene por si vuelve un archivo en
+> centavos, pero vence: en jul-26 esas medianas eran $4.529 y $3.420, y con ~2,5% mensual cruzarían $10.000 hacia 2029.
+> Arreglo cuando haga falta: comparar con el mes anterior (como la corrección de unidades del nb08) o con el semestral
+> de 2022, que está en pesos. La CELDA 6 del nb02, el nb05, el nb06 y el nb07 usan EANs de referencia, con el mismo
+> problema más tarde.
 
 ### Autodetección implementada en `01_exploracion_productos.ipynb`
 

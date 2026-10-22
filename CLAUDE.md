@@ -1,7 +1,11 @@
 # CLAUDE.md — precios_minoristas_supermercados
 
-Pipeline sobre el **SEPA** (precios de supermercados de Argentina): 7 notebooks de Colab (nb01–nb07).
-El que se trabaja hoy es el **nb07** (`notebooks/07_evolucion_canastas_alternativas.ipynb`), motor del
+Pipeline sobre el **SEPA** (precios de supermercados de Argentina): 9 notebooks de Colab (nb01–nb09). Líneas de trabajo
+vivas, en orden (estado y próximos pasos: bloque **ESTADO ACTUAL / HANDOFF [2026-10-22 · cierre]** de
+`.claude/memory.md`): el **pass-through del tipo de cambio** (nb08 + canasta fija de 775 productos, lo último; guía
+`docs/PASS_THROUGH.md`), el **nb09**, el **nb02** y el **nb07**.
+
+El **nb07** (`notebooks/07_evolucion_canastas_alternativas.ipynb`) es el motor del
 informe semanal: 6 canastas, índice encadenado, comparación con el IPC y aperturas por cadena/región.
 Versión vigente: **nb07 v5.15** (v5.13 en método: frescos por TPD, nivel fijo, cobertura mínima; v5.14: corre en el
 Colab GRATUITO; v5.15: composición por rubro con faltantes imputados, candidatos de la Tecnológica y Lavarropas BGH).
@@ -23,19 +27,26 @@ la próxima corrida relee 12 meses en la 19c y los 33 de la econometría, una ve
 **índice con sucursales apareadas** (relativos de la misma sucursal, con imputación del IPC para los días que falta), los
 días con cobertura incompleta, índices por grupo del IPC y un panel producto × día. Un archivo por quincena (corrige el
 doble conteo del 1-5/08/2024). Test `test_canasta_diaria.py`; validado con datos reales contra el lector anterior.
+**Falta la primera corrida en Colab** (~1,5-2 h); qué revisar: `docs/PASS_THROUGH.md` §2. La canasta sale de
+`docs/canastas_alternativas/canasta_pass_through.py` (sobre las salidas del nb09) y el Excel que lee el nb08, del script
+de Colab `marcar_canasta_pass_through_colab.py`.
 
 **nb09** (`notebooks/09_trazabilidad_productos.ipynb`, fuente `gen_nb09.py`): ranking de representatividad de todos
 los productos del SEPA desde 2022. La **versión 2** (corrige los 6 errores de la primera corrida, BUG-45) corrió en
 Colab y se revisó el 2026-10-22 (`docs/AUDITORIA_2026-10-22_nb09.md`): números correctos (panel = SEPA crudo exacto en 4
 meses); quedan decisiones de método (componente comercial y regional del puntaje) y de fuente (ago-oct 2026 del SEPA
-diario sin 8 comercios), en la §4 de esa auditoría.
+diario sin 8 comercios), en la §4 de esa auditoría. Aplicados ese día sin releer (`4ec771f`, `a3acfce`): hoja `Dias`,
+comercios que dejaron de publicar con `mes_baja_comercios`, códigos con basura unidos a su EAN y precio simbólico
+relativo; la próxima corrida en Colab los muestra por primera vez.
 
 ## Al empezar una sesión
 
-1. **Leer los bloques `ESTADO ACTUAL ... / HANDOFF` al principio de `.claude/memory.md`** (uno del nb02 y uno
-   del nb07). Ahí está en qué quedó el trabajo, qué hay que hacer apenas el usuario pase resultados y los números
-   vigentes.
-2. Correr los tests (`pip install -r requirements.txt` si es una PC nueva):
+1. **Leer el bloque `ESTADO ACTUAL / HANDOFF [2026-10-22 · cierre]` al principio de `.claude/memory.md`** (estado de
+   cada línea de trabajo, prioridades, dónde están los datos) y, según lo que pida el usuario, el bloque de ese
+   notebook debajo (nb08 v2, canasta de pass-through, nb09, nb02, nb07). Ahí está en qué quedó el trabajo, qué hay que
+   hacer apenas el usuario pase resultados y los números vigentes.
+2. Correr los tests (`pip install -r requirements.txt` si es una PC nueva; los 14 dieron OK el 2026-10-22; el del nb09
+   tarda ~6 min):
    ```bash
    python notebooks/test_celdas_graficos_y_mapa.py
    python notebooks/test_encadenado_frescos.py encadenado
@@ -55,12 +66,18 @@ diario sin 8 comercios), en la §4 de esa auditoría.
 3. Los datos (ZIPs del SEPA, caché, Excel de salida) **no están en el repo**: viven en el Drive del
    usuario (`MyDrive/carga/`). Para auditar una corrida, el usuario pasa el Excel del nb07 y los zips
    de las carpetas del caché; para el nb02, la salida impresa, `canasta_analisis_<mes>.xlsx` y un zip de
-   `output_canasta/_cache/` (ver `docs/AUDITORIA_2026-10-16_nb02.md` §6 para los scripts). Descomprimir lo que
+   `output_canasta/_cache/` (ver `docs/AUDITORIA_2026-10-16_nb02.md` §6 para los scripts); para el nb08, la salida
+   impresa, `canasta_diaria_pass_through_<desde>_<hasta>.xlsx` y `panel_diario_pass_through_<...>.parquet`; para el nb09,
+   la salida impresa y los cuatro archivos de `output_trazabilidad/` (scripts en `docs/auditoria/scripts_nb09_2026-10/`,
+   AUDITORIA_2026-10-22_nb09 §7). Descomprimir lo que
    pase el usuario en una carpeta propia y correr los scripts con `python -I` (datos no confiables). Para simular
    celdas con datos reales en una PC hacen falta, además: `ar.json` (bajarlo del Drive, `MyDrive/carga/ar.json`; en
    la PC del INECO hay copia en `C:\Users\sriverti\Desktop\INECO\Otros\ar.json`) y los zips semestrales (Drive
-   `carga/`; en la PC del INECO, `...\INECO\SEPA\SEPA_Bases_Originales\carga\` y `...\SEPA\salida_consolidada\`). El usuario corre en el **Colab gratuito** (sin "RAM amplia"): no subir el
-   pico de RAM de las CELDAS 7-8 sin medirlo (`docs/auditoria/scripts_v514/bench_ram.py`).
+   `carga/`; en la PC del INECO, 2024A → 2026B en `...\INECO\SEPA\SEPA_Bases_Originales\carga\` —no hay 2022-2023 y ese
+   `2026B.zip` trae solo julio—; el `2026B.zip` de `...\SEPA\salida_consolidada\` (script 03, 22/10) trae solo julio y
+   octubre de 2026: no subirlo al Drive tal cual, el completo es el del Drive). El usuario corre en el **Colab gratuito** (sin "RAM
+   amplia"): no subir el pico de RAM de las CELDAS 7-8 del nb07 sin medirlo (`docs/auditoria/scripts_v514/bench_ram.py`);
+   el nb09 está medido en Colab (lector ≤ 1,95 GB, notebook ≤ 1,3 GB) y el nb08 v2 en la PC (0,4-0,5 GB por mes).
 
 ## Reglas que muerden
 
@@ -157,6 +174,14 @@ diario sin 8 comercios), en la §4 de esa auditoría.
   El caché `diaria_v2_<clave>` guarda por mes el agregado y el estado (`estado_AAAA-MM.parquet`: pares sucursal ×
   producto + índice de cada producto en los metadatos); cambiar cómo se calculan los relativos exige subir la versión
   del directorio. El último mes no se guarda.
+- **Ningún caché mira si cambió el zip** (nb02, nb07, nb08, nb09): un mes cerrado guardado no se relee aunque se
+  reemplace el zip. Cuando salga el semestral oficial 2026B (ago-oct 2026 vienen hoy del SEPA diario, sin 8 comercios),
+  borrar esos meses de los cachés: nb08 `diaria_v2_<clave>/2026-08.parquet` + `estado_2026-08.parquet` y siguientes;
+  nb09 `_cache_nb09/v1/2026-08_p*` y siguientes. Defectos de la fuente: `docs/SEPA_TECNICO.md`, "Defectos y cambios de
+  la fuente 2022-2026".
+- **Canasta de pass-through**: el nb08 la toma por nombre (`CANASTA_EXCEL`), no del `canasta_representativa_*` más
+  nuevo; el script de Colab NO nombra su salida `canasta_representativa_*` a propósito (el nb02 y el nb07 la tomarían).
+  Cambiar los EANs de la canasta cambia la clave del caché del nb08 (relee todo, ~1,5-2 h); cambiar cantidades no.
 - **nb02, una sola referencia del país** (BUG-42): todo "vs país" es el promedio ponderado del Cuadro 1
   (`prom_nac_dict`), CABA es su fila del Cuadro 1, cadenas y barrios van por mediana en el análisis [mediana], y el AMBA
   es la columna `amba` de la CELDA 7 (CABA + Buenos Aires a ≤ 90 km del Obelisco), nunca `PROVINCIA in (CABA, Buenos
@@ -178,11 +203,13 @@ diario sin 8 comercios), en la §4 de esa auditoría.
 |---|---|
 | `.claude/memory.md` | **Estado y próximos pasos** (bloque de arriba) + handoffs históricos |
 | `docs/CONTEXTO.md` | Pipeline, puesta en marcha en otra máquina, historial de cambios |
-| `docs/METODOLOGIA.md` | Metodología; nb02 en §4 (desagregación de la variación y hoja `analisis_detallado`, lo último); nb07 en §10 (§10.19 = v5.13; §10.20 = v5.14-v5.15) |
+| `docs/METODOLOGIA.md` | Metodología; nb02 en §4 (desagregación de la variación y hoja `analisis_detallado`); nb07 en §10 (§10.19 = v5.13; §10.20 = v5.14-v5.15); **nb08 v2 en §12, nb09 en §13, canasta de pass-through en §14** |
 | `docs/NB02_ANALISIS_VARIACION.md` | **nb02 CELDAS 19b y 19c**: cómo correrlas, cómo leer cada hoja, caché, validación con oct-26, trampas |
 | `docs/BUGS_Y_MEJORAS.md` | Defectos abiertos arriba; bugs resueltos con causa y fix |
-| `docs/SEPA_TECNICO.md` | Formato SEPA, cadenas, frescos por tipo, caché |
-| `docs/AUDITORIA_2026-10-22_nb09.md` | **Corrida del nb09 v2 revisada**: controles, panel contra el SEPA crudo, hallazgos de método y de fuente (§4). Scripts en `docs/auditoria/scripts_nb09_2026-10/` (r1-r6) |
+| `docs/SEPA_TECNICO.md` | Formato SEPA, **defectos y cambios de la fuente 2022-2026** (días con la mitad de los comercios, corte de ago-2026, archivos y filas repetidas, provincias, códigos con basura, precios simbólicos), factor de precio, cadenas, frescos por tipo, caché |
+| `docs/PASS_THROUGH.md` | **Pass-through del tipo de cambio**: estado, cómo correr el nb08 con la canasta de 775 productos y qué revisar, cómo rehacer la canasta, variable de precio, advertencias, próximos pasos (tipo de cambio, regresiones) |
+| `docs/AUDITORIA_2026-10-22_nb09.md` | **Corrida del nb09 v2 revisada**: controles, panel contra el SEPA crudo, hallazgos de método y de fuente (§4), corrida con los arreglos (§6). Scripts en `docs/auditoria/scripts_nb09_2026-10/` (r1-r8) |
+| `docs/auditoria/scripts_nb08_2026-10/` | `validar_real.py`: las celdas reales del nb08 v2 sobre zips locales contra el lector anterior (jul-sep 2024) |
 | `docs/AUDITORIA_2026-10-16_nb02.md` | **Última corrida del nb02 revisada** (oct-26 al 15/10): 19b/19c OK, BUG-42 (antes/ahora con los mismos datos, verificado en Colab), lecturas (Vea en jul-26), abiertos, §8 región por coordenadas (BUG-43, simulación), §9 provincia por polígonos (BUG-44), §10 colores, §11 Cuadro 1 de oct-26 antes/después |
 | `docs/auditoria/scripts_nb02_2026-10/` | Prototipo ad hoc de la desagregación (oct-26), validación de las CELDAS 19b/19c con datos reales, `simular_valores_documento.py` (rehace la CELDA 20 desde el Excel de una corrida), `comparar_corridas.py` (dos Excel hoja por hoja), `simular_region_19b_19c.py` + `comparar_region_19b_19c.py` (19b/19c reales sobre zips locales, código viejo vs nuevo), `reclasificacion_celda7.py` (la CELDA 7 real sobre el maestro, BUG-44), `cuadro1_reclasificacion.py` (Cuadro 1 de una corrida con la provincia de antes y la de ahora), `validar_amba_maestro.py`, `productos_que_mueven_grupo.py` |
 | `docs/AUDITORIA_2026-10-02_v514.md` | **Ultima corrida auditada** (v5.14 al 2026-10-01, Colab gratuito): numeros vigentes, volatilidad de Femenina/Tecnologica, Lavarropas y composicion por rubro (resueltos en la v5.15) |

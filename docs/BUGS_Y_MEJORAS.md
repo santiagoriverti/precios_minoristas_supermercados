@@ -1,6 +1,9 @@
 # Bugs Pendientes y Mejoras
 
-Última actualización: 2026-10-22 — **nb09**: corrida v2 en Colab revisada (`docs/AUDITORIA_2026-10-22_nb09.md`):
+Última actualización: 2026-10-22 (cierre) — **nb08 v2**: un archivo por quincena (el doble conteo del 1-5/08/2024
+queda solo en el nb02) e índice con sucursales apareadas, con la canasta de pass-through por defecto (abajo, entrada
+🟣 del nb08); **nb09**: `mes_baja_comercios` y precio simbólico relativo aplicados (abiertos de método: componente
+comercial y regional del puntaje). Antes, 2026-10-22 — **nb09**: corrida v2 en Colab revisada (`docs/AUDITORIA_2026-10-22_nb09.md`):
 BUG-45 verificado y panel = SEPA crudo en 4 meses; abiertos de método y de fuente (abajo, "nb09 — abiertos").
 Antes, 2026-10-21 — **nb09**: BUG-45 resuelto (6 errores de la primera corrida completa: HHI
 desbordado, 27 "provincias", sucursal × producto repetidos, parte de mes repetida, `es_ean`, nombres) y puntaje con la

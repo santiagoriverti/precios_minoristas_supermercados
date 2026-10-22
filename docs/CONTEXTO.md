@@ -1,13 +1,14 @@
 # Contexto del Proyecto — Precios Minoristas SEPA
 
-Última actualización: 2026-10-16 cierre (nb02: provincia de la CELDA 7 por polígonos de ar.json con tolerancia —BUG-44, resuelto: Neuquén capital, Paraná y San Nicolás vuelven a su provincia; la próxima corrida relee 12 meses en la 19c y 33 en la econometría, una vez—; región de la 19b/19c por coordenadas —BUG-43, simulado con datos reales, la próxima corrida relee 12 meses una vez—, Excel de azul a verde. Antes ese día: corrida de oct-26 en Colab revisada —19b y 19c OK— y BUG-42 corregido: AMBA por coordenadas, una sola referencia del país, acumulados contra el IPC en el mismo período, dispersión P5-P95 y formato del documento técnico; revisión en `docs/AUDITORIA_2026-10-16_nb02.md`. Script 03: acepta la carpeta de días y elige solo el zip semestral A/B. Antes, 2026-10-15: nb02: hoja `analisis_detallado` —la primera del Excel, CELDA 19c— con índices mensuales y semanales de la canasta Media por rubro, región, provincia, cadena y tipo de sucursal; y desagregación de la variación mensual por producto, arrastre, cadena y región —CELDA 19b—. Guía: `docs/NB02_ANALISIS_VARIACION.md`. Antes, 2026-10-02: nb07 v5.15: composición por rubro con faltantes imputados y Lavarropas BGH en la Tecnológica, relee el SEPA; corrida v5.14 al 2026-10-01 auditada y publicable. nb07 v5.14: el mismo cálculo que la v5.13 con un tercio de la RAM, corre en el Colab gratuito sin "RAM amplia"; no relee el SEPA. Antes, 2026-09-24: nb07 v5.13 lista para correr: frescos por TPD con nivel fijo, cobertura mínima de empaquetados, filtro estacional de frescos y ronda 2 de reemplazos —267 EANs—; ver el historial de cambios y `.claude/memory.md`. Antes, 2026-09-09: nb05/nb02: BUG-29 gráfico de barras con series de distinta longitud, BUG-30/32 mosaicos del mapa —CartoDB exige API key y OSM no responde desde la red de INECO— y BUG-31 el mapa pesaba 48 MB. Antes, 2026-09-07: nb07 v5.3, banda de plausibilidad anclada en frescos)
+Última actualización: 2026-10-22 cierre (documentación al día para retomar en otra PC: `docs/PASS_THROUGH.md` nuevo, METODOLOGIA §12-§14 —nb08 v2, nb09, canasta de pass-through—, SEPA_TECNICO con los defectos de la fuente 2022-2026, `requirements.txt` completo, bloque ESTADO ACTUAL / HANDOFF general en `.claude/memory.md`. Ese día: nb08 v2 con la canasta de pass-through por defecto e índice de sucursales apareadas —falta correrlo en Colab—; canasta fija de 775 productos para el pass-through diario y script de Colab que la pone en `cantidad_01`; corrida del nb09 v2 revisada y arreglos que no releen —hoja `Dias`, comercios que dejaron de publicar con `mes_baja_comercios`, códigos con basura unidos a su EAN, precio simbólico relativo—). Antes, 2026-10-16 cierre (nb02: provincia de la CELDA 7 por polígonos de ar.json con tolerancia —BUG-44, resuelto: Neuquén capital, Paraná y San Nicolás vuelven a su provincia; la próxima corrida relee 12 meses en la 19c y 33 en la econometría, una vez—; región de la 19b/19c por coordenadas —BUG-43, simulado con datos reales, la próxima corrida relee 12 meses una vez—, Excel de azul a verde. Antes ese día: corrida de oct-26 en Colab revisada —19b y 19c OK— y BUG-42 corregido: AMBA por coordenadas, una sola referencia del país, acumulados contra el IPC en el mismo período, dispersión P5-P95 y formato del documento técnico; revisión en `docs/AUDITORIA_2026-10-16_nb02.md`. Script 03: acepta la carpeta de días y elige solo el zip semestral A/B. Antes, 2026-10-15: nb02: hoja `analisis_detallado` —la primera del Excel, CELDA 19c— con índices mensuales y semanales de la canasta Media por rubro, región, provincia, cadena y tipo de sucursal; y desagregación de la variación mensual por producto, arrastre, cadena y región —CELDA 19b—. Guía: `docs/NB02_ANALISIS_VARIACION.md`. Antes, 2026-10-02: nb07 v5.15: composición por rubro con faltantes imputados y Lavarropas BGH en la Tecnológica, relee el SEPA; corrida v5.14 al 2026-10-01 auditada y publicable. nb07 v5.14: el mismo cálculo que la v5.13 con un tercio de la RAM, corre en el Colab gratuito sin "RAM amplia"; no relee el SEPA. Antes, 2026-09-24: nb07 v5.13 lista para correr: frescos por TPD con nivel fijo, cobertura mínima de empaquetados, filtro estacional de frescos y ronda 2 de reemplazos —267 EANs—; ver el historial de cambios y `.claude/memory.md`. Antes, 2026-09-09: nb05/nb02: BUG-29 gráfico de barras con series de distinta longitud, BUG-30/32 mosaicos del mapa —CartoDB exige API key y OSM no responde desde la red de INECO— y BUG-31 el mapa pesaba 48 MB. Antes, 2026-09-07: nb07 v5.3, banda de plausibilidad anclada en frescos)
 
-> **El proyecto tiene 7 herramientas (nb01–nb07).** Las descripciones detalladas por celda más
+> **El proyecto tiene 9 herramientas (nb01–nb09).** Las descripciones detalladas por celda más
 > abajo en este archivo son **históricas** (describen la arquitectura previa de nb02); el estado
 > vigente y el detalle por celda están en `.claude/memory.md`. Documentos por tema:
-> `docs/METODOLOGIA.md` (metodología ICR + doble análisis), `docs/BRECHA_CELIACA.md` (Notebook 06),
-> `docs/canastas_alternativas/README.md` (Notebook 07), `docs/SEPA_TECNICO.md` y
-> `docs/BUGS_Y_MEJORAS.md`.
+> `docs/METODOLOGIA.md` (metodología ICR + doble análisis; nb08, nb09 y la canasta de pass-through en §12-§14),
+> `docs/BRECHA_CELIACA.md` (Notebook 06), `docs/canastas_alternativas/README.md` (Notebook 07 y canasta de
+> pass-through), `docs/PASS_THROUGH.md` (pass-through del tipo de cambio con el nb08), `docs/NB02_ANALISIS_VARIACION.md`
+> (nb02 CELDAS 19b/19c), `docs/SEPA_TECNICO.md` y `docs/BUGS_Y_MEJORAS.md`.
 >
 > **Para retomar el trabajo** (en esta o en otra máquina): el punto de entrada es el bloque
 > **ESTADO ACTUAL / HANDOFF** al principio de `.claude/memory.md` — estado por notebook, pendientes
@@ -47,8 +48,10 @@ El notebook 01 entrega un Excel con **cuatro hojas**:
 - **Notebook 01**: `notebooks/01_exploracion_productos.ipynb` — selección dinámica de canasta (ejecutable en Colab)
 - **Notebook 02**: `notebooks/02_evolucion_canasta_representativa.ipynb` — análisis de canasta elegida, mapas, rankings (ejecutable en Colab)
 - **Maestros**: `data/` — productos, sucursales, provincias
-- **Datos SEPA**: NO están en el repo. Están en Google Drive personal: `/carga/` (2024A.zip, 2024B.zip, 2025A.zip, 2025B.zip, 2026A.zip, 2026B.zip)
-- **Archivos auxiliares en Drive** (`carga/`): `IPC.xlsx` (IPC INDEC), `ar.json` (GeoJSON provincias), `output_canasta/canasta_representativa_YYYY-MM.xlsx`
+- **Datos SEPA**: NO están en el repo. Están en Google Drive personal: `/carga/` (2022A.zip … 2026B.zip; 2022-2023 los
+  usan el nb08 y el nb09; desde ago-2026 el `2026B.zip` se completa con el script 03)
+- **Archivos auxiliares en Drive** (`carga/`): `IPC.xlsx` (IPC INDEC), `ar.json` (GeoJSON provincias), `output_canasta/canasta_representativa_YYYY-MM.xlsx`,
+  `output_canasta/canasta_pass_through_2026-10.xlsx` (entrada del nb08), `output_trazabilidad/` (nb09)
 
 ## Puesta en marcha en otra máquina
 
@@ -58,7 +61,8 @@ lo único que falta son los datos SEPA y los auxiliares, que están en el Drive.
 ```bash
 git clone https://github.com/santiagoriverti/precios_minoristas_supermercados
 cd precios_minoristas_supermercados
-pip install -r requirements.txt                     # pandas, pyarrow, openpyxl, xlrd, matplotlib, folium, tqdm
+pip install -r requirements.txt                     # pandas, numpy, pyarrow, openpyxl, xlrd, matplotlib, folium, tqdm,
+                                                    # xlsxwriter, scipy, psutil, python-calamine
 python notebooks/test_celdas_graficos_y_mapa.py     # gráficos + mapa (nb05 y nb02)
 python notebooks/test_encadenado_frescos.py encadenado   # índice de frescos (nb07), método encadenado
 python notebooks/test_encadenado_frescos.py tpd          # índice de frescos (nb07), método TPD (el vigente)
@@ -71,18 +75,28 @@ python notebooks/test_desagregacion_variacion.py    # nb02 CELDA 19b (desagregac
 python notebooks/test_analisis_detallado.py         # nb02 CELDA 19c (hoja analisis_detallado)
 python notebooks/test_valores_documento.py          # nb02 CELDAS 7 (AMBA), 16, 18 y 20 (documento técnico)
 python notebooks/test_reclasificacion_provincia.py  # nb02 CELDA 7 (provincia por polígonos de ar.json, BUG-44)
+python notebooks/test_trazabilidad_productos.py     # nb09 (SEPA sintético contra fuerza bruta, ~6 min)
+python notebooks/test_canasta_diaria.py             # nb08 v2 (medianas y sucursales apareadas contra fuerza bruta)
 ```
 
-Los 12 tests tienen que terminar en OK (verificado el 2026-10-16 con Python 3.14, pandas 2.3, numpy 2.4).
+Los 14 tests tienen que terminar en OK (verificado el 2026-10-22 con Python 3.14, pandas 2.3, numpy 2.4; versiones
+completas en `requirements.txt`). En Windows, si la consola no muestra bien los acentos: `set PYTHONUTF8=1` (cmd) o
+`$env:PYTHONUTF8=1` (PowerShell) antes de correrlos.
 
-**Por dónde empezar**: `CLAUDE.md` (raíz) y los bloques **ESTADO ACTUAL ... / HANDOFF** de
-`.claude/memory.md` (nb02 y nb07), que dicen en qué quedó el trabajo y qué hacer con los próximos resultados.
-Para el nb02 (análisis de la variación de la canasta): `docs/NB02_ANALISIS_VARIACION.md`; la última corrida revisada
-(qué se esperaba, qué salió, qué quedó abierto) está en `docs/AUDITORIA_2026-10-16_nb02.md`. Para revisar una corrida
-del nb02 hacen falta la salida impresa, `canasta_analisis_<mes>.xlsx` y un zip de `output_canasta/_cache/`.
-Para auditar una corrida del nb07 hacen falta el Excel de salida y las carpetas del caché del Drive
-(`_cache_nb07/sem_<clave>_v5` y `ean_<clave>_v5`, en zip); la planilla de precios promedio del INDEC
-está en `data/sh_ipc_precios_promedio_2026-08.xls` (bajar la nueva cuando se publique).
+**Por dónde empezar**: `CLAUDE.md` (raíz) y el bloque **ESTADO ACTUAL / HANDOFF [2026-10-22 · cierre]** al principio de
+`.claude/memory.md` (estado de cada línea de trabajo y qué hacer con los próximos resultados); debajo están los bloques
+de cada notebook (nb08, canasta de pass-through, nb09, nb02, nb07) con el detalle.
+- **Pass-through / nb08**: `docs/PASS_THROUGH.md` (cómo correrlo y qué revisar). Para revisar una corrida hacen falta la
+  salida impresa, `canasta_diaria_pass_through_<desde>_<hasta>.xlsx` y `panel_diario_pass_through_<...>.parquet`.
+- **nb09**: la última corrida revisada está en `docs/AUDITORIA_2026-10-22_nb09.md`; para revisar una corrida hacen falta
+  la salida impresa y los cuatro archivos de `output_trazabilidad/` (Excel, `.parquet`, `.csv.gz` y
+  `panel_mensual_productos_<...>.parquet`); los scripts están en `docs/auditoria/scripts_nb09_2026-10/`.
+- **nb02** (análisis de la variación de la canasta): `docs/NB02_ANALISIS_VARIACION.md`; la última corrida revisada
+  (qué se esperaba, qué salió, qué quedó abierto) está en `docs/AUDITORIA_2026-10-16_nb02.md`. Para revisar una corrida
+  del nb02 hacen falta la salida impresa, `canasta_analisis_<mes>.xlsx` y un zip de `output_canasta/_cache/`.
+- **nb07**: para auditar una corrida hacen falta el Excel de salida y las carpetas del caché del Drive
+  (`_cache_nb07/sem_<clave>_v5` y `ean_<clave>_v5`, en zip); la planilla de precios promedio del INDEC
+  está en `data/sh_ipc_precios_promedio_2026-08.xls` (bajar la nueva cuando se publique).
 
 Reglas del repo que conviene saber antes de tocar nada:
 
@@ -100,7 +114,18 @@ Reglas del repo que conviene saber antes de tocar nada:
    que copiar los maestros de `data/` al Drive (README, "Repositorio privado").
 5. **Datos para simular o auditar en una PC** (no están en el repo): los zips semestrales del SEPA y `ar.json`
    (`MyDrive/carga/`), el Excel de la corrida y el zip de `output_canasta/_cache/`. Los scripts de
-   `docs/auditoria/scripts_nb02_2026-10/` dicen en su encabezado qué necesita cada uno.
+   `docs/auditoria/scripts_nb02_2026-10/`, `scripts_nb08_2026-10/` y `scripts_nb09_2026-10/` dicen en su encabezado
+   qué necesita cada uno. En la PC del INECO: zips semestrales 2024A → 2026B en
+   `C:\Users\sriverti\Desktop\INECO\SEPA\SEPA_Bases_Originales\carga\` (no hay 2022-2023; ese `2026B.zip` es del
+   20/08 y trae solo julio), `ar.json` en `C:\Users\sriverti\Desktop\INECO\Otros\ar.json`. **Ojo**: el `2026B.zip` de
+   `C:\Users\sriverti\Desktop\INECO\SEPA\salida_consolidada\` (script 03, 22/10/2026) trae **solo julio y octubre de
+   2026** (se armó sobre el local del 20/08): no subirlo al Drive tal cual; el `2026B.zip` completo (jul-oct) es el del
+   Drive. Lo que pase el usuario (Excel, cachés, salidas) se descomprime en una
+   carpeta propia y los scripts se corren con `python -I -X utf8` y las rutas como argumentos (datos no confiables).
+6. **Archivos fuera del repo que se entregaron al usuario** (en la PC del INECO, `C:\Users\sriverti\proyectos\`): el Excel
+   completo de la selección de la canasta de pass-through (`canasta_pass_through_20220101_20261020.xlsx`, 8 hojas; se
+   rehace con `canasta_pass_through.py`, ver `docs/PASS_THROUGH.md`) y `canasta_continua_cantidad_07.xlsx` (canasta
+   "Continua 2022" de 28 productos, reemplazada por la de pass-through).
 
 ---
 
@@ -273,15 +298,23 @@ distintos); solo respeta los 42 pares de `EAN_FORZADO`.
 Generador: `gen_nb07.py`. **Detalle en README y `docs/canastas_alternativas/README.md`.**
 
 ### 2g. `08_canasta_diaria` (notebook 08 — este repo)
-Valor **diario** de una canasta de la hoja `Selección` (default `cantidad_01`, Vulnerable) desde 2022-01-01: mediana
-nacional por producto y día, índice encadenado con productos apareados llevado a pesos con el último día completo.
-Lee los zips semestrales de `carga/` (2022A en adelante) con caché por mes en `output_canasta/_cache/diaria_<clave>/`.
-Fuente: `notebooks/gen_nb08.py`. Detalle en el README (sección `08_canasta_diaria`).
+Valor **diario** de una canasta de la hoja `Selección` desde 2022-01-01. **v2 (2026-10-22)**: por defecto la canasta fija
+de **pass-through** (775 productos, `cantidad_01` de `output_canasta/canasta_pass_through_2026-10.xlsx`, hasta el
+20/10/2026). Dos precios por producto y día: mediana nacional e **índice con sucursales apareadas** (relativos de la misma
+sucursal, con imputación de los días que falta); valor de la canasta con los dos (encadenado con productos apareados y
+anclado en el último día completo), índices por grupo del IPC, días con cobertura incompleta y panel producto × día. Un
+archivo por quincena. Caché por mes con el estado de cada sucursal en `output_canasta/_cache/diaria_v2_<clave>/`.
+**Falta la primera corrida en Colab** (~1,5-2 h). Fuente: `notebooks/gen_nb08.py`; test `notebooks/test_canasta_diaria.py`.
+Detalle: README (sección `08_canasta_diaria`), `docs/PASS_THROUGH.md` y `docs/METODOLOGIA.md` §12.
 
 ### 2h. `09_trazabilidad_productos` (notebook 09 — este repo)
 Representatividad de todos los productos del SEPA desde 2022 (temporal, sucursal, comercial, regional, precio y
-puntaje). Fase 1 resume cada archivo de los zips semestrales en `output_trazabilidad/_cache_nb09/v1/`; fase 2 agrega.
-Fuente: `notebooks/gen_nb09.py`; test `notebooks/test_trazabilidad_productos.py`. Detalle en el README.
+puntaje). Fase 1 resume cada archivo de los zips semestrales en `output_trazabilidad/_cache_nb09/v1/` (un proceso por
+archivo, por bloques: corre en el Colab gratuito); fase 2 agrega. Versión 2 (lector `LECTOR_VERSION = 2`) corrida y
+revisada el 2026-10-22 (`docs/AUDITORIA_2026-10-22_nb09.md`), con hoja `Dias`, marcas de comercios que dejaron de
+publicar (`mes_baja_comercios`), códigos con basura unidos y precio simbólico relativo. De sus salidas sale la canasta de
+pass-through. Fuente: `notebooks/gen_nb09.py`; test `notebooks/test_trazabilidad_productos.py`. Detalle: README y
+`docs/METODOLOGIA.md` §13.
 
 ### 3. `analisis_SEPA_evolucion.ipynb`
 **Propósito**: evolución mensual de precios con canasta fija de 30 EANs.
@@ -579,6 +612,18 @@ Los 4 reemplazos (Swift XL, Lavandina Anti-splash, Plusbelle, Listerine) están 
 ---
 
 ## Historial de cambios
+
+### 2026-10-22 (cierre) — documentación al día para retomar en otra PC
+
+Pedido del usuario: dejar memoria, contexto, documentación técnica y README al día para seguir en otra PC y otra
+sesión. Sin cambios de código: `requirements.txt` completo (faltaban `xlsxwriter`, `scipy`, `psutil` y
+`python-calamine`, que usan los tests del nb08/nb09 y los scripts de la canasta y de la revisión del nb09), los 14 tests
+en OK; `docs/PASS_THROUGH.md` nuevo (estado, cómo correr el nb08 y qué revisar, la canasta y cómo rehacerla, variable
+de precio, advertencias, próximos pasos); `docs/METODOLOGIA.md` §12 (nb08 v2), §13 (nb09) y §14 (canasta de
+pass-through); `docs/SEPA_TECNICO.md`, "Defectos y cambios de la fuente 2022-2026"; README (preguntas, datos en el Drive
+con 2022-2023 y `output_trazabilidad/`, árbol, tests y documentación); bloque ESTADO ACTUAL / HANDOFF general al
+principio de `.claude/memory.md`; `CLAUDE.md`. Commits del día: `4ec771f` y `a3acfce` (nb09), `fa1144d` (canasta de
+pass-through), `a1f4522` (nb08 v2) y el de esta documentación.
 
 ### 2026-10-22 (noche) — nb08 v2: canasta de pass-through por defecto y sucursales apareadas
 

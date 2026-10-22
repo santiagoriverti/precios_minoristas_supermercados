@@ -6,7 +6,53 @@ Autor: Santiago Riverti — investigador independiente
 
 ---
 
-## 🟢 nb08 v2: pass-through por defecto y sucursales apareadas [2026-10-22 noche] — leer esto primero
+## 🟢 ESTADO ACTUAL / HANDOFF [2026-10-22 · cierre] — leer esto primero
+
+- **Repo**: `main` = `origin/main` (último commit: la documentación de cierre del 2026-10-22, después de `a1f4522`). Nada
+  sin commitear. **14 tests en OK** el 2026-10-22 (Python 3.14). En una PC nueva: `git clone`, `pip install -r
+  requirements.txt` (ya trae `xlsxwriter`, `scipy`, `psutil`, `python-calamine`) y los tests de `CLAUDE.md`.
+- **Commits del 2026-10-22**: `4ec771f` y `a3acfce` (nb09: hoja Dias, comercios que dejaron de publicar,
+  `mes_baja_comercios`, códigos con basura, precio simbólico relativo), `fa1144d` (canasta de pass-through + script de
+  Colab), `a1f4522` (nb08 v2) y el de la documentación (PASS_THROUGH.md, METODOLOGIA §12-§14, SEPA_TECNICO, README).
+
+**Líneas de trabajo, en orden de prioridad:**
+
+1. **Pass-through del tipo de cambio (nb08 v2 + canasta de 775 productos) — lo último.** Todo listo y pusheado; el
+   usuario ya subió `MyDrive/carga/output_canasta/canasta_pass_through_2026-10.xlsx`. **Falta que corra el nb08 en
+   Colab** (badge, Ejecutar todo, sin tocar la CELDA 1; ~1,5-2 h la primera vez, 58 meses). Cuando pase la salida
+   impresa, `canasta_diaria_pass_through_20220101_20261020.xlsx` y `panel_diario_pass_through_<...>.parquet`: revisar con
+   la lista de `docs/PASS_THROUGH.md` §2 (775 productos, AVISO de ago-2024 parte 1, `productos_con_dato` = 775,
+   `cobertura_incompleta` en 16-28/07/2023, medianas vs apareado, eslabones > ±15%). Después: tipo de cambio diario
+   (A3500, MEP/CCL) y regresiones (`docs/PASS_THROUGH.md` §6). Detalle: bloques "nb08 v2" y "Canasta para el
+   pass-through" de abajo.
+2. **nb09**: corrida v2 revisada (AUDITORIA_2026-10-22_nb09). `mes_baja_comercios` y el precio simbólico relativo
+   (`a3acfce`) no se corrieron en Colab todavía: la próxima corrida tarda ~10 min si `output_trazabilidad/_cache_nb09/`
+   está en el Drive (preguntar al usuario: la del 22/10 no lo encontró y releyó todo, 102 min). Revisar
+   `mes_baja_comercios` (2026-07 ~8.836, 2026-09 ~6.890) y el umbral (~$100, ~417 productos). Decisiones abiertas del
+   usuario: componente comercial del puntaje (relee ~65 min) y regional (no relee), AUDITORIA §4.1-4.2.
+3. **nb02**: falta re-correr en Colab con BUG-43/BUG-44 (relee 12 meses en la 19c, ~35 min, y los 33 de la econometría,
+   una vez); el nb02 todavía suma los dos archivos del 1-5/08/2024 (el nb08 y el nb09 ya no); portar la provincia por
+   polígonos y el AMBA al nb05; "Cadena 24" del maestro. Bloque "ESTADO ACTUAL nb02" de abajo.
+4. **nb07**: la v5.15 está lista desde el 2026-10-02 y **sin correr** (relee el SEPA, ~2h10m en el Colab gratuito);
+   después auditar y documentar; planilla del INDEC de sep-26. Bloque "ESTADO ACTUAL nb07" de abajo.
+5. **A futuro**: cuando salga el semestral oficial 2026B, reemplazar el zip y borrar de los cachés ago-oct 2026 (ningún
+   caché mira si cambió el zip; SEPA_TECNICO, "Defectos y cambios de la fuente"); la regla de centavos vence hacia
+   2029; rotar el PAT de GitHub (tarea del usuario).
+
+**Dónde están los datos** (no en el repo): Drive `MyDrive/carga/` (zips 2022A → 2026B, `IPC.xlsx`, `ar.json`,
+`output_canasta/` con `canasta_representativa_2026-10.xlsx`, `canasta_pass_through_2026-10.xlsx` y `_cache/`,
+`output_canasta_alternativa/`, `output_trazabilidad/`). PC del INECO: zips 2024A → 2026B en
+`C:\Users\sriverti\Desktop\INECO\SEPA\SEPA_Bases_Originales\carga\` (sin 2022-2023; ese `2026B.zip` trae solo julio),
+`ar.json` en `...\INECO\Otros\`; **el `2026B.zip` de `...\INECO\SEPA\salida_consolidada\` (script 03, 22/10) trae solo
+julio y octubre de 2026: no subirlo al Drive tal cual** (el completo es el del Drive); el Excel completo de la selección de
+pass-through en `C:\Users\sriverti\proyectos\canasta_pass_through_20220101_20261020.xlsx` (se rehace con
+`canasta_pass_through.py`). Lo que pase el usuario: carpeta propia y `python -I -X utf8`.
+
+**Reglas**: las de `CLAUDE.md` ("Reglas que muerden"): los `.ipynb` se regeneran con `gen_nbXX.py` (commit de los dos);
+scripts de edición escritos con Write (la shell se come las barras); commits solo con Santiago Riverti, sin atribución a
+Claude.
+
+## 🟢 nb08 v2: pass-through por defecto y sucursales apareadas [2026-10-22 noche]
 
 - Pedido: que el nb08 corra por defecto la canasta de pass-through (`CANASTA_COL = 'cantidad_01'`, `CANASTA_EXCEL =
   .../output_canasta/canasta_pass_through_2026-10.xlsx`, ya subido al Drive por el usuario) con las correcciones
@@ -41,14 +87,16 @@ Autor: Santiago Riverti — investigador independiente
   Morixe, que colapsan dic-23/abr-24; pesos IPC por grupo (Carnes 28% con envasados: advertido) o iguales por grupo.
 - **Script de Colab** (pedido del usuario): `docs/canastas_alternativas/marcar_canasta_pass_through_colab.py` pone la
   canasta en `cantidad_01` de la Selección de `canasta_representativa_AAAA-MM.xlsx` → `canasta_pass_through_AAAA-MM.xlsx`
-  (para el nb08 con `CANASTA_EXCEL` a ese archivo y `CANASTA_COL = 'cantidad_01'`; el nb08 la llama "Vulnerable").
+  (el nb08 v2 la usa por defecto, con `CANASTA_EXCEL` a ese archivo y `CANASTA_COL = 'cantidad_01'`, y la llama
+  "Pass-through").
   Probado con el Excel real de oct-26 simulando google.colab (casos: completo, _con_canastas, TIPOS, 'uno'/'igual',
   canasta_analisis sin Selección, cantidad_01 previa, segunda corrida, sin GitHub). Trampa: en openpyxl
   `ws.cell(..., value=None)` NO borra; usar `.value = None`. Baja la canasta del CSV en GitHub (main) o del Excel de
-  la selección subido junto. nb08 con 775 productos: medio mes 51 s/2,4 GB en la PC → ~3 h y ~5 GB/mes en Colab.
-- **Siguiente (propuesto)**: la variable de precio con sucursales apareadas (índice diario por producto, días
-  incompletos marcados) en un lector propio tipo nb09 (más rápido que el nb08 y sin el problema de la mediana);
-  después, el tipo de cambio diario (A3500 y MEP/CCL) y las regresiones.
+  la selección subido junto. Con el lector viejo del nb08, 775 productos tardaban 51 s y 2,4 GB por medio mes en la PC;
+  el nb08 v2 lee ~1 min y 0,5 GB por mes.
+- **Siguiente**: la variable de precio con sucursales apareadas quedó en el nb08 v2 (bloque de arriba, en vez de un
+  lector aparte); falta correrlo en Colab y después el tipo de cambio diario (A3500 y MEP/CCL) y las regresiones
+  (`docs/PASS_THROUGH.md` §6).
 
 ## 🟢 nb09 — corrida v2 en Colab revisada [2026-10-22]
 
@@ -110,7 +158,7 @@ Autor: Santiago Riverti — investigador independiente
   y el ranking nuevo (scripts de la revisión: scratchpad de la sesión, `rev09/r2_consistencia.py`, `r13_valida_v2.py`).
   Pendiente aparte (tarjeta): el nb02 y el nb08 suman los dos archivos de la primera quincena de ago-2024.
 
-## 🟢 nb09 — versión robusta para el Colab gratuito [2026-10-21] — leer esto primero
+## 🟢 nb09 — versión robusta para el Colab gratuito [2026-10-21]
 
 - La primera corrida en Colab se cayó por RAM. Reescrito sin cambiar números: lector = script aparte
   (`nb09_lector.py`, `subprocess` por archivo, NO fork), lectura por bloques (`BLOQUE_MB` 32), fase 2b por grupos de
@@ -198,7 +246,7 @@ Autor: Santiago Riverti — investigador independiente
   usuario la pide: misma revisión (meses desde 2022-01, productos tardíos, avisos de saltos > ±15%). No hay
   zips 2022/2023 en la PC del INECO (solo 2024A → 2026B en `SEPA_Bases_Originales\carga`).
 
-## 🟢 ESTADO ACTUAL nb02 / HANDOFF [2026-10-16 · cierre] — BUG-42 verificado; BUG-43, BUG-44 y Excel verde listos (falta Colab) — leer esto primero
+## 🟢 ESTADO ACTUAL nb02 / HANDOFF [2026-10-16 · cierre] — BUG-42 verificado; BUG-43, BUG-44 y Excel verde listos (falta Colab)
 
 ### Novedad 2026-10-16 (tarde) — lo último
 
@@ -229,8 +277,9 @@ Autor: Santiago Riverti — investigador independiente
   azul; `comparar_corridas.py` contra el Excel anterior (cambian Prov_*, Sucs_*, rankings, mapas, regiones y colores; la
   serie y la 19b por producto no). (2) Portar al nb05 la provincia por polígonos y el AMBA. (3) El resto de los abiertos.
 
-Hay dos líneas de trabajo vivas: **nb02** (este bloque, lo último) y **nb07** (bloque siguiente, sin cambios desde el
-2026-10-02). Guía práctica del nb02: **`docs/NB02_ANALISIS_VARIACION.md`**; método: `docs/METODOLOGIA.md` §4; última
+(Al 2026-10-16.) Hay dos líneas de trabajo vivas: **nb02** (este bloque) y **nb07** (bloque siguiente, sin cambios desde
+el 2026-10-02); desde el 2026-10-20 se sumaron el nb08, el nb09 y el pass-through (estado general: bloque del
+2026-10-22 al principio de este archivo). Guía práctica del nb02: **`docs/NB02_ANALISIS_VARIACION.md`**; método: `docs/METODOLOGIA.md` §4; última
 revisión de una corrida: **`docs/AUDITORIA_2026-10-16_nb02.md`**. Repo al día en `main` (sin cambios sin commitear).
 
 ### En qué estamos

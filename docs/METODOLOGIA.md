@@ -1,7 +1,7 @@
 # Metodología — ICR (Índice de Consumo Representativo)
 
-**Última actualización:** 2026-10-16 (§4: provincia de cada sucursal por polígonos de ar.json con tolerancia de 100 km —BUG-44—; región de la 19b/19c = AMBA por coordenadas y el resto por la provincia del archivo —BUG-43—; "Referencias, AMBA y valores del documento técnico" —una sola referencia del país, AMBA por coordenadas, acumulados contra el IPC en el mismo período, dispersión P5-P95—; antes, 2026-10-15: §4 desagregación de la variación mensual y hoja `analisis_detallado`. Antes, 2026-09-09: limitación nueva en §6: los índices base 100 de series que arrancan en meses distintos no son comparables entre sí. Antes, 2026-09-07: nb07 v5.3, banda de plausibilidad anclada en frescos + cobertura nacional obligatoria; v5.2: filtro de régimen [BUG-24] y tripwire Alertas_precio_item — 287 empaquetados + 59 tipos de frescos)
-**Período de referencia:** enero 2024 – agosto 2026
+**Última actualización:** 2026-10-22 (§12 nuevo: nb08 v2, valor diario de una canasta con índice de sucursales apareadas e imputación de precios faltantes; §13 nuevo: nb09, representatividad de todos los productos del SEPA —métricas, puntaje y marcas—; §14 nuevo: canasta fija para el pass-through diario —reglas, grupos del IPC, pesos—; §1: todos los semestrales 2022-2026 del Drive están en pesos). Antes, 2026-10-16 (§4: provincia de cada sucursal por polígonos de ar.json con tolerancia de 100 km —BUG-44—; región de la 19b/19c = AMBA por coordenadas y el resto por la provincia del archivo —BUG-43—; "Referencias, AMBA y valores del documento técnico" —una sola referencia del país, AMBA por coordenadas, acumulados contra el IPC en el mismo período, dispersión P5-P95—; antes, 2026-10-15: §4 desagregación de la variación mensual y hoja `analisis_detallado`. Antes, 2026-09-09: limitación nueva en §6: los índices base 100 de series que arrancan en meses distintos no son comparables entre sí. Antes, 2026-09-07: nb07 v5.3, banda de plausibilidad anclada en frescos + cobertura nacional obligatoria; v5.2: filtro de régimen [BUG-24] y tripwire Alertas_precio_item — 287 empaquetados + 59 tipos de frescos)
+**Período de referencia:** enero 2024 – octubre 2026 (nb02, nb07); enero 2022 – octubre 2026 (nb08, nb09 y la canasta de pass-through)
 
 ---
 
@@ -36,6 +36,12 @@ Las 24 provincias de Argentina. Aproximadamente 3.600 sucursales con coordenadas
 ### Factor de escala de precios
 
 Los datos SEPA hasta mediados de 2025 estaban en **centavos** (factor ÷100). Desde **2025B en adelante los datos ya vienen en pesos** (factor = 1). El código autodetecta el factor mediante la mediana de precios: si supera $10.000 → divide por 100.
+
+> **Medido el 2026-10-22** (nb09, todos los días de enero 2022 a octubre 2026 de los ZIPs que hay hoy en el Drive): factor
+> 1 en los 1.747 días, es decir que **los semestrales 2022-2026 publicados hoy están todos en pesos**. La regla se mantiene
+> por si vuelve un archivo en centavos, pero vence: en julio 2026 la mediana de todos los productos era $4.529 y la de
+> las observaciones de las canastas del nb02, $3.420; con ~2,5% mensual cruzarían $10.000 hacia 2029
+> (`docs/AUDITORIA_2026-10-22_nb09.md` §4.4).
 
 ---
 
@@ -1430,3 +1436,134 @@ del análisis clásico, exporta `datos_econometria_{MES}.xlsx` en `output_canast
 - **Semanas de borde**: cada semana ISO se asigna a su mes "dueño" (el del jueves ISO) para no
   duplicar fragmentos entre archivos mensuales.
 - **Hojas**: `Diccionario`, `canastas_nacional/provincia/cadena`, `productos_nacional/provincia/cadena`.
+
+---
+
+## 12. Notebook 08 — Valor diario de una canasta (v2, 2026-10-22)
+
+Valor **diario** de una canasta fija y precio diario de cada producto desde `FECHA_INICIO` (2022-01-01). Por defecto,
+la canasta de pass-through (§14). Guía práctica: `docs/PASS_THROUGH.md`; config y salidas: README, sección
+`08_canasta_diaria`.
+
+**Lectura.** Zips semestrales de `MyDrive/carga/` (`2022A.zip` en adelante), **un archivo por (mes, parte)**: si un zip
+trae dos para la misma parte (`2024B.zip`, agosto, `...parte1COMPLETO` con los días 1-5 y `...parte1COMPLETOb` con los
+días 1-15), se usa el que cubre más días (hasta el 2026-10-22 se sumaban y el 1-5/08/2024 contaba doble). Las líneas se
+filtran por EAN antes de parsear. Pesos o centavos por mes: mediana de todas las observaciones de la canasta en el mes >
+$10.000 → ÷100 (la regla de la CELDA 9 del nb02); además, si el eslabón de medianas del primer día de un mes da > 30 o <
+1/30, las medianas se corrigen (÷100 o ×100) desde ese mes y se avisa; si el mes siguiente vuelve a las unidades de
+antes, su primer día lo detecta y lo revierte, de modo que queda corregido el mes (o los meses) en otras unidades.
+
+**Dos precios por producto y día.**
+- **Mediana nacional** de todas las observaciones (sucursales) del día, sin filtro de sucursales (el universo de la
+  serie oficial del nb02), y media recortada (`precio_promedio`: fuera de [mediana/4, mediana×4]).
+- **Índice con sucursales apareadas.** Para el producto *e*, la sucursal *s* con precio hoy (*t*) y último precio
+  `p(s,τ)` en el día τ, con t − τ ≤ `MAX_DIAS_SIN_PRECIO` (31):
+
+  `r(s,t) = p(s,t) / p̂(s,t−1)`, con `p̂(s,t−1) = p(s,τ) × I(e,t−1) / I(e,τ)`
+
+  es decir, el precio anterior de la sucursal se mueve con el índice del producto desde el día en que informó por última
+  vez (imputación de precios faltantes por el movimiento de la clase, como en el IPC). Sin la imputación, una sucursal
+  que vuelve después de unos días suma de nuevo la variación que ya entró por las otras (el test lo detecta: el índice
+  deja de dar la tendencia verdadera). Relativos fuera de [1/4, 4] no cuentan (errores de carga). El eslabón del
+  producto es la media geométrica de sus relativos (Jevons) y `I(e,t) = I(e,t−1) × eslabón`; sin pares, el producto no
+  se mueve ese día. Si el SEPA repite una fila sucursal × producto, para los relativos cuenta el promedio de las repetidas. El índice
+  arranca el primer día con mediana y se lleva a pesos con la mediana del producto en su último día con dato
+  (`precio_apareado`).
+  Por qué: la mediana nacional se mueve cuando cambian las sucursales que informan aunque ningún precio cambie (del 16
+  al 28/07/2023 el SEPA trae la mitad de los comercios; desde el 01/08/2026, 8 comercios menos; Libertad hasta el
+  02/09/2026). El apareado compara siempre la misma sucursal con ella misma (principio de modelo emparejado).
+
+**Valor de la canasta.** Con cantidades fijas q (de la hoja `Selección`), eslabón diario de canasta = Σ q·p_t / Σ q·p_{t−1}
+sobre los productos con dato los dos días (productos apareados); se encadena y se lleva a pesos en el **día ancla** (el
+último con todos los productos): `valor_canasta` con las medianas y `valor_canasta_apareado` con los precios apareados.
+`valor_directo` = Σ q × mediana del día, solo con los productos con dato (salta cuando entra o sale un producto). Con
+cantidades fijas el índice es tipo Lowe: el peso efectivo de cada producto en un día es q × p de ese día.
+`Indices_por_grupo`: el mismo encadenado con los precios apareados de los productos de cada tipo y grupo del IPC (base 100
+el primer día).
+
+**Cobertura.** `cobertura_incompleta` = días en que las observaciones de la canasta quedan por debajo del 75%
+(`MIN_COBERTURA_DIA`) de la mediana de las observaciones diarias de su mes. Se marcan, no se borran. Los días calendario
+sin dato del SEPA (31/10/2023, 10/05/2026) no se completan.
+
+**Caché.** Por mes cerrado: el agregado (`AAAA-MM.parquet`) y el estado al cierre (`estado_AAAA-MM.parquet`: último
+precio, día e índice de cada sucursal × producto de los últimos 31 días, y el índice de cada producto en los metadatos)
+para empalmar el mes siguiente sin releer. Si falta el estado de un mes, se relee ese mes. Clave = los EANs de la
+canasta (cambiar cantidades no relee).
+
+**Validación.** Test con SEPA sintético contra fuerza bruta (`notebooks/test_canasta_diaria.py`); con datos reales
+(jul-sep 2024, 775 productos): medianas y promedios idénticos al lector anterior en 71.300 producto-días; apareado
++8,97% contra medianas +9,07% en el trimestre, con un tercio del ruido diario (desvío 0,09 contra 0,25 pp).
+
+---
+
+## 13. Notebook 09 — Representatividad de todos los productos del SEPA (2026-10)
+
+Para cada código que reportó precio desde `FECHA_INICIO` (2022-01-01) en los zips semestrales: qué tan representativo es
+en el tiempo, por sucursal, por comercio y por región. Sirve para elegir productos de canastas (la de pass-through, §14,
+salió de acá). Arquitectura, config y hojas: README, sección `09_trazabilidad_productos`; última corrida revisada:
+`docs/AUDITORIA_2026-10-22_nb09.md`.
+
+**Denominadores diarios** (hoja `Dias`): un día del período es un día con algún precio en el SEPA; una sucursal, un
+comercio o una provincia están **activos** un día si tienen algún precio ese día. Así no se castiga a un producto por
+sucursales o comercios que todavía no existían o ya se fueron.
+
+**Métricas principales.**
+- Temporal: `pct_dias` = días con precio / días del período; `continuo_periodo` (precio todos los días); días útiles =
+  días con ≥ 100 sucursales (`MIN_SUC_DIA_UTIL`) y ≥ 5% (`MIN_PCT_DIA_UTIL`) de las sucursales activas.
+- Sucursal: `pct_suc_diaria_prom` = promedio, en los días con precio, de sucursales con precio / sucursales activas;
+  también mínimo diario y sucursales distintas del período.
+- Comercial: `pct_com_diaria_prom` = lo mismo con comercios (empresa); cadena principal, su cuota y HHI.
+- Regional: `pct_provincias` = provincias en las que estuvo alguna vez / 24; `pct_prov_diaria_prom` (cuota diaria);
+  regiones INDEC con GBA = AMBA por coordenadas; departamentos (Georef) y localidades.
+- **Puntaje 0-100** = media geométrica de `pct_dias`, `pct_suc_diaria_prom`, `pct_com_diaria_prom` y `pct_provincias`.
+
+**Identificación y marcas.**
+- `es_ean`: solo dígitos, dígito verificador válido, fuera de los rangos de balanza (EAN-13 que empiezan con 2) y de uso
+  interno, y no marcado como no-EAN en el maestro; el resto son códigos internos de un comercio.
+- Códigos con texto mal codificado pegado (8-14 dígitos seguidos de caracteres no ASCII) se unen a su EAN
+  (`limpiar_codigo`); si el mismo día aparecen las dos formas, cuenta la de más sucursales.
+- `solo_en_comercios_que_dejaron_de_publicar`: el producto solo estuvo en comercios sin precios en el último mes del
+  período (su "último día" puede no ser una baja del producto); `mes_baja_comercios` = mes en que dejó de publicar la
+  última de esas cadenas ('2026-07' = corte de la fuente: desde ago-2026 los datos salen del SEPA diario, sin 8
+  comercios). Un hueco temporal en el último mes también cuenta como baja.
+- `precio_simbolico`: precio mediano del último mes ≤ `PRECIO_SIMBOLICO_PCT` (1,25%) de la mediana, entre productos, de
+  ese precio (~$100 en oct-2026; sigue a la inflación): precios de relleno (panadería de DIA a $5-95, comidas de
+  ChangoMas a $4-10).
+
+**Abiertas** (decisiones del usuario, AUDITORIA §4.1-4.2): el componente comercial pesa igual a un comercio de una
+sucursal, una estación de servicio o Mercado Libre que a Carrefour (limita el puntaje de 2.129 de los 2.496 productos con
+puntaje ≥ 50; cambiarlo relee el SEPA una vez); `pct_provincias` satura (mediana 100 entre los ≥ 50; usar la cuota
+diaria no relee).
+
+---
+
+## 14. Canasta fija para el pass-through diario (2026-10-22)
+
+Canasta para estimar el traspaso del tipo de cambio a precios con datos **diarios** del 01/01/2022 al 20/10/2026, con
+los **mismos productos todos los días** y grupos para desagregar. Guía de trabajo: `docs/PASS_THROUGH.md`; selección
+reproducible: `docs/canastas_alternativas/canasta_pass_through.py` (sobre las salidas del nb09 al 22/10/2026).
+
+**Reglas** (en orden; productos que quedan): precio todos los días (4.545) → EAN del maestro, sin blacklist ni precio
+simbólico (4.521) → consumo masivo (4.420) → ≥ 150 sucursales por día, en promedio, en **cada** mes (1.779) → cobertura
+estable: ningún mes bajo el 35% de su mes mediano y la de 2022 entre 1/3 y 3 veces la de 2026 (1.320) → ≥ 6 de las 8
+cadenas grandes y ninguna con más del 60% de sus sucursal-días (1.096) → 24 provincias y ≥ 85% de las provincias
+activas cada día (1.012) → CV del precio entre sucursales ≤ 25% (1.004) → una variedad por marca + subcategoría +
+presentación cuando el precio difiere menos de 3% (**775**).
+
+Decisiones de método:
+- **Cobertura por promedio mensual, no por el peor día**: el SEPA tiene días con la mitad de los comercios
+  (16-28/07/2023); esos días se tratan en la serie (`cobertura_incompleta` del nb08), no en la selección.
+- **Estabilidad**: un producto cuya cobertura colapsa en un tramo cambia de muestra justo cuando importa. Quedan
+  afuera, por eso, fideos y arroz de Molinos, azúcar Ledesma y harinas Morixe y Pureza (colapsan dic-2023/abr-2024).
+- **Grupos del IPC** (INDEC, 16 de 18 presentes) por categoría y subcategoría del maestro, con excepciones por
+  descripción (prefritos de pollo → Carnes). Tipo: Alimentos 287, Bebidas sin alcohol 138, Limpieza del hogar 127,
+  Bebidas alcohólicas 110, Cuidado personal y botiquín 81, Mascotas 32.
+- **Pesos**: `peso_ipc_%` = ponderación nacional del grupo en el IPC (ponderadores regionales × peso de cada región:
+  GBA 0,447, Pampeana 0,342, Noreste 0,045, Noroeste 0,069, Cuyo 0,052, Patagonia 0,046), renormalizada a los grupos
+  presentes e igual dentro de cada grupo; alternativa `peso_igual_grupo_%`. "Carnes y derivados" pesa 28,3% y está
+  representada por envasados (fiambres, hamburguesas, patés): la carne fresca no tiene EAN.
+- **Cantidades**: `cantidad_08` = peso × $1.000.000 / precio mediano de oct-2026 (por eso tienen decimales). Con
+  cantidades fijas el índice es tipo Lowe (§12).
+- **Variable de precio recomendada**: el índice con sucursales apareadas del nb08 (§12), no la mediana nacional.
+- `origen_gs1` (país del prefijo del código) es un indicio débil de importado: dice dónde registró el código el dueño
+  de la marca.
