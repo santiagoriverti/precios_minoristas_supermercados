@@ -580,6 +580,17 @@ Los 4 reemplazos (Swift XL, Lavandina Anti-splash, Plusbelle, Listerine) están 
 
 ## Historial de cambios
 
+### 2026-10-22 (noche) — canasta fija para el pass-through diario
+
+Pedido del usuario: qué productos usar para estudiar el pass-through del tipo de cambio con datos diarios del
+01/01/2022 al 20/10/2026, con la misma canasta todos los días y grupos para desagregar. Con las salidas del nb09 (al
+22/10/2026) se armó `docs/canastas_alternativas/canasta_pass_through.py`: 9 reglas fijas (precio todos los días,
+EAN del maestro, consumo masivo, ≥ 150 sucursales por día en cada mes, cobertura estable, ≥ 6 de 8 cadenas grandes,
+24 provincias y ≥ 85% diario, CV ≤ 25%, una variedad por precio) → 775 productos en 16 grupos del IPC, con pesos IPC
+(INDEC, por región y peso de las regiones) o iguales por grupo, y la columna `cantidad_08` para el nb08. Los fideos y el
+arroz de Molinos, el azúcar Ledesma y otras marcas líderes quedan afuera porque su cobertura colapsa entre dic-2023 y
+abr-2024. Detalle: README de `docs/canastas_alternativas/`.
+
 ### 2026-10-22 — nb09: corrida de la versión 2 revisada
 
 El usuario corrió la v2 en Colab (115 archivos; los 114 del caché viejo se releyeron; lectura 63 min; notebook ≤ 1,3 GB

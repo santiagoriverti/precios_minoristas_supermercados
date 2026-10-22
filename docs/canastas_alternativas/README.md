@@ -493,6 +493,52 @@ la salida del constructor, que lista las necesidades que quedaron fuera de cada 
 
 ---
 
+## Canasta fija para el pass-through diario (2026-10-22)
+
+Para estimar cuánto y qué tan rápido pasa el tipo de cambio a los precios, con datos **diarios** del 01/01/2022 al
+20/10/2026 y la **misma canasta todos los días**. No es una de las 6 canastas del nb07: es una lista de productos con
+grupos para desagregar el efecto.
+
+- **Script**: `canasta_pass_through.py` (reglas fijas, se reproduce desde las salidas del nb09: ranking, panel mensual
+  y hoja `Dias`). **Selección vigente**: `canasta_pass_through_20220101_20261020.csv` (775 productos; con el nb09 al
+  22/10/2026). El Excel completo (Selección, Grupos_IPC, Resumen, Criterios, Basicos_excluidos, Dias_incompletos,
+  Candidatos, Notas) se le entregó al usuario en `C:\Users\sriverti\proyectos\canasta_pass_through_20220101_20261020.xlsx`.
+- **Reglas, en orden** (productos que quedan): precio todos los días (4.545) → EAN del maestro, sin blacklist ni
+  precio simbólico (4.521) → consumo masivo (4.420) → ≥ 150 sucursales por día en promedio en **cada** mes (1.779) →
+  cobertura estable: ningún mes bajo el 35% de su mes mediano y 2022 entre 1/3 y 3 veces 2026 (1.320) → ≥ 6 de las 8
+  cadenas grandes y ninguna con más del 60% (1.096) → 24 provincias y ≥ 85% de las provincias cada día (1.012) → CV
+  entre sucursales ≤ 25% (1.004) → una variedad por marca + subcategoría + presentación con el mismo precio (775).
+- **Por qué la cobertura se mide por mes y no por el peor día**: del 16 al 28/07/2023 el SEPA trae la mitad de los
+  comercios (870 sucursales el 20/07); con "≥ 100 sucursales todos los días" quedaban afuera casi todos los básicos.
+  Esos días (53 con cobertura incompleta) se tratan en la serie, no en la selección.
+- **Básicos que no entran** (hoja Basicos_excluidos): fideos y arroz de Molinos (Lucchetti, Matarazzo, Gallo, Ala),
+  azúcar Ledesma, harinas Morixe y Pureza 0000: tienen precio todos los días pero su cobertura se desploma entre
+  dic-2023 y abr-2024 (de ~1.500 a 10-200 sucursales), justo en la devaluación. Entran aceites de girasol (Cañuelas,
+  Cocinero, Natura), harinas Caserita y Chacabuco, leches La Serenísima, arroz Dos Hermanos y 30 yerbas.
+- **Grupos**: 16 grupos del IPC (INDEC), tipo (Alimentos 287, Bebidas sin alcohol 138, Limpieza 127, Bebidas
+  alcohólicas 110, Cuidado personal 81, Mascotas 32), rubro y categoría del maestro, perecedero, `origen_gs1` (país
+  del prefijo del código: proxy débil de importado) y `proveedor`.
+- **Pesos**: `peso_ipc_%` = ponderación nacional del grupo en el IPC (regionales de `ponderadores_ipc.xls` por el peso
+  de cada región, como en IPC_jubilados), repartida entre los grupos presentes y en partes iguales dentro del grupo;
+  `peso_igual_grupo_%` como alternativa. Ojo: "Carnes y derivados" se lleva el 28% y acá son fiambres, hamburguesas y
+  patés (en el IPC es sobre todo carne fresca). `cantidad_08` reproduce `peso_ipc_%` a precios de oct-2026 (canasta de
+  $1.000.000) para correr el nb08 (`CANASTA_COL = 'cantidad_08'`).
+- **Variable de precio recomendada**: índice diario por producto con sucursales apareadas (las mismas el día anterior
+  y el actual), no la mediana nacional, que se mueve cuando cambian las sucursales que informan (jul-2023, 8 comercios
+  menos desde el 01/08/2026, Libertad hasta el 02/09/2026).
+- **Para correr el nb08 con esta canasta**: `marcar_canasta_pass_through_colab.py` (pegar en Colab). Toma el
+  `canasta_representativa_AAAA-MM.xlsx` del mes y devuelve `canasta_pass_through_AAAA-MM.xlsx` con la canasta en
+  `cantidad_01` de la hoja Selección (opciones: `CANTIDAD` = 'ipc' / 'igual' / 'uno', `TIPOS` para marcar una parte).
+  Agrega los productos que faltan en Selección copiando su fila de "Productos unicos" (sin las cantidades del nb07),
+  guarda el `cantidad_01` anterior en `cantidad_01_original` y no toca el resto. La salida no se llama
+  `canasta_representativa_*` a propósito (el nb02 y el nb07 la tomarían). Baja la canasta del CSV de GitHub o la toma
+  del Excel de la selección si se sube junto. Medido con el lector del nb08: medio mes con 775 productos = 51 s en la PC,
+  14 M de observaciones, 2,4 GB de pico (un mes ~5 GB): la primera corrida completa lleva ~3 h en el Colab gratuito.
+  Probado con el Excel real de oct-26 (simulando `google.colab`): 761 ya estaban + 14 agregados, valor $1.000.000,
+  otras hojas intactas, segunda corrida sobre su salida igual, y el nb08 lee 775 productos.
+
+---
+
 ## Archivos v4 (histórico)
 
 `cargar_canastas_v4.py` y `canastas_v4_detalle.csv` se conservan como referencia de lo que se

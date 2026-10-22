@@ -6,7 +6,29 @@ Autor: Santiago Riverti — investigador independiente
 
 ---
 
-## 🟢 nb09 — corrida v2 en Colab revisada [2026-10-22] — leer esto primero
+## 🟢 Canasta para el pass-through diario [2026-10-22 noche] — leer esto primero
+
+- Pedido: estudiar el pass-through del tipo de cambio con frecuencia DIARIA del 01/01/2022 al 20/10/2026, canasta
+  fija, consistente, desagregable por tipo de producto. Hecho con las salidas del nb09 al 22/10/2026:
+  `docs/canastas_alternativas/canasta_pass_through.py` (reglas fijas) → **775 productos**
+  (`canasta_pass_through_20220101_20261020.csv` en el repo; Excel con 8 hojas en
+  `C:\Users\sriverti\proyectos\canasta_pass_through_20220101_20261020.xlsx`). Embudo y razones: README de
+  `docs/canastas_alternativas/`, sección "Canasta fija para el pass-through diario".
+- Claves: cobertura por PROMEDIO MENSUAL (≥ 150 suc/día cada mes), no por el peor día (el SEPA tiene 16-28/07/2023
+  con la mitad de los comercios); estabilidad (ningún mes < 35% del mediano) saca a Molinos (fideos/arroz), Ledesma,
+  Morixe, que colapsan dic-23/abr-24; pesos IPC por grupo (Carnes 28% con envasados: advertido) o iguales por grupo.
+- **Script de Colab** (pedido del usuario): `docs/canastas_alternativas/marcar_canasta_pass_through_colab.py` pone la
+  canasta en `cantidad_01` de la Selección de `canasta_representativa_AAAA-MM.xlsx` → `canasta_pass_through_AAAA-MM.xlsx`
+  (para el nb08 con `CANASTA_EXCEL` a ese archivo y `CANASTA_COL = 'cantidad_01'`; el nb08 la llama "Vulnerable").
+  Probado con el Excel real de oct-26 simulando google.colab (casos: completo, _con_canastas, TIPOS, 'uno'/'igual',
+  canasta_analisis sin Selección, cantidad_01 previa, segunda corrida, sin GitHub). Trampa: en openpyxl
+  `ws.cell(..., value=None)` NO borra; usar `.value = None`. Baja la canasta del CSV en GitHub (main) o del Excel de
+  la selección subido junto. nb08 con 775 productos: medio mes 51 s/2,4 GB en la PC → ~3 h y ~5 GB/mes en Colab.
+- **Siguiente (propuesto)**: la variable de precio con sucursales apareadas (índice diario por producto, días
+  incompletos marcados) en un lector propio tipo nb09 (más rápido que el nb08 y sin el problema de la mediana);
+  después, el tipo de cambio diario (A3500 y MEP/CCL) y las regresiones.
+
+## 🟢 nb09 — corrida v2 en Colab revisada [2026-10-22]
 
 - El usuario corrió la v2 completa (115 archivos, 114 releídos por la versión vieja, lectura 63 min, RAM ≤ 1,3 GB en el
   notebook). Revisión: `docs/AUDITORIA_2026-10-22_nb09.md` + scripts en `docs/auditoria/scripts_nb09_2026-10/`
