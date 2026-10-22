@@ -74,9 +74,11 @@ CADENAS_FILTRAR_NB02 = {'19', '2013', '3001', '4'}
 
 TOP_POR_CATEGORIA = 10            # productos por categoría en la hoja Por_categoria
 
-# Precio simbólico: precio mediano del último mes <= este valor (pesos). Son precios de relleno de algunos comercios
-# (panadería de DIA a $5, comidas de ChangoMas a $4-10, productos a $1): se marcan en la columna precio_simbolico.
-PRECIO_SIMBOLICO_MAX = 10
+# Precio simbólico: precio mediano del último mes <= este % de la mediana de los precios de todos los productos ese mes
+# (oct-2026: 1,25% de $7.999 = ~$100). Son precios de relleno de algunos comercios (panadería y verdura por kilo de DIA a
+# $5-95, comidas de ChangoMas a $4-10, bolsas "por millar" a $75): se marcan en la columna precio_simbolico. Relativo a
+# la mediana para que siga a la inflación.
+PRECIO_SIMBOLICO_PCT = 1.25
 
 # ── Memoria (Colab gratuito, ~12,7 GB) ──
 # Cada archivo se lee en bloques de BLOQUE_MB (texto CSV): ~1 GB de pico por archivo con 32. Si la sesión se queda sin
@@ -867,8 +869,8 @@ print(f'Sucursales: {NS:,} ({SUC["lat"].notna().sum():,} en el maestro con coord
 # Dejaron de publicar, o la fuente del último tramo no los trae: desde ago-2026 los meses en curso salen del SEPA diario
 # (script 03), que no tiene los comercios 19, 1000, 2000-2013 y 3001. Un producto que solo estuvo en ellos tiene su
 # "último día" ahí aunque se siga vendiendo (columna solo_en_comercios_que_dejaron_de_publicar).
-_ult_com = SUC.groupby('id_comercio')['ultimo_mes'].max()
-COM_SIN_PUBLICAR = _ult_com[_ult_com < MES_ULTIMO].sort_values()
+ULTIMO_MES_COMERCIO = SUC.groupby('id_comercio')['ultimo_mes'].max()
+COM_SIN_PUBLICAR = ULTIMO_MES_COMERCIO[ULTIMO_MES_COMERCIO < MES_ULTIMO].sort_values()
 print(f'Comercios sin precios en {MES_ULTIMO}: {len(COM_SIN_PUBLICAR)}'
       + (' (' + ', '.join(f'{nombre_comercio(c)} hasta {m}' for c, m in COM_SIN_PUBLICAR.items()) + ')'
          if len(COM_SIN_PUBLICAR) else ''))
@@ -985,9 +987,11 @@ AMBA_V = SUC['amba'].to_numpy(np.int32)
 _fuera_nb02 = np.nonzero(np.array([c not in CADENAS_FILTRAR_NB02 for c in CAT_COM]))[0]
 _nom_com = np.array([nombre_comercio(c) for c in CAT_COM], dtype=object)
 _com_vigentes = np.nonzero(np.array([c not in COM_SIN_PUBLICAR.index for c in CAT_COM]))[0]
+_mes_com = np.array([int(ULTIMO_MES_COMERCIO[c].replace('-', '')) for c in CAT_COM], dtype=np.int32)   # AAAAMM
 
 suc_dist = np.zeros(NE, np.int32)
 n_com_vig = np.zeros(NE, np.int32)                   # comercios donde estuvo que publican en el último mes
+mes_baja = np.zeros(NE, np.int32)                    # último mes (AAAAMM) de la última de sus cadenas en publicar
 n_dim = {c: np.zeros(NE, np.int32) for c in DIMS}
 en_amba = np.zeros(NE, bool); en_nb02 = np.zeros(NE, bool)
 cad_pri = np.full(NE, '', dtype=object); pct_pri = np.full(NE, np.nan); hhi = np.full(NE, np.nan)
@@ -1032,6 +1036,9 @@ for k in range(N_GRUPOS):
         if c == 'id_comercio':
             prod_por_com += M.getnnz(axis=0)
             n_com_vig[gi] = M[:, _com_vigentes].getnnz(axis=1)
+            _Mm = M.copy(); _Mm.data = _mes_com[_Mm.indices]
+            mes_baja[gi] = _Mm.max(axis=1).toarray().ravel()
+            del _Mm
             cadenas_txt[gi] = ['; '.join(sorted(_nom_com[j] for j in M.indices[M.indptr[i]:M.indptr[i + 1]]))
                                for i in range(len(gi))]
         if c == 'provincia':
@@ -1119,6 +1126,10 @@ R['hhi_cadenas'] = hhi
 R['cadenas'] = cadenas_txt
 R['en_universo_nb02'] = en_nb02
 R['solo_en_comercios_que_dejaron_de_publicar'] = (n_dim['id_comercio'] > 0) & (n_com_vig == 0)
+# mes en que dejó de publicar la última de sus cadenas (solo los marcados): separa el corte de la fuente de ago-2026
+# ('2026-07') de las bajas de comercios de antes
+R['mes_baja_comercios'] = np.where(R['solo_en_comercios_que_dejaron_de_publicar'],
+                                   [f'{m // 100}-{m % 100:02d}' for m in mes_baja], None)
 # Regional
 R['provincias_total'] = T_PRV
 R['provincias'] = n_dim['provincia']
@@ -1137,6 +1148,8 @@ R['provincias_faltantes'] = prov_falt
 # Precio (último mes)
 R['precio_mediano_ultimo_mes'] = precio_med
 R['cv_precio_ultimo_mes_%'] = precio_cv
+PRECIO_SIMBOLICO_MAX = (float(R['precio_mediano_ultimo_mes'].median()) * PRECIO_SIMBOLICO_PCT / 100
+                        if R['precio_mediano_ultimo_mes'].notna().any() else 0.0)
 R['precio_simbolico'] = R['precio_mediano_ultimo_mes'] <= PRECIO_SIMBOLICO_MAX     # sin precio en el último mes: False
 # Continuidad y puntaje
 R['continuo_periodo'] = R['dias_con_precio'] == ND
@@ -1160,7 +1173,8 @@ print(f'Con precio todos los días: {int(R["continuo_periodo"].sum()):,} | todos
 print(f'Puntaje: mediana {R["puntaje"].median():.1f} | >= 50: {int((R["puntaje"] >= 50).sum()):,} | '
       f'>= 75: {int((R["puntaje"] >= 75).sum()):,}')
 print(f'Solo en comercios que dejaron de publicar: {int(R["solo_en_comercios_que_dejaron_de_publicar"].sum()):,} | '
-      f'precio simbólico (<= ${PRECIO_SIMBOLICO_MAX} en el último mes): {int(R["precio_simbolico"].sum()):,}')
+      f'precio simbólico (<= ${PRECIO_SIMBOLICO_MAX:,.2f} = {PRECIO_SIMBOLICO_PCT:g}% de la mediana del último mes): '
+      f'{int(R["precio_simbolico"].sum()):,}')
 print(R[['ranking', 'id_producto', 'descripcion', 'puntaje', 'pct_dias', 'pct_suc_diaria_prom', 'comercios',
          'provincias']].head(15).to_string(index=False))"""))
 
@@ -1244,7 +1258,8 @@ resumen = pd.DataFrame([
     ('Productos que solo estuvieron en esos comercios (su último día puede no ser una baja del producto)',
      int(R['solo_en_comercios_que_dejaron_de_publicar'].sum())),
     ('Códigos con caracteres inválidos unidos a su EAN', N_CODIGOS_UNIDOS),
-    (f'Productos con precio simbólico (mediana del último mes <= ${PRECIO_SIMBOLICO_MAX})', int(R['precio_simbolico'].sum())),
+    (f'Productos con precio simbólico (mediana del último mes <= {PRECIO_SIMBOLICO_PCT:g}% de la mediana de todos = '
+     f'${PRECIO_SIMBOLICO_MAX:,.2f})', int(R['precio_simbolico'].sum())),
     ('Puntaje', 'media geométrica de pct_dias, pct_suc_diaria_prom, pct_com_diaria_prom y pct_provincias'),
     ('Días calendario sin dato', ', '.join(d.strftime('%d/%m/%Y') for d in DIAS_CAL_SIN_DATO[:80])),
 ], columns=['concepto', 'valor'])
@@ -1280,6 +1295,9 @@ diccionario = pd.DataFrame([
     ('solo_en_comercios_que_dejaron_de_publicar', 'Todos los comercios donde apareció no tienen precios en el último mes '
                                                   'del período (dejaron de publicar o la fuente no los trae: ver Resumen y '
                                                   'Cadenas). Su último día puede no ser una baja del producto'),
+    ('mes_baja_comercios', 'Solo en los marcados: último mes con precios de la última de sus cadenas en dejar de publicar. '
+                           '2026-07 = corte de la fuente (desde ago-2026 el SEPA diario no trae los comercios 19, 1000, '
+                           '2000-2013 y 3001); los anteriores, comercios que se fueron del SEPA'),
     ('provincias / pct_provincias', 'Provincias donde apareció, sobre el total (componente regional). Código ISO del '
                                     'archivo de precios; las escritas con el nombre se pasan a código, las vacías toman '
                                     'la del maestro de sucursales y, si no está, no cuentan'),
@@ -1288,8 +1306,9 @@ diccionario = pd.DataFrame([
     ('departamentos / localidades', 'De las sucursales del maestro con coordenadas (Georef de datos.gob.ar) y su localidad'),
     ('provincias_presentes / provincias_faltantes', 'Se lista la más corta de las dos, separadas por punto y coma'),
     ('precio_mediano_ultimo_mes / cv_precio_ultimo_mes_%', 'Mediana entre sucursales del precio promedio de cada sucursal en el último mes (pesos) y coeficiente de variación'),
-    ('precio_simbolico', f'Precio mediano del último mes <= ${PRECIO_SIMBOLICO_MAX}: precio de relleno del comercio '
-                         '(panadería, comidas), no un precio de venta'),
+    ('precio_simbolico', f'Precio mediano del último mes <= {PRECIO_SIMBOLICO_PCT:g}% de la mediana de los precios de '
+                         f'todos los productos ese mes (${PRECIO_SIMBOLICO_MAX:,.2f}): precio de relleno del comercio '
+                         '(panadería, comidas, bolsas), no un precio de venta'),
     ('hoja Dias', 'Cada día con dato: sucursales, comercios, banderas y provincias activas, productos con precio, '
                   'observaciones (sucursal x producto con precio), factor de precio y archivo del SEPA'),
     ('hoja Cadenas: publica_en_el_ultimo_mes', 'El comercio tiene precios en el último mes del período'),

@@ -801,12 +801,16 @@ Revisión: `docs/AUDITORIA_2026-10-22_nb09.md`. Cambios en la agregación y la e
   sucursales.
 - **Comercios que dejaron de publicar**: los que no tienen precios en el último mes del período van al Resumen y a la
   columna `publica_en_el_ultimo_mes` de `Cadenas`; la columna `solo_en_comercios_que_dejaron_de_publicar` marca los
-  productos que solo estuvieron en ellos (su "último día" puede no ser una baja). Desde ago-2026 los meses en curso
-  salen del SEPA diario (script 03), que no trae los comercios 19, 1000, 2000-2013 y 3001.
+  productos que solo estuvieron en ellos (su "último día" puede no ser una baja) y `mes_baja_comercios` dice cuándo
+  dejó de publicar la última de sus cadenas: `2026-07` es el corte de la fuente (desde ago-2026 los meses en curso salen
+  del SEPA diario, script 03, que no trae los comercios 19, 1000, 2000-2013 y 3001); los meses anteriores, comercios que
+  se fueron del SEPA. Un hueco temporal en el último mes también cuenta (ChangoMas, Cadena 2002 y Mariano Max no tienen
+  precios en sep-2024 y vuelven después).
 - **Códigos con texto mal codificado** pegado (`8806094046892ÃƒÆ’...`, hasta 132 mil caracteres, Cadena 2003 en 2022):
   se unen a su EAN; si el mismo día aparecen las dos formas, cuenta la de más sucursales.
-- **`precio_simbolico`**: precio mediano del último mes ≤ `PRECIO_SIMBOLICO_MAX` ($10): precios de relleno (panadería de
-  DIA a $5, comidas de ChangoMas a $4-10).
+- **`precio_simbolico`**: precio mediano del último mes ≤ `PRECIO_SIMBOLICO_PCT` (1,25%) de la mediana de los precios de
+  todos los productos ese mes (~$100 en oct-2026; sigue a la inflación): precios de relleno (panadería y verdura por
+  kilo de DIA a $5-95, comidas de ChangoMas a $4-10, bolsas "por millar" a $75).
 - `primer_mes`/`ultimo_mes` de las sucursales y cadenas cuentan solo los meses con algún precio.
 
 ### Config (CELDA 1)
@@ -814,7 +818,7 @@ Revisión: `docs/AUDITORIA_2026-10-22_nb09.md`. Cambios en la agregación y la e
 `FECHA_INICIO`, `FECHA_FIN`, `MIN_SUC_DIA_UTIL` (100) y `MIN_PCT_DIA_UTIL` (5%) para los días "útiles", `BLOQUE_MB`
 (32), `N_GRUPOS` (16), `PROCESO_APARTE` (True), `RELEER_CACHE_VIEJO` (True), `USAR_GEOREF`
 (departamento y municipio de cada sucursal del maestro con coordenadas, API Georef de datos.gob.ar; una sola consulta
-por sucursal, en caché), `AMBA_RADIO_KM` (90), `CADENAS_FILTRAR_NB02`, `TOP_POR_CATEGORIA`, `PRECIO_SIMBOLICO_MAX` (10).
+por sucursal, en caché), `AMBA_RADIO_KM` (90), `CADENAS_FILTRAR_NB02`, `TOP_POR_CATEGORIA`, `PRECIO_SIMBOLICO_PCT` (1,25).
 
 ### Métricas (hoja `Diccionario` del Excel)
 
@@ -824,7 +828,7 @@ por sucursal, en caché), `AMBA_RADIO_KM` (90), `CADENAS_FILTRAR_NB02`, `TOP_POR
   / sucursales activas ese día; no castiga por sucursales que todavía no existían), promedio y mínimo diario.
 - **Comercial**: comercios (empresa) y banderas, **cuota diaria de comercios** (comercios con precio / comercios
   activos ese día), cadena principal, su cuota y HHI, lista de cadenas, si está en el universo del nb02, si solo estuvo
-  en comercios que dejaron de publicar. Los comercios
+  en comercios que dejaron de publicar y desde qué mes. Los comercios
   distintos del período (50) incluyen cadenas que reportaron pocos días y locales que parecen repetidos con otro código
   (44/45/46, 49/50): por eso el puntaje usa la cuota diaria.
 - **Regional**: provincias (código ISO del archivo de precios, con los nombres pasados a código; las vacías toman la del

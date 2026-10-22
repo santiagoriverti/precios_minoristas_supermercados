@@ -599,6 +599,14 @@ de RAM) y pidió una revisión exhaustiva. `docs/AUDITORIA_2026-10-22_nb09.md`; 
   `solo_en_comercios_que_dejaron_de_publicar`; los códigos con texto mal codificado se unen a su EAN; columna
   `precio_simbolico` (≤ $10). Test sintético ampliado con esos casos (OK) y corrida real local jul-ago 2025: panel igual
   al de Colab.
+- **Corrida con los arreglos** (datos al 22/10/2026, AUDITORIA §6): números iguales a la anterior en los meses
+  cerrados; releyó todo (102 min) porque el caché no estaba en el Drive. La marca de comercios que dejaron de publicar
+  vale en 65.123 productos (33 comercios desde 2022, Libertad hasta el 02/09/2026); el umbral de precio simbólico ($10)
+  deja afuera ~25 precios de relleno de $10-100. Propuestas: `mes_baja_comercios` y umbral relativo (~$100).
+- **Aplicadas** (pedido del usuario; no relee): `mes_baja_comercios` y `PRECIO_SIMBOLICO_PCT = 1.25` (% de la mediana
+  de precios del último mes). Test sintético OK; corrida real local jun-sep 2024: panel igual al de Colab y la marca y
+  el mes iguales al recálculo desde la hoja `Cadenas` (mostró que un hueco temporal en el último mes también cuenta como
+  baja: ChangoMas sin precios en sep-2024).
 
 ### 2026-10-21 (tarde) — nb09: primera corrida completa revisada y versión 2
 

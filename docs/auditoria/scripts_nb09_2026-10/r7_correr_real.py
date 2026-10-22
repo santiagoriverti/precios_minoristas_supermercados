@@ -33,5 +33,19 @@ print(x.parse('Resumen').to_string(index=False))
 print(x.parse('Cadenas')[['id_comercio', 'comercio', 'ultimo_mes', 'publica_en_el_ultimo_mes']].to_string(index=False))
 print('solo en comercios que dejaron de publicar:', int(R['solo_en_comercios_que_dejaron_de_publicar'].sum()),
       '| precio simbólico:', int(R['precio_simbolico'].sum()))
+if 'mes_baja_comercios' in R:
+    # la marca y el mes de baja, recalculados desde la hoja Cadenas y la lista de cadenas de cada producto
+    Cd = x.parse('Cadenas', dtype={'id_comercio': str})
+    ult = dict(zip(Cd['comercio'], Cd['ultimo_mes']))
+    pub = dict(zip(Cd['comercio'], Cd['publica_en_el_ultimo_mes'].astype(bool)))
+    cad = R['cadenas'].map(lambda s: s.split('; '))
+    esp_flag = cad.map(lambda l: not any(pub[c] for c in l))
+    esp_mes = [max(ult[c] for c in l) if f else None for l, f in zip(cad, esp_flag)]
+    ok_mes = all((a == b) if a is not None else pd.isna(b) for a, b in zip(esp_mes, R['mes_baja_comercios']))
+    print('marca = recálculo:', bool((esp_flag == R['solo_en_comercios_que_dejaron_de_publicar']).all()),
+          '| mes_baja_comercios = recálculo:', ok_mes, '|', R['mes_baja_comercios'].value_counts().sort_index().to_dict())
+if 'PRECIO_SIMBOLICO_PCT' in g:
+    print(f'umbral de precio simbólico: ${g["PRECIO_SIMBOLICO_MAX"]:,.2f} = {g["PRECIO_SIMBOLICO_PCT"]}% de '
+          f'${R["precio_mediano_ultimo_mes"].median():,.2f}')
 print(R.loc[R['precio_simbolico'], ['id_producto', 'descripcion', 'precio_mediano_ultimo_mes', 'sucursales_ultimo_mes',
                                     'cadena_principal']].head(10).to_string(index=False))

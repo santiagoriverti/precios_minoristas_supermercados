@@ -7,8 +7,8 @@ import pandas as pd
 
 D, DATA, PRY = Path(sys.argv[1]), Path(sys.argv[2]), Path(sys.argv[3])
 pd.set_option('display.width', 250); pd.set_option('display.max_columns', 30); pd.set_option('display.max_colwidth', 70)
-X = D / 'trazabilidad_productos_20220101_20261015.xlsx'
-R = pd.read_parquet(D / 'trazabilidad_productos_20220101_20261015.parquet')
+X = next(D.glob('trazabilidad_productos_*.xlsx'))
+R = pd.read_parquet(next(D.glob('trazabilidad_productos_*.parquet')))
 
 t = time.time()
 H = pd.read_excel(X, sheet_name=None, engine='calamine', dtype={'id_producto': str})

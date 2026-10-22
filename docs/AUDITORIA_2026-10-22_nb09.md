@@ -191,12 +191,52 @@ archivos que los tienen se leen enteros en la fase 2b, porque esas filas están 
   y 238 con ≥ 300: es la base para canastas fijas desde 2022 (Almacén 446, Bebidas 301, Limpieza 203, Perfumería 110,
   Frescos 73, Mascotas 70, Congelados 20).
 
-## 6. Scripts
+## 6. Corrida con los arreglos (commit `4ec771f`, datos al 22/10/2026)
+
+El usuario volvió a correr el nb09 el mismo día, con la segunda quincena de octubre hasta el 22 (116 archivos, 1.754
+días). Revisión con `r1_consistencia.py`, `r3_excel.py` y `r8_comparar_corridas.py` (corrida anterior contra nueva).
+
+- **Releyó todo (102 min) porque no encontró el caché**: "0 desde el caché" y Georef consultó las 3.600 sucursales, o
+  sea que `MyDrive/carga/output_trazabilidad/_cache_nb09/` no estaba al empezar. El commit no toca esas rutas ni borra
+  nada. Además la máquina de Colab fue más lenta: 40-74 s por archivo contra 26-45 s del 21/10, y las fases 2a/2b
+  tardaron el doble (111 s y 266 s).
+- **Números**: controles internos todos OK (238.453 productos). Excel = parquet; ya no hay códigos de más de 20
+  caracteres ni con caracteres no ASCII. **Panel de los meses cerrados (ene-22 a sep-26) idéntico al de la corrida del
+  15/10** en 4.761.834 filas. Solo cambian las dos tablets en feb-22 y jul-22: antes eran dos productos y ahora uno, con
+  los días contados una vez (jul-22: 31 días, no 40). Productos: 14 códigos con basura unidos y 573 nuevos, todos con
+  primer día entre el 16 y el 22/10. El top 100 es el mismo; 3 productos dejaron de tener precio todos los días.
+- **Hoja `Dias`**: el día de 870 sucursales es el **20/07/2023**. Del **16 al 28/07/2023** el SEPA trae la mitad de los
+  comercios (16-18 de 35) y ~1.450 sucursales. Hay 28 días con menos de 2.000 sucursales; los demás son días sueltos
+  (20-21/06/2022, 01-04/04/2025, 27 y 30/07/2025, 01/08/2026...). Medianas de 2026: 24-25 comercios hasta junio, 22 en
+  julio, 17 en agosto y 16 en septiembre-octubre; sucursales de ~3.100 a ~2.680.
+- **Comercios sin precios en el último mes: 33**. Por año de su último mes: 8 en 2022, 8 en 2023, 4 en 2024, 4 en 2025 y
+  9 en 2026 (los 8 del SEPA diario "hasta 2026-07" y **Libertad, cuyo último día es el 02/09/2026**). La marca
+  `solo_en_comercios_que_dejaron_de_publicar` vale en **65.123 productos**: es lo que define la regla (todos los
+  comercios que se fueron desde 2022), no los ~3.250 que se estimaron al aplicarla, que eran solo los de agosto 2026.
+  Por año en que se fue la última de sus cadenas: 2022 6.798, 2023 31.543, 2024 10.258, 2025 798, 2026 15.726
+  (2026-07 8.836, Libertad 6.890). Ninguno tiene precio después de esa fecha. Son casi todos del fondo del ranking
+  (puntaje máximo 24,9). Propuesta, sin releer: columna `mes_baja_comercios` (mes en que dejó de publicar la última de
+  sus cadenas) para separar el corte de la fuente (2026-07) de las bajas reales. **Aplicada el mismo día.** Probada con
+  datos reales de jun-sep 2024 (`r7_correr_real.py`): la marca y el mes coinciden con el recálculo desde la hoja
+  `Cadenas` (1.006 productos con baja 2024-07 y 4.193 con 2024-08). Esa ventana mostró que **un hueco temporal en el
+  último mes también cuenta como baja**: ChangoMas, Cadena 2002 y Mariano Max no tienen precios en todo sep-2024 y
+  vuelven después.
+- **Precio simbólico: 50 productos** (≤ $10; Carrefour 22, ChangoMas 16, DIA 4, California 4). El umbral se queda corto:
+  entre $10 y $100 con ≥ 30 sucursales hay 25 más, casi todos de relleno (panadería y verdura por kilo de DIA a $40-95,
+  bolsas "por millar" de Carrefour a $75, chipá "150 Un" a $52). Entre $100 y $150 se mezclan (facturas y pebetes de DIA
+  a $115 y mate cocido de 25 saquitos a $135, de relleno, con un chicle Bubbaloo de 5 g a $143, que es real): ningún
+  umbral fijo los separa del todo. Propuesta, sin releer: umbral relativo a la mediana de precios del último mes (1,25%
+  = ~$100 en oct-26: 417 productos, 47 con ≥ 30 sucursales), que sigue a la inflación. **Aplicada el mismo día**
+  (`PRECIO_SIMBOLICO_PCT = 1.25`; en sep-2024 da $33,50 = 1,25% de $2.680).
+
+## 7. Scripts
 
 `docs/auditoria/scripts_nb09_2026-10/`: `r1_consistencia.py` (controles internos), `r2_contenido.py` (puntaje por tipo de
 código, top, productos básicos, cadenas, precios, cruces con el nb08 y con la muestra v1), `r3_excel.py` (Excel contra
 parquet, hojas de apoyo, comercios repetidos, dígito verificador), `r4_crudo.py` (recálculo desde el SEPA crudo),
 `r5_metodo.py` (componentes comercial y regional, corte de ago-2026, blacklist), `r6_umbral_centavos.py` (regla de
 centavos), `r7_correr_real.py` (corre las celdas reales del nb09 sobre zips locales de un período corto y compara el
-panel con el de Colab: jul-ago 2025, 177.728 filas iguales, con los cambios del §4 aplicados). Todos con
+panel con el de Colab: jul-ago 2025, 177.728 filas iguales, con los cambios del §4 aplicados),
+`r8_comparar_corridas.py` (dos corridas: productos, panel de meses cerrados, ranking, Resumen, hoja Dias, comercios
+que dejaron de publicar, precio simbólico). `r1` y `r3` buscan los archivos por patrón en la carpeta. Todos con
 `python -I -X utf8` y las rutas como argumentos.

@@ -6,8 +6,8 @@ import numpy as np
 import pandas as pd
 
 D = Path(sys.argv[1])
-R = pd.read_parquet(D / 'trazabilidad_productos_20220101_20261015.parquet')
-P = pd.read_parquet(D / 'panel_mensual_productos_20220101_20261015.parquet')
+R = pd.read_parquet(next(D.glob('trazabilidad_productos_*.parquet')))
+P = pd.read_parquet(next(D.glob('panel_mensual_productos_*.parquet')))
 pd.set_option('display.width', 250); pd.set_option('display.max_columns', 80); pd.set_option('display.max_colwidth', 60)
 
 print('=== Esquema ===')
@@ -60,8 +60,8 @@ chk('suc_diarias_prom > sucursales_distintas', R['suc_diarias_prom'] > R['sucurs
     ['id_producto', 'suc_diarias_prom', 'sucursales_distintas'])
 chk('suc_diarias_min > suc_diarias_prom', R['suc_diarias_min'] > R['suc_diarias_prom'] + 0.006)
 chk('sucursal_dias < sucursales_distintas', R['sucursal_dias'] < R['sucursales_distintas'])
-chk('sucursal_dias != suc_diarias_prom*dias (rel > 1e-3)',
-    np.abs(R['sucursal_dias'] - R['suc_diarias_prom'] * R['dias_con_precio']) / R['sucursal_dias'] > 1e-3)
+chk('sucursal_dias != suc_diarias_prom*dias (mas que el redondeo a 2 decimales)',
+    np.abs(R['sucursal_dias'] - R['suc_diarias_prom'] * R['dias_con_precio']) > 0.005 * R['dias_con_precio'] * (1 + 1e-6))
 chk('sucursales_distintas > total', R['sucursales_distintas'] > R['sucursales_total'])
 chk('sucursales_ultimo_mes > sucursales_distintas', R['sucursales_ultimo_mes'] > R['sucursales_distintas'])
 chk('pct_suc_diaria_periodo > pct_suc_diaria_prom', R['pct_suc_diaria_periodo'] > R['pct_suc_diaria_prom'] + 1e-3)
@@ -131,8 +131,8 @@ chk('sum(dias panel) != dias_con_precio', X['d'] != X['dias_con_precio'])
 chk('meses en panel != meses_con_precio', X['m'] != X['meses_con_precio'])
 rel = np.abs(X['sd'] - X['sucursal_dias']) / X['sucursal_dias']
 print(f'  sucursal-dias panel vs ranking: dif rel max {rel.max():.2e} (redondeo a 0,1)')
-chk('sucursal-dias panel vs ranking (rel > 1e-3 y abs > 0.05*dias)',
-    (rel > 1e-3) & (np.abs(X['sd'] - X['sucursal_dias']) > 0.05 * X['d']))
+chk('sucursal-dias panel vs ranking (mas que el redondeo a 1 decimal)',
+    np.abs(X['sd'] - X['sucursal_dias']) > 0.05 * X['d'] * (1 + 1e-3))
 dpm = P.groupby('mes')['dias_con_precio'].max()
 print('  dias max por mes (= dias con dato del mes):')
 print('  ', dpm.to_dict())

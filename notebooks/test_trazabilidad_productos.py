@@ -8,7 +8,8 @@ El SEPA sintético trae a propósito los defectos que tiene el real:
   - dos archivos para la misma parte de un mes (uno parcial, días 1-5, y el completo), con el parcial ÚLTIMO en el zip;
   - códigos que no son EAN: interno con guiones y de balanza (EAN-13 que empieza con 2);
   - un código con texto mal codificado pegado (como la Cadena 2003 en 2022), que se une a su EAN;
-  - un comercio que deja de publicar (solo enero) con un producto que solo estuvo ahí, y un producto con precio simbólico.
+  - un comercio que deja de publicar (solo enero) con un producto que solo estuvo ahí (mes de baja 2026-01), y un
+    producto con precio simbólico ($5, contra un umbral de 1,25% de la mediana de precios).
 
     python notebooks/test_trazabilidad_productos.py
 """
@@ -176,6 +177,8 @@ for e, o in obs.groupby('e'):
     chk(f'{e} en_universo_nb02', r['en_universo_nb02'], bool((o['c'] != '19').any()))
     chk(f'{e} solo_en_comercios_que_dejaron_de_publicar', r['solo_en_comercios_que_dejaron_de_publicar'],
         bool((o['c'] == '23').all()))
+    chk(f'{e} mes_baja_comercios', (r['mes_baja_comercios'] == '2026-01') if e == NUEVO else pd.isna(r['mes_baja_comercios']),
+        True)
     chk(f'{e} precio_simbolico', r['precio_simbolico'], e == SIMB)
     chk(f'{e} puntaje', r['puntaje'], (r['pct_dias'] * r['pct_suc_diaria_prom'] * r['pct_com_diaria_prom'] *
                                        r['pct_provincias'] / 100 ** 4) ** 0.25 * 100, 0.006)
@@ -197,6 +200,8 @@ chk('fuente de la provincia', g['SUC']['provincia_fuente'].value_counts().to_dic
 chk('código con basura unido a su EAN', g['N_CODIGOS_UNIDOS'], 1)
 chk('código con basura: no queda como producto', any(not i.isascii() for i in R.index), False)
 chk('comercios sin precios en el último mes', list(g['COM_SIN_PUBLICAR'].index) == ['23'], True)
+chk('umbral de precio simbólico = 1,25% de la mediana', g['PRECIO_SIMBOLICO_MAX'],
+    R['precio_mediano_ultimo_mes'].median() * 1.25 / 100, 1e-6)
 pv = pd.read_excel(next((tmp / 'out').glob('trazabilidad_productos_*.xlsx')), 'Provincias').set_index('provincia')
 chk('Provincias: una sucursal sin dato', int(pv.loc[[i for i in pv.index if i.startswith('Sin dato')], 'sucursales'].sum()), 1)
 chk('Provincias: 5 reales + sin dato', len(pv), prov_tot + 1)

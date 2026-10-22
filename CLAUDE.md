@@ -142,7 +142,9 @@ diario sin 8 comercios), en la §4 de esa auditoría.
 - **nb09, fase 2 (2026-10-22)**: los códigos con texto mal codificado pegado se unen a su EAN con `limpiar_codigo`
   (CELDA 5); en `ean_suc` esas filas están en el row group de su código ORIGINAL, así que los archivos que las tienen
   (`TAGS_BASURA`) se leen enteros en la fase 2b. "Comercio que dejó de publicar" = sin precios en el último mes del
-  período (`COM_SIN_PUBLICAR`); desde ago-2026 eso incluye los 8 comercios que el SEPA diario (script 03) no trae.
+  período (`COM_SIN_PUBLICAR`, desde 2022: 33 en oct-26); desde ago-2026 eso incluye los 8 comercios que el SEPA diario
+  (script 03) no trae (`mes_baja_comercios` = '2026-07'). Un hueco temporal en el último mes también cuenta. El precio
+  simbólico es relativo: `PRECIO_SIMBOLICO_PCT` (1,25%) de la mediana de precios del último mes.
 - **nb02, una sola referencia del país** (BUG-42): todo "vs país" es el promedio ponderado del Cuadro 1
   (`prom_nac_dict`), CABA es su fila del Cuadro 1, cadenas y barrios van por mediana en el análisis [mediana], y el AMBA
   es la columna `amba` de la CELDA 7 (CABA + Buenos Aires a ≤ 90 km del Obelisco), nunca `PROVINCIA in (CABA, Buenos

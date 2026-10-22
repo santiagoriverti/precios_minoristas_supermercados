@@ -33,10 +33,21 @@ Autor: Santiago Riverti — investigador independiente
   `precio_simbolico` (≤ `PRECIO_SIMBOLICO_MAX` = $10); `primer_mes`/`ultimo_mes` solo con meses con precios. Test
   sintético ampliado (código con basura, comercio que deja de publicar, precio simbólico, hoja Dias) y corrida real
   local jul-ago 2025 (`scripts_nb09_2026-10/r7_correr_real.py`): panel = Colab exacto.
-- **Siguiente**: la próxima corrida en Colab usa el caché (~10 min, solo relee el último mes). Revisar: Resumen
-  (8 comercios sin precios en oct-26 "hasta 2026-07", ~3.250 productos marcados, 14 códigos unidos, ~100 precios
-  simbólicos) y la hoja `Dias` (el día de 870 sucursales). Quedan para decidir: componente comercial (relee) y regional
-  (no relee) del puntaje, AUDITORIA §4.1-4.2.
+- **Corrida con los arreglos (datos al 22/10/2026) revisada el mismo día** (AUDITORIA §6, `r8_comparar_corridas.py`):
+  todo OK. Panel de meses cerrados = corrida del 15/10 en 4.761.834 filas (solo cambian las tablets unidas); 14 códigos
+  unidos; Excel = parquet. **Releyó todo (102 min) porque `_cache_nb09/` no estaba en el Drive** (Georef también se
+  consultó de cero); el commit no toca el caché. Hoja Dias: 870 sucursales el 20/07/2023 (16-28/07/2023 el SEPA trae la
+  mitad de los comercios). 33 comercios sin precios en oct-26 (desde 2022; Libertad hasta el 02/09/2026) → la marca vale
+  en **65.123 productos** (la estimación de ~3.250 contaba solo el corte de ago-26; 2026-07: 8.836). Precio simbólico
+  ≤ $10: 50; entre $10 y $100 hay ~25 de relleno más (panadería de DIA).
+- **Aplicado después (pedido del usuario, no relee)**: columna `mes_baja_comercios` ('AAAA-MM' de la última de sus
+  cadenas en dejar de publicar, solo en los marcados; '2026-07' = corte de la fuente) y precio simbólico relativo
+  (`PRECIO_SIMBOLICO_PCT = 1.25` % de la mediana del último mes; reemplaza a `PRECIO_SIMBOLICO_MAX` fijo, que ahora se
+  calcula). Test sintético OK; real jun-sep 2024: panel = Colab, marca y mes = recálculo desde `Cadenas`. Ojo: un hueco
+  temporal en el último mes también cuenta como baja (ChangoMas, 2002 y Mariano Max sin precios en sep-2024).
+- **Siguiente**: la próxima corrida en Colab (~10 min si el caché está; preguntar al usuario si borró `_cache_nb09`):
+  revisar `mes_baja_comercios` (2026-07 ~8.836, 2026-09 ~6.890) y el umbral (~$100, ~417 productos). Quedan para
+  decidir: componente comercial (relee) y regional (no relee) del puntaje, AUDITORIA §4.1-4.2.
 
 ## 🟢 nb09 — versión 2: errores de la primera corrida corregidos [2026-10-21 tarde]
 
