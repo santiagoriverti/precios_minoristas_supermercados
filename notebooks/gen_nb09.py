@@ -42,8 +42,8 @@ armar, para cada producto (`id_producto`) que alguna vez reportó precio, qué t
 3. **Excel** escrito fila a fila (memoria constante).
 
 **Salidas** (en `output_trazabilidad/`): `trazabilidad_productos_<desde>_<hasta>.xlsx` (Resumen, Ranking,
-Continuos_periodo, Por_categoria, Cadenas, Provincias, Diccionario), el mismo ranking en `.parquet` y `.csv.gz`, y el
-panel mensual producto × mes en `.parquet`.
+Continuos_periodo, Por_categoria, Cadenas, Provincias, Dias, Diccionario), el mismo ranking en `.parquet` y `.csv.gz`,
+y el panel mensual producto × mes en `.parquet`.
 
 **Estructura:** Config → Setup → Maestros (sucursales, Georef, productos) → Fase 1 (lectura) → Fase 2a (días) →
 Fase 2b (sucursales, cadenas, regiones) y ranking → Exportación. Cada celda imprime la RAM usada y la libre."""))
@@ -73,6 +73,10 @@ AMBA_RADIO_KM = 90
 CADENAS_FILTRAR_NB02 = {'19', '2013', '3001', '4'}
 
 TOP_POR_CATEGORIA = 10            # productos por categoría en la hoja Por_categoria
+
+# Precio simbólico: precio mediano del último mes <= este valor (pesos). Son precios de relleno de algunos comercios
+# (panadería de DIA a $5, comidas de ChangoMas a $4-10, productos a $1): se marcan en la columna precio_simbolico.
+PRECIO_SIMBOLICO_MAX = 10
 
 # ── Memoria (Colab gratuito, ~12,7 GB) ──
 # Cada archivo se lee en bloques de BLOQUE_MB (texto CSV): ~1 GB de pico por archivo con 32. Si la sesión se queda sin
@@ -814,6 +818,8 @@ _suc_filas['iso'] = _suc_filas['provincia_iso'].map(L.iso_provincia)
 # la provincia como venía en el archivo (los resúmenes de la versión 1 del lector guardaban esa en provincia_iso)
 _suc_filas['prov_orig'] = (_suc_filas['provincia_original'] if 'provincia_original' in _suc_filas
                            else pd.Series(np.nan, index=_suc_filas.index)).fillna(_suc_filas['provincia_iso']).fillna('')
+# primer y último mes con algún precio (una sucursal puede venir en un archivo sin ningún precio)
+_meses_act = _suc_filas[_suc_filas['dias_activa'] > 0].groupby('suc')['mes'].agg(['min', 'max'])
 
 def _moda_valida(x):
     x = x[x != '']
@@ -823,9 +829,11 @@ SUC = (_suc_filas.groupby('suc', sort=True)
        .agg(id_comercio=('id_comercio', 'first'), id_bandera=('id_bandera', 'first'),
             id_sucursal=('id_sucursal', 'first'), provincia_iso=('iso', _moda_valida),
             provincia_archivo=('prov_orig', lambda x: x.mode().iat[0]),
-            dias_activa=('dias_activa', 'sum'), primer_mes=('mes', 'min'), ultimo_mes=('mes', 'max')))
+            dias_activa=('dias_activa', 'sum')))
 del _suc_filas
 SUC = SUC[SUC['dias_activa'] > 0]          # solo las sucursales que alguna vez informaron un precio
+SUC['primer_mes'] = _meses_act['min'].reindex(SUC.index)
+SUC['ultimo_mes'] = _meses_act['max'].reindex(SUC.index)
 _sin = SUC['provincia_iso'] == ''
 SUC.loc[_sin, 'provincia_iso'] = (maestro_suc['sucursales_provincia'].map(L.iso_provincia)
                                   .reindex(SUC.index[_sin]).fillna('').to_numpy())
@@ -855,15 +863,48 @@ print(f'Sucursales: {NS:,} ({SUC["lat"].notna().sum():,} en el maestro con coord
       f'banderas {SUC["bandera_id"].nunique()} | provincias {SUC["provincia"].nunique()} '
       f'({int(SUC["provincia"].isna().sum())} sucursales sin provincia)')
 
+# ── Comercios sin precios en el último mes del período ──
+# Dejaron de publicar, o la fuente del último tramo no los trae: desde ago-2026 los meses en curso salen del SEPA diario
+# (script 03), que no tiene los comercios 19, 1000, 2000-2013 y 3001. Un producto que solo estuvo en ellos tiene su
+# "último día" ahí aunque se siga vendiendo (columna solo_en_comercios_que_dejaron_de_publicar).
+_ult_com = SUC.groupby('id_comercio')['ultimo_mes'].max()
+COM_SIN_PUBLICAR = _ult_com[_ult_com < MES_ULTIMO].sort_values()
+print(f'Comercios sin precios en {MES_ULTIMO}: {len(COM_SIN_PUBLICAR)}'
+      + (' (' + ', '.join(f'{nombre_comercio(c)} hasta {m}' for c, m in COM_SIN_PUBLICAR.items()) + ')'
+         if len(COM_SIN_PUBLICAR) else ''))
+
 # ── Productos: unión de todos los archivos ──
-_cats = set()
+# Códigos con texto mal codificado pegado (el SEPA trae '8806094046892ÃƒÆ’...', de hasta 132 mil caracteres, en la
+# Cadena 2003 en feb y jul 2022): se unen a su EAN (los dígitos del principio). Si el mismo día aparecen las dos formas,
+# cuenta la que tiene más sucursales (comercios, provincias). En el resumen producto x sucursal esas filas están en el
+# grupo de su código original: los archivos que las tienen se leen enteros en la fase 2b (TAGS_BASURA).
+_PAT_BASURA = re.compile(r'^(\d{8,14})[^\x00-\x7f]')
+
+def limpiar_codigo(x):
+    if x.isascii():
+        return x
+    m = _PAT_BASURA.match(x)
+    return m.group(1) if m else x
+
+_cats, TAGS_BASURA = set(), set()
 for t in TAGS:
-    _cats.update(pd.read_parquet(_ruta(t, 'ean_dia'), columns=['ean'])['ean'].cat.categories)
-EANS = pd.Index(sorted(_cats))
+    _c = pd.read_parquet(_ruta(t, 'ean_dia'), columns=['ean'])['ean'].cat.categories
+    if any(not x.isascii() and limpiar_codigo(x) != x for x in _c):
+        TAGS_BASURA.add(t)
+    _cats.update(_c)
+N_CODIGOS_UNIDOS = sum(1 for c in _cats if limpiar_codigo(c) != c)
+EANS = pd.Index(sorted({limpiar_codigo(c) for c in _cats}))
 NE = len(EANS)
 GRUPO = L.grupo_de(EANS, N_GRUPOS)
 del _cats; gc.collect()
-print(f'Productos distintos con algún precio: {NE:,} | {ram()}')
+
+def indices_ean(cats):
+    # posición en EANS de cada categoría de un resumen (los códigos con basura van a su EAN)
+    return EANS.get_indexer([limpiar_codigo(c) for c in cats])
+
+print(f'Productos distintos con algún precio: {NE:,}'
+      + (f' ({N_CODIGOS_UNIDOS} códigos con caracteres inválidos unidos a su EAN, en {len(TAGS_BASURA)} archivos)'
+         if N_CODIGOS_UNIDOS else '') + f' | {ram()}')
 
 # ── Acumuladores por producto (recorrido en orden de fechas; memoria = unos pocos vectores de NE) ──
 dias_precio = np.zeros(NE, np.int32); dias_util = np.zeros(NE, np.int32)
@@ -885,16 +926,18 @@ _orden = sorted(TAGS, key=lambda t: pd.read_parquet(_ruta(t, 'dia'), columns=['f
 for _i, t in enumerate(_orden):
     ed = pd.read_parquet(_ruta(t, 'ean_dia'))
     ed = ed[ed['fecha'].map(TAG_FECHA).eq(t).to_numpy()]
-    _e = EANS.get_indexer(ed['ean'].cat.categories)[ed['ean'].cat.codes.to_numpy()]
+    _e = indices_ean(ed['ean'].cat.categories)[ed['ean'].cat.codes.to_numpy()]
     _d = POS_DIA.reindex(ed['fecha']).to_numpy()
     _ns, _nc, _np = ed['n_suc'].to_numpy(), ed['n_com'].to_numpy(), ed['n_prov'].to_numpy()
     del ed
     for d in np.unique(_d):                              # días del archivo, en orden
         m = _d == d
         ee = _e[m]
-        n_s = np.zeros(NE, np.int64); n_s[ee] = _ns[m]
-        n_c = np.zeros(NE); n_c[ee] = _nc[m]
-        n_p = np.zeros(NE); n_p[ee] = _np[m]
+        n_s = np.zeros(NE, np.int64); n_c = np.zeros(NE); n_p = np.zeros(NE)
+        if t in TAGS_BASURA:                             # dos códigos del mismo producto: el de más sucursales
+            np.maximum.at(n_s, ee, _ns[m]); np.maximum.at(n_c, ee, _nc[m]); np.maximum.at(n_p, ee, _np[m])
+        else:
+            n_s[ee] = _ns[m]; n_c[ee] = _nc[m]; n_p[ee] = _np[m]
         pres = n_s > 0
         dias_precio += pres
         suc_obs += n_s
@@ -941,8 +984,10 @@ T_COM, T_BAN, T_PRV, T_REG, T_DEP, T_LOC = (len(DIMS[c][1]) for c in
 AMBA_V = SUC['amba'].to_numpy(np.int32)
 _fuera_nb02 = np.nonzero(np.array([c not in CADENAS_FILTRAR_NB02 for c in CAT_COM]))[0]
 _nom_com = np.array([nombre_comercio(c) for c in CAT_COM], dtype=object)
+_com_vigentes = np.nonzero(np.array([c not in COM_SIN_PUBLICAR.index for c in CAT_COM]))[0]
 
 suc_dist = np.zeros(NE, np.int32)
+n_com_vig = np.zeros(NE, np.int32)                   # comercios donde estuvo que publican en el último mes
 n_dim = {c: np.zeros(NE, np.int32) for c in DIMS}
 en_amba = np.zeros(NE, bool); en_nb02 = np.zeros(NE, bool)
 cad_pri = np.full(NE, '', dtype=object); pct_pri = np.full(NE, np.nan); hhi = np.full(NE, np.nan)
@@ -963,10 +1008,16 @@ for k in range(N_GRUPOS):
     S = sp.csr_matrix((len(gi), NS), dtype=np.int32)
     _um = []
     for t in TAGS:
-        es = L.leer_grupo(_ruta(t, 'ean_suc'), k, N_GRUPOS)
+        # los archivos con códigos con basura se leen enteros: esas filas están en el grupo de su código original
+        es = (pq.read_table(str(_ruta(t, 'ean_suc'))).to_pandas() if t in TAGS_BASURA
+              else L.leer_grupo(_ruta(t, 'ean_suc'), k, N_GRUPOS))
         if es is None or not len(es):
             continue
-        _er = loc[EANS.get_indexer(es['ean'].cat.categories)[es['ean'].cat.codes.to_numpy()]]
+        _er = loc[indices_ean(es['ean'].cat.categories)[es['ean'].cat.codes.to_numpy()]]
+        if t in TAGS_BASURA:
+            es = es[_er >= 0]; _er = _er[_er >= 0]
+            if not len(es):
+                continue
         _sr = POS_SUC.reindex(es['suc'].cat.categories).to_numpy()[es['suc'].cat.codes.to_numpy()]
         S = S + sp.csr_matrix((es['n_dias'].to_numpy(np.int32), (_er, _sr)), shape=(len(gi), NS))
         if t in _tags_um:
@@ -980,6 +1031,7 @@ for k in range(N_GRUPOS):
         n_dim[c][gi] = M.getnnz(axis=1)
         if c == 'id_comercio':
             prod_por_com += M.getnnz(axis=0)
+            n_com_vig[gi] = M[:, _com_vigentes].getnnz(axis=1)
             cadenas_txt[gi] = ['; '.join(sorted(_nom_com[j] for j in M.indices[M.indptr[i]:M.indptr[i + 1]]))
                                for i in range(len(gi))]
         if c == 'provincia':
@@ -1066,6 +1118,7 @@ R['pct_cadena_principal'] = pct_pri
 R['hhi_cadenas'] = hhi
 R['cadenas'] = cadenas_txt
 R['en_universo_nb02'] = en_nb02
+R['solo_en_comercios_que_dejaron_de_publicar'] = (n_dim['id_comercio'] > 0) & (n_com_vig == 0)
 # Regional
 R['provincias_total'] = T_PRV
 R['provincias'] = n_dim['provincia']
@@ -1084,6 +1137,7 @@ R['provincias_faltantes'] = prov_falt
 # Precio (último mes)
 R['precio_mediano_ultimo_mes'] = precio_med
 R['cv_precio_ultimo_mes_%'] = precio_cv
+R['precio_simbolico'] = R['precio_mediano_ultimo_mes'] <= PRECIO_SIMBOLICO_MAX     # sin precio en el último mes: False
 # Continuidad y puntaje
 R['continuo_periodo'] = R['dias_con_precio'] == ND
 R['continuo_util'] = R['dias_utiles'] == ND
@@ -1105,6 +1159,8 @@ print(f'Con precio todos los días: {int(R["continuo_periodo"].sum()):,} | todos
       f'(>= {MIN_SUC_DIA_UTIL} suc y >= {MIN_PCT_DIA_UTIL}%): {int(R["continuo_util"].sum()):,}')
 print(f'Puntaje: mediana {R["puntaje"].median():.1f} | >= 50: {int((R["puntaje"] >= 50).sum()):,} | '
       f'>= 75: {int((R["puntaje"] >= 75).sum()):,}')
+print(f'Solo en comercios que dejaron de publicar: {int(R["solo_en_comercios_que_dejaron_de_publicar"].sum()):,} | '
+      f'precio simbólico (<= ${PRECIO_SIMBOLICO_MAX} en el último mes): {int(R["precio_simbolico"].sum()):,}')
 print(R[['ranking', 'id_producto', 'descripcion', 'puntaje', 'pct_dias', 'pct_suc_diaria_prom', 'comercios',
          'provincias']].head(15).to_string(index=False))"""))
 
@@ -1137,6 +1193,7 @@ _sd = SUC.groupby('id_comercio').agg(comercio=('comercio', 'first'), banderas=('
                                      dias_activa_max=('dias_activa', 'max'), primer_mes=('primer_mes', 'min'),
                                      ultimo_mes=('ultimo_mes', 'max'))
 _sd['productos_distintos'] = pd.Series(prod_por_com, index=CAT_COM).reindex(_sd.index)
+_sd['publica_en_el_ultimo_mes'] = _sd['ultimo_mes'] == MES_ULTIMO
 _sd['fuente_nombre'] = [FUENTE_NOMBRE.get(str(c), '') for c in _sd.index]
 cadenas = _sd.sort_values('sucursales', ascending=False).reset_index()
 _pv = (SUC.assign(provincia=SUC['provincia'].fillna('Sin dato (no cuenta como provincia)'))
@@ -1145,6 +1202,13 @@ _pv = (SUC.assign(provincia=SUC['provincia'].fillna('Sin dato (no cuenta como pr
                                  departamentos=('depto', 'nunique')))
 _pv['productos_distintos'] = pd.Series(prod_por_prv, index=CAT_PRV).reindex(_pv.index)
 provincias = _pv.sort_values('sucursales', ascending=False).reset_index()
+# Denominadores de cada día (muestran los cambios de la fuente: comercios que entran o salen, días flacos)
+dias = (DIA.assign(archivo=[f'{ARCHIVOS[t][0].name}/{ARCHIVOS[t][1]}' for t in DIA['tag']])
+        .rename(columns={'n_suc': 'sucursales', 'n_com': 'comercios', 'n_ban': 'banderas', 'n_prov': 'provincias',
+                         'n_productos': 'productos', 'n_precios': 'observaciones'}))
+dias = dias[[c for c in ['fecha', 'sucursales', 'comercios', 'banderas', 'provincias', 'productos', 'observaciones',
+                         'factor_precio', 'archivo'] if c in dias]]
+_dmin, _dmax = DIA['fecha'].iat[int(np.argmin(ACT_SUC))], DIA['fecha'].iat[int(np.argmax(ACT_SUC))]
 
 resumen = pd.DataFrame([
     ('Período', f'{F_DESDE:%d/%m/%Y} a {F_HASTA:%d/%m/%Y}'),
@@ -1157,7 +1221,8 @@ resumen = pd.DataFrame([
     ('  de ellos códigos internos de comercio', int((~R['es_ean']).sum())),
     ('  en el Maestro de Productos Interno', int(R['en_maestro'].sum())),
     ('Sucursales que alguna vez reportaron', NS),
-    ('Sucursales activas por día (mín / mediana / máx)', f'{int(ACT_SUC.min())} / {int(np.median(ACT_SUC))} / {int(ACT_SUC.max())}'),
+    ('Sucursales activas por día (mín / mediana / máx; hoja Dias)',
+     f'{int(ACT_SUC.min())} ({_dmin:%d/%m/%Y}) / {int(np.median(ACT_SUC))} / {int(ACT_SUC.max())} ({_dmax:%d/%m/%Y})'),
     ('Comercios / banderas', f'{T_COM} / {T_BAN}'),
     ('Provincias / regiones', f'{T_PRV} / {T_REG}'),
     ('Departamentos / localidades con sucursales (las del maestro con coordenadas)', f'{T_DEP} / {T_LOC}'),
@@ -1174,13 +1239,20 @@ resumen = pd.DataFrame([
      ' / '.join(str(int((SUC['provincia_fuente'] == f).sum())) for f in
                 ('archivo', 'archivo (nombre pasado a código)', 'maestro de sucursales', 'sin dato'))),
     ('Comercios que reportaron menos de 30 días', int((SUC.groupby('id_comercio')['dias_activa'].max() < 30).sum())),
+    (f'Comercios sin precios en el último mes ({MES_ULTIMO}): dejaron de publicar o la fuente no los trae',
+     '; '.join(f'{nombre_comercio(c)} (hasta {m})' for c, m in COM_SIN_PUBLICAR.items()) or 'ninguno'),
+    ('Productos que solo estuvieron en esos comercios (su último día puede no ser una baja del producto)',
+     int(R['solo_en_comercios_que_dejaron_de_publicar'].sum())),
+    ('Códigos con caracteres inválidos unidos a su EAN', N_CODIGOS_UNIDOS),
+    (f'Productos con precio simbólico (mediana del último mes <= ${PRECIO_SIMBOLICO_MAX})', int(R['precio_simbolico'].sum())),
     ('Puntaje', 'media geométrica de pct_dias, pct_suc_diaria_prom, pct_com_diaria_prom y pct_provincias'),
     ('Días calendario sin dato', ', '.join(d.strftime('%d/%m/%Y') for d in DIAS_CAL_SIN_DATO[:80])),
 ], columns=['concepto', 'valor'])
 
 diccionario = pd.DataFrame([
     ('ranking', 'Posición por puntaje (desempate: sucursal-días)'),
-    ('id_producto', 'Código del SEPA sin ceros a la izquierda'),
+    ('id_producto', 'Código del SEPA sin ceros a la izquierda. Los que traen texto mal codificado pegado (8 a 14 dígitos '
+                    'y caracteres no ASCII) se unen a su EAN'),
     ('descripcion ... proveedor', 'Del Maestro de Productos Interno (data/); vacío si el código no está'),
     ('es_ean', 'EAN/GTIN real: solo dígitos, 8 a 14 sin ceros a la izquierda, dígito verificador válido, fuera de los '
                'rangos de circulación restringida (balanza o uso interno: EAN-13/EAN-8 que empiezan con 2, UPC-A de '
@@ -1205,6 +1277,9 @@ diccionario = pd.DataFrame([
     ('cadenas', 'Comercios donde apareció, separados por punto y coma'),
     ('cadena_principal / pct_cadena_principal / hhi_cadenas', 'Comercio con más sucursal-días, su cuota y el índice de concentración (1 = una sola cadena)'),
     ('en_universo_nb02', 'Tiene precios en comercios que el nb02 no filtra (19, 2013, 3001, 4)'),
+    ('solo_en_comercios_que_dejaron_de_publicar', 'Todos los comercios donde apareció no tienen precios en el último mes '
+                                                  'del período (dejaron de publicar o la fuente no los trae: ver Resumen y '
+                                                  'Cadenas). Su último día puede no ser una baja del producto'),
     ('provincias / pct_provincias', 'Provincias donde apareció, sobre el total (componente regional). Código ISO del '
                                     'archivo de precios; las escritas con el nombre se pasan a código, las vacías toman '
                                     'la del maestro de sucursales y, si no está, no cuentan'),
@@ -1213,6 +1288,11 @@ diccionario = pd.DataFrame([
     ('departamentos / localidades', 'De las sucursales del maestro con coordenadas (Georef de datos.gob.ar) y su localidad'),
     ('provincias_presentes / provincias_faltantes', 'Se lista la más corta de las dos, separadas por punto y coma'),
     ('precio_mediano_ultimo_mes / cv_precio_ultimo_mes_%', 'Mediana entre sucursales del precio promedio de cada sucursal en el último mes (pesos) y coeficiente de variación'),
+    ('precio_simbolico', f'Precio mediano del último mes <= ${PRECIO_SIMBOLICO_MAX}: precio de relleno del comercio '
+                         '(panadería, comidas), no un precio de venta'),
+    ('hoja Dias', 'Cada día con dato: sucursales, comercios, banderas y provincias activas, productos con precio, '
+                  'observaciones (sucursal x producto con precio), factor de precio y archivo del SEPA'),
+    ('hoja Cadenas: publica_en_el_ultimo_mes', 'El comercio tiene precios en el último mes del período'),
     ('continuo_periodo / continuo_util', 'Precio todos los días del período / todos los días útiles'),
     ('puntaje', 'Media geométrica de pct_dias, pct_suc_diaria_prom, pct_com_diaria_prom y pct_provincias (0-100). Los '
                 '% se guardan con 4 decimales: el puntaje se puede recalcular desde las columnas'),
@@ -1222,7 +1302,7 @@ _cols_cont = ['ranking', 'id_producto', 'descripcion', 'marca', 'rubro', 'catego
               'dias_utiles', 'suc_diarias_min', 'suc_diarias_prom', 'pct_suc_diaria_prom', 'comercios', 'provincias',
               'cadena_principal', 'pct_cadena_principal', 'es_ean']
 _hojas = [('Resumen', resumen), ('Ranking', R), ('Continuos_periodo', _cont[_cols_cont]),
-          ('Por_categoria', _cat[_cols_cont]), ('Cadenas', cadenas), ('Provincias', provincias),
+          ('Por_categoria', _cat[_cols_cont]), ('Cadenas', cadenas), ('Provincias', provincias), ('Dias', dias),
           ('Diccionario', diccionario)]
 
 def _valor(v):
@@ -1248,7 +1328,7 @@ for nombre, df in _hojas:
                f_pes if 'precio' in c else f_fec if pd.api.types.is_datetime64_any_dtype(df[c]) else
                f_num if pd.api.types.is_integer_dtype(df[c]) else None)
         ancho = (60 if c in ('descripcion', 'cadenas', 'provincias_presentes', 'provincias_faltantes', 'definicion',
-                             'valor') else 34 if c in ('concepto', 'columna') else
+                             'valor') else 34 if c in ('concepto', 'columna') else 46 if c == 'archivo' else
                  16 if c in ('id_producto', 'proveedor', 'comercio') else 12)
         ws.set_column(j, j, ancho, fmt); fmts.append(fmt)
     ws.set_row(0, 32)

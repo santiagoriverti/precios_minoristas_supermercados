@@ -21,9 +21,10 @@ la próxima corrida relee 12 meses en la 19c y los 33 de la econometría, una ve
 (`CANASTA_COL`, default `cantidad_01`) desde 2022 con encadenado de productos apareados; validado local, falta Colab.
 
 **nb09** (`notebooks/09_trazabilidad_productos.ipynb`, fuente `gen_nb09.py`): ranking de representatividad de todos
-los productos del SEPA desde 2022. Corrió completo en Colab (2026-10-21, 237.894 productos); la revisión encontró 6
-errores, corregidos en la **versión 2 del lector** (mismo día, probada local con datos reales): **falta la corrida en
-Colab, que relee casi todo el caché una vez (~1,5-2 h)**.
+los productos del SEPA desde 2022. La **versión 2** (corrige los 6 errores de la primera corrida, BUG-45) corrió en
+Colab y se revisó el 2026-10-22 (`docs/AUDITORIA_2026-10-22_nb09.md`): números correctos (panel = SEPA crudo exacto en 4
+meses); quedan decisiones de método (componente comercial y regional del puntaje) y de fuente (ago-oct 2026 del SEPA
+diario sin 8 comercios), en la §4 de esa auditoría.
 
 ## Al empezar una sesión
 
@@ -138,6 +139,10 @@ Colab, que relee casi todo el caché una vez (~1,5-2 h)**.
   `COMPLETOb` días 1-15): `listar_archivos` usa el que cubre más días; el nb02 y el nb08 los SUMAN (tarea aparte).
   Cualquier conteo con enteros al cuadrado, en float (el HHI se desbordaba). Comercios: nombres del comercio.csv del
   SEPA (el 47 es Unicoop, no Pasamonte; el 23 Axion; el 4 Estación Lima); banderas por id.
+- **nb09, fase 2 (2026-10-22)**: los códigos con texto mal codificado pegado se unen a su EAN con `limpiar_codigo`
+  (CELDA 5); en `ean_suc` esas filas están en el row group de su código ORIGINAL, así que los archivos que las tienen
+  (`TAGS_BASURA`) se leen enteros en la fase 2b. "Comercio que dejó de publicar" = sin precios en el último mes del
+  período (`COM_SIN_PUBLICAR`); desde ago-2026 eso incluye los 8 comercios que el SEPA diario (script 03) no trae.
 - **nb02, una sola referencia del país** (BUG-42): todo "vs país" es el promedio ponderado del Cuadro 1
   (`prom_nac_dict`), CABA es su fila del Cuadro 1, cadenas y barrios van por mediana en el análisis [mediana], y el AMBA
   es la columna `amba` de la CELDA 7 (CABA + Buenos Aires a ≤ 90 km del Obelisco), nunca `PROVINCIA in (CABA, Buenos
@@ -163,6 +168,7 @@ Colab, que relee casi todo el caché una vez (~1,5-2 h)**.
 | `docs/NB02_ANALISIS_VARIACION.md` | **nb02 CELDAS 19b y 19c**: cómo correrlas, cómo leer cada hoja, caché, validación con oct-26, trampas |
 | `docs/BUGS_Y_MEJORAS.md` | Defectos abiertos arriba; bugs resueltos con causa y fix |
 | `docs/SEPA_TECNICO.md` | Formato SEPA, cadenas, frescos por tipo, caché |
+| `docs/AUDITORIA_2026-10-22_nb09.md` | **Corrida del nb09 v2 revisada**: controles, panel contra el SEPA crudo, hallazgos de método y de fuente (§4). Scripts en `docs/auditoria/scripts_nb09_2026-10/` (r1-r6) |
 | `docs/AUDITORIA_2026-10-16_nb02.md` | **Última corrida del nb02 revisada** (oct-26 al 15/10): 19b/19c OK, BUG-42 (antes/ahora con los mismos datos, verificado en Colab), lecturas (Vea en jul-26), abiertos, §8 región por coordenadas (BUG-43, simulación), §9 provincia por polígonos (BUG-44), §10 colores, §11 Cuadro 1 de oct-26 antes/después |
 | `docs/auditoria/scripts_nb02_2026-10/` | Prototipo ad hoc de la desagregación (oct-26), validación de las CELDAS 19b/19c con datos reales, `simular_valores_documento.py` (rehace la CELDA 20 desde el Excel de una corrida), `comparar_corridas.py` (dos Excel hoja por hoja), `simular_region_19b_19c.py` + `comparar_region_19b_19c.py` (19b/19c reales sobre zips locales, código viejo vs nuevo), `reclasificacion_celda7.py` (la CELDA 7 real sobre el maestro, BUG-44), `cuadro1_reclasificacion.py` (Cuadro 1 de una corrida con la provincia de antes y la de ahora), `validar_amba_maestro.py`, `productos_que_mueven_grupo.py` |
 | `docs/AUDITORIA_2026-10-02_v514.md` | **Ultima corrida auditada** (v5.14 al 2026-10-01, Colab gratuito): numeros vigentes, volatilidad de Femenina/Tecnologica, Lavarropas y composicion por rubro (resueltos en la v5.15) |

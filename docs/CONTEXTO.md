@@ -580,6 +580,26 @@ Los 4 reemplazos (Swift XL, Lavandina Anti-splash, Plusbelle, Listerine) están 
 
 ## Historial de cambios
 
+### 2026-10-22 — nb09: corrida de la versión 2 revisada
+
+El usuario corrió la v2 en Colab (115 archivos; los 114 del caché viejo se releyeron; lectura 63 min; notebook ≤ 1,3 GB
+de RAM) y pidió una revisión exhaustiva. `docs/AUDITORIA_2026-10-22_nb09.md`; scripts en
+`docs/auditoria/scripts_nb09_2026-10/`.
+- **Correcto**: los seis errores del BUG-45 resueltos (24 provincias, HHI en rango, 0 productos con más sucursales
+  promedio que distintas, `COMPLETOb`, `es_ean`, nombres); todos los controles internos OK en los 237.894 productos; el
+  panel mensual = recálculo desde el SEPA crudo **exacto** en ene-24, ago-24, ago-25 y jul-26 (64-93 mil productos por
+  mes) y lo que imprime la CELDA 4 por archivo, igual; el mínimo diario de sucursales = nb08 en los 28 de la Continua
+  2022; may-jul 2026 = la muestra local de la v1.
+- **Abiertos** (decisiones del usuario): el componente comercial premia comercios chicos, estaciones de servicio y
+  Mercado Libre (limita 2.129 de los 2.496 productos ≥ 50); el regional satura; ago-oct 2026 vienen del SEPA diario
+  (nb03) sin 8 comercios (3.254 productos con "último día" 31/07/2026 por eso); precios simbólicos; 12 códigos con
+  basura de codificación; la regla de centavos vence hacia 2029.
+- **Aplicado el mismo día** (pedido del usuario; no relee el SEPA): hoja `Dias` con los denominadores diarios y el
+  archivo de cada día; comercios sin precios en el último mes (Resumen, `Cadenas.publica_en_el_ultimo_mes`) y la columna
+  `solo_en_comercios_que_dejaron_de_publicar`; los códigos con texto mal codificado se unen a su EAN; columna
+  `precio_simbolico` (≤ $10). Test sintético ampliado con esos casos (OK) y corrida real local jul-ago 2025: panel igual
+  al de Colab.
+
 ### 2026-10-21 (tarde) — nb09: primera corrida completa revisada y versión 2
 
 El usuario corrió el nb09 completo en Colab (115 archivos, 2022-01 → 15/10/2026, lectura 93 min, RAM estable: lector

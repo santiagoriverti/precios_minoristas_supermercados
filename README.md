@@ -793,12 +793,28 @@ caché. Cambiar `N_GRUPOS` no relee el SEPA (los resúmenes se reorganizan solos
   listas separadas con `; `, rubros sin variantes de mayúsculas, % con 4 decimales y **puntaje con la cuota diaria de
   comercios**.
 
+### Después de revisar la corrida de la versión 2 (2026-10-22, no relee el SEPA)
+
+Revisión: `docs/AUDITORIA_2026-10-22_nb09.md`. Cambios en la agregación y la exportación (el caché sirve tal cual):
+- **Hoja `Dias`**: los denominadores de cada día (sucursales, comercios, banderas y provincias activas, productos con
+  precio, observaciones, factor de precio y archivo del SEPA). El Resumen dice qué día tuvo el mínimo y el máximo de
+  sucursales.
+- **Comercios que dejaron de publicar**: los que no tienen precios en el último mes del período van al Resumen y a la
+  columna `publica_en_el_ultimo_mes` de `Cadenas`; la columna `solo_en_comercios_que_dejaron_de_publicar` marca los
+  productos que solo estuvieron en ellos (su "último día" puede no ser una baja). Desde ago-2026 los meses en curso
+  salen del SEPA diario (script 03), que no trae los comercios 19, 1000, 2000-2013 y 3001.
+- **Códigos con texto mal codificado** pegado (`8806094046892ÃƒÆ’...`, hasta 132 mil caracteres, Cadena 2003 en 2022):
+  se unen a su EAN; si el mismo día aparecen las dos formas, cuenta la de más sucursales.
+- **`precio_simbolico`**: precio mediano del último mes ≤ `PRECIO_SIMBOLICO_MAX` ($10): precios de relleno (panadería de
+  DIA a $5, comidas de ChangoMas a $4-10).
+- `primer_mes`/`ultimo_mes` de las sucursales y cadenas cuentan solo los meses con algún precio.
+
 ### Config (CELDA 1)
 
 `FECHA_INICIO`, `FECHA_FIN`, `MIN_SUC_DIA_UTIL` (100) y `MIN_PCT_DIA_UTIL` (5%) para los días "útiles", `BLOQUE_MB`
 (32), `N_GRUPOS` (16), `PROCESO_APARTE` (True), `RELEER_CACHE_VIEJO` (True), `USAR_GEOREF`
 (departamento y municipio de cada sucursal del maestro con coordenadas, API Georef de datos.gob.ar; una sola consulta
-por sucursal, en caché), `AMBA_RADIO_KM` (90), `CADENAS_FILTRAR_NB02`, `TOP_POR_CATEGORIA`.
+por sucursal, en caché), `AMBA_RADIO_KM` (90), `CADENAS_FILTRAR_NB02`, `TOP_POR_CATEGORIA`, `PRECIO_SIMBOLICO_MAX` (10).
 
 ### Métricas (hoja `Diccionario` del Excel)
 
@@ -807,13 +823,14 @@ por sucursal, en caché), `AMBA_RADIO_KM` (90), `CADENAS_FILTRAR_NB02`, `TOP_POR
 - **Sucursal**: sucursales distintas sobre todas las que alguna vez reportaron y **cuota diaria** (sucursales con precio
   / sucursales activas ese día; no castiga por sucursales que todavía no existían), promedio y mínimo diario.
 - **Comercial**: comercios (empresa) y banderas, **cuota diaria de comercios** (comercios con precio / comercios
-  activos ese día), cadena principal, su cuota y HHI, lista de cadenas, si está en el universo del nb02. Los comercios
+  activos ese día), cadena principal, su cuota y HHI, lista de cadenas, si está en el universo del nb02, si solo estuvo
+  en comercios que dejaron de publicar. Los comercios
   distintos del período (50) incluyen cadenas que reportaron pocos días y locales que parecen repetidos con otro código
   (44/45/46, 49/50): por eso el puntaje usa la cuota diaria.
 - **Regional**: provincias (código ISO del archivo de precios, con los nombres pasados a código; las vacías toman la del
   maestro o no cuentan), regiones INDEC con GBA = AMBA por coordenadas, presencia en AMBA, departamentos y localidades
   (sucursales del maestro), provincias presentes o faltantes.
-- **Precio**: mediana entre sucursales del último mes y coeficiente de variación.
+- **Precio**: mediana entre sucursales del último mes, coeficiente de variación y marca de precio simbólico.
 - **Puntaje 0-100** = media geométrica de `pct_dias`, `pct_suc_diaria_prom`, `pct_com_diaria_prom` y `pct_provincias`
   (los % van con 4 decimales: se puede recalcular). Identificación desde `data/Maestro de Productos Interno.xlsx`;
   `es_ean` = EAN/GTIN real (solo dígitos, dígito verificador válido, fuera de los rangos de balanza o uso interno, y no
@@ -822,11 +839,12 @@ por sucursal, en caché), `AMBA_RADIO_KM` (90), `CADENAS_FILTRAR_NB02`, `TOP_POR
 ### Qué genera (en `output_trazabilidad/`)
 
 `trazabilidad_productos_<desde>_<hasta>.xlsx` (Resumen, Ranking, Continuos_periodo, Por_categoria, Cadenas,
-Provincias, Diccionario), el ranking en `.parquet` y `.csv.gz`, y `panel_mensual_productos_<...>.parquet`
+Provincias, Dias, Diccionario), el ranking en `.parquet` y `.csv.gz`, y `panel_mensual_productos_<...>.parquet`
 (producto × mes: días con precio y sucursales diarias promedio). Test: `notebooks/test_trazabilidad_productos.py`
-(SEPA sintético contra fuerza bruta, con filas repetidas, provincias vacías o con nombre, una parte de mes repetida y
-códigos no EAN; también bloques diminutos, otra cantidad de grupos, caché reorganizado, caché de la versión 1 y lector
-en el mismo proceso: todo da igual).
+(SEPA sintético contra fuerza bruta, con filas repetidas, provincias vacías o con nombre, una parte de mes repetida,
+códigos no EAN, un código con texto mal codificado, un comercio que deja de publicar y un precio simbólico; también
+bloques diminutos, otra cantidad de grupos, caché reorganizado, caché de la versión 1 y lector en el mismo proceso:
+todo da igual).
 
 ---
 

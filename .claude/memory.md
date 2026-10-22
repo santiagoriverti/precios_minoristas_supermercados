@@ -6,7 +6,39 @@ Autor: Santiago Riverti — investigador independiente
 
 ---
 
-## 🟢 nb09 — versión 2: errores de la primera corrida corregidos [2026-10-21 tarde] — leer esto primero
+## 🟢 nb09 — corrida v2 en Colab revisada [2026-10-22] — leer esto primero
+
+- El usuario corrió la v2 completa (115 archivos, 114 releídos por la versión vieja, lectura 63 min, RAM ≤ 1,3 GB en el
+  notebook). Revisión: `docs/AUDITORIA_2026-10-22_nb09.md` + scripts en `docs/auditoria/scripts_nb09_2026-10/`
+  (r1-r6, `python -I -X utf8`, rutas como argumentos). Insumos en Descargas del usuario (no en el repo).
+- **BUG-45 verificado**: 24 provincias, HHI en [1/comercios, 1], 0 con `suc_diarias_prom > sucursales_distintas`,
+  COMPLETOb para ago-24 p1, `es_ean` sin DV inválido ni balanza, puntaje recalculable (dif. máx. 0,0059). Panel = SEPA
+  crudo EXACTO en ene-24, ago-24, ago-25 y jul-26 (días y sucursales/día de cada producto, y lo que imprime la CELDA 4);
+  mínimo diario de sucursales = nb08 en los 28 de la Continua 2022; may-jul 2026 = muestra local de la v1.
+- Hallazgos abiertos (decisiones del usuario, ver AUDITORIA §4): (1) el componente comercial (`pct_com_diaria_prom`)
+  limita 2.129 de los 2.496 con puntaje ≥ 50 y premia comercios chicos, estaciones de servicio, Mercado Libre (2013) y
+  los repetidos 44/45/46-49/50 → top 100 = 56% bebidas; cambiarlo a "comercios con ≥ N sucursales" relee (~65 min);
+  (2) `pct_provincias` satura (mediana 100): la cuota diaria no relee; (3) desde 01/08/2026 la fuente es el SEPA diario
+  (nb03) sin los comercios 19, 1000, 2000, 2002, 2005, 2007, 2013, 3001: 12.990 productos con último día en jul-26
+  (3.254 solo en esos); (4) precios simbólicos ($5 panadería DIA, $4-10 ChangoMas); (5) 12 códigos con basura de
+  codificación (tablets Samsung, Cadena 2003, 2022; 2 no entran en una celda de Excel); (6) la regla "mediana >
+  $10.000 = centavos" (nb09, nb02 CELDA 9, nb08) está en $4.529 / $3.420 en jul-26: vence hacia 2029.
+- Filas repetidas: 2024-01_p2 = Cadena 2011 (891, mismos días y precios) + comercio 35; 2025-08_p1 = UNA sucursal de
+  ChangoMas con cada producto dos veces y días distintos (24.890); 2022-05_p2 (111.651) sin mirar (no hay zip 2022 local).
+- **Aplicado el mismo día (pedido del usuario, NO relee el SEPA)**: hoja `Dias` (denominadores diarios + archivo) y
+  fecha del mínimo/máximo de sucursales en el Resumen; comercios sin precios en el último mes en el Resumen y en
+  `Cadenas.publica_en_el_ultimo_mes`; columna `solo_en_comercios_que_dejaron_de_publicar`; códigos con basura unidos a
+  su EAN (`limpiar_codigo`, CELDA 5; si el mismo día hay las dos formas, el de más sucursales; los archivos con basura,
+  `TAGS_BASURA`, se leen enteros en la fase 2b porque esas filas están en el row group del código original); columna
+  `precio_simbolico` (≤ `PRECIO_SIMBOLICO_MAX` = $10); `primer_mes`/`ultimo_mes` solo con meses con precios. Test
+  sintético ampliado (código con basura, comercio que deja de publicar, precio simbólico, hoja Dias) y corrida real
+  local jul-ago 2025 (`scripts_nb09_2026-10/r7_correr_real.py`): panel = Colab exacto.
+- **Siguiente**: la próxima corrida en Colab usa el caché (~10 min, solo relee el último mes). Revisar: Resumen
+  (8 comercios sin precios en oct-26 "hasta 2026-07", ~3.250 productos marcados, 14 códigos unidos, ~100 precios
+  simbólicos) y la hoja `Dias` (el día de 870 sucursales). Quedan para decidir: componente comercial (relee) y regional
+  (no relee) del puntaje, AUDITORIA §4.1-4.2.
+
+## 🟢 nb09 — versión 2: errores de la primera corrida corregidos [2026-10-21 tarde]
 
 - La corrida completa del usuario en Colab funcionó (115 archivos, RAM estable). Revisión: lo temporal y de sucursales
   validado contra el nb08 (exacto en 97 productos); 6 errores (BUG-45 en BUGS_Y_MEJORAS): HHI int32 desbordado, 27

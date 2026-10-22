@@ -6,11 +6,13 @@ El SEPA sintético trae a propósito los defectos que tiene el real:
     bloque del archivo;
   - provincias vacías, escritas con el nombre ('Santa Fe', 'Provincia de Córdoba');
   - dos archivos para la misma parte de un mes (uno parcial, días 1-5, y el completo), con el parcial ÚLTIMO en el zip;
-  - códigos que no son EAN: interno con guiones y de balanza (EAN-13 que empieza con 2).
+  - códigos que no son EAN: interno con guiones y de balanza (EAN-13 que empieza con 2);
+  - un código con texto mal codificado pegado (como la Cadena 2003 en 2022), que se une a su EAN;
+  - un comercio que deja de publicar (solo enero) con un producto que solo estuvo ahí, y un producto con precio simbólico.
 
     python notebooks/test_trazabilidad_productos.py
 """
-import gzip, io, json, os, shutil, sys, tempfile, zipfile
+import gzip, io, json, os, re, shutil, sys, tempfile, zipfile
 from pathlib import Path
 import numpy as np
 import pandas as pd
@@ -22,11 +24,13 @@ rng = np.random.default_rng(7)
 # ── SEPA sintético ──────────────────────────────────────────────────────────────
 SUCS = [('9', '1', '101', 'AR-C'), ('9', '2', '102', ''), ('12', '1', '201', 'AR-C'),
         ('12', '1', '202', 'Provincia de Córdoba'), ('15', '1', '301', 'AR-B'), ('15', '1', '302', 'AR-T'),
-        ('19', '1', '401', 'AR-X'), ('15', '1', '303', 'Santa Fe')]
+        ('19', '1', '401', 'AR-X'), ('15', '1', '303', 'Santa Fe'), ('23', '1', '501', 'AR-M')]
 ISO = {'AR-C': 'AR-C', '': None, 'Provincia de Córdoba': 'AR-X', 'AR-B': 'AR-B', 'AR-T': 'AR-T', 'AR-X': 'AR-X',
-       'Santa Fe': 'AR-S'}
+       'Santa Fe': 'AR-S', 'AR-M': 'AR-M'}
+NUEVO = '7790580131784'               # solo en el comercio 23, que publica solo en enero
+SIMB = '8480017072948'                # precio de relleno: $5 en todas las sucursales de DIA
 EANS = ['7790895000232', '0007790070318312', '7791866001364', '123', '7798181510267', '7790742340108',
-        '2003080000005', '10-1-2300377000008']
+        '2003080000005', '10-1-2300377000008', NUEVO, SIMB]
 DIAS = pd.date_range('2026-01-01', '2026-02-28')
 # Patrón por producto: probabilidad de que una sucursal lo tenga, días en que el producto no existe
 REGLA = {'7790895000232': (1.0, None), '0007790070318312': (0.7, None),
@@ -34,7 +38,7 @@ REGLA = {'7790895000232': (1.0, None), '0007790070318312': (0.7, None),
          '123': (0.5, ('2026-01-01', '2026-01-31')),                 # aparece en febrero
          '7798181510267': (0.6, ('2026-02-15', '2026-02-28')),        # desaparece a mitad de febrero
          '7790742340108': (0.15, None),
-         '2003080000005': (0.4, None), '10-1-2300377000008': (0.3, None)}
+         '2003080000005': (0.4, None), '10-1-2300377000008': (0.3, None), NUEVO: (0.8, None), SIMB: (0.9, None)}
 # Una sucursal que no reporta nada del 5 al 8 de enero (cambia el denominador diario)
 SIN_REPORTE = ('15', '1', '302'), pd.date_range('2026-01-05', '2026-01-08')
 
@@ -42,8 +46,8 @@ filas = []
 for (c, b, s, p) in SUCS:
     for e in EANS:
         prob, fuera = REGLA[e]
-        if e == '7790742340108' and c != '9':
-            continue                                                  # solo en Cencosud
+        if (e == '7790742340108' and c != '9') or (e == NUEVO and c != '23') or (e == SIMB and c != '15'):
+            continue                                                  # solo en Cencosud / en el 23 / en DIA
         for d in DIAS:
             if fuera and pd.Timestamp(fuera[0]) <= d <= pd.Timestamp(fuera[1]):
                 continue
@@ -51,8 +55,15 @@ for (c, b, s, p) in SUCS:
                 continue
             if (c, b, s) == ('9', '2', '102') and d < pd.Timestamp('2026-01-16'):
                 continue                                              # la sucursal sin provincia empieza el 16/01
+            if c == '23' and d.month != 1:
+                continue                                              # el comercio 23 deja de publicar en febrero
             if rng.random() < prob:
-                filas.append((c, b, s, p, e, d, int(rng.integers(50_000, 900_000))))   # centavos
+                precio = int(rng.integers(50_000, 900_000))          # centavos
+                filas.append((c, b, s, p, e, d, 500 if e == SIMB else precio))
+# Código con texto mal codificado pegado: el 12/01, dentro del hueco del EAN limpio (10 al 20/01), en dos sucursales
+BASURA = '7791866001364Ãƒâ€šÃ‚Â'
+for (c, b, s, p) in (SUCS[2], SUCS[4]):
+    filas.append((c, b, s, p, BASURA, pd.Timestamp('2026-01-12'), int(rng.integers(50_000, 900_000))))
 obs = pd.DataFrame(filas, columns=['c', 'b', 's', 'p', 'e', 'd', 'precio'])
 
 def tabla(mes, dd):
@@ -112,7 +123,7 @@ g = correr()
 R = g['R'].set_index('id_producto')
 
 # ── Fuerza bruta ────────────────────────────────────────────────────────────────
-obs['e'] = obs['e'].str.lstrip('0')
+obs['e'] = obs['e'].map(lambda x: x if x.isascii() else re.match(r'\d+', x).group(0)).str.lstrip('0')
 obs['suc'] = obs['c'] + '|' + obs['b'] + '|' + obs['s']
 obs['iso'] = obs['p'].map(ISO)
 act = obs.groupby('d')['suc'].nunique()
@@ -163,6 +174,9 @@ for e, o in obs.groupby('e'):
     chk(f'{e} pct_cadena_principal', r['pct_cadena_principal'], sd.max() / sd.sum() * 100, 1e-4)
     chk(f'{e} continuo_periodo', r['continuo_periodo'], len(dd) == ND)
     chk(f'{e} en_universo_nb02', r['en_universo_nb02'], bool((o['c'] != '19').any()))
+    chk(f'{e} solo_en_comercios_que_dejaron_de_publicar', r['solo_en_comercios_que_dejaron_de_publicar'],
+        bool((o['c'] == '23').all()))
+    chk(f'{e} precio_simbolico', r['precio_simbolico'], e == SIMB)
     chk(f'{e} puntaje', r['puntaje'], (r['pct_dias'] * r['pct_suc_diaria_prom'] * r['pct_com_diaria_prom'] *
                                        r['pct_provincias'] / 100 ** 4) ** 0.25 * 100, 0.006)
 
@@ -179,7 +193,10 @@ chk('lista de cadenas separada por ;', R.loc['7790895000232', 'cadenas'].count('
 chk('parte repetida: se eligió el archivo completo', [x[2] for x in g['ARCHIVOS_REPETIDOS']] == ['2026A.zip/012026_pais_parte1COMPLETOb.csv.gz'], True)
 chk('filas repetidas contadas', int(sum((g['_info_de'](t).get('duplicados') or 0) for t in g['TAGS'])), 4)
 chk('fuente de la provincia', g['SUC']['provincia_fuente'].value_counts().to_dict() ==
-    {'archivo': 5, 'archivo (nombre pasado a código)': 2, 'sin dato': 1}, True)
+    {'archivo': 6, 'archivo (nombre pasado a código)': 2, 'sin dato': 1}, True)
+chk('código con basura unido a su EAN', g['N_CODIGOS_UNIDOS'], 1)
+chk('código con basura: no queda como producto', any(not i.isascii() for i in R.index), False)
+chk('comercios sin precios en el último mes', list(g['COM_SIN_PUBLICAR'].index) == ['23'], True)
 pv = pd.read_excel(next((tmp / 'out').glob('trazabilidad_productos_*.xlsx')), 'Provincias').set_index('provincia')
 chk('Provincias: una sucursal sin dato', int(pv.loc[[i for i in pv.index if i.startswith('Sin dato')], 'sucursales'].sum()), 1)
 chk('Provincias: 5 reales + sin dato', len(pv), prov_tot + 1)
@@ -190,8 +207,15 @@ chk('panel enero coca', pm.query("id_producto == '7790895000232' and mes == '202
 # Excel con todas las hojas
 x = pd.ExcelFile(next((tmp / 'out').glob('trazabilidad_productos_*.xlsx')))
 chk('hojas Excel', x.sheet_names == ['Resumen', 'Ranking', 'Continuos_periodo', 'Por_categoria', 'Cadenas',
-                                    'Provincias', 'Diccionario'], True)
+                                    'Provincias', 'Dias', 'Diccionario'], True)
 chk('filas Ranking', len(pd.read_excel(x, 'Ranking')), len(R))
+dsh = pd.read_excel(x, 'Dias')
+chk('Dias: un renglón por día', list(pd.to_datetime(dsh['fecha'])) == list(fechas), True)
+chk('Dias: sucursales activas', list(dsh['sucursales']) == list(act.reindex(fechas)), True)
+chk('Dias: comercios activos', list(dsh['comercios']) == list(act_com.reindex(fechas)), True)
+chk('Dias: archivo de la primera quincena de enero', dsh['archivo'].iat[0] == '2026A.zip/012026_pais_parte1COMPLETOb.csv.gz', True)
+cd = pd.read_excel(x, 'Cadenas', dtype={'id_comercio': str}).set_index('id_comercio')
+chk('Cadenas: solo el 23 no publica en el último mes', sorted(cd.index[~cd['publica_en_el_ultimo_mes'].astype(bool)]) == ['23'], True)
 
 cols = [c for c in R.columns if c != 'ranking']
 

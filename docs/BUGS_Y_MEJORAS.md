@@ -1,6 +1,8 @@
 # Bugs Pendientes y Mejoras
 
-Última actualización: 2026-10-21 — **nb09**: BUG-45 resuelto (6 errores de la primera corrida completa: HHI
+Última actualización: 2026-10-22 — **nb09**: corrida v2 en Colab revisada (`docs/AUDITORIA_2026-10-22_nb09.md`):
+BUG-45 verificado y panel = SEPA crudo en 4 meses; abiertos de método y de fuente (abajo, "nb09 — abiertos").
+Antes, 2026-10-21 — **nb09**: BUG-45 resuelto (6 errores de la primera corrida completa: HHI
 desbordado, 27 "provincias", sucursal × producto repetidos, parte de mes repetida, `es_ean`, nombres) y puntaje con la
 cuota diaria de comercios; falta la corrida en Colab (relee casi todo una vez). Abierto: el nb02 y el nb08 suman los dos
 archivos de la primera quincena de agosto 2024.
@@ -27,6 +29,15 @@ Los defectos abiertos que resuelve quedan marcados abajo (se verifican con la co
 
 ## 🟡 Defectos abiertos
 
+- **nb09 — abiertos de la corrida v2** (2026-10-22, detalle y números en `docs/AUDITORIA_2026-10-22_nb09.md` §4):
+  (1) el componente comercial del puntaje pesa igual a un comercio de 1 sucursal, una estación de servicio o Mercado
+  Libre que a Carrefour, y limita el puntaje de 2.129 de los 2.496 productos ≥ 50 (top 100 = 56% bebidas); restringirlo a
+  comercios con ≥ N sucursales relee una vez; (2) `pct_provincias` satura (mediana 100 en los ≥ 50): usar la cuota diaria
+  no relee; (3) ago-oct 2026 salen del SEPA diario (nb03) sin 8 comercios: "último día 31/07/2026" en 3.254 productos que
+  solo estaban ahí — **marcados desde el 2026-10-22** (hoja `Dias`, columna `solo_en_comercios_que_dejaron_de_publicar`);
+  falta reemplazar esos meses por el semestral oficial cuando salga; (4) precios simbólicos ($1-$10) — **marcados**
+  (`precio_simbolico`); (5) 14 códigos con basura de codificación — **unidos a su EAN**; (6) la regla "mediana > $10.000
+  = centavos" (nb09, nb02 CELDA 9, nb08) vence hacia 2029 ($4.529 / $3.420 en jul-26).
 - **nb02 / nb08: suman los dos archivos de la primera quincena de agosto 2024** (2026-10-21) — `2024B.zip` trae
   `082024_pais_parte1COMPLETO.csv.gz` (días 1-5, 3.048 sucursales) y `082024_pais_parte1COMPLETOb.csv.gz` (días 1-15,
   3.376 sucursales, superconjunto con los mismos precios). `archivos_por_mes` (nb02 CELDA 5 y 9, nb08 CELDA 4) junta
