@@ -219,10 +219,9 @@ if GUARDAR_EN_DRIVE:
     shutil.copy(salida, CARPETA_DRIVE)
     print(f'Copiado a {CARPETA_DRIVE}/{salida}')
 print(f"""
-Para el nb08 (valor diario de la canasta), en la CELDA 1:
+El nb08 (valor diario de la canasta) usa por defecto {CARPETA_DRIVE}/canasta_pass_through_2026-10.xlsx y cantidad_01.
+Si este archivo tiene otro nombre, en su CELDA 1:
     CANASTA_EXCEL = '{CARPETA_DRIVE}/{salida}'
-    CANASTA_COL   = 'cantidad_01'
-El nb08 llama "Vulnerable" a cantidad_01 (en títulos y en el nombre del Excel de salida). Con los 775 productos la
-primera corrida lleva unas 3 horas en el Colab gratuito (~5 GB de RAM por mes; guarda cada mes en caché y, si se
-corta, sigue donde quedó). Para probar antes, TIPOS = ['Alimentos'].""")
+La primera corrida con los 775 productos lee 58 meses (~1,5-2 h en el Colab gratuito; guarda cada mes en caché y, si se
+corta, sigue donde quedó).""")
 files.download(salida)

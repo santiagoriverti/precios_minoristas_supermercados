@@ -17,8 +17,12 @@ vuelven a su provincia; mueve el Cuadro 1 hasta ~1%). Los tres simulados con dat
 la próxima corrida relee 12 meses en la 19c y los 33 de la econometría, una vez**. Revisión de todo:
 `docs/AUDITORIA_2026-10-16_nb02.md`.
 
-**Nuevo (2026-10-20): nb08** (`notebooks/08_canasta_diaria.ipynb`, fuente `gen_nb08.py`): valor diario de una canasta
-(`CANASTA_COL`, default `cantidad_01`) desde 2022 con encadenado de productos apareados; validado local, falta Colab.
+**nb08** (`notebooks/08_canasta_diaria.ipynb`, fuente `gen_nb08.py`): valor diario de una canasta desde 2022. Desde el
+2026-10-22 corre **por defecto la canasta fija de pass-through** (775 productos, `cantidad_01` de
+`output_canasta/canasta_pass_through_2026-10.xlsx`, 01/01/2022 → 20/10/2026) y, además de la mediana diaria, calcula un
+**índice con sucursales apareadas** (relativos de la misma sucursal, con imputación del IPC para los días que falta), los
+días con cobertura incompleta, índices por grupo del IPC y un panel producto × día. Un archivo por quincena (corrige el
+doble conteo del 1-5/08/2024). Test `test_canasta_diaria.py`; validado con datos reales contra el lector anterior.
 
 **nb09** (`notebooks/09_trazabilidad_productos.ipynb`, fuente `gen_nb09.py`): ranking de representatividad de todos
 los productos del SEPA desde 2022. La **versión 2** (corrige los 6 errores de la primera corrida, BUG-45) corrió en
@@ -46,6 +50,7 @@ diario sin 8 comercios), en la §4 de esa auditoría.
    python notebooks/test_valores_documento.py         # nb02 CELDAS 7 (AMBA), 16, 18 y 20 (documento técnico)
    python notebooks/test_reclasificacion_provincia.py # nb02 CELDA 7 (provincia por polígonos, BUG-44)
    python notebooks/test_trazabilidad_productos.py    # nb09 (SEPA sintético contra fuerza bruta)
+   python notebooks/test_canasta_diaria.py            # nb08 (medianas y sucursales apareadas contra fuerza bruta)
    ```
 3. Los datos (ZIPs del SEPA, caché, Excel de salida) **no están en el repo**: viven en el Drive del
    usuario (`MyDrive/carga/`). Para auditar una corrida, el usuario pasa el Excel del nb07 y los zips
@@ -136,7 +141,8 @@ diario sin 8 comercios), en la §4 de esa auditoría.
   **Provincias** escritas con el nombre ('Buenos Aires' en una sucursal de DIA en todos los archivos 2024-2026, 'Santa
   Fe' en 3 del comercio 1001) o vacías (36 sucursales en 2022-2023): `iso_provincia` del lector; las vacías toman la
   del maestro o no cuentan. **Dos archivos para la misma parte** (`2024B.zip`, agosto, `COMPLETO` días 1-5 y
-  `COMPLETOb` días 1-15): `listar_archivos` usa el que cubre más días; el nb02 y el nb08 los SUMAN (tarea aparte).
+  `COMPLETOb` días 1-15): `listar_archivos` usa el que cubre más días; el nb08 también desde el 2026-10-22; el nb02
+  todavía los SUMA (tarea aparte).
   Cualquier conteo con enteros al cuadrado, en float (el HHI se desbordaba). Comercios: nombres del comercio.csv del
   SEPA (el 47 es Unicoop, no Pasamonte; el 23 Axion; el 4 Estación Lima); banderas por id.
 - **nb09, fase 2 (2026-10-22)**: los códigos con texto mal codificado pegado se unen a su EAN con `limpiar_codigo`
@@ -145,6 +151,12 @@ diario sin 8 comercios), en la §4 de esa auditoría.
   período (`COM_SIN_PUBLICAR`, desde 2022: 33 en oct-26); desde ago-2026 eso incluye los 8 comercios que el SEPA diario
   (script 03) no trae (`mes_baja_comercios` = '2026-07'). Un hueco temporal en el último mes también cuenta. El precio
   simbólico es relativo: `PRECIO_SIMBOLICO_PCT` (1,25%) de la mediana de precios del último mes.
+- **nb08, sucursales apareadas (2026-10-22)**: el relativo de una sucursal es su precio / su precio anterior movido con
+  el índice del producto desde entonces (si faltó ≤ `MAX_DIAS_SIN_PRECIO` días). Sin esa imputación, una sucursal que
+  vuelve suma de nuevo la variación que ya entró por las otras (el test lo detecta: el índice deja de dar la tendencia).
+  El caché `diaria_v2_<clave>` guarda por mes el agregado y el estado (`estado_AAAA-MM.parquet`: pares sucursal ×
+  producto + índice de cada producto en los metadatos); cambiar cómo se calculan los relativos exige subir la versión
+  del directorio. El último mes no se guarda.
 - **nb02, una sola referencia del país** (BUG-42): todo "vs país" es el promedio ponderado del Cuadro 1
   (`prom_nac_dict`), CABA es su fila del Cuadro 1, cadenas y barrios van por mediana en el análisis [mediana], y el AMBA
   es la columna `amba` de la CELDA 7 (CABA + Buenos Aires a ≤ 90 km del Obelisco), nunca `PROVINCIA in (CABA, Buenos

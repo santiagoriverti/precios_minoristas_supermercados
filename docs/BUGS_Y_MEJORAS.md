@@ -41,7 +41,8 @@ Los defectos abiertos que resuelve quedan marcados abajo (se verifican con la co
   (`precio_simbolico`) con umbral relativo, 1,25% de la mediana del último mes (~$100 en oct-26); (5) 14 códigos con basura de
   codificación — **unidos a su EAN**; (6) la regla "mediana > $10.000
   = centavos" (nb09, nb02 CELDA 9, nb08) vence hacia 2029 ($4.529 / $3.420 en jul-26).
-- **nb02 / nb08: suman los dos archivos de la primera quincena de agosto 2024** (2026-10-21) — `2024B.zip` trae
+- **nb02: suma los dos archivos de la primera quincena de agosto 2024** (2026-10-21; **el nb08 lo corrigió el
+  2026-10-22**: un archivo por quincena, el que cubre más días) — `2024B.zip` trae
   `082024_pais_parte1COMPLETO.csv.gz` (días 1-5, 3.048 sucursales) y `082024_pais_parte1COMPLETOb.csv.gz` (días 1-15,
   3.376 sucursales, superconjunto con los mismos precios). `archivos_por_mes` (nb02 CELDA 5 y 9, nb08 CELDA 4) junta
   los dos: el nb08 cuenta dos veces las observaciones del 1 al 5 (la mediana diaria no cambia) y el nb02 pondera doble
@@ -248,6 +249,19 @@ de la Tecnológica** hasta que haya al menos dos cadenas con cobertura de durabl
 ---
 
 ## 🟢 Cambios y fixes 2026-10
+
+### 🟣 nb08 — canasta de pass-through por defecto y sucursales apareadas (2026-10-22)
+
+Pedido del usuario: que el nb08 corra por defecto la canasta fija de pass-through (`cantidad_01` de
+`output_canasta/canasta_pass_through_2026-10.xlsx`) con las correcciones sugeridas. Cambios: (1) defaults
+`CANASTA_COL`/`CANASTA_EXCEL`, `NOMBRE_CANASTA` automático ("Pass-through", antes salía "Vulnerable") y `FECHA_FIN`
+(20/10/2026); (2) **un archivo por quincena** (el que cubre más días): antes sumaba los dos de ago-2024 p1 y las
+observaciones del 1-5/08/2024 contaban doble; (3) lector por archivo (no junta el mes entero en texto); (4) **índice con
+sucursales apareadas** por producto (media geométrica de relativos de la misma sucursal, con imputación del IPC para
+los días que falta, relativos fuera de [1/4, 4] afuera) y valor de la canasta con ese índice; (5) `cobertura_incompleta`
+por día; (6) `Indices_por_grupo`, `Precios_apareados` y panel producto × día (parquet y csv.gz); (7) Excel con
+xlsxwriter. Caché nueva `diaria_v2_<clave>` (con estado por mes). Test `test_canasta_diaria.py` (fuerza bruta); real:
+ver CONTEXTO 2026-10-22.
 
 ### 🔴 BUG-45 — nb09: errores de la primera corrida completa (2026-10-21) ✅ Resuelto (falta Colab)
 

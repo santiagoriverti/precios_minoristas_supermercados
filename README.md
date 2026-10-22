@@ -27,7 +27,7 @@ El proyecto responde tres preguntas:
 | `05_evolucion_productos_representativos` | Igual que el Notebook 02, pero para **productos individuales** en vez de canastas: evolución de precio, mapas provinciales, comparación con el IPC y rankings por cadena/barrio de cada EAN que se ingrese. Ver [sección detallada](#evolución-de-productos-individuales--05_evolucion_productos_representativos). | [![Abrir en Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/santiagoriverti/precios_minoristas_supermercados/blob/main/notebooks/05_evolucion_productos_representativos.ipynb) |
 | `06_evolucion_brecha_celiaca` | Mide la **brecha celíaca** (canasta sin-TACC vs. base con TACC) y su evolución **diaria, semanal y mensual**, usando solo tipos de producto con dicotomía celíaca (2–3 EANs representativos por lado, promediados). Brecha **intra-sucursal**, desagregada por provincia, cadena y concentración de comercios. Ver [sección detallada](#brecha-celíaca--06_evolucion_brecha_celiaca). | [![Abrir en Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/santiagoriverti/precios_minoristas_supermercados/blob/main/notebooks/06_evolucion_brecha_celiaca.ipynb) |
 | `07_evolucion_canastas_alternativas` | **Motor del informe semanal.** Costo de **6 canastas** (**Popular / Media / Ejecutiva / Tecnológica / Representativa / Femenina**) con **semana que cierra el jueves**, comparado con el **IPC**, desagregado por **rubro**, **provincia**, **región** y **cadena**. **Índice encadenado de muestra apareada** (sin saltos por altas/bajas), **nacional ponderado por población** y **provincia controlando por cadena**. Composición: **267 empaquetados** por EAN (`cantidad_01..06`) + **59 tipos de frescos** por nombre (índice multilateral **TPD** por EAN). Exporta `Presencia_items`, `Alertas_reemplazo`, `Alertas_quiebre`, `Candidatos_trazabilidad` y `Frescos_metodos`. **v5.15** (2026-10-02: composición por rubro con faltantes imputados, Lavarropas BGH en la Tecnológica; v5.14: corre en el **Colab gratuito**, pico de RAM ÷3 con el mismo resultado) sobre la **v5.13** (frescos por TPD con nivel fijo, cobertura mínima de empaquetados, filtro estacional y ronda 2 de reemplazos). Ver [sección detallada](#canastas-alternativas--07_evolucion_canastas_alternativas). | [![Abrir en Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/santiagoriverti/precios_minoristas_supermercados/blob/main/notebooks/07_evolucion_canastas_alternativas.ipynb) |
-| `08_canasta_diaria` | **Valor diario de una canasta desde 2022.** Toma una columna de la hoja `Selección` (por defecto `cantidad_01`, Vulnerable) y exporta `canasta_diaria_<canasta>_<desde>_<hasta>.xlsx`: valor día por día (mediana nacional por producto, índice encadenado con productos apareados llevado a pesos), resumen mensual y precios diarios por producto. Caché por mes. Ver [sección detallada](#valor-diario-de-una-canasta--08_canasta_diaria). | [![Abrir en Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/santiagoriverti/precios_minoristas_supermercados/blob/main/notebooks/08_canasta_diaria.ipynb) |
+| `08_canasta_diaria` | **Valor diario de una canasta desde 2022.** Por defecto, la canasta fija de **pass-through** (775 productos, `cantidad_01` de `canasta_pass_through_2026-10.xlsx`, 01/01/2022 → 20/10/2026). Dos precios por producto y día: mediana nacional e índice con **sucursales apareadas** (no salta cuando cambian las sucursales que informan); valor de la canasta con los dos, índices por grupo del IPC, días con cobertura incompleta marcados y panel producto × día para regresiones. Caché por mes. Ver [sección detallada](#valor-diario-de-una-canasta--08_canasta_diaria). | [![Abrir en Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/santiagoriverti/precios_minoristas_supermercados/blob/main/notebooks/08_canasta_diaria.ipynb) |
 | `09_trazabilidad_productos` | **Representatividad de TODOS los productos del SEPA desde 2022.** Lee todos los archivos de los ZIPs semestrales (con caché por archivo) y arma un ranking: % de días con precio, cuota diaria de sucursales, comercios/banderas, provincias, regiones, departamentos (Georef), continuidad y precio. Ver [sección detallada](#trazabilidad-de-productos--09_trazabilidad_productos). | [![Abrir en Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/santiagoriverti/precios_minoristas_supermercados/blob/main/notebooks/09_trazabilidad_productos.ipynb) |
 
 > **¿Ves una versión vieja en Colab?** El badge siempre apunta a la última versión en GitHub, pero Colab puede mostrar una copia cacheada de tu Drive. Para forzar la actualización: eliminá el notebook de `Mi unidad/Colab Notebooks/` en Google Drive y volvé a hacer clic en el badge.
@@ -718,37 +718,62 @@ Para abrir los notebooks desde los badges con el repo privado hay que autorizar 
 
 ## Valor diario de una canasta — `08_canasta_diaria`
 
-Devuelve el valor de **una** canasta con frecuencia **diaria** desde `FECHA_INICIO` (2022-01-01) hasta el último día
-de los ZIPs semestrales de `MyDrive/carga/` (`2022A.zip` ... `2026B.zip`).
+Devuelve el valor de **una** canasta con frecuencia **diaria** y el precio diario de cada producto, de `FECHA_INICIO` a
+`FECHA_FIN`, con los ZIPs semestrales de `MyDrive/carga/` (`2022A.zip` ... `2026B.zip`). **Por defecto** (desde el
+2026-10-22) es la canasta fija de **pass-through**: 775 productos con precio todos los días del 01/01/2022 al
+20/10/2026, en `cantidad_01` de `output_canasta/canasta_pass_through_2026-10.xlsx` (la arma
+`docs/canastas_alternativas/marcar_canasta_pass_through_colab.py`; ver el README de `docs/canastas_alternativas/`).
 
 ### Config (CELDA 1)
 
-`CANASTA_COL` (`'cantidad_01'`, Vulnerable), `CANASTA_EXCEL` (`None` = el `canasta_representativa_*.xlsx` más nuevo de
-`output_canasta/`), `FECHA_INICIO`, `USE_CACHE`, `ALERTA_ESLABON` (aviso si un día se mueve más de ±15%).
+`CANASTA_COL` (`'cantidad_01'`), `CANASTA_EXCEL` (`.../output_canasta/canasta_pass_through_2026-10.xlsx`; `None` = el
+`canasta_representativa_*.xlsx` más nuevo de `output_canasta/`), `NOMBRE_CANASTA` (`None` = "Pass-through" si el Excel
+es `canasta_pass_through_*`, si no el de la columna: cantidad_01 = Vulnerable...), `FECHA_INICIO` (2022-01-01),
+`FECHA_FIN` (2026-10-20; `None` = hasta el último día de los ZIPs), `USE_CACHE`, `MAX_DIAS_SIN_PRECIO` (31),
+`RELATIVO_MAX` (4), `MIN_COBERTURA_DIA` (0,75), `ALERTA_ESLABON` (aviso si un día se mueve más de ±15%).
 
 ### Método
 
-- Precio de un producto en un día = **mediana nacional** de todas las observaciones (sucursales) de ese día, sin filtro
-  de sucursales (el universo de la serie oficial del nb02, CELDA 9).
-- `valor_directo` = Σ cantidad × mediana, solo con los productos con dato ese día (baja si falta un producto).
-- `valor_canasta` (principal) = índice **encadenado día a día con productos apareados** (Σ q·p_t / Σ q·p_{t-1} sobre los
-  productos con dato los dos días), llevado a pesos con el `valor_directo` del día ancla (el último día con todos los
-  productos). Un producto que falta unos días, o que todavía no existía en 2022, no hace saltar la serie.
-- Pesos/centavos: regla del nb02 por mes (mediana > 10.000 → ÷100) y, además, se corrige un mes entero si el eslabón
-  de su primer día da > 30 o < 1/30.
-- Los días calendario sin dato en el SEPA no se completan: se listan en `Notas`.
+- **Mediana**: precio de un producto en un día = mediana nacional de todas las observaciones (sucursales) de ese día, sin
+  filtro de sucursales (el universo de la serie oficial del nb02, CELDA 9).
+- **Sucursales apareadas** (la variable recomendada para el pass-through): eslabón del producto = media geométrica de
+  los relativos *precio de hoy / precio anterior de la misma sucursal*. Si la sucursal faltó unos días (≤
+  `MAX_DIAS_SIN_PRECIO`), el precio anterior es su último precio movido con el índice del producto desde entonces
+  (imputación del IPC para precios faltantes: no vuelve a contar la variación que ya entró por las otras sucursales).
+  Relativos fuera de [1/4, 4] = errores de carga, no cuentan; sin pares, el precio no se mueve. Se encadena desde el
+  primer día con dato y se lleva a pesos con la mediana del último día con dato. A diferencia de la mediana, no se mueve
+  cuando cambian las sucursales que informan (16-28/07/2023 con la mitad de los comercios; 8 comercios menos desde el
+  01/08/2026; Libertad hasta el 02/09/2026).
+- `valor_canasta` (medianas) y `valor_canasta_apareado` = índices **encadenados día a día con productos apareados**
+  (Σ q·p_t / Σ q·p_{t-1} sobre los productos con dato los dos días), llevados a pesos en el día ancla (el último con
+  todos los productos). `valor_directo` = Σ q × mediana del día, solo con los productos con dato.
+- **Un archivo por quincena**: si un ZIP trae dos para la misma parte (`2024B.zip`: `082024_pais_parte1COMPLETO`, días
+  1-5, y `...COMPLETOb`, días 1-15), se usa el que cubre más días (antes se sumaban y el 1-5/08/2024 contaba doble).
+- `cobertura_incompleta`: días con observaciones de la canasta bajo el 75% de la mediana de su mes (se marcan, no se
+  borran). Pesos/centavos: regla del nb02 por mes (mediana > 10.000 → ÷100) y corrección de un mes entero de las
+  medianas si el eslabón de su primer día da > 30 o < 1/30. Los días calendario sin dato no se completan (`Notas`).
 
 ### Qué genera (en `output_canasta/`)
 
-`canasta_diaria_<canasta>_<AAAAMMDD>_<AAAAMMDD>.xlsx` con las hojas `Serie_diaria`, `Resumen_mensual` (promedio de
-los días del mes y punta a punta), `Composicion`, `Precios_diarios` (mediana por producto y día) y `Notas`.
+`canasta_diaria_<canasta>_<AAAAMMDD>_<AAAAMMDD>.xlsx` con `Serie_diaria` (valor por medianas y apareado, variaciones,
+índices base 100, cobertura), `Resumen_mensual`, `Composicion` (con grupo y tipo del IPC si la canasta los trae),
+`Indices_por_grupo` (apareado, por tipo y grupo), `Precios_diarios` (mediana por producto y día), `Precios_apareados` y
+`Notas`; y `panel_diario_<canasta>_<...>.parquet` / `.csv.gz` (producto × día: precio_mediano, precio_promedio, n_obs,
+n_pares, relativo_apareado, indice_apareado, precio_apareado, cobertura_incompleta y la composición) para regresiones.
 
 ### Caché y tiempos
 
-Cada mes cerrado se guarda en `output_canasta/_cache/diaria_<clave>/AAAA-MM.parquet` (clave = EANs de la canasta;
-cambiar cantidades no relee). El último mes se relee siempre. Las líneas del CSV se filtran por EAN antes de parsear:
-~45 s por mes en una PC (validado 2026-10-20 con nov-25 → jul-26: promedios mensuales a −0,42%/+0,11% de la serie
-mensual del nb02; con el producto más pesado faltando un mes, el encadenado se aparta ≤ 0,23% y el directo −4,7%).
+Cada mes cerrado se guarda en `output_canasta/_cache/diaria_v2_<clave>/` (clave = EANs de la canasta; cambiar
+cantidades no relee): `AAAA-MM.parquet` y `estado_AAAA-MM.parquet` (último precio de cada sucursal y producto e índice de
+cada producto, para empalmar con el mes siguiente; si falta, se relee el mes anterior). El último mes se relee siempre.
+Las líneas del CSV se filtran por EAN antes de parsear y cada archivo se procesa por separado. Test:
+`notebooks/test_canasta_diaria.py` (SEPA sintético contra fuerza bruta: medianas, relativos apareados con imputación,
+índice = tendencia verdadera aunque la mediana salte en un hueco, archivo repetido, filas repetidas, centavos, caché).
+Validado con datos reales (2026-10-22, jul-sep 2024, los 775 productos, `docs/auditoria/scripts_nb08_2026-10/validar_real.py`):
+medianas y promedios **idénticos** al lector anterior en 71.300 producto-días, observaciones distintas solo del 1 al
+5/08/2024 (el doble conteo corregido); ~1 min por mes en una PC con 0,4-0,5 GB de RAM (el lector anterior, ~5 GB por
+mes); estado ~3,4 MB por mes. Apareado vs medianas: +8,97% vs +9,07% en el trimestre, con un tercio del ruido diario
+(desvío 0,09 vs 0,25 pp) y ningún día con más de 1% (medianas: 2).
 
 ---
 
@@ -894,6 +919,7 @@ precios_minoristas_supermercados/
 │   ├── gen_nb08.py                               # Script fuente que genera el Notebook 8
 │   ├── gen_nb09.py                               # Script fuente que genera el Notebook 9
 │   ├── test_trazabilidad_productos.py            # Test: nb09 sobre un SEPA sintético contra fuerza bruta
+│   ├── test_canasta_diaria.py                    # Test: nb08 (medianas y sucursales apareadas) contra fuerza bruta
 │   ├── auditar_salida_nb07.py                    # Audita una salida del nb07 (réplica del índice, quiebres, trazabilidad, IPC, aperturas, INDEC)
 │   ├── test_celdas_graficos_y_mapa.py            # Tests: gráficos (CELDA 12) y mapa (CELDA 17) de nb05/nb02
 │   ├── test_encadenado_frescos.py                # Tests: índice de frescos de nb07 (argumento encadenado | tpd)

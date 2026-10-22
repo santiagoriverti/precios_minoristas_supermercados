@@ -6,7 +6,29 @@ Autor: Santiago Riverti — investigador independiente
 
 ---
 
-## 🟢 Canasta para el pass-through diario [2026-10-22 noche] — leer esto primero
+## 🟢 nb08 v2: pass-through por defecto y sucursales apareadas [2026-10-22 noche] — leer esto primero
+
+- Pedido: que el nb08 corra por defecto la canasta de pass-through (`CANASTA_COL = 'cantidad_01'`, `CANASTA_EXCEL =
+  .../output_canasta/canasta_pass_through_2026-10.xlsx`, ya subido al Drive por el usuario) con las correcciones
+  sugeridas, y commitear/pushear. Hecho en `gen_nb08.py`: nombre automático "Pass-through", `FECHA_FIN = '2026-10-20'`,
+  un archivo por quincena (fin del doble conteo del 1-5/08/2024 en el nb08), lector por archivo, **índice con
+  sucursales apareadas** (relativo = precio / precio anterior de la misma sucursal movido con el índice del producto si
+  faltó ≤ 31 días; relativos fuera de [1/4, 4] afuera), `valor_canasta_apareado`, `cobertura_incompleta` (< 75% de las
+  observaciones de la mediana del mes), `Indices_por_grupo`, `Precios_apareados`, panel producto × día (parquet +
+  csv.gz), Excel con xlsxwriter. Caché nueva `diaria_v2_<clave>` con `estado_AAAA-MM.parquet` (si falta el estado del
+  mes anterior, se relee ese mes).
+- Test nuevo `notebooks/test_canasta_diaria.py` (SEPA sintético: medianas, n_obs, promedios y relativos contra fuerza
+  bruta; índice apareado = tendencia verdadera aunque la mediana salte en un hueco; caché con mes y estado borrados).
+  Mi primer diseño (relativo contra el último precio sin imputar) contaba dos veces la variación de los días que la
+  sucursal faltó: la imputación lo corrige.
+- Real (jul-sep 2024, 775 productos, `docs/auditoria/scripts_nb08_2026-10/validar_real.py`): medianas y promedios
+  idénticos al lector viejo en 71.300 producto-días; n_obs distintos solo 1-5/08/2024 (doble conteo corregido); ~1 min
+  y 0,5 GB por mes en la PC (viejo ~5 GB); estado 3,2-3,6 MB/mes (se guardan todos, ~200 MB los 58 meses); apareado
+  +8,97% vs medianas +9,07%, desvío diario 0,09 vs 0,25 pp; cobertura incompleta 18-19/07 y 03/09/2024.
+- **Siguiente**: el usuario corre el nb08 en Colab (primera vez lee 58 meses). Revisar la salida: AVISO de ago-2024
+  parte 1, días con cobertura incompleta (16-28/07/2023 entre ellos), diferencia medianas vs apareado, y el panel.
+
+## 🟢 Canasta para el pass-through diario [2026-10-22 noche]
 
 - Pedido: estudiar el pass-through del tipo de cambio con frecuencia DIARIA del 01/01/2022 al 20/10/2026, canasta
   fija, consistente, desagregable por tipo de producto. Hecho con las salidas del nb09 al 22/10/2026:

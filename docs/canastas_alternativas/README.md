@@ -526,14 +526,17 @@ grupos para desagregar el efecto.
 - **Variable de precio recomendada**: índice diario por producto con sucursales apareadas (las mismas el día anterior
   y el actual), no la mediana nacional, que se mueve cuando cambian las sucursales que informan (jul-2023, 8 comercios
   menos desde el 01/08/2026, Libertad hasta el 02/09/2026).
-- **Para correr el nb08 con esta canasta**: `marcar_canasta_pass_through_colab.py` (pegar en Colab). Toma el
+- **El nb08 la usa por defecto desde el 2026-10-22** (`CANASTA_EXCEL = .../output_canasta/canasta_pass_through_2026-10.xlsx`,
+  `CANASTA_COL = 'cantidad_01'`, nombre "Pass-through", hasta el 20/10/2026) y calcula además el índice con sucursales
+  apareadas, los días con cobertura incompleta, índices por grupo y un panel producto × día (README, sección del nb08).
+- **Para armar ese Excel**: `marcar_canasta_pass_through_colab.py` (pegar en Colab). Toma el
   `canasta_representativa_AAAA-MM.xlsx` del mes y devuelve `canasta_pass_through_AAAA-MM.xlsx` con la canasta en
   `cantidad_01` de la hoja Selección (opciones: `CANTIDAD` = 'ipc' / 'igual' / 'uno', `TIPOS` para marcar una parte).
   Agrega los productos que faltan en Selección copiando su fila de "Productos unicos" (sin las cantidades del nb07),
   guarda el `cantidad_01` anterior en `cantidad_01_original` y no toca el resto. La salida no se llama
   `canasta_representativa_*` a propósito (el nb02 y el nb07 la tomarían). Baja la canasta del CSV de GitHub o la toma
-  del Excel de la selección si se sube junto. Medido con el lector del nb08: medio mes con 775 productos = 51 s en la PC,
-  14 M de observaciones, 2,4 GB de pico (un mes ~5 GB): la primera corrida completa lleva ~3 h en el Colab gratuito.
+  del Excel de la selección si se sube junto. Con el lector del nb08 v2 (2026-10-22): ~1 min por mes en una PC, ~22 M de
+  observaciones y 0,4-0,5 GB de RAM (el lector anterior, ~5 GB por mes): la primera corrida completa, ~1,5-2 h en Colab.
   Probado con el Excel real de oct-26 (simulando `google.colab`): 761 ya estaban + 14 agregados, valor $1.000.000,
   otras hojas intactas, segunda corrida sobre su salida igual, y el nb08 lee 775 productos.
 

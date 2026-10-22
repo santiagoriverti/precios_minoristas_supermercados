@@ -580,6 +580,19 @@ Los 4 reemplazos (Swift XL, Lavandina Anti-splash, Plusbelle, Listerine) están 
 
 ## Historial de cambios
 
+### 2026-10-22 (noche) — nb08 v2: canasta de pass-through por defecto y sucursales apareadas
+
+Pedido del usuario: que el nb08 tome por defecto `cantidad_01` de `output_canasta/canasta_pass_through_2026-10.xlsx`
+(ya en el Drive), con las correcciones sugeridas, y dejarlo listo para correr. `gen_nb08.py`: defaults, nombre
+automático "Pass-through", `FECHA_FIN` (20/10/2026), un archivo por quincena (corrige el doble conteo del 1-5/08/2024),
+lector por archivo, índice con **sucursales apareadas** por producto (relativos de la misma sucursal; si faltó unos días,
+su precio anterior se mueve con el índice del producto, como imputa el IPC), `valor_canasta_apareado`,
+`cobertura_incompleta`, índices por grupo del IPC, `Precios_apareados` y panel producto × día para regresiones. Caché
+`diaria_v2_<clave>` con el estado de cada mes. Test `test_canasta_diaria.py` contra fuerza bruta (OK). Con datos reales
+(jul-sep 2024, 775 productos, `docs/auditoria/scripts_nb08_2026-10/validar_real.py`): medianas y promedios idénticos al
+lector anterior en 71.300 producto-días, observaciones distintas solo del 1-5/08/2024; ~1 min y 0,5 GB por mes (antes
+~5 GB); apareado +8,97% vs medianas +9,07% en el trimestre, con un tercio del ruido diario.
+
 ### 2026-10-22 (noche) — canasta fija para el pass-through diario
 
 Pedido del usuario: qué productos usar para estudiar el pass-through del tipo de cambio con datos diarios del
