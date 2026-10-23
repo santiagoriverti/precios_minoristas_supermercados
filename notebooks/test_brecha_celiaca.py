@@ -15,7 +15,10 @@ El SEPA sintético (ene-mar 2026, 8 sucursales de 4 comercios, 2 tipos) trae a p
     lejos del Obelisco (AMBA / Pampeana);
   - la caché de Georef del nb09 con el departamento de cada sucursal (concentración: HHI de empresas por departamento).
 Además, con tablas chicas armadas a mano: un grupo al que le faltan subtipos (misma canasta: toman la brecha nacional) y
-un subtipo que falta un mes en la serie (hoja Imputaciones). Corre dos veces: la segunda lee los meses cerrados del caché.
+un subtipo que falta un mes en la serie (hoja Imputaciones). Serie TPD (CELDA 8b): sin ruido recupera exacto la prima
+de cada mes aunque falten productos y un subtipo entero; sobre el SEPA sintético es igual a mínimos cuadrados densos con
+todas las indicadoras y la covarianza agrupada escrita a mano (tipo y canasta); un subtipo con productos que no se
+pueden comparar queda afuera. Corre dos veces: la segunda lee los meses cerrados del caché.
 
     python notebooks/test_brecha_celiaca.py
 """
@@ -144,7 +147,8 @@ TIPOS = {t: {'peso': PESOS[t],
 GRAMOS = {e: v[2] for e, v in P.items() if v[0] in PESOS}
 VIGENCIA = {'7790000000028': (None, '2026-01'), '7790000000035': ('2026-02', None)}
 FUERA_VIG = {('7790000000028', '2026-02')}
-PRODUCTO = {'Fideo sin TACC X': ['7790000000042', '7790000000110']}
+PRODUCTO = {'Fideo sin TACC X': ['7790000000042', '7790000000110'],
+            'Fideo con TACC Y': ['7790000000028', '7790000000035']}   # cambio de código (vigencia), como Molinos
 PROD_DE = {e: p for p, es in PRODUCTO.items() for e in es}
 SUBTIPO = {'A': ['7790000000011', '7790000000042', '7790000000110'],
            'B': ['7790000000028', '7790000000035', '7790000000059'],
@@ -339,6 +343,148 @@ chk('concentración: HHI por departamento (2/3 Cencosud y 1/3 Carrefour en el 02
     and cc.loc['14014', 'hhi'] == 1 and cc.loc['14014', 'sucursales_con_brecha'] == 2
     and abs(cc.loc['02001', 'brecha_mediana'] - bsuc[['9|1|101', '9|1|102', '10|1|201']].median()) < 1e-9
     and (out / 'brecha_concentracion_032026.png').exists())
+
+# ── Serie TPD (CELDA 8b) ────────────────────────────────────────────────────────
+# (a) sin ruido, con productos que faltan al azar y el lado sin TACC del subtipo B que en los meses 3 y 6 está en una sola
+#     sucursal y en los meses 4 y 5 en ninguna (la descriptiva lo arrastraría): la TPD recupera exacto la prima de cada mes
+#     (los meses sin pares de B, moviéndolo con los demás subtipos del tipo); niveles con los pesos por disponibilidad.
+#     Con un mínimo de 2 sucursales con pares (MIN_SUC_SUBTIPO), B se mueve también en los meses de una sola, y sigue exacto
+rng = np.random.default_rng(7)
+TR = {'T1': {'A': (['a1', 'a2'], ['a3', 'a4']), 'B': (['b1', 'b2'], ['b3', 'b4'])}, 'T2': {'C': (['c1', 'c2'], ['c3'])}}
+BETA = {'T1': [0, .05, .12, .2, .15, .3, .35, .25, .4, .5], 'T2': [0, -.02, .04, .1, .1, .12, .2, .18, .25, .3]}
+GAM = {p: rng.normal(0, .3) + (0.8 if p in ('a3', 'a4', 'b3', 'b4', 'c3') else 0) for t in TR for s in TR[t]
+       for lado in TR[t][s] for p in lado}
+MS = [f'2025-{m:02d}' for m in range(1, 11)]
+_rows = []
+for s in range(30):
+    for t, mes in enumerate(MS):
+        alfa = rng.normal(0, .2)
+        for tipo, subs in TR.items():
+            for sub, (con, sin) in subs.items():
+                alfa_sub = alfa + rng.normal(0, .1)          # efecto de la celda (sucursal × mes × subtipo)
+                for p in con + sin:
+                    if tipo == 'T1' and sub == 'B' and p in sin and ((t in (2, 5) and s != 0) or t in (3, 4)):
+                        continue
+                    if rng.random() > 0.7 and not (s == 0 and p in sin):
+                        continue
+                    _rows.append({'suc_key': f's{s}', 'mes': mes, 'tipo': tipo, 'subtipo': sub,
+                                  'rol': 'sin' if p in sin else 'tacc', 'producto': p,
+                                  'precio_100': float(np.exp(alfa_sub + GAM[p] + BETA[tipo][t] * (p in sin)))})
+_df_tpd = pd.DataFrame(_rows)
+_obs = _df_tpd.groupby('producto').size()
+def _nivel(con, sin):
+    return (sum(GAM[p] * _obs[p] for p in sin) / _obs[list(sin)].sum()
+            - sum(GAM[p] * _obs[p] for p in con) / _obs[list(con)].sum())
+_L = {'T1': np.mean([_nivel(*TR['T1'][m]) for m in ('A', 'B')]), 'T2': _nivel(*TR['T2']['C'])}
+def _ok_tpd_exacto(_min_suc, _movidos):
+    _tr = g['_tpd_serie'](_df_tpd, ['T1', 'T2'], {'T1': 0.6, 'T2': 0.4}, _min_suc)
+    _tt = _tr['tipos'].set_index(['tipo', 'mes'])
+    _ok_t = all(abs(_tt.loc[(tp, mes), 'brecha_tpd'] - 100 * np.expm1(_L[tp] + BETA[tp][t])) < 1e-6
+                and _tt.loc[(tp, mes), 'error_estandar_log'] < 1e-6 for tp in TR for t, mes in enumerate(MS))
+    _can = _tr['canasta'].set_index('mes')
+    _ok_c = all(abs(_can.loc[mes, 'brecha_canasta_tpd'] - 100 * (0.6 * np.exp(_L['T1'] + BETA['T1'][t])
+                                                                 + 0.4 * np.exp(_L['T2'] + BETA['T2'][t]) - 1)) < 1e-6
+                # peso movido: la mitad de T1 (B de 2 subtipos) con el 60% del peso
+                and abs(_can.loc[mes, 'peso_movido_pct'] - (30 if t in _movidos else 0)) < 1e-9 for t, mes in enumerate(MS))
+    _mov = _tr['subtipos'].set_index(['subtipo', 'mes'])['movido_con_los_demas']
+    _aj = _tr['ajuste'].set_index('subtipo')
+    return (_ok_t and _ok_c and len(_tt) == 20 and _aj['rango_completo'].all()
+            and list(_mov.loc['B'].to_numpy()) == [t in _movidos for t in range(10)] and not _mov.loc['A'].any()
+            and list(_tt.loc['T1', 'subtipos_movidos']) == [int(t in _movidos) for t in range(10)]
+            and _aj.loc['B', 'meses_con_pares'] == 8 and _aj.loc['B', 'meses_con_dato_propio'] == 10 - len(_movidos))
+chk('TPD: recupera exacto la prima de cada mes aunque falten productos y el subtipo B no tenga pares en 2 meses '
+    '(con mínimo de 2 sucursales, tampoco en los 2 de una sola)', _ok_tpd_exacto(1, (3, 4)) and _ok_tpd_exacto(2, (2, 3, 4, 5)))
+
+# (b) sobre el SEPA sintético: la CELDA 8b contra mínimos cuadrados densos con todas las variables indicadoras (efecto
+#     de cada celda sucursal-mes, de cada producto y sin TACC × mes, una regresión por subtipo) y la covarianza agrupada
+#     por sucursal escrita a mano, sumando los puntajes de los subtipos (tipo) y de los tipos (canasta)
+PP = (B.groupby(['id_comercio', 'id_bandera', 'id_sucursal', 'mes', 'tipo', 'sub', 'rol', 'prod'])['p100'].median()
+      .reset_index())
+PP['suc'] = PP['id_comercio'] + '|' + PP['id_bandera'] + '|' + PP['id_sucursal']
+PP['w'] = 1 / PP.groupby(['suc', 'mes', 'tipo', 'sub', 'rol'])['prod'].transform('size')
+SUCS_PP = sorted(PP['suc'].unique())
+MESES_PP = sorted(PP['mes'].unique())
+Q_PP = len(SUCS_PP) / (len(SUCS_PP) - 1)
+_niv, _gs = {}, {}              # (tipo, subtipo, mes) -> nivel; (tipo, subtipo, mes) -> vector de puntajes Sc @ bread @ a
+for (tipo, sub), D in PP.groupby(['tipo', 'sub']):
+    D = D.reset_index(drop=True)
+    gm = sorted(set(zip(D['suc'], D['mes'])))
+    prods = sorted(D['prod'].unique())
+    ref = sorted(D.loc[D['rol'] == 'tacc', 'prod'].unique())[0]
+    cols = [('g', x) for x in gm] + [('p', p) for p in prods if p != ref] + [('b', m) for m in MESES_PP[1:]]
+    ci = {c: i for i, c in enumerate(cols)}
+    X = np.zeros((len(D), len(cols)))
+    for i, r in D.iterrows():
+        X[i, ci[('g', (r['suc'], r['mes']))]] = 1
+        if r['prod'] != ref:
+            X[i, ci[('p', r['prod'])]] = 1
+        if r['rol'] == 'sin' and r['mes'] != MESES_PP[0]:
+            X[i, ci[('b', r['mes'])]] = 1
+    y, w_ = np.log(D['p100'].to_numpy()), D['w'].to_numpy()
+    bread = np.linalg.inv(X.T @ (X * w_[:, None]))
+    coef = bread @ (X.T @ (w_ * y))
+    u = y - X @ coef
+    S = np.zeros((len(SUCS_PP), len(cols)))
+    for i, r in D.iterrows():
+        S[SUCS_PP.index(r['suc'])] += w_[i] * X[i] * u[i]
+    obs = D.groupby('prod').size()
+    a_L = np.zeros(len(cols))
+    for lado, sg in (('sin', 1.0), ('tacc', -1.0)):
+        ps = sorted(D.loc[D['rol'] == lado, 'prod'].unique())
+        for p in ps:
+            if p != ref:
+                a_L[ci[('p', p)]] += sg * obs[p] / obs[ps].sum()
+    L = a_L @ coef
+    for mes in MESES_PP:
+        a = a_L.copy()
+        if mes != MESES_PP[0]:
+            a[ci[('b', mes)]] += 1
+        _niv[(tipo, sub, mes)] = L + (coef[ci[('b', mes)]] if mes != MESES_PP[0] else 0.0)
+        _gs[(tipo, sub, mes)] = S @ (bread @ a)
+bt_tpd = g['brecha_tipo_tpd']
+bt_tpd = bt_tpd[bt_tpd['universo'] == 'todas las sucursales'].set_index(['tipo', 'mes'])
+_ok_tipo, _lam = True, {}
+for tipo in PESOS:
+    subs_t = sorted({k[1] for k in _niv if k[0] == tipo})
+    for mes in MESES_PP:
+        lam = np.mean([_niv[(tipo, s_, mes)] for s_ in subs_t])
+        z = sum(_gs[(tipo, s_, mes)] for s_ in subs_t) / len(subs_t)
+        _lam[(tipo, mes)] = (lam, z)
+        _ok_tipo &= (abs(bt_tpd.loc[(tipo, mes), 'brecha_tpd'] - 100 * np.expm1(lam)) < 1e-8
+                     and abs(bt_tpd.loc[(tipo, mes), 'error_estandar_log'] - np.sqrt(Q_PP * float(z @ z))) < 1e-10)
+chk('TPD sobre el SEPA sintético: brecha por tipo y mes y su error estándar = mínimos cuadrados densos por subtipo',
+    _ok_tipo and len(bt_tpd) == len(_lam))
+_sw = sum(PESOS.values())
+_ok_can = True
+st_ = g['serie_tpd'].set_index('mes')
+for mes in MESES_PP:
+    v = sum(PESOS[tp] * np.exp(_lam[(tp, mes)][0]) for tp in PESOS) / _sw
+    z = sum(_lam[(tp, mes)][1] * PESOS[tp] * np.exp(_lam[(tp, mes)][0]) / _sw for tp in PESOS)
+    se = np.sqrt(Q_PP * float(z @ z))
+    _ok_can &= (abs(st_.loc[mes, 'brecha_canasta_tpd_todas'] - 100 * (v - 1)) < 1e-8
+                and abs(st_.loc[mes, 'brecha_canasta_tpd_ic95_sup_todas'] - 100 * (v + 1.96 * se - 1)) < 1e-8)
+# (c) dos códigos del mismo producto con TACC que nunca conviven y SIN unir en PRODUCTO: el nivel del subtipo B no está
+#     identificado (se confunde con la prima del mes); la TPD no lo inventa: lo deja afuera y el tipo sale del subtipo A
+PP2 = B.assign(producto=B['id_producto'].map(lambda e: e if e in ('7790000000028', '7790000000035')
+                                             else PROD_DE.get(e, e)))
+PP2 = (PP2.groupby(['id_comercio', 'id_bandera', 'id_sucursal', 'mes', 'tipo', 'sub', 'rol', 'producto'])['p100']
+       .median().reset_index())
+PP2 = PP2.assign(suc_key=PP2['id_comercio'] + '|' + PP2['id_bandera'] + '|' + PP2['id_sucursal']).rename(
+    columns={'sub': 'subtipo', 'p100': 'precio_100'})
+_r2 = g['_tpd_serie'](PP2[['suc_key', 'mes', 'tipo', 'subtipo', 'rol', 'producto', 'precio_100']], list(PESOS),
+                      {k: v / sum(PESOS.values()) for k, v in PESOS.items()})
+_aj2 = _r2['ajuste'].set_index('subtipo')
+_t2 = _r2['tipos'].set_index(['tipo', 'mes'])
+chk('TPD: un subtipo con productos que no se pueden comparar entre sí queda afuera (no inventa el nivel)',
+    not bool(_aj2.loc['B', 'rango_completo']) and _aj2.loc['B', 'meses_no_estimables'] == 3
+    and 'B' not in set(_r2['subtipos']['subtipo']) and (_t2.loc['Fideos secos', 'subtipos'] == 1).all()
+    and np.allclose(_t2.loc['Fideos secos', 'brecha_tpd'].to_numpy(),
+                    [100 * np.expm1(_niv[('Fideos secos', 'A', m)]) for m in MESES_PP], rtol=1e-9))
+chk('TPD: canasta y su IC (covarianza entre subtipos y tipos agrupada por sucursal) = cálculo denso; hojas y gráficos',
+    _ok_can and {'Serie_TPD', 'Brecha_tipo_TPD', 'TPD_subtipos', 'TPD_anual', 'TPD_productos'} <= set(
+        pd.ExcelFile(out / 'brecha_celiaca_2026-03.xlsx').sheet_names)
+    and set(g['brecha_tipo_tpd']['universo']) == {'panel balanceado', 'todas las sucursales'}
+    and (out / 'brecha_tpd_032026.png').exists() and (out / 'brecha_tpd_tipos_032026.png').exists())
 chk('segunda corrida: meses cerrados desde el caché', g2['_faltan'] == [] and
     len(list((out / '_cache' / f'brecha_v3_{g["_cache_key"]}').glob('*.parquet'))) == 2)
 chk('segunda corrida: mismos datos', g2['datos_dia'].reset_index(drop=True).equals(g['datos_dia'].reset_index(drop=True)))

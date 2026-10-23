@@ -71,7 +71,8 @@ for k in ('datos_dia', 'bt_sm', 'bt_sub', 'brecha_subtipo', 'brecha_subtipo_anua
           'serie_mensual_bal', 'brecha_region', 'brecha_empresa', 'brecha_prov', 'control_ean', 'plausibilidad',
           'ponderaciones', 'cobertura_mensual', 'suc_geo', 'brecha_tipo_anual', 'serie_anual', 'serie_anual_bal',
           'brecha_tipo_anual_bal', 'brecha_region_anual', 'brecha_empresa_anual', 'brecha_cadena', 'cobertura_tipo',
-          'imputaciones', 'concentracion', 'brecha_suc_mes'):
+          'imputaciones', 'concentracion', 'brecha_suc_mes', 'serie_tpd', 'brecha_tipo_tpd', 'tpd_productos',
+          'tpd_ajuste', 'tpd_anual', 'tpd_subtipos'):
     if k not in g:
         print(f'  (no existe {k})'); continue
     try:

@@ -1,8 +1,8 @@
-# Resultados esperados del nb06 con BUG-47 (simulación del 2026-10-23, tarde)
+# Resultados esperados del nb06 con BUG-47 y la serie TPD (simulación del 2026-10-23, noche)
 
 Un CSV por hoja del Excel `brecha_celiaca_2026-10.xlsx` que generaron las **celdas reales** del notebook vigente (con
 BUG-47: misma canasta de 12 subtipos para provincias, regiones, empresas, cadenas y sucursales; concentración por
-departamento) sobre los **mismos datos** que la primera corrida de Colab: el caché del nb06 de los 57 meses cerrados
+departamento; y la serie TPD de la CELDA 8b, `docs/BRECHA_CELIACA.md` §14.12) sobre los **mismos datos** que la primera corrida de Colab: el caché del nb06 de los 57 meses cerrados
 (`brecha_v3_38349f0a`, idéntico al de Colab: esa corrida dio igual a `../simulacion_2026-10-23/` en las 29 hojas), oct-26
 leído del `2026B.zip` del Drive (al 22/10), el `ar.json` del Drive y la caché de Georef del nb09
 (`output_trazabilidad/_cache_nb09/georef_sucursales.parquet`, 3.600 sucursales). Faltan `Leeme` y las hojas grandes
@@ -11,9 +11,12 @@ leído del `2026B.zip` del Drive (al 22/10), el `ar.json` del Drive y la caché 
 Contra la carpeta anterior no cambian las 14 hojas de lectura, subtipos, tipos y series por tipo; las series de la
 canasta (`Serie_canasta*`, `Canasta_anual*`) tienen los mismos valores y una columna nueva (`peso_imputado_pct`); cambian
 por diseño las de grupos (`Brecha_provincia`, `_region`, `_region_anual`, `_empresa`, `_empresa_anual`, `_cadena` y
-`Brecha_tipo_provincia`, `_region`, `_empresa`), `Brecha_sucursal` y `Concentracion`, y se agrega `Imputaciones`.
+`Brecha_tipo_provincia`, `_region`, `_empresa`), `Brecha_sucursal` y `Concentracion`, y se agregan `Imputaciones` y
+las 5 hojas de la serie TPD (`Serie_TPD`, `Brecha_tipo_TPD`, `TPD_subtipos`, `TPD_anual`, `TPD_productos`; las 30
+anteriores no cambian con la TPD).
 Verificado: grupos y canasta comparable por sucursal iguales a cálculos independientes (`r8`, `r9`; diferencia máxima
-1e-13); brecha por sucursal × mes × subtipo y tipo igual al cálculo desde los precios (`s12`).
+1e-13); brecha por sucursal × mes × subtipo y tipo igual al cálculo desde los precios (`s12`); serie TPD por subtipo y
+mes igual a un LSQR independiente (`r10`, 1.297 subtipo-mes, diferencia máxima 1,3e-7 pp).
 
 ## Cómo comparar una corrida de Colab
 
@@ -21,8 +24,9 @@ Verificado: grupos y canasta comparable por sucursal iguales a cálculos indepen
 python -I -X utf8 docs/auditoria/scripts_nb06_2026-10/s16_comparar_colab.py <brecha_celiaca_2026-10.xlsx de Colab> docs/brecha_celiaca/simulacion_2026-10-23b
 ```
 
-Con el notebook vigente y los mismos datos tiene que dar **30 hojas iguales**. Si difiere solo en `2026-10` (y lo que lo
-incluye: últimos 12 meses, `Brecha_sucursal`, `Concentracion`), cambió el `2026B.zip` del Drive (el mes en curso se lee
+Con el notebook vigente y los mismos datos tiene que dar **35 hojas iguales**. Si difiere solo en `2026-10` (y lo que lo
+incluye: últimos 12 meses, `Brecha_sucursal`, `Concentracion` y la serie TPD, que estima todos los meses juntos),
+cambió el `2026B.zip` del Drive (el mes en curso se lee
 siempre); si difiere `Concentracion` y `Brecha_sucursal` en el departamento, la caché de Georef del Drive es otra.
 
 ## Números clave
@@ -39,3 +43,6 @@ siempre); si difiere `Concentracion` y `Brecha_sucursal` en el departamento, la 
 | Concentración | 319 departamentos; 62 con >= 5 sucursales con brecha propia; Spearman por sucursal −0,11 (1.105 sucursales) |
 | Sucursales (oct-26) | 2.176; canasta comparable mediana +120,0%; peso medido en la sucursal, mediana 51% |
 | Imputaciones | 29 rachas (15 en todas las sucursales y 14 en el panel; de más de 3 meses, 8 y 7; la más larga, tirabuzón en el panel, 14 meses) |
+| Serie TPD, canasta por año (panel; todas las sucursales) | 2022 +111,8% (+119,4%), 2023 +122,7% (+123,3%), 2024 +105,4% (+116,4%), 2025 +98,8% (+104,9%), 2026 +117,6% (+122,4%) |
+| Serie TPD, oct-2026 | panel +119,0% (IC 95% +118,2% a +119,8%; descriptiva +123,6%); todas +119,9% (+119,4% a +120,4%; descriptiva +122,8%) |
+| Serie TPD, subtipo-mes movidos (< 10 sucursales con los dos lados) | 25 en el panel (con chips 14, rebozador 6, tirabuzón 3, spaghetti 1, mostachol 1) y 12 en todas (obleas 8, con chips 4); todos los subtipos con rango completo |

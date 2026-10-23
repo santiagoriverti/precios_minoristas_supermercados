@@ -6,11 +6,12 @@ Autor: Santiago Riverti — investigador independiente
 
 ---
 
-## 🟢 ESTADO ACTUAL / HANDOFF [2026-10-23 · tarde] — leer esto primero
+## 🟢 ESTADO ACTUAL / HANDOFF [2026-10-23 · noche] — leer esto primero
 
 - **Repo**: `main` = `origin/main` al cierre (ver `git log`). Commits del 2026-10-23: `678e9b9` (nb06: canasta fija
   2022-2026 + estimador por subtipo + BUG-46), `b02871c` (documentación para retomar) y el de la tarde (revisión de la
-  primera corrida de Colab del nb06 + BUG-47). **15 tests en OK** (el del nb06 pasó a 26 controles). En una PC nueva:
+  primera corrida de Colab del nb06 + BUG-47) y el de la noche (serie TPD del nb06). **15 tests en OK** (el del nb06
+  tiene 30 controles). En una PC nueva:
   `git clone`, `pip install -r requirements.txt` y los tests de `CLAUDE.md`.
 - **Datos en la PC del INECO** (el usuario bajó el 23/10 todo el Drive; **desde la tarde del 23/10 están en
   `C:\Users\sriverti\Downloads\carga\`**): `2022A.zip` … `2026B.zip` (idénticos a `MyDrive/carga/`; el `2026B` trae
@@ -22,19 +23,18 @@ Autor: Santiago Riverti — investigador independiente
 
 **Líneas de trabajo, en orden de prioridad:**
 
-1. **Brecha celíaca (nb06) — lo último, 2026-10-23 (tarde).** El usuario corrió el nb06 con la canasta fija en Colab:
-   **igual a la simulación** (`s16`: 29 hojas, dif. máx. 1,4e-13) → canasta y estimador validados
-   (`docs/AUDITORIA_2026-10-23_nb06.md`). Al revisarla, **BUG-47** (corregido, no relee): grupos (provincia, región,
-   empresa, cadena) y sucursales (mapa) se comparan con la **misma canasta de 12 subtipos** (lo que falta en el grupo,
-   con la brecha nacional del período; confiable = <= 25% imputado y >= 30 sucursales) y la concentración es el **HHI
-   de empresas por departamento** (Georef, caché del nb09; Spearman −0,11: sin relación). Series nacionales y brecha
-   por tipo sin cambios. **Siguiente**: (a) el usuario re-corre el nb06 en Colab (Ejecutar todo; ~5 min, no relee) y
-   se compara con `s16 ... docs/brecha_celiaca/simulacion_2026-10-23b` (esperado: 30 hojas iguales); (b) **decisión del
-   usuario sobre la imputación de la serie mensual** (rachas de 7-14 meses en 2023-2024 y 9 meses de galletitas con
-   chips en 2025-26; variantes medidas en AUDITORIA §4, ninguna claramente mejor) — recomendación: implementar la
-   **TPD/hedónica** de BRECHA_CELIACA §3.9 (por tipo: log precio ~ EF producto + EF sucursal×mes + prima sin TACC por
-   mes) como serie principal o de robustez; (c) agenda del paper: lectura de 2023, robustez desde 2024, modelar la
-   concentración controlando por cadena. Detalle: bloques "nb06 — corrida de Colab" y "nb06 — canasta fija" de abajo.
+1. **Brecha celíaca (nb06) — lo último, 2026-10-23 (noche).** Implementada la **serie TPD (hedónica)** como robustez
+   de la serie mensual frente a la imputación de subtipos (CELDA 8b; BRECHA_CELIACA §14.12): por subtipo, `ln p =
+   α(celda sucursal-mes) + γ(producto) + β(mes)·sinTACC`, errores agrupados por sucursal, dos universos; subtipo-mes con
+   < 10 sucursales con los dos lados se mueve con los demás de su tipo. Test 30 controles; con datos reales = LSQR
+   independiente (r10, 1,3e-7 pp); esperados `simulacion_2026-10-23b/` (35 hojas; las 30 descriptivas no cambian).
+   Antes ese día: primera corrida de Colab = simulación (29 hojas) y BUG-47 (grupos y mapa con la misma canasta de 12
+   subtipos, HHI por departamento). **Siguiente**: (a) el usuario re-corre el nb06 en Colab (Ejecutar todo; ~5 min, no
+   relee) y se compara con `s16 ... docs/brecha_celiaca/simulacion_2026-10-23b` (esperado: **35 hojas iguales**); (b)
+   la regla de imputación de la descriptiva sigue como está (decisión del usuario; la TPD muestra que pesa en 2023 y que
+   los fideos del panel de jun-2023 → feb-2024 no se miden bien con ninguna); (c) agenda del paper: determinantes de la
+   prima (interacciones de la hedónica con HHI, región, cadena), prima neta de envase, robustez desde 2024. Detalle:
+   bloques "nb06 — serie TPD", "nb06 — corrida de Colab" y "nb06 — canasta fija" de abajo.
 2. **Pass-through del tipo de cambio (nb08 v2 + canasta de 775 productos).** Todo listo y pusheado; el
    usuario ya subió `MyDrive/carga/output_canasta/canasta_pass_through_2026-10.xlsx`. **Falta que corra el nb08 en
    Colab** (badge, Ejecutar todo, sin tocar la CELDA 1; ~1,5-2 h la primera vez, 58 meses). Cuando pase la salida
@@ -70,6 +70,34 @@ pass-through en `C:\Users\sriverti\proyectos\canasta_pass_through_20220101_20261
 **Reglas**: las de `CLAUDE.md` ("Reglas que muerden"): los `.ipynb` se regeneran con `gen_nbXX.py` (commit de los dos);
 scripts de edición escritos con Write (la shell se come las barras); commits solo con Santiago Riverti, sin atribución a
 Claude.
+
+## 🟢 nb06 — serie TPD (hedónica) de la brecha [2026-10-23 noche]
+
+- Pedido: "Implementá en el nb06 la serie TPD/hedónica de la brecha (BRECHA_CELIACA §3.9) como serie de robustez frente
+  a la imputación de subtipos, con simulación y test." Hecho en `gen_nb06.py` **CELDA 8b** (`_tpd_ajuste`, `_tpd_serie`
+  con `_min_suc` = `MIN_SUC_SUBTIPO`): una regresión por subtipo con efecto de celda (sucursal × mes del subtipo),
+  efecto de producto y prima sin TACC × mes; WLS 1/(productos del lado en la celda); ecuaciones normales exactas con la
+  celda descontada (dispersas); nivel = γ sin − γ con pesados por observaciones de todo el período; tipo geométrico,
+  canasta ENGHo; CR1 por sucursal y delta con puntajes apilados (covarianza entre subtipos y tipos); control de
+  estimabilidad (`proy` = B·pinv(B)); subtipo-mes con < 10 sucursales con pares → se mueve con el promedio de los demás
+  subtipos del tipo (adelante y atrás; rebozador, único de su tipo, plano); `peso_movido_pct` en la canasta.
+- Hojas `Serie_TPD`, `Brecha_tipo_TPD`, `TPD_subtipos`, `TPD_anual`, `TPD_productos` (Excel de 38 hojas); gráficos
+  `brecha_tpd` y `brecha_tpd_tipos` con los meses movidos en círculo vacío.
+- Descartados con datos reales: α de sucursal-mes del TIPO entero (con chips al revés, canasta 2022 +17 pp), prima por
+  sucursal (cambia poco), sin mínimo de sucursales (30 subtipo-mes de 1-9 sucursales con IC ~0: con 1 sola, β absorbe la
+  celda). Trampa del test: dos códigos de un producto que nunca conviven en una celda dejan el nivel sin identificar
+  (por eso `PRODUCTO` y el control `rango_completo`).
+- Verificado: test 30 controles (exacto sin ruido, también con mínimo de sucursales; = denso con indicadoras y CR1 a
+  mano; no inventa niveles); s11 con el caché (`sim_v2`, 4,1 min; CELDA 8b 17 s, 2,9 GB); r10 LSQR = TPD en 1.297
+  subtipo-mes (1,3e-7 pp); s16: las 30 hojas descriptivas iguales; esperados regenerados con s17 (35 hojas).
+  Scripts nuevos: r10, r11 (saladas: composición y mediana vs geométrico), r12 (TPD vs descriptiva por subtipo-mes).
+- Resultados (canasta por año, panel TPD / descriptiva): 2022 111,8/110,3 · 2023 122,7/112,2 · 2024 105,4/110,0 ·
+  2025 98,8/101,5 · 2026 117,6/122,6; oct-2026 TPD +119,0% (IC 118,2-119,8) vs +123,6%. Fuera de jun-2023 → feb-2024
+  coinciden (|dif.| mediana 4,1 pp panel, 2,9 todas). Saladas 8-18 pp debajo (Smams 46% → 66% del lado sin en 2024;
+  Crisppino Minis 33% → 58%; en 2026 crackers bimodal: mediana 165 vs geométrico 148). En todas las sucursales el pico
+  de oct-dic 2023 es menor (137-148 vs 161-170: la descriptiva arrastra tirabuzón +396% y mostachol +152%). En el panel,
+  sep-2023 spaghetti con pares en 108 de 782 (TPD +254% vs +107% en las 1.271 de todas) y oct-2023 en 1: el +174% de
+  la TPD del panel en oct-2023 es imputación, no medición.
 
 ## 🟢 nb06 — primera corrida de Colab revisada + BUG-47 [2026-10-23 tarde]
 

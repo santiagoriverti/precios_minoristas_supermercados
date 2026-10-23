@@ -173,6 +173,12 @@ BRECHA_CELIACA §3.9 para la serie (log del precio de cada producto en cada sucu
 sucursal × mes, y la prima sin TACC por mes y tipo): no necesita imputar subtipos y la composición de cada sucursal no
 mueve la serie. Mientras tanto, los tramos imputados quedan marcados en los gráficos y en la hoja `Imputaciones`.
 
+> **Implementada el 2026-10-23 (noche)** como serie de robustez (CELDA 8b, BRECHA_CELIACA §14.12), con el efecto de
+> la celda sucursal × mes del **subtipo** (con el del tipo entero, las galletitas con chips salían al revés) y un mínimo
+> de 10 sucursales con los dos lados por subtipo-mes. Confirma lo que mostraban V3 y V4: los fideos del panel de
+> jun-2023 → feb-2024 salen de muy pocas sucursales; en todas las sucursales, parte del pico de oct-dic 2023 de la
+> descriptiva es imputación (TPD +137% a +148% contra +161% a +170%).
+
 ## 5. Próxima corrida de Colab
 
 Ejecutar todo sin tocar la CELDA 1: **no relee el SEPA** (el caché `brecha_v3_38349f0a` no cambia; ~5 min, oct-26 se
@@ -183,14 +189,16 @@ lee siempre). La CELDA 7 toma el departamento de la caché de Georef del nb09 en
 python -I -X utf8 docs/auditoria/scripts_nb06_2026-10/s16_comparar_colab.py <Excel de Colab> docs/brecha_celiaca/simulacion_2026-10-23b
 ```
 
-Esperado: **30 hojas iguales** (las 29 de antes, con las de grupos, sucursales y concentración nuevas, más
-`Imputaciones`), salvo oct-26 si el `2026B.zip` del Drive cambió.
+Esperado: **35 hojas iguales** (las 29 de antes, con las de grupos, sucursales y concentración nuevas, más
+`Imputaciones` y, desde la noche del 23/10, las 5 de la serie TPD), salvo oct-26 (y la TPD, que estima todos los meses
+juntos) si el `2026B.zip` del Drive cambió.
 
 ## 6. Scripts
 
 `docs/auditoria/scripts_nb06_2026-10/` (README): `s16` (comparación con los esperados), `s17` (esperados desde el Excel
 de una simulación) y los de esta revisión, `r1`-`r9` (resumen de hojas, series, subtipos por mes, lados por mes,
 canasta por sucursal y localidades, variantes de la imputación, rachas de imputación y canasta comparable por grupos y
-por sucursal). Simulación con el caché y el notebook vigente: `s11 ... sim_v2 2022-01 --georef
+por sucursal) y, para la serie TPD, `r10`-`r12` (LSQR independiente, composición de saladas, TPD contra descriptiva
+por subtipo-mes). Simulación con el caché y el notebook vigente: `s11 ... sim_v2 2022-01 --georef
 <georef_sucursales.parquet>` (~5 min en la PC, pico de RAM 2,4 GB; `s12` sin cambios: el cálculo desde los precios
 sigue dando igual).

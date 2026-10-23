@@ -11,7 +11,8 @@ import pandas as pd
 F_XLS, D_ESP = Path(sys.argv[1]), Path(sys.argv[2])
 TOL = 1e-6
 CLAVES = ['tipo', 'subtipo', 'lado', 'rol', 'ean', 'ean_norm', 'mes', 'anio', 'provincia', 'region', 'empresa',
-          'cadena', 'localidad', 'id_comercio', 'id_bandera', 'id_sucursal', 'departamento_id', 'serie', 'desde']
+          'cadena', 'localidad', 'id_comercio', 'id_bandera', 'id_sucursal', 'departamento_id', 'serie', 'desde',
+          'producto', 'universo']
 TEXTO = {c: str for c in CLAVES}
 def num(s):
     # columnas numéricas o booleanas (confiable, revisar, amba...) como float; el resto queda NaN

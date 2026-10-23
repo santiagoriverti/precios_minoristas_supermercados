@@ -146,9 +146,12 @@ cadenas**, sobre las salidas del nb09. Reglas, listas y métricas: `docs/BRECHA_
 - Provincias, regiones, empresas, cadenas y sucursales (mapa) se comparan con la **misma canasta de subtipos**: lo que
   un grupo no tiene se completa con la brecha nacional del período y se informa qué parte del peso es imputada.
 - **Concentración**: HHI de empresas por **departamento** (Georef de datos.gob.ar; la caché del nb09).
+- **Serie TPD (hedónica)**, robustez de la serie mensual frente a la imputación de subtipos (CELDA 8b): por subtipo, log
+  del precio = efecto de la sucursal-mes + efecto de cada producto + prima sin TACC del mes. Compara cada producto
+  consigo mismo, usa los meses con pocas sucursales que la descriptiva imputa y da intervalos de confianza.
 
 **Config en la CELDA 1.** Estructura: Config → Setup → Maestros → Canasta → ZIPs → Lectura (caché por mes) → Brecha por
-sucursal × mes × tipo → Agregaciones → Gráficos → Mapa → Excel → Mapa por sucursal"""))
+sucursal × mes × tipo → Agregaciones → Serie TPD → Gráficos → Mapa → Excel → Mapa por sucursal"""))
 
 # ── CELL 1 — CONFIG ────────────────────────────────────────────────────────────
 _CONFIG_PRE = r"""# ===========================================================
@@ -1391,6 +1394,296 @@ if len(concentracion):
         print(_h.groupby('tercil_hhi', observed=True).agg(hhi_mediano=('hhi','median'), brecha_mediana=('brecha','median'),
                                                           sucursales=('brecha','size')).round(2).to_string())"""))
 
+# ── CELL 8b — SERIE TPD (HEDÓNICA) ─────────────────────────────────────────────
+cells.append(cell_code(r"""# ============================================================
+# CELDA 8b — Serie TPD (hedónica) de la brecha: robustez frente a la imputación de subtipos
+# ============================================================
+# BRECHA_CELIACA §3.9 y §14.12. Una regresión por SUBTIPO con todas sus observaciones producto × sucursal × mes ($/100 g;
+# un producto con dos códigos entra una vez, con la mediana de sus códigos, como en la CELDA 7):
+#     ln p(producto, sucursal, mes) = α(sucursal, mes) + γ(producto) + β(mes) · sinTACC + ε
+# α es la celda de la descriptiva (el subtipo en esa sucursal y mes): cada sin TACC se compara con los con TACC de su
+# subtipo en el mismo super y mes. Con α por sucursal-mes del TIPO entero, la prima de un subtipo se medía contra todos
+# los con TACC del tipo (las galletitas con chips daban la evolución al revés). γ fija el nivel de cada producto: qué
+# productos tiene cada sucursal no mueve la serie (la mediana de la descriptiva sí). Mínimos cuadrados ponderados: cada
+# producto pesa 1 / (productos de su lado en la celda). Nivel del subtipo = promedio de γ sin TACC − promedio de γ con
+# TACC, cada producto pesado por su disponibilidad (observaciones de todo el período: ponderaciones fijas); brecha del
+# subtipo en el mes = exp(nivel + β(mes)) − 1 (no depende de qué producto o mes se fija como referencia). Tipo =
+# promedio geométrico de sus subtipos y canasta = suma ENGHo, como la descriptiva. NO arrastra: el subtipo-mes con menos
+# de la mitad de sus sucursales, que la descriptiva arrastra (hoja Imputaciones), sale de las sucursales que hay, con su
+# IC; solo con menos de MIN_SUC_SUBTIPO sucursales con los dos lados (con tan pocas, el error agrupado por sucursal
+# subestima la incertidumbre) se mueve con el promedio de los demás subtipos de su tipo (el único subtipo de su tipo,
+# el rebozador, queda con el valor del mes vecino). Dos universos: las celdas del panel balanceado (comparable con la
+# serie clave) y todas las sucursales. Errores estándar agrupados por sucursal (CR1) e IC 95% por el método delta, con
+# la covarianza entre subtipos y tipos. Ajuste exacto (ecuaciones normales con los efectos de celda descontados,
+# matrices dispersas): no itera.
+from scipy import sparse as _sp
+
+def _tpd_ajuste(_d, _np, _nt, _nc, _ref, _base):
+    # _d: g (celda: sucursal-mes del subtipo), c (sucursal), j (producto), t (mes), s (1 = sin TACC), y (log del precio), w (peso), enteros
+    # 0..n-1 (c sobre las _nc sucursales de todos los tipos). Columnas: _np productos y _nt meses (sin TACC × mes); se
+    # fijan γ(_ref) = 0 y β(_base) = 0. Devuelve θ completo (NaN = no identificado), la inversa de X'WX (columnas
+    # estimadas) y los puntajes por sucursal Σ w·x·u para la covarianza agrupada.
+    _N = len(_d)
+    _g, _c, _j, _t, _s = (_d[_x].to_numpy() for _x in ('g', 'c', 'j', 't', 's'))
+    _y, _w = _d['y'].to_numpy(float), _d['w'].to_numpy(float)
+    _p, _ix = _np + _nt, np.arange(_N)
+    _X = _sp.csr_matrix((np.ones(_N + int(_s.sum())), (np.concatenate([_ix, _ix[_s == 1]]),
+                                                          np.concatenate([_j, _np + _t[_s == 1]]))), shape=(_N, _p))
+    _G = int(_g.max()) + 1
+    _Wg = np.bincount(_g, weights=_w, minlength=_G)
+    _Cg = _sp.csr_matrix((_w, (_g, _ix)), shape=(_G, _N)) @ _X              # suma ponderada de x en cada sucursal-mes
+    _A = (_X.T @ _sp.diags(_w) @ _X).toarray() - (_Cg.T @ _sp.diags(1.0 / _Wg) @ _Cg).toarray()
+    _Sy = np.bincount(_g, weights=_w * _y, minlength=_G)
+    _b = _X.T @ (_w * _y) - _Cg.T @ (_Sy / _Wg)
+    _k = np.ones(_p, bool)
+    _k[_ref] = False
+    _k[_np + _base] = False
+    _k &= np.diag(_A) > 1e-9 * max(1.0, float(np.diag(_A).max()))            # sin variación propia: no identificado
+    _B = _A[np.ix_(_k, _k)]
+    _rango = int(np.linalg.matrix_rank(_B))
+    _Bi = np.linalg.inv(_B) if _rango == _B.shape[0] else np.linalg.pinv(_B)
+    _th = np.full(_p, np.nan)
+    _th[_k] = _Bi @ _b[_k]
+    _th[_ref] = 0.0
+    _th[_np + _base] = 0.0
+    _f = _X @ np.nan_to_num(_th)
+    _u = (_y - (_Sy / _Wg)[_g]) - (_f - (np.bincount(_g, weights=_w * _f, minlength=_G) / _Wg)[_g])
+    _Sc = (_sp.csr_matrix((_w * _u, (_c, _ix)), shape=(_nc, _N)) @ _X).tocsc()[:, np.where(_k)[0]]
+    # con rango incompleto (productos de un lado que nunca conviven en una celda con los demás, p. ej. dos códigos del
+    # mismo producto sin unir en PRODUCTO) solo son válidas las combinaciones del espacio de filas: proyección para verlo
+    return {'theta': _th, 'k': _k, 'Binv': _Bi, 'Sc': _Sc, 'rango_completo': _rango == _B.shape[0], 'grupos': _G,
+            'proy': None if _rango == _B.shape[0] else _B @ _Bi}
+
+def _tpd_comb(*_partes):
+    # combina gradientes {subtipo: vector} con coeficientes: _partes = (coef, gradiente), ...
+    _o = {}
+    for _cf, _gd in _partes:
+        for _key, _v in _gd.items():
+            _o[_key] = _o.get(_key, 0) + _cf * _v
+    return _o
+
+def _tpd_serie(_pt, _tipos, _w_tipo, _min_suc=1):
+    # _pt: suc_key, mes, tipo, subtipo, rol ('tacc' / 'sin'), producto, precio_100 (una fila por producto, sucursal y
+    # mes). Una regresión por subtipo con efecto de celda (sucursal-mes del subtipo); tipo = promedio de sus subtipos;
+    # canasta con los pesos ENGHo. El subtipo-mes con menos de _min_suc sucursales con los dos lados no tiene dato propio
+    # (se mueve con los demás subtipos del tipo). Devuelve tipos, canasta, subtipos, productos y diagnóstico del ajuste.
+    _pt = _pt[_pt['precio_100'] > 0].copy()
+    _pt['w'] = 1.0 / _pt.groupby(['suc_key','mes','tipo','subtipo','rol'])['producto'].transform('size')
+    _pt['y'] = np.log(_pt['precio_100'].astype(float))
+    _pt['s'] = (_pt['rol'] == 'sin').astype(int)
+    _meses = sorted(_pt['mes'].unique())
+    _nt = len(_meses)
+    _pt['t'] = _pt['mes'].map({_m: _i for _i, _m in enumerate(_meses)})
+    _sucs = sorted(_pt['suc_key'].unique())
+    _nc = len(_sucs)
+    _pt['c'] = _pt['suc_key'].map({_x: _i for _i, _x in enumerate(_sucs)})
+    _q = _nc / max(_nc - 1, 1)                                               # CR1
+    _fit, _lev, _id, _grad, _npar = {}, {}, {}, {}, {}
+    _prods, _diag = [], []
+    for (_tp, _sub), _d in _pt.groupby(['tipo','subtipo'], sort=True):
+        if _tp not in _tipos or _d['s'].nunique() < 2:
+            continue
+        _d = _d.copy()
+        _d['g'] = _d.groupby(['suc_key','mes'], sort=False).ngroup()
+        _pi = (_d.groupby(['producto','rol'], as_index=False).agg(obs=('y', 'size'))
+               .sort_values(['rol','producto']).reset_index(drop=True))
+        _np = len(_pi)
+        _d['j'] = _d['producto'].map(dict(zip(_pi['producto'], _pi.index)))
+        _cel = _d.groupby('g').agg(t=('t', 'first'), smin=('s', 'min'), smax=('s', 'max'))
+        _pares = (_cel[(_cel['smin'] == 0) & (_cel['smax'] == 1)].groupby('t').size()
+                  .reindex(range(_nt), fill_value=0))
+        if _pares.sum() == 0:
+            continue
+        _base = int(_pares[_pares > 0].index.min())
+        _ref = int(_pi.loc[_pi['rol'] == 'tacc', 'obs'].idxmax())
+        _r = _tpd_ajuste(_d, _np, _nt, _nc, _ref, _base)
+        _th, _keep = _r['theta'], np.where(_r['k'])[0]
+        _ok = ~np.isnan(_th[:_np])
+        # nivel del subtipo: promedio de γ sin TACC − promedio de γ con TACC, cada producto pesado por su disponibilidad
+        # (observaciones en todo el período: canasta fija, como un índice con ponderaciones fijas)
+        _aL = np.zeros(_np + _nt)
+        _peso = np.zeros(_np)
+        for _lado, _sg in (('sin', 1.0), ('tacc', -1.0)):
+            _x = _pi[(_pi['rol'] == _lado) & _ok]
+            _peso[_x.index] = _x['obs'] / _x['obs'].sum()
+            _aL[_x.index] = _sg * _peso[_x.index]
+        _key = (_tp, _sub)
+        _fit[_key] = {'Binv': _r['Binv'], 'Sc': _r['Sc']}
+        _lv = np.full(_nt, np.nan)
+        _no_est = 0
+        for _t in range(_nt):
+            if _pares[_t] < max(_min_suc, 1) or np.isnan(_th[_np + _t]):
+                continue
+            _a = _aL.copy()
+            _a[_np + _t] += 1.0
+            if _r['proy'] is not None and np.abs(_r['proy'] @ _a[_keep] - _a[_keep]).max() > 1e-7:
+                _no_est += 1                       # nivel no identificado: se mueve con los demás subtipos
+                continue
+            _lv[_t] = float(_a @ np.nan_to_num(_th))
+            _grad[(_tp, _sub, _t)] = {_key: _a[_keep]}
+        _lev[_key], _id[_key], _npar[_key] = _lv, ~np.isnan(_lv), _pares.to_numpy()
+        _gcon = float((_th[:_np] * _peso)[(_pi['rol'] == 'tacc').to_numpy() & _ok].sum())
+        for _i, _row in _pi.iterrows():
+            _prods.append({'tipo': _tp, 'subtipo': _sub, 'lado': 'sin TACC' if _row['rol'] == 'sin' else 'con TACC',
+                           'producto': _row['producto'], 'obs': int(_row['obs']), 'peso_en_el_nivel': _peso[_i],
+                           'gamma': _th[_i], 'mes_base': _meses[_base],
+                           'nivel_vs_con_tacc_subtipo_pct': np.expm1(_th[_i] - _gcon) * 100, 'referencia': _i == _ref})
+        _diag.append({'tipo': _tp, 'subtipo': _sub, 'obs': len(_d), 'celdas': _r['grupos'], 'productos': _np,
+                      'meses_con_pares': int((_pares > 0).sum()), 'meses_con_dato_propio': int((~np.isnan(_lv)).sum()),
+                      'meses_no_estimables': _no_est, 'rango_completo': _r['rango_completo']})
+    # subtipo-mes sin dato propio: su valor del mes vecino movido con el promedio de los demás subtipos del tipo que tienen
+    # dato propio en los dos meses (imputación por la variación del resto del agregado; adelante y después hacia atrás)
+    _filas_s = []
+    for _tp in _tipos:
+        _subs = [_k for _k in _lev if _k[0] == _tp]
+        for _paso in (1, -1):
+            _orden = range(1, _nt) if _paso == 1 else range(_nt - 2, -1, -1)
+            for _t in _orden:
+                _u = _t - _paso
+                for _k in _subs:
+                    if not np.isnan(_lev[_k][_t]) or np.isnan(_lev[_k][_u]):
+                        continue
+                    _otros = [_o for _o in _subs if _o != _k and _id[_o][_t] and _id[_o][_u]]
+                    _mov = float(np.mean([_lev[_o][_t] - _lev[_o][_u] for _o in _otros])) if _otros else 0.0
+                    _lev[_k][_t] = _lev[_k][_u] + _mov
+                    _grad[(_tp, _k[1], _t)] = _tpd_comb((1.0, _grad[(_tp, _k[1], _u)]),
+                                                        *[(1.0 / len(_otros), _grad[(_tp, _o[1], _t)]) for _o in _otros],
+                                                        *[(-1.0 / len(_otros), _grad[(_tp, _o[1], _u)]) for _o in _otros])
+        for _k in _subs:
+            for _t in range(_nt):
+                if not np.isnan(_lev[_k][_t]):
+                    _filas_s.append({'mes': _meses[_t], 'tipo': _tp, 'subtipo': _k[1],
+                                     'brecha_tpd': np.expm1(_lev[_k][_t]) * 100,
+                                     'sucursales_con_pares': int(_npar[_k][_t]), 'movido_con_los_demas': not _id[_k][_t]})
+
+    def _se(_gd):
+        # error estándar de una combinación lineal de los parámetros de varios subtipos (covarianza agrupada por sucursal)
+        _z = np.zeros(_nc)
+        for _key, _v in _gd.items():
+            _z += np.asarray(_fit[_key]['Sc'] @ (_fit[_key]['Binv'] @ _v)).ravel()
+        return float(np.sqrt(_q * (_z ** 2).sum()))
+
+    _filas, _lam, _fmov = [], {}, {}
+    for _tp in _tipos:
+        _subs = [_k for _k in _lev if _k[0] == _tp]
+        for _t in range(_nt):
+            _ks = [_k for _k in _subs if not np.isnan(_lev[_k][_t])]
+            if not _ks:
+                continue
+            _l = float(np.mean([_lev[_k][_t] for _k in _ks]))
+            _g = _tpd_comb(*[(1.0 / len(_ks), _grad[(_tp, _k[1], _t)]) for _k in _ks])
+            _s = _se(_g)
+            _lam[(_tp, _t)] = (_l, _g)
+            _nm = int(sum(not _id[_k][_t] for _k in _ks))
+            _fmov[(_tp, _t)] = _nm / len(_ks)
+            _filas.append({'mes': _meses[_t], 'tipo': _tp, 'brecha_tpd': np.expm1(_l) * 100,
+                           'brecha_tpd_ic95_inf': np.expm1(_l - 1.96 * _s) * 100,
+                           'brecha_tpd_ic95_sup': np.expm1(_l + 1.96 * _s) * 100, 'error_estandar_log': _s,
+                           'subtipos': len(_ks), 'subtipos_movidos': _nm})
+    _filas_c = []
+    for _t in range(_nt):
+        _ws = {_tp: _w_tipo[_tp] for _tp in _tipos if (_tp, _t) in _lam}
+        if not _ws:
+            continue
+        _sw = sum(_ws.values())
+        _v = sum(_wk * np.exp(_lam[(_tp, _t)][0]) for _tp, _wk in _ws.items()) / _sw
+        _s = _se(_tpd_comb(*[(_wk * np.exp(_lam[(_tp, _t)][0]) / _sw, _lam[(_tp, _t)][1]) for _tp, _wk in _ws.items()]))
+        # peso_movido_pct: parte del peso de la canasta en subtipos sin dato propio ese mes (como peso_imputado_pct)
+        _filas_c.append({'mes': _meses[_t], 'brecha_canasta_tpd': (_v - 1) * 100,
+                         'brecha_canasta_tpd_ic95_inf': (_v - 1.96 * _s - 1) * 100,
+                         'brecha_canasta_tpd_ic95_sup': (_v + 1.96 * _s - 1) * 100,
+                         'peso_movido_pct': 100 * sum(_wk * _fmov[(_tp, _t)] for _tp, _wk in _ws.items()) / _sw,
+                         'tipos_tpd': len(_ws)})
+    return {'tipos': pd.DataFrame(_filas), 'canasta': pd.DataFrame(_filas_c), 'subtipos': pd.DataFrame(_filas_s),
+            'productos': pd.DataFrame(_prods), 'ajuste': pd.DataFrame(_diag)}
+
+# ── Datos: producto × sucursal × mes, con las sucursales del universo (CELDA 7); dos universos: las celdas del panel
+# balanceado (sucursal × subtipo de la CELDA 8, comparable con la serie clave) y todas las sucursales ──
+_pt = (datos_dia[['id_comercio','id_bandera','id_sucursal','mes','tipo','subtipo','rol','producto','precio_100']]
+       .merge(suc_geo[['id_comercio','id_bandera','id_sucursal','suc_key']], on=['id_comercio','id_bandera','id_sucursal'],
+              how='inner')
+       .groupby(['suc_key','mes','tipo','subtipo','rol','producto'], as_index=False)['precio_100'].median())
+_UNI_TPD = {'panel balanceado': _pt.merge(bt_bal[['suc_key','tipo','subtipo']].drop_duplicates(),
+                                          on=['suc_key','tipo','subtipo'], how='inner'),
+            'todas las sucursales': _pt}
+_DESC = {'panel balanceado': (brecha_tipo_mensual_bal, serie_mensual_bal),
+         'todas las sucursales': (brecha_tipo_mensual, serie_mensual)}
+_tpd = {_u: _tpd_serie(_d, TIPOS_ORD, W_TIPO, MIN_SUC_SUBTIPO) for _u, _d in _UNI_TPD.items()}
+del _pt, _UNI_TPD
+tpd_ajuste = pd.concat([_r['ajuste'].assign(universo=_u) for _u, _r in _tpd.items()], ignore_index=True)
+tpd_subtipos = pd.concat([_r['subtipos'].assign(universo=_u) for _u, _r in _tpd.items()], ignore_index=True)
+tpd_productos = pd.concat([_r['productos'].assign(universo=_u) for _u, _r in _tpd.items()], ignore_index=True)
+if len(tpd_productos):
+    tpd_productos['descripcion'] = tpd_productos['producto'].map(lambda _x: EAN_DESC.get(_x, _x))
+_bt = []
+for _u, _r in _tpd.items():
+    if len(_r['tipos']):
+        _bt.append(_r['tipos'].assign(universo=_u).merge(
+            _DESC[_u][0][['mes','tipo','brecha_mediana','n_subtipos_imputados']]
+            .rename(columns={'brecha_mediana': 'brecha_descriptiva', 'n_subtipos_imputados': 'subtipos_imputados_descriptiva'}),
+            on=['mes','tipo'], how='left'))
+brecha_tipo_tpd = pd.concat(_bt, ignore_index=True) if _bt else pd.DataFrame(columns=['mes','tipo','universo'])
+# serie de la canasta: una fila por mes, TPD y descriptiva de los dos universos
+serie_tpd = pd.DataFrame({'mes': sorted(set(serie_mensual['mes']) | set(serie_mensual_bal['mes']))})
+for _u, _suf in (('panel balanceado', 'panel'), ('todas las sucursales', 'todas')):
+    _c = _tpd[_u]['canasta']
+    if len(_c):
+        serie_tpd = serie_tpd.merge(_c.drop(columns='tipos_tpd').rename(
+            columns={_x: f'{_x}_{_suf}' for _x in _c.columns if _x != 'mes'}), on='mes', how='left')
+    _ds = _DESC[_u][1][['mes','brecha_canasta','peso_imputado_pct']].rename(
+        columns={'brecha_canasta': f'brecha_canasta_descriptiva_{_suf}', 'peso_imputado_pct': f'peso_imputado_pct_{_suf}'})
+    serie_tpd = serie_tpd.merge(_ds, on='mes', how='left')
+    if f'brecha_canasta_tpd_{_suf}' in serie_tpd.columns:
+        serie_tpd[f'dif_tpd_menos_descriptiva_{_suf}_pp'] = (serie_tpd[f'brecha_canasta_tpd_{_suf}']
+                                                            - serie_tpd[f'brecha_canasta_descriptiva_{_suf}'])
+# por año: promedio de los meses (TPD y descriptiva por igual)
+_cols_a = [_c for _c in serie_tpd.columns if _c.startswith('brecha_canasta_') and 'ic95' not in _c]
+tpd_anual = serie_tpd.assign(anio=serie_tpd['mes'].str[:4]).groupby('anio')[_cols_a].mean().reset_index()
+if len(brecha_tipo_tpd):
+    _ta = (brecha_tipo_tpd[brecha_tipo_tpd['universo'] == 'panel balanceado'].assign(anio=lambda _x: _x['mes'].str[:4])
+           .groupby(['anio','tipo'])[['brecha_tpd','brecha_descriptiva']].mean().unstack('tipo'))
+    _ta.columns = [f'{_a}_panel_{_b}' for _a, _b in _ta.columns]
+    tpd_anual = tpd_anual.merge(_ta.reset_index(), on='anio', how='left')
+
+print('=== Serie TPD (hedónica): robustez frente a la imputación de subtipos (BRECHA_CELIACA §14.12) ===')
+if len(tpd_ajuste):
+    _aj = tpd_ajuste.groupby('universo').agg(subtipos=('subtipo', 'size'), obs=('obs', 'sum'), celdas=('celdas', 'sum'),
+                                             rango_completo=('rango_completo', 'all'))
+    print(_aj.to_string())
+    if not tpd_ajuste['rango_completo'].all():
+        _ri = tpd_ajuste[~tpd_ajuste['rango_completo']]
+        print('  ⚠️ subtipos con productos que no se pueden comparar entre sí (nunca conviven en una celda; ¿dos códigos '
+              'del mismo producto sin unir en PRODUCTO?): ' + ', '.join(
+                  f'[{_r.universo}] {_r.subtipo} ({_r.meses_no_estimables} meses sin nivel estimable)'
+                  for _r in _ri.itertuples(index=False)))
+    _mv = tpd_subtipos[tpd_subtipos['movido_con_los_demas']]
+    if len(_mv):
+        print(f'  Subtipo-mes con menos de {MIN_SUC_SUBTIPO} sucursales con los dos lados (movidos con los demás subtipos '
+              'del tipo, o con el mes vecino si es el único de su tipo): ' +
+              ', '.join(f'[{_u}] {_s} {len(_g)}' for (_u, _s), _g in _mv.groupby(['universo','subtipo'])))
+if len(serie_tpd) and 'brecha_canasta_tpd_panel' in serie_tpd.columns:
+    print('\nCanasta por año (promedio de los meses): TPD y descriptiva, panel balanceado y todas las sucursales')
+    print(tpd_anual[['anio'] + [_c for _c in tpd_anual.columns if _c.startswith('brecha_canasta_')]].round(1)
+          .to_string(index=False))
+    _dp = serie_tpd['dif_tpd_menos_descriptiva_panel_pp']
+    _imp = serie_tpd['peso_imputado_pct_panel'] > 0
+    print(f'TPD − descriptiva (canasta, panel): mediana {_dp.median():+.1f} pp; |dif.| mediana {_dp[~_imp].abs().median():.1f} '
+          f'pp en los {int((~_imp).sum())} meses sin subtipos imputados y {_dp[_imp].abs().median():.1f} pp en los '
+          f'{int(_imp.sum())} con alguno. Desvío de la variación mensual: TPD '
+          f'{serie_tpd["brecha_canasta_tpd_panel"].diff().std():.1f} pp, descriptiva '
+          f'{serie_tpd["brecha_canasta_descriptiva_panel"].diff().std():.1f} pp')
+    print(f'Meses con algún subtipo sin dato propio (panel): TPD {int((serie_tpd["peso_movido_pct_panel"] > 0).sum())} '
+          f'(movido con los demás), descriptiva {int(_imp.sum())} (arrastrado)')
+    _ult = serie_tpd.dropna(subset=['brecha_canasta_tpd_panel']).iloc[-1]
+    print(f'Último mes ({_ult["mes"]}), panel: TPD {_ult["brecha_canasta_tpd_panel"]:+.1f}% (IC 95% '
+          f'{_ult["brecha_canasta_tpd_ic95_inf_panel"]:+.1f}% a {_ult["brecha_canasta_tpd_ic95_sup_panel"]:+.1f}%) · '
+          f'descriptiva {_ult["brecha_canasta_descriptiva_panel"]:+.1f}%')
+if len(brecha_tipo_tpd):
+    _tt = (brecha_tipo_tpd[brecha_tipo_tpd['universo'] == 'panel balanceado'].assign(anio=lambda _x: _x['mes'].str[:4])
+           .groupby(['tipo','anio'])[['brecha_tpd','brecha_descriptiva']].mean().unstack('anio').round(1))
+    print('\nPor tipo y año, panel balanceado (promedio de los meses): TPD / descriptiva')
+    print(_tt.to_string())"""))
+
 # ── CELL 9 — GRÁFICOS ──────────────────────────────────────────────────────────
 cells.append(cell_code(r"""# ============================================================
 # CELDA 9 — Gráficos de la brecha
@@ -1504,7 +1797,59 @@ if len(_cc) >= 3:
                  f'sucursales con brecha propia (tamaño = sucursales) · Spearman por sucursal {CONC_RHO:+.2f} '
                  f'(n = {CONC_N:,})', fontsize=11)
     ax.grid(True, alpha=0.3)
-    _guardar('brecha_concentracion')"""))
+    _guardar('brecha_concentracion')
+
+# 9) Serie TPD (hedónica, CELDA 8b) contra la descriptiva: canasta, panel balanceado y todas las sucursales
+_C_TPD = '#d62728'
+if len(serie_tpd) and 'brecha_canasta_tpd_panel' in serie_tpd.columns:
+    fig, axs = plt.subplots(2, 1, figsize=(13, 10), sharex=True)
+    _st = serie_tpd.assign(f=pd.to_datetime(serie_tpd['mes'] + '-01'))
+    for _ax, _suf, _col, _tit in ((axs[0], 'panel', _C_BAL, 'Panel balanceado (la serie clave)'),
+                                  (axs[1], 'todas', _C_MED, 'Todas las sucursales')):
+        if f'brecha_canasta_tpd_{_suf}' not in _st.columns:
+            continue
+        _ax.fill_between(_st['f'], _st[f'brecha_canasta_tpd_ic95_inf_{_suf}'], _st[f'brecha_canasta_tpd_ic95_sup_{_suf}'],
+                         color=_C_TPD, alpha=0.15, lw=0, label='TPD: IC 95% (errores agrupados por sucursal)')
+        _ax.plot(_st['f'], _st[f'brecha_canasta_tpd_{_suf}'], color=_C_TPD, lw=2.4,
+                 label='TPD (hedónica): canasta fija de productos')
+        _mv = _st[f'peso_movido_pct_{_suf}'] > 0
+        _ax.plot(_st.loc[_mv, 'f'], _st.loc[_mv, f'brecha_canasta_tpd_{_suf}'], ls='none', marker='o', ms=6,
+                 mfc='white', mec=_C_TPD, color=_C_TPD,
+                 label=f'TPD: mes con algún subtipo movido con los demás (< {MIN_SUC_SUBTIPO} sucursales)')
+        _ax.plot(_st['f'], _st[f'brecha_canasta_descriptiva_{_suf}'], color=_col, lw=1.6, marker='D', ms=3,
+                 label='Descriptiva')
+        _im = _st[f'peso_imputado_pct_{_suf}'] > 0
+        _ax.plot(_st.loc[_im, 'f'], _st.loc[_im, f'brecha_canasta_descriptiva_{_suf}'], ls='none', marker='D', ms=6,
+                 mfc='white', mec=_col, color=_col, label='descriptiva: mes con algún subtipo imputado')
+        _ax.set_title(_tit, fontsize=11, loc='left'); _ax.set_ylabel('Brecha de la canasta (%)')
+        _ax.yaxis.set_major_formatter(mticker.FuncFormatter(lambda x, _: f'{x:+.0f}%'))
+        _ax.legend(loc='upper left', fontsize=8); _ax.grid(True, alpha=0.3)
+    fig.suptitle('Brecha celíaca de la canasta: serie TPD (hedónica) y serie descriptiva', y=1.0)
+    _guardar('brecha_tpd')
+
+# 10) Serie TPD por tipo contra la descriptiva (panel balanceado)
+_btp = brecha_tipo_tpd[brecha_tipo_tpd['universo'] == 'panel balanceado'] if len(brecha_tipo_tpd) else brecha_tipo_tpd
+if len(_btp):
+    _tps = [_t for _t in TIPOS_ORD if _t in set(_btp['tipo'])]
+    fig, axs = plt.subplots(len(_tps), 1, figsize=(13, 2.9 * len(_tps)), sharex=True)
+    axs = np.atleast_1d(axs)
+    for _ax, _tp in zip(axs, _tps):
+        _x = _btp[_btp['tipo'] == _tp].sort_values('mes')
+        _f = pd.to_datetime(_x['mes'] + '-01')
+        _ax.fill_between(_f, _x['brecha_tpd_ic95_inf'], _x['brecha_tpd_ic95_sup'], color=_C_TPD, alpha=0.15, lw=0)
+        _ax.plot(_f, _x['brecha_tpd'], color=_C_TPD, lw=2, label='TPD (IC 95%)')
+        _mv = (_x['subtipos_movidos'] > 0).to_numpy()
+        _ax.plot(_f[_mv], _x['brecha_tpd'][_mv], ls='none', marker='o', ms=5, mfc='white', mec=_C_TPD, color=_C_TPD,
+                 label='TPD: subtipo movido')
+        _ax.plot(_f, _x['brecha_descriptiva'], color=_C_BAL, lw=1.3, marker='o', ms=2.5, label='Descriptiva')
+        _im = (_x['subtipos_imputados_descriptiva'] > 0).to_numpy()
+        _ax.plot(_f[_im], _x['brecha_descriptiva'][_im], ls='none', marker='o', ms=5, mfc='white', mec=_C_BAL,
+                 color=_C_BAL, label='descriptiva: subtipo imputado')
+        _ax.set_title(_tp, fontsize=10, loc='left')
+        _ax.yaxis.set_major_formatter(mticker.FuncFormatter(lambda x, _: f'{x:+.0f}%')); _ax.grid(True, alpha=0.3)
+    axs[0].legend(loc='upper right', fontsize=8, ncol=4)
+    fig.suptitle('Brecha por tipo, panel balanceado: serie TPD (hedónica) y descriptiva', y=1.0)
+    _guardar('brecha_tpd_tipos')"""))
 
 # ── CELL 10 — MAPA COROPLÉTICO ─────────────────────────────────────────────────
 cells.append(cell_code("""\
@@ -1669,7 +2014,8 @@ else:
 leeme = pd.DataFrame({'hoja_o_columna': [
     'Método', 'Canasta', 'Ponderaciones', 'Brecha_subtipo*', 'Brecha_tipo*', 'Serie_canasta*',
     'Brecha_provincia / region / empresa / cadena', '*_anual', 'brecha_canasta', 'n_min / confiable', 'Panel balanceado',
-    'peso_imputado_pct', 'Imputaciones', 'Brecha_sucursal', 'Concentracion', 'Control_EAN', 'Plausibilidad', 'Fuente'],
+    'peso_imputado_pct', 'Imputaciones', 'Serie_TPD / Brecha_tipo_TPD', 'TPD_subtipos', 'TPD_anual', 'TPD_productos',
+    'Brecha_sucursal', 'Concentracion', 'Control_EAN', 'Plausibilidad', 'Fuente'],
     'definicion': [
     'Brecha de un subtipo en una sucursal y mes = mediana $/100 g de los productos sin TACC presentes / mediana $/100 g de '
     'los con TACC presentes - 1 (los dos lados en el mismo super). Brecha del tipo = promedio geométrico de las de sus '
@@ -1699,6 +2045,23 @@ leeme = pd.DataFrame({'hoja_o_columna': [
     '(pocas sucursales ese mes); en los grupos, subtipos con la brecha nacional del período.',
     'Rachas de meses en que un subtipo se imputa con su último mes válido en la serie mensual (todas las sucursales y '
     'panel balanceado): desde, hasta, sucursales que tenía y brecha arrastrada. Más de 3 meses: leer ese tramo con cuidado.',
+    'Serie TPD (hedónica, CELDA 8b), robustez de la serie mensual: por subtipo, ln p = efecto de la celda (sucursal-mes '
+    'del subtipo) + efecto de producto + prima sin TACC del mes (mínimos cuadrados; cada producto pesa 1 / productos de su '
+    'lado en la celda). Brecha del subtipo = exp(nivel + prima del mes) - 1, con nivel = promedio de los efectos de los sin '
+    'TACC - promedio de los con TACC (cada producto pesado por su disponibilidad en todo el período); tipo = promedio '
+    'geométrico de sus subtipos; canasta con los pesos ENGHo. Canasta fija de productos; usa los subtipo-mes que la '
+    'descriptiva imputa (menos de la mitad de sus sucursales) y solo con menos de '
+    f'{MIN_SUC_SUBTIPO} sucursales con los dos lados mueve el subtipo con los demás de su tipo (subtipos_movidos; el '
+    'único subtipo de su tipo queda con el mes vecino; peso_movido_pct = parte del peso de la canasta en subtipos '
+    'movidos, como peso_imputado_pct en la descriptiva). Dos universos: las celdas del panel balanceado y todas las '
+    'sucursales, cada uno al lado de su descriptiva (y de cuánto se imputó en ella). IC 95% con errores agrupados por '
+    'sucursal y la covarianza entre subtipos y tipos (en un mes movido, sin la incertidumbre de la imputación).',
+    'Brecha TPD de cada subtipo por mes y universo, sucursales con los dos lados y si se movió con los demás subtipos '
+    f'(menos de {MIN_SUC_SUBTIPO} sucursales).',
+    'Promedio de los meses de cada año de la serie TPD y de la descriptiva: canasta (los dos universos) y tipos (panel).',
+    'Por universo y subtipo: efecto estimado de cada producto (gamma, log), su peso en el nivel (disponibilidad) y su nivel '
+    'contra el promedio ponderado de los con TACC del subtipo; en los sin TACC es la prima del producto en el mes base. '
+    'referencia = producto fijado en 0.',
     'Último mes: brecha_canasta = canasta comparable (misma canasta de subtipos en todas las sucursales; lo que la '
     'sucursal no tiene con los dos lados, con la brecha nacional del mes; peso_propio_pct = parte medida en la sucursal). '
     'brecha_tipos_presentes = canasta por cantidades solo con los tipos que tiene (depende de cuántos tiene: no comparar).',
@@ -1719,7 +2082,9 @@ _hojas = [
     ('Brecha_tipo_mes_balanceado', brecha_tipo_mensual_bal), ('Brecha_tipo_anual', brecha_tipo_anual),
     ('Brecha_tipo_anual_balanceado', brecha_tipo_anual_bal), ('Serie_canasta', serie_mensual),
     ('Serie_canasta_balanceada', serie_mensual_bal), ('Canasta_anual', serie_anual),
-    ('Canasta_anual_balanceada', serie_anual_bal), ('Brecha_provincia', brecha_prov),
+    ('Canasta_anual_balanceada', serie_anual_bal), ('Serie_TPD', serie_tpd), ('Brecha_tipo_TPD', brecha_tipo_tpd),
+    ('TPD_subtipos', tpd_subtipos), ('TPD_anual', tpd_anual), ('TPD_productos', tpd_productos),
+    ('Brecha_provincia', brecha_prov),
     ('Brecha_tipo_provincia', brecha_tipo_prov), ('Brecha_region', brecha_region),
     ('Brecha_tipo_region', brecha_tipo_region), ('Brecha_region_anual', brecha_region_anual),
     ('Brecha_empresa', brecha_empresa), ('Brecha_tipo_empresa', brecha_tipo_empresa),

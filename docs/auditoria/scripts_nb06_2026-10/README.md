@@ -66,6 +66,9 @@ y los objetos de la simulación (`sim_final/`, iguales a Colab):
 | `r7_imputados.py <sim_final>` | Rachas de subtipo-mes imputados en las dos series (cálculo independiente de la hoja `Imputaciones`) |
 | `r8_canasta_comparable_grupos.py <sim> <Excel> [MIN]` | Canasta de 12 subtipos fijos por provincia, región, empresa y cadena con la brecha nacional en los subtipos sin datos (cálculo independiente de la CELDA 8 vigente; si el Excel es del notebook vigente, compara sus hojas de grupos: dif. 1e-13) |
 | `r9_canasta_comparable_sucursal.py <sim> <Excel>` | Canasta comparable por sucursal y mes (cálculo independiente) contra `sim_brecha_suc_mes.parquet` de la simulación del notebook vigente (dif. 1e-13 en 123.906 sucursal-mes) |
+| `r10_tpd_independiente.py <sim> <Excel>` | Serie TPD (CELDA 8b) con otro algoritmo: por subtipo, LSQR de scipy sobre el diseño completo sin normalizar (una indicadora por celda sucursal-mes, por producto y por sin TACC × mes), en los dos universos, contra la hoja `TPD_subtipos` de la simulación del notebook vigente (meses con dato propio) |
+| `r11_saladas_composicion.py <sim> <Excel> [tipo]` | Por qué la TPD de saladas queda debajo de la descriptiva: brecha por sucursal-mes de cada subtipo por año (mediana contra promedio geométrico) y composición de cada lado por producto y año con su nivel TPD (`TPD_productos`) |
+| `r12_tpd_vs_descriptiva_subtipo.py <sim> <Excel> [tipo] [desde] [hasta]` | TPD de cada subtipo del tipo (`TPD_subtipos`) contra la mediana del subtipo-mes antes de imputar, sus sucursales y el valor que arrastra la serie mensual (panel balanceado) |
 
 **Salidas intermedias de la corrida del 2026-10-23** (precios extraídos, selección, verificación, simulación con el
 caché del nb06; ~315 MB): en la PC del INECO, `C:\Users\sriverti\proyectos\nb06_brecha_celiaca_20261023\` (README

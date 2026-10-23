@@ -273,9 +273,17 @@ ln(precio_100g)_{i,s,k,t} = β·SINTACC_i + θ·ln(gramos_i)
   ver cuánto de β es envase; (ii) mediana vs mínimo (§3.7); (iii) `FACTOR_PLAUS` alternativo (§3.8);
   (iv) panel balanceado para la dimensión temporal.
 
-> **Estado**: la especificación está **definida** acá; la **implementación** del modelo (paquete
-> `linearmodels`/`pyfixest` o `statsmodels`) es la **fase de análisis** siguiente. La medición
-> descriptiva (nb06) ya produce el panel y las covariables necesarias.
+> **Estado (2026-10-23, noche)**: implementada en el nb06 (**CELDA 8b**) la versión de **serie de tiempo**, como
+> robustez de la serie descriptiva frente a la imputación de subtipos (§14.12): una regresión por **subtipo**,
+> `ln p(i,s,t) = α(s,t) + γ(i) + β(t)·SINTACC(i) + ε`, con efectos fijos de **producto** (absorben marca, presentación y
+> `ln gramos`) y de la **celda** sucursal × mes del subtipo (el mismo super, mes y subtipo que compara la descriptiva),
+> mínimos cuadrados ponderados (cada producto pesa 1 / productos de su lado en la celda) y errores agrupados por
+> sucursal. El nivel del subtipo sale de los efectos de producto (promedio de los sin TACC − promedio de los con TACC,
+> cada uno pesado por su disponibilidad en todo el período) y la evolución, de `β(t)`; tipo = promedio geométrico de sus
+> subtipos y canasta ENGHo, como la descriptiva. Compara siempre los mismos productos (qué productos tiene cada sucursal
+> no mueve la serie) y usa los subtipo-mes con pocas sucursales que la descriptiva imputa. Con efectos fijos de producto
+> el nivel **no** está neto del efecto envase (eso pide la versión con `ln gramos` y efectos de subtipo). Siguen
+> pendientes: los determinantes (interacciones con HHI, región, cadena) y la prima neta de envase.
 
 ---
 
@@ -387,22 +395,25 @@ Los EANs concretos están en la CELDA 1 de `notebooks/gen_nb06.py` (fuente) y de
 | `brecha_region_anual_MMAAAA.png` | Canasta por región y año |
 | `brecha_provincia_MMAAAA.png` / `brecha_empresa_MMAAAA.png` / `brecha_cadena_MMAAAA.png` | Provincia, empresa y cadena en los últimos 12 meses (solo grupos confiables: misma canasta, <= 25% del peso imputado, >= 30 sucursales) |
 | `brecha_concentracion_MMAAAA.png` / `mapa_brecha_MMAAAA.png` | Brecha vs. HHI de empresas por departamento (Georef); mapa coroplético por provincia (gris: no confiable) |
+| `brecha_tpd_MMAAAA.png` / `brecha_tpd_tipos_MMAAAA.png` | Serie TPD (hedónica, §14.12) con su IC 95% contra la descriptiva: canasta (panel balanceado y todas las sucursales) y cada tipo (panel); marcador vacío = mes con algún subtipo imputado en la descriptiva |
 | `mapa_sucursales_brecha_MMAAAA.html` | Mapa Folium por sucursal (último dato de cada una en los últimos 6 meses): color por la canasta comparable (lo que la sucursal no tiene, con la brecha nacional del mes; el popup dice qué parte se midió ahí), productos comparados por subtipo, filtro por cadena, mosaicos Esri y límites del `ar.json` local (popups lazy-load) |
-| `brecha_celiaca_YYYY-MM.xlsx` | 33 hojas (la hoja `Leeme` las explica): `Canasta`, `Ponderaciones`, `Cobertura` y `Cobertura_mensual`; **`Brecha_subtipo`**, `Brecha_subtipo_anual` y `Brecha_subtipo_anual_balanc`; `Brecha_tipo`, `Brecha_tipo_mes` y `Brecha_tipo_anual` (y sus versiones con panel balanceado); `Serie_canasta`, `Serie_canasta_balanceada`, `Canasta_anual` y `Canasta_anual_balanceada` (con `peso_imputado_pct`); provincia, región, empresa y cadena (últimos 12 meses, con y sin desagregar por tipo) y región y empresa por año; `Concentracion` (por departamento); `Brecha_sucursal`, `Comparacion_productos` y `Detalle_producto` (último mes); **`Imputaciones`** (rachas de subtipos imputados en la serie mensual); `Control_EAN` y `Plausibilidad` |
+| `brecha_celiaca_YYYY-MM.xlsx` | 38 hojas (la hoja `Leeme` las explica): `Canasta`, `Ponderaciones`, `Cobertura` y `Cobertura_mensual`; **`Brecha_subtipo`**, `Brecha_subtipo_anual` y `Brecha_subtipo_anual_balanc`; `Brecha_tipo`, `Brecha_tipo_mes` y `Brecha_tipo_anual` (y sus versiones con panel balanceado); `Serie_canasta`, `Serie_canasta_balanceada`, `Canasta_anual` y `Canasta_anual_balanceada` (con `peso_imputado_pct`); **serie TPD** (`Serie_TPD`, `Brecha_tipo_TPD`, `TPD_subtipos`, `TPD_anual`, `TPD_productos`; §14.12); provincia, región, empresa y cadena (últimos 12 meses, con y sin desagregar por tipo) y región y empresa por año; `Concentracion` (por departamento); `Brecha_sucursal`, `Comparacion_productos` y `Detalle_producto` (último mes); **`Imputaciones`** (rachas de subtipos imputados en la serie mensual); `Control_EAN` y `Plausibilidad` |
 
 Para la evolución temporal, usar las series del **panel balanceado** (y mirar `Imputaciones`: los tramos con un subtipo
-arrastrado varios meses); para comparar grupos, solo los `confiable`.
+arrastrado varios meses) y compararlas con la **serie TPD** (`Serie_TPD`, `TPD_anual`): donde coinciden, la evolución no
+depende de la imputación; para comparar grupos, solo los `confiable`.
 
 ---
 
 ## 8. Arquitectura (celdas del generador)
 
-`notebooks/gen_nb06.py` → `06_evolucion_brecha_celiaca.ipynb` (13 celdas: una de texto y 12 de código). Qué hace cada
+`notebooks/gen_nb06.py` → `06_evolucion_brecha_celiaca.ipynb` (14 celdas: una de texto y 13 de código). Qué hace cada
 una y qué cambió el 2026-10-23: §14.7. En resumen: CELDA 1 config; 2 setup (Drive, imports); 3 maestros (sucursales,
 nombres de comercios y empresas, regiones); 4 la canasta (TIPOS, gramos, subtipos); 5 zips (un archivo por parte de cada
 mes); 6 lectura mensual con caché por mes (mediana exacta de los días, líneas filtradas por EAN); 7 vigencias,
 plausibilidad, control de identidad, brecha por sucursal × mes × subtipo y tipo, geografía, pesos ENGHo; 8
-agregaciones subtipo → tipo → canasta (mes, año, panel, grupos); 9-10 gráficos y coroplético; 11 Excel; 12 mapa.
+agregaciones subtipo → tipo → canasta (mes, año, panel, grupos); 8b serie TPD (hedónica, §14.12); 9-10 gráficos y
+coroplético; 11 Excel; 12 mapa.
 
 `_pmean` = media con outliers fuera (banda `[mediana/4, mediana×4]`), la misma que nb02/nb05.
 
@@ -410,16 +421,20 @@ agregaciones subtipo → tipo → canasta (mes, año, panel, grupos); 9-10 gráf
 
 ## 9. Validación
 
-- **Test** `notebooks/test_brecha_celiaca.py` (22 controles): corre las celdas reales sobre un SEPA sintético con cada
+- **Test** `notebooks/test_brecha_celiaca.py` (30 controles): corre las celdas reales sobre un SEPA sintético con cada
   trampa (archivo parcial duplicado, centavos, fila repetida, código viejo congelado, producto con dos códigos, EAN x10,
   salto x2,5, estación de servicio, sucursal web, provincia mal declarada, subtipos con un lado faltante, subtipo-mes
-  faltante, caché en dos corridas) y compara cada número con fuerza bruta.
+  faltante, caché en dos corridas) y compara cada número con fuerza bruta; desde BUG-47, también grupos, sucursales y
+  concentración, y desde la serie TPD, la TPD contra mínimos cuadrados densos (§14.12).
 - **Simulación con datos reales** (2026-10-23): las celdas reales con los 58 meses de los zips del Drive coinciden
   **exactamente** con un cálculo independiente (3,4 millones de precios mensuales, 534.456 brechas por subtipo). Tiempo,
   memoria y resultados: §14.10; resultados esperados: `docs/brecha_celiaca/simulacion_2026-10-23/`.
 - **Corrida de Colab (2026-10-23)**: igual a la simulación en las 29 hojas (diferencia máxima 1,4e-13): canasta y
   estimador validados en Colab (`docs/AUDITORIA_2026-10-23_nb06.md`). Con BUG-47 el test pasó a 26 controles y la
   simulación con el caché da los esperados de `simulacion_2026-10-23b/` (30 hojas); falta re-correr en Colab (no relee).
+- **Serie TPD (2026-10-23, noche)**: test con 30 controles (4 de la TPD); con los datos reales, otro algoritmo
+  (`r10_tpd_independiente.py`, LSQR sobre el diseño completo) da lo mismo que la CELDA 8b en los 1.297 subtipo-mes con
+  dato propio (diferencia máxima 1,3e-7 pp). Esperados con la TPD: `simulacion_2026-10-23b/` (35 hojas; §14.12).
 
 ---
 
@@ -430,10 +445,10 @@ agregaciones subtipo → tipo → canasta (mes, año, panel, grupos); 9-10 gráf
   sin coordenadas en 2022, ago-oct 2026 del SEPA diario y precio de lista.
 - **Departamento**: falta shapefile departamental (hoy: provincia, región, AMBA y localidad).
 - **Imputación de la serie mensual sin límite de meses** (abierto, decisión del usuario): un subtipo-mes con pocas
-  sucursales arrastra su último mes válido; hay rachas de 7 a 14 meses (hoja `Imputaciones`, §14.11). El arreglo de
-  fondo es la TPD/hedónica de §3.9.
-- **Agenda del paper** (§13): selección de sucursales, modelar la concentración (el HHI por departamento ya está), la
-  hedónica de §3.9 y deflactar los niveles.
+  sucursales arrastra su último mes válido; hay rachas de 7 a 14 meses (hoja `Imputaciones`, §14.11). Desde el
+  2026-10-23 (noche) la serie TPD (§14.12) es la robustez: no arrastra y muestra en qué meses pesa la imputación.
+- **Agenda del paper** (§13): selección de sucursales, modelar la concentración (el HHI por departamento ya está), los
+  determinantes y la prima neta de envase de la hedónica de §3.9 y deflactar los niveles.
 - **Extensiones posibles**: más tipos con dicotomía cuando haya sin TACC continuos (pan envasado, premezclas, alfajores,
   cerveza); una serie de robustez desde 2024 (sin los precios controlados de 2023); pesos por subtipo si aparece una
   fuente de gasto más fina.
@@ -445,7 +460,8 @@ agregaciones subtipo → tipo → canasta (mes, año, panel, grupos); 9-10 gráf
 1. Estado y próximos pasos: bloque ESTADO ACTUAL de `.claude/memory.md` (y su bloque "nb06 — canasta fija").
 2. Correr el nb06 en Colab desde el badge del README (Ejecutar todo, sin tocar la CELDA 1).
 3. Revisar la corrida: `python -I -X utf8 docs/auditoria/scripts_nb06_2026-10/s16_comparar_colab.py <Excel>
-   docs/brecha_celiaca/simulacion_2026-10-23` (con los mismos zips, 29 hojas iguales) y la lista de §14.9.
+   docs/brecha_celiaca/simulacion_2026-10-23b` (con los mismos zips y el notebook vigente, 35 hojas iguales) y la lista
+   de §14.9.
 4. Para cambiar productos o reglas: scripts s7-s10 de `docs/auditoria/scripts_nb06_2026-10/` → CSV →
    `python notebooks/gen_nb06.py` → `python notebooks/test_brecha_celiaca.py` → simulación s11/s12 (s14/s15 para no
    releer) → nueva carpeta de resultados esperados → commit de CSV, generador, `.ipynb` y docs juntos.
@@ -924,6 +940,9 @@ python -I -X utf8 docs/auditoria/scripts_nb06_2026-10/s16_comparar_colab.py <bre
 8. **Imputaciones** (desde BUG-47): las rachas de más de 3 meses que avisa la CELDA 8 (hoja `Imputaciones`).
 9. **Concentración** (desde BUG-47): "Departamento (Georef): N de M sucursales" en la CELDA 7 (con la caché del nb09,
    todas) y el Spearman de la CELDA 8.
+10. **Serie TPD** (desde el 2026-10-23, noche; §14.12): en la CELDA 8b, `rango_completo` True en los 11 subtipos del
+    panel y los 12 de todas; subtipo-mes movidos: panel con chips 14, mostachol 1, rebozador 6, spaghetti 1, tirabuzón 3;
+    todas con chips 4, obleas 8; último mes (panel) TPD +119,0% (IC 95% +118,2% a +119,8%) contra +123,6%.
 
 ### 14.10 Simulación con los zips del Drive (ene-2022 → oct-2026)
 
@@ -1023,4 +1042,122 @@ sucursales habituales arrastra su último mes válido sin límite: rachas de 7-1
 14 meses, mostachol de todas 12) y de 9 meses en las galletitas con chips (ago-2025 → abr-2026, 4-12 sucursales). Las
 variantes medidas (límite de 3 meses, referencia local de 13 meses, dato propio después) mueven 2023-2024 sin ser
 claramente mejores (AUDITORIA §4); la recomendación es la TPD/hedónica de §3.9 para la serie. Mientras tanto la hoja
-`Imputaciones` lista las rachas y los gráficos marcan los meses imputados.
+`Imputaciones` lista las rachas y los gráficos marcan los meses imputados. **Implementada esa noche como serie de
+robustez: §14.12.**
+
+### 14.12 Serie TPD (hedónica): robustez frente a la imputación de subtipos (2026-10-23, noche)
+
+**Para qué.** La serie mensual descriptiva imputa el subtipo-mes con menos de la mitad de sus sucursales habituales con
+su último mes válido, sin límite (§14.11): 57 subtipo-mes en el panel balanceado y 70 en todas las sucursales, con rachas
+de hasta 14 meses en 2023-2024. La serie TPD (*time-product-dummy*, la versión de serie de tiempo de la hedónica de
+§3.9) estima la prima de cada mes con las sucursales que hay y compara siempre los mismos productos. Al lado de la
+descriptiva, muestra qué tramos de la serie dependen de la imputación o del surtido.
+
+**Modelo** (CELDA 8b). Una regresión por subtipo con todas sus observaciones producto × sucursal × mes ($/100 g; un
+producto con dos códigos entra una vez, con la mediana de sus códigos):
+
+```
+ln p(i,s,t) = α(s,t) + γ(i) + β(t)·SINTACC(i) + ε
+```
+
+- `α(s,t)`: efecto de la **celda** (el subtipo en la sucursal *s* y el mes *t*). Cada sin TACC se compara con los con
+  TACC de su subtipo en el mismo super y mes, como en la descriptiva.
+- `γ(i)`: efecto de cada **producto** (marca, presentación, `ln gramos`). Qué productos tiene cada sucursal no mueve la
+  serie; en la descriptiva, la mediana de cada lado depende del surtido.
+- `β(t)`: prima sin TACC del mes. Mínimos cuadrados ponderados: cada producto pesa 1 / (productos de su lado en la
+  celda), así cada celda aporta lo mismo de cada lado.
+- **Brecha del subtipo** en el mes = `exp(L + β(t)) − 1`, con `L` = promedio de γ de los sin TACC − promedio de γ de los
+  con TACC, cada producto pesado por sus observaciones en todo el período (ponderaciones fijas, como en un índice). No
+  depende de qué producto o mes se fija como referencia. **Tipo** = promedio geométrico de sus subtipos y **canasta** =
+  Σ w (1 + brecha del tipo) − 1 con los pesos ENGHo, como en la descriptiva.
+- **Subtipo-mes sin dato propio**: con menos de `MIN_SUC_SUBTIPO` (10) sucursales con los dos lados, el subtipo se mueve
+  con el promedio de los demás subtipos de su tipo que tienen dato propio en los dos meses (hacia adelante y después
+  hacia atrás); el rebozador, único subtipo de su tipo, queda con el valor del mes vecino. Con tan pocas sucursales el
+  error agrupado no mide la incertidumbre: con una sola, `β(t)` absorbe esa celda y el error sale ~0. Son 25 subtipo-mes
+  en el panel (con chips 14, rebozador 6, tirabuzón 3, spaghetti 1, mostachol 1) y 12 en todas las sucursales (obleas
+  8, con chips 4), contra 57 y 70 que arrastra la descriptiva. `peso_movido_pct` es la parte del peso de la canasta
+  movida, como `peso_imputado_pct` en la descriptiva. En el panel hay 19 meses con algo movido (máximo 28,6%) contra 31
+  con algo imputado en la descriptiva (máximo 42,5%); en todas las sucursales, 12 (máximo 6,9%) contra 36 (máximo 37,6%).
+- **Errores**: agrupados por sucursal (CR1) y método delta para el tipo y la canasta, con la covarianza entre subtipos y
+  tipos (se suman los puntajes de cada sucursal en todas las regresiones). El IC de un mes movido no incluye la
+  incertidumbre de la imputación.
+- **Cálculo**: ecuaciones normales exactas con los efectos de celda descontados (matrices dispersas; hasta 138 mil
+  celdas por subtipo). No itera: 17 s y 2,9 GB de pico con los 58 meses. Si dos productos de un lado nunca conviven en
+  una celda (p. ej. dos códigos del mismo producto sin unir en `PRODUCTO`), su nivel relativo no está identificado: la
+  CELDA 8b lo avisa (`rango_completo`, meses no estimables) y no inventa ese nivel. Con los datos reales, todos los
+  subtipos tienen rango completo.
+- **Dos universos**: las celdas del panel balanceado (comparable con la serie clave) y todas las sucursales.
+
+**Diseños descartados** (probados con los datos reales):
+
+- Efecto de sucursal-mes del **tipo entero** en lugar de la celda del subtipo: cada sin TACC se medía contra todos los
+  con TACC del tipo (las galletitas con chips contra rellenas, secas y pepas), la evolución de las con chips salía al
+  revés y la canasta de 2022 daba ~17 pp más.
+- Efecto fijo de **prima por sucursal** (sin TACC × sucursal): cambia poco la serie.
+- **Sin mínimo de sucursales** (todo subtipo-mes con al menos una sucursal con los dos lados): 30 subtipo-mes salían de
+  1 a 9 sucursales (el spaghetti del panel en oct-2023, de una sola) con un IC que no medía nada.
+
+**Validación**: test con 30 controles, 4 de la TPD. La TPD recupera exacto la prima sin ruido aunque falten productos y
+subtipo-mes (también con un mínimo de sucursales, moviendo el subtipo), coincide con mínimos cuadrados densos con todas
+las indicadoras y la covarianza agrupada escrita a mano (brecha por tipo, error estándar, canasta e IC) y no inventa el
+nivel de productos que nunca conviven. Con los datos reales, otro algoritmo (`r10_tpd_independiente.py`: LSQR sobre el
+diseño completo, sin normalizar ni descontar efectos) da lo mismo en los 1.297 subtipo-mes con dato propio de los dos
+universos (diferencia máxima 1,3e-7 pp). Resultados esperados: `simulacion_2026-10-23b/` (35 hojas, con las 5 de la TPD).
+
+**Resultados** (canasta, promedio de los meses de cada año):
+
+| Año | TPD panel | Descriptiva panel | TPD todas | Descriptiva todas |
+|---|---|---|---|---|
+| 2022 | +111,8% | +110,3% | +119,4% | +122,1% |
+| 2023 | +122,7% | +112,2% | +123,3% | +125,8% |
+| 2024 | +105,4% | +110,0% | +116,4% | +118,1% |
+| 2025 | +98,8% | +101,5% | +104,9% | +103,4% |
+| 2026 | +117,6% | +122,6% | +122,4% | +125,0% |
+
+Por tipo, panel balanceado (TPD / descriptiva, %):
+
+| Tipo | 2022 | 2023 | 2024 | 2025 | 2026 |
+|---|---|---|---|---|---|
+| Fideos secos | 175,7 / 170,2 | 167,9 / 143,7 | 149,7 / 148,6 | 156,0 / 154,1 | 184,9 / 183,6 |
+| Galletitas dulces | 103,6 / 99,9 | 125,1 / 120,1 | 99,9 / 103,3 | 86,1 / 89,5 | 104,5 / 105,1 |
+| Galletitas saladas y crackers | 69,7 / 73,7 | 83,0 / 78,0 | 73,9 / 85,2 | 67,1 / 75,0 | 78,7 / 96,2 |
+| Pan rallado y rebozador | 77,6 / 82,8 | 131,4 / 128,4 | 115,3 / 133,5 | 68,8 / 68,7 | 80,8 / 87,8 |
+| Cereales rellenos (almohaditas) | 24,0 / 24,8 | 24,0 / 24,3 | 23,5 / 21,6 | 22,4 / 20,3 | 22,7 / 24,4 |
+
+**Último mes (oct-2026)**: en el panel, TPD +119,0% (IC 95% +118,2% a +119,8%) contra +123,6% de la descriptiva; en
+todas las sucursales, +119,9% (+119,4% a +120,4%) contra +122,8%. El IC de la canasta tiene un ancho mediano de 2,0 pp
+(panel) y 1,3 pp (todas).
+
+**Lectura**:
+
+1. **Fuera de jun-2023 → feb-2024, las dos series cuentan lo mismo**: diferencia absoluta mediana de la canasta de 4,1 pp
+   en el panel y 2,9 pp en todas las sucursales (dentro de ese tramo, 18,8 y 13,2 pp), y la TPD es más suave (desvío de
+   la variación mensual: 4,7 contra 6,2 pp en el panel). Fideos, galletitas dulces y almohaditas coinciden en nivel y
+   evolución; la TPD queda unos pp debajo sobre todo por las saladas.
+2. **Galletitas saladas: 8 a 18 pp debajo en 2024-2026** (`r11_saladas_composicion.py`). Es surtido y método, no
+   imputación (las saladas no se imputan en esos años). (a) El lado sin TACC cambió hacia productos de prima más alta.
+   En crackers, Smams (+148% a +161% sobre los con TACC del subtipo) contra Grandiet (+79% a +92%): Smams pasó de 46%
+   de las observaciones del lado en 2022-2023 a 66% en 2024, y ese año la TPD da +144% contra +172% del promedio
+   geométrico de las celdas. En snacks, las Crisppino Minis (+57% a +60%) contra las de 100 g (+43%) pasaron de 33% en
+   2022 a 58% en 2026; la TPD da +30,8% contra +45,5% de la mediana en 2026. La descriptiva compara lo que hay en cada
+   sucursal y sube con la mezcla; la TPD fija los productos. (b) En 2026 las brechas de las celdas de crackers tienen
+   dos niveles (sucursales con Grandiet y con Smams) y la mediana cae en el de arriba: +165,0% contra +148,1% del
+   promedio geométrico, que es lo que promedia la TPD (+144,5%).
+3. **2023: lo que pesa la imputación.** En todas las sucursales, donde la TPD tiene dato propio en casi todos los
+   subtipo-mes, el pico de oct-dic 2023 es menor: +137% a +148% contra +161% a +170% de la descriptiva, que arrastra
+   tirabuzón a +396% en oct-nov 2023 y mostachol a +152% de abr-2023 a mar-2024. En el **panel**, los fideos de
+   jun-2023 → feb-2024 tienen muy pocas sucursales con los dos lados (cambio de códigos de Molinos y precios
+   controlados, §14.8). En sep-2023 el spaghetti tiene pares en 108 de sus 782 sucursales del panel (TPD +254%, mientras
+   las 1.271 de todas las sucursales dan +107%) y el tirabuzón en 40 de 344; en oct-2023, en 1 y 0. La descriptiva
+   arrastra (tirabuzón +270,7% durante 14 meses, spaghetti +65,3% de jul a oct) y la TPD los mueve con el mostachol desde
+   el valor de sep-2023: el pico de la canasta del panel en oct-2023 (+174%) sale de eso, no de una medición. Para 2023
+   conviene mirar la TPD de todas las sucursales (`r12_tpd_vs_descriptiva_subtipo.py` muestra cada subtipo-mes).
+4. **Rebozador** (un solo subtipo, el tipo con menos sucursales): la descriptiva del panel arrastró +220% de dic-2023 a
+   feb-2024; la TPD mide feb-2024 (+87,5%), y en 2024 da +115% contra +134%.
+
+**Cómo usarla**: la descriptiva sigue siendo el titular (§3.9); la TPD dice qué tramos dependen de la imputación o del
+surtido. Donde coinciden (2022, 2025, 2026 y los tipos fuera de saladas) el número es robusto; en 2023 manda la TPD de
+todas las sucursales, y en saladas la diferencia es de surtido y de método. Limitaciones: con pocas sucursales la TPD sale
+de las que quedan, y el IC no cubre que sean distintas de las de siempre (sep-2023 en el panel); los efectos de producto
+son fijos en todo el período (un producto que cambia de precio relativo, como un código nuevo empalmado con el viejo,
+mueve la prima del mes); con efectos de producto, el nivel no está neto del efecto envase (§3.9).

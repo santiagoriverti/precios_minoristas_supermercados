@@ -1,6 +1,6 @@
 # Bugs Pendientes y Mejoras
 
-Última actualización: 2026-10-23 (tarde) — **nb06**: la primera corrida de Colab con la canasta fija dio **igual a la
+Última actualización: 2026-10-23 (noche) — **nb06**: **serie TPD (hedónica)** de la brecha como robustez frente a la imputación de subtipos (CELDA 8b, entrada 🟣 abajo; `docs/BRECHA_CELIACA.md` §14.12). Con dato propio coincide con la descriptiva; en 2023 muestra cuánto pesa la imputación. Falta re-correr en Colab (no relee el SEPA). Antes, 2026-10-23 (tarde) — **nb06**: la primera corrida de Colab con la canasta fija dio **igual a la
 simulación** (29 hojas; `docs/AUDITORIA_2026-10-23_nb06.md`). Al revisarla, **BUG-47** resuelto: las comparaciones
 entre provincias, empresas, cadenas y sucursales (mapa) mezclaban composición de subtipos y la "concentración" agrupaba
 por un campo de localidad que DIA carga con el nombre de la provincia; ahora misma canasta de 12 subtipos en todos los
@@ -52,7 +52,11 @@ Los defectos abiertos que resuelve quedan marcados abajo (se verifican con la co
   límite de 3 meses, referencia local de 13 meses, dato propio después) mueven 2023-2024 de 3 a 15 pp en algunos meses y
   ninguna es claramente mejor: el arreglo de fondo es la TPD/hedónica de BRECHA_CELIACA §3.9 (efectos fijos de
   producto, no hace falta imputar). Mientras tanto el nb06 marca los meses imputados en los gráficos y lista las rachas
-  en la hoja `Imputaciones`. **Decisión del usuario.**
+  en la hoja `Imputaciones`. **Decisión del usuario.** **2026-10-23 (noche)**: implementada la serie TPD como robustez
+  (CELDA 8b, entrada 🟣 de abajo, BRECHA_CELIACA §14.12). En todas las sucursales, donde la TPD tiene dato propio en casi
+  todos los subtipo-mes, el pico de oct-dic 2023 es menor (+137% a +148% contra +161% a +170%: la descriptiva arrastra
+  tirabuzón a +396% y mostachol a +152%); en el panel, los fideos de jun-2023 → feb-2024 tienen tan pocas sucursales que
+  ninguna de las dos series los mide bien. La regla de la descriptiva sigue como está.
 - **nb09 — abiertos de la corrida v2** (2026-10-22, detalle y números en `docs/AUDITORIA_2026-10-22_nb09.md` §4):
   (1) el componente comercial del puntaje pesa igual a un comercio de 1 sucursal, una estación de servicio o Mercado
   Libre que a Carrefour, y limita el puntaje de 2.129 de los 2.496 productos ≥ 50 (top 100 = 56% bebidas); restringirlo a
@@ -278,6 +282,41 @@ de la Tecnológica** hasta que haya al menos dos cadenas con cobertura de durabl
 ---
 
 ## 🟢 Cambios y fixes 2026-10
+
+### 🟣 nb06 — serie TPD (hedónica) de la brecha, robustez frente a la imputación de subtipos (2026-10-23, noche) — falta Colab (no relee)
+
+Pedido del usuario: implementar la TPD/hedónica de BRECHA_CELIACA §3.9 como serie de robustez frente a la imputación
+de subtipos (abierto de abajo), con simulación y test. **CELDA 8b** nueva (detalle, validación y lectura: BRECHA_CELIACA
+§14.12):
+
+- **Modelo**: una regresión por subtipo, `ln p = α(celda: sucursal × mes del subtipo) + γ(producto) + β(mes)·sinTACC`,
+  mínimos cuadrados ponderados (cada producto pesa 1 / productos de su lado en la celda), exacta con matrices dispersas
+  (efectos de celda descontados de las ecuaciones normales). Nivel del subtipo = promedio de γ sin TACC − promedio de γ
+  con TACC, pesados por su disponibilidad en todo el período; tipo = promedio geométrico de sus subtipos; canasta ENGHo.
+  Errores agrupados por sucursal (CR1) e IC 95% por el método delta, con la covarianza entre subtipos y tipos. Dos
+  universos: las celdas del panel balanceado y todas las sucursales.
+- **No arrastra**: usa los subtipo-mes que la descriptiva imputa (menos de la mitad de sus sucursales); solo con menos
+  de `MIN_SUC_SUBTIPO` (10) sucursales con los dos lados mueve el subtipo con el promedio de los demás de su tipo (el
+  rebozador, único de su tipo, queda con el mes vecino; `peso_movido_pct`). Subtipo-mes sin dato propio: 25 en el panel
+  y 12 en todas las sucursales, contra 57 y 70 que arrastra la descriptiva.
+- **Probado y descartado**: efecto de sucursal-mes del tipo entero (cada sin TACC contra todos los con TACC del tipo: la
+  evolución de las galletitas con chips salía al revés); prima por sucursal (cambia poco); sin mínimo de sucursales (30
+  subtipo-mes salían de 1 a 9 sucursales, con un IC que no medía nada).
+- **Salidas**: hojas `Serie_TPD` (canasta de los dos universos al lado de la descriptiva, con `peso_movido_pct` y
+  `peso_imputado_pct`), `Brecha_tipo_TPD`, `TPD_subtipos`, `TPD_anual` y `TPD_productos` (Excel de 38 hojas) y los
+  gráficos `brecha_tpd` (canasta) y `brecha_tpd_tipos` (por tipo), con los meses movidos marcados.
+- **Verificado**: test con 30 controles (4 nuevos: recupera exacto la prima sin ruido aunque falten productos y
+  subtipo-mes, también con el mínimo de sucursales; = mínimos cuadrados densos con la covarianza agrupada escrita a mano
+  en tipo, canasta e IC; no inventa el nivel de productos que nunca conviven). Con los datos reales (s11 con el caché,
+  4,1 min; CELDA 8b en 17 s, 2,9 GB), otro algoritmo (`r10_tpd_independiente.py`, LSQR sobre el diseño completo) da lo
+  mismo en los 1.297 subtipo-mes con dato propio (dif. máx. 1,3e-7 pp). Las 30 hojas descriptivas no cambian;
+  esperados con la TPD en `docs/brecha_celiaca/simulacion_2026-10-23b/` (35 hojas).
+- **Lectura**: fuera de jun-2023 → feb-2024 las dos series coinciden (diferencia absoluta mediana de la canasta 4,1 pp en
+  el panel); saladas queda 8-18 pp debajo en 2024-2026 por el surtido del lado sin TACC y por mediana contra promedio
+  geométrico (`r11_saladas_composicion.py`); en todas las sucursales el pico de oct-dic 2023 es menor (+137% a +148%
+  contra +161% a +170%); en el panel, los fideos de 2023 tienen tan pocas sucursales que ninguna de las dos series los
+  mide bien (el +174% de la TPD en oct-2023 sale de mover subtipos sin pares). Último mes (oct-2026, panel): TPD +119,0%
+  (IC 95% +118,2% a +119,8%) contra +123,6% de la descriptiva.
 
 ### 🔴 BUG-47 — nb06: las comparaciones entre grupos, el mapa por sucursal y la concentración mezclaban composición (2026-10-23) ✅ Resuelto (falta Colab, no relee)
 
