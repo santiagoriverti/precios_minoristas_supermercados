@@ -6,18 +6,27 @@ Autor: Santiago Riverti — investigador independiente
 
 ---
 
-## 🟢 ESTADO ACTUAL / HANDOFF [2026-10-22 · cierre] — leer esto primero
+## 🟢 ESTADO ACTUAL / HANDOFF [2026-10-23] — leer esto primero
 
-- **Repo**: `main` = `origin/main` (último commit: la documentación de cierre del 2026-10-22, después de `a1f4522`). Nada
-  sin commitear. **14 tests en OK** el 2026-10-22 (Python 3.14). En una PC nueva: `git clone`, `pip install -r
-  requirements.txt` (ya trae `xlsxwriter`, `scipy`, `psutil`, `python-calamine`) y los tests de `CLAUDE.md`.
-- **Commits del 2026-10-22**: `4ec771f` y `a3acfce` (nb09: hoja Dias, comercios que dejaron de publicar,
-  `mes_baja_comercios`, códigos con basura, precio simbólico relativo), `fa1144d` (canasta de pass-through + script de
-  Colab), `a1f4522` (nb08 v2) y el de la documentación (PASS_THROUGH.md, METODOLOGIA §12-§14, SEPA_TECNICO, README).
+- **Repo**: `main` = `origin/main` con el commit del nb06 (canasta fija 2022-2026) del 2026-10-23. **15 tests**
+  (nuevo `notebooks/test_brecha_celiaca.py`, 22 controles). En una PC nueva: `git clone`, `pip install -r
+  requirements.txt` y los tests de `CLAUDE.md`.
+- **Datos en la PC del INECO** (el usuario bajó el 23/10 todo el Drive): `C:\Users\sriverti\Downloads\2022A.zip` …
+  `2026B.zip` (idénticos a `MyDrive/carga/`; el `2026B` trae jul-2026 y ago-oct 2026 del SEPA diario al 22/10) y
+  `carga-20261023T013908Z-1-001..010.zip` (la carpeta `carga` entera: los mismos zips, `ar.json`, `IPC.xlsx`,
+  `output_canasta*`, `output_trazabilidad/` con sus cachés, `maestro_sepa_completo.csv.gz`; no hay `output_brecha`).
 
 **Líneas de trabajo, en orden de prioridad:**
 
-1. **Pass-through del tipo de cambio (nb08 v2 + canasta de 775 productos) — lo último.** Todo listo y pusheado; el
+1. **Brecha celíaca (nb06 con canasta fija 2022-2026) — lo último, 2026-10-23.** 68 productos (80 códigos) elegidos con
+   reglas sobre el nb09 y verificados con precios ene-2022 → oct-2026; estimador por subtipo agregado como un índice
+   de precios. Todo pusheado. **Falta que el usuario corra el nb06 en Colab** desde el badge del README (Ejecutar todo,
+   sin tocar la CELDA 1; ~1 h la primera vez, relee 58 meses; pico de RAM 2,5 GB medido). Con los mismos zips del Drive
+   la corrida tiene que dar lo de `docs/BRECHA_CELIACA.md` §14.10 (canasta panel 2022 +111%, 2023 +106%, 2024 +107%,
+   2025 +100%, 2026 +120%; tipos 2022-26: fideos +172%, dulces +108%, saladas +84%, rebozador +84%, almohaditas +26%).
+   Cuando pase la salida y `brecha_celiaca_2026-10.xlsx`: revisar con §14.9. Detalle: bloque "nb06 — canasta fija" de
+   abajo.
+2. **Pass-through del tipo de cambio (nb08 v2 + canasta de 775 productos).** Todo listo y pusheado; el
    usuario ya subió `MyDrive/carga/output_canasta/canasta_pass_through_2026-10.xlsx`. **Falta que corra el nb08 en
    Colab** (badge, Ejecutar todo, sin tocar la CELDA 1; ~1,5-2 h la primera vez, 58 meses). Cuando pase la salida
    impresa, `canasta_diaria_pass_through_20220101_20261020.xlsx` y `panel_diario_pass_through_<...>.parquet`: revisar con
@@ -25,17 +34,17 @@ Autor: Santiago Riverti — investigador independiente
    `cobertura_incompleta` en 16-28/07/2023, medianas vs apareado, eslabones > ±15%). Después: tipo de cambio diario
    (A3500, MEP/CCL) y regresiones (`docs/PASS_THROUGH.md` §6). Detalle: bloques "nb08 v2" y "Canasta para el
    pass-through" de abajo.
-2. **nb09**: corrida v2 revisada (AUDITORIA_2026-10-22_nb09). `mes_baja_comercios` y el precio simbólico relativo
+3. **nb09**: corrida v2 revisada (AUDITORIA_2026-10-22_nb09). `mes_baja_comercios` y el precio simbólico relativo
    (`a3acfce`) no se corrieron en Colab todavía: la próxima corrida tarda ~10 min si `output_trazabilidad/_cache_nb09/`
    está en el Drive (preguntar al usuario: la del 22/10 no lo encontró y releyó todo, 102 min). Revisar
    `mes_baja_comercios` (2026-07 ~8.836, 2026-09 ~6.890) y el umbral (~$100, ~417 productos). Decisiones abiertas del
    usuario: componente comercial del puntaje (relee ~65 min) y regional (no relee), AUDITORIA §4.1-4.2.
-3. **nb02**: falta re-correr en Colab con BUG-43/BUG-44 (relee 12 meses en la 19c, ~35 min, y los 33 de la econometría,
+4. **nb02**: falta re-correr en Colab con BUG-43/BUG-44 (relee 12 meses en la 19c, ~35 min, y los 33 de la econometría,
    una vez); el nb02 todavía suma los dos archivos del 1-5/08/2024 (el nb08 y el nb09 ya no); portar la provincia por
    polígonos y el AMBA al nb05; "Cadena 24" del maestro. Bloque "ESTADO ACTUAL nb02" de abajo.
-4. **nb07**: la v5.15 está lista desde el 2026-10-02 y **sin correr** (relee el SEPA, ~2h10m en el Colab gratuito);
+5. **nb07**: la v5.15 está lista desde el 2026-10-02 y **sin correr** (relee el SEPA, ~2h10m en el Colab gratuito);
    después auditar y documentar; planilla del INDEC de sep-26. Bloque "ESTADO ACTUAL nb07" de abajo.
-5. **A futuro**: cuando salga el semestral oficial 2026B, reemplazar el zip y borrar de los cachés ago-oct 2026 (ningún
+6. **A futuro**: cuando salga el semestral oficial 2026B, reemplazar el zip y borrar de los cachés ago-oct 2026 (ningún
    caché mira si cambió el zip; SEPA_TECNICO, "Defectos y cambios de la fuente"); la regla de centavos vence hacia
    2029; rotar el PAT de GitHub (tarea del usuario).
 
@@ -51,6 +60,36 @@ pass-through en `C:\Users\sriverti\proyectos\canasta_pass_through_20220101_20261
 **Reglas**: las de `CLAUDE.md` ("Reglas que muerden"): los `.ipynb` se regeneran con `gen_nbXX.py` (commit de los dos);
 scripts de edición escritos con Write (la shell se come las barras); commits solo con Santiago Riverti, sin atribución a
 Claude.
+
+## 🟢 nb06 — canasta fija 2022-2026 de la brecha celíaca [2026-10-23]
+
+- Pedido: elegir productos con TACC y sin TACC con continuidad 2022-2026 (temporal, geográfica y por cadenas) con las
+  salidas del nb09 al 22/10, armar las dos canastas, medir la brecha en el tiempo, la geografía y las cadenas, y dejar
+  el nb06 corriendo en Colab sin que colapse la RAM. "Lo importante es que los productos se seleccionen de manera
+  robusta y consistente. No cometas errores."
+- Hecho: `docs/brecha_celiaca/canasta_fija_2022_2026.csv` (68 productos, 80 códigos; README con las columnas) →
+  `gen_nb06.py` arma `TIPOS`, `GRAMOS`, `VIGENCIA`, `PRODUCTO` y `SUBTIPO` de la CELDA 1. Reglas, fuentes, empalmes,
+  la canasta, el estimador, advertencias, qué revisar y la simulación: `docs/BRECHA_CELIACA.md` §14. Scripts
+  `docs/auditoria/scripts_nb06_2026-10/` s1-s15 (README con el orden de una corrida). BUG-46 (8 defectos del nb06).
+- Errores de la primera selección (con precios 2024-2026) que corrigieron los precios de 2022-2023: los sin TACC viejos
+  de Matarazzo (`…321800`, `…321855`, `…321794`) son genuinos (2-3 veces el común en las mismas sucursales), no "mal
+  etiquetados"; la caja Wakas es de 300 g (el Maestro dice 250); Porteñitas 130 → 139 g sin fecha (afuera); Grandiet
+  `…100663` es dulce; el control de estabilidad no puede encadenar medianas de variaciones (deriva con precios
+  escalonados); los saltos se miden como cambios de nivel persistentes contra su mismo lado y fuera de oct-2023 →
+  mar-2024.
+- Hallazgo: en 2023 las marcas masivas con TACC tenían precios controlados; Molinos salió en oct-2023 con códigos nuevos
+  (2,5-3,4 veces el precio viejo en las mismas sucursales) y el resto en ene-2024 (+87-118%): la brecha de 2023 está
+  inflada por eso (§14.8). Mismo corte para todos los de Molinos (viejo ≤ 2023-09, nuevo ≥ 2023-10).
+- Estimador (cambiado al simular): brecha por sucursal × mes × subtipo → mediana del subtipo entre sucursales → tipo =
+  promedio geométrico de sus subtipos (>= 10 sucursales; subtipo-mes con < 50% de sus sucursales habituales imputado
+  con el mes anterior) → canasta ENGHo. La mediana del tipo entero mezclaba snacks y crackers (saladas +26,5% contra
+  +84% con el nuevo) y tenía 2-3 veces más ruido mensual. "Más barato" vectorizado (CELDA 7: 11 min → 23 s).
+- Simulación (s11 + s12, celdas reales con los 58 meses del Drive): coincidencia exacta con un cálculo independiente;
+  lectura 37 min en la PC (38 s/mes), pico de RAM 2,5 GB; el caché de la canasta final se armó filtrando el de un
+  superconjunto (s14, s15). Resultados en §14.10.
+- **Siguiente**: el usuario corre el nb06 en Colab y pasa la salida impresa + `brecha_celiaca_2026-10.xlsx`; comparar
+  con §14.10 (mismos zips: tienen que dar igual) y revisar §14.9. Abiertos: precios controlados de 2023 (leer aparte o
+  serie desde 2024 como robustez), pocas sucursales con rebozador (601) y obleas fuera del panel balanceado.
 
 ## 🟢 nb08 v2: pass-through por defecto y sucursales apareadas [2026-10-22 noche]
 

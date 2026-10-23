@@ -1,22 +1,17 @@
-"""Script to generate 06_evolucion_brecha_celiaca.ipynb — Brecha TACC vs sin-TACC.
+"""Script to generate 06_evolucion_brecha_celiaca.ipynb — Brecha TACC vs sin-TACC con canasta FIJA 2022-2026.
 
-Evalua la evolucion DIARIA, SEMANAL y MENSUAL de la BRECHA entre una canasta base
-(productos con TACC) y su equivalente sin-TACC (canasta celiaca), usando SOLO tipos
-de producto con dicotomia celiaca (sin diluir con limpieza/higiene/otros alimentos).
+Mide la brecha de precios entre productos con TACC y sus equivalentes sin TACC (dentro de cada supermercado, por tipo
+de producto, en $/100 g) y cómo se distribuye en el tiempo (mensual desde enero de 2022), geográficamente (provincia,
+región, AMBA) y entre cadenas.
 
-Metodologia (acordada con los investigadores):
-- Cada TIPO de producto (fideos, galletitas, pan rallado, etc.) tiene 2-3 EANs TACC y
-  2-3 EANs sin-TACC representativos. El precio del tipo en una sucursal/dia = PROMEDIO
-  de los representativos PRESENTES (robusto a faltantes y a la eleccion del representativo).
-- La brecha se calcula POOLED por grupo (nacional/provincia/cadena/localidad): para cada
-  tipo se toma el precio TACC y el sin-TACC sobre las sucursales del grupo que ofrecen cada
-  lado, y se arma la canasta base y celiaca. Esto es robusto a la BAJA COBERTURA sin-TACC
-  (los productos sin-TACC estan en pocas gondolas, asi que exigir ambos lados en la MISMA
-  sucursal el mismo dia da 0 obs). Se calcula ademas una brecha intra-sucursal por mes
-  (best-effort) para las sucursales que si ofrecen ambos lados.
-- Series por partida doble: MEDIANA (robusta) y PROMEDIO (outliers fuera), como nb02/nb05.
+Canasta FIJA (2026-10-23): para cada tipo con dicotomía celíaca, productos con TACC y sin TACC elegidos por
+continuidad temporal 2022-2026, cobertura geográfica y por cadenas sobre las salidas del nb09. La lista vive en
+docs/brecha_celiaca/canasta_fija_2022_2026.csv (con las métricas de cada producto) y este generador la embebe en la
+CELDA 1. Reglas y fundamentos: docs/BRECHA_CELIACA.md §14.
+
+Regenerar:  python notebooks/gen_nb06.py   (commitear generador + .ipynb + CSV juntos)
 """
-import json, os, hashlib
+import csv, json, os, hashlib
 
 def _cell_id(prefix, src):
     return prefix + hashlib.md5(src.encode('utf-8')).hexdigest()[:6]
@@ -29,168 +24,198 @@ def cell_md(src):
 def cell_code(src):
     return {'cell_type':'code','execution_count':None,'id':_cell_id('c', src),'metadata':{},'outputs':[],'source':[src]}
 
+HERE = os.path.dirname(os.path.abspath(__file__))
+CANASTA_CSV = os.path.join(HERE, '..', 'docs', 'brecha_celiaca', 'canasta_fija_2022_2026.csv')
+
+# Peso de cada tipo = % del gasto de los hogares en alimentos y bebidas no alcohólicas (división A01) que va a sus
+# artículos en la ENGHo 2017/18 (INDEC, microdatos de gastos, monto x pondera; hogar promedio, no celíaco). Se
+# renormaliza entre los tipos de la canasta.
+PESOS_ENGHO = {
+    'Fideos secos': (1.503, 'A0111304 Fideos secos'),
+    'Galletitas dulces': (1.717, 'A0111105 Galletitas dulces envasadas + A0111108 Masas secas o finas'),
+    'Galletitas saladas y crackers': (1.407, 'A0111103 Galletitas de agua envasadas + A0111102 Galletas, grisines '
+                                             'y tostadas + A0111107 Galletitas de otro tipo'),
+    'Pan rallado y rebozador': (0.194, 'A0111114 Pan rallado'),
+    'Cereales rellenos (almohaditas)': (0.181, 'A0111207 Cereales inflados'),
+}
+ORDEN_TIPOS = list(PESOS_ENGHO)
+
+
+def _bloque_canasta():
+    # TIPOS y GRAMOS de la CELDA 1, desde el CSV de la canasta fija
+    with open(CANASTA_CSV, encoding='utf-8') as f:
+        filas = list(csv.DictReader(f))
+    tipos = {r['tipo'] for r in filas}
+    falta = tipos - set(ORDEN_TIPOS)
+    if falta:
+        raise ValueError(f'Tipos del CSV sin peso ENGHo: {falta}')
+    out = ['TIPOS = {']
+    for tipo in ORDEN_TIPOS:
+        fs = [r for r in filas if r['tipo'] == tipo]
+        if not fs:
+            continue
+        peso, art = PESOS_ENGHO[tipo]
+        out.append(f'    {tipo!r}: {{')
+        out.append(f"        'peso': {peso},   # % del gasto en alimentos (ENGHo 2017/18): {art}")
+        for lado in ('tacc', 'sin_tacc'):
+            out.append(f'        {lado!r}: {{')
+            for r in fs:
+                if r['lado'] != lado:
+                    continue
+                nota = f"  # {r['subtipo']}" + (f" · {r['nota']}" if r.get('nota') else '')
+                out.append(f"            {r['ean']!r}: {r['descripcion']!r},{nota}")
+            out.append('        },')
+        out.append('    },')
+    out.append('}')
+    out.append('')
+    out.append('# Gramos de cada presentación, verificados contra el SEPA (descripciones de las cadenas en oct-2026) y el')
+    out.append('# Maestro. NO se toman del maestro: hay EANs reutilizados con la descripción vieja.')
+    out.append('GRAMOS = {')
+    gs = [(r['ean'], r['gramos']) for t in ORDEN_TIPOS for r in filas if r['tipo'] == t]
+    for i in range(0, len(gs), 5):
+        out.append('    ' + ' '.join(f"{e!r}: {float(g):g}," for e, g in gs[i:i + 5]))
+    out.append('}')
+    out.append('')
+    out.append('# Vigencia de los códigos de un producto que cambió de EAN (desde, hasta; None = sin límite). Los códigos viejos')
+    out.append('# de Molinos que siguen apareciendo después del cambio (sep-oct 2023) traen precios CONGELADOS en ~100 sucursales')
+    out.append('# (Mostacholes Lucchetti viejo a $246-337 en 2024-2025 contra $1.042-1.700 del nuevo): fuera de su vigencia no')
+    out.append('# se usan (se filtran en la CELDA 7, NO cambian el caché).')
+    out.append('VIGENCIA = {')
+    for t in ORDEN_TIPOS:
+        for r in filas:
+            if r['tipo'] == t and (r.get('desde') or r.get('hasta')):
+                d = repr(r['desde']) if r.get('desde') else 'None'
+                h = repr(r['hasta']) if r.get('hasta') else 'None'
+                out.append(f"    {r['ean']!r}: ({d}, {h}),   # {r['descripcion']}")
+    out.append('}')
+    out.append('')
+    out.append('# Productos con más de un código (empalmes): en cada sucursal y mes el precio del producto es la mediana de sus')
+    out.append('# códigos vigentes, así cuenta UNA vez en la mediana de su lado aunque la sucursal tenga los dos códigos.')
+    out.append('PRODUCTO = {')
+    _prod = {}
+    for t in ORDEN_TIPOS:
+        for r in filas:
+            if r['tipo'] == t and r.get('producto'):
+                _prod.setdefault(r['producto'], []).append(r['ean'])
+    for p, es in _prod.items():
+        if len(es) > 1:
+            out.append(f'    {p!r}: {es!r},')
+    out.append('}')
+    out.append('')
+    out.append('# Subtipo de cada producto (comparabilidad: en cada subtipo hay tantos productos con TACC como sin TACC). Se usa')
+    out.append('# en la hoja Comparacion_productos y en el mapa por sucursal; la brecha se calcula por tipo.')
+    out.append('SUBTIPO = {')
+    _sub = {}
+    for t in ORDEN_TIPOS:
+        for r in filas:
+            if r['tipo'] == t and r.get('subtipo'):
+                _sub.setdefault(r['subtipo'], []).append(r['ean'])
+    for s, es in _sub.items():
+        out.append(f'    {s!r}: [')
+        for i in range(0, len(es), 6):
+            out.append('        ' + ' '.join(f'{e!r},' for e in es[i:i + 6]))
+        out.append('    ],')
+    out.append('}')
+    return '\n'.join(out)
+
+
 cells = []
 
 # ── CELL 0 ─────────────────────────────────────────────────────────────────────
-cells.append(cell_md("""# SEPA — Brecha Celíaca (TACC vs sin-TACC)
+cells.append(cell_md("""# SEPA — Brecha Celíaca (TACC vs sin-TACC), canasta fija 2022-2026
 
-**Objetivo:** medir la **brecha** entre una canasta **base** (productos con TACC) y su
-equivalente **sin-TACC** (canasta celíaca), y su evolución **diaria, semanal y mensual**,
-desagregada por provincia, cadena, concentración de comercios y localidad.
+**Objetivo:** medir la **brecha** de precios entre productos **con TACC** y sus equivalentes **sin TACC**, y cómo se
+distribuye **en el tiempo** (mensual, desde enero de 2022), **geográficamente** (provincia, región, AMBA) y **entre
+cadenas**.
 
-**Metodología** (acordada con los investigadores):
-- Solo **tipos de producto con dicotomía celíaca** (fideos, galletitas, pan rallado,
-  harina/premezcla, rebozador, caldo, cerveza→sidra…). Nada de limpieza/higiene/otros
-  alimentos: la brecha se reporta sobre esa canasta acotada, sin maquillar.
-- Cada tipo usa **2–3 EANs TACC y 2–3 sin-TACC representativos**; el precio del tipo en
-  una sucursal/día = **promedio de los representativos presentes** (robusto a faltantes).
-- La brecha se calcula **pooled por grupo** (nacional/provincia/cadena/localidad): por tipo se
-  toma el precio TACC y el sin-TACC sobre las sucursales del grupo que ofrecen cada lado. Es
-  robusto a la **baja cobertura** de los sin-TACC (exigir ambos lados en la misma sucursal el
-  mismo día da 0 obs). Hay además una brecha **intra-sucursal por mes** (best-effort).
-- Series por partida doble: **mediana** (robusta) y **promedio** (outliers fuera).
+**Canasta fija:** para cada tipo con dicotomía celíaca (fideos secos, galletitas dulces, galletitas saladas y crackers,
+rebozador, cereales rellenos) una lista FIJA de productos con TACC y sin TACC elegidos por **continuidad temporal**
+(precio todos los meses desde enero de 2022), **cobertura geográfica** (provincias y regiones) y **cobertura por
+cadenas**, sobre las salidas del nb09. Reglas, listas y métricas: `docs/BRECHA_CELIACA.md` §14 y
+`docs/brecha_celiaca/canasta_fija_2022_2026.csv`.
 
-**Config en la CELDA 1**: el diccionario `TIPOS` (tipo → EANs TACC / sin-TACC / cantidad).
+**Medición:**
+- Precio de cada producto en cada sucursal y mes = **mediana de sus precios diarios**, en **$/100 g**.
+- En cada sucursal y mes, por **subtipo** (spaghetti, crackers, rellenas…): precio de cada lado = **mediana** de los
+  productos presentes; **brecha del subtipo = sin TACC / con TACC − 1**, dentro del mismo super (controla el nivel de
+  precios de cada lugar y compara productos equivalentes).
+- Como un índice de precios: **subtipo** (mediana entre sucursales) → **tipo** (promedio geométrico de sus subtipos)
+  → **canasta** (promedio de los tipos ponderado por el **gasto de los hogares, ENGHo 2017/18**). Serie mensual con
+  todas las sucursales y con **panel balanceado**; un subtipo-mes con muy pocas sucursales se imputa con el mes anterior.
 
-**Estructura:** Config → Setup → Maestros → Parseo de tipos → ZIPs → Lectura diaria →
-Brecha por sucursal×día → Series (diaria/semanal/mensual) → Gráficos → Mapa → Excel"""))
+**Config en la CELDA 1.** Estructura: Config → Setup → Maestros → Canasta → ZIPs → Lectura (caché por mes) → Brecha por
+sucursal × mes × tipo → Agregaciones → Gráficos → Mapa → Excel → Mapa por sucursal"""))
 
 # ── CELL 1 — CONFIG ────────────────────────────────────────────────────────────
-cells.append(cell_code("""\
-# ===========================================================
+_CONFIG_PRE = r"""# ===========================================================
 # CONFIGURACIÓN — Modificar solo esta sección
 # ===========================================================
-# TIPOS: un diccionario tipo -> {qty, tacc:[EANs], sin_tacc:[EANs]}.
-#   - Poné VARIOS EANs candidatos por lado (cuantos más, más cobertura por sucursal).
-#   - En cada sucursal/día se usa el precio de LOS candidatos que esa sucursal tenga
-#     (mediana robusta, $/100g). Un tipo cuenta EN ESA SUCURSAL si tiene al menos 1
-#     candidato TACC y 1 sin-TACC → la brecha del tipo se calcula INTRA-SUCURSAL.
-#   - 'qty' = peso del tipo en la canasta (para la brecha agregada por sucursal).
-# LISTAS AMPLIAS curadas del Maestro (marcas mainstream + varias presentaciones).
-# Ajustá con la hoja Cobertura del primer run (n_tacc/n_sin por tipo).
-TIPOS = {
-    'Fideos secos': {
-        'qty': 4,
-        # TACC: Lucchetti · Matarazzo · Favorita (todos 500 g) — alta cobertura (canasta_repr. 07/2026, ~1900-2500 suc.)
-        'tacc':     ['7790070336385','7790070336118','7790070336149','7790070336316',
-                     '7790070336293','7790070320285','7790070320308','7790070320292'],
-        # sin-TACC (maíz/arroz/legumbres, mayormente 500 g) — AMPLIADA [2026-08-27] con marcas
-        # mainstream (Matarazzo/Gallo GF, Blue Patna, Grandiet, Yuka) para maximizar cobertura; §3.8.
-        'sin_tacc': ['7730114000780','7730114000797','7730114100015','7730114100046','7730114100077',
-                     '7797330105590','7797330105606','7797330105613',
-                     '7790070321800','7790070321794','7790070321855','7790070335999','7790070335982','7790070336224',
-                     '7790070321817','7790070321824',
-                     '7798031470024','7794903232240','7794903232257','7794903232264','7794903232271'],
-    },
-    'Galletitas dulces': {
-        'qty': 3,
-        # TACC: 9deOro · Don Satur · Chocolinas · Bagley Rumba · Sonrisas · Maná (galletita dulce base) — alta cobertura
-        'tacc':     ['7792200000128','7795735000335','7790040143234','7790040143524',
-                     '7790040133471','7790040137844'],
-        # sin-TACC — AMPLIADA [2026-08-27]: Santa María (línea completa 200 g), Natuzen, Smams,
-        # Arrozen, Nina. Se quitó 7798079230062 (Vainillas 12Un, sin gramos). §3.8.
-        'sin_tacc': ['7798079230017','7798079230147','7798079230109','7798079230116','7798079230598',
-                     '7798079230628','7798079230161','7798079230659','7798079230673',
-                     '7798082000317','7798082000331','7798082000393','7798082000492',
-                     '7798181510120','7798181510199','7798181510441','7798181510236','7798181510243',
-                     '7798082001017','7798082001024','0655257736631','7798294150435','7798308250205'],
-    },
-    'Galletitas saladas / crackers': {
-        'qty': 2,
-        # TACC (base trigo): 9deOro · Don Satur · Traviata · Tosti · Hogareñas — alta cobertura
-        'tacc':     ['7792200000159','7795735000328','7790040144095','7794529041608',
-                     '7790040136069'],
-        # sin-TACC (crackers/tostadas de arroz) — AMPLIADA [2026-08-27]: Tía Maruca, Carrefour,
-        # Granix, Crisppino, Shiva, Olienka, Viavita, Yuka, Apóstoles. §3.8.
-        'sin_tacc': ['7798199770035','7798199770042','7798199770103','7798199770110','7798199770134','7798199770141',
-                     '7798289620080','7798289620097','0617308824087','0617308824094','0617308824100','0617308824117',
-                     '7798195940173','7798082743726','7798082743849','7791720019054','7791720019061',
-                     '7790045826859','7794903232226','7791120098857'],
-    },
-    'Pan rallado / rebozador': {
-        'qty': 2,
-        # TACC: Preferido · Mamá Cocina · Lucchetti · Pureza · Favorita (pan rallado) — alta cobertura
-        'tacc':     ['7790070433169','7792180004741','7790070433275','7792180136480','7790070433312'],
-        # sin-TACC (pan rallado/rebozador de arroz) — AMPLIADA [2026-08-27]: se sumaron marca
-        # blanca de cadena (Carrefour) y mainstream (Preferido, Santa María, Natuzen) porque las
-        # marcas de nicho previas (Bio/La Delfina/Maizena/Marvese) tenían ~0 cobertura. §3.8.
-        'sin_tacc': ['7791720018453','7791720018460','7791720018477','7791720003411',
-                     '7790070100283','7798079230086','7798082000294','7798082000553',
-                     '7798221641845','7798221641944','7798131130200','7798131130231',
-                     '7794000005303','7794000007291','7794000008212',
-                     '7798306830164','7798306830171','7798306830201','7798075280559','7798239780123'],
-    },
-    # ⚠️ SUSTITUCIÓN (harina de trigo vs premezcla) — NO es el mismo producto sin gluten
-    #    y su brecha es enorme (~+700%). Descomentá SOLO si la querés incluir; para una
-    #    brecha "like-for-like" pura dejala comentada.
-    # 'Harina / premezcla': {
-    #     'qty': 2,
-    #     'tacc':     ['7792180004512','7790070506924','7792180001528'],
-    #     'sin_tacc': ['7790070508010','7794000005273','7798239780178'],
-    # },
-}
+# CANASTA FIJA 2022-2026 (docs/BRECHA_CELIACA.md §14; lista con métricas: docs/brecha_celiaca/canasta_fija_2022_2026.csv)
+# TIPOS: tipo -> {'peso': % del gasto de los hogares en alimentos y bebidas no alcohólicas (ENGHo 2017/18),
+#                 'tacc': {EAN: descripción}, 'sin_tacc': {EAN: descripción}}.
+#   Algunos productos tienen DOS códigos porque el fabricante cambió el EAN (Molinos en sep-oct 2023, Wakas en jun-2024):
+#   van los dos, cada uno con su VIGENCIA (abajo), y PRODUCTO los junta: en cada sucursal y mes el producto entra una
+#   vez, con la mediana de sus códigos vigentes.
+#   Cambiar un EAN cambia la clave del caché: relee todo el SEPA. Cambiar GRAMOS, VIGENCIA, PRODUCTO, SUBTIPO, pesos o
+#   descripciones NO relee.
+"""
 
-# EANs a EXCLUIR a mano (escape hatch documentado, §3.8). Se filtran en la CELDA 7 DESPUÉS
-# de leer → NO cambian el hash del caché. Vacío por diseño: la limpieza de errores de carga
-# la hace el FILTRO DE PLAUSIBILIDAD por regla (banda ×FACTOR_PLAUS, CELDA 7), que es simétrico
-# y reproducible (preferible a sacar productos a mano en un paper). Usar este set solo para
-# casos de NO-comparabilidad documentados que la regla no capture (hoy: ninguno).
-EANS_EXCLUIR = set()
-FACTOR_PLAUS = 4   # factor de la banda de plausibilidad a nivel EAN (data-quality, §3.8)
+_CONFIG_POST = r"""
 
-# ── Selección sin-TACC POR NOMBRE (regla reproducible) ─────────────────────────
-# Además de las listas curadas de arriba, se agregan como candidatos sin-TACC TODOS los
-# productos del maestro cuya descripción diga "sin tacc/gluten" y matcheen las keywords del
-# tipo (menos las exclusiones). Con el maestro SEPA COMPLETO esto captura los celíacos que
-# no están en el Maestro interno (p.ej. los que vende DIA). (kw_incluir, kw_excluir) por tipo.
+# Ponderación de la canasta: 'engho' = la brecha de la canasta es el promedio de las brechas por tipo con los pesos
+# ENGHo de TIPOS (y la canasta por sucursal usa cantidades = peso / precio con TACC del año base); 'qty' = cantidades
+# fijas TIPOS[tipo]['qty'] (el método de las corridas de agosto de 2026).
+PONDERACION = 'engho'
+ANIO_BASE_PONDERACION = None   # None = los primeros 12 meses del panel
+
+# Canasta FLEXIBLE (corridas de agosto de 2026): True agrega como candidatos sin TACC todos los productos del maestro
+# cuya descripción diga "sin TACC" y matcheen las palabras del tipo (SIN_TACC_REGLA). Rompe la continuidad y hace que
+# la canasta dependa de qué maestro_sepa_completo haya en el Drive: dejarlo en False salvo para comparar.
+USAR_REGLA_NOMBRE = False
 SIN_TACC_REGLA = {
     'Fideos secos': (
         r'fideo|spaghetti|spagueti|tallarin|mostachol|tirabuz|penne|fusilli|codito|cintas|caracol|rigat|letras|moñito|farfalle|dedalitos|cornetti|risoni|canestri|spirali',
         r'premezcla|ñoqui|noqui|harina|frola|salsa|rallado|rebozador|tapa|tarta|sopa|salvado|arroz integral|yamani'),
-    # dulces: REQUIERE sustantivo de galletita/bizcocho (no solo el sabor) → evita que
-    # 'naranja'/'frutilla'/'chocolate' sueltos metan yerba, mermelada, caramelos, tabletas, etc.
     'Galletitas dulces': (
         r'galletit|galleta|biscuit|bizcoch|oblea|scon|pepa|magdalena|masita|vainilla|marmolad|nevadit|rueditas',
         r'salad|queso|jamon|cracker|tostada|arroz|pizza|premezcla|bizcochuelo|flan|postre|leche|grisin|palito|semilla|rallado|ensalada|hamburg|pochoclo|pan dulce|cereal|copitas|barrita|turron|budin|budín|yerba|mate|mermelada|caramelo|tableta|bocadito|bombon|gomita|chupetin|jugo|bebida|agua|infusion|pimenton|cacao|dulce de leche|polvo|helado|alfajor'),
-    'Galletitas saladas / crackers': (
+    'Galletitas saladas y crackers': (
         r'cracker|tostada|tortita|talita|chalita|grisin|bizcochito|tostadita|(?:galletit|galleta).*(?:salad|queso|jamon|de arroz|pizza)|snack.*queso|palito.*(?:maiz|queso)',
         r'dulce|vainilla|chocolate|coco|limon|pepas|marmolad|premezcla|budin|oblea|alfajor|flan|leche|manteca|fideo|ensalada|hamburg|dambo|yamani|arroz integral|bizcochuelo|scon|rallado'),
-    'Pan rallado / rebozador': (
-        r'pan rallado|rebozador|rebozar|apanad',
-        r'premezcla|coco|queso rallado'),
+    'Pan rallado y rebozador': (r'pan rallado|rebozador|rebozar|apanad', r'premezcla|coco|queso rallado'),
 }
+
+# EANs a excluir a mano (se filtran en la CELDA 7, después de leer: NO cambian el caché). Vacío por diseño: los errores
+# de carga los saca el filtro de plausibilidad (banda x FACTOR_PLAUS, CELDA 7), que es simétrico y reproducible.
+EANS_EXCLUIR = set()
+FACTOR_PLAUS = 4   # banda de plausibilidad a nivel EAN (precio relativo a sus pares del mes)
 
 SEPA_SOURCE = 'mi_drive'   # 'mi_drive' | 'local'
 SEPA_DIR    = '/content/drive/MyDrive/carga'
 OUTPUT_DIR  = '/content/drive/MyDrive/carga/output_brecha'
-
 USE_CACHE = True
 
-# Mínimo de tipos (con ambos lados) para que una sucursal cuente en la brecha de CANASTA.
-# La brecha POR TIPO no lo usa (basta ese tipo presente en la sucursal). 1 = permisivo.
-MIN_TIPOS = 1
-# Mínimo de sucursales para reportar una desagregación (provincia/cadena/localidad) como
-# CONFIABLE. Las de menos quedan marcadas confiable=False y NO se usan en titulares ni plots
-# (evita brechas basadas en 3-10 sucursales).
-MIN_SUC_AGG = 30
-# Panel temporal BALANCEADO: una sucursal entra en la serie balanceada si aparece en al menos
-# esta fracción de los meses disponibles → trayectoria comparable (mitiga que la serie completa
-# se confunda con la composición cuando entran/salen sucursales).
-FRAC_MESES_PANEL = 0.7
+MES_INICIO_HISTORICO = '2022-01'   # la canasta fija se eligió con continuidad desde enero de 2022
+MIN_TIPOS = 1         # tipos con los dos lados para que una sucursal-mes cuente en la canasta POR SUCURSAL (mapa)
+MIN_SUC_AGG = 30      # sucursales mínimas para marcar una desagregación como confiable
+MIN_SUC_SUBTIPO = 10  # sucursales mínimas para que un subtipo entre en la brecha de su tipo en un mes o grupo
+FRAC_SUBTIPO_MES = 0.5   # serie mensual: un subtipo-mes con menos de esta fracción de sus sucursales habituales se
+                         # imputa con su último mes válido (cambios de código de Molinos en sep-oct 2023, su hueco de
+                         # dic-2023 a mar-2024: la mediana de pocas sucursales distintas movía el tipo entero)
+FRAC_MESES_PANEL = 0.7   # panel balanceado: sucursal x tipo presentes en >= este % de los meses
+VENTANA_GEO_MESES = 12   # provincias, regiones y cadenas: últimos N meses (además de las tablas por año)
 
-# Período mínimo de la serie histórica (semanal/mensual)
-MES_INICIO_HISTORICO = '2024-01'
+# Comercios fuera del universo: estaciones de servicio (19, 3001, 4 Estación Lima, 23 Axion Energy), Mercado Libre
+# (2013) y farmacias (24 Farmacity / Simplicity)
+CADENAS_FILTRAR = {'19', '2013', '3001', '4', '23', '24'}
 
-# Ventana de la serie DIARIA (meses hacia atrás desde el último mes). La semanal y
-# mensual usan TODO el histórico; la diaria solo esta ventana (evita gráficos gigantes).
-VENTANA_DIARIA_MESES = 3
+RECLASIF_TOL_KM = 100   # provincia: se cambia solo si la sucursal cae a más de esto de su provincia declarada (BUG-44)
+AMBA_RADIO_KM = 90      # AMBA = CABA + Buenos Aires a <= AMBA_RADIO_KM del Obelisco (BUG-42)"""
 
-# Excluir estaciones de servicio / comercios no minoristas de referencia
-CADENAS_FILTRAR = {'19', '2013', '3001', '4'}"""))
+cells.append(cell_code(_CONFIG_PRE + _bloque_canasta() + _CONFIG_POST))
 
-# ── CELL 2 — SETUP (idéntica a nb05, TMP/OUTPUT propios) ───────────────────────
-cells.append(cell_code("""\
-# ============================================================
+# ── CELL 2 — SETUP ─────────────────────────────────────────────────────────────
+cells.append(cell_code(r"""# ============================================================
 # CELDA 2 — Montar Drive + dependencias + imports
 # ============================================================
 try:
@@ -202,10 +227,9 @@ except ImportError:
     print('Entorno local')
 
 import subprocess, sys
-subprocess.run([sys.executable, '-m', 'pip', 'install',
-                'openpyxl', 'tqdm', 'pyarrow', '-q'], check=False)
+subprocess.run([sys.executable, '-m', 'pip', 'install', 'openpyxl', 'tqdm', 'pyarrow', '-q'], check=False)
 
-import zipfile, gzip, re, shutil, warnings, gc, hashlib, calendar as _cal
+import zipfile, gzip, io, re, shutil, warnings, gc, hashlib, tempfile, calendar as _cal
 import json as _json
 from pathlib import Path
 from tqdm.auto import tqdm
@@ -231,8 +255,9 @@ OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 CACHE_DIR  = OUTPUT_DIR / '_cache'
 if USE_CACHE:
     CACHE_DIR.mkdir(parents=True, exist_ok=True)
-TMP_DIR = Path('/content/tmp_sepa_nb06')
-TMP_DIR.mkdir(exist_ok=True)
+TMP_DIR = (Path('/content/tmp_sepa_nb06') if Path('/content').exists()
+           else Path(tempfile.gettempdir()) / 'tmp_sepa_nb06')
+TMP_DIR.mkdir(parents=True, exist_ok=True)
 
 GEOJSON_PATH = SEPA_DIR / 'ar.json'
 
@@ -242,11 +267,10 @@ def normalizar_ean(s):
     return s if s else '0'
 
 # EANs de referencia SOLO para detectar el factor centavos/pesos de cada mes.
-REF_EANS_FACTOR = {'7790072002080'.lstrip('0'), '7790070320285'.lstrip('0'), '7790132098459'.lstrip('0')}
+REF_EANS_FACTOR = {'7790072002080', '7790070320285', '7790132098459'}
 
 # ── Promedio con outliers fuera (banda relativa a la mediana) ────────────────
-# Descarta valores fuera de [mediana/4, mediana x4] antes de promediar. Robusto a
-# errores gruesos del SEPA a cualquier tamaño de muestra. (Igual que nb02/nb05.)
+# Descarta valores fuera de [mediana/4, mediana x4] antes de promediar (igual que nb02/nb05).
 def _pmean(_s):
     _s = pd.to_numeric(_s, errors='coerce').dropna()
     if len(_s) == 0: return float('nan')
@@ -258,11 +282,10 @@ def _pmean(_s):
 
 print(f'SEPA_DIR:   {SEPA_DIR}')
 print(f'OUTPUT_DIR: {OUTPUT_DIR}')
-print(f'  ar.json:  {"OK" if GEOJSON_PATH.exists() else "NO ENCONTRADO (mapa se saltea)"}')"""))
+print(f'  ar.json:  {"OK" if GEOJSON_PATH.exists() else "NO ENCONTRADO (no se reclasifican provincias ni hay mapas)"}')"""))
 
-# ── CELL 3 — MAESTROS (idéntica a nb05) ────────────────────────────────────────
-cells.append(cell_code("""\
-# ============================================================
+# ── CELL 3 — MAESTROS ──────────────────────────────────────────────────────────
+cells.append(cell_code(r"""# ============================================================
 # CELDA 3 — Maestros de sucursales, cadenas, provincias y productos
 # ============================================================
 DATA_URL = 'https://raw.githubusercontent.com/santiagoriverti/precios_minoristas_supermercados/main/data'
@@ -308,23 +331,29 @@ suc_pais = maestro_suc[
 IDS_PAIS = set(zip(suc_pais['id_comercio'], suc_pais['id_bandera'], suc_pais['id_sucursal']))
 print(f'  Sucursales validas: {len(suc_pais):,} | IDs unicos: {len(IDS_PAIS):,}')
 
+# Nombres según el comercio.csv del SEPA (SEPA diario, oct-2026). 'cadena' = bandera; 'empresa' = comercio.
 NOMBRES_COMPUESTOS = {
-    ('9','1'):'Vea',('9','2'):'Disco',('9','3'):'Jumbo',
-    ('10','1'):'Carrefour',('10','2'):'Carrefour Market',('10','3'):'Carrefour Express',
-    ('11','2'):'ChangoMas',('11','4'):'Hiper ChangoMas',('11','5'):'Mi ChangoMas',
-    ('16','1'):'Hipermercado Libertad',('16','2'):'Mini Libertad',
+    ('9','1'):'Vea', ('9','2'):'Disco', ('9','3'):'Jumbo',
+    ('10','1'):'Carrefour', ('10','2'):'Carrefour Market', ('10','3'):'Carrefour Express', ('10','4'):'Carrefour Maxi',
+    ('11','1'):'SuperChangomas', ('11','2'):'ChangoMas', ('11','3'):'SuperChangomas', ('11','4'):'SuperChangomas',
+    ('11','5'):'HiperChangomas',
+    ('16','1'):'Hipermercado Libertad', ('16','2'):'Mini Libertad',
 }
 NOMBRES_SIMPLES = {
-    '2':'La Anonima','3':'Cadena 3','5':'Hipermercado Misiones',
-    '8':'Mariano Max','12':'Coto','13':'Cooperativa Obrera',
-    '15':'DIA','20':'LAR','21':'Toledo','23':'Cadena 23','47':'Pasamonte',
+    '2':'La Anónima', '3':'Deheza', '5':'California', '6':'Comodín', '8':'Mariano Max', '12':'Coto',
+    '13':'Cooperativa Obrera', '15':'DIA', '20':'La Agrícola Regional', '21':'Toledo', '23':'Axion Energy',
+    '24':'Farmacity', '47':'Unicoop',
 }
+EMPRESAS = {'9':'Cencosud (Vea, Disco, Jumbo)', '10':'Carrefour', '11':'ChangoMas', '16':'Libertad'}
 
 def asignar_cadena(row):
     k = (row['id_comercio'], row['id_bandera'])
     if k in NOMBRES_COMPUESTOS: return NOMBRES_COMPUESTOS[k]
     if row['id_comercio'] in NOMBRES_SIMPLES: return NOMBRES_SIMPLES[row['id_comercio']]
     return f"Cadena {row['id_comercio']}"
+
+def asignar_empresa(_c):
+    return EMPRESAS.get(_c) or NOMBRES_SIMPLES.get(_c) or f'Cadena {_c}'
 
 PROV_NORM = {
     'Ciudad Autonoma de Buenos Aires':'CABA',
@@ -357,22 +386,21 @@ PROV_NORM = {
     'San Luis':'San Luis','Santa Cruz':'Santa Cruz',
     'Santa Fe':'Santa Fe','Santiago del Estero':'Santiago del Estero','Tucumán':'Tucumán',
 }
-PESOS_POBLACION = {
-    'Buenos Aires':17709732,'CABA':3075646,'Catamarca':415438,
-    'Chaco':1204541,'Chubut':618994,'Córdoba':3978984,
-    'Corrientes':1120801,'Entre Ríos':1385961,'Formosa':605193,
-    'Jujuy':770881,'La Pampa':368550,'La Rioja':393531,
-    'Mendoza':2014533,'Misiones':1261294,'Neuquén':664057,
-    'Río Negro':747610,'Salta':1441998,'San Juan':781217,
-    'San Luis':531745,'Santa Cruz':333473,'Santa Fe':3556522,
-    'Santiago del Estero':1019304,'Tierra del Fuego':190641,'Tucumán':1737127,
+# Regiones INDEC; Buenos Aires se parte en AMBA (por coordenadas, CELDA 7) y resto (Pampeana)
+REGION_PROV = {
+    'CABA':'AMBA', 'Buenos Aires':'Pampeana', 'Córdoba':'Pampeana', 'Entre Ríos':'Pampeana', 'La Pampa':'Pampeana',
+    'Santa Fe':'Pampeana', 'Catamarca':'Noroeste', 'Jujuy':'Noroeste', 'La Rioja':'Noroeste', 'Salta':'Noroeste',
+    'Santiago del Estero':'Noroeste', 'Tucumán':'Noroeste', 'Chaco':'Noreste', 'Corrientes':'Noreste',
+    'Formosa':'Noreste', 'Misiones':'Noreste', 'Mendoza':'Cuyo', 'San Juan':'Cuyo', 'San Luis':'Cuyo',
+    'Chubut':'Patagonia', 'Neuquén':'Patagonia', 'Río Negro':'Patagonia', 'Santa Cruz':'Patagonia',
+    'Tierra del Fuego':'Patagonia',
 }
 
 _mp_raw = leer_maestro('Maestro de Productos Interno.xlsx', dtype=str,
                        usecols=['producto_sepa_id','producto_descripcion','producto_marca','rubro',
                                 'producto_cantidad_presentacion','producto_unidad_medida_presentac'])
-# Maestro SEPA COMPLETO (opcional, del Drive carga/): trae TODOS los productos que se venden
-# con nombre/presentación → captura celíacos que NO están en el interno (p.ej. los de DIA).
+# Maestro SEPA COMPLETO (opcional, del Drive carga/): nombres de productos que no están en el interno. Con la canasta
+# fija solo se usa como respaldo de las descripciones (las de la canasta vienen en TIPOS).
 _msepa = None
 try:
     _msp = Path(SEPA_DIR) / 'maestro_sepa_completo.csv.gz'
@@ -398,16 +426,14 @@ if _msepa is not None:
 else:
     MP_META = _base
 
-# gramos/ml de la presentación → para normalizar el precio a $/100g. Se toma del CAMPO
-# presentación y, si no da (muchos productos —p.ej. de DIA— reportan '1 UNI' y los gramos van
-# en el TEXTO 'X 400 GR'), se PARSEA de la descripción.
+# gramos/ml de la presentación (respaldo de GRAMOS): del CAMPO presentación o, si no da, de la descripción
 def _to_gramos(_q, _u):
     _q = pd.to_numeric(str(_q).replace(',', '.'), errors='coerce'); _u = str(_u).strip().lower()
     if pd.isna(_q) or _q <= 0: return np.nan
     if _u in ('kg','kgm','l','lt','litro','litros','kilogramo','kilogramos'): return _q * 1000
     if _u in ('gr','g','grs','gramo','gramos','ml','cc','mililitro'): return _q
     return np.nan
-_RE_GR = re.compile(r'(\\d+(?:[.,]\\d+)?)\\s*(kg|kgm|kilo|grs?|gramos?|ml|cc|lts?|litros?|g)\\b')
+_RE_GR = re.compile(r'(\d+(?:[.,]\d+)?)\s*(kg|kgm|kilo|grs?|gramos?|ml|cc|lts?|litros?|g)\b')
 def _gramos_desc(_s):
     _m = _RE_GR.search(str(_s).lower())
     if not _m: return np.nan
@@ -423,115 +449,111 @@ MP_META = (MP_META.dropna(subset=['ean_norm']).drop_duplicates('ean_norm')
 print(f'  Maestro de productos (total): {len(MP_META):,} EANs con metadata')
 print('Maestros OK')"""))
 
-# ── CELL 4 — PARSEO DE TIPOS (config) ──────────────────────────────────────────
-cells.append(cell_code("""\
+# ── CELL 4 — CANASTA ───────────────────────────────────────────────────────────
+cells.append(cell_code(r"""# ============================================================
+# CELDA 4 — Canasta: productos con TACC / sin TACC por tipo (CELDA 1)
 # ============================================================
-# CELDA 4 — Parseo de tipos TACC / sin-TACC (CELDA 1)
-# ============================================================
-def _norm_lista(_lst):
-    _out = []
-    for _e in _lst:
-        _limpio = re.sub(r'\\D', '', str(_e))
-        if _limpio:
-            _out.append(_limpio.lstrip('0') or '0')
-    return _out
+def _norm_ean(_e):
+    _l = re.sub(r'\D', '', str(_e))
+    return (_l.lstrip('0') or '0') if _l else None
 
-TIPO_TACC = {}      # tipo -> set(ean_norm) TACC
-TIPO_SIN  = {}      # tipo -> set(ean_norm) sin-TACC
-TIPO_QTY  = {}      # tipo -> cantidad
-EAN_TIPO  = {}      # ean_norm -> tipo
-EAN_ROL   = {}      # ean_norm -> 'tacc' | 'sin'
-EAN_DESC  = {}      # ean_norm -> descripcion (del maestro o el propio EAN)
+def _items(_x):
+    # {EAN: descripción} o [EAN, ...] -> {ean_norm: descripción o None}
+    if isinstance(_x, dict):
+        return {_norm_ean(k): (str(v) if v else None) for k, v in _x.items() if _norm_ean(k)}
+    return {_norm_ean(k): None for k in _x if _norm_ean(k)}
 
-# Expansión sin-TACC POR NOMBRE: candidatos = lista curada ∪ {EANs del maestro cuya
-# descripción diga "sin tacc/gluten" y matcheen las keywords del tipo (§ SIN_TACC_REGLA)}.
+# Canasta flexible (opcional): candidatos sin TACC por nombre
 _desc_all = MP_META['descripcion'].fillna('').astype(str).str.lower()
 _gf_all = _desc_all.str.contains(r'sin tacc|sin gluten|libre de gluten|s/tacc', regex=True)
-_REGLAS_SIN = globals().get('SIN_TACC_REGLA', {})
 def _sin_por_regla(_tp):
-    _r = _REGLAS_SIN.get(_tp)
+    _r = SIN_TACC_REGLA.get(_tp)
     if not _r: return set()
     _kw, _ex = _r
     _m = _gf_all & _desc_all.str.contains(_kw, regex=True) & ~_desc_all.str.contains(_ex, regex=True)
     return set(MP_META.index[_m])
 
+TIPO_TACC, TIPO_SIN, TIPO_QTY, TIPO_PESO = {}, {}, {}, {}
+EAN_TIPO, EAN_ROL, EAN_DESC = {}, {}, {}
 for _tipo, _cfg in TIPOS.items():
-    _tacc = set(_norm_lista(_cfg.get('tacc', [])))
-    _sin  = set(_norm_lista(_cfg.get('sin_tacc', []))) | _sin_por_regla(_tipo)
-    if not _tacc or not _sin:
-        print(f'AVISO: el tipo \"{_tipo}\" no tiene EANs en ambos lados — se ignora.')
+    _t = _items(_cfg.get('tacc', {}))
+    _s = _items(_cfg.get('sin_tacc', {}))
+    if USAR_REGLA_NOMBRE:
+        _s.update({_e: None for _e in _sin_por_regla(_tipo) if _e not in _s and _e not in _t})
+    if not _t or not _s:
+        print(f'AVISO: el tipo "{_tipo}" no tiene EANs en los dos lados: se ignora.')
         continue
-    TIPO_TACC[_tipo] = _tacc
-    TIPO_SIN[_tipo]  = _sin
+    _dup = (set(_t) & set(_s)) | ((set(_t) | set(_s)) & set(EAN_TIPO))
+    if _dup:
+        raise ValueError(f'EANs repetidos entre lados o tipos en "{_tipo}": {sorted(_dup)}')
+    TIPO_TACC[_tipo] = set(_t)
+    TIPO_SIN[_tipo]  = set(_s)
     TIPO_QTY[_tipo]  = float(_cfg.get('qty', 1))
-    for _e in _tacc: EAN_TIPO[_e] = _tipo; EAN_ROL[_e] = 'tacc'
-    for _e in _sin:  EAN_TIPO[_e] = _tipo; EAN_ROL[_e] = 'sin'
-
+    TIPO_PESO[_tipo] = float(_cfg.get('peso', float('nan')))
+    for _e, _d in _t.items(): EAN_TIPO[_e] = _tipo; EAN_ROL[_e] = 'tacc'; EAN_DESC[_e] = _d
+    for _e, _d in _s.items(): EAN_TIPO[_e] = _tipo; EAN_ROL[_e] = 'sin';  EAN_DESC[_e] = _d
 if not TIPO_TACC:
-    raise ValueError('Ningún tipo válido en TIPOS (cada tipo necesita EANs TACC y sin-TACC).')
+    raise ValueError('Ningún tipo válido en TIPOS (cada tipo necesita EANs con TACC y sin TACC).')
+EANS_CONFIG = set(EAN_TIPO)
 
-EANS_CONFIG = set(EAN_TIPO.keys())
-EAN_GRAMS = {}      # ean_norm -> gramos/ml de la presentación (para normalizar a $/100g)
-_sin_gramos = []
-for _e in EANS_CONFIG:
-    if _e in MP_META.index and pd.notna(MP_META.loc[_e, 'descripcion']):
-        EAN_DESC[_e] = str(MP_META.loc[_e, 'descripcion'])[:50]
-    else:
-        EAN_DESC[_e] = f'EAN {_e}'
-    _g = MP_META.loc[_e, 'grams'] if _e in MP_META.index else np.nan
-    if pd.notna(_g) and _g > 0:
+# Descripción: la de TIPOS (o la del maestro). Gramos: GRAMOS (verificados) o, si falta, el maestro (con aviso).
+_GR_CFG = {_norm_ean(k): float(v) for k, v in globals().get('GRAMOS', {}).items() if _norm_ean(k)}
+EAN_GRAMS, _gr_maestro, _sin_gramos = {}, [], []
+for _e in sorted(EANS_CONFIG):
+    if not EAN_DESC.get(_e):
+        _dm = MP_META['descripcion'].get(_e) if _e in MP_META.index else None
+        EAN_DESC[_e] = str(_dm)[:60] if isinstance(_dm, str) and _dm else f'EAN {_e}'
+    _g = _GR_CFG.get(_e, float('nan'))
+    if not (_g > 0):
+        _g = MP_META['grams'].get(_e, float('nan')) if _e in MP_META.index else float('nan')
+        if _g > 0:
+            _gr_maestro.append(_e)
+    if _g > 0:
         EAN_GRAMS[_e] = float(_g)
     else:
         _sin_gramos.append(_e)
+if _gr_maestro:
+    print(f'AVISO: {len(_gr_maestro)} EAN sin GRAMOS en la CELDA 1, se usan los del maestro: {_gr_maestro}')
 if _sin_gramos:
-    print(f'AVISO: {len(_sin_gramos)} EAN sin presentación en el maestro — usan precio por paquete '
-          f'(NO normalizado a $/100g): {_sin_gramos}')
+    print(f'AVISO: {len(_sin_gramos)} EAN sin gramos (quedan afuera, no se pueden pasar a $/100 g): {_sin_gramos}')
 
-# ── Subtipo / EQUIVALENCIA dentro de cada tipo ───────────────────────────────
-# Para comparar producto-vs-producto equivalente, la GRANULARIDAD depende del tipo, porque
-# solo en algunos tipos la sub-variedad alinea entre TACC y sin-TACC:
-#  · Fideos: por FORMA (Spaghetti↔Spaghetti, Tirabuzón↔Tirabuzón…), que sí es equivalencia real.
-#  · Pan rallado, Galletitas dulces, Galletitas saladas: los surtidos TACC y sin-TACC son
-#    variedades DISTINTAS (bizcocho agridulce vs vainilla; galleta de trigo vs de arroz), así
-#    que la equivalencia honesta es a NIVEL TIPO → un solo grupo (evita filas espurias/vacías).
-_SUBTIPO_KW = {   # solo tipos con equivalencia fina (por forma)
+# ── Subtipo / EQUIVALENCIA dentro de cada tipo (mapa y hoja Comparacion_productos) ──
+# Fideos: por FORMA (Spaghetti↔Spaghetti, Tirabuzón↔Tirabuzón…), que sí es una equivalencia real. En los demás tipos
+# los surtidos con y sin TACC son variedades distintas: la equivalencia honesta es el tipo (un solo grupo).
+_SUBTIPO_KW = {
     'Fideos secos': [
-        ('Spaghetti', ['spaghetti','spagueti','spaghetti','spaguetti','spaghettini','cabello','vermicelli','fideo fino','fideos finos']),
+        ('Spaghetti', ['spaghetti','spagueti','spaguetti','spaghettini','cabello','vermicelli','fideo fino','fideos finos']),
         ('Tallarín/Cintas', ['tallarin','tallarín','fettuccini','fetuccini','fettuccine','cintas','nido','canestri']),
-        ('Mostachol', ['mostachol','rigati','rigato']),
+        ('Mostachol/Penne', ['mostachol','rigati','rigato','penne','pluma','plumita','rigate']),
         ('Tirabuzón/Fusilli', ['tirabuzon','tirabuzón','fusilli','fusili','caracol','spirali']),
-        ('Penne', ['penne','pluma','plumita','rigate']),
-        ('Codito/Corto', ['codito','dedalitos','tornillo','moñito','moñitos','farfalle','risoni','cornetti','coditos']),
-        ('Ñoquis', ['ñoqui','noqui']),
+        ('Corto (codito, dedalito...)', ['codito','dedalitos','dedalito','tornillo','moñito','moñitos','farfalle',
+                                         'risoni','cornetti','coditos','municion','ave maria','ave maría','letritas']),
     ],
 }
-_SUBTIPO_FIJO = {   # tipos donde la equivalencia es a nivel tipo (un solo grupo)
-    'Pan rallado / rebozador': 'Pan rallado / rebozador',
-    'Galletitas dulces': 'Galletita dulce',
-    'Galletitas saladas / crackers': 'Galleta / cracker salado',
-}
 def _subtipo(_desc, _tipo):
-    if _tipo in _SUBTIPO_FIJO:
-        return _SUBTIPO_FIJO[_tipo]
+    if _tipo not in _SUBTIPO_KW:
+        return _tipo
     _d = str(_desc).lower()
-    for _lab, _kws in _SUBTIPO_KW.get(_tipo, []):
+    for _lab, _kws in _SUBTIPO_KW[_tipo]:
         if any(_k in _d for _k in _kws):
             return _lab
     return 'Otros'
-EAN_SUBTIPO = {_e: _subtipo(EAN_DESC.get(_e, ''), EAN_TIPO[_e]) for _e in EANS_CONFIG}
+# El subtipo de la canasta fija (SUBTIPO, CELDA 1) manda; sin él, por palabras de la descripción
+_SUBT_CFG = {_norm_ean(_e): _s for _s, _es in globals().get('SUBTIPO', {}).items() for _e in _es if _norm_ean(_e)}
+EAN_SUBTIPO = {_e: _SUBT_CFG.get(_e) or _subtipo(EAN_DESC.get(_e, ''), EAN_TIPO[_e]) for _e in EANS_CONFIG}
 
-print(f'Tipos activos: {len(TIPO_TACC)} | EANs de config: {len(EANS_CONFIG)}')
+print(f'Tipos: {len(TIPO_TACC)} | EANs de la canasta: {len(EANS_CONFIG)} | con gramos: {len(EAN_GRAMS)}')
 for _t in TIPO_TACC:
-    print(f'  [{_t}] qty={TIPO_QTY[_t]:.0f} | TACC: {len(TIPO_TACC[_t])} · sin-TACC: {len(TIPO_SIN[_t])}')"""))
+    print(f'  [{_t}] {TIPO_PESO[_t]:.3f}% del gasto en alimentos (ENGHo) | con TACC: {len(TIPO_TACC[_t])} · '
+          f'sin TACC: {len(TIPO_SIN[_t])}')"""))
 
-# ── CELL 5 — ZIP FUNCTIONS (idéntica a nb05) ───────────────────────────────────
-cells.append(cell_code("""\
+# ── CELL 5 — ZIPs ──────────────────────────────────────────────────────────────
+cells.append(cell_code(r"""# ============================================================
+# CELDA 5 — ZIPs del SEPA: un archivo por parte de cada mes
 # ============================================================
-# CELDA 5 — Funciones de lectura de ZIPs SEPA
-# ============================================================
-_PAT_SEM  = re.compile(r'^(\\d{4})(A|B)$', re.IGNORECASE)
-_PAT_ARC  = re.compile(r'^(\\d{2})(\\d{4})_pais_parte.*COMPLETO.*\\.csv\\.gz$', re.IGNORECASE)
-PAT_FECHA = re.compile(r'^precio_(\\d{8})$')
+_PAT_SEM  = re.compile(r'^(\d{4})(A|B)$', re.IGNORECASE)
+_PAT_ARC  = re.compile(r'^(\d{2})(\d{4})_pais_parte(\d+).*COMPLETO.*\.csv\.gz$', re.IGNORECASE)
+PAT_FECHA = re.compile(r'^precio_(\d{8})$')
 
 def detectar_semestres():
     result = []
@@ -541,244 +563,368 @@ def detectar_semestres():
             result.append((z, int(m.group(1)), m.group(2).upper()))
     return result
 
-def archivos_por_mes(zip_path):
+def _dias_archivo(z, nombre):
+    with zipfile.ZipFile(z) as zf:
+        with zf.open(nombre) as s:
+            with gzip.open(s, 'rt', encoding='utf-8', errors='replace') as g:
+                return sum(1 for c in g.readline().split(',') if c.strip().startswith('precio_'))
+
+def archivos_por_mes():
+    # {mes: [(zip, archivo), ...]} con UN archivo por parte del mes. Si hay más de uno para la misma parte (2024B.zip
+    # trae 082024_pais_parte1COMPLETO.csv.gz, días 1 a 5, y ...COMPLETOb.csv.gz, días 1 a 15, con los mismos precios),
+    # se usa el que cubre más días, como el nb08 y el nb09 (las corridas anteriores del nb06 leían los dos).
+    cand = {}
+    for z, _a, _s in detectar_semestres():
+        with zipfile.ZipFile(z) as zf:
+            for info in zf.infolist():
+                m = _PAT_ARC.match(Path(info.filename).name)
+                if m:
+                    mes = f'{m.group(2)}-{m.group(1)}'
+                    if mes >= MES_INICIO_HISTORICO:
+                        cand.setdefault((mes, int(m.group(3))), []).append((z, info.filename, info.file_size))
     meses = {}
-    with zipfile.ZipFile(zip_path) as zf:
-        for nombre in zf.namelist():
-            m = _PAT_ARC.match(Path(nombre).name)
-            if m:
-                mes_n, anio = int(m.group(1)), int(m.group(2))
-                meses.setdefault((anio, mes_n), []).append(nombre)
+    for (mes, parte), c in sorted(cand.items()):
+        if len(c) > 1:
+            dias = [_dias_archivo(z, n) for z, n, _t in c]
+            k = max(range(len(c)), key=lambda j: (dias[j], c[j][2], j))
+            print(f'  AVISO {mes} parte {parte}: {len(c)} archivos ('
+                  + '; '.join(f'{Path(n).name} {d} días' for (z, n, _t), d in zip(c, dias))
+                  + f'); se usa {Path(c[k][1]).name}')
+            c = [c[k]]
+        meses.setdefault(mes, []).append(c[0][:2])
     return meses
 
-# Mapa de meses disponibles -> (zip, archivos)
-_mapa_mes = {}
-for _zip_path, _anio, _sem in detectar_semestres():
-    for (_anio_m, _mes_m), _archs in archivos_por_mes(_zip_path).items():
-        _lbl = f'{_anio_m}-{_mes_m:02d}'
-        if _lbl >= MES_INICIO_HISTORICO:
-            _mapa_mes[_lbl] = (_zip_path, _archs)
+_mapa_mes = archivos_por_mes()
 _meses_disp = sorted(_mapa_mes)
 if not _meses_disp:
-    raise RuntimeError(f'No hay meses disponibles >= {MES_INICIO_HISTORICO}')
+    raise RuntimeError(f'No hay meses disponibles >= {MES_INICIO_HISTORICO} en {SEPA_DIR}')
 _mes_actual = _meses_disp[-1]   # mes en curso -> NUNCA se cachea
-print(f'Meses disponibles: {len(_meses_disp)}  ({_meses_disp[0]} → {_meses_disp[-1]})')"""))
+print(f'Meses disponibles: {len(_meses_disp)}  ({_meses_disp[0]} → {_meses_disp[-1]})')
+_huecos = [str(p) for p in pd.period_range(_meses_disp[0], _meses_disp[-1], freq='M') if str(p) not in _mapa_mes]
+if _huecos:
+    print(f'  AVISO: meses sin archivo en los zips: {_huecos}')"""))
 
-# ── CELL 6 — LECTURA DIARIA (todos los meses, dimensión fecha) ─────────────────
-cells.append(cell_code("""\
+# ── CELL 6 — LECTURA ───────────────────────────────────────────────────────────
+cells.append(cell_code(r"""# ============================================================
+# CELDA 6 — Lectura MENSUAL de precios (una fila por sucursal × EAN × mes), con caché por mes
 # ============================================================
-# CELDA 6 — Lectura MENSUAL de precios (una fila por sucursal×EAN×mes)
-# ============================================================
-# Lee los EANs de config en todos los meses >= MES_INICIO_HISTORICO. Dentro de cada
-# mes COLAPSA los días a la MEDIANA mensual por (sucursal, EAN) → footprint ~30× menor
-# (clave para no reventar la RAM de Colab cuando los EANs tienen mucha cobertura). El
-# método vigente agrega por MES, así que no se pierde nada. Cache de meses cerrados.
-_cache_key    = hashlib.md5('|'.join(sorted(EANS_CONFIG)).encode()).hexdigest()[:8]
-_cache_path   = CACHE_DIR / f'brecha_dia_{_cache_key}_v2.parquet'
+# Para cada mes >= MES_INICIO_HISTORICO, el precio de cada EAN de la canasta en cada sucursal es la MEDIANA de sus
+# precios diarios del mes (de todas las partes) y 'dias' los días con precio. Se filtran las LÍNEAS del CSV por EAN
+# antes de parsear (como el nb08). Filas repetidas del SEPA (misma sucursal, producto y día): una sola vez. Factor
+# centavos/pesos por mes con los EANs de referencia. Solo sucursales del maestro con coordenadas.
+# Caché: un archivo por MES CERRADO en _cache/brecha_v3_<clave>/ (si Colab se corta, al volver a ejecutar sigue donde
+# quedó); el mes en curso se lee siempre. La clave cambia con los EANs de la canasta. El caché NO mira si cambió el
+# zip: si se reemplaza el zip de un mes ya guardado (p. ej. el semestral oficial de 2026B), borrar sus AAAA-MM.parquet.
+_K = ['id_comercio', 'id_bandera', 'id_sucursal', 'ean_norm']
 _EANS_LECTURA = EANS_CONFIG | REF_EANS_FACTOR
+_SUC_OK = {f'{a}|{b}|{c}' for a, b, c in IDS_PAIS}
+_cache_key = hashlib.md5('|'.join(sorted(EANS_CONFIG)).encode()).hexdigest()[:8]
+_cache_dir = CACHE_DIR / f'brecha_v3_{_cache_key}'
 
-def _leer_mes_dia(_lbl):
-    _zip_path, _archs = _mapa_mes[_lbl]
-    _rows = []; _muestra_ref = []
-    for _archivo in sorted(_archs):
-        _tmp_p = TMP_DIR / Path(_archivo).name
-        with zipfile.ZipFile(_zip_path) as _zf:
-            with _zf.open(_archivo) as _s, open(_tmp_p, 'wb') as _d:
-                shutil.copyfileobj(_s, _d, length=4*1024*1024)
-        with gzip.open(_tmp_p, 'rt', encoding='utf-8', errors='replace') as _g:
-            for _chunk in pd.read_csv(_g, dtype=str, chunksize=300_000, low_memory=False):
-                _chunk['ean_norm'] = _chunk['id_producto'].apply(normalizar_ean)
-                _chunk = _chunk[_chunk['ean_norm'].isin(_EANS_LECTURA)].copy()
-                if len(_chunk) == 0: continue
-                for _c in ['id_comercio','id_bandera','id_sucursal']:
-                    _chunk[_c] = _chunk[_c].astype(str)
-                _chunk['_k'] = list(zip(_chunk['id_comercio'],_chunk['id_bandera'],_chunk['id_sucursal']))
-                _chunk = _chunk[_chunk['_k'].isin(IDS_PAIS)].drop(columns=['_k']).copy()
-                if len(_chunk) == 0: continue
-                _cols_p = [c for c in _chunk.columns if PAT_FECHA.match(c)]
-                if not _cols_p: continue
-                _mlt = _chunk.melt(
-                    id_vars=['id_comercio','id_bandera','id_sucursal','ean_norm'],
-                    value_vars=_cols_p, var_name='_col', value_name='precio_raw')
-                _mlt['precio'] = pd.to_numeric(_mlt['precio_raw'].replace('NA', np.nan), errors='coerce')
-                _mlt = _mlt[_mlt['precio'].notna() & (_mlt['precio'] > 0)].copy()
-                _mlt['fecha'] = pd.to_datetime(_mlt['_col'].str[-8:], format='%Y%m%d', errors='coerce')
-                _mlt = _mlt[_mlt['fecha'].notna()]
-                _es_ref = _mlt['ean_norm'].isin(REF_EANS_FACTOR)
-                if _es_ref.any():
-                    _muestra_ref.extend(_mlt.loc[_es_ref, 'precio'].tolist())
-                _mlt = _mlt[_mlt['ean_norm'].isin(EANS_CONFIG)]
-                if len(_mlt) > 0:
-                    # Colapso parcial por chunk: mediana del mes por (suc, EAN) sobre los días
-                    # del chunk. Reduce el pico de RAM antes de concatenar (los días de un
-                    # mismo mes pueden venir en varios archivos/chunks → se re-agrega al final).
-                    _rows.append(_mlt.groupby(
-                        ['id_comercio','id_bandera','id_sucursal','ean_norm'],
-                        as_index=False)['precio'].median())
-        _tmp_p.unlink(missing_ok=True)
-    if not _rows:
+def _leer_archivo(_z, _nombre):
+    # Líneas del CSV con EANs de la canasta (o de referencia) -> filas (sucursal, EAN, día, precio)
+    _keep = []
+    with zipfile.ZipFile(_z) as _zf:
+        with _zf.open(_nombre) as _s:
+            with gzip.open(_s, 'rt', encoding='utf-8', errors='replace') as _g:
+                _hdr = _g.readline()
+                _i = [c.strip().strip('"') for c in _hdr.split(',')].index('id_producto')
+                for _line in _g:
+                    _p = _line.split(',', _i + 2)
+                    if len(_p) > _i and _p[_i].strip().strip('"').lstrip('0') in _EANS_LECTURA:
+                        _keep.append(_line)
+    if not _keep:
         return None
-    _df = pd.concat(_rows, ignore_index=True)
-    _med_ref = (pd.Series(_muestra_ref).median() if _muestra_ref else _df['precio'].median())
+    _df = pd.read_csv(io.StringIO(_hdr + ''.join(_keep)), dtype=str, low_memory=False)
+    del _keep
+    _df.columns = [c.strip().strip('"') for c in _df.columns]
+    _cp = [c for c in _df.columns if PAT_FECHA.match(c)]
+    _df['ean_norm'] = _df['id_producto'].astype(str).str.strip().str.lstrip('0')
+    for _c in ['id_comercio', 'id_bandera', 'id_sucursal']:
+        _df[_c] = _df[_c].astype(str).str.strip()
+    _L = _df.melt(id_vars=_K, value_vars=_cp, var_name='dia', value_name='precio')
+    _L['precio'] = pd.to_numeric(_L['precio'], errors='coerce')
+    _L = _L[_L['precio'] > 0].copy()
+    _L['dia'] = _L['dia'].str[-8:]
+    return _L
+
+def _leer_mes(_lbl):
+    _ps = [_p for _p in (_leer_archivo(_z, _n) for _z, _n in _mapa_mes[_lbl]) if _p is not None and len(_p)]
+    if not _ps:
+        return None
+    _L = pd.concat(_ps, ignore_index=True)
+    del _ps
+    _ref = _L.loc[_L['ean_norm'].isin(REF_EANS_FACTOR), 'precio']
+    _med_ref = float(_ref.median()) if len(_ref) else float(_L['precio'].median())
     _fac = 100 if _med_ref > 10_000 else 1
-    if _fac == 100: _df['precio'] /= 100
-    # Mediana mensual definitiva por (sucursal, EAN) — colapsa los distintos chunks/archivos
-    _df = _df.groupby(['id_comercio','id_bandera','id_sucursal','ean_norm'],
-                      as_index=False)['precio'].median()
-    _df['mes'] = _lbl
-    del _rows, _muestra_ref; gc.collect()
-    return _df
+    _L = _L[_L['ean_norm'].isin(EANS_CONFIG)]
+    _L = _L[(_L['id_comercio'] + '|' + _L['id_bandera'] + '|' + _L['id_sucursal']).isin(_SUC_OK)]
+    if not len(_L):
+        return None
+    if _fac == 100:
+        _L['precio'] = _L['precio'] / 100
+    _L = _L.groupby(_K + ['dia'], as_index=False)['precio'].median()          # filas repetidas: una vez por día
+    _A = _L.groupby(_K, as_index=False).agg(precio=('precio', 'median'), dias=('precio', 'size'))
+    _A['mes'] = _lbl
+    _A['factor'] = _fac
+    return _A
 
-# Meses cerrados: cache incremental
-if USE_CACHE and _cache_path.exists():
-    df_cache = pd.read_parquet(_cache_path)
-    df_cache = df_cache[df_cache['mes'] < _mes_actual].copy()
+_cerrados = [m for m in _meses_disp if m < _mes_actual]
+_mem = {}
+if USE_CACHE:
+    _cache_dir.mkdir(parents=True, exist_ok=True)
+    _en_cache = {p.stem for p in _cache_dir.glob('????-??.parquet')}
 else:
-    df_cache = pd.DataFrame(columns=['id_comercio','id_bandera','id_sucursal','ean_norm','precio','mes'])
-
-_en_cache = set(df_cache['mes'].unique())
-_faltantes = [m for m in _meses_disp if m < _mes_actual and m not in _en_cache]
-_nuevos = []
-for _lbl in tqdm(_faltantes, desc='Meses cerrados'):
-    _d = _leer_mes_dia(_lbl)
-    if _d is not None: _nuevos.append(_d)
-if _nuevos:
-    df_cache = pd.concat([df_cache] + _nuevos, ignore_index=True)
+    _en_cache = set()
+_faltan = [m for m in _cerrados if m not in _en_cache]
+print(f'Caché {_cache_dir.name}: {len(set(_cerrados) & _en_cache)} meses cerrados guardados, {len(_faltan)} por leer '
+      f'(+ el mes en curso {_mes_actual}, que se lee siempre)')
+for _lbl in tqdm(_faltan, desc='Meses cerrados'):
+    _d = _leer_mes(_lbl)
+    if _d is None:
+        print(f'  {_lbl}: sin precios de la canasta')
+        continue
     if USE_CACHE:
-        df_cache.to_parquet(_cache_path, compression='snappy', index=False)
-        print(f'Cache actualizado: {_cache_path.name} ({df_cache["mes"].nunique()} meses cerrados)')
+        _d.to_parquet(_cache_dir / f'{_lbl}.parquet', index=False)
+    else:
+        _mem[_lbl] = _d
+    del _d; gc.collect()
 
-# Mes en curso: siempre fresco
-_actual = _leer_mes_dia(_mes_actual)
-datos_dia = (pd.concat([df_cache] + ([_actual] if _actual is not None else []), ignore_index=True)
-             if (len(df_cache) > 0 or _actual is not None)
-             else pd.DataFrame(columns=df_cache.columns))
-if len(datos_dia) == 0:
-    raise RuntimeError('Sin datos para los EANs de config. Revisá los EANs de TIPOS (CELDA 1).')
+_partes = []
+for _m in _cerrados:
+    if USE_CACHE and (_cache_dir / f'{_m}.parquet').exists():
+        _partes.append(pd.read_parquet(_cache_dir / f'{_m}.parquet'))
+    elif _m in _mem:
+        _partes.append(_mem[_m])
+_actual = _leer_mes(_mes_actual)
+if _actual is not None:
+    _partes.append(_actual)
+if not _partes:
+    raise RuntimeError('Sin datos para los EANs de la canasta. Revisá los EANs de TIPOS (CELDA 1).')
+datos_dia = pd.concat(_partes, ignore_index=True)
+del _partes, _mem; gc.collect()
 datos_dia = datos_dia.sort_values('mes').reset_index(drop=True)
 
 ULTIMO_MES = _mes_actual
 _NOM = {'01':'enero','02':'febrero','03':'marzo','04':'abril','05':'mayo','06':'junio',
         '07':'julio','08':'agosto','09':'septiembre','10':'octubre','11':'noviembre','12':'diciembre'}
 NOMBRE_MES_TITLE = f"{_NOM[_mes_actual[5:7]]} {_mes_actual[:4]}".title()
+_fx = datos_dia.groupby('mes')['factor'].first()
 print(f'Observaciones (sucursal×EAN×mes): {len(datos_dia):,} | EANs con datos: {datos_dia["ean_norm"].nunique()}/{len(EANS_CONFIG)}')
-print(f'Meses: {datos_dia["mes"].min()} → {datos_dia["mes"].max()} | Sucursales: {datos_dia.groupby(["id_comercio","id_bandera","id_sucursal"]).ngroups:,}')"""))
+print(f'Meses: {datos_dia["mes"].min()} → {datos_dia["mes"].max()} ({datos_dia["mes"].nunique()}) | Sucursales: '
+      f'{datos_dia.groupby(["id_comercio","id_bandera","id_sucursal"]).ngroups:,} | meses en centavos: '
+      f'{list(_fx[_fx == 100].index) or "ninguno"}')
+_sin_datos = sorted(EANS_CONFIG - set(datos_dia['ean_norm']))
+if _sin_datos:
+    print(f'  AVISO: EANs de la canasta sin ningún precio: {_sin_datos}')"""))
 
-# ── CELL 7 — BRECHA POR SUCURSAL × DÍA ─────────────────────────────────────────
-cells.append(cell_code("""\
+# ── CELL 7 — BRECHA POR SUCURSAL × MES × TIPO ──────────────────────────────────
+cells.append(cell_code(r"""# ============================================================
+# CELDA 7 — Brecha INTRA-SUPERMERCADO por tipo (sucursal × mes)
 # ============================================================
-# CELDA 7 — Brecha INTRA-SUPERMERCADO por tipo (por sucursal, sobre el mes)
-# ============================================================
-# Para cada SUCURSAL y MES, por tipo, el precio de cada lado = MEDIANA $/100g (§3.3) de
-# los candidatos que esa sucursal tuvo ese mes. Un tipo cuenta en esa sucursal-mes si tuvo
-# ≥1 candidato TACC y ≥1 sin-TACC → la brecha del tipo se calcula DENTRO del mismo super
-# (sin exigir el MISMO día → mucho más robusto). Luego se promedia entre supers (y por
-# zonas/provincia/cadena). Se guarda en paralelo el "más barato" (mínimo) como referencia
-# ilustrativa (sesgada por el nº desigual de candidatos por lado; §3.7).
+# Para cada SUCURSAL y MES, por tipo, el precio de cada lado = MEDIANA $/100 g de los productos de la lista que esa
+# sucursal tuvo ese mes. Un tipo cuenta en esa sucursal-mes si tuvo >= 1 producto con TACC y >= 1 sin TACC: la brecha
+# del tipo se calcula DENTRO del mismo super. El "más barato" (mínimo) se guarda solo como referencia ilustrativa
+# (sesgado al alza porque el lado con TACC tiene más productos por sucursal; BRECHA_CELIACA §3.7).
 datos_dia['tipo'] = datos_dia['ean_norm'].map(EAN_TIPO)
 datos_dia['rol']  = datos_dia['ean_norm'].map(EAN_ROL)
-datos_dia = datos_dia[~datos_dia['id_comercio'].isin(CADENAS_FILTRAR)].copy()
-# Exclusión de EANs por curación de comparabilidad (§3.8) — cache-preserving
-_ex = EANS_EXCLUIR if 'EANS_EXCLUIR' in dir() else set()
+datos_dia = datos_dia[datos_dia['tipo'].notna() & ~datos_dia['id_comercio'].isin(CADENAS_FILTRAR)].copy()
+# Vigencia de los códigos que cambiaron de EAN (CELDA 1): fuera de su ventana no se usan (precios congelados)
+_VIG = {_norm_ean(k): v for k, v in globals().get('VIGENCIA', {}).items() if _norm_ean(k)}
+if _VIG:
+    _vd = datos_dia['ean_norm'].map({_e: _v[0] for _e, _v in _VIG.items()})
+    _vh = datos_dia['ean_norm'].map({_e: _v[1] for _e, _v in _VIG.items()})
+    _fuera = ((_vd.notna() & (datos_dia['mes'] < _vd.fillna(''))) |
+              (_vh.notna() & (datos_dia['mes'] > _vh.fillna('9999-99'))))
+    print(f'  Vigencia de códigos (CELDA 1): {int(_fuera.sum()):,} obs fuera de la ventana de su código, no se usan '
+          f'({datos_dia.loc[_fuera, "ean_norm"].nunique()} códigos)')
+    datos_dia = datos_dia[~_fuera].copy()
+_ex = set(globals().get('EANS_EXCLUIR', set()))
 if _ex:
     _n0e = len(datos_dia)
     datos_dia = datos_dia[~datos_dia['ean_norm'].isin(_ex)].copy()
-    print(f'  Excluidos {len(_ex)} EANs por curación (§3.8): {_n0e - len(datos_dia):,} obs')
-
-# Precio normalizado a $/100g. Los EANs SIN presentación en el maestro se EXCLUYEN
-# (definición §3.8 de docs/BRECHA_CELIACA.md: la brecha va siempre en $/100g; no se
-# mezcla precio por paquete). Filtrar acá NO cambia el hash del caché (cache-preserving).
+    print(f'  Excluidos {len(_ex)} EANs a mano (EANS_EXCLUIR): {_n0e - len(datos_dia):,} obs')
 datos_dia['grams'] = datos_dia['ean_norm'].map(EAN_GRAMS)
 _n0 = len(datos_dia)
 datos_dia = datos_dia[datos_dia['grams'].notna() & (datos_dia['grams'] > 0)].copy()
-_n_excl = _n0 - len(datos_dia)
-if _n_excl:
-    print(f'  Excluidas {_n_excl:,} obs de EANs sin presentación (no normalizables a $/100g)')
+if _n0 - len(datos_dia):
+    print(f'  Excluidas {_n0 - len(datos_dia):,} obs de EANs sin gramos (no normalizables a $/100 g)')
 datos_dia['precio_100'] = datos_dia['precio'] / datos_dia['grams'] * 100
 
 # ── Filtro de plausibilidad a nivel EAN (data-quality, §3.8) ──────────────────
-# Regla SIMÉTRICA, reproducible e INFLACIÓN-ROBUSTA (no curación a mano): cada EAN se mide
-# RELATIVO a sus pares CONTEMPORÁNEOS. Referencia = mediana de los precios-EAN dentro de
-# (tipo, lado, MES), ponderada POR PRODUCTO (no por sucursal → la cobertura no sesga la
-# referencia). Un EAN se descarta si su precio relativo mediano (en el panel) cae fuera de
-# [1/FACTOR_PLAUS, FACTOR_PLAUS]. Medir DENTRO del mes evita que la inflación 2024-2026
-# confunda la banda; así se quitan solo errores de carga groseros, sin elegir a mano ni
-# favorecer la dirección de la brecha. FACTOR_PLAUS = parámetro de robustez documentado.
-_fp = FACTOR_PLAUS if 'FACTOR_PLAUS' in dir() else 4
+# Regla SIMÉTRICA e INFLACIÓN-ROBUSTA: cada EAN se mide contra sus pares del mismo tipo, lado y MES (mediana de los
+# precios-EAN, uno por producto). Se descarta el EAN si su precio relativo mediano cae fuera de [1/FACTOR_PLAUS,
+# FACTOR_PLAUS]: errores de carga groseros, sin elegir a mano ni favorecer la dirección de la brecha.
+_fp = globals().get('FACTOR_PLAUS', 4)
 _eanm = datos_dia.groupby(['tipo','rol','mes','ean_norm'])['precio_100'].median().reset_index(name='_p')
 _eanm['_ref'] = _eanm.groupby(['tipo','rol','mes'])['_p'].transform('median')
 _eanm['_rel'] = _eanm['_p'] / _eanm['_ref']
 _emr = _eanm.groupby('ean_norm')['_rel'].median()
 _bad = set(_emr[(_emr < 1/_fp) | (_emr > _fp)].index)
+plausibilidad = pd.DataFrame({'ean_norm': sorted(_bad)})
 if _bad:
+    plausibilidad['tipo'] = plausibilidad['ean_norm'].map(EAN_TIPO)
+    plausibilidad['rol'] = plausibilidad['ean_norm'].map(EAN_ROL)
+    plausibilidad['descripcion'] = plausibilidad['ean_norm'].map(EAN_DESC)
+    plausibilidad['precio_relativo_mediano'] = plausibilidad['ean_norm'].map(_emr).round(3)
     _n0p = len(datos_dia)
-    _desc = MP_META['descripcion'] if 'MP_META' in dir() else pd.Series(dtype=str)
     datos_dia = datos_dia[~datos_dia['ean_norm'].isin(_bad)].copy()
-    print(f'  Filtro plausibilidad (banda ×{_fp}, inflación-robusta): {len(_bad)} EAN(s) fuera → '
-          f'{_n0p - len(datos_dia):,} obs quitadas (data-quality):')
-    for _e in sorted(_bad):
-        print(f'      - {_e}  rel={_emr[_e]:.2f}  {str(_desc.get(_e, "?"))[:50]}')
+    print(f'  Filtro de plausibilidad (banda ×{_fp}): {len(_bad)} EAN(s) fuera → {_n0p - len(datos_dia):,} obs:')
+    for _r in plausibilidad.itertuples(index=False):
+        print(f'      - {_r.ean_norm}  rel={_r.precio_relativo_mediano:.2f}  {str(_r.descripcion)[:50]}')
 
-# Precio del tipo por (sucursal, mes, lado) — definición §3.3: MEDIANA $/100g de los
-# candidatos presentes (estimador PRIMARIO: estable a la asimetría en el nº de candidatos
-# por lado). En paralelo se calcula el "más barato" (mínimo robusto) SOLO como referencia
-# ilustrativa — está sesgado al alza porque el lado TACC tiene muchos más candidatos que
-# el sin-TACC (min de más tiros baja más); ver §3.7.
-def _min_robusto(_s):
-    _s = pd.to_numeric(_s, errors='coerce').dropna()
-    if len(_s) == 0: return float('nan')
-    _m = _s.median()
-    if _m and _m > 0:
-        _f = _s[(_s >= _m/4) & (_s <= _m*4)]
-        if len(_f) > 0: _s = _f
-    return _s.min()
+# ── Control de identidad de cada EAN (diagnóstico, no excluye) ────────────────
+# Precio $/100 g de cada EAN relativo a la mediana del lado CON TACC de su tipo, mes por mes. Un código reutilizado
+# para otro producto o una presentación mal cargada se ve como un salto del relativo: se marca 'revisar' si el
+# relativo de sus últimos 12 meses difiere en más del doble del de sus primeros 12, o si salta x2 de un mes al otro.
+_rt = (datos_dia[datos_dia['rol'] == 'tacc'].groupby(['tipo','mes','ean_norm'])['precio_100'].median()
+       .groupby(level=['tipo','mes']).median().rename('_ref_tacc'))
+_ce = (datos_dia.groupby(['tipo','rol','mes','ean_norm'])
+       .agg(_p=('precio_100', 'median'), _n=('id_sucursal', 'size')).reset_index()
+       .merge(_rt.reset_index(), on=['tipo','mes'], how='left'))
+_ce['_rel'] = _ce['_p'] / _ce['_ref_tacc']
+_rows_ce = []
+for (_t, _r, _e), _g in _ce.sort_values('mes').groupby(['tipo','rol','ean_norm']):
+    _v = _g['_rel'].to_numpy()
+    _ini, _fin = np.nanmedian(_v[:12]), np.nanmedian(_v[-12:])
+    _lr = np.abs(np.diff(np.log(_v[np.isfinite(_v) & (_v > 0)]))) if len(_v) > 1 else np.array([])
+    _rows_ce.append({'tipo': _t, 'rol': _r, 'ean_norm': _e, 'descripcion': EAN_DESC.get(_e),
+                     'gramos': EAN_GRAMS.get(_e), 'meses_con_precio': len(_g), 'primer_mes': _g['mes'].iloc[0],
+                     'ultimo_mes': _g['mes'].iloc[-1], 'sucursales_mes_mediana': float(_g['_n'].median()),
+                     'precio_100g_ultimo_mes': float(_g['_p'].iloc[-1]),
+                     'relativo_al_lado_con_tacc': float(np.nanmedian(_v)), 'relativo_primeros_12': float(_ini),
+                     'relativo_ultimos_12': float(_fin), 'cambio_ultimos_sobre_primeros': float(_fin / _ini),
+                     'saltos_x2_mes_a_mes': int((_lr > np.log(2)).sum())})
+control_ean = pd.DataFrame(_rows_ce)
+if len(control_ean):
+    control_ean['revisar'] = (~control_ean['cambio_ultimos_sobre_primeros'].between(0.5, 2)) | (control_ean['saltos_x2_mes_a_mes'] > 0)
+    _rv = control_ean[control_ean['revisar']]
+    print(f'  Control de identidad: {len(_rv)} EAN(s) para revisar (cambio de nivel x2 o salto x2 mes a mes; no se excluyen):')
+    for _r in _rv.itertuples(index=False):
+        print(f'      - [{_r.tipo} / {_r.rol}] {_r.ean_norm} {str(_r.descripcion)[:40]}: relativo {_r.relativo_primeros_12:.2f} '
+              f'→ {_r.relativo_ultimos_12:.2f}, saltos x2: {_r.saltos_x2_mes_a_mes}')
+
+# Precio de cada SUBTIPO por (sucursal, mes, lado): MEDIANA $/100 g de los productos presentes (estimador PRIMARIO,
+# §3.3 y §14). La comparación es por subtipo (crackers con crackers, snacks con snacks, spaghetti con spaghetti): la
+# mediana del tipo entero mezclaba subtipos de niveles muy distintos según qué tuviera cada sucursal (en las saladas,
+# snacks con TACC de $2.000/100 g contra crackers sin TACC). Un producto con dos códigos (PRODUCTO, CELDA 1) entra con
+# la mediana de sus códigos: cuenta una vez. El "más barato" (ilustrativo) es el mínimo de los productos a menos de x4
+# de la mediana del grupo (siempre hay al menos uno), vectorizado: una función de Python por grupo tardaba minutos.
 _sk = ['id_comercio','id_bandera','id_sucursal']
-tp = (datos_dia.groupby(_sk + ['mes','tipo','rol'])['precio_100']
-      .agg(precio_rep='median', precio_min=_min_robusto).reset_index())
+_PROD = {_norm_ean(_e): _p for _p, _es in globals().get('PRODUCTO', {}).items() for _e in _es if _norm_ean(_e)}
+datos_dia['producto'] = datos_dia['ean_norm'].map(_PROD).fillna(datos_dia['ean_norm'])
+datos_dia['subtipo'] = datos_dia['ean_norm'].map(EAN_SUBTIPO)
+_pp = datos_dia.groupby(_sk + ['mes','tipo','subtipo','rol','producto'], as_index=False)['precio_100'].median()
+_gtp = _sk + ['mes','tipo','subtipo','rol']
+_mg = _pp.groupby(_gtp)['precio_100'].transform('median')
+_pp['_banda'] = _pp['precio_100'].where((_pp['precio_100'] >= _mg / 4) & (_pp['precio_100'] <= _mg * 4))
+tp = (_pp.groupby(_gtp).agg(precio_rep=('precio_100', 'median'), precio_min=('_banda', 'min'),
+                             n_items=('precio_100', 'size')).reset_index())
+del _pp, _mg
 
-# ── Geo (una vez) ────────────────────────────────────────────────────────────
-_PROV_BBOX = {
-    'CABA':(-34.72,-34.52,-58.54,-58.33),'Tucumán':(-28.0,-26.0,-66.5,-64.5),
-    'Jujuy':(-24.5,-21.5,-67.5,-63.5),'Misiones':(-28.5,-25.5,-56.5,-53.0),
-    'Chaco':(-27.5,-24.0,-63.0,-57.5),'Formosa':(-26.5,-22.0,-62.5,-58.0),
-    'Corrientes':(-30.5,-27.0,-60.0,-55.5),'Entre Ríos':(-34.0,-30.0,-60.5,-57.5),
-    'San Luis':(-36.0,-32.5,-68.5,-65.0),'San Juan':(-34.5,-27.5,-71.0,-65.0),
-    'La Rioja':(-32.5,-27.0,-70.0,-65.0),'Catamarca':(-29.5,-25.0,-70.5,-64.5),
-    'Salta':(-26.5,-21.5,-68.5,-62.5),'Santiago del Estero':(-30.0,-25.5,-65.5,-61.5),
-    'Mendoza':(-37.5,-32.0,-70.5,-66.5),'Neuquén':(-40.5,-36.0,-71.5,-68.5),
-    'La Pampa':(-40.0,-35.0,-68.5,-63.5),'Santa Fe':(-34.5,-28.5,-62.5,-59.0),
-    'Córdoba':(-39.0,-29.5,-67.0,-62.0),'Río Negro':(-42.5,-38.5,-71.5,-62.5),
-    'Chubut':(-46.5,-41.0,-72.5,-63.0),'Buenos Aires':(-42.5,-33.5,-63.5,-56.5),
-    'Santa Cruz':(-52.5,-46.0,-72.5,-65.5),'Tierra del Fuego':(-55.5,-51.0,-70.5,-63.5),
-}
-def _geocodif(lat, lon):
-    if pd.isna(lat) or pd.isna(lon): return None
-    for p,(la0,la1,lo0,lo1) in _PROV_BBOX.items():
-        if la0 <= lat <= la1 and lo0 <= lon <= lo1: return p
-    return None
-_cols_suc = ['id_comercio','id_bandera','id_sucursal','sucursales_nombre',
-             'sucursales_latitud','sucursales_longitud','sucursales_localidad','PROVINCIA']
+# ── Geografía: provincia por polígonos de ar.json con tolerancia (BUG-44), AMBA por coordenadas (BUG-42), región ──
+# Una sucursal cambia de provincia SOLO si cae a más de RECLASIF_TOL_KM del polígono de su provincia declarada y dentro
+# del polígono de otra (errores groseros de carga); cerca de un borde manda la declarada. Hasta 2026-10 el nb06 usaba
+# rectángulos (pasaban Neuquén capital a La Pampa, Paraná a Santa Fe y San Nicolás a Entre Ríos). Sin ar.json no se
+# reclasifica. Se sacan las sucursales 'Web' y las de CABA con coordenadas fuera de CABA (como el nb02).
+from matplotlib.path import Path as _MPath
+_GEO_ID_PROV = {'ARB': 'Buenos Aires', 'ARC': 'CABA', 'ARK': 'Catamarca', 'ARH': 'Chaco', 'ARU': 'Chubut',
+                'ARX': 'Córdoba', 'ARW': 'Corrientes', 'ARE': 'Entre Ríos', 'ARP': 'Formosa', 'ARY': 'Jujuy',
+                'ARL': 'La Pampa', 'ARF': 'La Rioja', 'ARM': 'Mendoza', 'ARN': 'Misiones', 'ARQ': 'Neuquén',
+                'ARR': 'Río Negro', 'ARA': 'Salta', 'ARJ': 'San Juan', 'ARD': 'San Luis', 'ARZ': 'Santa Cruz',
+                'ARS': 'Santa Fe', 'ARG': 'Santiago del Estero', 'ARV': 'Tierra del Fuego', 'ART': 'Tucumán'}
+
+def _poligonos_provincias(_ruta):
+    # provincia -> lista de polígonos; cada polígono, lista de anillos [lon, lat] (el primero es el exterior)
+    with open(_ruta, 'r', encoding='utf-8') as _f:
+        _g = _json.load(_f)
+    _pol = {}
+    for _ft in _g['features']:
+        _prov = _GEO_ID_PROV.get(_ft['properties'].get('id'))
+        if _prov is None:
+            continue
+        _geo = _ft['geometry']
+        _ps = _geo['coordinates'] if _geo['type'] == 'MultiPolygon' else [_geo['coordinates']]
+        _pol.setdefault(_prov, []).extend([[np.asarray(_r, dtype=float) for _r in _p] for _p in _ps])
+    return _pol
+
+def _dentro_poligono(_pols, _lon, _lat):
+    _pts = np.column_stack([_lon, _lat])
+    _res = np.zeros(len(_pts), bool)
+    for _p in _pols:
+        _en = _MPath(_p[0]).contains_points(_pts)
+        for _h in _p[1:]:
+            _en &= ~_MPath(_h).contains_points(_pts)
+        _res |= _en
+    return _res
+
+def _km_al_poligono(_pols, _lon, _lat):
+    # Distancia (km) de cada punto al borde más cercano de los polígonos (proyección equirectangular local)
+    _segs = np.concatenate([np.column_stack([_r[:-1], _r[1:]]) for _p in _pols for _r in _p])
+    _out = np.empty(len(_lon))
+    for _i, (_x, _y) in enumerate(zip(_lon, _lat)):
+        _kx = 111.32 * np.cos(np.radians(_y))
+        _x1, _y1 = (_segs[:, 0] - _x) * _kx, (_segs[:, 1] - _y) * 110.57
+        _x2, _y2 = (_segs[:, 2] - _x) * _kx, (_segs[:, 3] - _y) * 110.57
+        _dx, _dy = _x2 - _x1, _y2 - _y1
+        _t = np.clip(-(_x1 * _dx + _y1 * _dy) / np.maximum(_dx * _dx + _dy * _dy, 1e-12), 0, 1)
+        _out[_i] = np.sqrt((_x1 + _t * _dx) ** 2 + (_y1 + _t * _dy) ** 2).min()
+    return _out
+
+_OBELISCO = (-34.6037, -58.3816)
+def _km_obelisco(lat, lon):
+    _la, _lo = np.radians(lat), np.radians(lon)
+    _la0, _lo0 = np.radians(_OBELISCO[0]), np.radians(_OBELISCO[1])
+    _a = np.sin((_la - _la0) / 2) ** 2 + np.cos(_la0) * np.cos(_la) * np.sin((_lo - _lo0) / 2) ** 2
+    return 2 * 6371 * np.arcsin(np.sqrt(_a))
+
+_cols_suc = ['id_comercio','id_bandera','id_sucursal','sucursales_nombre','sucursales_latitud','sucursales_longitud',
+             'sucursales_localidad','PROVINCIA'] + (['sucursales_tipo'] if 'sucursales_tipo' in suc_pais.columns else [])
 suc_geo = suc_pais[_cols_suc].copy()
+if 'sucursales_tipo' in suc_geo.columns:
+    suc_geo = suc_geo[~suc_geo['sucursales_tipo'].astype(str).str.lower().str.contains('web|virtual')].copy()
 suc_geo['cadena'] = suc_geo.apply(asignar_cadena, axis=1)
+suc_geo['empresa'] = suc_geo['id_comercio'].map(asignar_empresa)
 suc_geo['PROVINCIA_NORM'] = suc_geo['PROVINCIA'].map(PROV_NORM).fillna(suc_geo['PROVINCIA'])
-_n_recl = 0
-for _idx,_row in suc_geo.iterrows():
-    _p = _row['PROVINCIA_NORM']
-    if _p not in _PROV_BBOX: continue
-    _la0,_la1,_lo0,_lo1 = _PROV_BBOX[_p]
-    if _la0 <= _row['sucursales_latitud'] <= _la1 and _lo0 <= _row['sucursales_longitud'] <= _lo1: continue
-    _nueva = _geocodif(_row['sucursales_latitud'], _row['sucursales_longitud'])
-    if _nueva and _nueva != _p:
-        suc_geo.at[_idx,'PROVINCIA_NORM'] = _nueva; _n_recl += 1
-if _n_recl: print(f'  Reclasificadas {_n_recl} sucursales por coordenadas')
+_mask_caba = (suc_geo['PROVINCIA_NORM'].eq('CABA') & (
+    (suc_geo['sucursales_latitud'] < -34.71) | (suc_geo['sucursales_latitud'] > -34.53) |
+    (suc_geo['sucursales_longitud'] < -58.53) | (suc_geo['sucursales_longitud'] > -58.34)))
+suc_geo = suc_geo[~_mask_caba].copy()
+_POL_PROV = _poligonos_provincias(GEOJSON_PATH) if GEOJSON_PATH.exists() else {}
+if not _POL_PROV:
+    print(f'  AVISO: no está {GEOJSON_PATH.name}: no se reclasifica la provincia de ninguna sucursal')
+_lon = suc_geo['sucursales_longitud'].to_numpy(dtype=float)
+_lat = suc_geo['sucursales_latitud'].to_numpy(dtype=float)
+_decl = suc_geo['PROVINCIA_NORM'].to_numpy(dtype=object)
+_dentro_de = {_p: _dentro_poligono(_pl, _lon, _lat) for _p, _pl in _POL_PROV.items()}
+_nueva = _decl.copy()
+for _p in sorted((set(_decl) & set(_POL_PROV)) - {'CABA'}):
+    _idx = np.where((_decl == _p) & ~_dentro_de[_p])[0]
+    if len(_idx) == 0:
+        continue
+    _lejos = _idx[_km_al_poligono(_POL_PROV[_p], _lon[_idx], _lat[_idx]) > RECLASIF_TOL_KM]
+    for _i in _lejos:
+        _q = next((_o for _o in _POL_PROV if _o != _p and _dentro_de[_o][_i]), None)
+        if _q is not None:
+            _nueva[_i] = _q
+_cambio = _nueva != _decl
+suc_geo['PROVINCIA_NORM'] = _nueva
+if _cambio.any():
+    _det = pd.Series([f'{_a} -> {_b}' for _a, _b in zip(_decl[_cambio], _nueva[_cambio])]).value_counts()
+    print(f'  Reclasificadas {int(_cambio.sum())} sucursales por coordenadas (a más de {RECLASIF_TOL_KM} km de su '
+          f'provincia declarada): ' + ', '.join(f'{_k} ({_v})' for _k, _v in _det.items()))
+suc_geo['amba'] = (suc_geo['PROVINCIA_NORM'].eq('CABA') |
+                   (suc_geo['PROVINCIA_NORM'].eq('Buenos Aires') &
+                    (_km_obelisco(suc_geo['sucursales_latitud'], suc_geo['sucursales_longitud']) <= AMBA_RADIO_KM)))
+suc_geo['region'] = np.where(suc_geo['amba'], 'AMBA', suc_geo['PROVINCIA_NORM'].map(REGION_PROV).fillna('Sin región'))
+print(f'  AMBA (CABA + Buenos Aires a <= {AMBA_RADIO_KM} km del Obelisco): {int(suc_geo["amba"].sum()):,} sucursales')
 
-tp = tp.merge(suc_geo[['id_comercio','id_bandera','id_sucursal','cadena','PROVINCIA_NORM',
-                       'sucursales_localidad','sucursales_nombre']],
-              on=['id_comercio','id_bandera','id_sucursal'], how='inner')
+_GEO = ['cadena','empresa','PROVINCIA_NORM','region','amba','sucursales_localidad','sucursales_nombre']
+tp = tp.merge(suc_geo[_sk + _GEO], on=_sk, how='inner')
 tp['localidad'] = (tp['sucursales_localidad'].astype(str).str.strip()
                    .replace({'':'N/D','nan':'N/D','None':'N/D'}))
 
-# ── DIAGNÓSTICO de cobertura por tipo ────────────────────────────────────────
+# ── DIAGNÓSTICO de cobertura por tipo (todo el período) ──────────────────────
 _cob_rows = []
 print('=== Cobertura por tipo (sucursales que ofrecen cada lado, todo el período) ===')
 for _t in TIPO_TACC:
@@ -786,263 +932,368 @@ for _t in TIPO_TACC:
     _set_t = set(map(tuple, _st[_st['rol']=='tacc'][_sk].drop_duplicates().to_numpy()))
     _set_s = set(map(tuple, _st[_st['rol']=='sin'][_sk].drop_duplicates().to_numpy()))
     _both  = _set_t & _set_s
-    print(f'  [{_t}] TACC: {len(_set_t):>5} · sin-TACC: {len(_set_s):>5} · con AMBOS: {len(_both):>5}')
+    print(f'  [{_t}] con TACC: {len(_set_t):>5} · sin TACC: {len(_set_s):>5} · con LOS DOS: {len(_both):>5}')
     _cob_rows.append({'tipo':_t,'sucursales_tacc':len(_set_t),'sucursales_sin_tacc':len(_set_s),'sucursales_ambos':len(_both)})
 cobertura_tipo = pd.DataFrame(_cob_rows)
 
-# ── ATÓMICO: brecha por (sucursal, mes, tipo) con AMBOS lados en ese super-mes ─
-_idx = _sk + ['mes','PROVINCIA_NORM','cadena','localidad','sucursales_nombre','tipo']
-_tacc = tp[tp['rol']=='tacc'][_idx + ['precio_rep','precio_min']].rename(columns={'precio_rep':'tacc','precio_min':'tacc_min'})
-_sin  = tp[tp['rol']=='sin'][_idx + ['precio_rep','precio_min']].rename(columns={'precio_rep':'sin','precio_min':'sin_min'})
-bt_sm = _tacc.merge(_sin, on=_idx, how='inner')   # inner = ambos lados en el mismo super-mes
-bt_sm['brecha_pct'] = (bt_sm['sin'] / bt_sm['tacc'] - 1) * 100          # PRIMARIO: mediana de candidatos (§3.4)
-bt_sm['brecha_min'] = (bt_sm['sin_min'] / bt_sm['tacc_min'] - 1) * 100  # ilustrativo "más barato" (sesgo por nº de candidatos, §3.7)
+# ── ATÓMICO: brecha por (sucursal, mes, tipo, subtipo) con LOS DOS lados en ese super-mes; la del TIPO en la
+# sucursal-mes = promedio geométrico de las de sus subtipos con los dos lados (pesos iguales): sus precios con y sin
+# TACC son los promedios geométricos de las medianas de esos subtipos, así que sin / tacc - 1 es esa brecha ─
+_idx = _sk + ['mes','PROVINCIA_NORM','region','amba','cadena','empresa','localidad','sucursales_nombre','tipo']
+_tacc = tp[tp['rol']=='tacc'][_idx + ['subtipo','precio_rep','precio_min','n_items']].rename(
+    columns={'precio_rep':'tacc','precio_min':'tacc_min','n_items':'n_tacc'})
+_sin  = tp[tp['rol']=='sin'][_idx + ['subtipo','precio_rep','precio_min','n_items']].rename(
+    columns={'precio_rep':'sin','precio_min':'sin_min','n_items':'n_sin'})
+bt_sub = _tacc.merge(_sin, on=_idx + ['subtipo'], how='inner')
+bt_sub['brecha_pct'] = (bt_sub['sin'] / bt_sub['tacc'] - 1) * 100
+bt_sub['brecha_min'] = (bt_sub['sin_min'] / bt_sub['tacc_min'] - 1) * 100
+bt_sub['anio'] = bt_sub['mes'].str[:4]
+bt_sub['suc_key'] = bt_sub['id_comercio'] + '|' + bt_sub['id_bandera'] + '|' + bt_sub['id_sucursal']
+_lg = ['tacc', 'sin', 'tacc_min', 'sin_min']
+bt_sm = (bt_sub.assign(**{f'_l_{_c}': np.log(bt_sub[_c]) for _c in _lg})
+         .groupby(_idx, dropna=False)
+         .agg(**{f'_l_{_c}': (f'_l_{_c}', 'mean') for _c in _lg},
+              n_tacc=('n_tacc', 'sum'), n_sin=('n_sin', 'sum'), n_subtipos=('subtipo', 'size'))
+         .reset_index())
+for _c in _lg:
+    bt_sm[_c] = np.exp(bt_sm.pop(f'_l_{_c}'))
+bt_sm['brecha_pct'] = (bt_sm['sin'] / bt_sm['tacc'] - 1) * 100          # PRIMARIO: medianas por subtipo (§3.4, §14)
+bt_sm['brecha_min'] = (bt_sm['sin_min'] / bt_sm['tacc_min'] - 1) * 100  # ilustrativo "más barato" (§3.7)
+bt_sm['anio'] = bt_sm['mes'].str[:4]
+bt_sm['suc_key'] = bt_sm['id_comercio'] + '|' + bt_sm['id_bandera'] + '|' + bt_sm['id_sucursal']
+
+cobertura_mensual = (bt_sm.groupby(['tipo','mes'])
+                     .agg(sucursales_ambos=('id_sucursal','size'), productos_tacc_prom=('n_tacc','mean'),
+                          productos_sin_prom=('n_sin','mean')).reset_index()
+                     .pivot_table(index='mes', columns='tipo', values='sucursales_ambos').reset_index())
+
+# ── Ponderación ENGHo ─────────────────────────────────────────────────────────
+# Brecha de la canasta = sum_k w_k (1 + g_k) - 1, con w_k = peso ENGHo del tipo renormalizado entre los tipos presentes
+# y g_k la brecha del tipo (mediana entre sucursales). Para la canasta POR SUCURSAL (mapa, Brecha_sucursal) se usan
+# cantidades fijas qty_k = w_k / (precio con TACC de k en el año base): con los precios del año base, el gasto con
+# TACC se reparte como la ENGHo.
+_meses_bt = sorted(bt_sm['mes'].unique())
+if ANIO_BASE_PONDERACION:
+    _mb = [m for m in _meses_bt if m.startswith(str(ANIO_BASE_PONDERACION))]
+else:
+    _mb = _meses_bt[:12]
+_pb = bt_sm[bt_sm['mes'].isin(_mb)].groupby('tipo')['tacc'].median()
+if PONDERACION == 'engho':
+    _sin_peso = [t for t in TIPO_TACC if not (TIPO_PESO.get(t, float('nan')) > 0)]
+    if _sin_peso:
+        raise ValueError(f'PONDERACION = "engho" pero estos tipos no tienen peso en TIPOS: {_sin_peso}')
+    W_TIPO = {t: TIPO_PESO[t] for t in TIPO_TACC}
+    TIPO_QTY = {t: W_TIPO[t] / _pb[t] for t in TIPO_TACC if t in _pb.index}
+else:
+    W_TIPO = {t: TIPO_QTY[t] * _pb.get(t, float('nan')) for t in TIPO_TACC}
+_sw = sum(v for v in W_TIPO.values() if v == v)
+W_TIPO = {t: v / _sw for t, v in W_TIPO.items() if v == v}
+ponderaciones = pd.DataFrame({'tipo': list(W_TIPO),
+                              'pct_gasto_alimentos_engho': [TIPO_PESO.get(t) for t in W_TIPO],
+                              'peso_en_la_canasta_pct': [100 * W_TIPO[t] for t in W_TIPO],
+                              'precio_con_tacc_100g_base': [_pb.get(t) for t in W_TIPO],
+                              'cantidad_100g_canasta_sucursal': [TIPO_QTY.get(t) for t in W_TIPO]})
+print(f'\nPonderación ({PONDERACION}), año base {_mb[0]} → {_mb[-1]}:')
+print(ponderaciones.round(4).to_string(index=False))
+
+# ── Canasta por (sucursal, mes): suma sobre los tipos con los dos lados (mapa y Brecha_sucursal) ─
 bt_sm['qty'] = bt_sm['tipo'].map(TIPO_QTY)
 bt_sm['base_c'] = bt_sm['tacc'] * bt_sm['qty']
 bt_sm['cel_c']  = bt_sm['sin']  * bt_sm['qty']
-
-# ── Canasta por (sucursal, mes): suma sobre los tipos con ambos lados ────────
+_gk = _sk + ['mes','PROVINCIA_NORM','region','cadena','empresa','localidad']
 if len(bt_sm):
-    brecha_suc_mes = (bt_sm.groupby(_sk + ['mes','PROVINCIA_NORM','cadena','localidad'])
-                      .agg(base=('base_c','sum'), celiaca=('cel_c','sum'), n_tipos=('tipo','nunique'))
-                      .reset_index())
+    brecha_suc_mes = (bt_sm.groupby(_gk).agg(base=('base_c','sum'), celiaca=('cel_c','sum'),
+                                             n_tipos=('tipo','nunique')).reset_index())
     brecha_suc_mes = brecha_suc_mes[brecha_suc_mes['n_tipos'] >= MIN_TIPOS].copy()
     brecha_suc_mes['brecha_pct'] = (brecha_suc_mes['celiaca'] / brecha_suc_mes['base'] - 1) * 100
+    brecha_suc_mes['suc_key'] = (brecha_suc_mes['id_comercio'] + '|' + brecha_suc_mes['id_bandera'] + '|'
+                                 + brecha_suc_mes['id_sucursal'])
 else:
-    brecha_suc_mes = pd.DataFrame(columns=_sk + ['mes','PROVINCIA_NORM','cadena','localidad',
-                                                 'base','celiaca','n_tipos','brecha_pct'])
+    brecha_suc_mes = pd.DataFrame(columns=_gk + ['base','celiaca','n_tipos','brecha_pct','suc_key'])
 
 _nsuc_bt = bt_sm[_sk].drop_duplicates().shape[0] if len(bt_sm) else 0
-print(f'\\nObs (sucursal×mes×tipo) con ambos lados: {len(bt_sm):,} | sucursales con ≥1 par: {_nsuc_bt:,}')
-print(f'Canasta por (sucursal×mes, ≥{MIN_TIPOS} tipos): {len(brecha_suc_mes):,} obs'
-      + (f' | brecha mediana {brecha_suc_mes["brecha_pct"].median():+.1f}%' if len(brecha_suc_mes) else ''))"""))
+print(f'\nObs (sucursal×mes×tipo) con los dos lados: {len(bt_sm):,} | sucursales con >= 1 par: {_nsuc_bt:,}')
+print(f'Canasta por sucursal-mes (>= {MIN_TIPOS} tipos): {len(brecha_suc_mes):,} obs')"""))
 
-# ── CELL 8 — SERIES (diaria / semanal / mensual) + desagregaciones ─────────────
-cells.append(cell_code("""\
+# ── CELL 8 — AGREGACIONES ──────────────────────────────────────────────────────
+cells.append(cell_code(r"""# ============================================================
+# CELDA 8 — Brecha por tipo y de la canasta: tiempo, geografía y cadenas
 # ============================================================
-# CELDA 8 — Brecha POR TIPO (intra-super) + evolución + desagregaciones
-# ============================================================
-# Todo se deriva de bt_sm (brecha por sucursal×mes×tipo) y brecha_suc_mes (canasta
-# por sucursal×mes). Se promedia ENTRE sucursales (mediana + promedio robusto).
-# brecha_mediana/_prom = agregación ENTRE sucursales (mediana/promedio) de la brecha
-# intra-super, que usa la MEDIANA de candidatos (§3.4). brecha_min_ilustr = misma
-# agregación pero con el "más barato" → referencia ilustrativa, sesgada al alza (§3.7).
+# Todo sale de bt_sub (brecha por sucursal × mes × SUBTIPO), como un índice de precios: (1) por subtipo, mediana ENTRE
+# sucursales de su brecha; (2) brecha del tipo = promedio geométrico de las de sus subtipos (pesos iguales, entre los
+# presentes en el grupo con >= MIN_SUC_SUBTIPO sucursales: la mediana de menos es ruido); (3) canasta de un grupo =
+# sum_k w_k (1 + brecha del tipo k) - 1 (pesos ENGHo renormalizados entre los tipos presentes). Así la serie no la
+# mueve qué subtipos o tipos tiene cada sucursal cada mes (la mediana entre sucursales de la brecha del tipo de cada
+# una tenía 2-3 veces más ruido mes a mes). 'confiable' = están todos los tipos y cada uno con >= MIN_SUC_AGG sucursales.
 def _agg_tipo(df, keys):
-    _cols = keys + ['tipo','tacc_100','sin_100','brecha_mediana','brecha_prom','brecha_min_ilustr','n_sucursales']
+    _cols = keys + ['tipo','tacc_100','sin_100','brecha_mediana','brecha_prom','brecha_min_ilustr','n_subtipos',
+                    'n_subtipos_imputados','n_sucursales','n_obs']
     if len(df) == 0:
         return pd.DataFrame(columns=_cols)
-    return (df.groupby(keys + ['tipo'])
-            .agg(tacc_100=('tacc','median'), sin_100=('sin','median'),
-                 brecha_mediana=('brecha_pct','median'), brecha_prom=('brecha_pct', _pmean),
-                 brecha_min_ilustr=('brecha_min','median'),
-                 n_sucursales=('id_sucursal','nunique')).reset_index())
+    _mensual = keys == ['mes']
+    _meses_all = sorted(df['mes'].unique()) if _mensual else []
+    _n = df.groupby(keys + ['tipo','subtipo'])['suc_key'].nunique().rename('n_suc').reset_index()
+    _ok = _n['n_suc'] >= globals().get('MIN_SUC_SUBTIPO', 1)
+    if _mensual:
+        # serie mensual: subtipo-mes con menos de FRAC_SUBTIPO_MES de sus sucursales habituales = faltante
+        _ok &= _n['n_suc'] >= (globals().get('FRAC_SUBTIPO_MES', 0)
+                               * _n.groupby(['tipo','subtipo'])['n_suc'].transform('median'))
+    df = df.merge(_n.loc[_ok, keys + ['tipo','subtipo']], on=keys + ['tipo','subtipo'], how='inner')
+    if len(df) == 0:
+        return pd.DataFrame(columns=_cols)
+    _s = (df.groupby(keys + ['tipo','subtipo'])
+          .agg(tacc=('tacc','median'), sin=('sin','median'), b=('brecha_pct','median'), bp=('brecha_pct', _pmean),
+               bm=('brecha_min','median'), n_obs=('brecha_pct','size')).reset_index())
+    _s = _s.assign(_lt=np.log(_s['tacc']), _ls=np.log(_s['sin']), _lb=np.log1p(_s['b'] / 100),
+                   _lbp=np.log1p(_s['bp'] / 100), _lbm=np.log1p(_s['bm'] / 100), _imp=0)
+    if _mensual:
+        # el subtipo-mes faltante se imputa con su último mes válido (como un índice de precios con un ítem que falta
+        # temporalmente): la composición de subtipos del tipo no cambia de un mes a otro
+        _L = ['_lt','_ls','_lb','_lbp','_lbm']
+        _grid = _s[['tipo','subtipo']].drop_duplicates().merge(pd.DataFrame({'mes': _meses_all}), how='cross')
+        _s = _grid.merge(_s, on=['mes','tipo','subtipo'], how='left').sort_values(['tipo','subtipo','mes'])
+        _falta = _s['_lb'].isna()
+        _s[_L] = _s.groupby(['tipo','subtipo'])[_L].ffill()
+        _s['_imp'] = (_falta & _s['_lb'].notna()).astype(int)
+        _s['n_obs'] = _s['n_obs'].fillna(0)
+        _s = _s[_s['_lb'].notna()]
+    _o = (_s.groupby(keys + ['tipo'])
+          .agg(_lt=('_lt','mean'), _ls=('_ls','mean'), _lb=('_lb','mean'), _lbp=('_lbp','mean'), _lbm=('_lbm','mean'),
+               n_subtipos=('subtipo','size'), n_subtipos_imputados=('_imp','sum'), n_obs=('n_obs','sum'))
+          .reset_index())
+    _o['tacc_100'] = np.exp(_o['_lt'])
+    _o['sin_100'] = np.exp(_o['_ls'])
+    _o['brecha_mediana'] = np.expm1(_o['_lb']) * 100
+    _o['brecha_prom'] = np.expm1(_o['_lbp']) * 100
+    _o['brecha_min_ilustr'] = np.expm1(_o['_lbm']) * 100
+    _o = _o.merge(df.groupby(keys + ['tipo'])['suc_key'].nunique().rename('n_sucursales').reset_index(),
+                  on=keys + ['tipo'], how='left')
+    return _o[_cols]
 
+TIPOS_ORD = [t for t in TIPO_TACC]
+def _canasta(df, keys):
+    # tabla ancha: por grupo, brecha de la canasta (ponderada) + brecha mediana y n de cada tipo
+    _t = _agg_tipo(df, keys)
+    if not len(_t):
+        return pd.DataFrame(columns=keys + ['brecha_canasta','n_tipos','n_min','confiable'])
+    _ix = keys if keys else None
+    if keys:
+        _g = _t.pivot_table(index=keys, columns='tipo', values='brecha_mediana', aggfunc='first')
+        _n = _t.pivot_table(index=keys, columns='tipo', values='n_sucursales', aggfunc='first')
+        _im = _t.pivot_table(index=keys, columns='tipo', values='n_subtipos_imputados', aggfunc='first')
+    else:
+        _g = _t.set_index('tipo')['brecha_mediana'].to_frame().T
+        _n = _t.set_index('tipo')['n_sucursales'].to_frame().T
+        _im = _t.set_index('tipo')['n_subtipos_imputados'].to_frame().T
+    _g = _g.reindex(columns=TIPOS_ORD); _n = _n.reindex(columns=TIPOS_ORD)
+    _w = pd.Series(W_TIPO).reindex(TIPOS_ORD)
+    _rel = 1 + _g / 100
+    _num = (_rel * _w).sum(axis=1, min_count=1)
+    _den = (_rel.notna() * _w).sum(axis=1)
+    _o = pd.DataFrame(index=_g.index)
+    _o['brecha_canasta'] = (_num / _den - 1) * 100
+    _o['n_tipos'] = _g.notna().sum(axis=1)
+    _o['n_min'] = _n.min(axis=1)
+    _o['confiable'] = (_o['n_tipos'] == len(TIPOS_ORD)) & (_o['n_min'] >= MIN_SUC_AGG)
+    _o['subtipos_imputados'] = _im.reindex(index=_g.index, columns=TIPOS_ORD).sum(axis=1)
+    for _c in TIPOS_ORD:
+        _o[f'brecha_{_c}'] = _g[_c]
+    for _c in TIPOS_ORD:
+        _o[f'n_{_c}'] = _n[_c]
+    return _o.reset_index() if keys else _o.reset_index(drop=True)
+
+# ── Panel BALANCEADO: sucursal × subtipo presentes (con los dos lados) en >= FRAC_MESES_PANEL de los meses ──
+_nmes = bt_sub['mes'].nunique()
+_minm = max(1, int(round(FRAC_MESES_PANEL * _nmes)))
+_pres = bt_sub.groupby(_sk + ['tipo','subtipo'])['mes'].nunique()
+_celdas = _pres[_pres >= _minm].index
+bt_bal = bt_sub[bt_sub.set_index(_sk + ['tipo','subtipo']).index.isin(_celdas)].copy()
+print(f'Panel balanceado: {len(_celdas):,} sucursal×subtipo presentes en >= {_minm}/{_nmes} meses '
+      f'({bt_bal["suc_key"].nunique():,} sucursales)')
+
+# ── Por tipo: período completo, mes (todas y panel), año ─────────────────────
+brecha_tipo = _agg_tipo(bt_sub, [])
+brecha_tipo_mensual = _agg_tipo(bt_sub, ['mes'])
+brecha_tipo_mensual_bal = _agg_tipo(bt_bal, ['mes'])
+brecha_tipo_anual = _agg_tipo(bt_sub, ['anio'])
+brecha_tipo_anual_bal = _agg_tipo(bt_bal, ['anio'])
+
+# ── Por subtipo (la comparación de base): período completo y por año ─────────
+def _agg_subtipo(df, keys):
+    _cols = keys + ['tipo','subtipo','tacc_100','sin_100','brecha_mediana','n_sucursales','n_obs']
+    if len(df) == 0:
+        return pd.DataFrame(columns=_cols)
+    return (df.groupby(keys + ['tipo','subtipo'])
+            .agg(tacc_100=('tacc','median'), sin_100=('sin','median'), brecha_mediana=('brecha_pct','median'),
+                 n_sucursales=('suc_key','nunique'), n_obs=('brecha_pct','size')).reset_index())[_cols]
+brecha_subtipo = _agg_subtipo(bt_sub, [])
+brecha_subtipo_anual = _agg_subtipo(bt_sub, ['anio'])
+brecha_subtipo_anual_bal = _agg_subtipo(bt_bal, ['anio'])
+
+# ── Canasta: serie mensual (todas las sucursales y panel balanceado) ──────────
+serie_mensual = _canasta(bt_sub, ['mes'])
+serie_mensual_bal = _canasta(bt_bal, ['mes'])
+serie_anual = _canasta(bt_sub, ['anio'])
+serie_anual_bal = _canasta(bt_bal, ['anio'])
+if len(serie_mensual):
+    _nmed = serie_mensual['n_min'].median()
+    _bajos = serie_mensual[serie_mensual['n_min'] < 0.6 * _nmed]
+    if len(_bajos):
+        print(f'  ⚠️ Cobertura BAJA en {len(_bajos)} mes(es) (el tipo con menos sucursales tiene < 60% de su mediana '
+              f'{_nmed:.0f}): ' + ', '.join(f'{_m}(n={int(_n)})' for _m, _n in zip(_bajos['mes'], _bajos['n_min'])))
+
+# ── Geografía y cadenas: últimos VENTANA_GEO_MESES meses y por año ────────────
+_meses_v = sorted(bt_sub['mes'].unique())[-VENTANA_GEO_MESES:]
+bt_v = bt_sub[bt_sub['mes'].isin(_meses_v)]
+VENTANA_TXT = f'{_meses_v[0]} → {_meses_v[-1]}' if _meses_v else ''
+brecha_prov = _canasta(bt_v, ['PROVINCIA_NORM']).rename(columns={'PROVINCIA_NORM':'provincia'})
+brecha_tipo_prov = _agg_tipo(bt_v, ['PROVINCIA_NORM']).rename(columns={'PROVINCIA_NORM':'provincia'})
+brecha_region = _canasta(bt_v, ['region'])
+brecha_tipo_region = _agg_tipo(bt_v, ['region'])
+brecha_region_anual = _canasta(bt_sub, ['region','anio'])
+brecha_empresa = _canasta(bt_v, ['empresa'])
+brecha_tipo_empresa = _agg_tipo(bt_v, ['empresa'])
+brecha_empresa_anual = _canasta(bt_sub, ['empresa','anio'])
+brecha_cadena = _canasta(bt_v, ['cadena'])
+for _d in (brecha_prov, brecha_region, brecha_empresa, brecha_cadena):
+    if len(_d):
+        _d.sort_values('brecha_canasta', inplace=True)
+
+# Concentración: por localidad, canasta por sucursal (mediana) y nº de sucursales (exploratorio)
 def _agg_suc(df, keys):
     _cols = keys + ['brecha_mediana','brecha_prom','n_sucursales']
     if len(df) == 0:
         return pd.DataFrame(columns=_cols)
     return (df.groupby(keys)
             .agg(brecha_mediana=('brecha_pct','median'), brecha_prom=('brecha_pct', _pmean),
-                 n_sucursales=('id_sucursal','nunique')).reset_index())
-
-# Brecha POR TIPO (el número clave): mediana de las brechas intra-super
-brecha_tipo         = _agg_tipo(bt_sm, [])
-if len(brecha_tipo): brecha_tipo = brecha_tipo.sort_values('brecha_mediana')
-brecha_tipo_mensual = _agg_tipo(bt_sm, ['mes'])
-brecha_tipo_prov    = _agg_tipo(bt_sm, ['PROVINCIA_NORM']).rename(columns={'PROVINCIA_NORM':'provincia'})
-
-# Series de CANASTA (brecha por sucursal, promediada entre supers). Granularidad MENSUAL
-# (intra-super por mes; diaria/semanal no aplican a este método y quedan vacías).
-serie_mensual = _agg_suc(brecha_suc_mes, ['mes'])
-if len(serie_mensual): serie_mensual = serie_mensual.sort_values('mes')
-serie_semanal = pd.DataFrame(columns=['semana','brecha_mediana','brecha_prom','n_sucursales'])
-serie_diaria  = pd.DataFrame(columns=['fecha','brecha_mediana','brecha_prom','n_sucursales'])
-
-# ── Cobertura temporal: PANEL BALANCEADO + diagnóstico de meses con baja cobertura ──
-# La serie completa mezcla sucursales que entran/salen (n_sucursales inestable) → la
-# comparación entre meses se confunde con la composición. La serie BALANCEADA usa solo
-# las sucursales presentes en ≥ FRAC_MESES_PANEL de los meses → trayectoria comparable.
-_sk3 = ['id_comercio','id_bandera','id_sucursal']
-if len(brecha_suc_mes):
-    _nmes  = brecha_suc_mes['mes'].nunique()
-    _minm  = max(1, int(round(FRAC_MESES_PANEL * _nmes)))
-    _pres  = brecha_suc_mes.groupby(_sk3)['mes'].nunique()
-    _panel = set(_pres[_pres >= _minm].index)
-    _bsm_bal = brecha_suc_mes[brecha_suc_mes.set_index(_sk3).index.isin(_panel)].copy()
-    serie_mensual_bal = _agg_suc(_bsm_bal, ['mes'])
-    if len(serie_mensual_bal): serie_mensual_bal = serie_mensual_bal.sort_values('mes')
-    if len(serie_mensual):
-        _nmed = serie_mensual['n_sucursales'].median()
-        _bajos = serie_mensual[serie_mensual['n_sucursales'] < 0.6 * _nmed]
-        if len(_bajos):
-            print(f'  ⚠️ Cobertura temporal BAJA en {len(_bajos)} mes(es) (n < 60% de la mediana {_nmed:.0f}): '
-                  + ', '.join(f'{_m}(n={int(_n)})' for _m, _n in zip(_bajos['mes'], _bajos['n_sucursales'])))
-    print(f'  Panel balanceado: {len(_panel):,} sucursales presentes en ≥{_minm}/{_nmes} meses '
-          f'→ serie_mensual_bal ({len(serie_mensual_bal)} meses, n≈{int(serie_mensual_bal["n_sucursales"].median()) if len(serie_mensual_bal) else 0})')
-else:
-    serie_mensual_bal = pd.DataFrame(columns=['mes','brecha_mediana','brecha_prom','n_sucursales'])
-
-# Desagregaciones (promedio entre supers, por zona). Se marca confiable = n >= MIN_SUC_AGG.
-def _marcar_conf(_df):
-    _df['confiable'] = (_df['n_sucursales'] >= MIN_SUC_AGG) if len(_df) else pd.Series(dtype=bool)
-    return _df
-brecha_prov   = _marcar_conf(_agg_suc(brecha_suc_mes, ['PROVINCIA_NORM']).rename(columns={'PROVINCIA_NORM':'provincia'}))
-if len(brecha_prov): brecha_prov = brecha_prov.sort_values('brecha_mediana')
-brecha_cadena = _marcar_conf(_agg_suc(brecha_suc_mes, ['cadena']))
-if len(brecha_cadena): brecha_cadena = brecha_cadena.sort_values('brecha_mediana')
-concentracion = _marcar_conf(_agg_suc(brecha_suc_mes, ['localidad']))
+                 n_sucursales=('suc_key','nunique')).reset_index())
+concentracion = _agg_suc(brecha_suc_mes[brecha_suc_mes['mes'].isin(_meses_v)], ['localidad'])
 if len(concentracion):
+    concentracion['confiable'] = concentracion['n_sucursales'] >= MIN_SUC_AGG
     concentracion = concentracion[concentracion['localidad'] != 'N/D'].sort_values('n_sucursales', ascending=False)
 
 # ── Resumen ──────────────────────────────────────────────────────────────────
-print('=== Brecha POR TIPO (intra-super, $/100g) — el número clave ===')
-print('    brecha_mediana    = estimador PRIMARIO (mediana de candidatos, §3.4)')
-print('    brecha_min_ilustr = referencia "más barato" (sesgada al alza por nº de candidatos, §3.7)')
+print('\n=== Brecha POR SUBTIPO (intra-super, $/100 g), todo el período ===')
+if len(brecha_subtipo):
+    print(brecha_subtipo[['tipo','subtipo','tacc_100','sin_100','brecha_mediana','n_sucursales']].round(1).to_string(index=False))
+print('\n=== Brecha POR TIPO (promedio geométrico de las de sus subtipos), todo el período ===')
 if len(brecha_tipo):
     print(brecha_tipo[['tipo','tacc_100','sin_100','brecha_mediana','brecha_min_ilustr','n_sucursales']].round(1).to_string(index=False))
-    print('  ⚠️ Revisá n_sucursales por tipo (y la hoja Cobertura): pocas = poco confiable.')
-else:
-    print('  (sin datos — revisá la Cobertura por tipo y los EANs de TIPOS)')
-
-print('\\n=== Brecha de CANASTA mensual (intra-super) — últimos 6 ===')
-if len(serie_mensual):
-    print(serie_mensual.tail(6).round(1).to_string(index=False))
-else:
-    print('  (sin datos)')
-_prov_conf = brecha_prov[brecha_prov['confiable']] if len(brecha_prov) else brecha_prov
-if len(_prov_conf):
-    print(f'\\nProvincia MENOR brecha (n≥{MIN_SUC_AGG}): {_prov_conf.iloc[0]["provincia"]} ({_prov_conf.iloc[0]["brecha_mediana"]:+.1f}%, n={int(_prov_conf.iloc[0]["n_sucursales"])})')
-    print(f'Provincia MAYOR brecha (n≥{MIN_SUC_AGG}): {_prov_conf.iloc[-1]["provincia"]} ({_prov_conf.iloc[-1]["brecha_mediana"]:+.1f}%, n={int(_prov_conf.iloc[-1]["n_sucursales"])})')
-
-# ── Resumen ──────────────────────────────────────────────────────────────────
-print('=== Brecha mensual (nacional) — últimos 6 ===')
-if len(serie_mensual):
-    print(serie_mensual.tail(6)[['mes','brecha_mediana','brecha_prom','n_sucursales']].to_string(index=False))
-    if len(serie_mensual) >= 2:
-        _b0, _b1 = serie_mensual['brecha_mediana'].iloc[0], serie_mensual['brecha_mediana'].iloc[-1]
-        print(f'Serie COMPLETA (n variable): {_b0:+.1f}% ({serie_mensual["mes"].iloc[0]}) -> {_b1:+.1f}% ({serie_mensual["mes"].iloc[-1]}) | cambio {(_b1-_b0):+.1f} pp')
-    if len(serie_mensual_bal) >= 2:
-        _c0, _c1 = serie_mensual_bal['brecha_mediana'].iloc[0], serie_mensual_bal['brecha_mediana'].iloc[-1]
-        print(f'Panel BALANCEADO (n≈estable): {_c0:+.1f}% ({serie_mensual_bal["mes"].iloc[0]}) -> {_c1:+.1f}% ({serie_mensual_bal["mes"].iloc[-1]}) | cambio {(_c1-_c0):+.1f} pp  ← usar este para la tendencia temporal')
-else:
-    print('  (sin datos — revisá la cobertura por tipo arriba y los EANs de TIPOS)')
-if len(_prov_conf):
-    print(f'Provincia MENOR brecha (n≥{MIN_SUC_AGG}): {_prov_conf.iloc[0]["provincia"]} ({_prov_conf.iloc[0]["brecha_mediana"]:+.2f}%)')
-    print(f'Provincia MAYOR brecha (n≥{MIN_SUC_AGG}): {_prov_conf.iloc[-1]["provincia"]} ({_prov_conf.iloc[-1]["brecha_mediana"]:+.2f}%)')"""))
+print('\n=== Por tipo y año (panel balanceado) ===')
+if len(brecha_tipo_anual_bal):
+    print(brecha_tipo_anual_bal.pivot_table(index='anio', columns='tipo', values='brecha_mediana').round(1).to_string())
+print('\n=== Canasta por año (ponderada ENGHo): todas las sucursales / panel balanceado ===')
+if len(serie_anual):
+    _sa = serie_anual[['anio','brecha_canasta','n_min']].merge(
+        serie_anual_bal[['anio','brecha_canasta','n_min']], on='anio', how='left', suffixes=('', '_bal'))
+    print(_sa.round(1).to_string(index=False))
+print(f'\n=== Región (últimos {VENTANA_GEO_MESES} meses, {VENTANA_TXT}) ===')
+if len(brecha_region):
+    print(brecha_region[['region','brecha_canasta','n_tipos','n_min','confiable']].round(1).to_string(index=False))
+print(f'\n=== Empresas (últimos {VENTANA_GEO_MESES} meses) ===')
+if len(brecha_empresa):
+    print(brecha_empresa[['empresa','brecha_canasta','n_tipos','n_min','confiable']].round(1).to_string(index=False))
+_pc = brecha_prov[brecha_prov['confiable']] if len(brecha_prov) else brecha_prov
+if len(_pc):
+    print(f'\nProvincia MENOR brecha (confiable): {_pc.iloc[0]["provincia"]} ({_pc.iloc[0]["brecha_canasta"]:+.1f}%) · '
+          f'MAYOR: {_pc.iloc[-1]["provincia"]} ({_pc.iloc[-1]["brecha_canasta"]:+.1f}%)')"""))
 
 # ── CELL 9 — GRÁFICOS ──────────────────────────────────────────────────────────
-cells.append(cell_code("""\
-# ============================================================
+cells.append(cell_code(r"""# ============================================================
 # CELDA 9 — Gráficos de la brecha
 # ============================================================
 MES = f'{ULTIMO_MES[5:7]}{ULTIMO_MES[:4]}'
-_C_MED, _C_PRO = '#0055A4', '#D62728'
+_C_MED, _C_BAL = '#0055A4', '#2ca02c'
 
-# 1) Serie temporal mensual: serie COMPLETA (n variable) vs PANEL BALANCEADO (n≈estable),
-#    con la cobertura (n_sucursales) en un eje secundario para leer la (in)estabilidad.
-fig, ax = plt.subplots(figsize=(13, 6))
-_sm = serie_mensual.copy(); _sm['fecha'] = pd.to_datetime(_sm['mes'] + '-01')
-ax.plot(_sm['fecha'], _sm['brecha_mediana'], color=_C_MED, lw=2.5, marker='o', label='Serie completa (n variable)')
-if len(serie_mensual_bal):
-    _smb = serie_mensual_bal.copy(); _smb['fecha'] = pd.to_datetime(_smb['mes'] + '-01')
-    ax.plot(_smb['fecha'], _smb['brecha_mediana'], color='#2ca02c', lw=2.5, marker='D',
-            label=f'Panel balanceado (n≈{int(_smb["n_sucursales"].median())} estable)')
-ax.set_ylabel('Brecha celíaca (%)'); ax.set_title('Evolución de la brecha celíaca — serie completa vs panel balanceado')
-ax.grid(True, alpha=0.3); ax.yaxis.set_major_formatter(mticker.FuncFormatter(lambda x,_: f'{x:+.0f}%'))
-_ax2 = ax.twinx()
-_ax2.bar(_sm['fecha'], _sm['n_sucursales'], width=20, color='#cccccc', alpha=0.35, label='n sucursales (der.)')
-_ax2.set_ylabel('n sucursales', color='#999'); _ax2.set_ylim(0, _sm['n_sucursales'].max()*3)
-_l1,_lb1 = ax.get_legend_handles_labels(); _l2,_lb2 = _ax2.get_legend_handles_labels()
-ax.legend(_l1+_l2, _lb1+_lb2, loc='upper left', fontsize=9)
-plt.tight_layout(); _o = OUTPUT_DIR / f'brecha_mensual_{MES}.png'
-plt.savefig(_o, dpi=200, bbox_inches='tight', facecolor='white'); plt.show()
-print(f'Guardado: {_o.name}')
-
-# 2) Serie DIARIA (ventana)
-if len(serie_diaria) > 1:
-    fig, ax = plt.subplots(figsize=(13, 5))
-    ax.plot(serie_diaria['fecha'], serie_diaria['brecha_mediana'], color=_C_MED, lw=1.5, label='Diaria (mediana)')
-    ax.plot(serie_diaria['fecha'], serie_diaria['brecha_prom'], color=_C_PRO, lw=1.2, alpha=0.8, label='Diaria (promedio)')
-    ax.set_ylabel('Brecha (%)'); ax.set_title(f'Brecha diaria — últimos {VENTANA_DIARIA_MESES} meses')
-    ax.legend(); ax.grid(True, alpha=0.3)
-    plt.tight_layout(); _o = OUTPUT_DIR / f'brecha_diaria_{MES}.png'
+def _guardar(_nombre):
+    plt.tight_layout(); _o = OUTPUT_DIR / f'{_nombre}_{MES}.png'
     plt.savefig(_o, dpi=200, bbox_inches='tight', facecolor='white'); plt.show()
     print(f'Guardado: {_o.name}')
 
-# 3) Brecha por provincia (barras) — solo provincias CONFIABLES (n >= MIN_SUC_AGG)
-_bp = brecha_prov[brecha_prov['confiable']] if len(brecha_prov) else brecha_prov
-fig, ax = plt.subplots(figsize=(11, max(5, len(_bp)*0.35+2)))
-_cols = plt.cm.RdYlGn_r(np.linspace(0.15, 0.9, max(1, len(_bp))))
-ax.barh(_bp['provincia'], _bp['brecha_mediana'], color=_cols, edgecolor='black', lw=0.4)
-for _i,(_,_r) in enumerate(_bp.iterrows()):
-    ax.text(_r['brecha_mediana'], _i, f' {_r["brecha_mediana"]:+.1f}% (n={int(_r["n_sucursales"])})', va='center', fontsize=8)
-ax.set_xlabel('Brecha mediana (%)'); ax.set_title(f'Brecha celíaca por provincia (n≥{MIN_SUC_AGG} sucursales)')
-ax.grid(True, alpha=0.3, axis='x')
-plt.tight_layout(); _o = OUTPUT_DIR / f'brecha_provincia_{MES}.png'
-plt.savefig(_o, dpi=200, bbox_inches='tight', facecolor='white'); plt.show()
-print(f'Guardado: {_o.name}')
+# 1) Canasta mensual: todas las sucursales vs panel balanceado (+ sucursales del tipo con menos cobertura)
+if len(serie_mensual):
+    fig, ax = plt.subplots(figsize=(13, 6))
+    _sm = serie_mensual.assign(f=pd.to_datetime(serie_mensual['mes'] + '-01'))
+    ax.plot(_sm['f'], _sm['brecha_canasta'], color=_C_MED, lw=2.2, marker='o', ms=3, label='Todas las sucursales')
+    if len(serie_mensual_bal):
+        _sb = serie_mensual_bal.assign(f=pd.to_datetime(serie_mensual_bal['mes'] + '-01'))
+        ax.plot(_sb['f'], _sb['brecha_canasta'], color=_C_BAL, lw=2.2, marker='D', ms=3, label='Panel balanceado')
+    ax.set_ylabel('Brecha de la canasta (%)')
+    ax.set_title('Brecha celíaca de la canasta (ponderada ENGHo) — canasta fija 2022-2026')
+    ax.yaxis.set_major_formatter(mticker.FuncFormatter(lambda x, _: f'{x:+.0f}%')); ax.grid(True, alpha=0.3)
+    _a2 = ax.twinx()
+    _a2.bar(_sm['f'], _sm['n_min'], width=20, color='#cccccc', alpha=0.35, label='sucursales del tipo con menos (der.)')
+    _a2.set_ylim(0, max(1, _sm['n_min'].max()) * 3); _a2.set_ylabel('sucursales', color='#999')
+    _l1, _b1 = ax.get_legend_handles_labels(); _l2, _b2 = _a2.get_legend_handles_labels()
+    ax.legend(_l1 + _l2, _b1 + _b2, loc='upper left', fontsize=9)
+    _guardar('brecha_mensual')
 
-# 4) Brecha por cadena (barras) — solo cadenas CONFIABLES (n >= MIN_SUC_AGG)
-_bc = brecha_cadena[brecha_cadena['n_sucursales'] >= MIN_SUC_AGG]
-if len(_bc) > 0:
-    fig, ax = plt.subplots(figsize=(11, max(4, len(_bc)*0.4+2)))
-    _cols = plt.cm.RdYlGn_r(np.linspace(0.15, 0.9, len(_bc)))
-    ax.barh(_bc['cadena'], _bc['brecha_mediana'], color=_cols, edgecolor='black', lw=0.4)
-    for _i,(_,_r) in enumerate(_bc.iterrows()):
-        ax.text(_r['brecha_mediana'], _i, f' {_r["brecha_mediana"]:+.1f}% (n={int(_r["n_sucursales"])})', va='center', fontsize=8)
-    ax.set_xlabel('Brecha mediana (%)'); ax.set_title(f'Brecha celíaca por cadena (n≥{MIN_SUC_AGG} sucursales)')
+# 2) Brecha mensual por tipo (panel balanceado)
+if len(brecha_tipo_mensual_bal):
+    fig, ax = plt.subplots(figsize=(13, 6))
+    for _t, _g in brecha_tipo_mensual_bal.groupby('tipo'):
+        _g = _g.sort_values('mes')
+        ax.plot(pd.to_datetime(_g['mes'] + '-01'), _g['brecha_mediana'], marker='o', ms=3, lw=1.8, label=_t)
+    ax.set_ylabel('Brecha (%)'); ax.set_title('Brecha mensual por tipo — panel balanceado')
+    ax.yaxis.set_major_formatter(mticker.FuncFormatter(lambda x, _: f'{x:+.0f}%'))
+    ax.legend(fontsize=8, ncol=2); ax.grid(True, alpha=0.3)
+    _guardar('brecha_tipo_mensual')
+
+# 3) Brecha por tipo (todo el período)
+if len(brecha_tipo):
+    _bt = brecha_tipo.sort_values('brecha_mediana')
+    fig, ax = plt.subplots(figsize=(11, max(4, len(_bt) * 0.7 + 2)))
+    ax.barh(_bt['tipo'], _bt['brecha_mediana'], color=plt.cm.RdYlGn_r(np.linspace(0.2, 0.9, len(_bt))),
+            edgecolor='black', lw=0.4)
+    for _i, (_, _r) in enumerate(_bt.iterrows()):
+        ax.text(_r['brecha_mediana'], _i, f'  {_r["brecha_mediana"]:+.0f}%  ({int(_r["n_sucursales"])} sucursales)',
+                va='center', fontsize=8)
+    ax.set_xlabel('Brecha mediana (%) — sin TACC vs con TACC, $/100 g'); ax.set_title('Brecha celíaca por tipo (2022 → hoy)')
     ax.grid(True, alpha=0.3, axis='x')
-    plt.tight_layout(); _o = OUTPUT_DIR / f'brecha_cadena_{MES}.png'
-    plt.savefig(_o, dpi=200, bbox_inches='tight', facecolor='white'); plt.show()
-    print(f'Guardado: {_o.name}')
+    _guardar('brecha_por_tipo')
 
-# 5) Brecha vs concentración de comercios (scatter)
-_cc = concentracion[concentracion['n_sucursales'] >= 2]
+# 4) Canasta por año y región (todas las sucursales)
+if len(brecha_region_anual):
+    fig, ax = plt.subplots(figsize=(11, 6))
+    for _rg, _g in brecha_region_anual.groupby('region'):
+        _g = _g.sort_values('anio')
+        ax.plot(_g['anio'], _g['brecha_canasta'], marker='o', lw=2, label=_rg)
+    ax.set_ylabel('Brecha de la canasta (%)'); ax.set_title('Brecha celíaca de la canasta por región y año')
+    ax.yaxis.set_major_formatter(mticker.FuncFormatter(lambda x, _: f'{x:+.0f}%'))
+    ax.legend(fontsize=9); ax.grid(True, alpha=0.3)
+    _guardar('brecha_region_anual')
+
+# 5) y 6) Provincia y empresa (últimos meses; solo confiables)
+for _df, _col, _tit, _nom in ((brecha_prov, 'provincia', 'provincia', 'brecha_provincia'),
+                              (brecha_empresa, 'empresa', 'empresa', 'brecha_empresa')):
+    _d = _df[_df['confiable']] if len(_df) else _df
+    if not len(_d):
+        continue
+    fig, ax = plt.subplots(figsize=(11, max(4, len(_d) * 0.38 + 2)))
+    ax.barh(_d[_col], _d['brecha_canasta'], color=plt.cm.RdYlGn_r(np.linspace(0.15, 0.9, len(_d))),
+            edgecolor='black', lw=0.4)
+    for _i, (_, _r) in enumerate(_d.iterrows()):
+        ax.text(_r['brecha_canasta'], _i, f' {_r["brecha_canasta"]:+.1f}% (n mín {int(_r["n_min"])})', va='center', fontsize=8)
+    ax.set_xlabel('Brecha de la canasta (%)')
+    ax.set_title(f'Brecha celíaca por {_tit} — {VENTANA_TXT} (todos los tipos con >= {MIN_SUC_AGG} sucursales)')
+    ax.grid(True, alpha=0.3, axis='x')
+    _guardar(_nom)
+
+# 7) Brecha vs concentración de comercios (exploratorio)
+_cc = concentracion[concentracion['n_sucursales'] >= 2] if len(concentracion) else concentracion
 if len(_cc) >= 3:
     fig, ax = plt.subplots(figsize=(9, 6))
     ax.scatter(_cc['n_sucursales'], _cc['brecha_mediana'], s=28, alpha=0.6, color=_C_MED, edgecolor='white')
     _corr = _cc['n_sucursales'].corr(_cc['brecha_mediana'])
-    _corr_str = f'{_corr:+.2f}' if pd.notna(_corr) else 'n/d'
-    ax.set_xscale('log')
-    ax.set_xlabel('Nº de sucursales en la localidad (log)'); ax.set_ylabel('Brecha mediana (%)')
-    ax.set_title(f'Brecha vs concentración de comercios (corr={_corr_str})')
-    ax.grid(True, alpha=0.3)
-    plt.tight_layout(); _o = OUTPUT_DIR / f'brecha_concentracion_{MES}.png'
-    plt.savefig(_o, dpi=200, bbox_inches='tight', facecolor='white'); plt.show()
-    print(f'Guardado: {_o.name} | correlación brecha–concentración: {_corr_str}')
+    _cs = f'{_corr:+.2f}' if pd.notna(_corr) else 'n/d'
+    ax.set_xscale('log'); ax.set_xlabel('Nº de sucursales en la localidad (log)'); ax.set_ylabel('Brecha mediana (%)')
+    ax.set_title(f'Brecha vs concentración de comercios (corr={_cs})'); ax.grid(True, alpha=0.3)
+    _guardar('brecha_concentracion')"""))
 
-# 6) Brecha POR TIPO (barras) — el gráfico clave
-if len(brecha_tipo):
-    _bt = brecha_tipo.sort_values('brecha_mediana')
-    fig, ax = plt.subplots(figsize=(11, max(4, len(_bt)*0.7+2)))
-    _cols = plt.cm.RdYlGn_r(np.linspace(0.2, 0.9, len(_bt)))
-    ax.barh(_bt['tipo'], _bt['brecha_mediana'], color=_cols, edgecolor='black', lw=0.4)
-    for _i,(_,_r) in enumerate(_bt.iterrows()):
-        ax.text(_r['brecha_mediana'], _i, f'  {_r["brecha_mediana"]:+.0f}%  ({int(_r["n_sucursales"])} sucs con ambos)',
-                va='center', fontsize=8)
-    ax.set_xlabel('Brecha mediana (%) — precio sin-TACC vs TACC, $/100g')
-    ax.set_title('Brecha celíaca POR TIPO de producto')
-    ax.grid(True, alpha=0.3, axis='x')
-    plt.tight_layout(); _o = OUTPUT_DIR / f'brecha_por_tipo_{MES}.png'
-    plt.savefig(_o, dpi=200, bbox_inches='tight', facecolor='white'); plt.show()
-    print(f'Guardado: {_o.name}')
-
-# 7) Evolución mensual de la brecha por tipo
-if len(brecha_tipo_mensual):
-    fig, ax = plt.subplots(figsize=(13, 6))
-    for _t, _g in brecha_tipo_mensual.groupby('tipo'):
-        _g = _g.sort_values('mes'); _x = pd.to_datetime(_g['mes'] + '-01')
-        ax.plot(_x, _g['brecha_mediana'], marker='o', ms=4, lw=1.8, label=_t)
-    ax.set_ylabel('Brecha (%)'); ax.set_title('Evolución mensual de la brecha por tipo')
-    ax.legend(fontsize=8, ncol=2); ax.grid(True, alpha=0.3)
-    plt.tight_layout(); _o = OUTPUT_DIR / f'brecha_tipo_mensual_{MES}.png'
-    plt.savefig(_o, dpi=200, bbox_inches='tight', facecolor='white'); plt.show()
-    print(f'Guardado: {_o.name}')"""))
-
-# ── CELL 10 — MAPA COROPLÉTICO de la brecha por provincia ──────────────────────
+# ── CELL 10 — MAPA COROPLÉTICO ─────────────────────────────────────────────────
 cells.append(cell_code("""\
 # ============================================================
-# CELDA 10 — Mapa coroplético de la brecha por provincia
+# CELDA 10 — Mapa coroplético de la brecha de la canasta por provincia (últimos meses)
 # ============================================================
 if not GEOJSON_PATH.exists():
     print(f'GeoJSON no encontrado en {GEOJSON_PATH} — saltear mapa')
@@ -1069,7 +1320,9 @@ else:
     cmap_m = LinearSegmentedColormap.from_list('c',
         ['#1a9850','#66bd63','#a6d96a','#fee08b','#fdae61','#f46d43','#d73027'], N=256)
 
-    _prov_val = dict(zip(brecha_prov['provincia'], brecha_prov['brecha_mediana']))
+    _pv = brecha_prov[brecha_prov['n_tipos'] > 0] if len(brecha_prov) else brecha_prov
+    _prov_val = dict(zip(_pv['provincia'], _pv['brecha_canasta']))
+    _conf = dict(zip(_pv['provincia'], _pv['confiable']))
     _vals = list(_prov_val.values())
     if _vals:
         norm_c = Normalize(vmin=min(_vals), vmax=max(_vals))
@@ -1084,7 +1337,8 @@ else:
             if nom == 'CABA': caba_c=(cx,cy); continue
             dx,dy = AJUST.get(nom,(0,0))
             if val is not None:
-                ax.text(cx+dx, cy+dy, f'{nom}\\n{val:+.1f}%', ha='center', va='center', fontsize=7.5,
+                _tx = f'{nom}\\n{val:+.1f}%' + ('' if _conf.get(nom) else ' (*)')
+                ax.text(cx+dx, cy+dy, _tx, ha='center', va='center', fontsize=7.5,
                         fontweight='bold', bbox=dict(boxstyle='round,pad=0.25', facecolor='white', alpha=0.75, edgecolor='none'))
         if caba_c and 'CABA' in _prov_val:
             vc = _prov_val['CABA']; cc = cmap_m(norm_c(vc)); lx,ly = caba_c[0]+2.2, caba_c[1]+0.8
@@ -1092,15 +1346,15 @@ else:
             ax.text(lx, ly, f'CABA\\n{vc:+.1f}%', ha='center', va='center', fontsize=9, fontweight='bold',
                     bbox=dict(boxstyle='round,pad=0.5', facecolor=cc, alpha=0.95, edgecolor='black', linewidth=1.0))
             ax.plot(*caba_c, marker='o', markersize=10, markerfacecolor=cc, markeredgecolor='black', markeredgewidth=1.2, zorder=5)
-        ax.set_title('Brecha celíaca por provincia (mediana %)', fontsize=13, fontweight='bold', pad=6)
+        ax.set_title(f'Brecha celíaca de la canasta por provincia — {VENTANA_TXT}\\n(*) falta algún tipo o tiene < {MIN_SUC_AGG} sucursales',
+                     fontsize=13, fontweight='bold', pad=6)
         ax.set_aspect('equal'); ax.axis('off'); plt.tight_layout()
         _o = OUTPUT_DIR / f'mapa_brecha_{MES}.png'
         plt.savefig(_o, dpi=300, bbox_inches='tight', facecolor='white'); plt.show()
         print(f'Guardado: {_o.name}')"""))
 
-# ── CELL 11 — EXCEL EXPORT ─────────────────────────────────────────────────────
-cells.append(cell_code("""\
-# ============================================================
+# ── CELL 11 — EXCEL ────────────────────────────────────────────────────────────
+cells.append(cell_code(r"""# ============================================================
 # CELDA 11 — Exportación Excel
 # ============================================================
 from openpyxl.styles import Font, PatternFill, Alignment
@@ -1109,151 +1363,171 @@ HDR_FILL = PatternFill(start_color='1F4E79', end_color='1F4E79', fill_type='soli
 HDR_FONT = Font(bold=True, color='FFFFFF', size=10)
 HDR_ALIG = Alignment(horizontal='center', wrap_text=True, vertical='center')
 def fmt_ws(ws):
-    ws.row_dimensions[1].height = 28; ws.freeze_panes = 'A2'
+    ws.row_dimensions[1].height = 30; ws.freeze_panes = 'A2'
     for cell in ws[1]: cell.fill = HDR_FILL; cell.font = HDR_FONT; cell.alignment = HDR_ALIG
 def auto_widths(ws):
     for ci in range(1, ws.max_column+1):
         cl = get_column_letter(ci); hdr = str(ws.cell(1,ci).value or '').lower()
-        ws.column_dimensions[cl].width = 30 if any(x in hdr for x in ('provincia','cadena','localidad','tipo','desc','producto','sucursal','nombre')) else 14
-        if any(x in hdr for x in ('brecha','base','celiaca','precio','n_','100','tacc','grams')):
+        ws.column_dimensions[cl].width = 34 if any(x in hdr for x in ('provincia','cadena','empresa','localidad','tipo',
+                                                                      'desc','producto','sucursal','nombre','region')) else 14
+        if any(x in hdr for x in ('brecha','base','celiaca','precio','100','tacc','grams','gramos','peso','relativo')):
             for row in ws.iter_rows(min_row=2, max_row=ws.max_row, min_col=ci, max_col=ci):
                 for cell in row:
-                    cell.number_format = ('+0.00"%"' if 'brecha' in hdr else '#,##0.00')
+                    cell.number_format = ('+0.0"%"' if 'brecha' in hdr else '#,##0.00')
 
-# ── Detalle intra-sucursal por producto (último mes): precio por sucursal×EAN ──
+# ── Canasta (lo que entró) ────────────────────────────────────────────────────
+_obs = datos_dia.groupby('ean_norm').agg(meses_con_precio=('mes','nunique'), primer_mes=('mes','min'),
+                                         ultimo_mes=('mes','max'), obs_sucursal_mes=('mes','size'))
+canasta = pd.DataFrame({'ean': sorted(EANS_CONFIG)})
+canasta['tipo'] = canasta['ean'].map(EAN_TIPO)
+canasta['lado'] = canasta['ean'].map(EAN_ROL).map({'tacc': 'con TACC', 'sin': 'sin TACC'})
+canasta['descripcion'] = canasta['ean'].map(EAN_DESC)
+canasta['producto'] = canasta['ean'].map(_PROD).fillna(canasta['descripcion'])
+canasta['gramos'] = canasta['ean'].map(EAN_GRAMS)
+canasta['subtipo'] = canasta['ean'].map(EAN_SUBTIPO)
+_VIGX = {_norm_ean(k): v for k, v in globals().get('VIGENCIA', {}).items() if _norm_ean(k)}
+canasta['vigente_desde'] = canasta['ean'].map(lambda _e: _VIGX.get(_e, (None, None))[0])
+canasta['vigente_hasta'] = canasta['ean'].map(lambda _e: _VIGX.get(_e, (None, None))[1])
+canasta = canasta.join(_obs, on='ean')
+canasta['excluido_plausibilidad'] = canasta['ean'].isin(_bad)
+canasta = canasta.sort_values(['tipo','lado','descripcion'])
+
+# ── Detalle intra-sucursal por producto (último mes) ─────────────────────────
 _ult = datos_dia[datos_dia['mes'] == ULTIMO_MES]
-_det = (_ult.groupby(['id_comercio','id_bandera','id_sucursal','ean_norm','tipo','rol'])['precio']
-        .median().reset_index().rename(columns={'precio':'precio_mediano_mes'}))
+_det = _ult[['id_comercio','id_bandera','id_sucursal','ean_norm','tipo','rol','precio','dias','grams','precio_100']].copy()
 _det['descripcion'] = _det['ean_norm'].map(EAN_DESC)
-_det['grams'] = _det['ean_norm'].map(EAN_GRAMS)
-_det['precio_100g'] = np.where(_det['grams'].notna() & (_det['grams'] > 0),
-                               _det['precio_mediano_mes'] / _det['grams'] * 100, np.nan)
-_det = _det.merge(suc_geo[['id_comercio','id_bandera','id_sucursal','cadena','PROVINCIA_NORM',
+_det = _det.merge(suc_geo[['id_comercio','id_bandera','id_sucursal','cadena','empresa','PROVINCIA_NORM','region',
                            'sucursales_localidad','sucursales_nombre']],
                   on=['id_comercio','id_bandera','id_sucursal'], how='left')
-_det = _det[['cadena','PROVINCIA_NORM','sucursales_localidad','sucursales_nombre',
-             'id_comercio','id_bandera','id_sucursal','tipo','rol','ean_norm','descripcion',
-             'grams','precio_mediano_mes','precio_100g']]
-_det = _det.sort_values(['PROVINCIA_NORM','cadena','sucursales_nombre','tipo','rol'])
+_det = _det.rename(columns={'precio':'precio_mediano_mes','precio_100':'precio_100g'})
+_det = _det[['cadena','empresa','PROVINCIA_NORM','region','sucursales_localidad','sucursales_nombre','id_comercio',
+             'id_bandera','id_sucursal','tipo','rol','ean_norm','descripcion','grams','precio_mediano_mes','dias',
+             'precio_100g']].sort_values(['PROVINCIA_NORM','cadena','sucursales_nombre','tipo','rol'])
 
-# ── Brecha por SUCURSAL (canasta intra-super) — último mes ────────────────────
+# ── Brecha por SUCURSAL (canasta con cantidades) — último mes ────────────────
 _bsm = brecha_suc_mes[brecha_suc_mes['mes'] == ULTIMO_MES].copy()
-if len(_bsm):
-    _brecha_suc = (_bsm.merge(suc_geo[['id_comercio','id_bandera','id_sucursal','sucursales_nombre']],
-                              on=['id_comercio','id_bandera','id_sucursal'], how='left')
-                   .rename(columns={'base':'base_mediana','celiaca':'celiaca_mediana','brecha_pct':'brecha_mediana'})
-                   [['cadena','PROVINCIA_NORM','localidad','sucursales_nombre','id_comercio','id_bandera',
-                     'id_sucursal','base_mediana','celiaca_mediana','n_tipos','brecha_mediana']]
-                   .sort_values('brecha_mediana', ascending=False))
-else:
-    _brecha_suc = pd.DataFrame(columns=['cadena','PROVINCIA_NORM','localidad','sucursales_nombre',
-                                        'base_mediana','celiaca_mediana','n_tipos','brecha_mediana'])
+_brecha_suc = (_bsm.merge(suc_geo[['id_comercio','id_bandera','id_sucursal','sucursales_nombre']],
+                          on=['id_comercio','id_bandera','id_sucursal'], how='left')
+               .rename(columns={'base':'canasta_con_tacc','celiaca':'canasta_sin_tacc','brecha_pct':'brecha_canasta'})
+               .sort_values('brecha_canasta', ascending=False)) if len(_bsm) else pd.DataFrame()
 
-# ── Comparación de productos EQUIVALENTES por sucursal (último mes) ────────────
-# Para cada sucursal, tipo y SUBTIPO (equivalencia: Spaghetti vs Spaghetti, Vainilla vs
-# Vainilla, Pan rallado vs Pan rallado…): qué producto(s) con TACC se comparan con qué
-# producto(s) sin-TACC, con presentación y $/100g, y la brecha de ese subtipo.
+# ── Comparación de productos EQUIVALENTES por sucursal (último mes) ───────────
 _cu = _ult.copy()
 _cu['subtipo'] = _cu['ean_norm'].map(EAN_SUBTIPO)
 _cu['descripcion'] = _cu['ean_norm'].map(EAN_DESC)
-_cu['grams'] = _cu['ean_norm'].map(EAN_GRAMS)
 def _items_lado(_g):
     _g = _g.sort_values('precio_100')
-    _p = []
-    for _t in _g.itertuples(index=False):
-        _gt = f'{int(_t.grams)}g' if (_t.grams == _t.grams) else 's/pres'
-        _pt = f'${_t.precio_100:,.0f}/100g' if (_t.precio_100 == _t.precio_100) else 's/precio'
-        _p.append(f'{_t.descripcion} ({_gt}, {_pt})')
-    return '; '.join(_p)
+    return '; '.join(f'{_t.descripcion} ({int(_t.grams)}g, ${_t.precio_100:,.0f}/100g)' for _t in _g.itertuples(index=False))
 _rows_c = []
 for _kk, _g in _cu.groupby(['id_comercio','id_bandera','id_sucursal','tipo','subtipo','rol']):
     _rows_c.append((*_kk, _items_lado(_g), float(_g['precio_100'].median()), int(_g['ean_norm'].nunique())))
-_cg = pd.DataFrame(_rows_c, columns=['id_comercio','id_bandera','id_sucursal','tipo','subtipo','rol',
-                                     'productos','precio_100g_med','n'])
+_cg = pd.DataFrame(_rows_c, columns=['id_comercio','id_bandera','id_sucursal','tipo','subtipo','rol','productos',
+                                     'precio_100g_med','n'])
 if len(_cg):
-    _tc = _cg[_cg['rol']=='tacc'].drop(columns='rol').rename(
-        columns={'productos':'productos_tacc','precio_100g_med':'precio_tacc_100g','n':'n_tacc'})
-    _sc = _cg[_cg['rol']=='sin'].drop(columns='rol').rename(
-        columns={'productos':'productos_sin','precio_100g_med':'precio_sin_100g','n':'n_sin'})
+    _tc = _cg[_cg['rol']=='tacc'].drop(columns='rol').rename(columns={'productos':'productos_tacc','precio_100g_med':'precio_tacc_100g','n':'n_tacc'})
+    _sc = _cg[_cg['rol']=='sin'].drop(columns='rol').rename(columns={'productos':'productos_sin','precio_100g_med':'precio_sin_100g','n':'n_sin'})
     _comp = _tc.merge(_sc, on=['id_comercio','id_bandera','id_sucursal','tipo','subtipo'], how='outer')
-    _comp['n_tacc'] = _comp['n_tacc'].fillna(0).astype(int)
-    _comp['n_sin']  = _comp['n_sin'].fillna(0).astype(int)
+    _comp['n_tacc'] = _comp['n_tacc'].fillna(0).astype(int); _comp['n_sin'] = _comp['n_sin'].fillna(0).astype(int)
     _comp['equivalencia'] = np.where((_comp['n_tacc']>0) & (_comp['n_sin']>0), 'ambos',
-                              np.where(_comp['n_tacc']>0, 'solo con-TACC', 'solo sin-TACC'))
-    _comp['brecha_subtipo_pct'] = np.where((_comp['precio_tacc_100g']>0) & (_comp['precio_sin_100g']>0),
-                                           (_comp['precio_sin_100g']/_comp['precio_tacc_100g']-1)*100, np.nan)
-    _comp = _comp.merge(suc_geo[['id_comercio','id_bandera','id_sucursal','cadena','PROVINCIA_NORM',
-                                 'sucursales_localidad','sucursales_nombre']],
-                        on=['id_comercio','id_bandera','id_sucursal'], how='left')
-    _comp = _comp[['cadena','PROVINCIA_NORM','sucursales_localidad','sucursales_nombre',
-                   'id_comercio','id_bandera','id_sucursal','tipo','subtipo','equivalencia',
-                   'n_tacc','productos_tacc','precio_tacc_100g','n_sin','productos_sin','precio_sin_100g',
-                   'brecha_subtipo_pct']].sort_values(['PROVINCIA_NORM','cadena','sucursales_nombre','tipo','subtipo'])
+                              np.where(_comp['n_tacc']>0, 'solo con TACC', 'solo sin TACC'))
+    _comp['brecha_subtipo_pct'] = (_comp['precio_sin_100g'] / _comp['precio_tacc_100g'] - 1) * 100
+    _comp = _comp.merge(suc_geo[['id_comercio','id_bandera','id_sucursal','cadena','PROVINCIA_NORM','sucursales_localidad',
+                                 'sucursales_nombre']], on=['id_comercio','id_bandera','id_sucursal'], how='left')
+    _comp = _comp[['cadena','PROVINCIA_NORM','sucursales_localidad','sucursales_nombre','id_comercio','id_bandera',
+                   'id_sucursal','tipo','subtipo','equivalencia','n_tacc','productos_tacc','precio_tacc_100g','n_sin',
+                   'productos_sin','precio_sin_100g','brecha_subtipo_pct']].sort_values(
+                       ['PROVINCIA_NORM','cadena','sucursales_nombre','tipo','subtipo'])
 else:
-    _comp = pd.DataFrame(columns=['cadena','PROVINCIA_NORM','sucursales_localidad','sucursales_nombre',
-                                  'id_comercio','id_bandera','id_sucursal','tipo','subtipo','equivalencia',
-                                  'n_tacc','productos_tacc','precio_tacc_100g','n_sin','productos_sin',
-                                  'precio_sin_100g','brecha_subtipo_pct'])
+    _comp = pd.DataFrame()
+
+leeme = pd.DataFrame({'hoja_o_columna': [
+    'Método', 'Canasta', 'Ponderaciones', 'Brecha_subtipo*', 'Brecha_tipo*', 'Serie_canasta*',
+    'Brecha_provincia / region / empresa / cadena', '*_anual', 'brecha_canasta', 'n_min / confiable', 'Panel balanceado',
+    'Control_EAN', 'Plausibilidad', 'Fuente'],
+    'definicion': [
+    'Brecha de un subtipo en una sucursal y mes = mediana $/100 g de los productos sin TACC presentes / mediana $/100 g de '
+    'los con TACC presentes - 1 (los dos lados en el mismo super). Brecha del tipo = promedio geométrico de las de sus '
+    'subtipos con los dos lados (pesos iguales). Precio de un producto en el mes = mediana de sus precios diarios.',
+    'Productos de la canasta fija (CELDA 1), con los meses en que tuvieron precio. Un producto que cambió de código '
+    'ocupa una fila por código (misma columna producto; vigente_desde / vigente_hasta: meses en que se usa cada código). '
+    'Lista con métricas: docs/brecha_celiaca/canasta_fija_2022_2026.csv; reglas: docs/BRECHA_CELIACA.md §14.',
+    'Peso de cada tipo: % del gasto de los hogares en alimentos y bebidas no alcohólicas que va a sus artículos (ENGHo '
+    '2017/18), renormalizado entre los tipos de la canasta; cantidades de la canasta por sucursal (peso / precio con '
+    'TACC del año base).',
+    'Por subtipo (crackers, snacks, spaghetti, rellenas...): mediana entre sucursal-mes de la brecha del subtipo, '
+    'precios medianos $/100 g de cada lado y sucursales; todo el período y por año. Es la comparación de base.',
+    'Por tipo: promedio geométrico (pesos iguales) de las brechas medianas de sus subtipos presentes en el grupo '
+    '(brecha_mediana; ídem con el promedio sin outliers, brecha_prom, y el "más barato" ilustrativo, sesgado al alza), '
+    'precios $/100 g de cada lado (promedio geométrico de los de sus subtipos), subtipos y sucursales.',
+    'Canasta por mes (y año): sum_k w_k (1 + brecha del tipo k) - 1, con los pesos ENGHo.',
+    f'Últimos {VENTANA_GEO_MESES} meses ({VENTANA_TXT}). Una columna por tipo con su brecha y sus sucursales.',
+    'Mismo cálculo por año (todas las sucursales del año).',
+    'Brecha de la canasta del grupo (pesos ENGHo renormalizados entre los tipos presentes).',
+    f'n_min = sucursales del tipo con menos sucursales en el grupo; confiable = están todos los tipos y n_min >= {MIN_SUC_AGG}.',
+    f'Solo sucursal x subtipo con los dos lados en >= {int(FRAC_MESES_PANEL * 100)}% de los meses: la serie no cambia '
+    'por sucursales que entran o salen.',
+    'Precio de cada EAN relativo a la mediana del lado con TACC de su tipo, mes a mes; revisar = cambio de nivel x2 o '
+    'salto x2 mes a mes (código reutilizado, presentación mal cargada). No excluye.',
+    f'EANs excluidos por precio relativo a sus pares fuera de [1/{FACTOR_PLAUS}, {FACTOR_PLAUS}].',
+    'SEPA (zips semestrales del Drive). Desde ago-2026 los meses salen del SEPA diario (script 03), sin 8 comercios.']})
 
 out_xls = OUTPUT_DIR / f'brecha_celiaca_{ULTIMO_MES}.xlsx'
+_hojas = [
+    ('Leeme', leeme), ('Canasta', canasta), ('Ponderaciones', ponderaciones), ('Cobertura', cobertura_tipo),
+    ('Cobertura_mensual', cobertura_mensual), ('Brecha_subtipo', brecha_subtipo),
+    ('Brecha_subtipo_anual', brecha_subtipo_anual), ('Brecha_subtipo_anual_balanc', brecha_subtipo_anual_bal),
+    ('Brecha_tipo', brecha_tipo), ('Brecha_tipo_mes', brecha_tipo_mensual),
+    ('Brecha_tipo_mes_balanceado', brecha_tipo_mensual_bal), ('Brecha_tipo_anual', brecha_tipo_anual),
+    ('Brecha_tipo_anual_balanceado', brecha_tipo_anual_bal), ('Serie_canasta', serie_mensual),
+    ('Serie_canasta_balanceada', serie_mensual_bal), ('Canasta_anual', serie_anual),
+    ('Canasta_anual_balanceada', serie_anual_bal), ('Brecha_provincia', brecha_prov),
+    ('Brecha_tipo_provincia', brecha_tipo_prov), ('Brecha_region', brecha_region),
+    ('Brecha_tipo_region', brecha_tipo_region), ('Brecha_region_anual', brecha_region_anual),
+    ('Brecha_empresa', brecha_empresa), ('Brecha_tipo_empresa', brecha_tipo_empresa),
+    ('Brecha_empresa_anual', brecha_empresa_anual), ('Brecha_cadena', brecha_cadena), ('Concentracion', concentracion),
+    ('Brecha_sucursal', _brecha_suc), ('Comparacion_productos', _comp), ('Detalle_producto', _det),
+    ('Control_EAN', control_ean), ('Plausibilidad', plausibilidad)]
 with pd.ExcelWriter(out_xls, engine='openpyxl') as writer:
-    cobertura_tipo.to_excel(writer, sheet_name='Cobertura', index=False)
-    brecha_tipo.to_excel(writer, sheet_name='Brecha_tipo', index=False)
-    brecha_tipo_mensual.to_excel(writer, sheet_name='Brecha_tipo_mes', index=False)
-    brecha_tipo_prov.to_excel(writer, sheet_name='Brecha_tipo_prov', index=False)
-    serie_mensual.to_excel(writer, sheet_name='Serie_mensual', index=False)
-    serie_mensual_bal.to_excel(writer, sheet_name='Serie_mensual_balanceada', index=False)
-    # Serie_diaria/Serie_semanal solo si tienen datos (el método es mensual → normalmente vacías)
-    if len(serie_diaria):  serie_diaria.to_excel(writer, sheet_name='Serie_diaria', index=False)
-    if len(serie_semanal): serie_semanal.to_excel(writer, sheet_name='Serie_semanal', index=False)
-    brecha_prov.to_excel(writer, sheet_name='Brecha_provincia', index=False)
-    brecha_cadena.to_excel(writer, sheet_name='Brecha_cadena', index=False)
-    concentracion.to_excel(writer, sheet_name='Concentracion', index=False)
-    _brecha_suc.to_excel(writer, sheet_name='Brecha_sucursal', index=False)
-    _comp.to_excel(writer, sheet_name='Comparacion_productos', index=False)
-    _det.to_excel(writer, sheet_name='Detalle_producto', index=False)
+    for _sn, _df in _hojas:
+        (_df if len(_df.columns) else pd.DataFrame({'(sin datos)': []})).to_excel(writer, sheet_name=_sn, index=False)
     for sn in writer.sheets:
         ws = writer.sheets[sn]; fmt_ws(ws); auto_widths(ws)
+    writer.sheets['Leeme'].column_dimensions['B'].width = 140
 print(f'Excel guardado: {out_xls}')
-print(f'  Hojas: Cobertura · Brecha_tipo/_mes/_prov · Serie_mensual(+balanceada) · Brecha_provincia/cadena (col confiable) · Concentracion · Brecha_sucursal · Comparacion_productos · Detalle_producto')
-_np = int(brecha_prov['confiable'].sum()) if len(brecha_prov) else 0
-_nc = int(brecha_cadena['confiable'].sum()) if len(brecha_cadena) else 0
-print(f'  Confiables (n≥{MIN_SUC_AGG}): {_np}/{len(brecha_prov)} provincias · {_nc}/{len(brecha_cadena)} cadenas | Panel balanceado: {len(serie_mensual_bal)} meses')
-print(f'  Detalle_producto: {len(_det):,} filas · Comparacion_productos: {len(_comp):,} filas (sucursal×tipo×subtipo) · Brecha_sucursal: {len(_brecha_suc):,}')
-print(f'  ⚠️ El número clave está en Brecha_tipo (brecha por tipo en $/100g). La canasta pooled mezcla tipos de brecha muy distinta.')"""))
+print(f'  {len(_hojas)} hojas · Detalle_producto {len(_det):,} filas · Comparacion_productos {len(_comp):,} · '
+      f'Brecha_sucursal {len(_brecha_suc):,}')
+print('  El número clave: Brecha_tipo (por tipo) y Serie_canasta_balanceada / Canasta_anual_balanceada (evolución).')"""))
 
 # ── CELL 12 — MAPA FOLIUM POR SUCURSAL (lazy-load) ─────────────────────────────
 cells.append(cell_code("""\
 # ============================================================
-# CELDA 12 — Mapa Folium interactivo POR SUCURSAL (brecha celíaca, último mes)
+# CELDA 12 — Mapa Folium interactivo POR SUCURSAL (brecha celíaca, último dato de cada sucursal)
 # ============================================================
-# Un punto por supermercado; color VERDE→ROJO graduado por la brecha de canasta.
-# LIVIANO: los popups se arman al hacer clic (lazy-load desde un JSON compacto), así el
-# HTML no pesa (antes ~15 MB con todos los popups embebidos → carga al instante). Popup:
-# (1) valor de cada canasta y % de brecha; (2) productos por EQUIVALENCIA (subtipo) —
-# Con TACC vs Sin TACC, con presentación y $/100g; (3) cadena + localidad/provincia. La
-# brecha AUTORITATIVA es la del tipo (§3). Filtro por cadena (LayerControl) + pantalla
-# completa. Tiles OpenStreetMap (sin API key).
+# Un punto por supermercado; color VERDE→ROJO graduado por la brecha de la canasta en esa sucursal.
+# LIVIANO: los popups se arman al hacer clic (lazy-load desde un JSON compacto). Popup: (1) valor de cada canasta y %
+# de brecha; (2) productos por EQUIVALENCIA (subtipo) — con TACC vs sin TACC, con presentación y $/100g; (3) cadena +
+# localidad/provincia. La brecha AUTORITATIVA es la del tipo (§3). Filtro por cadena (LayerControl) + pantalla
+# completa. Mosaicos: Esri World Light Gray (sin API key y responde desde la red del INECO, BUG-32) + límites
+# provinciales dibujados desde el ar.json local (se ven aunque la red bloquee los mosaicos).
 import folium
 from folium.plugins import Fullscreen
 from branca.colormap import LinearColormap
 import json as _json
 
-# Snapshot = ÚLTIMA brecha disponible POR SUCURSAL dentro de una ventana de meses. Así el
-# mapa incluye cadenas que no reportaron el último mes (p.ej. DIA sin datos en agosto): cada
-# sucursal muestra su mes más reciente con dato (el popup indica de qué mes es).
+# Snapshot = ÚLTIMA brecha disponible POR SUCURSAL dentro de una ventana de meses (cadenas que no informaron el
+# último mes aparecen con su dato más reciente; el popup indica de qué mes es).
 _sk3m = ['id_comercio','id_bandera','id_sucursal']
 VENTANA_MAPA_MESES = 6
 _meses_ord = sorted(brecha_suc_mes['mes'].unique())
 _meses_win = set(_meses_ord[-VENTANA_MAPA_MESES:]) if _meses_ord else set()
 _bsm_w = brecha_suc_mes[brecha_suc_mes['mes'].isin(_meses_win)]
-_bk = (_bsm_w.sort_values('mes').groupby(_sk3m, as_index=False).tail(1)   # última fila = mes más reciente por sucursal
+_bk = (_bsm_w.sort_values('mes').groupby(_sk3m, as_index=False).tail(1)
        .merge(suc_geo[['id_comercio','id_bandera','id_sucursal','sucursales_nombre',
                        'sucursales_latitud','sucursales_longitud']],
               on=_sk3m, how='left')
        .dropna(subset=['sucursales_latitud','sucursales_longitud']))
 _um = _meses_ord[-1] if _meses_ord else ULTIMO_MES
-_sel_mes = _bk[_sk3m + ['mes']]   # mes elegido por sucursal → alinea bt_sm y datos_dia a ESE mes
+_sel_mes = _bk[_sk3m + ['mes']]
 
 _btm = bt_sm.merge(_sel_mes, on=_sk3m + ['mes'], how='inner')[_sk3m + ['tipo','tacc','sin','brecha_pct']]
 _bt_por_suc = {}
@@ -1276,16 +1550,15 @@ def _p_arr(_lst):
     _lst = sorted(_lst, key=lambda x: (x[2] if x[2] == x[2] else 9e9))[:8]
     return [[_d, (int(_g) if (_g == _g and _g > 0) else 0), (_iround(_p) if _p == _p else None)] for _d, _g, _p in _lst]
 
-# JSON compacto por sucursal (lo consume el JS al abrir el popup)
 _pd = {}
 for _r in _bk.itertuples(index=False):
-    _sk = (_r.id_comercio, _r.id_bandera, _r.id_sucursal)
+    _skk = (_r.id_comercio, _r.id_bandera, _r.id_sucursal)
     _key = f'{_r.id_comercio}_{_r.id_bandera}_{_r.id_sucursal}'
-    _tipos = _bt_por_suc.get(_sk, {})
+    _tipos = _bt_por_suc.get(_skk, {})
     _T = []
     for _tp in sorted(_tipos, key=lambda t: -_tipos[t][2]):
         _tacc_p, _sin_p, _brk = _tipos[_tp]
-        _subs = _prod.get(_sk, {}).get(_tp, {})
+        _subs = _prod.get(_skk, {}).get(_tp, {})
         def _ord(_s):
             _d = _subs[_s]; return (0 if (_d['A'] and _d['B']) else 1, _s)
         _S = [{'s': _s, 'A': _p_arr(_subs[_s]['A']), 'B': _p_arr(_subs[_s]['B'])} for _s in sorted(_subs, key=_ord)]
@@ -1300,16 +1573,19 @@ if _vmin == _vmax: _vmin, _vmax = float(_bk['brecha_pct'].min()), float(_bk['bre
 _cm = LinearColormap(colors=['#1a9850','#66bd63','#a6d96a','#fee08b','#fdae61','#f46d43','#d73027'],
                      vmin=_vmin, vmax=_vmax, caption=f'Brecha de canasta celíaca (%) — {NOMBRE_MES_TITLE}')
 
-m = folium.Map(location=[-38.0, -63.5], zoom_start=5, tiles='cartodbpositron', control_scale=True)
-# Límites PROVINCIALES desde el GeoJSON local (ar.json) → se ven SIEMPRE, aun si la red
-# bloquea los tiles externos (el fondo con nombres es un extra si los tiles cargan).
+m = folium.Map(location=[-38.0, -63.5], zoom_start=5, tiles=None, control_scale=True)
+_ESRI = 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/'
+folium.TileLayer(tiles=_ESRI + 'World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}', attr='Esri, HERE, Garmin, OSM',
+                 name='Esri Light Gray', control=False).add_to(m)
+folium.TileLayer(tiles=_ESRI + 'World_Light_Gray_Reference/MapServer/tile/{z}/{y}/{x}', attr='Esri',
+                 name='Esri nombres', control=False, overlay=True).add_to(m)
 try:
     if 'GEOJSON_PATH' in dir() and Path(GEOJSON_PATH).exists():
         with open(GEOJSON_PATH, 'r', encoding='utf-8') as _gf:
             _geo_base = _json.load(_gf)
         folium.GeoJson(_geo_base, name='Límites provinciales', control=False,
                        style_function=lambda _f: {'color': '#8a8f98', 'weight': 1.0,
-                                                  'fillColor': '#eef0f2', 'fillOpacity': 0.35}
+                                                  'fillColor': '#eef0f2', 'fillOpacity': 0.20}
                        ).add_to(m)
 except Exception as _e:
     print(f'  (aviso: no se pudieron dibujar los límites provinciales: {_e})')
@@ -1359,9 +1635,9 @@ function _bpop(k){ var pd=_gpd(); if(!pd||!pd[k]) return "<div>Sin datos.</div>"
   var h='<div style="font-family:Arial;font-size:12px;min-width:360px;max-width:480px;max-height:520px;overflow-y:auto">';
   h+='<div style="font-size:14px;font-weight:bold">'+d.n+'</div>';
   h+='<div style="color:#555;margin-bottom:5px">'+d.c+" · "+d.l+", "+d.p+'</div>';
-  h+='<div style="padding:6px;background:#f5f5f5;border-radius:4px;margin-bottom:4px">Brecha de canasta celíaca: <b style="font-size:15px">+'+d.b+'%</b><br>Canasta convencional: <b>'+_fmt(d.bs)+'</b> · celíaca: <b>'+_fmt(d.cl)+'</b> <span style="color:#888">(índice $/100g ponderado)</span><br><span style="color:#888;font-size:11px">'+d.nt+" tipo(s) · dato de "+d.m+'</span></div>';
+  h+='<div style="padding:6px;background:#f5f5f5;border-radius:4px;margin-bottom:4px">Brecha de canasta celíaca: <b style="font-size:15px">+'+d.b+'%</b><br>Canasta con TACC: <b>'+_fmt(d.bs)+'</b> · sin TACC: <b>'+_fmt(d.cl)+'</b> <span style="color:#888">(índice $/100g ponderado)</span><br><span style="color:#888;font-size:11px">'+d.nt+" tipo(s) · dato de "+d.m+'</span></div>';
   for(var i=0;i<d.T.length;i++){ var t=d.T[i];
-    h+='<div style="margin-top:7px;font-weight:bold;color:#1F4E79">'+t.t+" · brecha del tipo +"+t.g+'% <span style="color:#888;font-weight:normal">(mediana con-TACC '+_fmt(t.ta)+" vs sin "+_fmt(t.si)+'/100g)</span></div>';
+    h+='<div style="margin-top:7px;font-weight:bold;color:#1F4E79">'+t.t+" · brecha del tipo +"+t.g+'% <span style="color:#888;font-weight:normal">(mediana con TACC '+_fmt(t.ta)+" vs sin "+_fmt(t.si)+'/100g)</span></div>';
     h+='<table style="border-collapse:collapse;width:100%;font-size:11px"><tr style="background:#1F4E79;color:#fff"><th style="padding:2px">Equivalente</th><th style="padding:2px">Con TACC</th><th style="padding:2px">Sin TACC</th></tr>';
     for(var j=0;j<t.S.length;j++){ var s=t.S[j];
       h+='<tr><td style="border:1px solid #ddd;padding:3px;vertical-align:top;font-weight:600">'+s.s+'</td><td style="border:1px solid #ddd;padding:3px;vertical-align:top">'+_plist(s.A)+'</td><td style="border:1px solid #ddd;padding:3px;vertical-align:top">'+_plist(s.B)+'</td></tr>';
@@ -1397,8 +1673,7 @@ nb = {
     'nbformat': 4,
     'nbformat_minor': 5
 }
-script_dir = os.path.dirname(os.path.abspath(__file__))
-out_path = os.path.join(script_dir, '06_evolucion_brecha_celiaca.ipynb')
+out_path = os.path.join(HERE, '06_evolucion_brecha_celiaca.ipynb')
 with open(out_path, 'w', encoding='utf-8') as f:
     json.dump(nb, f, ensure_ascii=False, indent=1)
 print(f'Written: {out_path}')

@@ -1,9 +1,19 @@
 # CLAUDE.md — precios_minoristas_supermercados
 
 Pipeline sobre el **SEPA** (precios de supermercados de Argentina): 9 notebooks de Colab (nb01–nb09). Líneas de trabajo
-vivas, en orden (estado y próximos pasos: bloque **ESTADO ACTUAL / HANDOFF [2026-10-22 · cierre]** de
-`.claude/memory.md`): el **pass-through del tipo de cambio** (nb08 + canasta fija de 775 productos, lo último; guía
-`docs/PASS_THROUGH.md`), el **nb09**, el **nb02** y el **nb07**.
+vivas, en orden (estado y próximos pasos: bloque **ESTADO ACTUAL / HANDOFF** de `.claude/memory.md`): la **brecha
+celíaca** (nb06 con canasta fija 2022-2026, lo último: 2026-10-23; guía `docs/BRECHA_CELIACA.md` §14), el
+**pass-through del tipo de cambio** (nb08 + canasta fija de 775 productos; guía `docs/PASS_THROUGH.md`), el **nb09**, el
+**nb02** y el **nb07**.
+
+**nb06** (`notebooks/06_evolucion_brecha_celiaca.ipynb`, fuente `gen_nb06.py`): brecha de precios con TACC / sin TACC
+dentro de cada sucursal, por tipo, en $/100 g, mensual desde ene-2022, por provincia, región, empresa y cadena. Desde el
+2026-10-23 la canasta es **fija**: productos elegidos por continuidad temporal, geográfica y por cadenas sobre las salidas
+del nb09 (lista con métricas en `docs/brecha_celiaca/canasta_fija_2022_2026.csv`, que `gen_nb06.py` embebe en la
+CELDA 1; reglas en `docs/BRECHA_CELIACA.md` §14; scripts de la selección en `docs/auditoria/scripts_nb06_2026-10/`).
+La brecha se calcula por subtipo dentro de cada sucursal y se agrega como un índice de precios (subtipo → tipo →
+canasta ENGHo). **Falta la corrida en Colab** (relee 58 meses una vez, ~1 h; pico de RAM 2,5 GB): con los mismos zips
+del Drive tiene que dar lo de `docs/BRECHA_CELIACA.md` §14.10 (simulación local exacta). Test `test_brecha_celiaca.py`.
 
 El **nb07** (`notebooks/07_evolucion_canastas_alternativas.ipynb`) es el motor del
 informe semanal: 6 canastas, índice encadenado, comparación con el IPC y aperturas por cadena/región.
@@ -62,6 +72,7 @@ relativo; la próxima corrida en Colab los muestra por primera vez.
    python notebooks/test_reclasificacion_provincia.py # nb02 CELDA 7 (provincia por polígonos, BUG-44)
    python notebooks/test_trazabilidad_productos.py    # nb09 (SEPA sintético contra fuerza bruta)
    python notebooks/test_canasta_diaria.py            # nb08 (medianas y sucursales apareadas contra fuerza bruta)
+   python notebooks/test_brecha_celiaca.py            # nb06 (canasta fija, subtipos, vigencias, geografía, ENGHo, caché)
    ```
 3. Los datos (ZIPs del SEPA, caché, Excel de salida) **no están en el repo**: viven en el Drive del
    usuario (`MyDrive/carga/`). Para auditar una corrida, el usuario pasa el Excel del nb07 y los zips
@@ -179,6 +190,25 @@ relativo; la próxima corrida en Colab los muestra por primera vez.
   borrar esos meses de los cachés: nb08 `diaria_v2_<clave>/2026-08.parquet` + `estado_2026-08.parquet` y siguientes;
   nb09 `_cache_nb09/v1/2026-08_p*` y siguientes. Defectos de la fuente: `docs/SEPA_TECNICO.md`, "Defectos y cambios de
   la fuente 2022-2026".
+- **nb06, canasta fija**: la fuente de la canasta es `docs/brecha_celiaca/canasta_fija_2022_2026.csv` (tipo, lado,
+  EAN, descripción, gramos, subtipo, vigencia, producto y métricas); `gen_nb06.py` arma con él `TIPOS`, `GRAMOS`,
+  `VIGENCIA`, `PRODUCTO` (códigos de un mismo producto: entra una vez en la mediana de su lado) y `SUBTIPO` de la CELDA 1.
+  Para cambiar un producto: editar el CSV (o rehacerlo con los scripts s7-s10 de `docs/auditoria/scripts_nb06_2026-10/`;
+  s11/s12 simulan el nb06 con los zips y lo comparan con un cálculo independiente), regenerar y commitear CSV + generador
+  + `.ipynb`. Cambiar un EAN cambia la clave del caché (`_cache/brecha_v3_<clave>/`, un archivo por mes: relee los 58
+  meses); gramos, vigencias, pesos y descripciones no. La selección por nombre (`USAR_REGLA_NOMBRE`) queda apagada:
+  hacía que la canasta dependiera del `maestro_sepa_completo.csv.gz` que hubiera en el Drive.
+- **Códigos que cambiaron de EAN**: Molinos reemplazó los EANs de sus fideos en sep-oct 2023 y los viejos siguen en ~100
+  sucursales con el precio CONGELADO (Spaghetti Lucchetti viejo a $230-274 en 2024-2026 contra $1.042-1.699 del nuevo).
+  Un producto empalmado lleva sus códigos con `VIGENCIA` (el viejo hasta el mes anterior al nuevo); nunca sumar un código
+  viejo sin cortarlo. El Maestro interno tiene descripciones viejas de EANs reutilizados (`7790070336002` = Spaghetti sin
+  TACC Matarazzo en todas las cadenas, "Mostachol 5 Cereales" en el Maestro): identificar por la descripción del SEPA
+  y verificar con precios **de todo el período** — con solo 2024-2026, los sin TACC viejos de Matarazzo (`…321800`,
+  `…321855`, reemplazados en oct-2023 y congelados después) parecían fideos comunes; en 2022 costaban el doble o el
+  triple del común en las mismas sucursales: eran sin TACC genuinos y se empalman. **Los gramos del
+  Maestro también pueden estar viejos**: la caja Wakas que reemplazó a la bolsa de 250 g en jun-2024 es de 300 g (el
+  Maestro dice 250) y las Porteñitas pasaron de 130 a 139 g con el mismo EAN; contrastar con la presentación que
+  publican las cadenas y, si no se sabe desde cuándo cambió, no usar el producto.
 - **Canasta de pass-through**: el nb08 la toma por nombre (`CANASTA_EXCEL`), no del `canasta_representativa_*` más
   nuevo; el script de Colab NO nombra su salida `canasta_representativa_*` a propósito (el nb02 y el nb07 la tomarían).
   Cambiar los EANs de la canasta cambia la clave del caché del nb08 (relee todo, ~1,5-2 h); cambiar cantidades no.
@@ -207,6 +237,7 @@ relativo; la próxima corrida en Colab los muestra por primera vez.
 | `docs/NB02_ANALISIS_VARIACION.md` | **nb02 CELDAS 19b y 19c**: cómo correrlas, cómo leer cada hoja, caché, validación con oct-26, trampas |
 | `docs/BUGS_Y_MEJORAS.md` | Defectos abiertos arriba; bugs resueltos con causa y fix |
 | `docs/SEPA_TECNICO.md` | Formato SEPA, **defectos y cambios de la fuente 2022-2026** (días con la mitad de los comercios, corte de ago-2026, archivos y filas repetidas, provincias, códigos con basura, precios simbólicos), factor de precio, cadenas, frescos por tipo, caché |
+| `docs/BRECHA_CELIACA.md` | **nb06 — brecha celíaca**: estimador intra-sucursal por tipo, **canasta fija 2022-2026 (§14: fuentes, reglas, empalmes y vigencias, productos, ponderación ENGHo, qué revisar en la corrida)**, salidas, agenda para el paper (§13). Lista con métricas: `docs/brecha_celiaca/canasta_fija_2022_2026.csv`; scripts de la selección: `docs/auditoria/scripts_nb06_2026-10/` |
 | `docs/PASS_THROUGH.md` | **Pass-through del tipo de cambio**: estado, cómo correr el nb08 con la canasta de 775 productos y qué revisar, cómo rehacer la canasta, variable de precio, advertencias, próximos pasos (tipo de cambio, regresiones) |
 | `docs/AUDITORIA_2026-10-22_nb09.md` | **Corrida del nb09 v2 revisada**: controles, panel contra el SEPA crudo, hallazgos de método y de fuente (§4), corrida con los arreglos (§6). Scripts en `docs/auditoria/scripts_nb09_2026-10/` (r1-r8) |
 | `docs/auditoria/scripts_nb08_2026-10/` | `validar_real.py`: las celdas reales del nb08 v2 sobre zips locales contra el lector anterior (jul-sep 2024) |

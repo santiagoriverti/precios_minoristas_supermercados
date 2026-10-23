@@ -1,12 +1,17 @@
 # Brecha Celíaca (TACC vs sin-TACC) — `06_evolucion_brecha_celiaca`
 
-Documento técnico del **Notebook 06**. Mide la **brecha** entre una canasta **base**
-(productos con TACC) y su equivalente **sin-TACC** (canasta celíaca), y su evolución
-**diaria, semanal y mensual**, desagregada por provincia, cadena y concentración de
-comercios.
+Documento técnico del **Notebook 06**. Mide la **brecha** de precios entre productos **con TACC** y sus
+equivalentes **sin TACC**, dentro de cada supermercado, y cómo se distribuye **en el tiempo** (mensual desde
+enero de 2022), **geográficamente** (provincia, región, AMBA) y **entre cadenas**.
 
-Última actualización: 2026-08-27 (revisión exhaustiva nivel-paper del estimador a nivel sucursal:
-filtro de plausibilidad por regla, tratamiento del efecto envase, especificación hedónica §3.9).
+Última actualización: 2026-10-23 — **canasta FIJA 2022-2026** (§14: productos con continuidad temporal, geográfica y por
+cadenas elegidos con reglas sobre las salidas del nb09, empalmes de códigos con vigencia, pesos ENGHo, qué revisar en la
+corrida). El estimador de §3 no cambia; la canasta flexible de agosto de 2026 (§6.1, §12) queda como antecedente.
+Antes: 2026-08-27 (revisión exhaustiva nivel-paper del estimador a nivel sucursal: filtro de plausibilidad por regla,
+tratamiento del efecto envase, especificación hedónica §3.9).
+
+> **Para retomar**: §14 (canasta vigente y qué revisar cuando vuelva la corrida de Colab), §3 (estimador), §13 (agenda
+> para el paper). La lista de productos con sus métricas está en `docs/brecha_celiaca/canasta_fija_2022_2026.csv`.
 
 ---
 
@@ -444,9 +449,10 @@ Córdoba (+206 %). El mapa incluye **19 cadenas** con **DIA (1.001 sucursales, l
 
 > **El filtro de plausibilidad descartó 3 EANs** (transparentes en la salida): Smams chocolate
 > ($184/100 g, error de carga) y **dos "sin TACC Matarazzo" (`7790070321800`, `7790070321855`)
-> con precio de fideo convencional (~$207/100 g)** — mal etiquetados en el Maestro; Matarazzo tiene
-> su verdadera línea GF con otros EANs (`7790070335xxx`, ~$970/100 g, alta cobertura), que sí se
-> usan. Es una **validación** de que la regla atrapa errores de etiquetado sin curación a mano.
+> con precio de fideo convencional (~$207/100 g)**. *Corrección del 2026-10-23 (§14.4)*: no estaban mal
+> etiquetados; son los códigos sin TACC de Matarazzo hasta oct-2023, que después quedaron con el precio
+> congelado en ~100 sucursales (el filtro hizo bien en sacarlos de 2024-2026, pero no son fideos comunes:
+> en 2022 costaban el doble o el triple del Matarazzo común en las mismas sucursales).
 > Dulces cambió de +89 % (Maná fuera) a **+66 %** (Maná dentro): sensible a un producto porque el
 > TACC dulces tiene pocos candidatos; se conserva Maná (más conservador) y la **hedónica (§3.9)** con
 > control de gramaje es la cifra identificada.
@@ -513,3 +519,410 @@ Córdoba (+206 %). El mapa incluye **19 cadenas** con **DIA (1.001 sucursales, l
 
 **G. Reproducibilidad.** Ya versionado en git (generador + listas de EANs). Falta: fijar y
   documentar fecha/versión de descarga SEPA usada para cada corte del paper.
+
+> **Qué resuelve la canasta fija de §14 (2026-10-23)**: A (criterio de matching reproducible: reglas escritas, misma
+> composición por subtipo en los dos lados), B en parte (gramos verificados por producto; los EANs sin presentación ya
+> no entran; mediana mensual exacta en lugar de la mediana de medianas por bloque), D (la canasta de un grupo es el
+> promedio ponderado de las brechas por tipo: no la mueve qué tipos tiene cada sucursal), E (mismos productos todo el
+> período + panel balanceado por sucursal × tipo) y G (la canasta vive en el repo y no depende del maestro del Drive).
+> Siguen abiertos: C (selección de sucursales), F (HHI), la hedónica de §3.9 y deflactar los niveles.
+
+---
+
+## 14. Canasta fija 2022-2026 (2026-10-23)
+
+> **Estado**: implementada en el nb06 (`gen_nb06.py` arma `TIPOS`, `GRAMOS`, `VIGENCIA`, `PRODUCTO` y `SUBTIPO` de la
+> CELDA 1 desde `docs/brecha_celiaca/canasta_fija_2022_2026.csv`). **Falta la primera corrida en Colab**: relee los 58
+> meses (ene-2022 → oct-2026) una vez. Reemplaza la canasta flexible de agosto de 2026 (§6.1 y §12, que quedan como
+> antecedente). Scripts de la selección y de la simulación: `docs/auditoria/scripts_nb06_2026-10/` (s1-s14 y su README).
+
+### 14.1 Por qué una canasta fija
+
+La canasta flexible (listas curadas más todos los productos del maestro cuya descripción decía "sin TACC", ~250 EANs)
+servía para la foto de un mes pero no para comparar en el tiempo, entre regiones y entre cadenas:
+
+1. **La composición cambiaba sola.** La mayoría de los candidatos sin TACC tenía historia corta. Las líneas sin TACC de
+   marcas masivas (Matarazzo en sep-2023, Exquisita y La Salteña en nov-2023/feb-2024, Oreo en abr-2024, Preferido en
+   abr-2025, Terrabusi en jul-2025) entraron con precios más bajos que las marcas celíacas y bajaron la mediana del lado
+   sin TACC: parte de la "evolución" de la brecha era la entrada de productos, no un cambio de precios.
+2. **Dependía del Drive.** Los candidatos salían de `maestro_sepa_completo.csv.gz`, que el script 03 reescribe cada mes
+   con lo que se vende ese mes: cambiaban los candidatos (y la clave del caché, que releía todo) sin tocar el notebook.
+3. **La regla por nombre fallaba en los dos sentidos.** Se perdía las grafías del SEPA ("S TACC" de Carrefour, "LIBRE
+   D/GLUTEN", "S-TACC", la marca Glutal) y el Maestro interno tiene descripciones viejas de códigos reutilizados y
+   "sin TACC" mal puestos (14.4).
+
+Una canasta fija de productos que existen todo el período, con la misma composición de subtipos de los dos lados, mide
+el cambio de precios de **los mismos productos** y se puede comparar entre lugares y cadenas.
+
+### 14.2 Fuentes
+
+| Fuente | Para qué |
+|---|---|
+| nb09, corrida al 22/10/2026 (`trazabilidad_productos_20220101_20261022.parquet` y `panel_mensual_productos_20220101_20261022.parquet`) | Cobertura mensual de cada producto (sucursales con precio por día, promedio del mes) de ene-2022 a oct-2026; provincias, comercios, cadenas grandes y cadena principal en todo el período |
+| SEPA diario del 22/10/2026 (`productos.csv` de cada comercio) | La descripción que publica cada cadena: marca "sin TACC", identidad de cada código, presentación |
+| Zips semestrales 2022A → 2026B del Drive (`MyDrive/carga/`, los mismos que lee el nb06; bajados el 23/10/2026; el 2026B trae jul-2026 y ago-oct 2026 del SEPA diario hasta el 22/10) | Precio mensual por sucursal × EAN (mediana exacta de los días) para verificar identidad, gramos, empalmes y cortes de código en ene-2022 → oct-2026, y para simular el nb06 completo |
+| `canasta_representativa_2026-10.xlsx` (nb01) | Referencia: la canasta Celíaca Media (`cantidad_05`, 71 productos, casi todos naturalmente sin gluten: aceite, arroz, leche…) explica por qué su prima es ~9% y no se usa para elegir |
+| ENGHo 2017/18 (INDEC, microdatos de gastos; `IPC_jubilados/data/cache/`) | Peso de cada tipo en el gasto de los hogares |
+
+### 14.3 Reglas de selección (en orden)
+
+1. **Tipos**: con dicotomía celíaca y con algún producto sin TACC continuo 2022-2026: fideos secos, galletitas dulces,
+   galletitas saladas y crackers, pan rallado y rebozador, cereales rellenos (almohaditas). Afuera por no tener ningún
+   sin TACC que cumpla las reglas: pan envasado (los sin TACC —Schär, Binfinit— están en pocas cadenas y los con TACC
+   continuos son casi todos de DIA), alfajores (un solo Yuka), premezclas y harinas, budines, tapas, prepizzas, pastas
+   frescas y cerveza (la sin TACC aparece en 2023-2026).
+2. **Lado.** *Sin TACC*: la descripción del Maestro o de alguna cadena en el SEPA dice sin TACC / sin gluten (todas las
+   grafías; "C/GLUTEN" y "galletitas DE gluten" son con TACC) o la marca es celíaca (>= 50% de sus productos
+   etiquetados: Smams, Wakas, Blue Patna, Crisppino, Snuks, Santa María, Naturalsur…). *Con TACC*: sin esa marca, sin
+   ingredientes naturalmente sin gluten (arroz, maíz, legumbres, quinoa…) y de una marca que no sea celíaca.
+3. **Continuidad temporal**: precio todos los meses de ene-2022 a jul-2026 (55, los semestrales oficiales) y en
+   ago-oct 2026; a lo sumo 3 **caídas** (meses con cobertura < 35% de su mediana móvil de 13 meses) sin contar los meses
+   con defectos conocidos de la fuente (jul-2023, con la mitad de los comercios entre el 16 y el 28, y dic-2023 →
+   mar-2024, el hueco de Molinos); cobertura media 2022 / 2026 entre 1/4 y 4 (el producto no cambió de escala). La
+   caída se mide contra la mediana móvil para no castigar el crecimiento: las pepas Smams pasaron de ~480 sucursales
+   por día en 2022 a ~1.140 en 2026 sin ningún hueco (los bizcochos agridulces Smams, en cambio, pasaron de ~80 a ~510:
+   en 2022 eran un producto de nicho y quedan afuera por la cobertura 2022/2026 = 0,16).
+4. **Cobertura geográfica y por cadenas** (todo el período, ranking del nb09):
+
+   | | Sucursales por día (mediana mensual) | Provincias | Comercios súper | Cadenas grandes (de 8) | Cadena principal |
+   |---|---|---|---|---|---|
+   | Sin TACC | >= 100 | >= 20 | >= 4 | >= 3 | <= 75% de sus sucursal-días |
+   | Con TACC | >= 300 | >= 22 | >= 8 | >= 5 | <= 60% |
+
+   Cadenas grandes: DIA, Carrefour, Cencosud (Vea/Disco/Jumbo), La Anónima, Cooperativa Obrera, Coto, ChangoMas y
+   Toledo. Comercios súper: sin estaciones de servicio, Mercado Libre ni farmacias.
+5. **Comparabilidad por subtipo**: fideos por forma (spaghetti, tallarín, mostachol/penne, tirabuzón/fusilli, cortos);
+   galletitas dulces en rellenas, secas, pepas, con chips, obleas y bizcochos; saladas en crackers y galletas de arroz,
+   y saborizadas. Afuera lo que no tiene equivalente: fideos al huevo, integrales, de legumbres, "Rina", preparados;
+   galletitas bañadas, integrales, de avena, sin azúcar, surtidas, de hojaldre, tostadas dulces y vainillas; saladas de
+   salvado, bizcochitos de grasa, tostadas, palitos y las galletas de arroz **dulces** (el Grandiet `7797330100663` dice
+   "Galletas de Arroz" en el Maestro y "galletas de arroz dulces" en Carrefour y La Anónima).
+6. **Identidad verificada con precios (ene-2022 → oct-2026)**: cada producto contra los de su mismo tipo y lado
+   (mediana $/100 g de su lado en cada mes): su nivel relativo en los últimos 6 meses dentro de [0,4; 2,5] veces el de
+   los primeros 6, y ningún cambio de nivel **persistente** de más de ×2,5 (mediana de 3 meses contra los 3 anteriores:
+   eso es otro producto, una presentación mal cargada o un precio congelado; un dato malo de un mes en una cadena se
+   revierte y no cuenta). Las ventanas de esa regla no cruzan oct-2023 → mar-2024 (salida de los precios controlados,
+   14.8) ni los 3 meses desde el corte de un código. En los empalmes, cada código a ±25% de la mediana de sus códigos
+   en los meses en que conviven; el salto en el mes del corte se informa (s10, `CORTE`). Y cobertura en oct-2026 (nb09,
+   SEPA diario al 22/10) >= 25% de su mediana (no casi desaparecido).
+   **Presentación**: los gramos del Maestro tienen que coincidir (±5%) con los que publican las cadenas en oct-2026; si
+   difieren y no hay evidencia de cuándo cambió el paquete, el producto queda afuera (Porteñitas: 130 g en el Maestro,
+   139 g en cuatro cadenas, y un pack "3x139 g" registrado en may-2025). Los Wakas se resolvieron con evidencia (14.4).
+7. **Lado con TACC en marcas de primera línea**: precio $/100 g entre 0,6 y 1,67 veces la mediana con TACC de su
+   subtipo (afuera las marcas económicas: Spaghetti La Providencia a $192/100 g contra ~$360-440 de Lucchetti y
+   Matarazzo). El sin TACC no tiene franja: sus diferencias de precio son parte de lo que se mide.
+8. **Composición espejada**: en cada subtipo, tantos productos con TACC como sin TACC (los de más cobertura); si el
+   lado con TACC tiene menos candidatos que el sin TACC, entran todos los de los dos lados (tirabuzón, crackers,
+   almohaditas). El subtipo que no tiene los dos lados queda afuera (fideos cortos y tallarín, bizcochos y pan rallado
+   solo tenían con TACC).
+
+La prima sin TACC / con TACC de cada producto se calcula y se informa, pero **no** es una regla: la condición de sin
+TACC la dan la etiqueta y la marca, y sacar los sin TACC baratos sesgaría la brecha para arriba.
+
+### 14.4 Productos que cambiaron de código: empalmes y vigencias
+
+- **Molinos, sep-oct 2023.** Lucchetti y Matarazzo pasaron a códigos nuevos con número de forma ("Spaghetti N3
+  Matarazzo", "Mostachol N51 Lucchetti"…); en abr-2023 hubo además códigos intermedios (N°5, N°51, N°52, N°34). **El
+  código nuevo salió a 2,5-3,4 veces el precio del viejo en las mismas sucursales** (spaghetti Matarazzo: $166 contra
+  $60 por 100 g en oct-2023, en ~1.000 sucursales con los dos): los viejos venían con precio controlado (subieron 19%
+  entre jun y oct de 2023, con una inflación de ~48%) y el cambio de código fue la salida de ese precio. Los códigos
+  viejos **siguen apareciendo en ~100 sucursales con el precio congelado** (Spaghetti Lucchetti viejo a $230-274 en
+  todo 2024-2026 contra $1.042-1.699 del nuevo): si entraran en la mediana, en esas sucursales la brecha se dispararía.
+  Por eso cada código lleva una **vigencia**, la misma para todos los de Molinos, comunes y sin TACC: el viejo hasta
+  sep-2023 y el nuevo desde oct-2023. Los intermedios quedan afuera (poca cobertura y precios inconsistentes).
+- **Wakas, jun-2024: de la bolsa de 250 g a la caja de 300 g.** Los fusilli multicereal (`...0024/0031/0048/0086/0093`,
+  bolsa de 250 g según el Maestro desde 2017) pasaron a códigos "Caja" (`...0796/0826/0802/0819/0833`). El Maestro dice
+  250 g también para la caja, pero las cuatro cadenas que la publican en oct-2026 dicen 300 g, y los precios lo
+  confirman: en jun-sep 2024, en las mismas sucursales de la Cooperativa Obrera, la caja costaba 26% más que la bolsa
+  (3.136 contra 2.490: el mismo precio por gramo con 300 y 250 g), y en todas las cadenas la caja cuesta exactamente lo
+  mismo que el penne Wakas de 300 g. Desde ago-2024 algunas cadenas publican el código viejo como alias de la caja
+  (Cencosud: mismo precio, mismas sucursales, "x300g"). Por eso: bolsa 250 g hasta 2024-07, caja 300 g desde 2024-06
+  (en jun-jul 2024 conviven en algunas sucursales, a precio por gramo parecido, y el producto entra una vez).
+- **La línea sin TACC de Matarazzo existe desde antes de 2022** (corrección: el 22/10 los había tomado por mal
+  etiquetados). `7790070321800` (spaghetti), `7790070321855` (tirabuzón) y `7790070321794` (penne) tenían en 2022
+  1.400-2.000, 1.000-1.400 y ~500 sucursales por día y, en las mismas sucursales, costaban 1,97, 2,97 y 2,0 veces el
+  Matarazzo común (p5-p95 de 1,78-2,32 en el spaghetti; ninguna cadena por debajo de 1,3×): son sin TACC genuinos. En
+  oct-2023 Molinos los reemplazó por `7790070336002` (spaghetti; el Maestro lo describe como "Mostachol 5 Cereales"),
+  `7790070335982` (tirabuzón, desde dic-2023) y `7790070335999` (penne), y los viejos quedaron con el precio congelado en
+  ~100 sucursales: con solo los precios de 2024-2026 parecían fideos comunes (y el filtro de plausibilidad de agosto de
+  2026 los sacó). Se empalman como los demás de Molinos.
+- **El Maestro interno puede estar desactualizado**: `7790070336002` es el Spaghetti sin TACC Matarazzo 500 g en todas
+  las cadenas (SEPA diario) y el Maestro dice "Fideos Mostachol 5 Cereales"; los Crisppino de 100 g `7798199770134` y
+  `7798199770141` tienen los sabores cruzados (Carrefour y Cencosud: el primero es jamón y el segundo queso). Las
+  descripciones de la canasta salen del Maestro solo si coinciden con las del SEPA (si no, se corrigen: `DESC_FIJA` de
+  s10).
+
+En el nb06 la vigencia se aplica en la CELDA 7, después de leer: cambiarla no relee el SEPA.
+
+### 14.5 La canasta
+
+**68 productos (80 códigos)**: 30 con TACC y 38 sin TACC en 12 subtipos de 5 tipos. *Suc./día 2022-26* = mediana mensual de las sucursales con precio por día (nb09; en los empalmes, la suma de sus códigos vigentes); *Prov.*, *Com.* (comercios súper) y *Cad. grandes* en todo el período; *$/100 g oct-26* = mediana nacional (SEPA diario al 22/10); *Relativo* = $/100 g sobre la mediana con TACC de su subtipo (mediana 2022-2026): en el lado con TACC, su posición en la franja de primera línea; en el sin TACC, su prima. Vigencia: ≤ último mes del código viejo, ≥ primer mes del nuevo.
+
+Quedaron afuera en la verificación con precios: Porteñitas y Maná rellenas 165 g (los gramos del Maestro no coinciden con los de las cadenas y no se sabe desde cuándo), Scons 9 de Oro (dos cambios de nivel persistentes de ×4 frente a sus pares, may-2023 y dic-2023) y el tirabuzón sin TACC Matarazzo (su código nuevo recién aparece en dic-2023: dos meses sin precio). Fideos cortos y tallarín, bizcochos y pan rallado no tienen sin TACC continuo.
+
+| Tipo | Productos con TACC | Productos sin TACC | Códigos (EAN) | Subtipos |
+|---|---|---|---|---|
+| Fideos secos | 6 | 9 | 27 | Mostachol / penne, Spaghetti, Tirabuzón / fusilli |
+| Galletitas dulces | 10 | 10 | 20 | Con chips, Obleas, Pepas, Rellenas, Secas (vainilla, limón, chocolate) |
+| Galletitas saladas y crackers | 10 | 13 | 23 | Crackers y galletas de arroz, Saborizadas / snack |
+| Pan rallado y rebozador | 2 | 2 | 4 | Rebozador |
+| Cereales rellenos (almohaditas) | 2 | 4 | 6 | Almohaditas rellenas |
+| **Total** | 30 | 38 | 80 | |
+
+**Fideos secos**
+
+| Subtipo | Lado | Producto | EAN (vigencia) | g | Suc./día 2022-26 | Prov. | Com. | Cad. grandes | $/100 g oct-26 | Relativo |
+|---|---|---|---|---|---|---|---|---|---|---|
+| Mostachol / penne | sin TACC | Penne rigate sin TACC Matarazzo 500 g | `7790070321794` (≤2023-09)<br>`7790070335999` (≥2023-10) | 500 | 551 | 24 | 12 | 6 | 989 | 2,29 |
+| Mostachol / penne | sin TACC | Fideos Mostacholes sin TACC Blue Patna 500 Gr | `7730114100077` | 500 | 167 | 24 | 11 | 7 | 1.172 | 3,32 |
+| Mostachol / penne | con TACC | Mostacholes Lucchetti 500 g | `7790070318336` (≤2023-09)<br>`7790070336149` (≥2023-10) | 500 | 2.208 | 24 | 25 | 8 | 350 | 0,91 |
+| Mostachol / penne | con TACC | Penne rigate Matarazzo 500 g | `7790070318633` (≤2023-09)<br>`7790070336200` (≥2023-10) | 500 | 1.287 | 24 | 22 | 8 | 420 | 1,09 |
+| Spaghetti | sin TACC | Spaghetti sin TACC Matarazzo 500 g | `7790070321800` (≤2023-09)<br>`7790070336002` (≥2023-10) | 500 | 1.188 | 24 | 17 | 8 | 860 | 2,36 |
+| Spaghetti | sin TACC | Fideos Spaghetti sin TACC Blue Patna 500 Gr | `7730114100015` | 500 | 167 | 24 | 10 | 6 | 1.220 | 3,71 |
+| Spaghetti | con TACC | Spaghetti Matarazzo 500 g | `7790070318640` (≤2023-09)<br>`7790070336309` (≥2023-10) | 500 | 2.118 | 24 | 25 | 8 | 420 | 1,17 |
+| Spaghetti | con TACC | Spaghetti Lucchetti 500 g | `7790070318282` (≤2023-09)<br>`7790070336385` (≥2023-10) | 500 | 2.002 | 24 | 26 | 8 | 350 | 1,00 |
+| Tirabuzón / fusilli | sin TACC | Fusilli quinoa sin TACC Wakas | `7798031470031` (≤2024-07)<br>`7798031470826` (≥2024-06) | 250/300 | 586 | 24 | 18 | 7 | 1.257 | 3,38 |
+| Tirabuzón / fusilli | sin TACC | Fusilli maíz y arroz sin TACC Wakas | `7798031470024` (≤2024-07)<br>`7798031470796` (≥2024-06) | 250/300 | 537 | 24 | 18 | 7 | 1.257 | 3,67 |
+| Tirabuzón / fusilli | sin TACC | Fusilli chía sin TACC Wakas | `7798031470086` (≤2024-07)<br>`7798031470819` (≥2024-06) | 250/300 | 527 | 24 | 16 | 7 | 1.236 | 3,37 |
+| Tirabuzón / fusilli | sin TACC | Fusilli amaranto sin TACC Wakas | `7798031470048` (≤2024-07)<br>`7798031470802` (≥2024-06) | 250/300 | 443 | 24 | 16 | 6 | 1.343 | 3,52 |
+| Tirabuzón / fusilli | sin TACC | Fideos Tirabuzones sin TACC Blue Patna 500 Gr | `7730114100046` | 500 | 272 | 24 | 10 | 6 | 1.190 | 3,43 |
+| Tirabuzón / fusilli | con TACC | Tirabuzones Lucchetti 500 g | `7790070318329` (≤2023-09)<br>`7790070336026` (≥2023-10) | 500 | 2.080 | 24 | 25 | 8 | 350 | 0,93 |
+| Tirabuzón / fusilli | con TACC | Tirabuzones Matarazzo 500 g | `7790070318602` (≤2023-09)<br>`7790070336293` (≥2023-10) | 500 | 2.014 | 24 | 25 | 8 | 420 | 1,07 |
+
+**Galletitas dulces**
+
+| Subtipo | Lado | Producto | EAN (vigencia) | g | Suc./día 2022-26 | Prov. | Com. | Cad. grandes | $/100 g oct-26 | Relativo |
+|---|---|---|---|---|---|---|---|---|---|---|
+| Con chips | sin TACC | Galletitas Con Chips de Chocolate Smams 150 Gr | `7798181511004` | 150 | 511 | 24 | 13 | 5 | 2.527 | 1,96 |
+| Con chips | con TACC | Galletitas con Chips Suavecitas Par Nor 140 Gr | `7791324156926` | 140 | 333 | 24 | 11 | 5 | 1.214 | 1,00 |
+| Obleas | sin TACC | Obleas Limón Santa María 90 Gr | `7798079230833` | 90 | 108 | 24 | 5 | 4 | 3.222 | 2,60 |
+| Obleas | con TACC | Galletitas Obleas Clásicas Opera 220 Gr | `7790040008175` | 220 | 1.760 | 24 | 24 | 8 | 1.349 | 0,86 |
+| Pepas | sin TACC | Pepas de Membrillo sin TACC Smams 150 Gr | `7798181510786` | 150 | 997 | 24 | 14 | 7 | 2.093 | 2,28 |
+| Pepas | con TACC | Galletitas Dulces Pepas Trío 320 Gr | `7791787100924` | 320 | 359 | 24 | 11 | 5 | 716 | 0,97 |
+| Rellenas | sin TACC | Galletitas Sabor Chocolate con Relleno de Vainilla Smams 105 Gr | `7798181510014` | 105 | 1.005 | 24 | 15 | 7 | 2.467 | 1,92 |
+| Rellenas | sin TACC | Galletitas Vainilla Rellenas Smams 105 Gr | `7798181510021` | 105 | 914 | 24 | 16 | 7 | 2.371 | 1,95 |
+| Rellenas | sin TACC | Galletitas Vainilla Rellenas Sabor Frutilla Smams 105 Gr | `7798181510267` | 105 | 512 | 24 | 16 | 7 | 2.467 | 1,93 |
+| Rellenas | con TACC | Galletitas Rellena Sabor Frambuesa Sonrisas 108 Gr | `7790040133488` | 108 | 2.087 | 24 | 20 | 8 | 1.629 | 1,10 |
+| Rellenas | con TACC | Galletitas Vainilla con Relleno de Limón Duquesa 115 Gr | `7622300742645` | 115 | 1.932 | 24 | 23 | 8 | 1.460 | 0,99 |
+| Rellenas | con TACC | Galletitas Vainilla Rellenas Chocolate Maná 152 Gr | `7790040133242` | 152 | 890 | 24 | 19 | 8 | 1.178 | 1,00 |
+| Secas (vainilla, limón, chocolate) | sin TACC | Galletitas Colegial Vainilla Samms 150 Gr | `7798181510847` | 150 | 554 | 24 | 14 | 7 | 1.733 | 1,75 |
+| Secas (vainilla, limón, chocolate) | sin TACC | Galletitas Sabor Limón Aglu 150 Gr | `7798128410070` | 150 | 252 | 24 | 4 | 4 | 1.600 | 1,70 |
+| Secas (vainilla, limón, chocolate) | sin TACC | Galletitas Sabor Vainilla sin TACC Santa María 200 Gr | `7798079230147` | 200 | 207 | 24 | 4 | 3 | 1.450 | 1,69 |
+| Secas (vainilla, limón, chocolate) | sin TACC | Galletitas Marmoladas sin TACC Santa María 200 Gr | `7798079230628` | 200 | 171 | 23 | 5 | 4 | 1.450 | 1,63 |
+| Secas (vainilla, limón, chocolate) | con TACC | Galletitas Anillos Clásicos Terrabusi 170 Gr | `7622201808884` | 170 | 1.214 | 24 | 20 | 8 | 1.205 | 1,22 |
+| Secas (vainilla, limón, chocolate) | con TACC | Galletitas Dulces Boca de Dama Terrabusi 170 Gr | `7622201808860` | 170 | 894 | 24 | 20 | 8 | 935 | 0,93 |
+| Secas (vainilla, limón, chocolate) | con TACC | Galletitas Sconcitos 9 de Oro 200 Gr | `7792200000791` | 200 | 706 | 24 | 20 | 7 | 750 | 0,85 |
+| Secas (vainilla, limón, chocolate) | con TACC | Galletitas Frolitas Trio 300 Gr | `7791787000644` | 300 | 369 | 24 | 16 | 6 | 767 | 0,90 |
+
+**Galletitas saladas y crackers**
+
+| Subtipo | Lado | Producto | EAN (vigencia) | g | Suc./día 2022-26 | Prov. | Com. | Cad. grandes | $/100 g oct-26 | Relativo |
+|---|---|---|---|---|---|---|---|---|---|---|
+| Crackers y galletas de arroz | sin TACC | Galletitas Crackers Smams 150 Gr | `7798181510212` | 150 | 1.064 | 24 | 17 | 8 | 2.513 | 2,78 |
+| Crackers y galletas de arroz | sin TACC | Galletas de Arroz sin TACC sin Sal Multicereal Grandiet 100 Gr | `7797330102377` | 100 | 733 | 24 | 13 | 5 | 1.850 | 2,12 |
+| Crackers y galletas de arroz | sin TACC | Galletitas Crackers Mix Semillas Smams 150 Gr | `7798181510229` | 150 | 640 | 24 | 16 | 8 | 2.513 | 2,84 |
+| Crackers y galletas de arroz | sin TACC | Galletas de Arroz con Sal Grandiet 100 Gr | `7797330100649` | 100 | 382 | 24 | 12 | 4 | 1.590 | 2,05 |
+| Crackers y galletas de arroz | sin TACC | Galletas de Arroz sin Sal Grandiet 100 Gr | `7797330100656` | 100 | 366 | 24 | 12 | 4 | 1.690 | 2,05 |
+| Crackers y galletas de arroz | sin TACC | Galletitas Crackers Light sin Sal Smams 150 Gr | `7798181510205` | 150 | 301 | 24 | 14 | 7 | 2.500 | 2,71 |
+| Crackers y galletas de arroz | sin TACC | Galletas de Arroz sin TACC Multicereal Grandiet 100 Gr | `7797330102322` | 100 | 206 | 24 | 13 | 5 | 1.828 | 2,06 |
+| Crackers y galletas de arroz | con TACC | Galletitas Original Crackers Criollitas 100 Gr | `7790040377707` | 100 | 1.434 | 24 | 22 | 8 | 810 | 0,93 |
+| Crackers y galletas de arroz | con TACC | Galletitas Crackers Naturalmente Granix 200 Gr | `7790045001133` | 200 | 708 | 24 | 18 | 6 | 925 | 1,08 |
+| Crackers y galletas de arroz | con TACC | Galletitas Mini Marineras Paseo 220 Gr | `7792180006462` | 220 | 470 | 24 | 19 | 8 | 840 | 1,06 |
+| Crackers y galletas de arroz | con TACC | Mini Crackers con Semillas de Sésamo Paseo 300 Gr | `7792180007285` | 300 | 362 | 24 | 20 | 8 | 758 | 0,94 |
+| Saborizadas / snack | sin TACC | Galletita Arroz sin TACC Sabor Queso Crisppino 100 Gr | `7798199770134` | 100 | 434 | 24 | 4 | 4 | 2.590 | 1,29 |
+| Saborizadas / snack | sin TACC | Galletitas Arroz sin TACC Sabor Jamón Crisppino 100 Gr | `7798199770141` | 100 | 430 | 24 | 4 | 4 | 2.590 | 1,29 |
+| Saborizadas / snack | sin TACC | Galletas de Arroz Mini Sabor Oliva Crisppino 50 Gr | `7798199770073` | 50 | 334 | 24 | 7 | 4 | 2.958 | 1,47 |
+| Saborizadas / snack | sin TACC | Galletitas de Arroz Sabor Jamón sin TACC Crisppino Minis 50 Gr | `7798199770035` | 50 | 284 | 24 | 7 | 3 | 2.958 | 1,43 |
+| Saborizadas / snack | sin TACC | Galletitas de Arroz Sabor Queso sin TACC Crisppino Minis 50 Gr | `7798199770042` | 50 | 272 | 24 | 7 | 3 | 2.958 | 1,44 |
+| Saborizadas / snack | sin TACC | Galletas de Arroz Pizza Grandiet 100 Gr | `7797330102971` | 100 | 206 | 24 | 10 | 3 | 1.700 | 0,85 |
+| Saborizadas / snack | con TACC | Galletitas Pizza Saladix 100 Gr | `7790580697303` | 100 | 1.501 | 24 | 22 | 8 | 1.901 | 0,97 |
+| Saborizadas / snack | con TACC | Galletitas Saladas Tipo Snacks Rex 75 Gr | `7790040003569` | 75 | 1.336 | 24 | 20 | 8 | 2.493 | 1,15 |
+| Saborizadas / snack | con TACC | Galletitas Original Rex 125 Gr | `7790040719804` | 125 | 995 | 24 | 22 | 8 | 1.998 | 1,00 |
+| Saborizadas / snack | con TACC | Galletitas Jamón Saladix 100 Gr | `7790580716707` | 100 | 850 | 24 | 26 | 8 | 1.901 | 0,95 |
+| Saborizadas / snack | con TACC | Galletitas Kesitas 75 Gr | `7790040003606` | 75 | 740 | 24 | 21 | 8 | 2.495 | 1,14 |
+| Saborizadas / snack | con TACC | Galletitas Calabresa Saladix 100 Gr | `7790580716806` | 100 | 508 | 24 | 23 | 6 | 1.899 | 0,95 |
+
+**Pan rallado y rebozador**
+
+| Subtipo | Lado | Producto | EAN (vigencia) | g | Suc./día 2022-26 | Prov. | Com. | Cad. grandes | $/100 g oct-26 | Relativo |
+|---|---|---|---|---|---|---|---|---|---|---|
+| Rebozador | sin TACC | Rebozador Aglu 450 Gr | `7798128410087` | 450 | 494 | 24 | 6 | 5 | 856 | 2,05 |
+| Rebozador | sin TACC | Rebozador Naturalsur 500 Gr | `7798193377285` | 500 | 211 | 23 | 6 | 5 | 750 | 2,23 |
+| Rebozador | con TACC | Rebozador Horno Fortificado Mamá Cocina Plus 1 Kg | `7792180004796` | 1.000 | 821 | 24 | 12 | 6 | 363 | 1,14 |
+| Rebozador | con TACC | Rebozador Freir Fortificado Mamá Cocina Plus 500 Gr | `7792180004765` | 500 | 461 | 24 | 16 | 6 | 319 | 1,00 |
+
+**Cereales rellenos (almohaditas)**
+
+| Subtipo | Lado | Producto | EAN (vigencia) | g | Suc./día 2022-26 | Prov. | Com. | Cad. grandes | $/100 g oct-26 | Relativo |
+|---|---|---|---|---|---|---|---|---|---|---|
+| Almohaditas rellenas | sin TACC | Almohaditas Rellenas Chocolate sin TACC Snuks 240 Gr | `7798169802636` | 240 | 273 | 24 | 7 | 6 | 2.141 | 1,26 |
+| Almohaditas rellenas | sin TACC | Almohaditas Rellenas Avellana Snuks 240 Gr | `7798169802629` | 240 | 257 | 24 | 7 | 6 | 2.104 | 1,26 |
+| Almohaditas rellenas | sin TACC | Almohaditas Rellenas Limón sin TACC Snuks 240 Gr | `7798169802728` | 240 | 253 | 24 | 7 | 6 | 2.162 | 1,26 |
+| Almohaditas rellenas | sin TACC | Almohaditas Rellenas Frutilla sin TACC Snuks 240 Gr | `7798169802711` | 240 | 253 | 24 | 8 | 6 | 2.125 | 1,27 |
+| Almohaditas rellenas | con TACC | Almohaditas Rellenas Sabor Mousse Limón Lasfor 200 Gr | `7798169802681` | 200 | 338 | 24 | 8 | 6 | 1.620 | 1,00 |
+| Almohaditas rellenas | con TACC | Almohaditas Rellenas con Crema Avellanas Lasfor 200 Gr | `7798169802650` | 200 | 330 | 24 | 8 | 6 | 1.650 | 1,00 |
+
+### 14.6 Estimador y ponderación (ENGHo 2017/18)
+
+**Estimador (2026-10-23)**, como un índice de precios por niveles:
+
+1. **Subtipo en una sucursal y mes**: precio de cada lado = mediana $/100 g de los productos presentes (un producto con
+   dos códigos entra una vez); brecha = sin TACC / con TACC − 1 si están los dos lados. Compara productos
+   equivalentes dentro del mismo super.
+2. **Subtipo en un grupo** (país, mes, año, provincia, región, empresa, cadena): mediana de esas brechas entre
+   sucursales (sucursal-mes).
+3. **Tipo en un grupo**: promedio geométrico, con pesos iguales, de sus subtipos presentes en el grupo con al menos
+   `MIN_SUC_SUBTIPO` (10) sucursales. En la **serie mensual**, un subtipo-mes con menos de la mitad de sus sucursales
+   habituales (`FRAC_SUBTIPO_MES`) se imputa con su último mes válido, como un ítem que falta temporalmente en un índice
+   de precios (cambios de código de Molinos en sep-oct 2023 y su hueco de dic-2023 a mar-2024); la columna
+   `n_subtipos_imputados` (y `subtipos_imputados` en la canasta) dice cuántos.
+4. **Canasta**: `sum_k w_k (1 + g_k) − 1` con los pesos ENGHo de abajo (renormalizados entre los tipos presentes).
+
+La versión anterior tomaba, en cada sucursal, la mediana del tipo entero y después la mediana entre sucursales. Eso
+mezclaba subtipos de niveles muy distintos según qué tuviera cada sucursal: en las saladas, la brecha daba +26,5%
+porque el lado con TACC tenía más snacks (~$2.000/100 g) y el sin TACC más crackers, aunque crackers contra crackers
+da +165% y snacks contra snacks +28%. Además, la serie mensual de cada tipo tenía 2-3 veces más ruido (desvío de la
+variación mensual de 38-42 pp en fideos y galletitas, contra 14-21 pp por subtipos), porque se movía con la mezcla de
+sucursales de cada mes. El "más barato" ilustrativo y el promedio sin outliers siguen el mismo camino. En el mapa y en
+la canasta por sucursal, la brecha del tipo en una sucursal es el promedio geométrico de sus subtipos con los dos lados.
+
+**Ponderación.** Peso de cada tipo = parte del gasto de los hogares en alimentos y bebidas no alcohólicas (división A01) que va a sus
+artículos en la ENGHo 2017/18 (microdatos de gastos, monto × pondera; hogar promedio, no celíaco: no hay datos de gasto
+de hogares celíacos), renormalizada entre los tipos de la canasta. La brecha de la canasta de un grupo es
+`sum_k w_k (1 + g_k) − 1` con `g_k` la brecha mediana del tipo `k` en el grupo (pesos renormalizados entre los tipos
+presentes); en la canasta por sucursal (mapa) se usan cantidades `w_k / precio con TACC del tipo en el año base (2022)`.
+
+| Tipo | Artículos de la ENGHo 2017/18 | % del gasto en alimentos y bebidas no alcohólicas | Peso en la canasta |
+|---|---|---|---|
+| Fideos secos | A0111304 Fideos secos | 1,503 | 30,0% |
+| Galletitas dulces | A0111105 Galletitas dulces envasadas + A0111108 Masas secas o finas | 1,717 | 34,3% |
+| Galletitas saladas y crackers | A0111103 Galletitas de agua envasadas + A0111102 Galletas, grisines y tostadas + A0111107 Galletitas de otro tipo | 1,407 | 28,1% |
+| Pan rallado y rebozador | A0111114 Pan rallado | 0,194 | 3,9% |
+| Cereales rellenos (almohaditas) | A0111207 Cereales inflados | 0,181 | 3,6% |
+
+Los tres tipos grandes pesan lo mismo, a grandes rasgos (28-34%); rebozador y almohaditas casi no mueven la canasta. El
+Excel de la selección del 22/10 (`seleccion_brecha_celiaca_20261022.xlsx`, hoja `Ponderaciones_ENGHo`) mostraba los
+mismos pesos como % del gasto en los 12 tipos con TACC (12,70 / 14,51 / 11,89 / 1,64 / 1,53): misma proporción.
+
+### 14.7 Qué cambia en el nb06
+
+| Celda | Cambio |
+|---|---|
+| 1 | `TIPOS` (peso ENGHo + productos con TACC / sin TACC con su descripción), `GRAMOS`, `VIGENCIA`, `PRODUCTO` (códigos de un mismo producto), `SUBTIPO`, `PONDERACION = 'engho'`, `MES_INICIO_HISTORICO = '2022-01'`, `USAR_REGLA_NOMBRE = False`, `CADENAS_FILTRAR` con Axion (23) y Farmacity (24), `MIN_SUC_SUBTIPO`, `FRAC_SUBTIPO_MES`, `RECLASIF_TOL_KM`, `AMBA_RADIO_KM`, `VENTANA_GEO_MESES` |
+| 3 | Nombres de comercios y banderas del `comercio.csv` del SEPA, columna `empresa`, regiones INDEC |
+| 4 | Lee la canasta (descripción y gramos de la config; el maestro solo de respaldo) |
+| 5 | Un archivo por parte de cada mes (el que cubre más días) |
+| 6 | Mediana exacta de los precios diarios del mes por sucursal × EAN; líneas filtradas por EAN antes de parsear; caché por mes `_cache/brecha_v3_<clave>/AAAA-MM.parquet` (si Colab se corta, retoma) |
+| 7 | Vigencia de códigos; un producto con dos códigos entra una vez (mediana de sus códigos); brecha por sucursal × mes × **subtipo** (`bt_sub`) y del tipo en la sucursal como promedio geométrico de sus subtipos (`bt_sm`); "más barato" vectorizado (la versión anterior, una función de Python por grupo, tardaba ~11 min con 58 meses); provincia por polígonos de `ar.json` (tolerancia 100 km), AMBA por coordenadas, región; control de identidad por EAN (`Control_EAN`, no excluye); pesos ENGHo |
+| 8 | Agregación subtipo → tipo → canasta (14.6); brecha por subtipo y por tipo (período, mes, año; todas las sucursales y panel balanceado por sucursal × subtipo); canasta ponderada por mes y año; provincia, región, empresa y cadena en los últimos 12 meses y región/empresa por año |
+| 9-10 | Gráficos: canasta mensual (todas y panel), por tipo, por región y año, provincia y empresa (confiables), concentración; coroplético de los últimos 12 meses |
+| 11 | Excel de 32 hojas (`Leeme` las explica; nuevas `Brecha_subtipo`, `Brecha_subtipo_anual` y `Brecha_subtipo_anual_balanc`) |
+| 12 | Mapa por sucursal con mosaicos Esri (sin la marca de agua de CARTO) |
+
+### 14.8 Advertencias para leer los resultados
+
+- **2023: precios controlados del lado con TACC y salida en oct-2023 / ene-2024.** Durante 2023 los productos con TACC
+  de marcas masivas (Molinos, Bagley/Mondelez, Arcor, Mamá Cocina…) subieron mucho menos que los sin TACC de marcas
+  celíacas: en jun-sep 2023 las galletitas dulces con TACC subieron 2-5% por mes y las sin TACC 5-21%. Molinos salió
+  de ese precio cambiando los códigos de sus fideos (oct-2023: el nuevo cuesta 2,5-3,4 veces el viejo en las mismas
+  sucursales) y el resto al terminar el programa de precios (ene-2024: +87% las galletitas dulces con TACC, +105% las
+  saladas, +118% el rebozador, contra +26-36% de los sin TACC). **La brecha de 2023 está inflada por esos precios
+  controlados del lado con TACC** (que el SEPA informa aunque el producto faltara en góndola) y cae en oct-2023 (fideos)
+  y en ene-2024 (el resto). Es un dato de la realidad de precios, no un error de la canasta; para comparar niveles,
+  usar 2022 y 2024-2026 y leer 2023 aparte.
+- **Pocas marcas del lado sin TACC.** Las galletitas dulces y saladas dependen sobre todo de Smams (y Crisppino,
+  Grandiet, Santa María, Aglu); los fideos, de Wakas, Blue Patna y Matarazzo sin TACC (spaghetti y penne, la línea de
+  más cobertura: ~1.200 y ~550 sucursales por día); las almohaditas, de Snuks (que fabrica Lasfor, el mismo de las
+  almohaditas con TACC: es el par más limpio). El lado con TACC de fideos es todo de Molinos (Lucchetti y Matarazzo: no
+  hay otra marca de primera línea continua 2022-2026). La brecha por tipo refleja en buena medida la política de
+  precios de esas pocas marcas; el spaghetti y el penne Matarazzo sin TACC contra los Matarazzo comunes son pares de la
+  misma marca (el sin TACC cuesta ~2 veces el común en las mismas sucursales).
+- **Comparaciones de sustitución**: crackers y galletas de arroz contra crackers de trigo; rebozador de arroz contra
+  rebozador de trigo. Es la sustitución real del consumidor celíaco, no el mismo producto sin gluten.
+- **Hueco de Molinos (dic-2023 → mar-2024)**: en esos meses hay pocas sucursales con fideos con TACC (y con el penne sin
+  TACC de Matarazzo): la serie de fideos se apoya en menos sucursales (el notebook lo avisa como cobertura baja).
+- **Ago-oct 2026** salen del SEPA diario (script 03), sin los comercios 19, 1000, 2000, 2002, 2005, 2007, 2013 y 3001;
+  Libertad dejó de publicar el 02/09/2026. Cuando salga el semestral oficial 2026B, borrar esos meses del caché.
+- **Sucursales sin coordenadas**: el nb06 usa solo las sucursales del maestro (`data/maestro_sucursales_completo.xlsx`,
+  3.602 con coordenadas). En ene-2022 le faltan ~13% de las sucursales que venden estos productos (comercios que
+  dejaron de publicar —17, 7, 6, 14, 18— y parte de DIA) y en 2026 ~5% (sucursales nuevas de Carrefour). La serie de
+  "todas las sucursales" de 2022 tiene entonces un universo algo menor; el panel balanceado no cambia (esas sucursales
+  no están en >= 70% de los meses).
+- **Precio de lista, no de promoción**: el SEPA informa el precio de lista de góndola.
+- **Mismos productos**: la canasta fija mide el cambio de precios de los mismos productos; no recoge la entrada de
+  opciones sin TACC más baratas (eso lo mide la canasta flexible, que se puede volver a correr con
+  `USAR_REGLA_NOMBRE = True` para comparar).
+
+### 14.9 Qué revisar cuando vuelva la corrida de Colab
+
+La simulación de 14.10 corrió las celdas reales con **los mismos zips del Drive**: la corrida de Colab tiene que dar
+los mismos números (salvo el último mes si el `2026B.zip` del Drive cambió).
+
+1. **Lectura**: 58 meses (ene-2022 → oct-2026), el AVISO de ago-2024 parte 1 (se usa `COMPLETOb`), "meses en
+   centavos: ninguno", los EANs sin ningún precio (esperado: ninguno).
+2. **Vigencia**: cuántas observaciones quedan fuera de la ventana de su código (los códigos viejos de Molinos desde
+   oct-2023 y la bolsa Wakas desde ago-2024; cifra esperada en 14.10).
+3. **Plausibilidad** (esperado: ninguno) y **Control_EAN** (revisar cada marcado: los saltos de oct-2023 y ene-2024
+   son la salida de los precios controlados, 14.8).
+4. **Cobertura_mensual**: sucursales con los dos lados por tipo y mes; el hueco de dic-2023 → mar-2024 en fideos.
+5. **Ponderaciones**: año base 2022; cantidades y pesos.
+6. **Brecha por tipo y año (panel balanceado)** contra 14.10.
+7. **Región, empresa y provincia**: cuáles quedan confiables (todos los tipos con >= 30 sucursales).
+
+### 14.10 Simulación con los zips del Drive (ene-2022 → oct-2026)
+
+Las celdas reales del `.ipynb` (`s11`) sobre los 10 zips semestrales del Drive (los mismos que lee Colab, bajados el
+23/10) y un cálculo independiente desde los precios de `s8` (`s12`):
+
+- **Coinciden exactamente**: 3.378.515 precios mensuales por sucursal × código (diferencia 0 y los mismos días), 534.456
+  brechas por sucursal × mes × subtipo, 333.440 por sucursal × mes × tipo y las 290 brechas por tipo y mes.
+- **Tiempo y memoria**: la lectura de los 58 meses tardó 37 min en la PC (38 s por mes; en Colab, ~1 h la primera vez)
+  con un pico de 1,6 GB de RAM; el resto de las celdas, 3,6 min (CELDA 7 en 23 s, Excel en 77 s), con un pico de
+  2,5 GB. El Colab gratuito tiene 12,7 GB.
+- **Lectura**: 3,5 millones de observaciones (sucursal × código × mes), los 80 códigos con precio, 2.761 sucursales,
+  ningún mes en centavos, el AVISO de ago-2024 parte 1 (se usa `COMPLETOb`). Vigencia: 57.419 observaciones fuera de
+  la ventana de su código (16 códigos). 12 sucursales reclasificadas de provincia. Plausibilidad: ninguno.
+  `Control_EAN`: 16 códigos marcados, todos por los saltos de oct-2023 / ene-2024 (14.8) o por datos malos de un mes en
+  una cadena (DIA en sep-2026, jul-2023): ninguno es un cambio de producto.
+- **Cobertura**: sucursales con los dos lados en algún momento: fideos 2.483, galletitas dulces 2.406, saladas 2.515,
+  almohaditas 796 y rebozador 601. El aviso de "cobertura BAJA" de la CELDA 8 sale por el rebozador (el tipo con
+  menos sucursales: 34-238 por mes). Panel balanceado: 4.975 sucursal × subtipo (1.318 sucursales); las obleas no
+  entran (ninguna sucursal tiene los dos lados en >= 70% de los meses).
+
+**Brecha por subtipo, todo el período** (mediana entre sucursal-mes; $/100 g medianos de cada lado):
+
+| Tipo | Subtipo | Con TACC | Sin TACC | Brecha | Sucursales |
+|---|---|---|---|---|---|
+| Fideos secos | Spaghetti | 235 | 492 | +118% | 2.479 |
+| Fideos secos | Mostachol / penne | 280 | 624 | +148% | 2.413 |
+| Fideos secos | Tirabuzón / fusilli | 203 | 740 | +273% | 2.448 |
+| Galletitas dulces | Rellenas | 625 | 1.233 | +88% | 2.372 |
+| Galletitas dulces | Secas | 576 | 958 | +75% | 1.318 |
+| Galletitas dulces | Pepas | 500 | 1.067 | +127% | 668 |
+| Galletitas dulces | Con chips | 614 | 1.300 | +111% | 734 |
+| Galletitas dulces | Obleas | 1.046 | 2.078 | +147% | 626 |
+| Galletitas saladas | Crackers y galletas de arroz | 163 | 647 | +165% | 2.470 |
+| Galletitas saladas | Saborizadas / snack | 1.100 | 1.150 | +28% | 855 |
+| Pan rallado y rebozador | Rebozador | 241 | 451 | +84% | 599 |
+| Cereales rellenos | Almohaditas | 1.200 | 1.521 | +26% | 775 |
+
+**Por tipo** (promedio geométrico de sus subtipos), todo el período: fideos +172%, galletitas dulces +108%, saladas
++84%, rebozador +84%, almohaditas +26%. Por año, panel balanceado:
+
+| Año | Fideos | Gall. dulces | Gall. saladas | Rebozador | Almohaditas | **Canasta (panel)** | Canasta (todas) |
+|---|---|---|---|---|---|---|---|
+| 2022 | +161% | +106% | +79% | +77% | +25% | **+111%** | +120% |
+| 2023 | +147% | +109% | +69% | +113% | +24% | **+106%** | +116% |
+| 2024 | +145% | +101% | +84% | +105% | +24% | **+107%** | +118% |
+| 2025 | +152% | +89% | +73% | +71% | +20% | **+100%** | +104% |
+| 2026 | +179% | +104% | +96% | +69% | +27% | **+120%** | +125% |
+
+**Serie mensual de la canasta (panel balanceado)**: ~117-121% en ene-may 2022, ~100% en el segundo semestre de 2022 y
+93-101% en el primero de 2023; sube a 118% en sep-2023, 135% en oct y 149-152% en nov-dic 2023 (los precios con TACC
+controlados, 14.8); cae a 96% en ene-2024; 109-124% en 2024 hasta bajar a 92% en dic-2024; 88-110% en 2025; 122-129%
+desde feb-2026 (fideos ~180-200% y snacks sin TACC más caros). Desvío de la variación mensual: 10 pp.
+
+**Últimos 12 meses (nov-2025 → oct-2026)**, grupos confiables (los 5 tipos con >= 30 sucursales): regiones Pampeana
++120%, Cuyo +125%, AMBA +126% y Noroeste +127% (Noreste y Patagonia, con pocas sucursales); empresas Carrefour +119% y
+Cencosud +125% (las únicas con los 5 tipos: DIA solo tiene dos); provincias entre Buenos Aires (+123%) y Córdoba
+(+127%). Las diferencias entre regiones y cadenas son chicas frente a las diferencias entre tipos y subtipos.

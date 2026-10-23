@@ -560,22 +560,33 @@ Correcciones aplicadas sobre v2:
 
 ## 9. Notebook 06 — Brecha celíaca (TACC vs sin-TACC)
 
-Herramienta dedicada a medir la **brecha** entre una canasta **base** (con TACC) y su
-equivalente **sin-TACC** (celíaca), y su evolución **diaria, semanal y mensual**, desagregada por
-provincia, cadena y concentración de comercios.
+Herramienta dedicada a medir la **brecha** de precios entre productos **con TACC** y sus equivalentes **sin TACC**, y
+cómo se distribuye en el **tiempo** (mensual desde enero de 2022), la **geografía** (provincia, región, AMBA) y las
+**cadenas**. Desde el 2026-10-23 usa una **canasta fija 2022-2026** (`docs/BRECHA_CELIACA.md` §14; lista con métricas en
+`docs/brecha_celiaca/canasta_fija_2022_2026.csv`).
 
 Resumen metodológico (detalle completo en **`docs/BRECHA_CELIACA.md`**):
-- **Solo tipos con dicotomía celíaca** (fideos, galletitas, pan rallado, harina/premezcla…). Nada
-  de limpieza/higiene/otros alimentos: la brecha se reporta sobre esa canasta acotada, sin maquillar.
-- **2–3 EANs representativos por lado y por tipo, promediados** ("LOS" representativos): el precio
-  del tipo en una sucursal/día = promedio de los presentes → robusto a faltantes y a la elección
-  de una marca puntual.
-- **Brecha intra-sucursal**: `brecha = canasta_celíaca / canasta_base − 1` por sucursal/día (misma
-  composición de tipos), luego agregada por dimensión. Al ser intra-sucursal, el % es comparable
-  entre provincias y cadenas.
-- Agregación por **mediana** (robusta) y **promedio** (outliers fuera, `_pmean`), como nb02/nb05.
-- Resolución **diaria** (ventana), **semanal** (ISO) y **mensual** (histórico completo), leyendo
-  las columnas `precio_YYYYMMDD` de los semestrales.
+- **Solo tipos con dicotomía celíaca** con productos sin TACC continuos desde 2022: fideos secos, galletitas dulces,
+  galletitas saladas y crackers, rebozador y cereales rellenos (almohaditas). Nada de limpieza, higiene u otros
+  alimentos: la brecha se reporta sobre esa canasta acotada, sin maquillar.
+- **Productos elegidos por reglas** sobre las salidas del nb09 (2022-01 → 2026-10): precio todos los meses, sin caídas
+  de cobertura fuera de los meses con defectos de la fuente, cobertura geográfica y por cadenas mínima, subtipos
+  comparables con la misma composición en los dos lados, marcas de primera línea del lado con TACC, presentación
+  verificada contra lo que publican las cadenas e identidad verificada con precios 2022-2026. Los productos que
+  cambiaron de código (Molinos en 2023, Wakas en 2024, que además pasó de la bolsa de 250 g a la caja de 300 g) se
+  empalman con una vigencia por código y entran una vez en la mediana de su lado.
+- **Brecha intra-sucursal por subtipo**: en cada sucursal y mes, mediana $/100 g de los productos sin TACC presentes
+  sobre la de los con TACC presentes, menos 1, por subtipo (spaghetti con spaghetti, crackers con crackers). Controla
+  el nivel de precios propio de cada sucursal y compara productos equivalentes.
+- **Agregación como un índice de precios**: subtipo (mediana entre sucursales; y promedio con outliers fuera,
+  `_pmean`) → tipo (promedio geométrico de sus subtipos con >= 10 sucursales; en la serie mensual, un subtipo-mes con
+  menos de la mitad de sus sucursales habituales se imputa con su último mes válido) → **canasta** (promedio de los
+  tipos ponderado por el **gasto de los hogares en esos artículos, ENGHo 2017/18**). Para la canasta por sucursal
+  (mapa), cantidades = peso / precio con TACC del año base. Serie con **panel balanceado** (sucursal × subtipo
+  presentes en >= 70% de los meses). La mediana del tipo entero en cada sucursal (la versión anterior) mezclaba
+  subtipos de niveles muy distintos según qué tuviera cada sucursal (`docs/BRECHA_CELIACA.md` §14.6).
+- Precio mensual de un producto en una sucursal = **mediana de sus precios diarios** del mes (columnas `precio_YYYYMMDD`
+  de las dos partes del mes).
 
 Contraste con el **IPC del INDEC**: el IPC no usa mediana; es una canasta fija ponderada por gasto
 (ENGHo) con promedios de relativos de precio sobre una muestra relevada. La brecha celíaca es un

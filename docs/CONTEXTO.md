@@ -1,6 +1,6 @@
 # Contexto del Proyecto — Precios Minoristas SEPA
 
-Última actualización: 2026-10-22 cierre (documentación al día para retomar en otra PC: `docs/PASS_THROUGH.md` nuevo, METODOLOGIA §12-§14 —nb08 v2, nb09, canasta de pass-through—, SEPA_TECNICO con los defectos de la fuente 2022-2026, `requirements.txt` completo, bloque ESTADO ACTUAL / HANDOFF general en `.claude/memory.md`. Ese día: nb08 v2 con la canasta de pass-through por defecto e índice de sucursales apareadas —falta correrlo en Colab—; canasta fija de 775 productos para el pass-through diario y script de Colab que la pone en `cantidad_01`; corrida del nb09 v2 revisada y arreglos que no releen —hoja `Dias`, comercios que dejaron de publicar con `mes_baja_comercios`, códigos con basura unidos a su EAN, precio simbólico relativo—). Antes, 2026-10-16 cierre (nb02: provincia de la CELDA 7 por polígonos de ar.json con tolerancia —BUG-44, resuelto: Neuquén capital, Paraná y San Nicolás vuelven a su provincia; la próxima corrida relee 12 meses en la 19c y 33 en la econometría, una vez—; región de la 19b/19c por coordenadas —BUG-43, simulado con datos reales, la próxima corrida relee 12 meses una vez—, Excel de azul a verde. Antes ese día: corrida de oct-26 en Colab revisada —19b y 19c OK— y BUG-42 corregido: AMBA por coordenadas, una sola referencia del país, acumulados contra el IPC en el mismo período, dispersión P5-P95 y formato del documento técnico; revisión en `docs/AUDITORIA_2026-10-16_nb02.md`. Script 03: acepta la carpeta de días y elige solo el zip semestral A/B. Antes, 2026-10-15: nb02: hoja `analisis_detallado` —la primera del Excel, CELDA 19c— con índices mensuales y semanales de la canasta Media por rubro, región, provincia, cadena y tipo de sucursal; y desagregación de la variación mensual por producto, arrastre, cadena y región —CELDA 19b—. Guía: `docs/NB02_ANALISIS_VARIACION.md`. Antes, 2026-10-02: nb07 v5.15: composición por rubro con faltantes imputados y Lavarropas BGH en la Tecnológica, relee el SEPA; corrida v5.14 al 2026-10-01 auditada y publicable. nb07 v5.14: el mismo cálculo que la v5.13 con un tercio de la RAM, corre en el Colab gratuito sin "RAM amplia"; no relee el SEPA. Antes, 2026-09-24: nb07 v5.13 lista para correr: frescos por TPD con nivel fijo, cobertura mínima de empaquetados, filtro estacional de frescos y ronda 2 de reemplazos —267 EANs—; ver el historial de cambios y `.claude/memory.md`. Antes, 2026-09-09: nb05/nb02: BUG-29 gráfico de barras con series de distinta longitud, BUG-30/32 mosaicos del mapa —CartoDB exige API key y OSM no responde desde la red de INECO— y BUG-31 el mapa pesaba 48 MB. Antes, 2026-09-07: nb07 v5.3, banda de plausibilidad anclada en frescos)
+Última actualización: 2026-10-23 (nb06: canasta FIJA 2022-2026 para la brecha celíaca —68 productos con TACC y sin TACC con continuidad temporal, geográfica y por cadenas elegidos con reglas sobre las salidas del nb09 y verificados con los precios de ene-2022 a oct-2026, empalmes de los códigos que cambió Molinos en 2023 (también los sin TACC de Matarazzo) y Wakas en 2024 con vigencia por código, pesos ENGHo, serie desde 2022 con panel balanceado, región/empresa/año; la brecha de 2023 está inflada por los precios controlados del lado con TACC— y BUG-46 —provincia por polígonos, archivo duplicado de ago-2024, comercios no supermercados, nombres oficiales, caché por mes, mediana exacta, canasta que dependía del maestro del Drive, códigos viejos con precio congelado—; test nuevo `test_brecha_celiaca.py`; falta la corrida en Colab, que relee 58 meses una vez; `docs/BRECHA_CELIACA.md` §14). Antes, 2026-10-22 cierre (documentación al día para retomar en otra PC: `docs/PASS_THROUGH.md` nuevo, METODOLOGIA §12-§14 —nb08 v2, nb09, canasta de pass-through—, SEPA_TECNICO con los defectos de la fuente 2022-2026, `requirements.txt` completo, bloque ESTADO ACTUAL / HANDOFF general en `.claude/memory.md`. Ese día: nb08 v2 con la canasta de pass-through por defecto e índice de sucursales apareadas —falta correrlo en Colab—; canasta fija de 775 productos para el pass-through diario y script de Colab que la pone en `cantidad_01`; corrida del nb09 v2 revisada y arreglos que no releen —hoja `Dias`, comercios que dejaron de publicar con `mes_baja_comercios`, códigos con basura unidos a su EAN, precio simbólico relativo—). Antes, 2026-10-16 cierre (nb02: provincia de la CELDA 7 por polígonos de ar.json con tolerancia —BUG-44, resuelto: Neuquén capital, Paraná y San Nicolás vuelven a su provincia; la próxima corrida relee 12 meses en la 19c y 33 en la econometría, una vez—; región de la 19b/19c por coordenadas —BUG-43, simulado con datos reales, la próxima corrida relee 12 meses una vez—, Excel de azul a verde. Antes ese día: corrida de oct-26 en Colab revisada —19b y 19c OK— y BUG-42 corregido: AMBA por coordenadas, una sola referencia del país, acumulados contra el IPC en el mismo período, dispersión P5-P95 y formato del documento técnico; revisión en `docs/AUDITORIA_2026-10-16_nb02.md`. Script 03: acepta la carpeta de días y elige solo el zip semestral A/B. Antes, 2026-10-15: nb02: hoja `analisis_detallado` —la primera del Excel, CELDA 19c— con índices mensuales y semanales de la canasta Media por rubro, región, provincia, cadena y tipo de sucursal; y desagregación de la variación mensual por producto, arrastre, cadena y región —CELDA 19b—. Guía: `docs/NB02_ANALISIS_VARIACION.md`. Antes, 2026-10-02: nb07 v5.15: composición por rubro con faltantes imputados y Lavarropas BGH en la Tecnológica, relee el SEPA; corrida v5.14 al 2026-10-01 auditada y publicable. nb07 v5.14: el mismo cálculo que la v5.13 con un tercio de la RAM, corre en el Colab gratuito sin "RAM amplia"; no relee el SEPA. Antes, 2026-09-24: nb07 v5.13 lista para correr: frescos por TPD con nivel fijo, cobertura mínima de empaquetados, filtro estacional de frescos y ronda 2 de reemplazos —267 EANs—; ver el historial de cambios y `.claude/memory.md`. Antes, 2026-09-09: nb05/nb02: BUG-29 gráfico de barras con series de distinta longitud, BUG-30/32 mosaicos del mapa —CartoDB exige API key y OSM no responde desde la red de INECO— y BUG-31 el mapa pesaba 48 MB. Antes, 2026-09-07: nb07 v5.3, banda de plausibilidad anclada en frescos)
 
 > **El proyecto tiene 9 herramientas (nb01–nb09).** Las descripciones detalladas por celda más
 > abajo en este archivo son **históricas** (describen la arquitectura previa de nb02); el estado
@@ -77,9 +77,10 @@ python notebooks/test_valores_documento.py          # nb02 CELDAS 7 (AMBA), 16, 
 python notebooks/test_reclasificacion_provincia.py  # nb02 CELDA 7 (provincia por polígonos de ar.json, BUG-44)
 python notebooks/test_trazabilidad_productos.py     # nb09 (SEPA sintético contra fuerza bruta, ~6 min)
 python notebooks/test_canasta_diaria.py             # nb08 v2 (medianas y sucursales apareadas contra fuerza bruta)
+python notebooks/test_brecha_celiaca.py             # nb06 (canasta fija, subtipos, vigencias, geografía, ENGHo, caché)
 ```
 
-Los 14 tests tienen que terminar en OK (verificado el 2026-10-22 con Python 3.14, pandas 2.3, numpy 2.4; versiones
+Los 15 tests tienen que terminar en OK (verificado el 2026-10-23 con Python 3.14, pandas 2.3, numpy 2.4; versiones
 completas en `requirements.txt`). En Windows, si la consola no muestra bien los acentos: `set PYTHONUTF8=1` (cmd) o
 `$env:PYTHONUTF8=1` (PowerShell) antes de correrlos.
 
@@ -190,10 +191,13 @@ no existe. Oct-26 salió así: `102026_pais_parte1COMPLETO.csv.gz` dentro de `20
 Mismo doble análisis mediana/promedio. Config: `EANS_INPUT` (lista de EANs) en la CELDA 1.
 
 ### 2e. `06_evolucion_brecha_celiaca` (notebook 06 — este repo)
-**Propósito**: brecha **TACC vs sin-TACC** (canasta base vs celíaca) y su evolución
-**diaria/semanal/mensual**, desagregada por provincia, cadena y concentración de comercios.
-Solo tipos con dicotomía celíaca; 2–3 EANs representativos por lado, promediados; brecha
-intra-sucursal. Config: dict `TIPOS` en la CELDA 1. **Detalle completo: `docs/BRECHA_CELIACA.md`.**
+**Propósito**: brecha de precios **con TACC vs sin TACC** y cómo se distribuye en el tiempo (mensual desde ene-2022),
+la geografía (provincia, región, AMBA) y las cadenas. Desde el 2026-10-23, **canasta fija 2022-2026** de 5 tipos con
+dicotomía (fideos secos, galletitas dulces, galletitas saladas y crackers, rebozador, cereales rellenos) elegida por
+reglas sobre las salidas del nb09 (`docs/BRECHA_CELIACA.md` §14; lista con métricas en
+`docs/brecha_celiaca/canasta_fija_2022_2026.csv`). Brecha intra-sucursal por tipo en $/100 g; canasta = promedio de
+los tipos con pesos ENGHo 2017/18. Config: `TIPOS`, `GRAMOS`, `VIGENCIA`, `PRODUCTO` y `SUBTIPO` en la CELDA 1 (los
+arma `gen_nb06.py` desde el CSV). Test: `notebooks/test_brecha_celiaca.py`. **Detalle completo: `docs/BRECHA_CELIACA.md`.**
 
 ### 2f. `07_evolucion_canastas_alternativas` (notebook 07) — motor del informe semanal
 **Estado: v5.13 lista para correr (relee el SEPA), 2026-09-24.** Implementa las decisiones de la revisión de la
@@ -612,6 +616,32 @@ Los 4 reemplazos (Swift XL, Lavandina Anti-splash, Plusbelle, Listerine) están 
 ---
 
 ## Historial de cambios
+
+### 2026-10-23 — nb06: canasta fija 2022-2026 de la brecha celíaca
+
+Pedido del usuario: elegir, con las salidas del nb09 (trazabilidad al 22/10/2026), productos con TACC y sin TACC con
+continuidad temporal, geográfica y por cadenas para medir la brecha y cómo se distribuye en el tiempo, la geografía y
+las cadenas; dejar el nb06 listo para correr en Colab sin que colapse la RAM. Hecho: **68 productos (80 códigos)** en 5
+tipos y 12 subtipos con la misma composición de los dos lados (`docs/brecha_celiaca/canasta_fija_2022_2026.csv`, que
+`gen_nb06.py` embebe en la CELDA 1 como `TIPOS`, `GRAMOS`, `VIGENCIA`, `PRODUCTO` y `SUBTIPO`), pesos ENGHo 2017/18, y
+BUG-46 (provincia por polígonos, archivo duplicado de ago-2024, estaciones de servicio y farmacias afuera, nombres
+oficiales, caché por mes, mediana exacta, canasta que dependía del maestro del Drive, códigos viejos con precio
+congelado). Reglas y fundamentos: `docs/BRECHA_CELIACA.md` §14; scripts s1-s15 en `docs/auditoria/scripts_nb06_2026-10/`.
+La verificación con los precios de **2022-2023** (zips del Drive que bajó el usuario) corrigió la primera selección:
+los sin TACC viejos de Matarazzo eran genuinos (costaban 2-3 veces el común en las mismas sucursales) y entran
+empalmados; Wakas pasó de la bolsa de 250 g a la caja de 300 g; Porteñitas, Maná 165 g y Scons 9 de Oro afuera; el
+control de estabilidad dejó de encadenar medianas (marcaba a casi todos con 58 meses). Hallazgo: en 2023 los productos
+con TACC de marcas masivas tenían precios controlados y salieron en oct-2023 (Molinos, con códigos nuevos a 2,5-3,4
+veces el precio viejo) y ene-2024 (el resto, +87-118%): la brecha de 2023 está inflada por eso (§14.8). Al simular
+el nb06 con los 58 meses se cambió el estimador: la brecha se calcula **por subtipo** dentro de cada sucursal (la
+mediana del tipo entero mezclaba snacks con crackers según el surtido: saladas +26,5% contra +165% crackers y +28%
+snacks) y se agrega como un índice de precios (subtipo → tipo, promedio geométrico → canasta ENGHo; subtipo-mes con
+pocas sucursales imputado con el mes anterior), con la mitad o un tercio del ruido mensual; y se vectorizó el "más
+barato" (CELDA 7: de 11 min a 23 s). Test `test_brecha_celiaca.py` (22 controles). Simulación de las celdas reales con
+los 58 meses del Drive contra un cálculo independiente: coincidencia exacta (3,4 millones de precios, 534.456 brechas
+por subtipo); lectura 37 min en la PC, pico de RAM 2,5 GB. Brecha por tipo 2022-2026: fideos +172%, galletitas dulces
++108%, saladas +84%, rebozador +84%, almohaditas +26%; canasta (panel) +111% en 2022, +106% en 2023, +107% en 2024,
++100% en 2025 y +120% en 2026; regiones y cadenas confiables entre +119% y +127% en los últimos 12 meses (§14.10).
 
 ### 2026-10-22 (cierre) — documentación al día para retomar en otra PC
 

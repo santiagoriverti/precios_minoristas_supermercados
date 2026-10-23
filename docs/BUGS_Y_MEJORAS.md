@@ -1,6 +1,11 @@
 # Bugs Pendientes y Mejoras
 
-Última actualización: 2026-10-22 (cierre) — **nb08 v2**: un archivo por quincena (el doble conteo del 1-5/08/2024
+Última actualización: 2026-10-23 — **nb06**: canasta FIJA 2022-2026 (productos con continuidad temporal, geográfica y
+por cadenas sobre las salidas del nb09, con empalmes de los códigos que cambió Molinos y Wakas) y BUG-46 resuelto (8
+defectos del nb06: provincia por rectángulos, archivo duplicado de ago-2024, comercios no supermercados, nombres viejos,
+caché que se perdía si Colab se cortaba, mediana aproximada, candidatos que dependían del maestro del Drive y códigos
+viejos con precio congelado); mapa del nb06 con mosaicos Esri. Falta la corrida en Colab (relee 58 meses una vez).
+Entradas 🟣 y 🔴 del nb06 en "Cambios y fixes 2026-10". Antes, 2026-10-22 (cierre) — **nb08 v2**: un archivo por quincena (el doble conteo del 1-5/08/2024
 queda solo en el nb02) e índice con sucursales apareadas, con la canasta de pass-through por defecto (abajo, entrada
 🟣 del nb08); **nb09**: `mes_baja_comercios` y precio simbólico relativo aplicados (abiertos de método: componente
 comercial y regional del puntaje). Antes, 2026-10-22 — **nb09**: corrida v2 en Colab revisada (`docs/AUDITORIA_2026-10-22_nb09.md`):
@@ -219,11 +224,16 @@ Popular 234 contra 240-249, Media 241 contra 242-251, Representativa 231 contra 
 los frescos a un índice multilateral con ventana móvil (TPD o GEKS). Mientras tanto, publicar con la
 banda de sensibilidad.
 
-### El mapa del nb06 sigue con los mosaicos viejos (CartoDB)
+### El mapa del nb06 sigue con los mosaicos viejos (CartoDB) — MITIGADO 2026-10-23
 
-`gen_nb06.py` (CELDA 12, mapa de sucursales por brecha) todavía crea el mapa con
-`tiles='cartodbpositron'`, así que hoy sale con la marca de agua *"API key required"* (BUG-30) y no
-tiene el fallback de proveedores de BUG-32. **Se sigue entendiendo** porque ese mapa dibuja los
+Desde el 2026-10-23 el mapa del nb06 (CELDA 12) usa los mosaicos **Esri World Light Gray** (base + nombres), sin API
+key y que responden desde la red del INECO (BUG-32), más los límites provinciales del `ar.json` local: ya no sale la
+marca de agua de CARTO. Lo que sigue pendiente es el respaldo automático de proveedores del nb05/nb02 (si Esri no
+responde, el mapa queda solo con los límites del `ar.json`).
+
+`gen_nb06.py` (CELDA 12, mapa de sucursales por brecha) creaba el mapa con
+`tiles='cartodbpositron'`, así que salía con la marca de agua *"API key required"* (BUG-30) y no
+tenía el fallback de proveedores de BUG-32. **Se seguía entendiendo** porque ese mapa dibuja los
 límites provinciales desde el `ar.json` local, pero conviene portarle el bloque de nb05/nb02.
 
 **Receta** (los tres pedazos están en `gen_nb05.py` CELDA 17 y son copiables tal cual):
@@ -252,6 +262,64 @@ de la Tecnológica** hasta que haya al menos dos cadenas con cobertura de durabl
 ---
 
 ## 🟢 Cambios y fixes 2026-10
+
+### 🟣 nb06 — canasta FIJA 2022-2026 (2026-10-23, falta Colab: relee 58 meses una vez)
+
+La brecha celíaca pasa de una canasta **flexible** (candidatos sin TACC agregados por nombre desde el maestro, ~250
+EANs, la mayoría con historia corta) a una canasta **fija** de productos con TACC y sin TACC elegidos por continuidad
+temporal (precio todos los meses ene-2022 → jul-2026 y en ago-oct 2026, sin caídas fuera de los meses con defectos de
+la fuente, cobertura 2022/2026 entre 1/4 y 4), cobertura geográfica (provincias) y por cadenas (comercios y cadenas
+grandes, cadena principal acotada), comparabilidad por subtipo con composición espejada, franja de precio del lado con
+TACC (marcas de primera línea) e identidad verificada con precios de 2024-2026. Lista con métricas:
+`docs/brecha_celiaca/canasta_fija_2022_2026.csv`; reglas: `docs/BRECHA_CELIACA.md` §14; scripts:
+`docs/auditoria/scripts_nb06_2026-10/` (s7-s12). Además: pesos ENGHo 2017/18 por tipo (la canasta es el promedio
+ponderado de las brechas por tipo), un producto con dos códigos entra una vez en la mediana de su lado (`PRODUCTO`),
+serie desde 2022, panel balanceado por tipo, tablas por región, empresa y año, hoja `Control_EAN`. Test nuevo:
+`notebooks/test_brecha_celiaca.py` (celdas reales sobre un SEPA sintético, 22 controles).
+
+**Revisión con los precios de 2022-2023 (zips del Drive, 23/10)**, que corrigió cuatro errores de la primera selección
+(hecha con precios de 2024-2026): (1) los sin TACC viejos de Matarazzo (`7790070321800`, `…321855`) **no estaban mal
+etiquetados**: en 2022 costaban 2-3 veces el común en las mismas sucursales; se empalman con sus reemplazos de oct-2023
+(`…336002`, `…335982`), como el penne; (2) los fusilli Wakas: la bolsa vieja es de 250 g y la caja nueva de 300 g (el
+Maestro decía 250 para las dos); (3) Porteñitas pasó de 130 a 139 g sin cambiar de código ni fecha conocida: afuera;
+(4) un Grandiet "galletas de arroz" es dulce: afuera de las saladas. Además, dos Crisppino con los sabores cruzados en el
+Maestro, la cobertura final medida con el nb09 (no con el catálogo del 22/10, que no tiene todos los productos) y un
+control nuevo del salto en el mes de cada corte de código.
+
+**Estimador por subtipo (2026-10-23, después de simular con los 58 meses)**: la mediana del tipo entero en cada
+sucursal mezclaba subtipos de niveles distintos según el surtido de cada sucursal (saladas +26,5%, con crackers +165% y
+snacks +28%) y hacía la serie 2-3 veces más ruidosa. Ahora: brecha por sucursal × mes × subtipo → mediana del subtipo
+entre sucursales → tipo = promedio geométrico de sus subtipos (>= `MIN_SUC_SUBTIPO` sucursales; en la serie mensual,
+subtipo-mes con menos de `FRAC_SUBTIPO_MES` de sus sucursales habituales imputado con el mes anterior) → canasta ENGHo.
+Panel balanceado por sucursal × subtipo; hojas `Brecha_subtipo*`. También se vectorizó el "más barato" ilustrativo
+(una función de Python por grupo: la CELDA 7 tardaba 11 min con 58 meses; ahora 23 s). Verificado con el test (22
+controles) y con la simulación de los 58 meses contra un cálculo independiente (coincidencia exacta).
+
+### 🔴 BUG-46 — nb06: ocho defectos de lectura, geografía y canasta (2026-10-23) ✅ Resuelto (falta Colab)
+
+1. **Provincia por rectángulos** (el mismo error que BUG-44 en el nb02: Neuquén capital → La Pampa, Paraná → Santa Fe,
+   San Nicolás → Entre Ríos). Ahora: polígonos de `ar.json` con tolerancia de 100 km, AMBA por coordenadas (90 km del
+   Obelisco) y región INDEC; afuera las sucursales 'Web' y las de CABA con coordenadas fuera de CABA (como el nb02).
+2. **Los dos archivos de la primera quincena de ago-2024** (`COMPLETO`, días 1-5, y `COMPLETOb`, días 1-15) se leían
+   los dos: ahora un archivo por parte, el que cubre más días (como el nb08 y el nb09).
+3. **Comercios que no son supermercados**: Axion Energy (23, estaciones de servicio, aparecía en el mapa como "Cadena
+   23") y Farmacity (24) quedaban en el universo; ahora `CADENAS_FILTRAR` los saca.
+4. **Nombres viejos de comercios y banderas**: 47 era "Pasamonte" (es Unicoop), 5 "Hipermercado Misiones" (California),
+   11-4/11-5 "Hiper ChangoMas"/"Mi ChangoMas" (son SuperChangomas/HiperChangomas); faltaba Carrefour Maxi. Ahora los del
+   `comercio.csv` del SEPA, más una columna `empresa` (comercio).
+5. **El caché se escribía una sola vez al final de la lectura**: si Colab se cortaba a la hora y media, se perdía
+   todo. Ahora un archivo por mes cerrado (`_cache/brecha_v3_<clave>/AAAA-MM.parquet`): se retoma donde quedó.
+6. **Mediana de medianas por bloque de 300.000 filas**: el precio mensual de una sucursal × EAN era una aproximación.
+   Ahora la mediana exacta de los precios diarios del mes (las dos partes) y los días con precio.
+7. **Los candidatos sin TACC dependían de qué `maestro_sepa_completo.csv.gz` hubiera en el Drive** (el script 03 lo
+   reescribe cada mes): cambiaban los candidatos y la clave del caché sin tocar el notebook. Ahora la canasta es fija y
+   la selección por nombre queda apagada (`USAR_REGLA_NOMBRE = False`).
+8. **Códigos viejos con precio congelado**: los EANs que Molinos reemplazó en sep-oct 2023 siguen en ~100 sucursales
+   con el precio de 2023 (Spaghetti Lucchetti viejo a $230-274 en 2024-2026 contra $1.042-1.699 del nuevo). Ahora cada
+   código de un producto empalmado tiene su `VIGENCIA` y fuera de ella no se usa (CELDA 7, sin tocar el caché).
+
+Verificado con `test_brecha_celiaca.py` (fuerza bruta sobre un SEPA sintético con cada trampa) y con las celdas reales
+sobre los zips 2024-2026 de la PC contra un cálculo independiente (`s11`/`s12`).
 
 ### 🟣 nb08 — canasta de pass-through por defecto y sucursales apareadas (2026-10-22)
 

@@ -1,0 +1,68 @@
+# Selección de productos para la brecha celíaca (nb06) — scripts del 2026-10-22/23
+
+Los pasos 1-6 arman el Excel de decisión `seleccion_brecha_celiaca_20261022.xlsx`: qué productos con y sin TACC
+existen, con qué cobertura por sucursal, cadena y provincia, desde cuándo, qué pares de la misma marca hay y cuánto pesa
+cada tipo en el gasto de los hogares. Los pasos 7-10 arman la **canasta fija 2022-2026**
+(`docs/brecha_celiaca/canasta_fija_2022_2026.csv`, que `gen_nb06.py` embebe en la CELDA 1), los 11-12 verifican el
+nb06 con datos reales y los 13-14 son auxiliares (tablas del documento y caché de la simulación). Reglas y
+resultados: `docs/BRECHA_CELIACA.md` §14.
+
+Orden de una corrida completa (datos en carpetas propias; los zips semestrales son los del Drive):
+
+```bash
+python -I -X utf8 s7_continuidad.py <trazabilidad nb09 .parquet> <panel mensual nb09 .parquet> <tipos.parquet de s3> continuidad.parquet
+python -I -X utf8 s8_precios_zips.py <carpeta con los zips> eans.txt precios_mes
+python -I -X utf8 s9_seleccion.py continuidad.parquet seleccion.parquet
+python -I -X utf8 s10_precios.py seleccion.parquet precios_mes precios_mes_2 <tipos.parquet de s3> canasta_fija_2022_2026.csv
+python notebooks/gen_nb06.py && python notebooks/test_brecha_celiaca.py
+python -I -X utf8 s14_superconjunto.py canasta_fija_2022_2026.eans.parquet canasta_fija_2022_2026.csv superconjunto.json
+python -I -X utf8 s11_simular_nb06.py <repo> <carpeta con los zips> <ar.json> sim_super 2022-01 --config superconjunto.json --hasta-celda 5
+python -I -X utf8 s15_filtrar_cache.py <repo> sim_super/_cache/brecha_v3_<clave> sim_final
+python -I -X utf8 s11_simular_nb06.py <repo> <carpeta con los zips> <ar.json> sim_final 2022-01
+python -I -X utf8 s12_comparar_simulacion.py <repo> precios_mes precios_mes_2 sim_final
+```
+
+Fuentes: un día del SEPA diario (nombres, presentaciones, cobertura y precios; `...\INECO\SEPA\sepa_diario_minoristas\`),
+el Maestro de Productos Interno (`data/`), las salidas del nb09 (`trazabilidad_productos_20220101_20261022.parquet` y
+`panel_mensual_productos_20220101_20261022.parquet`) y la ENGHo 2017/18 (`IPC_jubilados/data/cache/`).
+
+| Paso | Script | Qué hace |
+|---|---|---|
+| 1 | `s1_catalogo_dia.py <carpeta del día> <cat.parquet>` | Lee los zips de un día y guarda las filas (sucursal × producto) de los tipos con dicotomía o que dicen "sin TACC" |
+| 2 | `s2_clasificar_catalogo.py <cat.parquet> <Maestro .xlsx> <catalogo.xlsx>` | Regla de "sin TACC" por nombre (variantes S TACC, S/TACC, LIBRE D/GLUTEN, Glutal...; "C/GLUTEN" es con TACC), gramos y cobertura por producto |
+| 3 | `s3_tipos_y_formas.py <catalogo.parquet> <tipos.xlsx>` | Tipos con dicotomía (reglas más estrictas) y forma de los fideos |
+| 4 | `s4_pares_misma_marca.py <tipos.parquet> <cat.parquet> <candidatos.xlsx>` | Referencias con TACC a base de trigo (marca no celíaca) y pares de la misma marca (tipo, forma, tamaño 0,5-2x) |
+| 5 | `s5_historia_nb09.py <candidatos.xlsx> <panel nb09> <ranking nb09> <historia.xlsx>` | Cobertura mensual 2022-01 → 2026-10 de cada candidato, meses con dato, caídas, estabilidad desde 2022 y desde 2024-05 |
+| 6 | `s6_consolidar_excel.py <candidatos.xlsx> <historia.parquet> <historia_serie.parquet> <engho2018_gastos.zip> <engho2018_articulos.zip> <salida.xlsx>` | Excel final: pares recomendados (revisados a mano), sin TACC multicadena, historia, cobertura mensual, ponderaciones ENGHo (como % del gasto en los 12 tipos con TACC; el nb06 usa la misma proporción como % del gasto en alimentos) |
+| 7 | `s7_continuidad.py <ranking nb09 .parquet> <panel mensual nb09 .parquet> <tipos.parquet de s3> <continuidad.parquet>` | Tabla de candidatos de todo el SEPA: lado (sin TACC por etiqueta del Maestro o del SEPA; con TACC a base de trigo), tipo, cobertura mensual ene-2022 → oct-2026 (serie en `continuidad_serie.parquet`), meses con precio, provincias, comercios súper, cadenas grandes y cadena principal |
+| 8 | `s8_precios_zips.py <carpeta con YYYYA.zip/YYYYB.zip> <eans.txt> <carpeta de salida> [desde AAAA-MM]` | Precio mensual por sucursal × EAN (mediana exacta de los días; si hay dos archivos para la misma parte, el que cubre más días) desde los zips semestrales: un parquet por mes |
+| 9 | `s9_seleccion.py <continuidad.parquet> <seleccion.parquet>` | Reglas de continuidad, caídas, cobertura geográfica y por cadenas, subtipos comparables y marcas celíacas; empalmes con vigencia por código. Guarda el motivo de cada descarte, `_serie.parquet`, `_miembros.parquet` y `_vigencia.json` |
+| 10 | `s10_precios.py <seleccion.parquet> <precios_mes> <precios_mes_2> <tipos.parquet de s3> <canasta.csv>` | Verificación con precios ene-2022 → oct-2026: franja de primera línea del lado con TACC, identidad contra la evolución de su tipo, empalmes (códigos que conviven) y cortes de código (salto en el mes del corte), cobertura en oct-2026 (nb09), gramos contra el SEPA (`GRAMOS_FIJOS` y `DESC_FIJA` con las correcciones verificadas a mano); composición espejada por subtipo → el CSV de la canasta (+ `.verif`, `.eans`, `.empalmes`, `.cortes` y `.serie` en parquet) |
+| 11 | `s11_simular_nb06.py <repo> <carpeta con los zips> <ar.json> <salida> [mes_inicio] [--config canasta.json] [--hasta-celda N]` | Corre las celdas REALES del `.ipynb` sobre los zips del Drive (ene-2022 → oct-2026), mide tiempo y pico de RAM de cada celda y guarda los objetos clave. `--config` lee con otra canasta (el superconjunto de s14) y `--hasta-celda 5` corta después de la lectura |
+| 12 | `s12_comparar_simulacion.py <repo> <precios_mes> <precios_mes_2> <salida de s11>` | Cálculo independiente de la brecha (desde los precios de s8, con la CELDA 1 del notebook) y comparación con la simulación: precio mensual, brecha por sucursal × mes × tipo y por tipo y mes |
+| 13 | `s13_tablas_doc.py <canasta.csv>` | Tablas en markdown de la canasta para `docs/BRECHA_CELIACA.md` §14.5 |
+| 14 | `s14_superconjunto.py <canasta.eans.parquet de s10> <canasta.csv> <salida.json>` | Config con todos los candidatos que pasan s9 (para leer el SEPA una sola vez en la simulación; el caché de la canasta final se arma filtrando ese) |
+| 15 | `s15_filtrar_cache.py <repo> <caché del superconjunto> <salida de s11>` | Caché de la canasta de la CELDA 1 filtrando el del superconjunto (mismo resultado que leer el SEPA con esa canasta) |
+
+Correr con `python -I -X utf8` (los zips del SEPA son datos bajados de internet). `precios_mes_2` es una segunda
+extracción con los códigos viejos de Molinos que no estaban en la primera lista (s10 y s12 sacan las filas repetidas).
+
+Hallazgos que importan para elegir productos:
+
+- Molinos cambió los EANs de sus fideos en sep-oct 2023 (p. ej. Spaghetti Matarazzo 500 g: `7790070318640` →
+  `7790070336309`; los dos conviven unos meses). Una serie larga del lado con TACC tiene que empalmar el EAN viejo con
+  el nuevo, verificando con precios.
+- El Maestro interno tiene descripciones viejas para EANs reutilizados: `7790070336002` es el spaghetti sin TACC
+  Matarazzo 500 g según todas las cadenas, y el Maestro dice "Mostachol 5 Cereales". Identificar por la descripción del SEPA.
+- Las líneas sin TACC de marcas masivas (Matarazzo, Exquisita, La Salteña, Oreo, Preferido, Terrabusi) aparecen entre
+  sep-2023 y jul-2025. Lo continuo desde 2022 son marcas celíacas (Smams, Aglu, Crackines, Binfinit, Schär, Blue Patna,
+  Santa María, Happy Food), que no tienen versión con TACC.
+- En el SEPA diario de oct-2026 aparece Farmacity (comercio 24), y el zip del comercio 36 viene vacío todos los días.
+- Con los precios 2022-2026 (pasos 8 y 10): los códigos viejos de Molinos siguen apareciendo en ~100 sucursales con el
+  precio CONGELADO después del cambio (Spaghetti Lucchetti viejo a $230-274 todo 2024-2026 contra $1.042-1.699 del
+  nuevo): cada código lleva una vigencia. Los sin TACC viejos de Matarazzo (`7790070321800` spaghetti, `…321855`
+  tirabuzón, `…321794` penne) son genuinos: en 2022 costaban 2-3 veces el Matarazzo común en las mismas sucursales;
+  con solo 2024-2026 (precio congelado) parecían fideos comunes. Wakas pasó en jun-2024 de la
+  bolsa de 250 g a la caja de 300 g con códigos nuevos (el Maestro dice 250 g para los dos); desde ago-2024 Cencosud
+  publica la bolsa como alias de la caja. Porteñitas cambió de 130 a 139 g sin cambiar el código y sin fecha conocida
+  (afuera). Detalle: `docs/BRECHA_CELIACA.md` §14.4.
