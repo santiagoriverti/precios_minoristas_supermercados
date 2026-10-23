@@ -1,5 +1,8 @@
 # Resultados esperados del nb06 (simulación del 2026-10-23)
 
+> **Histórico**: corresponde al notebook del commit `678e9b9`. La primera corrida de Colab (2026-10-23) dio igual a esta
+> carpeta en las 29 hojas. Para el notebook vigente (BUG-47) los esperados son `../simulacion_2026-10-23b/`.
+
 Un CSV por hoja del Excel `brecha_celiaca_2026-10.xlsx` que generaron las **celdas reales** del
 `notebooks/06_evolucion_brecha_celiaca.ipynb` (commit `678e9b9`) sobre los **mismos zips del Drive** que lee Colab
 (`MyDrive/carga/2022A.zip` … `2026B.zip`, bajados el 23/10/2026; el `2026B` trae jul-2026 y ago-oct 2026 del SEPA

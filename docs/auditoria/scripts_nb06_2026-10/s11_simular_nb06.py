@@ -1,7 +1,8 @@
 # Corre las celdas REALES del nb06 (el .ipynb generado) sobre los zips semestrales y guarda los objetos clave para
 # compararlos con un cálculo independiente (s12_comparar_simulacion.py). Mide tiempo y pico de RAM de cada celda.
 # Uso: python -I -X utf8 s11_simular_nb06.py <repo> <carpeta con YYYYA.zip/YYYYB.zip> <ar.json> <salida>
-#                                           [mes_inicio] [--config canasta.json] [--hasta-celda N]
+#                                           [mes_inicio] [--config canasta.json] [--hasta-celda N] [--georef parquet]
+#   --georef: georef_sucursales.parquet del nb09 (departamento de cada sucursal; concentración de la CELDA 8)
 #   --config: TIPOS/GRAMOS/VIGENCIA/PRODUCTO/SUBTIPO de un JSON en lugar de los de la CELDA 1 (p. ej. un superconjunto
 #             de candidatos para armar el caché una sola vez)
 #   --hasta-celda: corre hasta esa celda de código inclusive (5 = lectura) y no guarda objetos
@@ -16,11 +17,13 @@ for _st in (sys.stdout, sys.stderr):
 import psutil
 
 args = sys.argv[1:]
-CFG = HASTA = None
+CFG = HASTA = GEOREF = None
 if '--config' in args:
     i = args.index('--config'); CFG = Path(args[i + 1]); del args[i:i + 2]
 if '--hasta-celda' in args:
     i = args.index('--hasta-celda'); HASTA = int(args[i + 1]); del args[i:i + 2]
+if '--georef' in args:       # georef_sucursales.parquet del nb09 (departamento de cada sucursal, para la concentración)
+    i = args.index('--georef'); GEOREF = Path(args[i + 1]); del args[i:i + 2]
 REPO, CARGA, AR, OUT = (Path(a) for a in args[:4])
 DESDE = args[4] if len(args) > 4 else '2022-01'
 OUT.mkdir(parents=True, exist_ok=True)
@@ -51,6 +54,9 @@ if CFG:
     print(f'Config de {CFG.name}: {sum(len(t["tacc"]) + len(t["sin_tacc"]) for t in c["TIPOS"].values())} EANs')
 exec(cells[1], g)
 g['GEOJSON_PATH'] = AR
+if GEOREF is not None:
+    g['GEOREF_PATH'] = GEOREF
+    g['USAR_GEOREF'] = False          # la simulación no consulta la API: lo que no esté en el parquet queda sin departamento
 for i, c in enumerate(cells[2:], start=2):
     if HASTA is not None and i > HASTA:
         break
@@ -64,7 +70,8 @@ for k in ('datos_dia', 'bt_sm', 'bt_sub', 'brecha_subtipo', 'brecha_subtipo_anua
           'brecha_tipo_mensual_bal', 'serie_mensual',
           'serie_mensual_bal', 'brecha_region', 'brecha_empresa', 'brecha_prov', 'control_ean', 'plausibilidad',
           'ponderaciones', 'cobertura_mensual', 'suc_geo', 'brecha_tipo_anual', 'serie_anual', 'serie_anual_bal',
-          'brecha_tipo_anual_bal', 'brecha_region_anual', 'brecha_empresa_anual', 'brecha_cadena', 'cobertura_tipo'):
+          'brecha_tipo_anual_bal', 'brecha_region_anual', 'brecha_empresa_anual', 'brecha_cadena', 'cobertura_tipo',
+          'imputaciones', 'concentracion', 'brecha_suc_mes'):
     if k not in g:
         print(f'  (no existe {k})'); continue
     try:

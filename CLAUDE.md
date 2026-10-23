@@ -12,8 +12,13 @@ dentro de cada sucursal, por tipo, en $/100 g, mensual desde ene-2022, por provi
 del nb09 (lista con métricas en `docs/brecha_celiaca/canasta_fija_2022_2026.csv`, que `gen_nb06.py` embebe en la
 CELDA 1; reglas en `docs/BRECHA_CELIACA.md` §14; scripts de la selección en `docs/auditoria/scripts_nb06_2026-10/`).
 La brecha se calcula por subtipo dentro de cada sucursal y se agrega como un índice de precios (subtipo → tipo →
-canasta ENGHo). **Falta la corrida en Colab** (relee 58 meses una vez, ~1 h; pico de RAM 2,5 GB): con los mismos zips
-del Drive tiene que dar lo de `docs/BRECHA_CELIACA.md` §14.10 (simulación local exacta). Test `test_brecha_celiaca.py`.
+canasta ENGHo). **La primera corrida de Colab (2026-10-23) dio igual a la simulación** (29 hojas): canasta y estimador
+validados (`docs/AUDITORIA_2026-10-23_nb06.md`). Ese mismo día, BUG-47: provincias, regiones, empresas, cadenas y
+sucursales (mapa) se comparan con la **misma canasta de 12 subtipos** (lo que un grupo no tiene, con la brecha nacional
+del período; `peso_imputado_pct`) y la concentración es el **HHI de empresas por departamento** (Georef, caché del nb09);
+las series nacionales no cambian. **Falta re-correrlo en Colab** (no relee el SEPA, ~5 min) y comparar con
+`docs/brecha_celiaca/simulacion_2026-10-23b/` (30 hojas). Abierto (decisión del usuario): la imputación sin límite de
+la serie mensual; recomendación, la TPD/hedónica de BRECHA_CELIACA §3.9. Test `test_brecha_celiaca.py` (26 controles).
 
 El **nb07** (`notebooks/07_evolucion_canastas_alternativas.ipynb`) es el motor del
 informe semanal: 6 canastas, índice encadenado, comparación con el IPC y aperturas por cadena/región.
@@ -81,13 +86,14 @@ relativo; la próxima corrida en Colab los muestra por primera vez.
    impresa, `canasta_diaria_pass_through_<desde>_<hasta>.xlsx` y `panel_diario_pass_through_<...>.parquet`; para el nb09,
    la salida impresa y los cuatro archivos de `output_trazabilidad/` (scripts en `docs/auditoria/scripts_nb09_2026-10/`,
    AUDITORIA_2026-10-22_nb09 §7); para el nb06, la salida impresa y `output_brecha/brecha_celiaca_<mes>.xlsx` (comparar
-   con `docs/auditoria/scripts_nb06_2026-10/s16_comparar_colab.py` contra `docs/brecha_celiaca/simulacion_2026-10-23/` y
-   revisar con BRECHA_CELIACA §14.9). Descomprimir lo que
+   con `docs/auditoria/scripts_nb06_2026-10/s16_comparar_colab.py` contra `docs/brecha_celiaca/simulacion_2026-10-23b/`
+   —el notebook vigente, con BUG-47— y revisar con BRECHA_CELIACA §14.9; scripts de revisión r1-r8, AUDITORIA_2026-10-23_nb06). Descomprimir lo que
    pase el usuario en una carpeta propia y correr los scripts con `python -I` (datos no confiables). Para simular
    celdas con datos reales en una PC hacen falta, además: `ar.json` (bajarlo del Drive, `MyDrive/carga/ar.json`; en
    la PC del INECO hay copia en `C:\Users\sriverti\Desktop\INECO\Otros\ar.json`) y los zips semestrales (Drive
-   `carga/`; en la PC del INECO, desde el 23/10 **todos los del Drive, 2022A → 2026B, en `C:\Users\sriverti\Downloads\`**
-   —el `2026B` del Drive trae jul-2026 y ago-oct 2026 al 22/10—, y además 2024A → 2026B en
+   `carga/`; en la PC del INECO, desde el 23/10 **todos los del Drive, 2022A → 2026B, en `C:\Users\sriverti\Downloads\carga\`**
+   —el `2026B` del Drive trae jul-2026 y ago-oct 2026 al 22/10; ahí también los `carga-20261023T013908Z-1-0*.zip` con la
+   carpeta `carga` entera del Drive, p. ej. la caché de Georef del nb09—, y además 2024A → 2026B en
    `...\INECO\SEPA\SEPA_Bases_Originales\carga\` —ese `2026B.zip` trae solo julio—; el `2026B.zip` de
    `...\SEPA\salida_consolidada\` (script 03, 22/10) trae solo julio y octubre de 2026: no subirlo al Drive tal cual, el
    completo es el del Drive). El usuario corre en el **Colab gratuito** (sin "RAM amplia"): no subir el pico de RAM de
@@ -207,6 +213,13 @@ relativo; la próxima corrida en Colab los muestra por primera vez.
   `docs/brecha_celiaca/simulacion_2026-10-23/` (otra carpeta con la fecha nueva) antes de pedir una corrida de Colab.
   En 2023 las marcas masivas con TACC tenían precios controlados (la brecha de 2023 está inflada, §14.8 de
   BRECHA_CELIACA): no "corregirlo" sacando productos.
+- **nb06, comparar grupos (BUG-47)**: provincias, regiones, empresas, cadenas y sucursales se comparan con la MISMA
+  canasta de 12 subtipos (`_agg_tipo(..., ref_keys)`: el subtipo con < `MIN_SUC_SUBTIPO` sucursales en el grupo toma la
+  brecha nacional del período; confiable = `peso_imputado_pct` <= `MAX_PESO_IMPUTADO` y >= `MIN_SUC_AGG` sucursales).
+  Nunca renormalizar entre los tipos o subtipos presentes ni comparar la canasta de los tipos que tiene cada sucursal
+  (`brecha_tipos_presentes`): mide la composición (DIA, con 2 tipos, daba +77%). La localidad del maestro no sirve como
+  mercado (DIA la carga con el nombre de la provincia): la concentración usa el departamento de Georef (`GEOREF_PATH`,
+  caché del nb09 en el Drive; la simulación lo recibe con `s11 ... --georef`).
 - **Códigos que cambiaron de EAN**: Molinos reemplazó los EANs de sus fideos en sep-oct 2023 y los viejos siguen en ~100
   sucursales con el precio CONGELADO (Spaghetti Lucchetti viejo a $230-274 en 2024-2026 contra $1.042-1.699 del nuevo).
   Un producto empalmado lleva sus códigos con `VIGENCIA` (el viejo hasta el mes anterior al nuevo); nunca sumar un código

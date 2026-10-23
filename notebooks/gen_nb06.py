@@ -141,7 +141,11 @@ cadenas**, sobre las salidas del nb09. Reglas, listas y métricas: `docs/BRECHA_
   precios de cada lugar y compara productos equivalentes).
 - Como un índice de precios: **subtipo** (mediana entre sucursales) → **tipo** (promedio geométrico de sus subtipos)
   → **canasta** (promedio de los tipos ponderado por el **gasto de los hogares, ENGHo 2017/18**). Serie mensual con
-  todas las sucursales y con **panel balanceado**; un subtipo-mes con muy pocas sucursales se imputa con el mes anterior.
+  todas las sucursales y con **panel balanceado**; un subtipo-mes con muy pocas sucursales se imputa con el mes anterior
+  (hoja `Imputaciones`).
+- Provincias, regiones, empresas, cadenas y sucursales (mapa) se comparan con la **misma canasta de subtipos**: lo que
+  un grupo no tiene se completa con la brecha nacional del período y se informa qué parte del peso es imputada.
+- **Concentración**: HHI de empresas por **departamento** (Georef de datos.gob.ar; la caché del nb09).
 
 **Config en la CELDA 1.** Estructura: Config → Setup → Maestros → Canasta → ZIPs → Lectura (caché por mes) → Brecha por
 sucursal × mes × tipo → Agregaciones → Gráficos → Mapa → Excel → Mapa por sucursal"""))
@@ -204,6 +208,12 @@ FRAC_SUBTIPO_MES = 0.5   # serie mensual: un subtipo-mes con menos de esta fracc
                          # dic-2023 a mar-2024: la mediana de pocas sucursales distintas movía el tipo entero)
 FRAC_MESES_PANEL = 0.7   # panel balanceado: sucursal x tipo presentes en >= este % de los meses
 VENTANA_GEO_MESES = 12   # provincias, regiones y cadenas: últimos N meses (además de las tablas por año)
+MAX_PESO_IMPUTADO = 25   # provincias, regiones, empresas, cadenas y sucursales se comparan con la MISMA canasta (los 12
+                         # subtipos con sus pesos): el subtipo con < MIN_SUC_SUBTIPO sucursales en el grupo toma la brecha
+                         # nacional del mismo período. Confiable = eso pesa <= este % y el grupo tiene >= MIN_SUC_AGG sucursales
+USAR_GEOREF = True       # concentración: departamento de cada sucursal por coordenadas (API Georef de datos.gob.ar); usa la
+                         # caché del nb09 (output_trazabilidad/_cache_nb09/) y consulta solo las sucursales que falten
+MIN_SUC_DEPTO = 5        # concentración: sucursales con brecha propia para mostrar un departamento
 
 # Comercios fuera del universo: estaciones de servicio (19, 3001, 4 Estación Lima, 23 Axion Energy), Mercado Libre
 # (2013) y farmacias (24 Farmacity / Simplicity)
@@ -260,6 +270,8 @@ TMP_DIR = (Path('/content/tmp_sepa_nb06') if Path('/content').exists()
 TMP_DIR.mkdir(parents=True, exist_ok=True)
 
 GEOJSON_PATH = SEPA_DIR / 'ar.json'
+# Departamento de cada sucursal (concentración, CELDA 7): la caché de Georef que arma el nb09 en el Drive
+GEOREF_PATH = SEPA_DIR / 'output_trazabilidad' / '_cache_nb09' / 'georef_sucursales.parquet'
 
 def normalizar_ean(s):
     if pd.isna(s): return None
@@ -282,7 +294,8 @@ def _pmean(_s):
 
 print(f'SEPA_DIR:   {SEPA_DIR}')
 print(f'OUTPUT_DIR: {OUTPUT_DIR}')
-print(f'  ar.json:  {"OK" if GEOJSON_PATH.exists() else "NO ENCONTRADO (no se reclasifican provincias ni hay mapas)"}')"""))
+print(f'  ar.json:  {"OK" if GEOJSON_PATH.exists() else "NO ENCONTRADO (no se reclasifican provincias ni hay mapas)"}')
+print(f'  Georef:   {"caché del nb09 OK" if GEOREF_PATH.exists() else "sin la caché del nb09 (la CELDA 7 consulta la API)"}')"""))
 
 # ── CELL 3 — MAESTROS ──────────────────────────────────────────────────────────
 cells.append(cell_code(r"""# ============================================================
@@ -919,6 +932,46 @@ suc_geo['amba'] = (suc_geo['PROVINCIA_NORM'].eq('CABA') |
 suc_geo['region'] = np.where(suc_geo['amba'], 'AMBA', suc_geo['PROVINCIA_NORM'].map(REGION_PROV).fillna('Sin región'))
 print(f'  AMBA (CABA + Buenos Aires a <= {AMBA_RADIO_KM} km del Obelisco): {int(suc_geo["amba"].sum()):,} sucursales')
 
+# ── Departamento de cada sucursal (Georef de datos.gob.ar, por coordenadas) para la concentración (CELDA 8): la caché
+# del nb09 y la propia (_cache/georef_sucursales.parquet); con USAR_GEOREF se consultan las sucursales que falten. La
+# localidad del maestro no sirve como mercado: DIA la carga con el nombre de la provincia ("CAPITAL FEDERAL") ──
+suc_geo = suc_geo.drop_duplicates(['id_comercio','id_bandera','id_sucursal']).copy()
+suc_geo['suc_key'] = suc_geo['id_comercio'] + '|' + suc_geo['id_bandera'] + '|' + suc_geo['id_sucursal']
+_GR_COLS = ['suc','departamento_id','departamento','municipio']
+_gr_propia = CACHE_DIR / 'georef_sucursales.parquet'
+_gr = [pd.read_parquet(_p)[_GR_COLS] for _p in (Path(GEOREF_PATH), _gr_propia) if _p.exists()]
+_gr = (pd.concat(_gr, ignore_index=True).drop_duplicates('suc', keep='last') if _gr
+       else pd.DataFrame(columns=_GR_COLS))
+_pend = suc_geo[~suc_geo['suc_key'].isin(set(_gr['suc']))]
+if USAR_GEOREF and len(_pend):
+    import urllib.request, time as _time
+    print(f'  Georef: consultando {len(_pend):,} sucursales...')
+    _filas = []
+    for _i in range(0, len(_pend), 500):
+        _b = _pend.iloc[_i:_i + 500]
+        _body = _json.dumps({'ubicaciones': [{'lat': float(_la), 'lon': float(_lo), 'aplanar': True,
+                                              'campos': 'departamento.id,departamento.nombre,municipio.nombre'}
+                                             for _la, _lo in zip(_b['sucursales_latitud'], _b['sucursales_longitud'])]}).encode()
+        try:
+            _req = urllib.request.Request('https://apis.datos.gob.ar/georef/api/ubicacion', data=_body,
+                                          headers={'Content-Type': 'application/json'})
+            with urllib.request.urlopen(_req, timeout=120) as _r:
+                _res = _json.loads(_r.read())['resultados']
+        except Exception as _e:
+            print(f'  AVISO: Georef no respondió ({_e}): las sucursales que faltan quedan sin departamento')
+            break
+        for _k, _x in zip(_b['suc_key'], _res):
+            _u = _x.get('ubicacion') or {}
+            _filas.append({'suc': _k, 'departamento_id': _u.get('departamento_id'),
+                           'departamento': _u.get('departamento_nombre'), 'municipio': _u.get('municipio_nombre')})
+        _time.sleep(0.5)
+    if _filas:
+        _gr = pd.concat([_gr, pd.DataFrame(_filas)], ignore_index=True).drop_duplicates('suc', keep='last')
+        if USE_CACHE:
+            _gr.to_parquet(_gr_propia, index=False)
+suc_geo = suc_geo.merge(_gr.rename(columns={'suc': 'suc_key'}), on='suc_key', how='left')
+print(f'  Departamento (Georef): {int(suc_geo["departamento_id"].notna().sum()):,} de {len(suc_geo):,} sucursales')
+
 _GEO = ['cadena','empresa','PROVINCIA_NORM','region','amba','sucursales_localidad','sucursales_nombre']
 tp = tp.merge(suc_geo[_sk + _GEO], on=_sk, how='inner')
 tp['localidad'] = (tp['sucursales_localidad'].astype(str).str.strip()
@@ -994,7 +1047,7 @@ ponderaciones = pd.DataFrame({'tipo': list(W_TIPO),
                               'precio_con_tacc_100g_base': [_pb.get(t) for t in W_TIPO],
                               'cantidad_100g_canasta_sucursal': [TIPO_QTY.get(t) for t in W_TIPO]})
 print(f'\nPonderación ({PONDERACION}), año base {_mb[0]} → {_mb[-1]}:')
-print(ponderaciones.round(4).to_string(index=False))
+print(ponderaciones.to_string(index=False, float_format=lambda _x: f'{_x:,.4g}'))
 
 # ── Canasta por (sucursal, mes): suma sobre los tipos con los dos lados (mapa y Brecha_sucursal) ─
 bt_sm['qty'] = bt_sm['tipo'].map(TIPO_QTY)
@@ -1022,15 +1075,22 @@ cells.append(cell_code(r"""# ===================================================
 # Todo sale de bt_sub (brecha por sucursal × mes × SUBTIPO), como un índice de precios: (1) por subtipo, mediana ENTRE
 # sucursales de su brecha; (2) brecha del tipo = promedio geométrico de las de sus subtipos (pesos iguales, entre los
 # presentes en el grupo con >= MIN_SUC_SUBTIPO sucursales: la mediana de menos es ruido); (3) canasta de un grupo =
-# sum_k w_k (1 + brecha del tipo k) - 1 (pesos ENGHo renormalizados entre los tipos presentes). Así la serie no la
+# sum_k w_k (1 + brecha del tipo k) - 1 (pesos ENGHo; en los grupos con ref_keys están todos los tipos). Así la serie no la
 # mueve qué subtipos o tipos tiene cada sucursal cada mes (la mediana entre sucursales de la brecha del tipo de cada
-# una tenía 2-3 veces más ruido mes a mes). 'confiable' = están todos los tipos y cada uno con >= MIN_SUC_AGG sucursales.
-def _agg_tipo(df, keys):
+# una tenía 2-3 veces más ruido mes a mes). 'confiable' (series) = están todos los tipos y cada uno con >= MIN_SUC_AGG
+# sucursales. Provincias, regiones, empresas y cadenas se comparan con la MISMA canasta de subtipos (ref_keys, abajo).
+def _agg_tipo(df, keys, ref_keys=None, detalle=None):
+    # ref_keys (grupos: provincia, región, empresa, cadena): canasta FIJA de subtipos. El subtipo con menos de
+    # MIN_SUC_SUBTIPO sucursales en el grupo toma la brecha NACIONAL del mismo período (ref_keys = [] o ['anio']), como
+    # una celda que falta en un índice de precios: sin esto, un grupo sin snacks quedaba con la brecha de los crackers
+    # sola (+165%) y una cadena sin obleas ni pepas, con otra composición de galletitas dulces. detalle: lista donde se
+    # agrega la tabla por subtipo (con _imp = 1 en los subtipos imputados).
     _cols = keys + ['tipo','tacc_100','sin_100','brecha_mediana','brecha_prom','brecha_min_ilustr','n_subtipos',
                     'n_subtipos_imputados','n_sucursales','n_obs']
     if len(df) == 0:
         return pd.DataFrame(columns=_cols)
     _mensual = keys == ['mes']
+    _grupos = ref_keys is not None and not _mensual
     _meses_all = sorted(df['mes'].unique()) if _mensual else []
     _n = df.groupby(keys + ['tipo','subtipo'])['suc_key'].nunique().rename('n_suc').reset_index()
     _ok = _n['n_suc'] >= globals().get('MIN_SUC_SUBTIPO', 1)
@@ -1038,18 +1098,21 @@ def _agg_tipo(df, keys):
         # serie mensual: subtipo-mes con menos de FRAC_SUBTIPO_MES de sus sucursales habituales = faltante
         _ok &= _n['n_suc'] >= (globals().get('FRAC_SUBTIPO_MES', 0)
                                * _n.groupby(['tipo','subtipo'])['n_suc'].transform('median'))
+    _L = ['_lt','_ls','_lb','_lbp','_lbm']
+    def _medianas(_d, _k):
+        _x = (_d.groupby(_k + ['tipo','subtipo'])
+              .agg(tacc=('tacc','median'), sin=('sin','median'), b=('brecha_pct','median'), bp=('brecha_pct', _pmean),
+                   bm=('brecha_min','median'), n_obs=('brecha_pct','size')).reset_index())
+        return _x.assign(_lt=np.log(_x['tacc']), _ls=np.log(_x['sin']), _lb=np.log1p(_x['b'] / 100),
+                         _lbp=np.log1p(_x['bp'] / 100), _lbm=np.log1p(_x['bm'] / 100), _imp=0)
+    _ref = _medianas(df, ref_keys) if _grupos else None    # el país (o el país en ese año), con todas las sucursales
     df = df.merge(_n.loc[_ok, keys + ['tipo','subtipo']], on=keys + ['tipo','subtipo'], how='inner')
-    if len(df) == 0:
+    if len(df) == 0 and not _grupos:
         return pd.DataFrame(columns=_cols)
-    _s = (df.groupby(keys + ['tipo','subtipo'])
-          .agg(tacc=('tacc','median'), sin=('sin','median'), b=('brecha_pct','median'), bp=('brecha_pct', _pmean),
-               bm=('brecha_min','median'), n_obs=('brecha_pct','size')).reset_index())
-    _s = _s.assign(_lt=np.log(_s['tacc']), _ls=np.log(_s['sin']), _lb=np.log1p(_s['b'] / 100),
-                   _lbp=np.log1p(_s['bp'] / 100), _lbm=np.log1p(_s['bm'] / 100), _imp=0)
+    _s = _medianas(df, keys)
     if _mensual:
         # el subtipo-mes faltante se imputa con su último mes válido (como un índice de precios con un ítem que falta
         # temporalmente): la composición de subtipos del tipo no cambia de un mes a otro
-        _L = ['_lt','_ls','_lb','_lbp','_lbm']
         _grid = _s[['tipo','subtipo']].drop_duplicates().merge(pd.DataFrame({'mes': _meses_all}), how='cross')
         _s = _grid.merge(_s, on=['mes','tipo','subtipo'], how='left').sort_values(['tipo','subtipo','mes'])
         _falta = _s['_lb'].isna()
@@ -1057,6 +1120,22 @@ def _agg_tipo(df, keys):
         _s['_imp'] = (_falta & _s['_lb'].notna()).astype(int)
         _s['n_obs'] = _s['n_obs'].fillna(0)
         _s = _s[_s['_lb'].notna()]
+    elif _grupos:
+        _gs = _n[keys].drop_duplicates()
+        _grid = (_gs.merge(_ref[ref_keys + ['tipo','subtipo']], on=ref_keys, how='inner') if ref_keys
+                 else _gs.merge(_ref[['tipo','subtipo']], how='cross'))
+        _rf = _ref[ref_keys + ['tipo','subtipo'] + _L].rename(columns={_c: _c + '_ref' for _c in _L})
+        _s = (_grid.merge(_s, on=keys + ['tipo','subtipo'], how='left')
+              .merge(_rf, on=ref_keys + ['tipo','subtipo'], how='left'))
+        _falta = _s['_lb'].isna()
+        for _c in _L:
+            _s[_c] = _s[_c].fillna(_s.pop(_c + '_ref'))
+        _s['_imp'] = _falta.astype(int)
+        _s['n_obs'] = _s['n_obs'].fillna(0)
+    if detalle is not None:
+        detalle.append(_s.merge(_n[keys + ['tipo','subtipo','n_suc']], on=keys + ['tipo','subtipo'], how='left')
+                       .assign(brecha=lambda _x: np.expm1(_x['_lb']) * 100)
+                       [keys + ['tipo','subtipo','brecha','n_suc','_imp']])
     _o = (_s.groupby(keys + ['tipo'])
           .agg(_lt=('_lt','mean'), _ls=('_ls','mean'), _lb=('_lb','mean'), _lbp=('_lbp','mean'), _lbm=('_lbm','mean'),
                n_subtipos=('subtipo','size'), n_subtipos_imputados=('_imp','sum'), n_obs=('n_obs','sum'))
@@ -1068,24 +1147,29 @@ def _agg_tipo(df, keys):
     _o['brecha_min_ilustr'] = np.expm1(_o['_lbm']) * 100
     _o = _o.merge(df.groupby(keys + ['tipo'])['suc_key'].nunique().rename('n_sucursales').reset_index(),
                   on=keys + ['tipo'], how='left')
+    if _grupos:
+        _o['n_sucursales'] = _o['n_sucursales'].fillna(0).astype(int)
     return _o[_cols]
 
 TIPOS_ORD = [t for t in TIPO_TACC]
-def _canasta(df, keys):
-    # tabla ancha: por grupo, brecha de la canasta (ponderada) + brecha mediana y n de cada tipo
-    _t = _agg_tipo(df, keys)
+def _canasta(df, keys, ref_keys=None, detalle=None):
+    # tabla ancha: por grupo, brecha de la canasta (ponderada) + brecha mediana y n de cada tipo. peso_imputado_pct =
+    # parte del peso de la canasta que no se midió en el grupo o mes: subtipos imputados con su último mes válido (serie
+    # mensual) o con la brecha nacional del período (grupos, ref_keys; ahí confiable = eso <= MAX_PESO_IMPUTADO y el
+    # grupo tiene >= MIN_SUC_AGG sucursales)
+    _det = []
+    _t = _agg_tipo(df, keys, ref_keys, _det)
+    if detalle is not None:
+        detalle.extend(_det)
     if not len(_t):
-        return pd.DataFrame(columns=keys + ['brecha_canasta','n_tipos','n_min','confiable'])
-    _ix = keys if keys else None
+        return pd.DataFrame(columns=keys + ['brecha_canasta','n_tipos','n_min','peso_imputado_pct','confiable'])
     if keys:
-        _g = _t.pivot_table(index=keys, columns='tipo', values='brecha_mediana', aggfunc='first')
-        _n = _t.pivot_table(index=keys, columns='tipo', values='n_sucursales', aggfunc='first')
-        _im = _t.pivot_table(index=keys, columns='tipo', values='n_subtipos_imputados', aggfunc='first')
+        _pv = lambda _v: _t.pivot_table(index=keys, columns='tipo', values=_v, aggfunc='first')
     else:
-        _g = _t.set_index('tipo')['brecha_mediana'].to_frame().T
-        _n = _t.set_index('tipo')['n_sucursales'].to_frame().T
-        _im = _t.set_index('tipo')['n_subtipos_imputados'].to_frame().T
-    _g = _g.reindex(columns=TIPOS_ORD); _n = _n.reindex(columns=TIPOS_ORD)
+        _pv = lambda _v: _t.set_index('tipo')[_v].to_frame().T.reset_index(drop=True)
+    _g, _n, _im, _ns = (_pv(_v).reindex(columns=TIPOS_ORD) for _v in
+                        ('brecha_mediana', 'n_sucursales', 'n_subtipos_imputados', 'n_subtipos'))
+    _n, _im, _ns = (_x.reindex(index=_g.index) for _x in (_n, _im, _ns))
     _w = pd.Series(W_TIPO).reindex(TIPOS_ORD)
     _rel = 1 + _g / 100
     _num = (_rel * _w).sum(axis=1, min_count=1)
@@ -1094,12 +1178,23 @@ def _canasta(df, keys):
     _o['brecha_canasta'] = (_num / _den - 1) * 100
     _o['n_tipos'] = _g.notna().sum(axis=1)
     _o['n_min'] = _n.min(axis=1)
-    _o['confiable'] = (_o['n_tipos'] == len(TIPOS_ORD)) & (_o['n_min'] >= MIN_SUC_AGG)
-    _o['subtipos_imputados'] = _im.reindex(index=_g.index, columns=TIPOS_ORD).sum(axis=1)
+    _o['peso_imputado_pct'] = 100 * ((_im / _ns).fillna(0) * _w).sum(axis=1) / _den
+    if ref_keys is not None and keys != ['mes']:
+        _o['n_sucursales'] = df.groupby(keys)['suc_key'].nunique().reindex(_g.index).fillna(0).astype(int)
+        _o['confiable'] = (_o['peso_imputado_pct'] <= MAX_PESO_IMPUTADO + 1e-9) & (_o['n_sucursales'] >= MIN_SUC_AGG)
+        _d = pd.concat(_det, ignore_index=True)
+        _d = _d[_d['_imp'] == 1]
+        _o['subtipos_con_brecha_nacional'] = (_d.groupby(keys)['subtipo'].agg(lambda _x: ', '.join(_x))
+                                              .reindex(_g.index).fillna(''))
+    else:
+        _o['confiable'] = (_o['n_tipos'] == len(TIPOS_ORD)) & (_o['n_min'] >= MIN_SUC_AGG)
+    _o['subtipos_imputados'] = _im.sum(axis=1)
     for _c in TIPOS_ORD:
         _o[f'brecha_{_c}'] = _g[_c]
     for _c in TIPOS_ORD:
         _o[f'n_{_c}'] = _n[_c]
+    if ref_keys is not None and keys != ['mes']:
+        _o = _o[_o['peso_imputado_pct'] < 100 - 1e-9]     # un grupo sin ningún subtipo propio es la brecha nacional
     return _o.reset_index() if keys else _o.reset_index(drop=True)
 
 # ── Panel BALANCEADO: sucursal × subtipo presentes (con los dos lados) en >= FRAC_MESES_PANEL de los meses ──
@@ -1131,8 +1226,9 @@ brecha_subtipo_anual = _agg_subtipo(bt_sub, ['anio'])
 brecha_subtipo_anual_bal = _agg_subtipo(bt_bal, ['anio'])
 
 # ── Canasta: serie mensual (todas las sucursales y panel balanceado) ──────────
-serie_mensual = _canasta(bt_sub, ['mes'])
-serie_mensual_bal = _canasta(bt_bal, ['mes'])
+_det_todas, _det_bal = [], []
+serie_mensual = _canasta(bt_sub, ['mes'], detalle=_det_todas)
+serie_mensual_bal = _canasta(bt_bal, ['mes'], detalle=_det_bal)
 serie_anual = _canasta(bt_sub, ['anio'])
 serie_anual_bal = _canasta(bt_bal, ['anio'])
 if len(serie_mensual):
@@ -1142,35 +1238,118 @@ if len(serie_mensual):
         print(f'  ⚠️ Cobertura BAJA en {len(_bajos)} mes(es) (el tipo con menos sucursales tiene < 60% de su mediana '
               f'{_nmed:.0f}): ' + ', '.join(f'{_m}(n={int(_n)})' for _m, _n in zip(_bajos['mes'], _bajos['n_min'])))
 
+# ── Subtipos imputados en la serie mensual (rachas de meses seguidos con el valor de su último mes válido) ──
+def _rachas(_det, _serie):
+    _rows = []
+    if not _det:
+        return _rows
+    for (_t, _st), _g in pd.concat(_det, ignore_index=True).sort_values('mes').groupby(['tipo','subtipo']):
+        _f, _m = _g['_imp'].to_numpy(), _g['mes'].to_numpy()
+        _nn, _bb = _g['n_suc'].fillna(0).to_numpy(), _g['brecha'].to_numpy()
+        _i = 0
+        while _i < len(_f):
+            if _f[_i]:
+                _j = _i
+                while _j + 1 < len(_f) and _f[_j + 1]:
+                    _j += 1
+                _rows.append({'serie': _serie, 'tipo': _t, 'subtipo': _st, 'desde': _m[_i], 'hasta': _m[_j],
+                              'meses': _j - _i + 1, 'sucursales_min': int(_nn[_i:_j + 1].min()),
+                              'sucursales_max': int(_nn[_i:_j + 1].max()), 'brecha_arrastrada': float(_bb[_i])})
+                _i = _j + 1
+            else:
+                _i += 1
+    return _rows
+imputaciones = pd.DataFrame(_rachas(_det_todas, 'todas las sucursales') + _rachas(_det_bal, 'panel balanceado'),
+                            columns=['serie','tipo','subtipo','desde','hasta','meses','sucursales_min','sucursales_max',
+                                     'brecha_arrastrada'])
+_largas = imputaciones[imputaciones['meses'] > 3]
+if len(_largas):
+    print(f'  ⚠️ Subtipos imputados más de 3 meses seguidos (hoja Imputaciones; la serie arrastra su último valor):')
+    for _r in _largas.itertuples(index=False):
+        print(f'      - [{_r.serie}] {_r.tipo} / {_r.subtipo}: {_r.desde} → {_r.hasta} ({_r.meses} meses, '
+              f'{_r.sucursales_min}-{_r.sucursales_max} sucursales; arrastra {_r.brecha_arrastrada:+.1f}%)')
+
 # ── Geografía y cadenas: últimos VENTANA_GEO_MESES meses y por año ────────────
+# Misma canasta en todos los grupos (ref_keys): el subtipo sin MIN_SUC_SUBTIPO sucursales en el grupo toma la brecha
+# nacional del período; peso_imputado_pct dice cuánto de la canasta no se midió en el grupo
 _meses_v = sorted(bt_sub['mes'].unique())[-VENTANA_GEO_MESES:]
 bt_v = bt_sub[bt_sub['mes'].isin(_meses_v)]
 VENTANA_TXT = f'{_meses_v[0]} → {_meses_v[-1]}' if _meses_v else ''
-brecha_prov = _canasta(bt_v, ['PROVINCIA_NORM']).rename(columns={'PROVINCIA_NORM':'provincia'})
-brecha_tipo_prov = _agg_tipo(bt_v, ['PROVINCIA_NORM']).rename(columns={'PROVINCIA_NORM':'provincia'})
-brecha_region = _canasta(bt_v, ['region'])
-brecha_tipo_region = _agg_tipo(bt_v, ['region'])
-brecha_region_anual = _canasta(bt_sub, ['region','anio'])
-brecha_empresa = _canasta(bt_v, ['empresa'])
-brecha_tipo_empresa = _agg_tipo(bt_v, ['empresa'])
-brecha_empresa_anual = _canasta(bt_sub, ['empresa','anio'])
-brecha_cadena = _canasta(bt_v, ['cadena'])
+def _con_datos_propios(_t):
+    # tablas por tipo y grupo: afuera el tipo sin ningún subtipo propio en el grupo (sería la brecha nacional)
+    return _t[_t['n_subtipos_imputados'] < _t['n_subtipos']].reset_index(drop=True) if len(_t) else _t
+brecha_prov = _canasta(bt_v, ['PROVINCIA_NORM'], []).rename(columns={'PROVINCIA_NORM':'provincia'})
+brecha_tipo_prov = _con_datos_propios(_agg_tipo(bt_v, ['PROVINCIA_NORM'], [])).rename(columns={'PROVINCIA_NORM':'provincia'})
+brecha_region = _canasta(bt_v, ['region'], [])
+brecha_tipo_region = _con_datos_propios(_agg_tipo(bt_v, ['region'], []))
+brecha_region_anual = _canasta(bt_sub, ['region','anio'], ['anio'])
+brecha_empresa = _canasta(bt_v, ['empresa'], [])
+brecha_tipo_empresa = _con_datos_propios(_agg_tipo(bt_v, ['empresa'], []))
+brecha_empresa_anual = _canasta(bt_sub, ['empresa','anio'], ['anio'])
+brecha_cadena = _canasta(bt_v, ['cadena'], [])
 for _d in (brecha_prov, brecha_region, brecha_empresa, brecha_cadena):
     if len(_d):
         _d.sort_values('brecha_canasta', inplace=True)
 
-# Concentración: por localidad, canasta por sucursal (mediana) y nº de sucursales (exploratorio)
-def _agg_suc(df, keys):
-    _cols = keys + ['brecha_mediana','brecha_prom','n_sucursales']
-    if len(df) == 0:
-        return pd.DataFrame(columns=_cols)
-    return (df.groupby(keys)
-            .agg(brecha_mediana=('brecha_pct','median'), brecha_prom=('brecha_pct', _pmean),
-                 n_sucursales=('suc_key','nunique')).reset_index())
-concentracion = _agg_suc(brecha_suc_mes[brecha_suc_mes['mes'].isin(_meses_v)], ['localidad'])
-if len(concentracion):
-    concentracion['confiable'] = concentracion['n_sucursales'] >= MIN_SUC_AGG
-    concentracion = concentracion[concentracion['localidad'] != 'N/D'].sort_values('n_sucursales', ascending=False)
+# ── Canasta COMPARABLE por sucursal y mes (mapa, Brecha_sucursal, concentración): la misma canasta de subtipos en todas
+# las sucursales; el subtipo que la sucursal no tiene con los dos lados toma la brecha nacional del mes (la de la serie
+# mensual, imputación incluida). peso_propio_pct = parte del peso medida en la sucursal. La canasta por cantidades de la
+# CELDA 7 (brecha_pct) suma solo los tipos presentes: dependía de qué tipos tiene cada sucursal (con 2 tipos, mediana
+# +77%; con 3, +134%; DIA solo tiene fideos y galletitas dulces).
+_subs = bt_sub[['tipo','subtipo']].drop_duplicates()
+_subs['_w'] = _subs['tipo'].map(W_TIPO) / _subs.groupby('tipo')['subtipo'].transform('size')
+_nac = (pd.concat(_det_todas, ignore_index=True)[['mes','tipo','subtipo','brecha']].rename(columns={'brecha': '_bn'})
+        if _det_todas else pd.DataFrame(columns=['mes','tipo','subtipo','_bn']))
+_cs = (brecha_suc_mes[['suc_key','mes']].drop_duplicates().merge(_subs, how='cross')
+       .merge(bt_sub[['suc_key','mes','tipo','subtipo','brecha_pct']], on=['suc_key','mes','tipo','subtipo'], how='left')
+       .merge(_nac, on=['mes','tipo','subtipo'], how='left'))
+_cs['_wp'] = _cs['_w'] * _cs['brecha_pct'].notna()
+_cs['_lb'] = np.log1p(_cs['brecha_pct'].fillna(_cs['_bn']) / 100)
+_ct = _cs.groupby(['suc_key','mes','tipo'], as_index=False).agg(_lb=('_lb','mean'), _wp=('_wp','sum'))
+_ct['_v'] = np.exp(_ct['_lb']) * _ct['tipo'].map(W_TIPO)
+_cc = _ct.groupby(['suc_key','mes'], as_index=False).agg(_v=('_v','sum'), peso_propio_pct=('_wp','sum'))
+_cc['brecha_comparable'] = (_cc['_v'] - 1) * 100
+_cc['peso_propio_pct'] *= 100
+brecha_suc_mes = brecha_suc_mes.drop(columns=['brecha_comparable','peso_propio_pct'], errors='ignore').merge(
+    _cc[['suc_key','mes','brecha_comparable','peso_propio_pct']], on=['suc_key','mes'], how='left')
+del _cs, _ct, _cc
+
+# ── Concentración: mercado local = DEPARTAMENTO (Georef, CELDA 7) ─────────────
+# HHI de empresas con la cuota = sucursales de cada empresa entre las del universo del departamento (el SEPA no tiene
+# ventas). Brecha de cada sucursal = mediana de su canasta comparable en la ventana; solo las sucursales con >= 50% del
+# peso medido en ellas (en las demás la canasta es casi la nacional). Antes se agrupaba por el texto de la localidad,
+# que DIA carga con el nombre de la provincia ("CAPITAL FEDERAL", "BUENOS AIRES"): la correlación salía de la cadena.
+_uni = suc_geo[~suc_geo['id_comercio'].isin(CADENAS_FILTRAR) & suc_geo['departamento_id'].notna()]
+_bs = (brecha_suc_mes[brecha_suc_mes['mes'].isin(_meses_v)]
+       .groupby('suc_key').agg(brecha=('brecha_comparable','median'), peso_propio_pct=('peso_propio_pct','mean')))
+_bs = _bs[_bs['peso_propio_pct'] >= 50].join(suc_geo.set_index('suc_key')['departamento_id'], how='inner')
+CONC_RHO, CONC_N = float('nan'), 0
+if len(_uni):
+    _cnt = _uni.groupby(['departamento_id','empresa']).size().rename('_n').reset_index()
+    _cnt['_cuota'] = _cnt['_n'] / _cnt.groupby('departamento_id')['_n'].transform('sum')
+    _dep = _cnt.groupby('departamento_id').agg(sucursales=('_n','sum'), empresas=('empresa','size'))
+    _dep['hhi'] = (_cnt['_cuota'] ** 2).groupby(_cnt['departamento_id']).sum()
+    _top = _cnt.sort_values(['_cuota','empresa'], ascending=[False, True]).drop_duplicates('departamento_id')
+    _dep = _dep.join(_top.set_index('departamento_id')[['empresa','_cuota']]
+                     .rename(columns={'empresa':'empresa_principal','_cuota':'cuota_principal_pct'}))
+    _dep['cuota_principal_pct'] *= 100
+    _nom = _uni.groupby('departamento_id').agg(provincia=('PROVINCIA_NORM', lambda _x: _x.mode().iat[0]),
+                                                departamento=('departamento','first'))
+    _bd = _bs.groupby('departamento_id').agg(sucursales_con_brecha=('brecha','size'), brecha_mediana=('brecha','median'),
+                                             brecha_prom=('brecha', _pmean), peso_propio_medio=('peso_propio_pct','mean'))
+    concentracion = _nom.join(_dep).join(_bd, how='left').reset_index()
+    concentracion['sucursales_con_brecha'] = concentracion['sucursales_con_brecha'].fillna(0).astype(int)
+    concentracion['confiable'] = concentracion['sucursales_con_brecha'] >= MIN_SUC_DEPTO
+    concentracion = concentracion.sort_values('sucursales', ascending=False).reset_index(drop=True)
+    # correlación de rangos (Spearman) entre la brecha de cada sucursal y el HHI de su departamento
+    _sx = _bs.join(_dep['hhi'], on='departamento_id').dropna(subset=['brecha','hhi'])
+    if len(_sx) > 2:
+        CONC_RHO, CONC_N = float(_sx['brecha'].rank().corr(_sx['hhi'].rank())), len(_sx)
+else:
+    concentracion = pd.DataFrame(columns=['departamento_id','provincia','departamento','sucursales','empresas','hhi',
+                                          'empresa_principal','cuota_principal_pct','sucursales_con_brecha',
+                                          'brecha_mediana','brecha_prom','peso_propio_medio','confiable'])
+    print('  (sin departamentos de Georef: no se calcula la concentración)')
 
 # ── Resumen ──────────────────────────────────────────────────────────────────
 print('\n=== Brecha POR SUBTIPO (intra-super, $/100 g), todo el período ===')
@@ -1187,16 +1366,30 @@ if len(serie_anual):
     _sa = serie_anual[['anio','brecha_canasta','n_min']].merge(
         serie_anual_bal[['anio','brecha_canasta','n_min']], on='anio', how='left', suffixes=('', '_bal'))
     print(_sa.round(1).to_string(index=False))
-print(f'\n=== Región (últimos {VENTANA_GEO_MESES} meses, {VENTANA_TXT}) ===')
+_cg = ['brecha_canasta','peso_imputado_pct','n_sucursales','confiable']
+print(f'\n=== Región (últimos {VENTANA_GEO_MESES} meses, {VENTANA_TXT}; misma canasta: subtipos sin datos en el grupo = '
+      f'brecha nacional; confiable = <= {MAX_PESO_IMPUTADO}% del peso imputado y >= {MIN_SUC_AGG} sucursales) ===')
 if len(brecha_region):
-    print(brecha_region[['region','brecha_canasta','n_tipos','n_min','confiable']].round(1).to_string(index=False))
+    print(brecha_region[['region'] + _cg].round(1).to_string(index=False))
 print(f'\n=== Empresas (últimos {VENTANA_GEO_MESES} meses) ===')
 if len(brecha_empresa):
-    print(brecha_empresa[['empresa','brecha_canasta','n_tipos','n_min','confiable']].round(1).to_string(index=False))
+    print(brecha_empresa[['empresa'] + _cg].round(1).to_string(index=False))
+print(f'\n=== Cadenas (últimos {VENTANA_GEO_MESES} meses, solo confiables) ===')
+if len(brecha_cadena):
+    print(brecha_cadena.loc[brecha_cadena['confiable'], ['cadena'] + _cg[:-1]].round(1).to_string(index=False))
 _pc = brecha_prov[brecha_prov['confiable']] if len(brecha_prov) else brecha_prov
 if len(_pc):
-    print(f'\nProvincia MENOR brecha (confiable): {_pc.iloc[0]["provincia"]} ({_pc.iloc[0]["brecha_canasta"]:+.1f}%) · '
-          f'MAYOR: {_pc.iloc[-1]["provincia"]} ({_pc.iloc[-1]["brecha_canasta"]:+.1f}%)')"""))
+    print(f'\nProvincias confiables: {len(_pc)} de {len(brecha_prov)} · MENOR brecha: {_pc.iloc[0]["provincia"]} '
+          f'({_pc.iloc[0]["brecha_canasta"]:+.1f}%) · MAYOR: {_pc.iloc[-1]["provincia"]} ({_pc.iloc[-1]["brecha_canasta"]:+.1f}%)')
+if len(concentracion):
+    _cf = concentracion[concentracion['confiable']]
+    print(f'\n=== Concentración (departamentos con >= {MIN_SUC_DEPTO} sucursales con brecha propia: {len(_cf)}) ===')
+    print(f'  Spearman entre la brecha de cada sucursal y el HHI de su departamento: {CONC_RHO:+.2f} ({CONC_N:,} sucursales)')
+    if len(_bs) >= 3:
+        _h = _bs.join(concentracion.set_index('departamento_id')['hhi'], on='departamento_id').dropna(subset=['hhi'])
+        _h['tercil_hhi'] = pd.qcut(_h['hhi'].rank(method='first'), 3, labels=['bajo','medio','alto'])
+        print(_h.groupby('tercil_hhi', observed=True).agg(hhi_mediano=('hhi','median'), brecha_mediana=('brecha','median'),
+                                                          sucursales=('brecha','size')).round(2).to_string())"""))
 
 # ── CELL 9 — GRÁFICOS ──────────────────────────────────────────────────────────
 cells.append(cell_code(r"""# ============================================================
@@ -1210,14 +1403,21 @@ def _guardar(_nombre):
     plt.savefig(_o, dpi=200, bbox_inches='tight', facecolor='white'); plt.show()
     print(f'Guardado: {_o.name}')
 
-# 1) Canasta mensual: todas las sucursales vs panel balanceado (+ sucursales del tipo con menos cobertura)
+# 1) Canasta mensual: todas las sucursales vs panel balanceado (+ sucursales del tipo con menos cobertura). Marcador
+#    vacío: mes con algún subtipo imputado con su último mes válido (hoja Imputaciones)
 if len(serie_mensual):
     fig, ax = plt.subplots(figsize=(13, 6))
     _sm = serie_mensual.assign(f=pd.to_datetime(serie_mensual['mes'] + '-01'))
     ax.plot(_sm['f'], _sm['brecha_canasta'], color=_C_MED, lw=2.2, marker='o', ms=3, label='Todas las sucursales')
+    _im = _sm['peso_imputado_pct'] > 0
+    ax.plot(_sm.loc[_im, 'f'], _sm.loc[_im, 'brecha_canasta'], ls='none', marker='o', ms=6, mfc='white', mec=_C_MED)
     if len(serie_mensual_bal):
         _sb = serie_mensual_bal.assign(f=pd.to_datetime(serie_mensual_bal['mes'] + '-01'))
         ax.plot(_sb['f'], _sb['brecha_canasta'], color=_C_BAL, lw=2.2, marker='D', ms=3, label='Panel balanceado')
+        _im = _sb['peso_imputado_pct'] > 0
+        ax.plot(_sb.loc[_im, 'f'], _sb.loc[_im, 'brecha_canasta'], ls='none', marker='D', ms=6, mfc='white', mec=_C_BAL)
+    ax.plot([], [], ls='none', marker='o', ms=6, mfc='white', mec='#555',
+            label='mes con algún subtipo imputado (último mes válido)')
     ax.set_ylabel('Brecha de la canasta (%)')
     ax.set_title('Brecha celíaca de la canasta (ponderada ENGHo) — canasta fija 2022-2026')
     ax.yaxis.set_major_formatter(mticker.FuncFormatter(lambda x, _: f'{x:+.0f}%')); ax.grid(True, alpha=0.3)
@@ -1233,7 +1433,12 @@ if len(brecha_tipo_mensual_bal):
     fig, ax = plt.subplots(figsize=(13, 6))
     for _t, _g in brecha_tipo_mensual_bal.groupby('tipo'):
         _g = _g.sort_values('mes')
-        ax.plot(pd.to_datetime(_g['mes'] + '-01'), _g['brecha_mediana'], marker='o', ms=3, lw=1.8, label=_t)
+        _f = pd.to_datetime(_g['mes'] + '-01')
+        _ln = ax.plot(_f, _g['brecha_mediana'], marker='o', ms=3, lw=1.8, label=_t)[0]
+        _im = (_g['n_subtipos_imputados'] > 0).to_numpy()
+        ax.plot(_f[_im], _g['brecha_mediana'][_im], ls='none', marker='o', ms=6, mfc='white', mec=_ln.get_color(),
+                color=_ln.get_color())   # con color explícito no consume un color del ciclo
+    ax.plot([], [], ls='none', marker='o', ms=6, mfc='white', mec='#555', label='con algún subtipo imputado')
     ax.set_ylabel('Brecha (%)'); ax.set_title('Brecha mensual por tipo — panel balanceado')
     ax.yaxis.set_major_formatter(mticker.FuncFormatter(lambda x, _: f'{x:+.0f}%'))
     ax.legend(fontsize=8, ncol=2); ax.grid(True, alpha=0.3)
@@ -1252,20 +1457,26 @@ if len(brecha_tipo):
     ax.grid(True, alpha=0.3, axis='x')
     _guardar('brecha_por_tipo')
 
-# 4) Canasta por año y región (todas las sucursales)
+# 4) Canasta por año y región (todas las sucursales; misma canasta en todas las regiones). Marcador vacío: no confiable
 if len(brecha_region_anual):
     fig, ax = plt.subplots(figsize=(11, 6))
     for _rg, _g in brecha_region_anual.groupby('region'):
         _g = _g.sort_values('anio')
-        ax.plot(_g['anio'], _g['brecha_canasta'], marker='o', lw=2, label=_rg)
-    ax.set_ylabel('Brecha de la canasta (%)'); ax.set_title('Brecha celíaca de la canasta por región y año')
+        _ln = ax.plot(_g['anio'], _g['brecha_canasta'], marker='o', lw=2, label=_rg)[0]
+        _nc = ~_g['confiable'].astype(bool)
+        ax.plot(_g.loc[_nc, 'anio'], _g.loc[_nc, 'brecha_canasta'], ls='none', marker='o', ms=8, mfc='white',
+                mec=_ln.get_color(), color=_ln.get_color())
+    ax.set_ylabel('Brecha de la canasta (%)')
+    ax.set_title(f'Brecha celíaca de la canasta por región y año (marcador vacío: > {MAX_PESO_IMPUTADO}% del peso con la '
+                 f'brecha nacional o < {MIN_SUC_AGG} sucursales)', fontsize=10)
     ax.yaxis.set_major_formatter(mticker.FuncFormatter(lambda x, _: f'{x:+.0f}%'))
     ax.legend(fontsize=9); ax.grid(True, alpha=0.3)
     _guardar('brecha_region_anual')
 
-# 5) y 6) Provincia y empresa (últimos meses; solo confiables)
+# 5), 6) y 7) Provincia, empresa y cadena (últimos meses; solo confiables: misma canasta de subtipos en todos los grupos)
 for _df, _col, _tit, _nom in ((brecha_prov, 'provincia', 'provincia', 'brecha_provincia'),
-                              (brecha_empresa, 'empresa', 'empresa', 'brecha_empresa')):
+                              (brecha_empresa, 'empresa', 'empresa', 'brecha_empresa'),
+                              (brecha_cadena, 'cadena', 'cadena', 'brecha_cadena')):
     _d = _df[_df['confiable']] if len(_df) else _df
     if not len(_d):
         continue
@@ -1273,21 +1484,26 @@ for _df, _col, _tit, _nom in ((brecha_prov, 'provincia', 'provincia', 'brecha_pr
     ax.barh(_d[_col], _d['brecha_canasta'], color=plt.cm.RdYlGn_r(np.linspace(0.15, 0.9, len(_d))),
             edgecolor='black', lw=0.4)
     for _i, (_, _r) in enumerate(_d.iterrows()):
-        ax.text(_r['brecha_canasta'], _i, f' {_r["brecha_canasta"]:+.1f}% (n mín {int(_r["n_min"])})', va='center', fontsize=8)
+        ax.text(_r['brecha_canasta'], _i, f' {_r["brecha_canasta"]:+.1f}% ({int(_r["n_sucursales"])} sucursales; '
+                f'{_r["peso_imputado_pct"]:.0f}% del peso con la brecha nacional)', va='center', fontsize=8)
     ax.set_xlabel('Brecha de la canasta (%)')
-    ax.set_title(f'Brecha celíaca por {_tit} — {VENTANA_TXT} (todos los tipos con >= {MIN_SUC_AGG} sucursales)')
+    ax.set_title(f'Brecha celíaca por {_tit} — {VENTANA_TXT}\n(misma canasta en todos; subtipos sin datos = brecha '
+                 f'nacional, <= {MAX_PESO_IMPUTADO}% del peso; >= {MIN_SUC_AGG} sucursales)', fontsize=11)
     ax.grid(True, alpha=0.3, axis='x')
     _guardar(_nom)
 
-# 7) Brecha vs concentración de comercios (exploratorio)
-_cc = concentracion[concentracion['n_sucursales'] >= 2] if len(concentracion) else concentracion
+# 8) Brecha vs concentración del mercado local: HHI de empresas por departamento (cuota = sucursales)
+_cc = concentracion[concentracion['confiable']] if len(concentracion) else concentracion
 if len(_cc) >= 3:
-    fig, ax = plt.subplots(figsize=(9, 6))
-    ax.scatter(_cc['n_sucursales'], _cc['brecha_mediana'], s=28, alpha=0.6, color=_C_MED, edgecolor='white')
-    _corr = _cc['n_sucursales'].corr(_cc['brecha_mediana'])
-    _cs = f'{_corr:+.2f}' if pd.notna(_corr) else 'n/d'
-    ax.set_xscale('log'); ax.set_xlabel('Nº de sucursales en la localidad (log)'); ax.set_ylabel('Brecha mediana (%)')
-    ax.set_title(f'Brecha vs concentración de comercios (corr={_cs})'); ax.grid(True, alpha=0.3)
+    fig, ax = plt.subplots(figsize=(10, 6))
+    ax.scatter(_cc['hhi'], _cc['brecha_mediana'], s=12 + 3 * _cc['sucursales_con_brecha'].clip(upper=150), alpha=0.6,
+               color=_C_MED, edgecolor='white')
+    ax.set_xlabel('HHI de empresas en el departamento (cuota = sucursales; 1 = una sola empresa)')
+    ax.set_ylabel('Brecha de la canasta (mediana de sus sucursales, %)')
+    ax.set_title(f'Brecha vs concentración del mercado local — {VENTANA_TXT}\nDepartamentos con >= {MIN_SUC_DEPTO} '
+                 f'sucursales con brecha propia (tamaño = sucursales) · Spearman por sucursal {CONC_RHO:+.2f} '
+                 f'(n = {CONC_N:,})', fontsize=11)
+    ax.grid(True, alpha=0.3)
     _guardar('brecha_concentracion')"""))
 
 # ── CELL 10 — MAPA COROPLÉTICO ─────────────────────────────────────────────────
@@ -1320,12 +1536,14 @@ else:
     cmap_m = LinearSegmentedColormap.from_list('c',
         ['#1a9850','#66bd63','#a6d96a','#fee08b','#fdae61','#f46d43','#d73027'], N=256)
 
-    _pv = brecha_prov[brecha_prov['n_tipos'] > 0] if len(brecha_prov) else brecha_prov
+    # Solo se colorean las provincias confiables (misma canasta: <= MAX_PESO_IMPUTADO% del peso con la brecha nacional y
+    # >= MIN_SUC_AGG sucursales); las demás quedan en gris con su nombre (sus números están en la hoja Brecha_provincia)
+    _pv = brecha_prov[brecha_prov['confiable']] if len(brecha_prov) else brecha_prov
     _prov_val = dict(zip(_pv['provincia'], _pv['brecha_canasta']))
-    _conf = dict(zip(_pv['provincia'], _pv['confiable']))
+    _con_datos = set(brecha_prov['provincia']) if len(brecha_prov) else set()
     _vals = list(_prov_val.values())
     if _vals:
-        norm_c = Normalize(vmin=min(_vals), vmax=max(_vals))
+        norm_c = Normalize(vmin=min(_vals), vmax=max(_vals) if max(_vals) > min(_vals) else min(_vals) + 1)
         fig, ax = plt.subplots(figsize=(12, 16)); caba_c = None
         for feat in geo['features']:
             nom = NORM_GEO.get(feat['properties']['name'], feat['properties']['name'])
@@ -1336,18 +1554,19 @@ else:
             cx, cy = centroide([co] if gt=='Polygon' else co)
             if nom == 'CABA': caba_c=(cx,cy); continue
             dx,dy = AJUST.get(nom,(0,0))
-            if val is not None:
-                _tx = f'{nom}\\n{val:+.1f}%' + ('' if _conf.get(nom) else ' (*)')
+            if val is not None or nom in _con_datos:
+                _tx = f'{nom}\\n{val:+.1f}%' if val is not None else f'{nom}\\n(pocos datos)'
                 ax.text(cx+dx, cy+dy, _tx, ha='center', va='center', fontsize=7.5,
-                        fontweight='bold', bbox=dict(boxstyle='round,pad=0.25', facecolor='white', alpha=0.75, edgecolor='none'))
+                        fontweight='bold' if val is not None else 'normal', color='black' if val is not None else '#666',
+                        bbox=dict(boxstyle='round,pad=0.25', facecolor='white', alpha=0.75, edgecolor='none'))
         if caba_c and 'CABA' in _prov_val:
             vc = _prov_val['CABA']; cc = cmap_m(norm_c(vc)); lx,ly = caba_c[0]+2.2, caba_c[1]+0.8
             ax.annotate('', xy=caba_c, xytext=(lx,ly), arrowprops=dict(arrowstyle='-', color='black', linewidth=1.0))
             ax.text(lx, ly, f'CABA\\n{vc:+.1f}%', ha='center', va='center', fontsize=9, fontweight='bold',
                     bbox=dict(boxstyle='round,pad=0.5', facecolor=cc, alpha=0.95, edgecolor='black', linewidth=1.0))
             ax.plot(*caba_c, marker='o', markersize=10, markerfacecolor=cc, markeredgecolor='black', markeredgewidth=1.2, zorder=5)
-        ax.set_title(f'Brecha celíaca de la canasta por provincia — {VENTANA_TXT}\\n(*) falta algún tipo o tiene < {MIN_SUC_AGG} sucursales',
-                     fontsize=13, fontweight='bold', pad=6)
+        ax.set_title(f'Brecha celíaca de la canasta por provincia — {VENTANA_TXT}\\n(misma canasta en todas; gris: < {MIN_SUC_AGG} '
+                     f'sucursales o > {MAX_PESO_IMPUTADO}% del peso sin datos propios)', fontsize=13, fontweight='bold', pad=6)
         ax.set_aspect('equal'); ax.axis('off'); plt.tight_layout()
         _o = OUTPUT_DIR / f'mapa_brecha_{MES}.png'
         plt.savefig(_o, dpi=300, bbox_inches='tight', facecolor='white'); plt.show()
@@ -1404,12 +1623,19 @@ _det = _det[['cadena','empresa','PROVINCIA_NORM','region','sucursales_localidad'
              'id_bandera','id_sucursal','tipo','rol','ean_norm','descripcion','grams','precio_mediano_mes','dias',
              'precio_100g']].sort_values(['PROVINCIA_NORM','cadena','sucursales_nombre','tipo','rol'])
 
-# ── Brecha por SUCURSAL (canasta con cantidades) — último mes ────────────────
+# ── Brecha por SUCURSAL — último mes: canasta comparable (misma canasta de subtipos en todas; lo que la sucursal no
+# tiene, con la brecha nacional del mes) y, de referencia, la canasta por cantidades de los tipos que tiene ──
 _bsm = brecha_suc_mes[brecha_suc_mes['mes'] == ULTIMO_MES].copy()
-_brecha_suc = (_bsm.merge(suc_geo[['id_comercio','id_bandera','id_sucursal','sucursales_nombre']],
+_brecha_suc = (_bsm.merge(suc_geo[['id_comercio','id_bandera','id_sucursal','sucursales_nombre','departamento']],
                           on=['id_comercio','id_bandera','id_sucursal'], how='left')
-               .rename(columns={'base':'canasta_con_tacc','celiaca':'canasta_sin_tacc','brecha_pct':'brecha_canasta'})
+               .rename(columns={'base':'canasta_con_tacc','celiaca':'canasta_sin_tacc',
+                                'brecha_pct':'brecha_tipos_presentes','brecha_comparable':'brecha_canasta'})
                .sort_values('brecha_canasta', ascending=False)) if len(_bsm) else pd.DataFrame()
+if len(_brecha_suc):
+    _c1 = ['id_comercio','id_bandera','id_sucursal','mes','PROVINCIA_NORM','region','departamento','cadena','empresa',
+           'localidad','sucursales_nombre','brecha_canasta','peso_propio_pct','n_tipos','brecha_tipos_presentes',
+           'canasta_con_tacc','canasta_sin_tacc','suc_key']
+    _brecha_suc = _brecha_suc[[c for c in _c1 if c in _brecha_suc.columns]]
 
 # ── Comparación de productos EQUIVALENTES por sucursal (último mes) ───────────
 _cu = _ult.copy()
@@ -1443,7 +1669,7 @@ else:
 leeme = pd.DataFrame({'hoja_o_columna': [
     'Método', 'Canasta', 'Ponderaciones', 'Brecha_subtipo*', 'Brecha_tipo*', 'Serie_canasta*',
     'Brecha_provincia / region / empresa / cadena', '*_anual', 'brecha_canasta', 'n_min / confiable', 'Panel balanceado',
-    'Control_EAN', 'Plausibilidad', 'Fuente'],
+    'peso_imputado_pct', 'Imputaciones', 'Brecha_sucursal', 'Concentracion', 'Control_EAN', 'Plausibilidad', 'Fuente'],
     'definicion': [
     'Brecha de un subtipo en una sucursal y mes = mediana $/100 g de los productos sin TACC presentes / mediana $/100 g de '
     'los con TACC presentes - 1 (los dos lados en el mismo super). Brecha del tipo = promedio geométrico de las de sus '
@@ -1460,12 +1686,25 @@ leeme = pd.DataFrame({'hoja_o_columna': [
     '(brecha_mediana; ídem con el promedio sin outliers, brecha_prom, y el "más barato" ilustrativo, sesgado al alza), '
     'precios $/100 g de cada lado (promedio geométrico de los de sus subtipos), subtipos y sucursales.',
     'Canasta por mes (y año): sum_k w_k (1 + brecha del tipo k) - 1, con los pesos ENGHo.',
-    f'Últimos {VENTANA_GEO_MESES} meses ({VENTANA_TXT}). Una columna por tipo con su brecha y sus sucursales.',
-    'Mismo cálculo por año (todas las sucursales del año).',
-    'Brecha de la canasta del grupo (pesos ENGHo renormalizados entre los tipos presentes).',
-    f'n_min = sucursales del tipo con menos sucursales en el grupo; confiable = están todos los tipos y n_min >= {MIN_SUC_AGG}.',
+    f'Últimos {VENTANA_GEO_MESES} meses ({VENTANA_TXT}). Misma canasta en todos los grupos: el subtipo con menos de '
+    f'{MIN_SUC_SUBTIPO} sucursales en el grupo toma la brecha nacional del período (subtipos_con_brecha_nacional), así '
+    'un grupo sin snacks o sin obleas no cambia de composición. Una columna por tipo con su brecha y sus sucursales.',
+    'Mismo cálculo por año (todas las sucursales del año; lo que falta en el grupo, con la brecha nacional de ese año).',
+    'Brecha de la canasta del grupo o mes: sum_k w_k (1 + brecha del tipo k) - 1 (pesos ENGHo).',
+    f'Series: n_min = sucursales del tipo con menos sucursales; confiable = están todos los tipos y n_min >= {MIN_SUC_AGG}. '
+    f'Grupos: confiable = peso_imputado_pct <= {MAX_PESO_IMPUTADO} y n_sucursales >= {MIN_SUC_AGG}.',
     f'Solo sucursal x subtipo con los dos lados en >= {int(FRAC_MESES_PANEL * 100)}% de los meses: la serie no cambia '
     'por sucursales que entran o salen.',
+    'Parte del peso de la canasta que no se midió: en la serie mensual, subtipos imputados con su último mes válido '
+    '(pocas sucursales ese mes); en los grupos, subtipos con la brecha nacional del período.',
+    'Rachas de meses en que un subtipo se imputa con su último mes válido en la serie mensual (todas las sucursales y '
+    'panel balanceado): desde, hasta, sucursales que tenía y brecha arrastrada. Más de 3 meses: leer ese tramo con cuidado.',
+    'Último mes: brecha_canasta = canasta comparable (misma canasta de subtipos en todas las sucursales; lo que la '
+    'sucursal no tiene con los dos lados, con la brecha nacional del mes; peso_propio_pct = parte medida en la sucursal). '
+    'brecha_tipos_presentes = canasta por cantidades solo con los tipos que tiene (depende de cuántos tiene: no comparar).',
+    'Por departamento (Georef): sucursales del universo, empresas, HHI de empresas (cuota = sucursales; el SEPA no tiene '
+    'ventas), empresa principal, sucursales con brecha propia (>= 50% del peso medido en ellas) y su brecha mediana '
+    f'(canasta comparable, últimos {VENTANA_GEO_MESES} meses). confiable = >= {MIN_SUC_DEPTO} sucursales con brecha.',
     'Precio de cada EAN relativo a la mediana del lado con TACC de su tipo, mes a mes; revisar = cambio de nivel x2 o '
     'salto x2 mes a mes (código reutilizado, presentación mal cargada). No excluye.',
     f'EANs excluidos por precio relativo a sus pares fuera de [1/{FACTOR_PLAUS}, {FACTOR_PLAUS}].',
@@ -1486,7 +1725,7 @@ _hojas = [
     ('Brecha_empresa', brecha_empresa), ('Brecha_tipo_empresa', brecha_tipo_empresa),
     ('Brecha_empresa_anual', brecha_empresa_anual), ('Brecha_cadena', brecha_cadena), ('Concentracion', concentracion),
     ('Brecha_sucursal', _brecha_suc), ('Comparacion_productos', _comp), ('Detalle_producto', _det),
-    ('Control_EAN', control_ean), ('Plausibilidad', plausibilidad)]
+    ('Imputaciones', imputaciones), ('Control_EAN', control_ean), ('Plausibilidad', plausibilidad)]
 with pd.ExcelWriter(out_xls, engine='openpyxl') as writer:
     for _sn, _df in _hojas:
         (_df if len(_df.columns) else pd.DataFrame({'(sin datos)': []})).to_excel(writer, sheet_name=_sn, index=False)
@@ -1503,9 +1742,11 @@ cells.append(cell_code("""\
 # ============================================================
 # CELDA 12 — Mapa Folium interactivo POR SUCURSAL (brecha celíaca, último dato de cada sucursal)
 # ============================================================
-# Un punto por supermercado; color VERDE→ROJO graduado por la brecha de la canasta en esa sucursal.
-# LIVIANO: los popups se arman al hacer clic (lazy-load desde un JSON compacto). Popup: (1) valor de cada canasta y %
-# de brecha; (2) productos por EQUIVALENCIA (subtipo) — con TACC vs sin TACC, con presentación y $/100g; (3) cadena +
+# Un punto por supermercado; color VERDE→ROJO graduado por la brecha de la canasta COMPARABLE de esa sucursal (misma
+# canasta de subtipos en todas; lo que la sucursal no tiene con los dos lados, con la brecha nacional del mes: si no, el
+# color dependía de cuántos tipos tiene cada sucursal). LIVIANO: los popups se arman al hacer clic (lazy-load desde un
+# JSON compacto). Popup: (1) brecha comparable, parte del peso medida en la sucursal y valor de cada canasta; (2)
+# productos por EQUIVALENCIA (subtipo) — con TACC vs sin TACC, con presentación y $/100g; (3) cadena +
 # localidad/provincia. La brecha AUTORITATIVA es la del tipo (§3). Filtro por cadena (LayerControl) + pantalla
 # completa. Mosaicos: Esri World Light Gray (sin API key y responde desde la red del INECO, BUG-32) + límites
 # provinciales dibujados desde el ar.json local (se ven aunque la red bloquee los mosaicos).
@@ -1520,7 +1761,7 @@ _sk3m = ['id_comercio','id_bandera','id_sucursal']
 VENTANA_MAPA_MESES = 6
 _meses_ord = sorted(brecha_suc_mes['mes'].unique())
 _meses_win = set(_meses_ord[-VENTANA_MAPA_MESES:]) if _meses_ord else set()
-_bsm_w = brecha_suc_mes[brecha_suc_mes['mes'].isin(_meses_win)]
+_bsm_w = brecha_suc_mes[brecha_suc_mes['mes'].isin(_meses_win) & brecha_suc_mes['brecha_comparable'].notna()]
 _bk = (_bsm_w.sort_values('mes').groupby(_sk3m, as_index=False).tail(1)
        .merge(suc_geo[['id_comercio','id_bandera','id_sucursal','sucursales_nombre',
                        'sucursales_latitud','sucursales_longitud']],
@@ -1564,12 +1805,13 @@ for _r in _bk.itertuples(index=False):
         _S = [{'s': _s, 'A': _p_arr(_subs[_s]['A']), 'B': _p_arr(_subs[_s]['B'])} for _s in sorted(_subs, key=_ord)]
         _T.append({'t': _tp, 'ta': _iround(_tacc_p), 'si': _iround(_sin_p), 'g': _iround(_brk), 'S': _S})
     _pd[_key] = {'c': str(_r.cadena), 'n': str(_r.sucursales_nombre)[:46], 'p': str(_r.PROVINCIA_NORM),
-                 'l': str(_r.localidad), 'm': str(_r.mes), 'b': _iround(_r.brecha_pct), 'bs': _iround(_r.base),
+                 'l': str(_r.localidad), 'm': str(_r.mes), 'b': _iround(_r.brecha_comparable),
+                 'pp': _iround(_r.peso_propio_pct), 'bt': _iround(_r.brecha_pct), 'bs': _iround(_r.base),
                  'cl': _iround(_r.celiaca), 'nt': int(_r.n_tipos), 'T': _T}
 _json_str = _json.dumps(_pd, ensure_ascii=False, separators=(',', ':'))
 
-_vmin = float(_bk['brecha_pct'].quantile(0.05)); _vmax = float(_bk['brecha_pct'].quantile(0.95))
-if _vmin == _vmax: _vmin, _vmax = float(_bk['brecha_pct'].min()), float(_bk['brecha_pct'].max())
+_vmin = float(_bk['brecha_comparable'].quantile(0.05)); _vmax = float(_bk['brecha_comparable'].quantile(0.95))
+if _vmin == _vmax: _vmin, _vmax = float(_bk['brecha_comparable'].min()), float(_bk['brecha_comparable'].max()) + 1
 _cm = LinearColormap(colors=['#1a9850','#66bd63','#a6d96a','#fee08b','#fdae61','#f46d43','#d73027'],
                      vmin=_vmin, vmax=_vmax, caption=f'Brecha de canasta celíaca (%) — {NOMBRE_MES_TITLE}')
 
@@ -1600,26 +1842,28 @@ def _fg(_cad):
 
 for _r in _bk.itertuples(index=False):
     _key = f'{_r.id_comercio}_{_r.id_bandera}_{_r.id_sucursal}'
-    _b = float(_r.brecha_pct); _col = _cm(max(_vmin, min(_vmax, _b)))
+    _b = float(_r.brecha_comparable); _col = _cm(max(_vmin, min(_vmax, _b)))
     _ph = (f'<div class="lz-pop" data-key="{_key}" style="min-width:320px">'
            f'<span style="color:#aaa;font-family:Arial;font-size:12px">Cargando detalle…</span></div>')
     folium.CircleMarker(
         location=[_r.sucursales_latitud, _r.sucursales_longitud],
         radius=6, color='#333', weight=0.6, fill=True, fillColor=_col, fillOpacity=0.9,
-        tooltip=f'<b>{_r.cadena}</b><br>{_r.PROVINCIA_NORM}<br>Brecha <b>+{_b:.0f}%</b>',
+        tooltip=(f'<b>{_r.cadena}</b><br>{_r.PROVINCIA_NORM}<br>Brecha <b>{_b:+.0f}%</b> '
+                 f'({_r.peso_propio_pct:.0f}% de la canasta medida acá)'),
         popup=folium.Popup(_ph, max_width=500)
     ).add_to(_fg(_r.cadena))
 
 for _c in sorted(_fgs): _fgs[_c].add_to(m)
 folium.LayerControl(collapsed=True, position='topright').add_to(m)
 
-_med_nac = _bk['brecha_pct'].median()
+_med_nac = _bk['brecha_comparable'].median()
 _info = (f'<div style="position:fixed;top:10px;left:50px;width:335px;background:white;border:2px solid #0055A4;'
          f'border-radius:8px;padding:12px 15px;font-family:Arial;z-index:9999;box-shadow:0 2px 8px rgba(0,0,0,.15)">'
          f'<div style="color:#0055A4;font-size:15px;font-weight:bold;margin-bottom:4px">Brecha celíaca por sucursal</div>'
          f'<div style="font-size:11px;color:#555;line-height:1.5">Última brecha disponible por sucursal '
          f'(últimos {VENTANA_MAPA_MESES} meses) · <b>{len(_bk):,}</b> sucursales · <b>{len(_fgs)}</b> cadenas<br>'
-         f'Brecha mediana: <b>+{_med_nac:.0f}%</b> · el popup indica de qué mes es cada dato<br>'
+         f'Brecha mediana: <b>{_med_nac:+.0f}%</b> · el popup indica de qué mes es cada dato<br>'
+         f'Misma canasta en todas: lo que una sucursal no vende, con la brecha nacional del mes<br>'
          f'<span style="color:#1a9850">■</span> menor &nbsp; <span style="color:#d73027">■</span> mayor brecha &nbsp;·&nbsp; '
          f'filtrá cadenas con el control de capas (arriba der.)</div></div>')
 m.get_root().html.add_child(folium.Element(_info))
@@ -1630,14 +1874,15 @@ _JS = '''<script>
 var _MV="__MAPVAR__", _MES="__MES__", _PD=null;
 function _gpd(){ if(!_PD){ var el=document.getElementById("_pd_json"); if(el) _PD=JSON.parse(el.textContent); } return _PD; }
 function _fmt(x){ return "$"+Number(x).toLocaleString("es-AR"); }
+function _sg(x){ return (x>=0?"+":"")+x; }
 function _plist(a){ if(!a||!a.length) return '<span style="color:#bbb">—</span>'; var s=""; for(var i=0;i<a.length;i++){ var g=a[i][1]?a[i][1]+" g":"s/pres"; var p=(a[i][2]!=null)?_fmt(a[i][2])+"/100g":"s/precio"; s+='<div style="margin:1px 0">• '+a[i][0]+' <span style="color:#777">('+g+", "+p+')</span></div>'; } return s; }
 function _bpop(k){ var pd=_gpd(); if(!pd||!pd[k]) return "<div>Sin datos.</div>"; var d=pd[k];
   var h='<div style="font-family:Arial;font-size:12px;min-width:360px;max-width:480px;max-height:520px;overflow-y:auto">';
   h+='<div style="font-size:14px;font-weight:bold">'+d.n+'</div>';
   h+='<div style="color:#555;margin-bottom:5px">'+d.c+" · "+d.l+", "+d.p+'</div>';
-  h+='<div style="padding:6px;background:#f5f5f5;border-radius:4px;margin-bottom:4px">Brecha de canasta celíaca: <b style="font-size:15px">+'+d.b+'%</b><br>Canasta con TACC: <b>'+_fmt(d.bs)+'</b> · sin TACC: <b>'+_fmt(d.cl)+'</b> <span style="color:#888">(índice $/100g ponderado)</span><br><span style="color:#888;font-size:11px">'+d.nt+" tipo(s) · dato de "+d.m+'</span></div>';
+  h+='<div style="padding:6px;background:#f5f5f5;border-radius:4px;margin-bottom:4px">Brecha de la canasta celíaca: <b style="font-size:15px">'+_sg(d.b)+'%</b><br><span style="color:#888;font-size:11px">Misma canasta en todas las sucursales: '+d.pp+'% medida acá; lo que no vende, con la brecha nacional del mes</span><br>Solo con sus '+d.nt+' tipo(s): '+_sg(d.bt)+'% · canasta con TACC <b>'+_fmt(d.bs)+'</b> · sin TACC <b>'+_fmt(d.cl)+'</b> <span style="color:#888">($/100g ponderado)</span><br><span style="color:#888;font-size:11px">dato de '+d.m+'</span></div>';
   for(var i=0;i<d.T.length;i++){ var t=d.T[i];
-    h+='<div style="margin-top:7px;font-weight:bold;color:#1F4E79">'+t.t+" · brecha del tipo +"+t.g+'% <span style="color:#888;font-weight:normal">(mediana con TACC '+_fmt(t.ta)+" vs sin "+_fmt(t.si)+'/100g)</span></div>';
+    h+='<div style="margin-top:7px;font-weight:bold;color:#1F4E79">'+t.t+" · brecha del tipo "+_sg(t.g)+'% <span style="color:#888;font-weight:normal">(mediana con TACC '+_fmt(t.ta)+" vs sin "+_fmt(t.si)+'/100g)</span></div>';
     h+='<table style="border-collapse:collapse;width:100%;font-size:11px"><tr style="background:#1F4E79;color:#fff"><th style="padding:2px">Equivalente</th><th style="padding:2px">Con TACC</th><th style="padding:2px">Sin TACC</th></tr>';
     for(var j=0;j<t.S.length;j++){ var s=t.S[j];
       h+='<tr><td style="border:1px solid #ddd;padding:3px;vertical-align:top;font-weight:600">'+s.s+'</td><td style="border:1px solid #ddd;padding:3px;vertical-align:top">'+_plist(s.A)+'</td><td style="border:1px solid #ddd;padding:3px;vertical-align:top">'+_plist(s.B)+'</td></tr>';

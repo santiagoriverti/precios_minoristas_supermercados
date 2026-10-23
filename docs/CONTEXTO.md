@@ -207,7 +207,9 @@ dicotomía (fideos secos, galletitas dulces, galletitas saladas y crackers, rebo
 reglas sobre las salidas del nb09 (`docs/BRECHA_CELIACA.md` §14; lista con métricas en
 `docs/brecha_celiaca/canasta_fija_2022_2026.csv`). Brecha intra-sucursal por tipo en $/100 g; canasta = promedio de
 los tipos con pesos ENGHo 2017/18. Config: `TIPOS`, `GRAMOS`, `VIGENCIA`, `PRODUCTO` y `SUBTIPO` en la CELDA 1 (los
-arma `gen_nb06.py` desde el CSV). Test: `notebooks/test_brecha_celiaca.py`. **Detalle completo: `docs/BRECHA_CELIACA.md`.**
+arma `gen_nb06.py` desde el CSV). Provincias, regiones, empresas, cadenas y sucursales se comparan con la misma canasta
+de 12 subtipos (BUG-47) y la concentración es el HHI de empresas por departamento (Georef). Primera corrida de Colab
+(2026-10-23) = simulación. Test: `notebooks/test_brecha_celiaca.py`. **Detalle completo: `docs/BRECHA_CELIACA.md`.**
 
 ### 2f. `07_evolucion_canastas_alternativas` (notebook 07) — motor del informe semanal
 **Estado: v5.13 lista para correr (relee el SEPA), 2026-09-24.** Implementa las decisiones de la revisión de la
@@ -626,6 +628,26 @@ Los 4 reemplazos (Swift XL, Lavandina Anti-splash, Plusbelle, Listerine) están 
 ---
 
 ## Historial de cambios
+
+### 2026-10-23 (tarde) — nb06: primera corrida de Colab revisada y BUG-47
+
+El usuario corrió el nb06 con la canasta fija en Colab y pasó la salida impresa, el Excel y el mapa. Revisión
+(`docs/AUDITORIA_2026-10-23_nb06.md`): **la corrida es idéntica a la simulación local** (`s16_comparar_colab.py`: 29
+hojas iguales, diferencia máxima 1,4e-13), así que la canasta y el estimador quedan validados en Colab; lo de §14.9 da
+lo esperado. Al leer los resultados aparecieron tres salidas que mezclaban composición (**BUG-47**, corregido sin
+releer el SEPA): (1) provincias, regiones, empresas y cadenas comparaban grupos con distintos subtipos (una cadena sin
+snacks quedaba con la brecha de los crackers sola: Coto +141,7%, La Anónima +131,8%) → ahora la misma canasta de 12
+subtipos en todos, con la brecha nacional del período en los subtipos sin datos en el grupo (`peso_imputado_pct`;
+confiable = <= 25% imputado y >= 30 sucursales): 8 provincias, 6 regiones, 3 empresas y 7 cadenas comparables; (2) el
+mapa por sucursal coloreaba según cuántos tipos tiene cada sucursal (DIA, con 2, salía en +77%) → canasta comparable
+con `peso_propio_pct`; (3) la "concentración" agrupaba por un campo de localidad que DIA carga con el nombre de la
+provincia (la correlación −0,26 era DIA) → HHI de empresas por departamento de Georef (caché del nb09): Spearman −0,11,
+sin relación. Además: hoja `Imputaciones`, gráficos con los meses imputados marcados, gráfico por cadena. Las series
+nacionales y la brecha por tipo no cambian. Test con 26 controles; simulación con el caché (4,9 min, 2,4 GB) y
+esperados nuevos en `docs/brecha_celiaca/simulacion_2026-10-23b/`. Queda abierta para el usuario la imputación sin
+límite de la serie mensual (rachas de 7-14 meses en 2023-2024 y 9 meses en galletitas con chips en 2025-2026); la
+recomendación es pasar a la TPD/hedónica (BRECHA_CELIACA §3.9) en vez de cambiar la regla. Los zips del Drive están
+ahora en `C:\Users\sriverti\Downloads\carga\`.
 
 ### 2026-10-23 — nb06: canasta fija 2022-2026 de la brecha celíaca
 

@@ -6,33 +6,35 @@ Autor: Santiago Riverti — investigador independiente
 
 ---
 
-## 🟢 ESTADO ACTUAL / HANDOFF [2026-10-23] — leer esto primero
+## 🟢 ESTADO ACTUAL / HANDOFF [2026-10-23 · tarde] — leer esto primero
 
-- **Repo**: `main` = `origin/main`. Commits del 2026-10-23: `678e9b9` (nb06: canasta fija 2022-2026 + estimador por
-  subtipo + BUG-46) y el de documentación para retomar (resultados esperados, `s16_comparar_colab.py`, `seaborn` en
-  `requirements.txt`). Nada sin commitear. **15 tests en OK** el 2026-10-23 (nuevo `notebooks/test_brecha_celiaca.py`,
-  22 controles). En una PC nueva: `git clone`, `pip install -r requirements.txt` y los tests de `CLAUDE.md`.
-- **Datos en la PC del INECO** (el usuario bajó el 23/10 todo el Drive): `C:\Users\sriverti\Downloads\2022A.zip` …
-  `2026B.zip` (idénticos a `MyDrive/carga/`; el `2026B` trae jul-2026 y ago-oct 2026 del SEPA diario al 22/10) y
-  `carga-20261023T013908Z-1-001..010.zip` (la carpeta `carga` entera: los mismos zips, `ar.json`, `IPC.xlsx`,
-  `output_canasta*`, `output_trazabilidad/` con sus cachés, `maestro_sepa_completo.csv.gz`; no hay `output_brecha`).
-  Trabajo intermedio del nb06 (precios extraídos 2022-2026, selección, verificación, simulación con el caché del nb06;
-  ~315 MB): `C:\Users\sriverti\proyectos\nb06_brecha_celiaca_20261023\` (README adentro; en otra PC se rehace con los
-  scripts s7-s15).
+- **Repo**: `main` = `origin/main` al cierre (ver `git log`). Commits del 2026-10-23: `678e9b9` (nb06: canasta fija
+  2022-2026 + estimador por subtipo + BUG-46), `b02871c` (documentación para retomar) y el de la tarde (revisión de la
+  primera corrida de Colab del nb06 + BUG-47). **15 tests en OK** (el del nb06 pasó a 26 controles). En una PC nueva:
+  `git clone`, `pip install -r requirements.txt` y los tests de `CLAUDE.md`.
+- **Datos en la PC del INECO** (el usuario bajó el 23/10 todo el Drive; **desde la tarde del 23/10 están en
+  `C:\Users\sriverti\Downloads\carga\`**): `2022A.zip` … `2026B.zip` (idénticos a `MyDrive/carga/`; el `2026B` trae
+  jul-2026 y ago-oct 2026 del SEPA diario al 22/10) y `carga-20261023T013908Z-1-001..010.zip` (la carpeta `carga` entera:
+  los mismos zips, `ar.json`, `IPC.xlsx`, `output_canasta*`, `output_trazabilidad/` con sus cachés —la de Georef está en
+  el `-009`—, `maestro_sepa_completo.csv.gz`; no hay `output_brecha`). Trabajo intermedio del nb06 (~320 MB):
+  `C:\Users\sriverti\proyectos\nb06_brecha_celiaca_20261023\` (README adentro; `simulacion/sim_v2/` = el notebook
+  vigente con el caché, `georef_sucursales.parquet` = la caché de Georef del nb09; en otra PC se rehace con s7-s15).
 
 **Líneas de trabajo, en orden de prioridad:**
 
-1. **Brecha celíaca (nb06 con canasta fija 2022-2026) — lo último, 2026-10-23.** 68 productos (80 códigos) elegidos con
-   reglas sobre el nb09 y verificados con precios ene-2022 → oct-2026; estimador por subtipo agregado como un índice
-   de precios. Todo pusheado. **Falta que el usuario corra el nb06 en Colab** desde el badge del README (Ejecutar todo,
-   sin tocar la CELDA 1; ~1 h la primera vez, relee 58 meses; pico de RAM 2,5 GB medido). Con los mismos zips del Drive
-   la corrida tiene que dar lo de `docs/BRECHA_CELIACA.md` §14.10 (canasta panel 2022 +111%, 2023 +106%, 2024 +107%,
-   2025 +100%, 2026 +120%; tipos 2022-26: fideos +172%, dulces +108%, saladas +84%, rebozador +84%, almohaditas +26%).
-   Cuando pase la salida y `brecha_celiaca_2026-10.xlsx` (en `MyDrive/carga/output_brecha/`): guardarlo en una carpeta
-   propia, correr `python -I -X utf8 docs/auditoria/scripts_nb06_2026-10/s16_comparar_colab.py <Excel>
-   docs/brecha_celiaca/simulacion_2026-10-23` (esperado: 29 hojas iguales) y revisar la salida impresa con §14.9.
-   Si da igual, la canasta y el estimador quedan validados en Colab y se sigue con lo que el usuario decida (lectura de
-   2023, robustez desde 2024, la hedónica de §3.9). Detalle: bloque "nb06 — canasta fija" de abajo.
+1. **Brecha celíaca (nb06) — lo último, 2026-10-23 (tarde).** El usuario corrió el nb06 con la canasta fija en Colab:
+   **igual a la simulación** (`s16`: 29 hojas, dif. máx. 1,4e-13) → canasta y estimador validados
+   (`docs/AUDITORIA_2026-10-23_nb06.md`). Al revisarla, **BUG-47** (corregido, no relee): grupos (provincia, región,
+   empresa, cadena) y sucursales (mapa) se comparan con la **misma canasta de 12 subtipos** (lo que falta en el grupo,
+   con la brecha nacional del período; confiable = <= 25% imputado y >= 30 sucursales) y la concentración es el **HHI
+   de empresas por departamento** (Georef, caché del nb09; Spearman −0,11: sin relación). Series nacionales y brecha
+   por tipo sin cambios. **Siguiente**: (a) el usuario re-corre el nb06 en Colab (Ejecutar todo; ~5 min, no relee) y
+   se compara con `s16 ... docs/brecha_celiaca/simulacion_2026-10-23b` (esperado: 30 hojas iguales); (b) **decisión del
+   usuario sobre la imputación de la serie mensual** (rachas de 7-14 meses en 2023-2024 y 9 meses de galletitas con
+   chips en 2025-26; variantes medidas en AUDITORIA §4, ninguna claramente mejor) — recomendación: implementar la
+   **TPD/hedónica** de BRECHA_CELIACA §3.9 (por tipo: log precio ~ EF producto + EF sucursal×mes + prima sin TACC por
+   mes) como serie principal o de robustez; (c) agenda del paper: lectura de 2023, robustez desde 2024, modelar la
+   concentración controlando por cadena. Detalle: bloques "nb06 — corrida de Colab" y "nb06 — canasta fija" de abajo.
 2. **Pass-through del tipo de cambio (nb08 v2 + canasta de 775 productos).** Todo listo y pusheado; el
    usuario ya subió `MyDrive/carga/output_canasta/canasta_pass_through_2026-10.xlsx`. **Falta que corra el nb08 en
    Colab** (badge, Ejecutar todo, sin tocar la CELDA 1; ~1,5-2 h la primera vez, 58 meses). Cuando pase la salida
@@ -69,6 +71,38 @@ pass-through en `C:\Users\sriverti\proyectos\canasta_pass_through_20220101_20261
 scripts de edición escritos con Write (la shell se come las barras); commits solo con Santiago Riverti, sin atribución a
 Claude.
 
+## 🟢 nb06 — primera corrida de Colab revisada + BUG-47 [2026-10-23 tarde]
+
+- Insumos del usuario: salida impresa, `brecha_celiaca_2026-10.xlsx` y `mapa_sucursales_brecha_102026.html` (en
+  `C:\Users\sriverti\Downloads\`; revisados en una carpeta del scratchpad con `python -I`). `s16` contra
+  `simulacion_2026-10-23/`: **29 hojas iguales**. §14.9 todo como lo esperado (57.419 obs fuera de vigencia, 16 en
+  `Control_EAN`, 12 reclasificadas, panel 4.975 sucursal × subtipo).
+- Hallazgos (scripts r1-r9 en `docs/auditoria/scripts_nb06_2026-10/`): (1) grupos con distinta composición de subtipos
+  (Coto +141,7%, La Anónima +131,8%, Carrefour Express +140,2% por no tener snacks/obleas/pepas; "confiable" exigía los 5
+  tipos: 4 provincias, 2 empresas); (2) mapa por sucursal coloreado por cuántos tipos tiene (DIA, con 2: +77%); (3)
+  concentración por `sucursales_localidad`, que DIA carga con el nombre de la provincia ("CAPITAL FEDERAL" 430, "BUENOS
+  AIRES" 428): la correlación −0,26 era DIA; (4) imputación sin límite de la serie mensual (abierto); (5) la serie de
+  todas las sucursales se mueve con DIA, que entra y sale de los lados sin TACC (fideos 2026-08: −16 pp); la
+  Cooperativa Obrera pierde los sin TACC desde abr-2025 y Libertad deja de publicar en jun-2026.
+- **BUG-47 aplicado** (`gen_nb06.py`): `_agg_tipo(df, keys, ref_keys, detalle)` con canasta fija de subtipos en grupos
+  (nacional del período en los subtipos con < `MIN_SUC_SUBTIPO`; se sacan los grupos y tipos sin nada propio);
+  `_canasta` con `peso_imputado_pct`, `n_sucursales`, `subtipos_con_brecha_nacional`, confiable = <= `MAX_PESO_IMPUTADO`
+  (25) y >= `MIN_SUC_AGG`; canasta comparable por sucursal (`brecha_comparable`, `peso_propio_pct` en `brecha_suc_mes`;
+  `Brecha_sucursal.brecha_canasta`, la vieja = `brecha_tipos_presentes`); Georef en la CELDA 7 (`GEOREF_PATH` = caché
+  del nb09; `USAR_GEOREF` consulta la API para las que falten); concentración por departamento (HHI por sucursales,
+  `MIN_SUC_DEPTO` = 5, Spearman por sucursal `CONC_RHO`); hoja `Imputaciones` (`_rachas`) y aviso de rachas > 3 meses;
+  gráficos con meses imputados vacíos, gráfico por cadena, coroplético solo confiables; ponderaciones impresas con 4
+  cifras. Trampa encontrada: un `ax.plot` de marcadores sin `color=` consume un color del ciclo (AMBA y Patagonia
+  salían del mismo color).
+- Verificado: test 26 controles (canasta comparable por sucursal, grupos con subtipos faltantes, rachas y HHI contra
+  fuerza bruta; el test ya NO consulta Georef: caché sintética + `USAR_GEOREF=False`); simulación `sim_v2` con el caché
+  (5 min, 2,4 GB): 14 hojas iguales a antes, series iguales (+ `peso_imputado_pct`), grupos = cálculo independiente
+  (r8, 1e-13), canasta comparable por sucursal = independiente en 123.906 sucursal-mes (r9), s12 sin cambios, JS del
+  popup probado con node. Esperados nuevos: `docs/brecha_celiaca/simulacion_2026-10-23b/` (s17, 30 hojas).
+- Resultados (últimos 12 meses, nacional +122,7%): 6 regiones (Patagonia +107% … Noroeste +127%), 8 provincias (Chubut
+  +111% … Córdoba +127%), 3 empresas (Carrefour +124%, Cencosud +125%, ChangoMas +140%), 7 cadenas (Carrefour Market
+  +120% … HiperChangomas +142%): la cadena pesa más que la región.
+
 ## 🟢 nb06 — canasta fija 2022-2026 de la brecha celíaca [2026-10-23]
 
 - Pedido: elegir productos con TACC y sin TACC con continuidad 2022-2026 (temporal, geográfica y por cadenas) con las
@@ -98,10 +132,9 @@ Claude.
 - Resultados esperados (un CSV por hoja del Excel de la simulación): `docs/brecha_celiaca/simulacion_2026-10-23/`;
   comparación automática: `s16_comparar_colab.py`. Trabajo intermedio (no en el repo):
   `C:\Users\sriverti\proyectos\nb06_brecha_celiaca_20261023\` (README adentro).
-- **Siguiente**: el usuario corre el nb06 en Colab y pasa la salida impresa + `brecha_celiaca_2026-10.xlsx`; correr
-  s16 (mismos zips: tienen que dar igual) y revisar §14.9. Abiertos: precios controlados de 2023 (leer aparte o
-  serie desde 2024 como robustez), pocas sucursales con rebozador (601) y obleas fuera del panel balanceado; la
-  hedónica de §3.9 y deflactar niveles siguen pendientes de la agenda del paper (§13).
+- **Siguiente** (cumplido el 2026-10-23 tarde: la corrida de Colab dio igual; ver el bloque de arriba). Abiertos:
+  precios controlados de 2023 (leer aparte o serie desde 2024 como robustez), pocas sucursales con rebozador (601) y
+  obleas fuera del panel balanceado; la hedónica de §3.9 y deflactar niveles siguen pendientes de la agenda (§13).
 - Trampas de la sesión: `rm` de una ruta absoluta en la raíz de Git Bash lo frena el control de seguridad (escribir
   temporales en el scratchpad); comillas invertidas dentro de `python -c "..."` en bash ejecutan comandos (usar Write
   o comillas simples); `groupby(...).apply` ya no pasa `.name` al grupo en pandas 2.3 (iterar los grupos).

@@ -1,6 +1,12 @@
 # Bugs Pendientes y Mejoras
 
-Última actualización: 2026-10-23 — **nb06**: canasta FIJA 2022-2026 (productos con continuidad temporal, geográfica y
+Última actualización: 2026-10-23 (tarde) — **nb06**: la primera corrida de Colab con la canasta fija dio **igual a la
+simulación** (29 hojas; `docs/AUDITORIA_2026-10-23_nb06.md`). Al revisarla, **BUG-47** resuelto: las comparaciones
+entre provincias, empresas, cadenas y sucursales (mapa) mezclaban composición de subtipos y la "concentración" agrupaba
+por un campo de localidad que DIA carga con el nombre de la provincia; ahora misma canasta de 12 subtipos en todos los
+grupos (lo que falta, con la brecha nacional del período) y HHI de empresas por departamento (Georef). Las series
+nacionales y la brecha por tipo no cambian. Falta re-correr en Colab (no relee el SEPA). Abierto: la imputación sin
+límite de la serie mensual (abajo, "Defectos abiertos"). Antes ese día — **nb06**: canasta FIJA 2022-2026 (productos con continuidad temporal, geográfica y
 por cadenas sobre las salidas del nb09, con empalmes de los códigos que cambió Molinos y Wakas) y BUG-46 resuelto (8
 defectos del nb06: provincia por rectángulos, archivo duplicado de ago-2024, comercios no supermercados, nombres viejos,
 caché que se perdía si Colab se cortaba, mediana aproximada, candidatos que dependían del maestro del Drive y códigos
@@ -37,6 +43,16 @@ Los defectos abiertos que resuelve quedan marcados abajo (se verifican con la co
 
 ## 🟡 Defectos abiertos
 
+- **nb06 — imputación sin límite en la serie mensual** (2026-10-23, `docs/AUDITORIA_2026-10-23_nb06.md` §4): un
+  subtipo-mes con menos de la mitad de sus sucursales habituales (mediana de TODO el período) arrastra su último mes
+  válido sin límite de meses. Rachas largas en la corrida de oct-26: panel balanceado — tirabuzón 14 meses (2023-06 →
+  2024-07), galletitas con chips 9 (2025-08 → 2026-04, 4-6 sucursales), mostachol 6; todas las sucursales — mostachol 12
+  (2023-04 → 2024-03), con chips 9, obleas 8, rebozador 7 (arrastra +31% de dic-2023 hasta jul-2024). Afecta sobre todo
+  2023-2024 (el tramo ya marcado por los precios controlados). Las variantes medidas (`r6_variantes_imputacion.py`:
+  límite de 3 meses, referencia local de 13 meses, dato propio después) mueven 2023-2024 de 3 a 15 pp en algunos meses y
+  ninguna es claramente mejor: el arreglo de fondo es la TPD/hedónica de BRECHA_CELIACA §3.9 (efectos fijos de
+  producto, no hace falta imputar). Mientras tanto el nb06 marca los meses imputados en los gráficos y lista las rachas
+  en la hoja `Imputaciones`. **Decisión del usuario.**
 - **nb09 — abiertos de la corrida v2** (2026-10-22, detalle y números en `docs/AUDITORIA_2026-10-22_nb09.md` §4):
   (1) el componente comercial del puntaje pesa igual a un comercio de 1 sucursal, una estación de servicio o Mercado
   Libre que a Carrefour, y limita el puntaje de 2.129 de los 2.496 productos ≥ 50 (top 100 = 56% bebidas); restringirlo a
@@ -262,6 +278,45 @@ de la Tecnológica** hasta que haya al menos dos cadenas con cobertura de durabl
 ---
 
 ## 🟢 Cambios y fixes 2026-10
+
+### 🔴 BUG-47 — nb06: las comparaciones entre grupos, el mapa por sucursal y la concentración mezclaban composición (2026-10-23) ✅ Resuelto (falta Colab, no relee)
+
+Encontrado al revisar la primera corrida de Colab con la canasta fija (igual a la simulación en las 29 hojas:
+`docs/AUDITORIA_2026-10-23_nb06.md`). Los números clave (brecha por subtipo y por tipo, series nacionales mensuales y
+anuales) estaban bien y no cambian; las comparaciones entre grupos no:
+
+1. **Grupos con distinta composición de subtipos.** La brecha de un tipo en un grupo era el promedio de los subtipos que
+   ese grupo tenía (>= 10 sucursales) y la canasta renormalizaba los pesos entre los tipos presentes. Un grupo sin
+   snacks quedaba con la brecha de los crackers sola (+165% en el país), y una cadena sin obleas ni pepas, con otra
+   composición de galletitas dulces: Coto daba +141,7%, Carrefour Express +140,2% y La Anónima +131,8%, y con la misma
+   canasta dan +127,0%, +122,5% y +110,5%. Además, "confiable" exigía los 5 tipos con >= 30 sucursales: quedaban 4
+   provincias y 2 empresas. **Ahora** provincias, regiones, empresas y cadenas (últimos 12 meses y por año) se comparan
+   con la misma canasta de 12 subtipos: el subtipo con < `MIN_SUC_SUBTIPO` sucursales en el grupo toma la brecha
+   nacional del mismo período (columnas `peso_imputado_pct` y `subtipos_con_brecha_nacional`); confiable = <=
+   `MAX_PESO_IMPUTADO` (25%) del peso imputado y >= `MIN_SUC_AGG` (30) sucursales.
+2. **Mapa por sucursal y hoja `Brecha_sucursal`.** La canasta por cantidades de la sucursal sumaba solo sus tipos: con 2
+   tipos (DIA: fideos y galletitas dulces, 955 sucursales) la mediana daba +77%; con 3, +134%; con 5, +121%. El color
+   del mapa medía cuántos tipos tiene cada sucursal. **Ahora** el color y `brecha_canasta` son la canasta comparable (la
+   misma canasta de subtipos; lo que la sucursal no tiene, con la brecha nacional del mes) con `peso_propio_pct`; la
+   anterior queda como `brecha_tipos_presentes`.
+3. **Concentración.** Se agrupaba por el texto de `sucursales_localidad`, que DIA carga con el nombre de la provincia
+   ("CAPITAL FEDERAL" 430 sucursales, "BUENOS AIRES" 428, "ENTRE RIOS" 66; CABA aparecía con cuatro grafías y Córdoba
+   con dos), y la "concentración" era el nº de sucursales: la correlación −0,26 salía de DIA (2 tipos, +77%). **Ahora**
+   el mercado local es el departamento de Georef (caché del nb09, `GEOREF_PATH`; si falta, la CELDA 7 consulta la API),
+   la concentración es el HHI de empresas (cuota = sucursales) y la brecha, la canasta comparable de las sucursales con
+   >= 50% del peso medido en ellas; correlación de Spearman por sucursal.
+4. **Presentación.** Los gráficos mensuales marcan los meses con algún subtipo imputado; hoja nueva `Imputaciones`
+   (rachas por subtipo) y aviso de las de más de 3 meses; gráfico nuevo por cadena; región por año marca los no
+   confiables; el coroplético pinta solo las provincias confiables; las ponderaciones se imprimían con 2 decimales
+   (cantidades en 0,00).
+
+Verificado con `test_brecha_celiaca.py` (26 controles; nuevos: canasta comparable por sucursal, grupos con subtipos
+faltantes, rachas de imputación y HHI contra fuerza bruta; el test ya no consulta Georef por red) y con las celdas
+reales sobre los 58 meses (s11 con el caché, 5 min, 2,4 GB): las 14 hojas de lectura, subtipos y tipos dan igual que
+antes, las 4 de la serie de la canasta tienen los mismos valores (más `peso_imputado_pct`), los grupos coinciden con un
+cálculo independiente (`r8_canasta_comparable_grupos.py`, 1e-13) y la canasta comparable por sucursal también
+(`r9_canasta_comparable_sucursal.py`, 123.906 sucursal-mes). Resultados esperados nuevos:
+`docs/brecha_celiaca/simulacion_2026-10-23b/` (30 hojas).
 
 ### 🟣 nb06 — canasta FIJA 2022-2026 (2026-10-23, falta Colab: relee 58 meses una vez)
 

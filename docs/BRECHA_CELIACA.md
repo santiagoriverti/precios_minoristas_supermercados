@@ -4,7 +4,12 @@ Documento técnico del **Notebook 06**. Mide la **brecha** de precios entre prod
 equivalentes **sin TACC**, dentro de cada supermercado, y cómo se distribuye **en el tiempo** (mensual desde
 enero de 2022), **geográficamente** (provincia, región, AMBA) y **entre cadenas**.
 
-Última actualización: 2026-10-23 — **canasta FIJA 2022-2026** (§14: 68 productos con continuidad temporal, geográfica y
+Última actualización: 2026-10-23 (tarde) — **primera corrida de Colab con la canasta fija: igual a la simulación** (29
+hojas; canasta y estimador validados) y, al revisarla, **BUG-47**: provincias, regiones, empresas, cadenas y sucursales
+(mapa) se comparan ahora con la **misma canasta de 12 subtipos** (lo que un grupo no tiene, con la brecha nacional del
+período) y la concentración es el **HHI de empresas por departamento** (Georef). Las series nacionales y la brecha por
+tipo no cambian. Revisión: `docs/AUDITORIA_2026-10-23_nb06.md`; resultados después del cambio: §14.11; esperados nuevos:
+`docs/brecha_celiaca/simulacion_2026-10-23b/`. Antes ese día — **canasta FIJA 2022-2026** (§14: 68 productos con continuidad temporal, geográfica y
 por cadenas elegidos con reglas sobre las salidas del nb09 y verificados con precios 2022-2026, empalmes de códigos con
 vigencia, pesos ENGHo, qué revisar en la corrida) y **estimador por subtipo** (§14.6: la brecha se calcula por subtipo
 dentro de cada sucursal y se agrega subtipo → tipo → canasta, como un índice de precios; §3 queda como la definición
@@ -295,10 +300,14 @@ El histórico completo se usa para responder *"¿la prima se mantiene o se ampl�
 
 ## 5. Desagregaciones
 
-> **Vigente (2026-10-23)**: por **subtipo** y **tipo**; **provincia** (polígonos de `ar.json` con tolerancia de 100 km),
-> **región** INDEC con **AMBA** por coordenadas, **empresa** (comercio) y **cadena** (bandera), en los últimos 12 meses y
-> región y empresa por año; concentración por localidad; detalle por sucursal y producto del último mes. Grupos
-> "confiables": los 5 tipos con >= 30 sucursales.
+> **Vigente (2026-10-23, BUG-47)**: por **subtipo** y **tipo**; **provincia** (polígonos de `ar.json` con tolerancia de
+> 100 km), **región** INDEC con **AMBA** por coordenadas, **empresa** (comercio) y **cadena** (bandera), en los últimos 12
+> meses y región y empresa por año, todos con la **misma canasta de 12 subtipos** (el subtipo con < 10 sucursales en el
+> grupo toma la brecha nacional del período; `peso_imputado_pct`); grupos "confiables": <= 25% del peso imputado y >= 30
+> sucursales. **Concentración**: HHI de empresas por **departamento** (Georef de datos.gob.ar; cuota = sucursales) contra
+> la canasta comparable de cada sucursal. **Sucursal** (mapa y `Brecha_sucursal`): la misma canasta, con lo que la
+> sucursal no tiene completado con la brecha nacional del mes (`peso_propio_pct`). Detalle por producto del último mes.
+> Lo de abajo es el diseño de agosto de 2026.
 
 - **Serie temporal** nacional (diaria/semanal/mensual), mediana y promedio.
 - **Por provincia** (barras + mapa coroplético de la brecha).
@@ -376,12 +385,13 @@ Los EANs concretos están en la CELDA 1 de `notebooks/gen_nb06.py` (fuente) y de
 | `brecha_mensual_MMAAAA.png` | Canasta mensual: todas las sucursales y panel balanceado, con las sucursales en el eje secundario |
 | `brecha_tipo_mensual_MMAAAA.png` / `brecha_por_tipo_MMAAAA.png` | Evolución por tipo y brecha por tipo |
 | `brecha_region_anual_MMAAAA.png` | Canasta por región y año |
-| `brecha_provincia_MMAAAA.png` / `brecha_empresa_MMAAAA.png` | Provincia y empresa en los últimos 12 meses (solo grupos confiables) |
-| `brecha_concentracion_MMAAAA.png` / `mapa_brecha_MMAAAA.png` | Brecha vs. sucursales por localidad; mapa coroplético por provincia |
-| `mapa_sucursales_brecha_MMAAAA.html` | Mapa Folium por sucursal (último dato de cada una en los últimos 6 meses): color por la brecha de su canasta, popup con los productos comparados por subtipo, filtro por cadena, mosaicos Esri y límites del `ar.json` local (popups lazy-load) |
-| `brecha_celiaca_YYYY-MM.xlsx` | 32 hojas (la hoja `Leeme` las explica): `Canasta`, `Ponderaciones`, `Cobertura` y `Cobertura_mensual`; **`Brecha_subtipo`**, `Brecha_subtipo_anual` y `Brecha_subtipo_anual_balanc`; `Brecha_tipo`, `Brecha_tipo_mes` y `Brecha_tipo_anual` (y sus versiones con panel balanceado); `Serie_canasta`, `Serie_canasta_balanceada`, `Canasta_anual` y `Canasta_anual_balanceada`; provincia, región, empresa y cadena (últimos 12 meses, con y sin desagregar por tipo) y región y empresa por año; `Concentracion`; `Brecha_sucursal`, `Comparacion_productos` y `Detalle_producto` (último mes); `Control_EAN` y `Plausibilidad` |
+| `brecha_provincia_MMAAAA.png` / `brecha_empresa_MMAAAA.png` / `brecha_cadena_MMAAAA.png` | Provincia, empresa y cadena en los últimos 12 meses (solo grupos confiables: misma canasta, <= 25% del peso imputado, >= 30 sucursales) |
+| `brecha_concentracion_MMAAAA.png` / `mapa_brecha_MMAAAA.png` | Brecha vs. HHI de empresas por departamento (Georef); mapa coroplético por provincia (gris: no confiable) |
+| `mapa_sucursales_brecha_MMAAAA.html` | Mapa Folium por sucursal (último dato de cada una en los últimos 6 meses): color por la canasta comparable (lo que la sucursal no tiene, con la brecha nacional del mes; el popup dice qué parte se midió ahí), productos comparados por subtipo, filtro por cadena, mosaicos Esri y límites del `ar.json` local (popups lazy-load) |
+| `brecha_celiaca_YYYY-MM.xlsx` | 33 hojas (la hoja `Leeme` las explica): `Canasta`, `Ponderaciones`, `Cobertura` y `Cobertura_mensual`; **`Brecha_subtipo`**, `Brecha_subtipo_anual` y `Brecha_subtipo_anual_balanc`; `Brecha_tipo`, `Brecha_tipo_mes` y `Brecha_tipo_anual` (y sus versiones con panel balanceado); `Serie_canasta`, `Serie_canasta_balanceada`, `Canasta_anual` y `Canasta_anual_balanceada` (con `peso_imputado_pct`); provincia, región, empresa y cadena (últimos 12 meses, con y sin desagregar por tipo) y región y empresa por año; `Concentracion` (por departamento); `Brecha_sucursal`, `Comparacion_productos` y `Detalle_producto` (último mes); **`Imputaciones`** (rachas de subtipos imputados en la serie mensual); `Control_EAN` y `Plausibilidad` |
 
-Para la evolución temporal, usar las series del **panel balanceado**; para comparar grupos, solo los `confiable`.
+Para la evolución temporal, usar las series del **panel balanceado** (y mirar `Imputaciones`: los tramos con un subtipo
+arrastrado varios meses); para comparar grupos, solo los `confiable`.
 
 ---
 
@@ -407,7 +417,9 @@ agregaciones subtipo → tipo → canasta (mes, año, panel, grupos); 9-10 gráf
 - **Simulación con datos reales** (2026-10-23): las celdas reales con los 58 meses de los zips del Drive coinciden
   **exactamente** con un cálculo independiente (3,4 millones de precios mensuales, 534.456 brechas por subtipo). Tiempo,
   memoria y resultados: §14.10; resultados esperados: `docs/brecha_celiaca/simulacion_2026-10-23/`.
-- **Pendiente**: la corrida del usuario en Colab (comparar con `s16_comparar_colab.py`, §14.9).
+- **Corrida de Colab (2026-10-23)**: igual a la simulación en las 29 hojas (diferencia máxima 1,4e-13): canasta y
+  estimador validados en Colab (`docs/AUDITORIA_2026-10-23_nb06.md`). Con BUG-47 el test pasó a 26 controles y la
+  simulación con el caché da los esperados de `simulacion_2026-10-23b/` (30 hojas); falta re-correr en Colab (no relee).
 
 ---
 
@@ -417,7 +429,11 @@ agregaciones subtipo → tipo → canasta (mes, año, panel, grupos); 9-10 gráf
   comparaciones de sustitución (crackers de arroz contra crackers de trigo), pocas sucursales con rebozador, sucursales
   sin coordenadas en 2022, ago-oct 2026 del SEPA diario y precio de lista.
 - **Departamento**: falta shapefile departamental (hoy: provincia, región, AMBA y localidad).
-- **Agenda del paper** (§13): selección de sucursales, HHI, la hedónica de §3.9 y deflactar los niveles.
+- **Imputación de la serie mensual sin límite de meses** (abierto, decisión del usuario): un subtipo-mes con pocas
+  sucursales arrastra su último mes válido; hay rachas de 7 a 14 meses (hoja `Imputaciones`, §14.11). El arreglo de
+  fondo es la TPD/hedónica de §3.9.
+- **Agenda del paper** (§13): selección de sucursales, modelar la concentración (el HHI por departamento ya está), la
+  hedónica de §3.9 y deflactar los niveles.
 - **Extensiones posibles**: más tipos con dicotomía cuando haya sin TACC continuos (pan envasado, premezclas, alfajores,
   cerveza); una serie de robustez desde 2024 (sin los precios controlados de 2023); pesos por subtipo si aparece una
   fuente de gasto más fina.
@@ -543,7 +559,10 @@ Córdoba (+206 %). El mapa incluye **19 cadenas** con **DIA (1.001 sucursales, l
 > no entran; mediana mensual exacta en lugar de la mediana de medianas por bloque), D (la canasta de un grupo es el
 > promedio ponderado de las brechas por tipo: no la mueve qué tipos tiene cada sucursal), E (mismos productos todo el
 > período + panel balanceado por sucursal × tipo) y G (la canasta vive en el repo y no depende del maestro del Drive).
-> Siguen abiertos: C (selección de sucursales), F (HHI), la hedónica de §3.9 y deflactar los niveles.
+> **Con BUG-47 (2026-10-23, tarde)**: D también entre grupos (la misma canasta de 12 subtipos en provincias, regiones,
+> empresas, cadenas y sucursales; lo que falta, con la brecha nacional del período) y F en su parte descriptiva (HHI de
+> empresas por departamento de Georef; Spearman por sucursal −0,11: sin relación a la vista).
+> Siguen abiertos: C (selección de sucursales), modelar F, la hedónica de §3.9 y deflactar los niveles.
 
 ---
 
@@ -837,6 +856,13 @@ mismos pesos como % del gasto en los 12 tipos con TACC (12,70 / 14,51 / 11,89 / 
 | 11 | Excel de 32 hojas (`Leeme` las explica; nuevas `Brecha_subtipo`, `Brecha_subtipo_anual` y `Brecha_subtipo_anual_balanc`) |
 | 12 | Mapa por sucursal con mosaicos Esri (sin la marca de agua de CARTO) |
 
+Con BUG-47 (§14.11, el mismo día) cambian además: CELDA 1 (`MAX_PESO_IMPUTADO`, `USAR_GEOREF`, `MIN_SUC_DEPTO`), 2
+(`GEOREF_PATH`: la caché de Georef del nb09 en el Drive), 7 (departamento de cada sucursal; si falta en la caché, la API
+de Georef), 8 (`_agg_tipo(..., ref_keys)`: misma canasta de subtipos en los grupos; canasta comparable por sucursal;
+concentración por departamento; rachas de imputación), 9-10 (meses imputados marcados, gráfico por cadena, coroplético
+solo con las provincias confiables), 11 (hoja `Imputaciones`; columnas nuevas en grupos, `Brecha_sucursal` y
+`Concentracion`) y 12 (mapa con la canasta comparable).
+
 ### 14.8 Advertencias para leer los resultados
 
 - **2023: precios controlados del lado con TACC y salida en oct-2023 / ene-2024.** Durante 2023 los productos con TACC
@@ -874,13 +900,15 @@ mismos pesos como % del gasto en los 12 tipos con TACC (12,70 / 14,51 / 11,89 / 
 ### 14.9 Qué revisar cuando vuelva la corrida de Colab
 
 La simulación de 14.10 corrió las celdas reales con **los mismos zips del Drive**: la corrida de Colab tiene que dar
-los mismos números (salvo el último mes si el `2026B.zip` del Drive cambió). Comparación automática, hoja por hoja:
+los mismos números (salvo el último mes si el `2026B.zip` del Drive cambió). **La primera corrida (2026-10-23) dio 29
+hojas iguales a `simulacion_2026-10-23/`.** Con el notebook vigente (BUG-47, §14.11) la referencia es
+`simulacion_2026-10-23b/` (30 hojas). Comparación automática, hoja por hoja:
 
 ```bash
-python -I -X utf8 docs/auditoria/scripts_nb06_2026-10/s16_comparar_colab.py <brecha_celiaca_2026-10.xlsx de Colab> docs/brecha_celiaca/simulacion_2026-10-23
+python -I -X utf8 docs/auditoria/scripts_nb06_2026-10/s16_comparar_colab.py <brecha_celiaca_2026-10.xlsx de Colab> docs/brecha_celiaca/simulacion_2026-10-23b
 ```
 
-(esperado: 29 hojas iguales). Después, la lectura de cada punto:
+(esperado: 30 hojas iguales). Después, la lectura de cada punto:
 
 1. **Lectura**: 58 meses (ene-2022 → oct-2026), el AVISO de ago-2024 parte 1 (se usa `COMPLETOb`), "meses en
    centavos: ninguno", los EANs sin ningún precio (esperado: ninguno).
@@ -891,7 +919,11 @@ python -I -X utf8 docs/auditoria/scripts_nb06_2026-10/s16_comparar_colab.py <bre
 4. **Cobertura_mensual**: sucursales con los dos lados por tipo y mes; el hueco de dic-2023 → mar-2024 en fideos.
 5. **Ponderaciones**: año base 2022; cantidades y pesos.
 6. **Brecha por tipo y año (panel balanceado)** contra 14.10.
-7. **Región, empresa y provincia**: cuáles quedan confiables (todos los tipos con >= 30 sucursales).
+7. **Región, empresa, cadena y provincia**: cuáles quedan confiables (misma canasta: <= 25% del peso con la brecha
+   nacional y >= 30 sucursales; antes de BUG-47, todos los tipos con >= 30 sucursales).
+8. **Imputaciones** (desde BUG-47): las rachas de más de 3 meses que avisa la CELDA 8 (hoja `Imputaciones`).
+9. **Concentración** (desde BUG-47): "Departamento (Georef): N de M sucursales" en la CELDA 7 (con la caché del nb09,
+   todas) y el Spearman de la CELDA 8.
 
 ### 14.10 Simulación con los zips del Drive (ene-2022 → oct-2026)
 
@@ -950,3 +982,45 @@ desde feb-2026 (fideos ~180-200% y snacks sin TACC más caros). Desvío de la va
 +120%, Cuyo +125%, AMBA +126% y Noroeste +127% (Noreste y Patagonia, con pocas sucursales); empresas Carrefour +119% y
 Cencosud +125% (las únicas con los 5 tipos: DIA solo tiene dos); provincias entre Buenos Aires (+123%) y Córdoba
 (+127%). Las diferencias entre regiones y cadenas son chicas frente a las diferencias entre tipos y subtipos.
+*(Corregido en §14.11: estos grupos mezclaban composición de subtipos.)*
+
+### 14.11 La corrida de Colab (2026-10-23) y la comparación entre grupos (BUG-47)
+
+**La primera corrida de Colab dio igual a la simulación de 14.10** (29 hojas, diferencia máxima 1,4e-13): la canasta y
+el estimador quedan validados en Colab. Revisión completa: `docs/AUDITORIA_2026-10-23_nb06.md`.
+
+Al leerla aparecieron tres salidas que comparaban **composiciones distintas**, corregidas sin releer el SEPA (BUG-47):
+
+1. **Grupos** (provincia, región, empresa, cadena): el tipo de un grupo promediaba solo los subtipos que el grupo tenía
+   y la canasta renormalizaba entre los tipos presentes. Como los subtipos de un tipo tienen brechas muy distintas
+   (saladas: crackers +165%, snacks +28%), un grupo sin snacks quedaba con la de los crackers: Coto +141,7%, Carrefour
+   Express +140,2%, La Anónima +131,8%. Ahora todos los grupos tienen **la misma canasta de 12 subtipos** (cada subtipo
+   pesa el peso ENGHo de su tipo dividido por los subtipos del tipo); el subtipo con < `MIN_SUC_SUBTIPO` sucursales en
+   el grupo toma la brecha **nacional** del mismo período (`peso_imputado_pct`, `subtipos_con_brecha_nacional`), y el
+   grupo es confiable con <= `MAX_PESO_IMPUTADO` (25%) del peso imputado y >= 30 sucursales.
+2. **Sucursales** (mapa y `Brecha_sucursal`): misma canasta, con lo que la sucursal no tiene completado con la brecha
+   nacional del mes (`peso_propio_pct`). Antes, con 2 tipos (DIA) la canasta daba +77% y con 3, +134%.
+3. **Concentración**: HHI de empresas por **departamento** (Georef; cuota = sucursales) contra la canasta comparable de
+   las sucursales con >= 50% del peso medido en ellas. Antes se agrupaba por el texto de la localidad, que DIA carga
+   con el nombre de la provincia (la correlación −0,26 era DIA).
+
+**Resultados con la misma canasta** (últimos 12 meses, nov-2025 → oct-2026; nacional +122,7%):
+
+| | Confiables |
+|---|---|
+| Regiones (6) | Patagonia +107,4%, Pampeana +120,1%, Noreste +124,8%, Cuyo +124,9%, AMBA +125,6%, Noroeste +126,7% |
+| Provincias (8) | Chubut +110,9%, Entre Ríos +114,1%, Santa Fe +117,3%, Salta +123,0%, Buenos Aires +123,2%, Mendoza +123,7%, CABA +124,3%, Córdoba +127,0% |
+| Empresas (3) | Carrefour +124,0%, Cencosud +125,1%, ChangoMas +140,4% |
+| Cadenas (7) | Carrefour Market +119,5%, Carrefour +121,1%, Vea +124,3%, Jumbo +126,0%, Disco +128,6%, ChangoMas +141,1%, HiperChangomas +141,9% |
+| No confiables (más de 25% imputado) | La Anónima +110,5% (38,5%), Coto +127,0% (41,7%), Carrefour Express +122,5% (35,3%), DIA +115,8% (83,1%) |
+
+Lectura: **la cadena pesa más que la región** (ChangoMas ~20 pp arriba de Carrefour y Cencosud; regiones con muchas
+sucursales entre +120% y +127%). La concentración local no se relaciona con la brecha (Spearman −0,11 por sucursal;
+mediana +125-126% en los tres tercios de HHI). Las series nacionales y la brecha por tipo no cambian.
+
+**Abierto — la imputación de la serie mensual** (decisión del usuario): un subtipo-mes con menos de la mitad de sus
+sucursales habituales arrastra su último mes válido sin límite: rachas de 7-14 meses en 2023-2024 (tirabuzón del panel
+14 meses, mostachol de todas 12) y de 9 meses en las galletitas con chips (ago-2025 → abr-2026, 4-12 sucursales). Las
+variantes medidas (límite de 3 meses, referencia local de 13 meses, dato propio después) mueven 2023-2024 sin ser
+claramente mejores (AUDITORIA §4); la recomendación es la TPD/hedónica de §3.9 para la serie. Mientras tanto la hoja
+`Imputaciones` lista las rachas y los gráficos marcan los meses imputados.

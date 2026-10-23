@@ -12,8 +12,10 @@ El SEPA sintético (ene-mar 2026, 8 sucursales de 4 comercios, 2 tipos) trae a p
     promedio geométrico de las de sus subtipos con los dos lados;
   - una estación de servicio (comercio 23, fuera del universo) y una sucursal 'Web';
   - una sucursal declarada en Mendoza con coordenadas en Córdoba (se reclasifica) y sucursales de Buenos Aires cerca y
-    lejos del Obelisco (AMBA / Pampeana).
-Corre dos veces: la segunda tiene que leer los meses cerrados del caché.
+    lejos del Obelisco (AMBA / Pampeana);
+  - la caché de Georef del nb09 con el departamento de cada sucursal (concentración: HHI de empresas por departamento).
+Además, con tablas chicas armadas a mano: un grupo al que le faltan subtipos (misma canasta: toman la brecha nacional) y
+un subtipo que falta un mes en la serie (hoja Imputaciones). Corre dos veces: la segunda lee los meses cerrados del caché.
 
     python notebooks/test_brecha_celiaca.py
 """
@@ -123,6 +125,13 @@ ms = pd.DataFrame([{'id_comercio': c, 'id_bandera': b, 'id_sucursal': s, 'sucurs
                     'sucursales_localidad': 'Loc', 'PROVINCIA': pv}
                    for (c, b, s), (pv, la, lo, t, _n) in SUCS.items()])
 ms.to_excel(tmp / 'data' / 'maestro_sucursales_completo.xlsx', index=False)
+# caché de Georef del nb09: departamento de cada sucursal (la estación de servicio 401 no entra en el HHI)
+DEPTO = {('9', '1', '101'): '02001', ('9', '1', '102'): '02001', ('10', '1', '201'): '02001', ('23', '1', '401'): '02001',
+         ('10', '1', '202'): '06357', ('15', '1', '301'): '14014', ('15', '1', '302'): '14014', ('15', '1', '303'): '02001'}
+(sepa / 'output_trazabilidad' / '_cache_nb09').mkdir(parents=True)
+pd.DataFrame([{'suc': f'{c}|{b}|{s}', 'departamento_id': d, 'departamento': f'Depto {d}', 'municipio': 'M',
+               'provincia_georef': 'P'} for (c, b, s), d in DEPTO.items()]).to_parquet(
+    sepa / 'output_trazabilidad' / '_cache_nb09' / 'georef_sucursales.parquet', index=False)
 mp = pd.DataFrame([{'producto_sepa_id': e, 'producto_descripcion': f'Producto {e[-3:]} {g} Gr', 'producto_marca': 'M',
                     'rubro': 'Almacén', 'producto_cantidad_presentacion': str(g), 'producto_unidad_medida_presentac': 'gr'}
                    for e, (t, l, g, b, m) in P.items()])
@@ -152,7 +161,7 @@ def correr():
     exec(cells[0], g)
     g.update(SEPA_DIR=str(sepa), OUTPUT_DIR=str(out), TIPOS=TIPOS, GRAMOS=GRAMOS, VIGENCIA=VIGENCIA,
              PRODUCTO=PRODUCTO, SUBTIPO=SUBTIPO, MES_INICIO_HISTORICO='2026-01', MIN_SUC_AGG=1, MIN_SUC_SUBTIPO=1,
-             VENTANA_GEO_MESES=12)
+             VENTANA_GEO_MESES=12, USAR_GEOREF=False, MIN_SUC_DEPTO=1)
     for c in cells[1:]:
         exec(c, g)
     return g
@@ -262,6 +271,74 @@ chk('producto con dos códigos que conviven: cuenta una vez (2 productos sin TAC
     list(_f.loc[['2026-01', '2026-02', '2026-03'], 'n_sin']) == [2, 2, 2])
 br = g['brecha_region'].set_index('region')
 chk('región AMBA y Pampeana con los dos tipos', set(br.index) == {'AMBA', 'Pampeana'} and (br['n_tipos'] == 2).all())
+
+# canasta COMPARABLE por sucursal y mes: subtipo propio o, si la sucursal no lo tiene, la brecha nacional del mes
+W = pd.Series(PESOS) / sum(PESOS.values())
+TSUB = {'A': 'Fideos secos', 'B': 'Fideos secos', 'C': 'Galletitas dulces', 'D': 'Galletitas dulces'}
+nac = SS.groupby(['mes', 'sub'])['brecha'].median()
+own = SS.assign(suc=SS['id_comercio'] + '|' + SS['id_bandera'] + '|' + SS['id_sucursal']).set_index(['suc', 'mes', 'sub'])['brecha']
+fb = {}
+for suc, mes in g['brecha_suc_mes'][['suc_key', 'mes']].itertuples(index=False):
+    rel, propio = 0.0, 0.0
+    for t in PESOS:
+        subs = [s for s in TSUB if TSUB[s] == t]
+        lg = []
+        for s in subs:
+            v = own.get((suc, mes, s))
+            if v is not None and v == v:
+                propio += W[t] / len(subs)
+            else:
+                v = nac[(mes, s)]
+            lg.append(np.log1p(v / 100))
+        rel += W[t] * np.exp(np.mean(lg))
+    fb[(suc, mes)] = ((rel - 1) * 100, 100 * propio)
+bsm = g['brecha_suc_mes'].set_index(['suc_key', 'mes'])
+chk('canasta comparable por sucursal (falta el subtipo B en la 301 y el D en la 102: brecha nacional del mes)',
+    all(abs(bsm.loc[k, 'brecha_comparable'] - v[0]) < 1e-9 and abs(bsm.loc[k, 'peso_propio_pct'] - v[1]) < 1e-9
+        for k, v in fb.items())
+    and abs(bsm.loc[('15|1|301', '2026-02'), 'peso_propio_pct'] - 100 * (1 - W['Fideos secos'] / 2)) < 1e-9)
+
+# grupos con la MISMA canasta: el subtipo con < MIN_SUC_SUBTIPO sucursales en el grupo toma la brecha nacional
+_rows = []
+for grupo, subs in (('g1', {'A': (100, 120, 140), 'B': (50, 60, 70), 'C': (80, 90, 100), 'D': (20, 30, 40)}),
+                    ('g2', {'A': (200, 210, 220), 'B': (150, 160, 170), 'C': (300,)})):
+    for s, vals in subs.items():
+        for k, v in enumerate(vals):
+            _rows.append({'grupo': grupo, 'tipo': TSUB[s], 'subtipo': s, 'suc_key': f'{grupo}{s}{k}', 'tacc': 100.0,
+                          'sin': 100.0 + v, 'brecha_pct': float(v), 'brecha_min': float(v)})
+_dg = pd.DataFrame(_rows)
+g['MIN_SUC_SUBTIPO'], g['MAX_PESO_IMPUTADO'] = 2, 25
+_cg = g['_canasta'](_dg, ['grupo'], []).set_index('grupo')
+g['MIN_SUC_SUBTIPO'] = 1
+_nat = _dg.groupby('subtipo')['brecha_pct'].median()
+_l = lambda *v: np.exp(np.mean(np.log1p(np.array(v) / 100)))
+_e1 = W['Fideos secos'] * _l(120, 60) + W['Galletitas dulces'] * _l(90, 30) - 1
+_e2 = W['Fideos secos'] * _l(210, 160) + W['Galletitas dulces'] * _l(_nat['C'], _nat['D']) - 1
+chk('grupos: subtipos sin datos en el grupo con la brecha nacional; peso imputado y confiable',
+    abs(_cg.loc['g1', 'brecha_canasta'] - 100 * _e1) < 1e-9 and abs(_cg.loc['g2', 'brecha_canasta'] - 100 * _e2) < 1e-9
+    and abs(_cg.loc['g2', 'peso_imputado_pct'] - 100 * W['Galletitas dulces']) < 1e-9
+    and _cg.loc['g1', 'peso_imputado_pct'] == 0 and bool(_cg.loc['g1', 'confiable'])
+    and not bool(_cg.loc['g2', 'confiable']) and _cg.loc['g2', 'subtipos_con_brecha_nacional'] == 'C, D'
+    and _cg.loc['g2', 'n_Galletitas dulces'] == 0 and _cg.loc['g2', 'n_tipos'] == 2)
+
+# hoja Imputaciones: rachas de un subtipo imputado con su último mes válido
+_det = []
+g['_agg_tipo'](_d, ['mes'], None, _det)
+_ri = pd.DataFrame(g['_rachas'](_det, 'x'))
+chk('imputaciones: el subtipo B falta en febrero y arrastra la brecha de enero',
+    len(_ri) == 1 and _ri.iloc[0][['subtipo', 'desde', 'hasta', 'meses']].tolist() == ['B', '2026-02', '2026-02', 1]
+    and abs(_ri.iloc[0]['brecha_arrastrada'] - 50) < 1e-9 and 'Imputaciones' in pd.ExcelFile(
+        out / 'brecha_celiaca_2026-03.xlsx').sheet_names)
+
+# concentración: HHI de empresas por departamento (cuota = sucursales; sin la estación de servicio) y brecha mediana
+cc = g['concentracion'].set_index('departamento_id')
+bsuc = g['brecha_suc_mes'].groupby('suc_key')['brecha_comparable'].median()
+chk('concentración: HHI por departamento (2/3 Cencosud y 1/3 Carrefour en el 02001) y brecha de sus sucursales',
+    abs(cc.loc['02001', 'hhi'] - 5 / 9) < 1e-12 and cc.loc['02001', 'sucursales'] == 3 and cc.loc['02001', 'empresas'] == 2
+    and cc.loc['02001', 'empresa_principal'] == 'Cencosud (Vea, Disco, Jumbo)' and cc.loc['06357', 'hhi'] == 1
+    and cc.loc['14014', 'hhi'] == 1 and cc.loc['14014', 'sucursales_con_brecha'] == 2
+    and abs(cc.loc['02001', 'brecha_mediana'] - bsuc[['9|1|101', '9|1|102', '10|1|201']].median()) < 1e-9
+    and (out / 'brecha_concentracion_032026.png').exists())
 chk('segunda corrida: meses cerrados desde el caché', g2['_faltan'] == [] and
     len(list((out / '_cache' / f'brecha_v3_{g["_cache_key"]}').glob('*.parquet'))) == 2)
 chk('segunda corrida: mismos datos', g2['datos_dia'].reset_index(drop=True).equals(g['datos_dia'].reset_index(drop=True)))

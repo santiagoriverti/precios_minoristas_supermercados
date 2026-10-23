@@ -18,9 +18,10 @@ python notebooks/gen_nb06.py && python notebooks/test_brecha_celiaca.py
 python -I -X utf8 s14_superconjunto.py canasta_fija_2022_2026.eans.parquet canasta_fija_2022_2026.csv superconjunto.json
 python -I -X utf8 s11_simular_nb06.py <repo> <carpeta con los zips> <ar.json> sim_super 2022-01 --config superconjunto.json --hasta-celda 5
 python -I -X utf8 s15_filtrar_cache.py <repo> sim_super/_cache/brecha_v3_<clave> sim_final
-python -I -X utf8 s11_simular_nb06.py <repo> <carpeta con los zips> <ar.json> sim_final 2022-01
+python -I -X utf8 s11_simular_nb06.py <repo> <carpeta con los zips> <ar.json> sim_final 2022-01 --georef <georef_sucursales.parquet del nb09>
 python -I -X utf8 s12_comparar_simulacion.py <repo> precios_mes precios_mes_2 sim_final
-python -I -X utf8 s16_comparar_colab.py <brecha_celiaca_2026-10.xlsx de Colab> <repo>/docs/brecha_celiaca/simulacion_2026-10-23
+python -I -X utf8 s17_esperados.py sim_final/brecha_celiaca_2026-10.xlsx <repo>/docs/brecha_celiaca/simulacion_<fecha>
+python -I -X utf8 s16_comparar_colab.py <brecha_celiaca_2026-10.xlsx de Colab> <repo>/docs/brecha_celiaca/simulacion_2026-10-23b
 ```
 
 `precios_mes_2` existe porque el 2026-10-23 se hicieron dos extracciones (la segunda con 14 códigos viejos de Molinos
@@ -48,7 +49,23 @@ el Maestro de Productos Interno (`data/`), las salidas del nb09 (`trazabilidad_p
 | 13 | `s13_tablas_doc.py <canasta.csv>` | Tablas en markdown de la canasta para `docs/BRECHA_CELIACA.md` §14.5 |
 | 14 | `s14_superconjunto.py <canasta.eans.parquet de s10> <canasta.csv> <salida.json>` | Config con todos los candidatos que pasan s9 (para leer el SEPA una sola vez en la simulación; el caché de la canasta final se arma filtrando ese) |
 | 15 | `s15_filtrar_cache.py <repo> <caché del superconjunto> <salida de s11>` | Caché de la canasta de la CELDA 1 filtrando el del superconjunto (mismo resultado que leer el SEPA con esa canasta) |
-| 16 | `s16_comparar_colab.py <brecha_celiaca_AAAA-MM.xlsx> <carpeta de esperados>` | Compara hoja por hoja el Excel de una corrida (Colab) con los resultados esperados de `docs/brecha_celiaca/simulacion_2026-10-23/` (filas de un solo lado y diferencia máxima de cada columna; esperado: 29 hojas iguales) |
+| 16 | `s16_comparar_colab.py <brecha_celiaca_AAAA-MM.xlsx> <carpeta de esperados>` | Compara hoja por hoja el Excel de una corrida (Colab) con los resultados esperados (filas de un solo lado y diferencia máxima de cada columna). La primera corrida de Colab (2026-10-23) dio 29 hojas iguales a `docs/brecha_celiaca/simulacion_2026-10-23/`; con el notebook vigente (BUG-47) la referencia es `simulacion_2026-10-23b/` (30 hojas) |
+| 17 | `s17_esperados.py <Excel de la simulación> <carpeta de salida>` | Arma la carpeta de resultados esperados (un CSV por hoja, sin `Leeme`, `Comparacion_productos` ni `Detalle_producto`) |
+
+**Revisión de la primera corrida de Colab (2026-10-23, `docs/AUDITORIA_2026-10-23_nb06.md`)**, sobre el Excel de Colab
+y los objetos de la simulación (`sim_final/`, iguales a Colab):
+
+| Script | Qué hace |
+|---|---|
+| `r1_resumen_excel.py <Excel> [hoja ...]` | Forma, columnas y primeras filas de cada hoja (o de las pedidas, completas) |
+| `r2_series.py <Excel>` | Series mensuales de la canasta (todas y panel) con la brecha y las sucursales de cada tipo |
+| `r3_subtipos_mes.py <sim_final> [tipo ...]` | Serie mensual por subtipo (mediana entre sucursales) y sucursales |
+| `r4_lados_mes.py <sim_final> <subtipo> [desde] [hasta]` | Precio de cada lado del subtipo por mes y $/100 g nacional y sucursales de cada producto |
+| `r5_sucursal_y_localidad.py <Excel> <sim_final>` | Canasta por sucursal según cuántos tipos tiene, combinaciones de tipos y la hoja `Concentracion` contra las empresas de cada "localidad" |
+| `r6_variantes_imputacion.py <sim_final> <Excel> [K]` | La imputación de la serie mensual hoy (control: = Excel) y cuatro variantes (arrastre de a lo sumo K meses, referencia local de 13 meses, dato propio después de K meses) |
+| `r7_imputados.py <sim_final>` | Rachas de subtipo-mes imputados en las dos series (cálculo independiente de la hoja `Imputaciones`) |
+| `r8_canasta_comparable_grupos.py <sim> <Excel> [MIN]` | Canasta de 12 subtipos fijos por provincia, región, empresa y cadena con la brecha nacional en los subtipos sin datos (cálculo independiente de la CELDA 8 vigente; si el Excel es del notebook vigente, compara sus hojas de grupos: dif. 1e-13) |
+| `r9_canasta_comparable_sucursal.py <sim> <Excel>` | Canasta comparable por sucursal y mes (cálculo independiente) contra `sim_brecha_suc_mes.parquet` de la simulación del notebook vigente (dif. 1e-13 en 123.906 sucursal-mes) |
 
 **Salidas intermedias de la corrida del 2026-10-23** (precios extraídos, selección, verificación, simulación con el
 caché del nb06; ~315 MB): en la PC del INECO, `C:\Users\sriverti\proyectos\nb06_brecha_celiaca_20261023\` (README
