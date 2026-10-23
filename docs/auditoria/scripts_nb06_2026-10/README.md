@@ -4,8 +4,8 @@ Los pasos 1-6 arman el Excel de decisión `seleccion_brecha_celiaca_20261022.xls
 existen, con qué cobertura por sucursal, cadena y provincia, desde cuándo, qué pares de la misma marca hay y cuánto pesa
 cada tipo en el gasto de los hogares. Los pasos 7-10 arman la **canasta fija 2022-2026**
 (`docs/brecha_celiaca/canasta_fija_2022_2026.csv`, que `gen_nb06.py` embebe en la CELDA 1), los 11-12 verifican el
-nb06 con datos reales y los 13-14 son auxiliares (tablas del documento y caché de la simulación). Reglas y
-resultados: `docs/BRECHA_CELIACA.md` §14.
+nb06 con datos reales, los 13-15 son auxiliares (tablas del documento y caché de la simulación) y el 16 compara una
+corrida de Colab con los resultados esperados. Reglas y resultados: `docs/BRECHA_CELIACA.md` §14.
 
 Orden de una corrida completa (datos en carpetas propias; los zips semestrales son los del Drive):
 
@@ -20,7 +20,12 @@ python -I -X utf8 s11_simular_nb06.py <repo> <carpeta con los zips> <ar.json> si
 python -I -X utf8 s15_filtrar_cache.py <repo> sim_super/_cache/brecha_v3_<clave> sim_final
 python -I -X utf8 s11_simular_nb06.py <repo> <carpeta con los zips> <ar.json> sim_final 2022-01
 python -I -X utf8 s12_comparar_simulacion.py <repo> precios_mes precios_mes_2 sim_final
+python -I -X utf8 s16_comparar_colab.py <brecha_celiaca_2026-10.xlsx de Colab> <repo>/docs/brecha_celiaca/simulacion_2026-10-23
 ```
+
+`precios_mes_2` existe porque el 2026-10-23 se hicieron dos extracciones (la segunda con 14 códigos viejos de Molinos
+que faltaban); con una sola extracción de todos los EANs, pasar una carpeta vacía en su lugar. s10 y s12 sacan las
+filas repetidas entre las dos.
 
 Fuentes: un día del SEPA diario (nombres, presentaciones, cobertura y precios; `...\INECO\SEPA\sepa_diario_minoristas\`),
 el Maestro de Productos Interno (`data/`), las salidas del nb09 (`trazabilidad_productos_20220101_20261022.parquet` y
@@ -43,6 +48,11 @@ el Maestro de Productos Interno (`data/`), las salidas del nb09 (`trazabilidad_p
 | 13 | `s13_tablas_doc.py <canasta.csv>` | Tablas en markdown de la canasta para `docs/BRECHA_CELIACA.md` §14.5 |
 | 14 | `s14_superconjunto.py <canasta.eans.parquet de s10> <canasta.csv> <salida.json>` | Config con todos los candidatos que pasan s9 (para leer el SEPA una sola vez en la simulación; el caché de la canasta final se arma filtrando ese) |
 | 15 | `s15_filtrar_cache.py <repo> <caché del superconjunto> <salida de s11>` | Caché de la canasta de la CELDA 1 filtrando el del superconjunto (mismo resultado que leer el SEPA con esa canasta) |
+| 16 | `s16_comparar_colab.py <brecha_celiaca_AAAA-MM.xlsx> <carpeta de esperados>` | Compara hoja por hoja el Excel de una corrida (Colab) con los resultados esperados de `docs/brecha_celiaca/simulacion_2026-10-23/` (filas de un solo lado y diferencia máxima de cada columna; esperado: 29 hojas iguales) |
+
+**Salidas intermedias de la corrida del 2026-10-23** (precios extraídos, selección, verificación, simulación con el
+caché del nb06; ~315 MB): en la PC del INECO, `C:\Users\sriverti\proyectos\nb06_brecha_celiaca_20261023\` (README
+adentro). En otra PC se rehacen con los comandos de abajo (extracción ~70 min + lectura del nb06 ~40 min).
 
 Correr con `python -I -X utf8` (los zips del SEPA son datos bajados de internet). `precios_mes_2` es una segunda
 extracción con los códigos viejos de Molinos que no estaban en la primera lista (s10 y s12 sacan las filas repetidas).

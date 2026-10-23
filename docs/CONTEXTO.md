@@ -1,6 +1,6 @@
 # Contexto del Proyecto — Precios Minoristas SEPA
 
-Última actualización: 2026-10-23 (nb06: canasta FIJA 2022-2026 para la brecha celíaca —68 productos con TACC y sin TACC con continuidad temporal, geográfica y por cadenas elegidos con reglas sobre las salidas del nb09 y verificados con los precios de ene-2022 a oct-2026, empalmes de los códigos que cambió Molinos en 2023 (también los sin TACC de Matarazzo) y Wakas en 2024 con vigencia por código, pesos ENGHo, serie desde 2022 con panel balanceado, región/empresa/año; la brecha de 2023 está inflada por los precios controlados del lado con TACC— y BUG-46 —provincia por polígonos, archivo duplicado de ago-2024, comercios no supermercados, nombres oficiales, caché por mes, mediana exacta, canasta que dependía del maestro del Drive, códigos viejos con precio congelado—; test nuevo `test_brecha_celiaca.py`; falta la corrida en Colab, que relee 58 meses una vez; `docs/BRECHA_CELIACA.md` §14). Antes, 2026-10-22 cierre (documentación al día para retomar en otra PC: `docs/PASS_THROUGH.md` nuevo, METODOLOGIA §12-§14 —nb08 v2, nb09, canasta de pass-through—, SEPA_TECNICO con los defectos de la fuente 2022-2026, `requirements.txt` completo, bloque ESTADO ACTUAL / HANDOFF general en `.claude/memory.md`. Ese día: nb08 v2 con la canasta de pass-through por defecto e índice de sucursales apareadas —falta correrlo en Colab—; canasta fija de 775 productos para el pass-through diario y script de Colab que la pone en `cantidad_01`; corrida del nb09 v2 revisada y arreglos que no releen —hoja `Dias`, comercios que dejaron de publicar con `mes_baja_comercios`, códigos con basura unidos a su EAN, precio simbólico relativo—). Antes, 2026-10-16 cierre (nb02: provincia de la CELDA 7 por polígonos de ar.json con tolerancia —BUG-44, resuelto: Neuquén capital, Paraná y San Nicolás vuelven a su provincia; la próxima corrida relee 12 meses en la 19c y 33 en la econometría, una vez—; región de la 19b/19c por coordenadas —BUG-43, simulado con datos reales, la próxima corrida relee 12 meses una vez—, Excel de azul a verde. Antes ese día: corrida de oct-26 en Colab revisada —19b y 19c OK— y BUG-42 corregido: AMBA por coordenadas, una sola referencia del país, acumulados contra el IPC en el mismo período, dispersión P5-P95 y formato del documento técnico; revisión en `docs/AUDITORIA_2026-10-16_nb02.md`. Script 03: acepta la carpeta de días y elige solo el zip semestral A/B. Antes, 2026-10-15: nb02: hoja `analisis_detallado` —la primera del Excel, CELDA 19c— con índices mensuales y semanales de la canasta Media por rubro, región, provincia, cadena y tipo de sucursal; y desagregación de la variación mensual por producto, arrastre, cadena y región —CELDA 19b—. Guía: `docs/NB02_ANALISIS_VARIACION.md`. Antes, 2026-10-02: nb07 v5.15: composición por rubro con faltantes imputados y Lavarropas BGH en la Tecnológica, relee el SEPA; corrida v5.14 al 2026-10-01 auditada y publicable. nb07 v5.14: el mismo cálculo que la v5.13 con un tercio de la RAM, corre en el Colab gratuito sin "RAM amplia"; no relee el SEPA. Antes, 2026-09-24: nb07 v5.13 lista para correr: frescos por TPD con nivel fijo, cobertura mínima de empaquetados, filtro estacional de frescos y ronda 2 de reemplazos —267 EANs—; ver el historial de cambios y `.claude/memory.md`. Antes, 2026-09-09: nb05/nb02: BUG-29 gráfico de barras con series de distinta longitud, BUG-30/32 mosaicos del mapa —CartoDB exige API key y OSM no responde desde la red de INECO— y BUG-31 el mapa pesaba 48 MB. Antes, 2026-09-07: nb07 v5.3, banda de plausibilidad anclada en frescos)
+Última actualización: 2026-10-23 (nb06: canasta FIJA 2022-2026 para la brecha celíaca —68 productos con TACC y sin TACC con continuidad temporal, geográfica y por cadenas elegidos con reglas sobre las salidas del nb09 y verificados con los precios de ene-2022 a oct-2026, empalmes de los códigos que cambió Molinos en 2023 (también los sin TACC de Matarazzo) y Wakas en 2024 con vigencia por código, pesos ENGHo, serie desde 2022 con panel balanceado, región/empresa/año; la brecha de 2023 está inflada por los precios controlados del lado con TACC— y BUG-46 —provincia por polígonos, archivo duplicado de ago-2024, comercios no supermercados, nombres oficiales, caché por mes, mediana exacta, canasta que dependía del maestro del Drive, códigos viejos con precio congelado—; estimador por subtipo agregado subtipo → tipo → canasta; test nuevo `test_brecha_celiaca.py`; simulado con los 58 meses del Drive —coincidencia exacta con un cálculo independiente, pico de RAM 2,5 GB— y resultados esperados en `docs/brecha_celiaca/simulacion_2026-10-23/` con `s16_comparar_colab.py`; falta la corrida en Colab, que relee 58 meses una vez; `docs/BRECHA_CELIACA.md` §14). Antes, 2026-10-22 cierre (documentación al día para retomar en otra PC: `docs/PASS_THROUGH.md` nuevo, METODOLOGIA §12-§14 —nb08 v2, nb09, canasta de pass-through—, SEPA_TECNICO con los defectos de la fuente 2022-2026, `requirements.txt` completo, bloque ESTADO ACTUAL / HANDOFF general en `.claude/memory.md`. Ese día: nb08 v2 con la canasta de pass-through por defecto e índice de sucursales apareadas —falta correrlo en Colab—; canasta fija de 775 productos para el pass-through diario y script de Colab que la pone en `cantidad_01`; corrida del nb09 v2 revisada y arreglos que no releen —hoja `Dias`, comercios que dejaron de publicar con `mes_baja_comercios`, códigos con basura unidos a su EAN, precio simbólico relativo—). Antes, 2026-10-16 cierre (nb02: provincia de la CELDA 7 por polígonos de ar.json con tolerancia —BUG-44, resuelto: Neuquén capital, Paraná y San Nicolás vuelven a su provincia; la próxima corrida relee 12 meses en la 19c y 33 en la econometría, una vez—; región de la 19b/19c por coordenadas —BUG-43, simulado con datos reales, la próxima corrida relee 12 meses una vez—, Excel de azul a verde. Antes ese día: corrida de oct-26 en Colab revisada —19b y 19c OK— y BUG-42 corregido: AMBA por coordenadas, una sola referencia del país, acumulados contra el IPC en el mismo período, dispersión P5-P95 y formato del documento técnico; revisión en `docs/AUDITORIA_2026-10-16_nb02.md`. Script 03: acepta la carpeta de días y elige solo el zip semestral A/B. Antes, 2026-10-15: nb02: hoja `analisis_detallado` —la primera del Excel, CELDA 19c— con índices mensuales y semanales de la canasta Media por rubro, región, provincia, cadena y tipo de sucursal; y desagregación de la variación mensual por producto, arrastre, cadena y región —CELDA 19b—. Guía: `docs/NB02_ANALISIS_VARIACION.md`. Antes, 2026-10-02: nb07 v5.15: composición por rubro con faltantes imputados y Lavarropas BGH en la Tecnológica, relee el SEPA; corrida v5.14 al 2026-10-01 auditada y publicable. nb07 v5.14: el mismo cálculo que la v5.13 con un tercio de la RAM, corre en el Colab gratuito sin "RAM amplia"; no relee el SEPA. Antes, 2026-09-24: nb07 v5.13 lista para correr: frescos por TPD con nivel fijo, cobertura mínima de empaquetados, filtro estacional de frescos y ronda 2 de reemplazos —267 EANs—; ver el historial de cambios y `.claude/memory.md`. Antes, 2026-09-09: nb05/nb02: BUG-29 gráfico de barras con series de distinta longitud, BUG-30/32 mosaicos del mapa —CartoDB exige API key y OSM no responde desde la red de INECO— y BUG-31 el mapa pesaba 48 MB. Antes, 2026-09-07: nb07 v5.3, banda de plausibilidad anclada en frescos)
 
 > **El proyecto tiene 9 herramientas (nb01–nb09).** Las descripciones detalladas por celda más
 > abajo en este archivo son **históricas** (describen la arquitectura previa de nb02); el estado
@@ -61,8 +61,8 @@ lo único que falta son los datos SEPA y los auxiliares, que están en el Drive.
 ```bash
 git clone https://github.com/santiagoriverti/precios_minoristas_supermercados
 cd precios_minoristas_supermercados
-pip install -r requirements.txt                     # pandas, numpy, pyarrow, openpyxl, xlrd, matplotlib, folium, tqdm,
-                                                    # xlsxwriter, scipy, psutil, python-calamine
+pip install -r requirements.txt                     # pandas, numpy, pyarrow, openpyxl, xlrd, matplotlib, seaborn,
+                                                    # folium, tqdm, xlsxwriter, scipy, psutil, python-calamine
 python notebooks/test_celdas_graficos_y_mapa.py     # gráficos + mapa (nb05 y nb02)
 python notebooks/test_encadenado_frescos.py encadenado   # índice de frescos (nb07), método encadenado
 python notebooks/test_encadenado_frescos.py tpd          # índice de frescos (nb07), método TPD (el vigente)
@@ -84,9 +84,13 @@ Los 15 tests tienen que terminar en OK (verificado el 2026-10-23 con Python 3.14
 completas en `requirements.txt`). En Windows, si la consola no muestra bien los acentos: `set PYTHONUTF8=1` (cmd) o
 `$env:PYTHONUTF8=1` (PowerShell) antes de correrlos.
 
-**Por dónde empezar**: `CLAUDE.md` (raíz) y el bloque **ESTADO ACTUAL / HANDOFF [2026-10-22 · cierre]** al principio de
+**Por dónde empezar**: `CLAUDE.md` (raíz) y el bloque **ESTADO ACTUAL / HANDOFF [2026-10-23]** al principio de
 `.claude/memory.md` (estado de cada línea de trabajo y qué hacer con los próximos resultados); debajo están los bloques
-de cada notebook (nb08, canasta de pass-through, nb09, nb02, nb07) con el detalle.
+de cada notebook (nb06, nb08, canasta de pass-through, nb09, nb02, nb07) con el detalle.
+- **Brecha celíaca / nb06**: `docs/BRECHA_CELIACA.md` §14 (canasta fija 2022-2026, estimador por subtipo, qué revisar
+  en §14.9 y lo esperado en §14.10). Para revisar una corrida hacen falta la salida impresa y
+  `output_brecha/brecha_celiaca_<mes>.xlsx`; se compara con
+  `python -I -X utf8 docs/auditoria/scripts_nb06_2026-10/s16_comparar_colab.py <Excel> docs/brecha_celiaca/simulacion_2026-10-23`.
 - **Pass-through / nb08**: `docs/PASS_THROUGH.md` (cómo correrlo y qué revisar). Para revisar una corrida hacen falta la
   salida impresa, `canasta_diaria_pass_through_<desde>_<hasta>.xlsx` y `panel_diario_pass_through_<...>.parquet`.
 - **nb09**: la última corrida revisada está en `docs/AUDITORIA_2026-10-22_nb09.md`; para revisar una corrida hacen falta
@@ -115,18 +119,24 @@ Reglas del repo que conviene saber antes de tocar nada:
    que copiar los maestros de `data/` al Drive (README, "Repositorio privado").
 5. **Datos para simular o auditar en una PC** (no están en el repo): los zips semestrales del SEPA y `ar.json`
    (`MyDrive/carga/`), el Excel de la corrida y el zip de `output_canasta/_cache/`. Los scripts de
-   `docs/auditoria/scripts_nb02_2026-10/`, `scripts_nb08_2026-10/` y `scripts_nb09_2026-10/` dicen en su encabezado
-   qué necesita cada uno. En la PC del INECO: zips semestrales 2024A → 2026B en
+   `docs/auditoria/scripts_nb02_2026-10/`, `scripts_nb06_2026-10/`, `scripts_nb08_2026-10/` y `scripts_nb09_2026-10/`
+   dicen en su encabezado qué necesita cada uno. En la PC del INECO: desde el 23/10/2026 **todos los zips del Drive
+   (2022A → 2026B) están en `C:\Users\sriverti\Downloads\`**, junto con la carpeta `carga` entera bajada en 10 zips
+   (`carga-20261023T013908Z-1-001..010.zip`); además, zips 2024A → 2026B en
    `C:\Users\sriverti\Desktop\INECO\SEPA\SEPA_Bases_Originales\carga\` (no hay 2022-2023; ese `2026B.zip` es del
-   20/08 y trae solo julio), `ar.json` en `C:\Users\sriverti\Desktop\INECO\Otros\ar.json`. **Ojo**: el `2026B.zip` de
+   20/08 y trae solo julio), `ar.json` en `C:\Users\sriverti\Desktop\INECO\Otros\ar.json` (idéntico al del Drive).
+   **Ojo**: el `2026B.zip` de
    `C:\Users\sriverti\Desktop\INECO\SEPA\salida_consolidada\` (script 03, 22/10/2026) trae **solo julio y octubre de
    2026** (se armó sobre el local del 20/08): no subirlo al Drive tal cual; el `2026B.zip` completo (jul-oct) es el del
    Drive. Lo que pase el usuario (Excel, cachés, salidas) se descomprime en una
    carpeta propia y los scripts se corren con `python -I -X utf8` y las rutas como argumentos (datos no confiables).
 6. **Archivos fuera del repo que se entregaron al usuario** (en la PC del INECO, `C:\Users\sriverti\proyectos\`): el Excel
    completo de la selección de la canasta de pass-through (`canasta_pass_through_20220101_20261020.xlsx`, 8 hojas; se
-   rehace con `canasta_pass_through.py`, ver `docs/PASS_THROUGH.md`) y `canasta_continua_cantidad_07.xlsx` (canasta
-   "Continua 2022" de 28 productos, reemplazada por la de pass-through).
+   rehace con `canasta_pass_through.py`, ver `docs/PASS_THROUGH.md`), `canasta_continua_cantidad_07.xlsx` (canasta
+   "Continua 2022" de 28 productos, reemplazada por la de pass-through), `seleccion_brecha_celiaca_20261022.xlsx` (el
+   Excel de decisión de los candidatos de la brecha celíaca; scripts s1-s6) y `nb06_brecha_celiaca_20261023\` (trabajo
+   intermedio de la canasta fija del nb06: precios extraídos 2022-2026, selección, verificación y la simulación con el
+   caché del nb06; ~315 MB, README adentro; se rehace con los scripts s7-s15).
 
 ---
 
@@ -642,6 +652,17 @@ los 58 meses del Drive contra un cálculo independiente: coincidencia exacta (3,
 por subtipo); lectura 37 min en la PC, pico de RAM 2,5 GB. Brecha por tipo 2022-2026: fideos +172%, galletitas dulces
 +108%, saladas +84%, rebozador +84%, almohaditas +26%; canasta (panel) +111% en 2022, +106% en 2023, +107% en 2024,
 +100% en 2025 y +120% en 2026; regiones y cadenas confiables entre +119% y +127% en los últimos 12 meses (§14.10).
+
+### 2026-10-23 (cierre) — documentación al día para retomar en otra PC
+
+Pedido del usuario: dejar memoria, contexto, documentación técnica y README al día para seguir en otra sesión y otra
+PC. Agregado: resultados esperados del nb06 en el repo (`docs/brecha_celiaca/simulacion_2026-10-23/`, un CSV por hoja
+del Excel de la simulación con los zips del Drive) y `s16_comparar_colab.py` para comparar una corrida de Colab hoja
+por hoja (probado contra la simulación: 29 hojas iguales, y con una diferencia sembrada); `seaborn` en
+`requirements.txt` (lo importa el nb06 y faltaba: el test fallaba en una PC nueva); nota del estimador vigente en
+BRECHA_CELIACA §3 y su encabezado; README (árbol, documentación, nb06), CLAUDE.md (datos de la PC, cachés del nb06,
+reglas de la brecha), bloque ESTADO ACTUAL de `.claude/memory.md`. El trabajo intermedio del nb06 (~315 MB) quedó en
+`C:\Users\sriverti\proyectos\nb06_brecha_celiaca_20261023\` (fuera del repo, README adentro). 15 tests en OK.
 
 ### 2026-10-22 (cierre) — documentación al día para retomar en otra PC
 

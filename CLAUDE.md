@@ -80,15 +80,19 @@ relativo; la próxima corrida en Colab los muestra por primera vez.
    `output_canasta/_cache/` (ver `docs/AUDITORIA_2026-10-16_nb02.md` §6 para los scripts); para el nb08, la salida
    impresa, `canasta_diaria_pass_through_<desde>_<hasta>.xlsx` y `panel_diario_pass_through_<...>.parquet`; para el nb09,
    la salida impresa y los cuatro archivos de `output_trazabilidad/` (scripts en `docs/auditoria/scripts_nb09_2026-10/`,
-   AUDITORIA_2026-10-22_nb09 §7). Descomprimir lo que
+   AUDITORIA_2026-10-22_nb09 §7); para el nb06, la salida impresa y `output_brecha/brecha_celiaca_<mes>.xlsx` (comparar
+   con `docs/auditoria/scripts_nb06_2026-10/s16_comparar_colab.py` contra `docs/brecha_celiaca/simulacion_2026-10-23/` y
+   revisar con BRECHA_CELIACA §14.9). Descomprimir lo que
    pase el usuario en una carpeta propia y correr los scripts con `python -I` (datos no confiables). Para simular
    celdas con datos reales en una PC hacen falta, además: `ar.json` (bajarlo del Drive, `MyDrive/carga/ar.json`; en
    la PC del INECO hay copia en `C:\Users\sriverti\Desktop\INECO\Otros\ar.json`) y los zips semestrales (Drive
-   `carga/`; en la PC del INECO, 2024A → 2026B en `...\INECO\SEPA\SEPA_Bases_Originales\carga\` —no hay 2022-2023 y ese
-   `2026B.zip` trae solo julio—; el `2026B.zip` de `...\SEPA\salida_consolidada\` (script 03, 22/10) trae solo julio y
-   octubre de 2026: no subirlo al Drive tal cual, el completo es el del Drive). El usuario corre en el **Colab gratuito** (sin "RAM
-   amplia"): no subir el pico de RAM de las CELDAS 7-8 del nb07 sin medirlo (`docs/auditoria/scripts_v514/bench_ram.py`);
-   el nb09 está medido en Colab (lector ≤ 1,95 GB, notebook ≤ 1,3 GB) y el nb08 v2 en la PC (0,4-0,5 GB por mes).
+   `carga/`; en la PC del INECO, desde el 23/10 **todos los del Drive, 2022A → 2026B, en `C:\Users\sriverti\Downloads\`**
+   —el `2026B` del Drive trae jul-2026 y ago-oct 2026 al 22/10—, y además 2024A → 2026B en
+   `...\INECO\SEPA\SEPA_Bases_Originales\carga\` —ese `2026B.zip` trae solo julio—; el `2026B.zip` de
+   `...\SEPA\salida_consolidada\` (script 03, 22/10) trae solo julio y octubre de 2026: no subirlo al Drive tal cual, el
+   completo es el del Drive). El usuario corre en el **Colab gratuito** (sin "RAM amplia"): no subir el pico de RAM de
+   las CELDAS 7-8 del nb07 sin medirlo (`docs/auditoria/scripts_v514/bench_ram.py`); el nb09 está medido en Colab (lector
+   ≤ 1,95 GB, notebook ≤ 1,3 GB), el nb08 v2 en la PC (0,4-0,5 GB por mes) y el nb06 en la PC con los 58 meses (2,5 GB).
 
 ## Reglas que muerden
 
@@ -185,11 +189,11 @@ relativo; la próxima corrida en Colab los muestra por primera vez.
   El caché `diaria_v2_<clave>` guarda por mes el agregado y el estado (`estado_AAAA-MM.parquet`: pares sucursal ×
   producto + índice de cada producto en los metadatos); cambiar cómo se calculan los relativos exige subir la versión
   del directorio. El último mes no se guarda.
-- **Ningún caché mira si cambió el zip** (nb02, nb07, nb08, nb09): un mes cerrado guardado no se relee aunque se
+- **Ningún caché mira si cambió el zip** (nb02, nb06, nb07, nb08, nb09): un mes cerrado guardado no se relee aunque se
   reemplace el zip. Cuando salga el semestral oficial 2026B (ago-oct 2026 vienen hoy del SEPA diario, sin 8 comercios),
-  borrar esos meses de los cachés: nb08 `diaria_v2_<clave>/2026-08.parquet` + `estado_2026-08.parquet` y siguientes;
-  nb09 `_cache_nb09/v1/2026-08_p*` y siguientes. Defectos de la fuente: `docs/SEPA_TECNICO.md`, "Defectos y cambios de
-  la fuente 2022-2026".
+  borrar esos meses de los cachés: nb06 `output_brecha/_cache/brecha_v3_<clave>/2026-08.parquet` y siguientes; nb08
+  `diaria_v2_<clave>/2026-08.parquet` + `estado_2026-08.parquet` y siguientes; nb09 `_cache_nb09/v1/2026-08_p*` y
+  siguientes. Defectos de la fuente: `docs/SEPA_TECNICO.md`, "Defectos y cambios de la fuente 2022-2026".
 - **nb06, canasta fija**: la fuente de la canasta es `docs/brecha_celiaca/canasta_fija_2022_2026.csv` (tipo, lado,
   EAN, descripción, gramos, subtipo, vigencia, producto y métricas); `gen_nb06.py` arma con él `TIPOS`, `GRAMOS`,
   `VIGENCIA`, `PRODUCTO` (códigos de un mismo producto: entra una vez en la mediana de su lado) y `SUBTIPO` de la CELDA 1.
@@ -197,7 +201,12 @@ relativo; la próxima corrida en Colab los muestra por primera vez.
   s11/s12 simulan el nb06 con los zips y lo comparan con un cálculo independiente), regenerar y commitear CSV + generador
   + `.ipynb`. Cambiar un EAN cambia la clave del caché (`_cache/brecha_v3_<clave>/`, un archivo por mes: relee los 58
   meses); gramos, vigencias, pesos y descripciones no. La selección por nombre (`USAR_REGLA_NOMBRE`) queda apagada:
-  hacía que la canasta dependiera del `maestro_sepa_completo.csv.gz` que hubiera en el Drive.
+  hacía que la canasta dependiera del `maestro_sepa_completo.csv.gz` que hubiera en el Drive. **La brecha se calcula
+  por subtipo** (nunca la mediana del tipo entero: mezcla snacks y crackers según el surtido) y se agrega subtipo → tipo
+  → canasta; si se cambia la canasta o el estimador, rehacer la simulación (s11/s12) y los resultados esperados de
+  `docs/brecha_celiaca/simulacion_2026-10-23/` (otra carpeta con la fecha nueva) antes de pedir una corrida de Colab.
+  En 2023 las marcas masivas con TACC tenían precios controlados (la brecha de 2023 está inflada, §14.8 de
+  BRECHA_CELIACA): no "corregirlo" sacando productos.
 - **Códigos que cambiaron de EAN**: Molinos reemplazó los EANs de sus fideos en sep-oct 2023 y los viejos siguen en ~100
   sucursales con el precio CONGELADO (Spaghetti Lucchetti viejo a $230-274 en 2024-2026 contra $1.042-1.699 del nuevo).
   Un producto empalmado lleva sus códigos con `VIGENCIA` (el viejo hasta el mes anterior al nuevo); nunca sumar un código
@@ -237,7 +246,7 @@ relativo; la próxima corrida en Colab los muestra por primera vez.
 | `docs/NB02_ANALISIS_VARIACION.md` | **nb02 CELDAS 19b y 19c**: cómo correrlas, cómo leer cada hoja, caché, validación con oct-26, trampas |
 | `docs/BUGS_Y_MEJORAS.md` | Defectos abiertos arriba; bugs resueltos con causa y fix |
 | `docs/SEPA_TECNICO.md` | Formato SEPA, **defectos y cambios de la fuente 2022-2026** (días con la mitad de los comercios, corte de ago-2026, archivos y filas repetidas, provincias, códigos con basura, precios simbólicos), factor de precio, cadenas, frescos por tipo, caché |
-| `docs/BRECHA_CELIACA.md` | **nb06 — brecha celíaca**: estimador intra-sucursal por tipo, **canasta fija 2022-2026 (§14: fuentes, reglas, empalmes y vigencias, productos, ponderación ENGHo, qué revisar en la corrida)**, salidas, agenda para el paper (§13). Lista con métricas: `docs/brecha_celiaca/canasta_fija_2022_2026.csv`; scripts de la selección: `docs/auditoria/scripts_nb06_2026-10/` |
+| `docs/BRECHA_CELIACA.md` | **nb06 — brecha celíaca**: estimador intra-sucursal, **canasta fija 2022-2026 (§14: fuentes, reglas, empalmes y vigencias, productos, estimador por subtipo y ponderación ENGHo, advertencias, qué revisar en la corrida, simulación con los 58 meses)**, salidas, agenda para el paper (§13). Lista con métricas: `docs/brecha_celiaca/canasta_fija_2022_2026.csv`; resultados esperados: `docs/brecha_celiaca/simulacion_2026-10-23/`; scripts de la selección, la simulación y la comparación con Colab (s16): `docs/auditoria/scripts_nb06_2026-10/` |
 | `docs/PASS_THROUGH.md` | **Pass-through del tipo de cambio**: estado, cómo correr el nb08 con la canasta de 775 productos y qué revisar, cómo rehacer la canasta, variable de precio, advertencias, próximos pasos (tipo de cambio, regresiones) |
 | `docs/AUDITORIA_2026-10-22_nb09.md` | **Corrida del nb09 v2 revisada**: controles, panel contra el SEPA crudo, hallazgos de método y de fuente (§4), corrida con los arreglos (§6). Scripts en `docs/auditoria/scripts_nb09_2026-10/` (r1-r8) |
 | `docs/auditoria/scripts_nb08_2026-10/` | `validar_real.py`: las celdas reales del nb08 v2 sobre zips locales contra el lector anterior (jul-sep 2024) |

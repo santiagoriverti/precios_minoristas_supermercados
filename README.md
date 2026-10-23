@@ -561,7 +561,7 @@ Mide la **brecha** de precios entre productos **con TACC** y sus equivalentes **
 | `mapa_sucursales_brecha_MMAAAA.html` | Mapa Folium por sucursal (popup con los productos comparados) |
 | `brecha_celiaca_YYYY-MM.xlsx` | 32 hojas: `Leeme`, `Canasta`, `Ponderaciones`, cobertura, brecha por subtipo (período, año y panel balanceado), brecha por tipo (mes, año, panel balanceado), serie de la canasta, provincia, región, empresa, cadena (y por año), sucursal, `Comparacion_productos`, `Detalle_producto`, `Control_EAN`, `Plausibilidad` |
 
-> Requiere en `carga/` (Drive) los ZIPs SEPA 2022A → 2026B y `ar.json` (provincia por polígonos y mapas). Los maestros se leen de `data/` o se bajan de GitHub. Caché por mes en `output_brecha/_cache/brecha_v3_<clave>/`: la primera corrida lee los 58 meses (~1 h en el Colab gratuito; en la PC del INECO, 37 min) y si se corta retoma donde quedó; con el caché, todo tarda ~4 min. Pico de RAM medido con los 58 meses: 2,5 GB (el Colab gratuito tiene 12,7 GB). Test: `python notebooks/test_brecha_celiaca.py`. Simulación con los zips del Drive y resultados esperados: `docs/BRECHA_CELIACA.md` §14.10.
+> Requiere en `carga/` (Drive) los ZIPs SEPA 2022A → 2026B y `ar.json` (provincia por polígonos y mapas). Los maestros se leen de `data/` o se bajan de GitHub. Caché por mes en `output_brecha/_cache/brecha_v3_<clave>/`: la primera corrida lee los 58 meses (~1 h en el Colab gratuito; en la PC del INECO, 37 min) y si se corta retoma donde quedó; con el caché, todo tarda ~4 min. Pico de RAM medido con los 58 meses: 2,5 GB (el Colab gratuito tiene 12,7 GB). Test: `python notebooks/test_brecha_celiaca.py`. Simulación con los zips del Drive y resultados esperados: `docs/BRECHA_CELIACA.md` §14.10 y `docs/brecha_celiaca/simulacion_2026-10-23/` (un CSV por hoja); para comparar el Excel de una corrida: `python -I -X utf8 docs/auditoria/scripts_nb06_2026-10/s16_comparar_colab.py <Excel> docs/brecha_celiaca/simulacion_2026-10-23`.
 
 ---
 
@@ -933,7 +933,7 @@ precios_minoristas_supermercados/
 │   ├── gen_nb09.py                               # Script fuente que genera el Notebook 9
 │   ├── test_trazabilidad_productos.py            # Test: nb09 sobre un SEPA sintético contra fuerza bruta
 │   ├── test_canasta_diaria.py                    # Test: nb08 (medianas y sucursales apareadas) contra fuerza bruta
-│   ├── test_brecha_celiaca.py                    # Test: nb06 (canasta fija, vigencias, geografía, ENGHo, caché) contra fuerza bruta
+│   ├── test_brecha_celiaca.py                    # Test: nb06 (canasta fija, subtipos, vigencias, geografía, ENGHo, caché) contra fuerza bruta
 │   ├── auditar_salida_nb07.py                    # Audita una salida del nb07 (réplica del índice, quiebres, trazabilidad, IPC, aperturas, INDEC)
 │   ├── test_celdas_graficos_y_mapa.py            # Tests: gráficos (CELDA 12) y mapa (CELDA 17) de nb05/nb02
 │   ├── test_encadenado_frescos.py                # Tests: índice de frescos de nb07 (argumento encadenado | tpd)
@@ -967,7 +967,8 @@ precios_minoristas_supermercados/
     ├── AUDITORIA_2026-10-02_v514.md    # Última corrida auditada del nb07 (v5.14 al 2026-10-01, Colab gratuito): números vigentes
     ├── AUDITORIA_2026-10-16_nb02.md    # Última corrida revisada del nb02 (oct-26): 19b/19c, BUG-42, región por coordenadas (BUG-43), provincia por polígonos (BUG-44)
     ├── AUDITORIA_2026-10-22_nb09.md    # Corrida del nb09 v2 revisada: controles, panel contra el SEPA crudo, hallazgos de método y de fuente
-    ├── auditoria/                      # Informes HTML/PDF + scripts_v59/, v512/, v513/ (simulación), v514/ (benchmark de RAM), scripts_nb02_2026-10/ (prototipo y validación de las CELDAS 19b/19c, simulación de las CELDAS 7 y 20 con datos reales, comparación de corridas), scripts_nb08_2026-10/ (validar_real.py: nb08 v2 contra el lector anterior) y scripts_nb09_2026-10/ (r1-r8: revisión de las corridas del nb09)
+    ├── auditoria/                      # Informes HTML/PDF + scripts_v59/, v512/, v513/ (simulación), v514/ (benchmark de RAM), scripts_nb02_2026-10/ (prototipo y validación de las CELDAS 19b/19c, simulación de las CELDAS 7 y 20 con datos reales, comparación de corridas), scripts_nb08_2026-10/ (validar_real.py: nb08 v2 contra el lector anterior), scripts_nb09_2026-10/ (r1-r8: revisión de las corridas del nb09) y scripts_nb06_2026-10/ (s1-s16: selección de la canasta fija, verificación con precios, simulación del nb06 y comparación con Colab)
+    ├── brecha_celiaca/                 # Notebook 06 — canasta fija 2022-2026 (CSV con métricas, la fuente de la CELDA 1) y simulacion_2026-10-23/ (resultados esperados, un CSV por hoja del Excel)
     └── canastas_alternativas/           # Notebook 07 — composición de las 6 canastas alternativas (+ canasta de pass-through)
         ├── README.md                    #   diseño, flujo de trabajo, cambios posteriores a v5, canasta de pass-through
         ├── construir_canastas_v5.py     #   constructor (local): elige productos y genera el cargador
@@ -1088,7 +1089,7 @@ El Notebook 02 usa dos estrategias para manejar la complejidad de múltiples can
 | [`docs/METODOLOGIA.md`](docs/METODOLOGIA.md) | **Metodología completa**: fuente de datos, score de cobertura, canastas ENGHo por quintil (coeficiente de Engel), filtros de calidad (score ≥ 0.88, trazabilidad ≥ 90%), limitaciones conocidas, historial de versiones de canastas |
 | [`docs/CONTEXTO.md`](docs/CONTEXTO.md) | Objetivo del proyecto, descripción del pipeline celda por celda, métricas de ejecución reales, historial completo de cambios |
 | [`docs/SEPA_TECNICO.md`](docs/SEPA_TECNICO.md) | Formato semestral vs. diario, autodetección de FACTOR_PRECIO, diccionario de cadenas, maestros de referencia, arquitectura anti-OOM, trampas conocidas en la selección de grupos, patrones técnicos del Notebook 02 |
-| [`docs/BRECHA_CELIACA.md`](docs/BRECHA_CELIACA.md) | **Notebook 06 — brecha celíaca (TACC vs sin-TACC)**: metodología (decisiones con los investigadores), definición de canastas y brecha intra-sucursal, resolución diaria/semanal/mensual, plantilla curada de tipos/EANs, outputs, limitaciones |
+| [`docs/BRECHA_CELIACA.md`](docs/BRECHA_CELIACA.md) | **Notebook 06 — brecha celíaca (TACC vs sin-TACC)**: metodología (decisiones con los investigadores), brecha intra-sucursal, **canasta fija 2022-2026 (§14: fuentes, reglas, empalmes y vigencias, los 68 productos, estimador por subtipo, ponderación ENGHo, advertencias —precios controlados de 2023—, qué revisar en la corrida y la simulación con los 58 meses)**, agenda para el paper (§13). Lista con métricas y resultados esperados: [`docs/brecha_celiaca/`](docs/brecha_celiaca/) |
 | [`docs/BUGS_Y_MEJORAS.md`](docs/BUGS_Y_MEJORAS.md) | Bugs resueltos y **defectos abiertos**, con causa raíz, evidencia y fix aplicado |
 | [`docs/canastas_alternativas/README.md`](docs/canastas_alternativas/README.md) | **Notebook 07** — composición de las 6 canastas alternativas (empaquetados por EAN + frescos por tipo); canasta fija para el pass-through diario |
 | [`docs/PASS_THROUGH.md`](docs/PASS_THROUGH.md) | **Pass-through del tipo de cambio**: estado, cómo correr el nb08 con la canasta de 775 productos, qué revisar, cómo rehacer la canasta, variable de precio, advertencias y próximos pasos |

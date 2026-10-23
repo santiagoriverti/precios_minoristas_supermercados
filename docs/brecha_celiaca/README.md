@@ -5,6 +5,9 @@ por código (EAN). `notebooks/gen_nb06.py` la lee y arma `TIPOS`, `GRAMOS`, `VIG
 CELDA 1. Reglas, fuentes y advertencias: `docs/BRECHA_CELIACA.md` §14. Scripts que la arman:
 `docs/auditoria/scripts_nb06_2026-10/` (s7 → s10).
 
+`simulacion_2026-10-23/` tiene los **resultados esperados** del nb06 con esta canasta y los zips del Drive del 23/10 (un
+CSV por hoja del Excel, y cómo compararlos con una corrida de Colab: `s16_comparar_colab.py`).
+
 Para cambiar la canasta: editar el CSV (o rehacerlo con s9 y s10), correr `python notebooks/gen_nb06.py` y
 `python notebooks/test_brecha_celiaca.py`, y commitear el CSV, el generador y el `.ipynb` juntos. Agregar o sacar un
 EAN cambia la clave del caché del nb06 (relee el SEPA); cambiar gramos, vigencias, subtipos o descripciones no.

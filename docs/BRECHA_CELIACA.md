@@ -4,9 +4,12 @@ Documento técnico del **Notebook 06**. Mide la **brecha** de precios entre prod
 equivalentes **sin TACC**, dentro de cada supermercado, y cómo se distribuye **en el tiempo** (mensual desde
 enero de 2022), **geográficamente** (provincia, región, AMBA) y **entre cadenas**.
 
-Última actualización: 2026-10-23 — **canasta FIJA 2022-2026** (§14: productos con continuidad temporal, geográfica y por
-cadenas elegidos con reglas sobre las salidas del nb09, empalmes de códigos con vigencia, pesos ENGHo, qué revisar en la
-corrida). El estimador de §3 no cambia; la canasta flexible de agosto de 2026 (§6.1, §12) queda como antecedente.
+Última actualización: 2026-10-23 — **canasta FIJA 2022-2026** (§14: 68 productos con continuidad temporal, geográfica y
+por cadenas elegidos con reglas sobre las salidas del nb09 y verificados con precios 2022-2026, empalmes de códigos con
+vigencia, pesos ENGHo, qué revisar en la corrida) y **estimador por subtipo** (§14.6: la brecha se calcula por subtipo
+dentro de cada sucursal y se agrega subtipo → tipo → canasta, como un índice de precios; §3 queda como la definición
+por tipo, que ahora se aplica a cada subtipo). Simulación con los 58 meses del Drive y resultados esperados: §14.10 y
+`docs/brecha_celiaca/simulacion_2026-10-23/`. La canasta flexible de agosto de 2026 (§6.1, §12) queda como antecedente.
 Antes: 2026-08-27 (revisión exhaustiva nivel-paper del estimador a nivel sucursal: filtro de plausibilidad por regla,
 tratamiento del efecto envase, especificación hedónica §3.9).
 
@@ -64,9 +67,20 @@ mencionó pero valoró menos que este enfoque.)
 por **mediana** (robusta) y **promedio con outliers fuera**. La elección final de qué tipos y
 EANs entran es del investigador; la plantilla es un punto de partida, no la lista definitiva.
 
+> **Cómo se aplican hoy (2026-10-23)**: "los representativos" son los productos de la canasta fija de §14 (de 2 a 13
+> por tipo y lado, en subtipos comparables con la misma composición en los dos lados); el precio de cada lado es la
+> **mediana** de los presentes (no el promedio, §3.3) dentro de cada subtipo; y contra el cherry-picking, los productos
+> salen de **reglas escritas** aplicadas a todo el SEPA (§14.3), no de una lista curada a mano.
+
 ---
 
 ## 3. Definición formal de la brecha (estimador canónico)
+
+> **Estado vigente [2026-10-23]**: las definiciones de esta sección (precio del lado = mediana $/100 g de los productos
+> presentes, brecha intra-sucursal) se aplican ahora a cada **subtipo** del tipo (spaghetti, crackers, rellenas…), y la
+> agregación es por niveles: subtipo (mediana entre sucursales) → tipo (promedio geométrico de sus subtipos) → canasta
+> (pesos ENGHo). La lista de productos es la canasta fija de §14 (no "candidatos" curados ni regla por nombre). Detalle y
+> motivo: §14.6.
 
 > **Estado [2026-08-27, corregido]**: estimador a nivel sucursal, implementado en `gen_nb06.py`
 > (CELDA 7). **Brecha del lado = MEDIANA $/100 g de los candidatos presentes, intra-sucursal, por
@@ -262,6 +276,11 @@ ln(precio_100g)_{i,s,k,t} = β·SINTACC_i + θ·ln(gramos_i)
 
 ## 4. Resolución temporal
 
+> **Vigente (2026-10-23)**: resolución **mensual** desde ene-2022 (58 meses a oct-2026). El precio de un producto en
+> una sucursal y mes es la **mediana de sus precios diarios** (columnas `precio_YYYYMMDD` de las dos partes del mes).
+> Series mensuales con todas las sucursales y con panel balanceado, y tablas por año. Lo de abajo (diaria y semanal) es
+> el diseño de agosto de 2026 y ya no se calcula.
+
 Los archivos semestrales del SEPA traen **una columna de precio por día** (`precio_YYYYMMDD`),
 así que la brecha diaria sale directo:
 
@@ -276,6 +295,11 @@ El histórico completo se usa para responder *"¿la prima se mantiene o se ampl�
 
 ## 5. Desagregaciones
 
+> **Vigente (2026-10-23)**: por **subtipo** y **tipo**; **provincia** (polígonos de `ar.json` con tolerancia de 100 km),
+> **región** INDEC con **AMBA** por coordenadas, **empresa** (comercio) y **cadena** (bandera), en los últimos 12 meses y
+> región y empresa por año; concentración por localidad; detalle por sucursal y producto del último mes. Grupos
+> "confiables": los 5 tipos con >= 30 sucursales.
+
 - **Serie temporal** nacional (diaria/semanal/mensual), mediana y promedio.
 - **Por provincia** (barras + mapa coroplético de la brecha).
 - **Por cadena** (barras, cadenas con ≥5 sucursales).
@@ -283,27 +307,42 @@ El histórico completo se usa para responder *"¿la prima se mantiene o se ampl�
   (scatter + correlación) → ¿más concentración = más o menos brecha?
 - **Detalle intra-sucursal por producto**: precio de **cada EAN en cada sucursal** (último mes).
 
-> **Departamento**: hoy la geolocalización llega a **provincia** (por bounding box lat/lon) y a
-> **localidad** (campo `sucursales_localidad` del maestro, con su caveat de fiabilidad — muchas
-> vienen `nan`). Departamento requeriría un **shapefile departamental** que el proyecto no tiene;
-> queda como mejora futura.
+> **Departamento**: la geolocalización llega a **provincia** (desde el 2026-10-23 por polígonos; antes por bounding
+> box) y a **localidad** (campo `sucursales_localidad` del maestro, con su caveat de fiabilidad — muchas vienen `nan`).
+> Departamento requeriría un **shapefile departamental** que el proyecto no tiene; queda como mejora futura.
 
 ---
 
 ## 6. Configuración (CELDA 1)
 
+> **Vigente desde el 2026-10-23.** La CELDA 1 la arma `gen_nb06.py` desde `docs/brecha_celiaca/canasta_fija_2022_2026.csv`
+> (la canasta no se edita en el notebook: se edita el CSV y se regenera).
+
 ```python
-TIPOS = {
-    'Fideos secos': {'qty': 4, 'tacc': ['EAN1','EAN2','EAN3'], 'sin_tacc': ['EAN4','EAN5','EAN6']},
-    # ...
-}
-MIN_TIPOS            = 3   # mínimo de tipos presentes (ambos lados) por sucursal/día
-VENTANA_DIARIA_MESES = 3   # meses de detalle diario (semanal/mensual usan todo el histórico)
-MES_INICIO_HISTORICO = '2024-01'
-CADENAS_FILTRAR      = {'19','2013','3001','4'}   # estaciones de servicio / no minoristas
+TIPOS = {'Fideos secos': {'peso': 1.503, 'tacc': {EAN: descripción, ...}, 'sin_tacc': {EAN: descripción, ...}}, ...}
+GRAMOS = {EAN: gramos, ...}          # presentación verificada contra el SEPA (no del maestro)
+VIGENCIA = {EAN: (desde, hasta), ...}  # códigos empalmados (Molinos oct-2023, Wakas jun-2024)
+PRODUCTO = {producto: [EAN, EAN], ...}  # códigos de un mismo producto: entra una vez en su lado
+SUBTIPO = {subtipo: [EAN, ...], ...}    # la brecha se calcula por subtipo
+PONDERACION = 'engho'                 # canasta = promedio de los tipos con los pesos ENGHo de TIPOS
+MES_INICIO_HISTORICO = '2022-01'
+USAR_REGLA_NOMBRE = False             # la canasta flexible de agosto de 2026, apagada
+MIN_SUC_AGG = 30                      # sucursales para que un grupo sea "confiable"
+MIN_SUC_SUBTIPO = 10                  # sucursales para que un subtipo entre en su tipo en un mes o grupo
+FRAC_SUBTIPO_MES = 0.5                # serie mensual: subtipo-mes con menos de la mitad de sus sucursales -> imputado
+FRAC_MESES_PANEL = 0.7                # panel balanceado: sucursal x subtipo en >= 70% de los meses
+VENTANA_GEO_MESES = 12                # provincias, regiones, empresas y cadenas: últimos 12 meses (y por año)
+CADENAS_FILTRAR = {'19', '2013', '3001', '4', '23', '24'}   # estaciones de servicio, Mercado Libre, farmacias
+RECLASIF_TOL_KM = 100; AMBA_RADIO_KM = 90
 ```
 
-### 6.1. Plantilla precargada — LISTAS AMPLIAS (4 tipos like-for-like)
+Cambiar un EAN de `TIPOS` cambia la clave del caché (`output_brecha/_cache/brecha_v3_<clave>/`, un archivo por mes) y
+relee los 58 meses (~1 h en el Colab gratuito); cambiar gramos, vigencias, productos, subtipos, pesos o descripciones,
+no. Los 68 productos y por qué: §14.
+
+### 6.1. Antecedente: plantilla de agosto de 2026 (listas amplias, 4 tipos)
+
+> Reemplazada por la canasta fija de §14 el 2026-10-23. Se deja como registro de las corridas de agosto (§12).
 
 Se precargan **listas amplias** por lado (muchas marcas + presentaciones) para maximizar la
 cobertura intra-sucursal: fideos (~10 TACC / 8 sin), galletitas dulces (~8/9), galletitas
@@ -330,55 +369,30 @@ Los EANs concretos están en la CELDA 1 de `notebooks/gen_nb06.py` (fuente) y de
 
 ---
 
-## 7. Outputs
+## 7. Outputs (en `MyDrive/carga/output_brecha/`)
 
-### Gráficos (`.png`)
 | Archivo | Contenido |
 |---------|-----------|
-| `brecha_mensual_MMAAAA.png` | Serie mensual de la brecha (mediana + promedio) + media del período |
-| `brecha_diaria_MMAAAA.png` | Serie diaria (ventana) |
-| `brecha_provincia_MMAAAA.png` | Brecha por provincia |
-| `brecha_cadena_MMAAAA.png` | Brecha por cadena (≥5 sucursales) |
-| `brecha_concentracion_MMAAAA.png` | Scatter brecha vs. nº de sucursales por localidad (+ correlación) |
-| `mapa_brecha_MMAAAA.png` | Mapa coroplético de la brecha por provincia |
+| `brecha_mensual_MMAAAA.png` | Canasta mensual: todas las sucursales y panel balanceado, con las sucursales en el eje secundario |
+| `brecha_tipo_mensual_MMAAAA.png` / `brecha_por_tipo_MMAAAA.png` | Evolución por tipo y brecha por tipo |
+| `brecha_region_anual_MMAAAA.png` | Canasta por región y año |
+| `brecha_provincia_MMAAAA.png` / `brecha_empresa_MMAAAA.png` | Provincia y empresa en los últimos 12 meses (solo grupos confiables) |
+| `brecha_concentracion_MMAAAA.png` / `mapa_brecha_MMAAAA.png` | Brecha vs. sucursales por localidad; mapa coroplético por provincia |
+| `mapa_sucursales_brecha_MMAAAA.html` | Mapa Folium por sucursal (último dato de cada una en los últimos 6 meses): color por la brecha de su canasta, popup con los productos comparados por subtipo, filtro por cadena, mosaicos Esri y límites del `ar.json` local (popups lazy-load) |
+| `brecha_celiaca_YYYY-MM.xlsx` | 32 hojas (la hoja `Leeme` las explica): `Canasta`, `Ponderaciones`, `Cobertura` y `Cobertura_mensual`; **`Brecha_subtipo`**, `Brecha_subtipo_anual` y `Brecha_subtipo_anual_balanc`; `Brecha_tipo`, `Brecha_tipo_mes` y `Brecha_tipo_anual` (y sus versiones con panel balanceado); `Serie_canasta`, `Serie_canasta_balanceada`, `Canasta_anual` y `Canasta_anual_balanceada`; provincia, región, empresa y cadena (últimos 12 meses, con y sin desagregar por tipo) y región y empresa por año; `Concentracion`; `Brecha_sucursal`, `Comparacion_productos` y `Detalle_producto` (último mes); `Control_EAN` y `Plausibilidad` |
 
-### Mapa interactivo (`.html`) — CELDA 12
-| Archivo | Contenido |
-|---------|-----------|
-| `mapa_sucursales_brecha_MMAAAA.html` | **Mapa Folium por sucursal** (último mes): un punto por supermercado, color **verde→rojo** graduado por la brecha (tiles **OpenStreetMap**, sin API key). **Carga liviana (lazy-load)**: los popups se guardan en un JSON y se inyectan al hacer click (no van en el DOM) → soporta miles de sucursales sin colgarse. Popup con: (1) valor de cada canasta y **% de brecha**; (2) comparación **por EQUIVALENCIA de productos** — la granularidad depende del tipo: **fideos por forma** (Spaghetti↔Spaghetti, Tirabuzón↔Tirabuzón…); **pan rallado, galletitas dulces y saladas en un solo grupo** cada uno (sus surtidos TACC/sin-TACC son variedades distintas → la equivalencia real es a nivel tipo); (3) cadena y localidad/provincia; (4) brecha del tipo. **Usabilidad**: filtro por **cadena** (LayerControl), **pantalla completa**, leyenda y caja de resumen. Subtipo = `EAN_SUBTIPO` (CELDA 4). |
-
-### Excel — `brecha_celiaca_YYYY-MM.xlsx`
-| Hoja | Contenido |
-|------|-----------|
-| `Cobertura` | **diagnóstico**: por tipo, nº de sucursales que ofrecen TACC, sin-TACC y **ambos** (todo el período) |
-| `Brecha_tipo` | **el número clave**: por tipo, precio TACC vs sin-TACC en `$/100g`, brecha (mediana + promedio), `n_tacc`/`n_sin` |
-| `Brecha_tipo_mes` / `Brecha_tipo_prov` | la brecha por tipo desagregada por mes (evolución) y por provincia |
-| `Serie_mensual` | brecha nacional por mes: mediana y promedio, nº sucursales. **⚠️ `n_sucursales` varía mes a mes** (composición inestable) → leer la tendencia con la balanceada |
-| `Serie_mensual_balanceada` | **serie temporal robusta**: solo sucursales presentes en ≥ `FRAC_MESES_PANEL` (=0,7) de los meses → `n` estable, trayectoria comparable. **Usar esta para la evolución temporal.** El notebook además imprime un aviso de meses con cobertura anómalamente baja |
-| `Brecha_provincia` / `Brecha_cadena` | brecha por provincia/cadena (mediana + promedio) + columna **`confiable`** (`n ≥ MIN_SUC_AGG`=30). Titulares y gráficos usan solo las confiables |
-| `Concentracion` | por localidad: nº de sucursales + brecha + `confiable` |
-| `Brecha_sucursal` | **intra-sucursal** (best-effort, último mes): sucursales que ofrecen ambos lados — base, celíaca, brecha, nº tipos |
-| `Comparacion_productos` | **qué producto se compara con cuál** (último mes): por sucursal × tipo × **subtipo/equivalencia**, los productos **con TACC** vs **sin-TACC** (con presentación y $/100g), `equivalencia` (ambos / solo un lado), medianas por lado y **brecha del subtipo** |
-| `Detalle_producto` | **precio por sucursal × EAN** (último mes), con tipo, rol (tacc/sin) y descripción |
+Para la evolución temporal, usar las series del **panel balanceado**; para comparar grupos, solo los `confiable`.
 
 ---
 
 ## 8. Arquitectura (celdas del generador)
 
-`notebooks/gen_nb06.py` → `06_evolucion_brecha_celiaca.ipynb` (12 celdas). Reusa de nb05 la
-CELDA 2 (setup/mount), CELDA 3 (maestros) y CELDA 5 (funciones ZIP) **verbatim**.
-
-- **CELDA 1** — Config (`TIPOS`, `MIN_TIPOS`, `VENTANA_DIARIA_MESES`, paths).
-- **CELDA 4** — Parseo de `TIPOS`: sets `TIPO_TACC`/`TIPO_SIN`, `TIPO_QTY`, mapas `EAN_TIPO`/`EAN_ROL`/`EAN_DESC`.
-- **CELDA 6** — Lectura **diaria**: melt de las columnas `precio_YYYYMMDD` conservando `fecha`;
-  cache `brecha_dia_{hash}_v1.parquet` de **meses cerrados** + **mes en curso fresco**; factor
-  centavos/pesos por mes anclado a `REF_EANS_FACTOR`.
-- **CELDA 7** — Brecha vectorizada: promedio de representativos por (suc, día, tipo, rol) →
-  pivot rol→`tacc`/`sin` (solo tipos con ambos lados) → canasta base/celíaca por (suc, día) con
-  `n_tipos ≥ MIN_TIPOS` → `brecha_pct`; merge con geo (provincia por bbox, cadena, localidad).
-- **CELDA 8** — Series (`_serie()`: mediana + `_pmean`) diaria (ventana) / semanal / mensual +
-  `brecha_prov` / `brecha_cadena` / `concentracion`.
-- **CELDA 9** — 5 gráficos. **CELDA 10** — coroplético. **CELDA 11** — Excel.
+`notebooks/gen_nb06.py` → `06_evolucion_brecha_celiaca.ipynb` (13 celdas: una de texto y 12 de código). Qué hace cada
+una y qué cambió el 2026-10-23: §14.7. En resumen: CELDA 1 config; 2 setup (Drive, imports); 3 maestros (sucursales,
+nombres de comercios y empresas, regiones); 4 la canasta (TIPOS, gramos, subtipos); 5 zips (un archivo por parte de cada
+mes); 6 lectura mensual con caché por mes (mediana exacta de los días, líneas filtradas por EAN); 7 vigencias,
+plausibilidad, control de identidad, brecha por sucursal × mes × subtipo y tipo, geografía, pesos ENGHo; 8
+agregaciones subtipo → tipo → canasta (mes, año, panel, grupos); 9-10 gráficos y coroplético; 11 Excel; 12 mapa.
 
 `_pmean` = media con outliers fuera (banda `[mediana/4, mediana×4]`), la misma que nb02/nb05.
 
@@ -386,35 +400,39 @@ CELDA 2 (setup/mount), CELDA 3 (maestros) y CELDA 5 (funciones ZIP) **verbatim**
 
 ## 9. Validación
 
-- `ast.parse` OK; **11/11 celdas compilan**.
-- **Test end-to-end sintético** (celdas 7→11 ejecutadas de verdad con matplotlib + openpyxl):
-  con 3 tipos y una prima inyectada del 9%, la brecha mediana global da **+9,07%**; un outlier
-  100× **no** la infla; se generan las 8 hojas de Excel (incluida `Detalle_producto`) y 6 PNGs.
-- **Pendiente**: correr en Colab con datos reales (los tests son sintéticos). Requiere en
-  `carga/` los ZIPs SEPA y `ar.json` (para el mapa); los maestros se descargan solos.
+- **Test** `notebooks/test_brecha_celiaca.py` (22 controles): corre las celdas reales sobre un SEPA sintético con cada
+  trampa (archivo parcial duplicado, centavos, fila repetida, código viejo congelado, producto con dos códigos, EAN x10,
+  salto x2,5, estación de servicio, sucursal web, provincia mal declarada, subtipos con un lado faltante, subtipo-mes
+  faltante, caché en dos corridas) y compara cada número con fuerza bruta.
+- **Simulación con datos reales** (2026-10-23): las celdas reales con los 58 meses de los zips del Drive coinciden
+  **exactamente** con un cálculo independiente (3,4 millones de precios mensuales, 534.456 brechas por subtipo). Tiempo,
+  memoria y resultados: §14.10; resultados esperados: `docs/brecha_celiaca/simulacion_2026-10-23/`.
+- **Pendiente**: la corrida del usuario en Colab (comparar con `s16_comparar_colab.py`, §14.9).
 
 ---
 
 ## 10. Limitaciones y mejoras futuras
 
-- **Cobertura de los representativos**: no se usa (todavía) la métrica de cobertura del
-  `canasta_representativa`; la plantilla se curó por marca mainstream. El primer run + la hoja
-  `Detalle_producto` muestran qué EANs aparecen en pocas sucursales para reemplazarlos.
-- **Departamento**: falta shapefile departamental (hoy: provincia + localidad).
-- **Tipos ambiguos**: galletitas saladas (arroz vs trigo) y harina/premezcla (sustitución) —
-  ver caveats en §6.1. La decisión de incluirlos es del investigador.
-- **Posible extensión**: agregar más tipos con dicotomía (cereales/copos, budines, tapas de
-  empanada, cerveza→sidra), y una versión de la brecha ponderada por gasto celíaco si se
-  consigue una fuente de ponderaciones.
+- Las de §14.8: precios controlados en 2023, pocas marcas del lado sin TACC (y el con TACC de fideos todo de Molinos),
+  comparaciones de sustitución (crackers de arroz contra crackers de trigo), pocas sucursales con rebozador, sucursales
+  sin coordenadas en 2022, ago-oct 2026 del SEPA diario y precio de lista.
+- **Departamento**: falta shapefile departamental (hoy: provincia, región, AMBA y localidad).
+- **Agenda del paper** (§13): selección de sucursales, HHI, la hedónica de §3.9 y deflactar los niveles.
+- **Extensiones posibles**: más tipos con dicotomía cuando haya sin TACC continuos (pan envasado, premezclas, alfajores,
+  cerveza); una serie de robustez desde 2024 (sin los precios controlados de 2023); pesos por subtipo si aparece una
+  fuente de gasto más fina.
 
 ---
 
 ## 11. Cómo continuar (otra sesión / otra PC)
 
-1. El generador es la fuente de verdad: `python notebooks/gen_nb06.py` regenera el `.ipynb`.
-2. Para un primer resultado, correr nb06 **tal cual** (ya trae `TIPOS` con datos reales).
-3. Ajustar `TIPOS` según lo que muestre `Detalle_producto` (cobertura por EAN/sucursal).
-4. Handoff y detalle por celda: `.claude/memory.md` (sección "Notebook 06").
+1. Estado y próximos pasos: bloque ESTADO ACTUAL de `.claude/memory.md` (y su bloque "nb06 — canasta fija").
+2. Correr el nb06 en Colab desde el badge del README (Ejecutar todo, sin tocar la CELDA 1).
+3. Revisar la corrida: `python -I -X utf8 docs/auditoria/scripts_nb06_2026-10/s16_comparar_colab.py <Excel>
+   docs/brecha_celiaca/simulacion_2026-10-23` (con los mismos zips, 29 hojas iguales) y la lista de §14.9.
+4. Para cambiar productos o reglas: scripts s7-s10 de `docs/auditoria/scripts_nb06_2026-10/` → CSV →
+   `python notebooks/gen_nb06.py` → `python notebooks/test_brecha_celiaca.py` → simulación s11/s12 (s14/s15 para no
+   releer) → nueva carpeta de resultados esperados → commit de CSV, generador, `.ipynb` y docs juntos.
 
 ---
 
@@ -856,7 +874,13 @@ mismos pesos como % del gasto en los 12 tipos con TACC (12,70 / 14,51 / 11,89 / 
 ### 14.9 Qué revisar cuando vuelva la corrida de Colab
 
 La simulación de 14.10 corrió las celdas reales con **los mismos zips del Drive**: la corrida de Colab tiene que dar
-los mismos números (salvo el último mes si el `2026B.zip` del Drive cambió).
+los mismos números (salvo el último mes si el `2026B.zip` del Drive cambió). Comparación automática, hoja por hoja:
+
+```bash
+python -I -X utf8 docs/auditoria/scripts_nb06_2026-10/s16_comparar_colab.py <brecha_celiaca_2026-10.xlsx de Colab> docs/brecha_celiaca/simulacion_2026-10-23
+```
+
+(esperado: 29 hojas iguales). Después, la lectura de cada punto:
 
 1. **Lectura**: 58 meses (ene-2022 → oct-2026), el AVISO de ago-2024 parte 1 (se usa `COMPLETOb`), "meses en
    centavos: ninguno", los EANs sin ningún precio (esperado: ninguno).

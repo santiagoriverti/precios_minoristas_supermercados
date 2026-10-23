@@ -8,13 +8,17 @@ Autor: Santiago Riverti — investigador independiente
 
 ## 🟢 ESTADO ACTUAL / HANDOFF [2026-10-23] — leer esto primero
 
-- **Repo**: `main` = `origin/main` con el commit del nb06 (canasta fija 2022-2026) del 2026-10-23. **15 tests**
-  (nuevo `notebooks/test_brecha_celiaca.py`, 22 controles). En una PC nueva: `git clone`, `pip install -r
-  requirements.txt` y los tests de `CLAUDE.md`.
+- **Repo**: `main` = `origin/main`. Commits del 2026-10-23: `678e9b9` (nb06: canasta fija 2022-2026 + estimador por
+  subtipo + BUG-46) y el de documentación para retomar (resultados esperados, `s16_comparar_colab.py`, `seaborn` en
+  `requirements.txt`). Nada sin commitear. **15 tests en OK** el 2026-10-23 (nuevo `notebooks/test_brecha_celiaca.py`,
+  22 controles). En una PC nueva: `git clone`, `pip install -r requirements.txt` y los tests de `CLAUDE.md`.
 - **Datos en la PC del INECO** (el usuario bajó el 23/10 todo el Drive): `C:\Users\sriverti\Downloads\2022A.zip` …
   `2026B.zip` (idénticos a `MyDrive/carga/`; el `2026B` trae jul-2026 y ago-oct 2026 del SEPA diario al 22/10) y
   `carga-20261023T013908Z-1-001..010.zip` (la carpeta `carga` entera: los mismos zips, `ar.json`, `IPC.xlsx`,
   `output_canasta*`, `output_trazabilidad/` con sus cachés, `maestro_sepa_completo.csv.gz`; no hay `output_brecha`).
+  Trabajo intermedio del nb06 (precios extraídos 2022-2026, selección, verificación, simulación con el caché del nb06;
+  ~315 MB): `C:\Users\sriverti\proyectos\nb06_brecha_celiaca_20261023\` (README adentro; en otra PC se rehace con los
+  scripts s7-s15).
 
 **Líneas de trabajo, en orden de prioridad:**
 
@@ -24,8 +28,11 @@ Autor: Santiago Riverti — investigador independiente
    sin tocar la CELDA 1; ~1 h la primera vez, relee 58 meses; pico de RAM 2,5 GB medido). Con los mismos zips del Drive
    la corrida tiene que dar lo de `docs/BRECHA_CELIACA.md` §14.10 (canasta panel 2022 +111%, 2023 +106%, 2024 +107%,
    2025 +100%, 2026 +120%; tipos 2022-26: fideos +172%, dulces +108%, saladas +84%, rebozador +84%, almohaditas +26%).
-   Cuando pase la salida y `brecha_celiaca_2026-10.xlsx`: revisar con §14.9. Detalle: bloque "nb06 — canasta fija" de
-   abajo.
+   Cuando pase la salida y `brecha_celiaca_2026-10.xlsx` (en `MyDrive/carga/output_brecha/`): guardarlo en una carpeta
+   propia, correr `python -I -X utf8 docs/auditoria/scripts_nb06_2026-10/s16_comparar_colab.py <Excel>
+   docs/brecha_celiaca/simulacion_2026-10-23` (esperado: 29 hojas iguales) y revisar la salida impresa con §14.9.
+   Si da igual, la canasta y el estimador quedan validados en Colab y se sigue con lo que el usuario decida (lectura de
+   2023, robustez desde 2024, la hedónica de §3.9). Detalle: bloque "nb06 — canasta fija" de abajo.
 2. **Pass-through del tipo de cambio (nb08 v2 + canasta de 775 productos).** Todo listo y pusheado; el
    usuario ya subió `MyDrive/carga/output_canasta/canasta_pass_through_2026-10.xlsx`. **Falta que corra el nb08 en
    Colab** (badge, Ejecutar todo, sin tocar la CELDA 1; ~1,5-2 h la primera vez, 58 meses). Cuando pase la salida
@@ -50,7 +57,8 @@ Autor: Santiago Riverti — investigador independiente
 
 **Dónde están los datos** (no en el repo): Drive `MyDrive/carga/` (zips 2022A → 2026B, `IPC.xlsx`, `ar.json`,
 `output_canasta/` con `canasta_representativa_2026-10.xlsx`, `canasta_pass_through_2026-10.xlsx` y `_cache/`,
-`output_canasta_alternativa/`, `output_trazabilidad/`). PC del INECO: zips 2024A → 2026B en
+`output_canasta_alternativa/`, `output_trazabilidad/`; el nb06 escribe en `output_brecha/`). PC del INECO: desde el
+23/10, los zips del Drive 2022A → 2026B en `C:\Users\sriverti\Downloads\` (ver arriba); además, zips 2024A → 2026B en
 `C:\Users\sriverti\Desktop\INECO\SEPA\SEPA_Bases_Originales\carga\` (sin 2022-2023; ese `2026B.zip` trae solo julio),
 `ar.json` en `...\INECO\Otros\`; **el `2026B.zip` de `...\INECO\SEPA\salida_consolidada\` (script 03, 22/10) trae solo
 julio y octubre de 2026: no subirlo al Drive tal cual** (el completo es el del Drive); el Excel completo de la selección de
@@ -87,9 +95,16 @@ Claude.
 - Simulación (s11 + s12, celdas reales con los 58 meses del Drive): coincidencia exacta con un cálculo independiente;
   lectura 37 min en la PC (38 s/mes), pico de RAM 2,5 GB; el caché de la canasta final se armó filtrando el de un
   superconjunto (s14, s15). Resultados en §14.10.
-- **Siguiente**: el usuario corre el nb06 en Colab y pasa la salida impresa + `brecha_celiaca_2026-10.xlsx`; comparar
-  con §14.10 (mismos zips: tienen que dar igual) y revisar §14.9. Abiertos: precios controlados de 2023 (leer aparte o
-  serie desde 2024 como robustez), pocas sucursales con rebozador (601) y obleas fuera del panel balanceado.
+- Resultados esperados (un CSV por hoja del Excel de la simulación): `docs/brecha_celiaca/simulacion_2026-10-23/`;
+  comparación automática: `s16_comparar_colab.py`. Trabajo intermedio (no en el repo):
+  `C:\Users\sriverti\proyectos\nb06_brecha_celiaca_20261023\` (README adentro).
+- **Siguiente**: el usuario corre el nb06 en Colab y pasa la salida impresa + `brecha_celiaca_2026-10.xlsx`; correr
+  s16 (mismos zips: tienen que dar igual) y revisar §14.9. Abiertos: precios controlados de 2023 (leer aparte o
+  serie desde 2024 como robustez), pocas sucursales con rebozador (601) y obleas fuera del panel balanceado; la
+  hedónica de §3.9 y deflactar niveles siguen pendientes de la agenda del paper (§13).
+- Trampas de la sesión: `rm` de una ruta absoluta en la raíz de Git Bash lo frena el control de seguridad (escribir
+  temporales en el scratchpad); comillas invertidas dentro de `python -c "..."` en bash ejecutan comandos (usar Write
+  o comillas simples); `groupby(...).apply` ya no pasa `.name` al grupo en pandas 2.3 (iterar los grupos).
 
 ## 🟢 nb08 v2: pass-through por defecto y sucursales apareadas [2026-10-22 noche]
 
