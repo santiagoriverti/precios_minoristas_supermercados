@@ -20,10 +20,29 @@ Autor: Santiago Riverti — investigador independiente
   el `-009`—, `maestro_sepa_completo.csv.gz`; no hay `output_brecha`). Trabajo intermedio del nb06 (~320 MB):
   `C:\Users\sriverti\proyectos\nb06_brecha_celiaca_20261023\` (README adentro; `simulacion/sim_v2/` = el notebook
   vigente con el caché, `georef_sucursales.parquet` = la caché de Georef del nb09; en otra PC se rehace con s7-s15).
+  Desde el 2026-10-26 (BUG-49): `canasta_v9/` (canasta corregida), `seleccion/seleccion_v9*`, `simulacion/sim_super_v9/`
+  (lectura de los 116 candidatos, caché `brecha_v3_80a827f5`) y `simulacion/sim_v5/` (= los esperados vigentes).
 
 **Líneas de trabajo, en orden de prioridad:**
 
-1. **Brecha celíaca (nb06) — lo último, 2026-10-26.** La **segunda corrida de Colab** (notebook `46e426b`: canasta
+1. **Brecha celíaca (nb06) — lo último, 2026-10-26 (auditoría de la selección, BUG-49).** El usuario pidió revisar la
+   selección de productos con la carpeta `carga` (`docs/AUDITORIA_SELECCION_2026-10-26_nb06.md`, scripts `r20`-`r28`).
+   - **Etiqueta**: contrastada con el listado ALG de ANMAT (`listadoalg.anmat.gob.ar`, buscador por marca en el
+     navegador). Ningún con TACC está etiquetado sin TACC; Lasfor no tiene ALG y Snuks es su línea sin TACC.
+   - **Cuatro errores de s9 corregidos** (pedido del usuario): `\btita\b`; Blue Patna es pasta AL HUEVO (ANMAT), fuera;
+     oct-nov 2023 tolerados en los empalmes (entra el tirabuzón sin TACC Matarazzo); sabores de una línea que pasa
+     (Lasfor, 7 de 8 comercios).
+   - **Canasta**: 66 productos (77 códigos). La regla espejada saca además el Spaghetti Lucchetti y el Penne Matarazzo;
+     la variante con las dos marcas (`sim_v5b`) da igual a < 1 pp.
+   - **Simulación** con los 58 meses releídos (`sim_v5`, `s12` igual); esperados VIGENTES en
+     `docs/brecha_celiaca/simulacion_2026-10-26b/`. Fideos +172,3% → +160,6%; canasta de los últimos 12 meses +122,7% →
+     +118,0%; ChangoMas deja de ser confiable (su +140% era Blue Patna); 2.324 sucursales; penne imputado 16 meses en
+     todas las sucursales (BRECHA_CELIACA §14.13).
+   - **Siguiente**: (a) **corrida de Colab** (relee los 58 meses, caché `brecha_v3_492a002c`) → `s16` contra
+     `simulacion_2026-10-26b`; (b) el usuario decide las propuestas de la auditoría (obleas 92 g, crackers sin galletas
+     de arroz, empalmar Pepitos y otros líderes, vainillas).
+
+   Antes (2026-10-26): la **segunda corrida de Colab** (notebook `46e426b`: canasta
    fija, BUG-47 y serie TPD) es **idéntica a la simulación** en todo: 35 hojas contra los esperados (`s16`), las 38 hojas
    celda por celda (`r13`), el mapa salvo los ids de Folium (`r15`), las 169 líneas de la salida impresa y el caché del
    Drive (57 meses, mismos datos; `r14`) → BUG-47 y la TPD verificados en Colab (`docs/AUDITORIA_2026-10-26_nb06.md`).

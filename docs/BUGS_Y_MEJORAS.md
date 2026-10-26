@@ -1,6 +1,6 @@
 # Bugs Pendientes y Mejoras
 
-Última actualización: 2026-10-26 (cierre) — **nb06**: la corrida de Colab con los arreglos de los gráficos dio igual a la simulación; **revisión metodológica** frente al objetivo (`docs/REVISION_METODOLOGICA_2026-10-26_nb06.md`), con recomendaciones abiertas (abajo, "Defectos abiertos"). Antes, 2026-10-26 (noche) — **nb06**: corregidos los tres detalles de presentación de los gráficos de la CELDA 9 (entrada 🟣 abajo); el Excel y los esperados no cambian; falta re-correr en Colab para tener los PNG nuevos. Antes, 2026-10-26 (tarde) — **nb06**: **BUG-48** resuelto (las tiendas online que el maestro carga como Supermercado o Autoservicio salen por el nombre; formato de las diferencias de la TPD; entrada 🔴 abajo); esperados nuevos en `docs/brecha_celiaca/simulacion_2026-10-26/`; **la corrida de Colab con BUG-48 dio igual a la simulación** (Excel, mapa, salida impresa y caché; `docs/AUDITORIA_2026-10-26_nb06.md` §6). Quedaban tres detalles de presentación de los gráficos (corregidos esa noche). Antes ese día — **nb06**: la segunda corrida de Colab (con BUG-47 y la serie TPD) es **idéntica a la simulación** en el Excel (38 hojas), el mapa, la salida impresa y el caché (`docs/AUDITORIA_2026-10-26_nb06.md`): BUG-47 y la TPD quedan verificados en Colab. Hallazgo menor: dos tiendas online pasaban el filtro de sucursales web (BUG-48). Antes, 2026-10-23 (noche) — **nb06**: **serie TPD (hedónica)** de la brecha como robustez frente a la imputación de subtipos (CELDA 8b, entrada 🟣 abajo; `docs/BRECHA_CELIACA.md` §14.12). Con dato propio coincide con la descriptiva; en 2023 muestra cuánto pesa la imputación. Antes, 2026-10-23 (tarde) — **nb06**: la primera corrida de Colab con la canasta fija dio **igual a la
+Última actualización: 2026-10-26 (auditoría de la selección) — **nb06**: **BUG-49** resuelto. Se corrigieron cuatro errores de las reglas de la selección de productos (entrada 🔴 abajo; `docs/AUDITORIA_SELECCION_2026-10-26_nb06.md`). La canasta queda en 66 productos (77 códigos). Esperados nuevos en `docs/brecha_celiaca/simulacion_2026-10-26b/`. Falta la corrida de Colab (relee los 58 meses). Hay cuatro propuestas de diseño abiertas. Antes, 2026-10-26 (cierre) — **nb06**: la corrida de Colab con los arreglos de los gráficos dio igual a la simulación; **revisión metodológica** frente al objetivo (`docs/REVISION_METODOLOGICA_2026-10-26_nb06.md`), con recomendaciones abiertas (abajo, "Defectos abiertos"). Antes, 2026-10-26 (noche) — **nb06**: corregidos los tres detalles de presentación de los gráficos de la CELDA 9 (entrada 🟣 abajo); el Excel y los esperados no cambian; falta re-correr en Colab para tener los PNG nuevos. Antes, 2026-10-26 (tarde) — **nb06**: **BUG-48** resuelto (las tiendas online que el maestro carga como Supermercado o Autoservicio salen por el nombre; formato de las diferencias de la TPD; entrada 🔴 abajo); esperados nuevos en `docs/brecha_celiaca/simulacion_2026-10-26/`; **la corrida de Colab con BUG-48 dio igual a la simulación** (Excel, mapa, salida impresa y caché; `docs/AUDITORIA_2026-10-26_nb06.md` §6). Quedaban tres detalles de presentación de los gráficos (corregidos esa noche). Antes ese día — **nb06**: la segunda corrida de Colab (con BUG-47 y la serie TPD) es **idéntica a la simulación** en el Excel (38 hojas), el mapa, la salida impresa y el caché (`docs/AUDITORIA_2026-10-26_nb06.md`): BUG-47 y la TPD quedan verificados en Colab. Hallazgo menor: dos tiendas online pasaban el filtro de sucursales web (BUG-48). Antes, 2026-10-23 (noche) — **nb06**: **serie TPD (hedónica)** de la brecha como robustez frente a la imputación de subtipos (CELDA 8b, entrada 🟣 abajo; `docs/BRECHA_CELIACA.md` §14.12). Con dato propio coincide con la descriptiva; en 2023 muestra cuánto pesa la imputación. Antes, 2026-10-23 (tarde) — **nb06**: la primera corrida de Colab con la canasta fija dio **igual a la
 simulación** (29 hojas; `docs/AUDITORIA_2026-10-23_nb06.md`). Al revisarla, **BUG-47** resuelto: las comparaciones
 entre provincias, empresas, cadenas y sucursales (mapa) mezclaban composición de subtipos y la "concentración" agrupaba
 por un campo de localidad que DIA carga con el nombre de la provincia; ahora misma canasta de 12 subtipos en todos los
@@ -57,6 +57,17 @@ Los defectos abiertos que resuelve quedan marcados abajo (se verifican con la co
   todos los subtipo-mes, el pico de oct-dic 2023 es menor (+137% a +148% contra +161% a +170%: la descriptiva arrastra
   tirabuzón a +396% y mostachol a +152%); en el panel, los fideos de jun-2023 → feb-2024 tienen tan pocas sucursales que
   ninguna de las dos series los mide bien. La regla de la descriptiva sigue como está.
+- **nb06 — propuestas de la auditoría de la selección** (2026-10-26, `docs/AUDITORIA_SELECCION_2026-10-26_nb06.md` §4;
+  **decisión del usuario**, no aplicadas):
+  - **Obleas**: Opera 92 g en lugar de (o junto a) la de 220 g, del tamaño de la Santa María sin TACC de 90 g. Las
+    obleas pasan de +126% a +107%.
+  - **Crackers**: sin las galletas de arroz Grandiet, o con un subtipo propio. Los crackers pasan de +168% a +205% y la
+    canasta sube 3,6 pp.
+  - **Líderes con TACC**: empalmar los códigos de los que los cambiaron, como Pepitos, que podría reemplazar a Par Nor en
+    con chips. Hay que extraer los códigos viejos de los zips.
+  - **Subtipo vainillas**: Pozo contra Santa María; hay que fechar el cambio de 85 a 80 g.
+  - **Spaghetti y penne con las dos marcas con TACC**: simulado (`sim_v5b`). Cambia el nivel de esos dos subtipos, pero
+    no los fideos ni la canasta (menos de 1 pp). No hace falta.
 - **nb06 — revisión metodológica frente al objetivo** (2026-10-26, `docs/REVISION_METODOLOGICA_2026-10-26_nb06.md`): la prima mide envasados de primera marca en súper (+120% a +125%; +154% con cantidades de la CBA, +$19.000 por adulto equivalente por mes sin pan ni harina); el panel no tiene a DIA; los pesos de los subtipos mueven la evolución (2024: −10 pp); la brecha se amplió 7% relativo 2022-2026 (sin TACC ×14,7 contra ×13,7); Patagonia tiene la menor disponibilidad; la concentración no muestra efecto ni dentro de cada empresa, pero sí mueve uno u otro lado del cociente; las diferencias entre cadenas se amplían por tipo. Recomendaciones sin releer: costo en pesos con la CBA, índices de cada lado, pesos de los subtipos explícitos, cadenas y regiones por tipo, concentración por lado y dentro de cada cadena, disponibilidad, IC por bootstrap y la TPD de todas las sucursales para la evolución; con relectura: comparador con TACC más barato, pan y harina, canasta actual. **Decisión del usuario.**
 - **nb09 — abiertos de la corrida v2** (2026-10-22, detalle y números en `docs/AUDITORIA_2026-10-22_nb09.md` §4):
   (1) el componente comercial del puntaje pesa igual a un comercio de 1 sucursal, una estación de servicio o Mercado
@@ -283,6 +294,42 @@ de la Tecnológica** hasta que haya al menos dos cadenas con cobertura de durabl
 ---
 
 ## 🟢 Cambios y fixes 2026-10
+
+### 🔴 BUG-49 — nb06: cuatro errores de las reglas de la selección de productos (2026-10-26) ✅ Resuelto (falta Colab: relee los 58 meses)
+
+Encontrados en la auditoría de la selección que pidió el usuario (`docs/AUDITORIA_SELECCION_2026-10-26_nb06.md`). Antes,
+cada sin TACC se contrastó con el listado ALG de ANMAT: ningún con TACC está etiquetado sin TACC y los sin TACC son de
+marcas celíacas o están registrados. El usuario pidió corregir los cuatro, todos en `s9_seleccion.py`:
+
+1. **`tita\b`** (las Tita de Terrabusi) también atrapaba "galle**tita**" en singular y mandaba 112 galletitas dulces a
+   "fuera de subtipo". Solo una pasaba las demás reglas: Maná Limón 152 g, que reemplaza a Maná Chocolate en rellenas
+   con TACC (mismo precio, más cobertura). Ahora `\btita\b`.
+2. **Blue Patna es pasta de arroz al huevo** (ANMAT), aunque la descripción no lo diga, y la regla 5 saca los fideos al
+   huevo. Salen sus spaghetti, mostacholes y tirabuzones. Con un solo sin TACC en spaghetti y penne, la composición
+   espejada deja un solo con TACC: salen también el Spaghetti Lucchetti y el Penne rigate Matarazzo.
+3. **Tirabuzón sin TACC Matarazzo**: quedaba afuera por oct-nov 2023 sin precio. Su código nuevo aparece recién en
+   dic-2023, en el cambio de código de Molinos. Ahora esos dos meses no cuentan en los empalmes y entra (813 sucursales
+   por día).
+4. **Sabores de Lasfor** Chocolate Suizo y Crema de Frutilla 200 g: les faltaba un comercio súper (7 de 8). Ahora entra
+   un con TACC al que le falta un comercio si otro producto de la misma marca, presentación y subtipo pasa todas las
+   reglas. Las almohaditas quedan 4 contra 4 con los mismos sabores que los Snuks.
+
+Canasta nueva: **66 productos (77 códigos)** (`docs/brecha_celiaca/canasta_fija_2022_2026.csv`; BRECHA_CELIACA §14.5 y
+§14.13). Con el estimador sin imputación (`r27`), la canasta de los últimos 12 meses baja de +121,9% a +118,2% y los
+fideos de +182,3% a +169,7%, casi todo por el tirabuzón; los demás tipos no cambian. Control: `s10` sobre la tabla de
+`s9` del 2026-10-23 reproduce exacto la canasta anterior. Scripts `r20`-`r28`.
+
+**Simulación del nb06** con los 58 meses releídos (`sim_v5`; el cálculo independiente de `s12` da lo mismo); esperados
+en `docs/brecha_celiaca/simulacion_2026-10-26b/` (35 hojas; cambian 34). Cambios:
+
+- Fideos de 2022-2026: +172,3% → +160,6%. Canasta de los últimos 12 meses: +122,7% → +118,0%.
+- ChangoMas deja de ser confiable: su +140% venía de los Blue Patna, sus únicos fideos sin TACC.
+- Se miden 2.324 sucursales en oct-2026 (antes 2.175).
+- El penne de todas las sucursales queda imputado 16 meses (2022-12 → 2024-03).
+- El pico de la TPD del panel en oct-2023 baja de +174% a +114%.
+
+Lectura: BRECHA_CELIACA §14.13. Agregar 5 códigos cambia la clave del caché: **Colab relee los 58 meses** (~1 h; caché
+`brecha_v3_492a002c`).
 
 ### 🟣 nb06 — gráficos: tres detalles de presentación (2026-10-26, noche) ✅ Resuelto y verificado en Colab (2026-10-26)
 

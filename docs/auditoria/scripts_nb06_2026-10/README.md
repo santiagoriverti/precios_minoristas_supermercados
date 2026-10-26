@@ -21,7 +21,7 @@ python -I -X utf8 s15_filtrar_cache.py <repo> sim_super/_cache/brecha_v3_<clave>
 python -I -X utf8 s11_simular_nb06.py <repo> <carpeta con los zips> <ar.json> sim_final 2022-01 --georef <georef_sucursales.parquet del nb09>
 python -I -X utf8 s12_comparar_simulacion.py <repo> precios_mes precios_mes_2 sim_final
 python -I -X utf8 s17_esperados.py sim_final/brecha_celiaca_2026-10.xlsx <repo>/docs/brecha_celiaca/simulacion_<fecha>
-python -I -X utf8 s16_comparar_colab.py <brecha_celiaca_2026-10.xlsx de Colab> <repo>/docs/brecha_celiaca/simulacion_2026-10-26
+python -I -X utf8 s16_comparar_colab.py <brecha_celiaca_2026-10.xlsx de Colab> <repo>/docs/brecha_celiaca/simulacion_2026-10-26b
 ```
 
 `precios_mes_2` existe porque el 2026-10-23 se hicieron dos extracciones (la segunda con 14 códigos viejos de Molinos
@@ -42,7 +42,7 @@ el Maestro de Productos Interno (`data/`), las salidas del nb09 (`trazabilidad_p
 | 6 | `s6_consolidar_excel.py <candidatos.xlsx> <historia.parquet> <historia_serie.parquet> <engho2018_gastos.zip> <engho2018_articulos.zip> <salida.xlsx>` | Excel final: pares recomendados (revisados a mano), sin TACC multicadena, historia, cobertura mensual, ponderaciones ENGHo (como % del gasto en los 12 tipos con TACC; el nb06 usa la misma proporción como % del gasto en alimentos) |
 | 7 | `s7_continuidad.py <ranking nb09 .parquet> <panel mensual nb09 .parquet> <tipos.parquet de s3> <continuidad.parquet>` | Tabla de candidatos de todo el SEPA: lado (sin TACC por etiqueta del Maestro o del SEPA; con TACC a base de trigo), tipo, cobertura mensual ene-2022 → oct-2026 (serie en `continuidad_serie.parquet`), meses con precio, provincias, comercios súper, cadenas grandes y cadena principal |
 | 8 | `s8_precios_zips.py <carpeta con YYYYA.zip/YYYYB.zip> <eans.txt> <carpeta de salida> [desde AAAA-MM]` | Precio mensual por sucursal × EAN (mediana exacta de los días; si hay dos archivos para la misma parte, el que cubre más días) desde los zips semestrales: un parquet por mes |
-| 9 | `s9_seleccion.py <continuidad.parquet> <seleccion.parquet>` | Reglas de continuidad, caídas, cobertura geográfica y por cadenas, subtipos comparables y marcas celíacas; empalmes con vigencia por código. Guarda el motivo de cada descarte, `_serie.parquet`, `_miembros.parquet` y `_vigencia.json` |
+| 9 | `s9_seleccion.py <continuidad.parquet> <seleccion.parquet>` | (Corregido el 2026-10-26: `\btita\b`, Blue Patna fuera por ser al huevo, oct-nov 2023 tolerados en los empalmes de Molinos y sabores de una línea que pasa; `docs/BRECHA_CELIACA.md` §14.13.) Reglas de continuidad, caídas, cobertura geográfica y por cadenas, subtipos comparables y marcas celíacas; empalmes con vigencia por código. Guarda el motivo de cada descarte, `_serie.parquet`, `_miembros.parquet` y `_vigencia.json` |
 | 10 | `s10_precios.py <seleccion.parquet> <precios_mes> <precios_mes_2> <tipos.parquet de s3> <canasta.csv>` | Verificación con precios ene-2022 → oct-2026: franja de primera línea del lado con TACC, identidad contra la evolución de su tipo, empalmes (códigos que conviven) y cortes de código (salto en el mes del corte), cobertura en oct-2026 (nb09), gramos contra el SEPA (`GRAMOS_FIJOS` y `DESC_FIJA` con las correcciones verificadas a mano); composición espejada por subtipo → el CSV de la canasta (+ `.verif`, `.eans`, `.empalmes`, `.cortes` y `.serie` en parquet) |
 | 11 | `s11_simular_nb06.py <repo> <carpeta con los zips> <ar.json> <salida> [mes_inicio] [--config canasta.json] [--hasta-celda N]` | Corre las celdas REALES del `.ipynb` sobre los zips del Drive (ene-2022 → oct-2026), mide tiempo y pico de RAM de cada celda y guarda los objetos clave. `--config` lee con otra canasta (el superconjunto de s14) y `--hasta-celda 5` corta después de la lectura |
 | 12 | `s12_comparar_simulacion.py <repo> <precios_mes> <precios_mes_2> <salida de s11>` | Cálculo independiente de la brecha (desde los precios de s8, con la CELDA 1 del notebook) y comparación con la simulación: precio mensual, brecha por sucursal × mes × tipo y por tipo y mes |
@@ -87,6 +87,22 @@ la simulación con el caché (`sim_v4`, igual a Colab):
 | `r17_concentracion_cadenas_disponibilidad.py <sim>` | Concentración dentro de cada empresa, regresión con efectos de empresa y región, competencia por radio, canasta núcleo por empresa, disponibilidad sin TACC y brecha por tipo de local |
 | `r18_catalogo_comparador.py <catálogo> <canasta_fija_2022_2026.csv>` | Catálogo del SEPA del 22/10: fideos con TACC de DIA por marca y precio, y cuánto de la oferta sin TACC cubre la canasta fija |
 | `r19_niveles_por_lado_concentracion.py <sim>` | Nivel de cada lado (con y sin TACC) por sucursal contra el HHI, por empresa |
+
+**Auditoría de la selección de productos (2026-10-26, `docs/AUDITORIA_SELECCION_2026-10-26_nb06.md`)**. Corre sobre la
+tabla de s9, la canasta del 2026-10-23, el catálogo del 22/10 y los maestros. La etiqueta sin TACC se contrastó además a
+mano con el listado ALG de ANMAT (`listadoalg.anmat.gob.ar`).
+
+| Script | Qué hace |
+|---|---|
+| `r20_etiquetas_canasta.py <canasta.csv> <seleccion.parquet> <cat_20261022.parquet> <cat_..._comercios.parquet> <maestro_sepa_completo.csv.gz> [salida]` | Cómo describe cada cadena cada código de la canasta el 22/10, si dice sin TACC, y qué dice el maestro del SEPA |
+| `r21_descartes.py <seleccion.parquet> <salida.csv> [n]` | Los descartados con más cobertura por tipo y lado, con el motivo |
+| `r22_pasan_s9.py <seleccion.parquet> <canasta.csv> <canasta.verif.parquet>` | Los que pasan s9 por subtipo y lado y si quedaron en la canasta |
+| `r23_marcas_dudosas.py <Maestro .xlsx> <maestro_sepa_completo.csv.gz> <continuidad.parquet> <regex marcas> [regex prefijos]` | Todos los productos de una marca o fabricante (prefijo GS1) en los dos maestros y en la tabla de continuidad |
+| `r24_fuera_que_pasarian.py <seleccion.parquet> [lado]` | Los que quedaron fuera por el subtipo (o por ingrediente sin gluten) y pasan las demás reglas o fallan una sola |
+| `r25_regex_subtipos.py <seleccion.parquet>` | Efecto del error `tita\b` (atrapaba "galletita") y lo que en saladas cae fuera por no coincidir con ningún patrón |
+| `r26_alternativas.py <canasta.csv> <precios_mes> <precios_mes_2> <sim> <salida.csv>` | Brecha con cada corrección posible sobre la canasta del 2026-10-23 (estimador del nb06 sin imputación; reproduce `sim_bt_sub` exacto) |
+| `r27_comparar_canastas.py <precios_mes> <precios_mes_2> <sim> <salida.csv> nombre=canasta.csv[+eans] ...` | Lo mismo para canastas armadas con s10 (por subtipo, tipo y canasta; sucursal-meses con los dos lados) |
+| `r28_numeros_clave.py <carpeta de esperados> [otras ...]` | Números clave de una o varias carpetas de esperados (s17), lado a lado: brecha por tipo y subtipo, canasta por año, grupos confiables, concentración, imputaciones y TPD (la tabla del README de cada carpeta) |
 
 **Salidas intermedias de la corrida del 2026-10-23** (precios extraídos, selección, verificación, simulación con el
 caché del nb06; ~315 MB): en la PC del INECO, `C:\Users\sriverti\proyectos\nb06_brecha_celiaca_20261023\` (README

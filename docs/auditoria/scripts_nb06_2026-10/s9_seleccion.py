@@ -33,8 +33,11 @@ def norm(s):
 # Subtipos (comparabilidad): (nombre, regex) en orden; None = fuera de la canasta (no comparable)
 SUBTIPOS = {
     'Fideos secos': [
-        (None, r'al huevo|integral|vegetal|espinaca|morron|legumbre|alubia|garbanz|lentej|arveja|poroto|proteina|\brina\b|'
-               r'nido|cabello|mono|bucat|foratt|guiser|3 minutos|instant|preparad|sabor|queso|fileto|\bmix\b|soja|risoni'),
+        # blue patna: todos sus fideos son AL HUEVO (listado ALG de ANMAT, 26/10/2026: "pastas secas de harina de arroz
+        # al huevo", RNPA 04036877-80 y 036-00-000548), aunque la descripción del Maestro y del SEPA no lo diga
+        (None, r'al huevo|blue patna|integral|vegetal|espinaca|morron|legumbre|alubia|garbanz|lentej|arveja|poroto|'
+               r'proteina|\brina\b|nido|cabello|mono|bucat|foratt|guiser|3 minutos|instant|preparad|sabor|queso|fileto|'
+               r'\bmix\b|soja|risoni'),
         ('Spaghetti', r'spag|spagu|largos'),
         ('Tallarín / cintas', r'tallar|fettu|fetuc|cinta|linguin'),
         ('Tirabuzón / fusilli', r'tirabu|fusil|tornill|caracol|spiral'),
@@ -42,8 +45,10 @@ SUBTIPOS = {
         ('Cortos (codito, dedalito, munición...)', r'codit|dedal|municion|ave maria|letrit'),
     ],
     'Galletitas dulces': [
+        # \btita\b (las Tita de Terrabusi): sin el \b inicial atrapaba "galletita" en singular, como varias cadenas
+        # publican el producto en el SEPA (dejaba afuera, por ejemplo, las Maná rellenas de limón 152 g)
         (None, r'banad|bañad|cubiert|alfajor|tapita|hojald|hojalmar|integral|avena|salvado|granola|cereal|fibra|organic|'
-               r'sin azuc|light|dietet|surtid|variedad|kit kat|rhodesia|bon o bon|chocopause|graffiti|habanit|tita\b|'
+               r'sin azuc|light|dietet|surtid|variedad|kit kat|rhodesia|bon o bon|chocopause|graffiti|habanit|\btita\b|'
                r'brownie|merengu|tripack|3 un|5 un|biscuit|tostad|vainillas\b|okebon|molino natural'),
         ('Obleas', r'oblea|wafer'),
         ('Rellenas', r'rellen'),
@@ -84,6 +89,11 @@ OFI = [m for m in SER.columns if m <= '2026-07']
 # mitad de los comercios) y dic-2023 -> mar-2024 (todo Molinos -Lucchetti, Matarazzo, Favorita, Terrabusi, Exquisita,
 # Preferido- pasa de ~2.000 a ~100-200 sucursales por día y vuelve en abril-julio de 2024; SEPA_TECNICO).
 MESES_DEFECTO = {'2023-07', '2023-12', '2024-01', '2024-02', '2024-03'}
+# Cambio de código de Molinos: en un EMPALME, oct-nov 2023 sin precio no cuentan contra la continuidad. El código
+# viejo vale hasta sep-2023 (después queda con el precio congelado) y el nuevo de algún producto recién aparece en
+# dic-2023: el tirabuzón sin TACC Matarazzo (~1.000 sucursales por día en sep-2023 con el viejo y ~800 de mediana con
+# el nuevo). En esos dos meses el producto no entra en la mediana de su lado, como cualquier faltante.
+MESES_TOLERADOS_EMPALME = {'2023-10', '2023-11'}
 
 def caidas(serie):
     v = serie.reindex(OFI)
@@ -153,6 +163,7 @@ for gname, ids in EMPALMES.items():
     best['grupo'] = gname
     best['codigos'] = ','.join(ids)
     best['meses_2022_2026_07'] = int(v.notna().sum())
+    best['meses_tolerados'] = int(v.reindex(sorted(MESES_TOLERADOS_EMPALME)).isna().sum())
     best['presente_ago_oct_2026'] = bool(serie.reindex([m for m in SER.columns if m >= '2026-08']).notna().all())
     best['suc_mes_mediana'] = float(v.median())
     best['cob_2022_sobre_2026'] = float(a22 / a26) if a26 > 0 else np.nan
@@ -172,6 +183,7 @@ import json
 F_OUT.with_name(F_OUT.stem + '_vigencia.json').write_text(json.dumps(VIGENCIA, ensure_ascii=False, indent=1),
                                                           encoding='utf-8')
 c = pd.concat([c[~c['id'].isin(VIGENCIA)], emp.drop(columns=['_serie'])], ignore_index=True)
+c['meses_tolerados'] = c['meses_tolerados'].fillna(0).astype(int)
 SER = pd.concat([SER, pd.DataFrame({r['id']: r['_serie'] for r in filas}).T])
 c['caidas'] = [caidas(SER.loc[i]) if i in SER.index else 99 for i in c['id']]
 inv = {s: t for t, ss in TIPOS_CANASTA.items() for s in ss}
@@ -188,7 +200,8 @@ def motivo(r):
         return 'subtipo no comparable'
     g = REGLAS[r['lado']]
     m = []
-    if r['meses_2022_2026_07'] < MESES_OFICIALES: m.append(f"meses {int(r['meses_2022_2026_07'])}/55")
+    if r['meses_2022_2026_07'] + r['meses_tolerados'] < MESES_OFICIALES:
+        m.append(f"meses {int(r['meses_2022_2026_07'])}/55")
     if not r['presente_ago_oct_2026']: m.append('sin precio ago-oct 2026')
     if r['caidas'] > MAX_CAIDAS: m.append(f"{int(r['caidas'])} caídas")
     if not (RATIO_22_26[0] <= r['cob_2022_sobre_2026'] <= RATIO_22_26[1]): m.append(f"2022/2026 {r['cob_2022_sobre_2026']:.2f}")
@@ -200,6 +213,16 @@ def motivo(r):
     return '; '.join(m)
 
 c['motivo'] = c.apply(motivo, axis=1)
+# Sabores de una línea que ya pasa: un con TACC al que solo le falta UN comercio súper entra si otro producto de la
+# misma marca, presentación y subtipo pasa todas las reglas (es el mismo producto en otro sabor y en las mismas
+# cadenas). Entran las Lasfor Chocolate Suizo y Crema de Frutilla 200 g (7 comercios), junto a Mousse Limón y Crema
+# Avellanas (8): el lado con TACC de las almohaditas queda con los mismos cuatro sabores que los Snuks sin TACC.
+_k = ['tipo_nb06', 'subtipo', 'lado', 'marca_n', 'presentacion']
+_lineas = set(map(tuple, c.loc[c['motivo'].eq(''), _k].astype(str).to_numpy()))
+_sabor = (c['lado'].eq('tacc') & c['motivo'].eq(f"comercios {REGLAS['tacc']['com'] - 1}")
+          & [tuple(x) in _lineas for x in c[_k].astype(str).to_numpy()])
+print(f'Sabores de una línea que pasa (les falta un comercio): {c.loc[_sabor, "descripcion"].tolist()}')
+c.loc[_sabor, 'motivo'] = ''
 c['pasa'] = c['motivo'].eq('')
 cols = ['tipo_nb06', 'subtipo', 'lado', 'id', 'descripcion', 'presentacion', 'pasa', 'motivo', 'suc_mes_mediana',
         'caidas', 'cob_2022_sobre_2026', 'provincias', 'comercios_super', 'cadenas_grandes',
