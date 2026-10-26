@@ -32,9 +32,11 @@ Autor: Santiago Riverti — investigador independiente
    Ese día, **BUG-48** aplicado: tiendas online afuera por el nombre (`SUCURSALES_NO_FISICAS`; DIA "eCommerce" y la
    "Dark Store Mendoza" de Libertad, las únicas con datos) y formato `+0.0 pp` en `dif_tpd_menos_descriptiva_*_pp`;
    simulación `sim_v3` (el panel no cambia; todas, como mucho 0,30 pp en un mes); esperados
-   `docs/brecha_celiaca/simulacion_2026-10-26/`. **Siguiente**: (a) el usuario re-corre el nb06 en Colab (no relee,
-   ~5 min) y se compara con `s16 ... docs/brecha_celiaca/simulacion_2026-10-26` (esperado: **35 hojas iguales**; la
-   CELDA 7 dice "9 de tipo web o virtual y 6 por el nombre"); (b) la regla de imputación de la descriptiva sigue como está (decisión del
+   `docs/brecha_celiaca/simulacion_2026-10-26/`. **La corrida de Colab con BUG-48 (tarde) dio igual a la simulación**
+   (35 hojas contra los esperados, 38 contra `sim_v3`, mapa, 170 líneas de salida, caché; AUDITORIA_2026-10-26 §6).
+   **Siguiente**: (a) decisión del usuario: tres detalles de presentación de los gráficos (CELDA 9: `twinx` de
+   `brecha_mensual` encima de las líneas, grilla del eje y en las barras horizontales, ticks redondeados de
+   almohaditas en `brecha_tpd_tipos`; no cambian números, los PNG nuevos piden otra corrida); (b) la regla de imputación de la descriptiva sigue como está (decisión del
    usuario; la TPD muestra que pesa en 2023); (c) agenda del paper: determinantes de la prima (interacciones de la
    hedónica con HHI, región, cadena), prima neta de envase, robustez desde 2024. Detalle: bloques "nb06 — segunda
    corrida", "nb06 — serie TPD", "nb06 — corrida de Colab" y "nb06 — canasta fija" de abajo.
@@ -93,6 +95,9 @@ Claude.
   sucursales del maestro; no toca ningún local), formato `_pp` (CELDA 11), sucursal sintética "eCommerce" en el test;
   `sim_v3` (caché copiado de `sim_v2`, que queda como la referencia de la corrida de Colab validada) y esperados
   `simulacion_2026-10-26/`; `simulacion_2026-10-23b/` queda como histórico.
+- Tercera corrida de Colab (tarde, `09b2028`, zip de `output_brecha/` completo en `colab_20261026b/`): igual a
+  `sim_v3` en todo (s16 35/35, r13 38/38, r15, r14, salida 170/170). Los 11 PNG se revisaron a ojo (los tamaños
+  difieren unos píxeles por las fuentes de Colab: comparar PNG por píxel no sirve).
 - Trampas de esta revisión: la shell se come las barras invertidas de los heredocs (escribir los scripts con Write);
   comparar Excel con `header=None` compara los números como texto (usar `r13`).
 

@@ -7,7 +7,8 @@ enero de 2022), **geográficamente** (provincia, región, AMBA) y **entre cadena
 Última actualización: 2026-10-26 — la **segunda corrida de Colab** (BUG-47 y la serie TPD) dio igual a la simulación
 (`docs/AUDITORIA_2026-10-26_nb06.md`) y **BUG-48**: las tiendas online que el maestro carga como Supermercado o
 Autoservicio salen por el nombre (`SUCURSALES_NO_FISICAS`; el panel no cambia); esperados vigentes en
-`docs/brecha_celiaca/simulacion_2026-10-26/`. Antes, 2026-10-23 (noche) — **serie TPD (hedónica)** como robustez de la
+`docs/brecha_celiaca/simulacion_2026-10-26/`, que la corrida de Colab con BUG-48 reprodujo (AUDITORIA §6). Antes,
+2026-10-23 (noche) — **serie TPD (hedónica)** como robustez de la
 serie mensual frente a la imputación de subtipos (§3.9, §14.12). Antes, 2026-10-23 (tarde) — **primera corrida de
 Colab con la canasta fija: igual a la simulación** (29
 hojas; canasta y estimador validados) y, al revisarla, **BUG-47**: provincias, regiones, empresas, cadenas y sucursales
@@ -446,7 +447,8 @@ coroplético; 11 Excel; 12 mapa.
   validados en Colab (`docs/AUDITORIA_2026-10-26_nb06.md`).
 - **BUG-48 (2026-10-26)**: el test saca una tienda online sintética por el nombre; con los datos reales (`sim_v3`) el
   panel no cambia y la serie de todas las sucursales, como mucho 0,30 pp en un mes. Esperados vigentes:
-  `simulacion_2026-10-26/` (35 hojas). Falta re-correr en Colab (no relee).
+  `simulacion_2026-10-26/` (35 hojas); la corrida de Colab con BUG-48 los reprodujo en todo
+  (`docs/AUDITORIA_2026-10-26_nb06.md` §6).
 
 ---
 

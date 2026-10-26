@@ -21,10 +21,11 @@ imputación de subtipos (CELDA 8b, BRECHA_CELIACA §14.12): una regresión por s
 y de producto, errores agrupados por sucursal. **La segunda corrida de Colab (2026-10-26) dio igual a la simulación**
 (35 hojas contra `docs/brecha_celiaca/simulacion_2026-10-23b/`; Excel completo, mapa y caché con `r13`-`r15`): BUG-47
 y la TPD verificados (`docs/AUDITORIA_2026-10-26_nb06.md`). Ese día, BUG-48: las tiendas online que el maestro carga
-como Supermercado o Autoservicio salen por el nombre (`SUCURSALES_NO_FISICAS`; el panel no cambia). **Falta re-correr
-en Colab** (no relee, ~5 min) y comparar con `docs/brecha_celiaca/simulacion_2026-10-26/` (35 hojas). Abierto
-(decisión del usuario): la imputación sin límite de la serie descriptiva (la TPD muestra dónde pesa). Test
-`test_brecha_celiaca.py` (30 controles).
+como Supermercado o Autoservicio salen por el nombre (`SUCURSALES_NO_FISICAS`; el panel no cambia); **la corrida de
+Colab con BUG-48 dio igual a la simulación** (35 hojas contra `docs/brecha_celiaca/simulacion_2026-10-26/`;
+AUDITORIA_2026-10-26 §6). Abiertos (decisión del usuario): la imputación sin límite de la serie descriptiva (la TPD
+muestra dónde pesa) y tres detalles de presentación de los gráficos (CELDA 9). Test `test_brecha_celiaca.py` (30
+controles).
 
 El **nb07** (`notebooks/07_evolucion_canastas_alternativas.ipynb`) es el motor del
 informe semanal: 6 canastas, índice encadenado, comparación con el IPC y aperturas por cadena/región.

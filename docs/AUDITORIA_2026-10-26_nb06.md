@@ -9,6 +9,8 @@ con `python -I`.
 Resultado: **la corrida de Colab es idéntica a la simulación local en todo lo que produce** (Excel, mapa, salida impresa
 y caché). BUG-47 y la serie TPD quedan **validados en Colab**. La revisión encontró un detalle menor de universo (dos
 tiendas online que pasan el filtro de sucursales web, §3.1) y uno de formato (§3.3); ninguno cambia los números clave.
+Los dos se arreglaron ese día (BUG-48) y la **tercera corrida de Colab, con BUG-48, también dio igual a la
+simulación** (§6), con tres detalles de presentación en los gráficos.
 
 ## 1. La corrida contra la simulación
 
@@ -88,3 +90,39 @@ muchos decimales); el resto de las hojas tiene el encabezado, el panel congelado
 En `docs/auditoria/scripts_nb06_2026-10/`: `s16` (contra los esperados), y nuevos para revisar una corrida de Colab
 completa: `r13_comparar_excels.py` (todas las hojas, celda por celda), `r14_comparar_cache.py` (el zip del caché del
 Drive contra el local) y `r15_comparar_mapas.py` (el mapa, sin los identificadores de Folium, y su JSON).
+
+## 6. Tercera corrida de Colab, con BUG-48 (2026-10-26, tarde)
+
+El usuario corrió el notebook `09b2028` (con BUG-48) y pasó la salida impresa y el zip de `output_brecha/` completo
+(Excel, mapa, los 11 gráficos y el caché; revisados en
+`C:\Users\sriverti\proyectos\nb06_brecha_celiaca_20261023\colab_20261026b\`). **Es idéntica a la simulación
+local `sim_v3`**:
+
+| Qué | Resultado |
+|---|---|
+| Excel contra los esperados (`s16`, `simulacion_2026-10-26/`) | **35 hojas iguales** |
+| Excel completo contra el de `sim_v3` (`r13`) | **38 hojas iguales** (`Brecha_sucursal`: las mismas 2.175 filas, otro orden en casi empates) |
+| Mapa (`r15`) | igual salvo los ids de Folium; 2.343 sucursales en el JSON de los popups |
+| Caché (`r14`) | 57 meses, los mismos datos |
+| Salida impresa | las 170 líneas iguales a las de `sim_v3` |
+
+BUG-48 queda **verificado en Colab**: la CELDA 7 dice "Sucursales que no son locales, afuera: 9 de tipo web o
+virtual y 6 por el nombre"; las reclasificadas de provincia pasan de 12 a 10 (ya no están la Dark Store de Libertad
+ni la tienda web de la cadena 2011), AMBA de 1.973 a 1.970 sucursales, `Brecha_sucursal` a 2.175 filas y el mapa a
+2.343 sucursales.
+
+**Gráficos** (esta vez vinieron los 11 PNG): salen de los mismos datos (los tamaños difieren en unos píxeles por las
+fuentes de Colab). Se ven bien el mapa coroplético, la región por año, la concentración y las dos series TPD, con tres
+detalles de presentación que no cambian ningún número:
+
+1. `brecha_mensual`: las barras de sucursales del eje derecho (`twinx`) se dibujan encima de las líneas y traen su
+   propia grilla, que cruza el gráfico con otra serie de líneas horizontales y tacha "Todas las sucursales" en la
+   leyenda.
+2. Barras horizontales (`brecha_por_tipo`, `brecha_provincia`, `brecha_empresa`, `brecha_cadena`): la grilla del eje
+   y que pone el estilo (`ax.grid(True, axis='x')` no la apaga) pasa por el medio de la etiqueta de cada barra, y
+   las etiquetas se salen del marco a la derecha.
+3. `brecha_tpd_tipos`: en el panel de almohaditas los ticks van de a 2,5 puntos y el formato `{x:+.0f}%` los redondea
+   (27,5 → "+28%", 22,5 → "+22%", 17,5 → "+18%").
+
+Arreglarlos toca solo la CELDA 9: no relee y el Excel y los esperados no cambian; para tener los PNG nuevos hace falta
+otra corrida de Colab. **Decisión del usuario.**
