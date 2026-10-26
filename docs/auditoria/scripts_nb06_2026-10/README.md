@@ -78,6 +78,16 @@ y los objetos de la simulación (`sim_final/`, iguales a Colab):
 | `r14_comparar_cache.py <zip del Drive> <carpeta vacía> <caché local brecha_v3_xxx>` | El caché de `output_brecha/_cache/` que baja el Drive contra el de la simulación: mismos meses y mismos datos (no extrae si el zip trae rutas peligrosas) |
 | `r15_comparar_mapas.py <mapa A> <mapa B>` | El mapa por sucursal sin los identificadores aleatorios de Folium, y el JSON de los popups (sucursales y mes de cada una) |
 
+**Revisión de datos y método frente al objetivo (2026-10-26, `docs/REVISION_METODOLOGICA_2026-10-26_nb06.md`)**, sobre
+la simulación con el caché (`sim_v4`, igual a Colab):
+
+| Script | Qué hace |
+|---|---|
+| `r16_nivel_tiempo_cba.py <sim>` | Pesos de los subtipos (iguales contra disponibilidad), composición del panel, índices de precio de cada lado y costo mensual con las cantidades de la CBA |
+| `r17_concentracion_cadenas_disponibilidad.py <sim>` | Concentración dentro de cada empresa, regresión con efectos de empresa y región, competencia por radio, canasta núcleo por empresa, disponibilidad sin TACC y brecha por tipo de local |
+| `r18_catalogo_comparador.py <catálogo> <canasta_fija_2022_2026.csv>` | Catálogo del SEPA del 22/10: fideos con TACC de DIA por marca y precio, y cuánto de la oferta sin TACC cubre la canasta fija |
+| `r19_niveles_por_lado_concentracion.py <sim>` | Nivel de cada lado (con y sin TACC) por sucursal contra el HHI, por empresa |
+
 **Salidas intermedias de la corrida del 2026-10-23** (precios extraídos, selección, verificación, simulación con el
 caché del nb06; ~315 MB): en la PC del INECO, `C:\Users\sriverti\proyectos\nb06_brecha_celiaca_20261023\` (README
 adentro). En otra PC se rehacen con los comandos de abajo (extracción ~70 min + lectura del nb06 ~40 min).

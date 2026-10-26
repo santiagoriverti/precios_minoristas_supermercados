@@ -126,3 +126,13 @@ detalles de presentación que no cambian ningún número:
 
 **Corregidos esa noche, a pedido del usuario**: (1) en `brecha_mensual` el eje de la brecha va encima del de las sucursales (`set_zorder`) y el eje derecho no tiene grilla; (2) en las barras horizontales (tipo, provincia, empresa, cadena) no hay grilla del eje y, las etiquetas tienen fondo blanco y se sacan los bordes de arriba y de la derecha (`_barras_horizontales`); (3) los ejes en % muestran un decimal cuando el tick no es entero (`_pct`: en almohaditas, +27,5%, +22,5%, +17,5%). El Excel no cambia (la simulación `sim_v4` da las 35
 hojas iguales a `simulacion_2026-10-26/`); los PNG nuevos salen con la próxima corrida de Colab.
+
+## 7. Cuarta corrida de Colab, con los arreglos de los gráficos (2026-10-26, noche)
+
+El usuario corrió el notebook `5938054` y pasó la salida impresa y el zip de `output_brecha/` (en
+`colab_20261026c/` de la carpeta de trabajo). **Igual a la simulación `sim_v4` en todo**: `s16` 35/35, `r13` 38/38,
+`r15` (mapa), `r14` (caché, 57 meses) y las 170 líneas de la salida impresa. Los gráficos corregidos se ven bien en
+Colab (`brecha_mensual` sin las barras encima ni la doble grilla, las barras horizontales sin la grilla sobre las
+etiquetas y almohaditas con +27,5%, +22,5%...).
+
+El usuario pidió además revisar datos y método frente al objetivo del notebook: `docs/REVISION_METODOLOGICA_2026-10-26_nb06.md`.

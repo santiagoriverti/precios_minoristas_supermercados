@@ -35,9 +35,11 @@ Autor: Santiago Riverti — investigador independiente
    `docs/brecha_celiaca/simulacion_2026-10-26/`. **La corrida de Colab con BUG-48 (tarde) dio igual a la simulación**
    (35 hojas contra los esperados, 38 contra `sim_v3`, mapa, 170 líneas de salida, caché; AUDITORIA_2026-10-26 §6).
    Esa noche se corrigieron los tres detalles de presentación de los gráficos (CELDA 9: `_pct`,
-   `_barras_horizontales`, `twinx` debajo; `sim_v4`: el Excel no cambia). **Siguiente**: (a) el usuario re-corre el
-   nb06 en Colab (~5 min, no relee) para tener los PNG nuevos: `s16` contra `simulacion_2026-10-26` tiene que seguir
-   dando 35 hojas iguales; (b) la regla de imputación de la descriptiva sigue como está (decisión del
+   `_barras_horizontales`, `twinx` debajo; `sim_v4`: el Excel no cambia), verificados en la cuarta corrida de Colab.
+   **Revisión de datos y método frente al objetivo**: `docs/REVISION_METODOLOGICA_2026-10-26_nb06.md` (scripts `r16`-`r19`).
+   **Siguiente**: (a) el usuario elige qué recomendaciones de la revisión implementar (las de prioridad 1 no releen:
+   costo en pesos con la CBA, índices de cada lado, pesos de subtipos, cadenas por tipo, concentración por lado,
+   disponibilidad, IC, TPD de todas para la evolución); (b) la regla de imputación de la descriptiva sigue como está (decisión del
    usuario; la TPD muestra que pesa en 2023); (c) agenda del paper: determinantes de la prima (interacciones de la
    hedónica con HHI, región, cadena), prima neta de envase, robustez desde 2024. Detalle: bloques "nb06 — segunda
    corrida", "nb06 — serie TPD", "nb06 — corrida de Colab" y "nb06 — canasta fija" de abajo.
@@ -76,6 +78,17 @@ pass-through en `C:\Users\sriverti\proyectos\canasta_pass_through_20220101_20261
 **Reglas**: las de `CLAUDE.md` ("Reglas que muerden"): los `.ipynb` se regeneran con `gen_nbXX.py` (commit de los dos);
 scripts de edición escritos con Write (la shell se come las barras); commits solo con Santiago Riverti, sin atribución a
 Claude.
+
+## 🟢 nb06 — revisión de datos y método frente al objetivo [2026-10-26 cierre]
+
+- Pedido: "Revisá los datos y la metodología en vistas al objetivo del notebook" (cuánto más paga un celíaco,
+  evolución, geografía, concentración, cadenas). Documento: `docs/REVISION_METODOLOGICA_2026-10-26_nb06.md`.
+- Hallazgos (sobre `sim_v4` = Colab): la prima mide envasados de primera marca en súper (+120% a +125%; +154% con cantidades de la CBA, +$19.000 por adulto equivalente por mes sin pan ni harina); el panel no tiene a DIA; los pesos de los subtipos mueven la evolución (2024: −10 pp); la brecha se amplió 7% relativo 2022-2026 (sin TACC ×14,7 contra ×13,7); Patagonia tiene la menor disponibilidad; la concentración no muestra efecto ni dentro de cada empresa, pero sí mueve uno u otro lado del cociente; las diferencias entre cadenas se amplían por tipo. En DIA (catálogo del 22/10) los fideos con TACC baratos
+  (Cuque $159/100 g, Res $210, Favorita $240) contra Lucchetti $370 y Matarazzo sin TACC $827: prima +124% contra
+  primera marca y +420% contra Cuque. Canasta núcleo (fideos + dulces): Carrefour +142%, Cencosud +156%, ChangoMas
+  +176%, DIA 74% imputado. Disponibilidad ponderada: Patagonia 78%, Pampeana 82%, AMBA 94%, NOA 98%.
+- Scripts: `r16_nivel_tiempo_cba.py`, `r17_concentracion_cadenas_disponibilidad.py`, `r18_catalogo_comparador.py`
+  (catálogo `seleccion/cat_20261022.parquet` de la carpeta de trabajo), `r19_niveles_por_lado_concentracion.py`.
 
 ## 🟢 nb06 — segunda corrida de Colab revisada [2026-10-26]
 

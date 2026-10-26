@@ -4,7 +4,7 @@ Documento técnico del **Notebook 06**. Mide la **brecha** de precios entre prod
 equivalentes **sin TACC**, dentro de cada supermercado, y cómo se distribuye **en el tiempo** (mensual desde
 enero de 2022), **geográficamente** (provincia, región, AMBA) y **entre cadenas**.
 
-Última actualización: 2026-10-26 — la **segunda corrida de Colab** (BUG-47 y la serie TPD) dio igual a la simulación
+Última actualización: 2026-10-26 (cierre) — **revisión de datos y método frente al objetivo** (`docs/REVISION_METODOLOGICA_2026-10-26_nb06.md`): qué responde bien el nb06 y qué falta para cada pregunta (cuánto más paga un celíaco, evolución, geografía, concentración, cadenas), con recomendaciones priorizadas; la cuarta corrida de Colab (gráficos) dio igual a la simulación. Antes, 2026-10-26 — la **segunda corrida de Colab** (BUG-47 y la serie TPD) dio igual a la simulación
 (`docs/AUDITORIA_2026-10-26_nb06.md`) y **BUG-48**: las tiendas online que el maestro carga como Supermercado o
 Autoservicio salen por el nombre (`SUCURSALES_NO_FISICAS`; el panel no cambia); esperados vigentes en
 `docs/brecha_celiaca/simulacion_2026-10-26/`, que la corrida de Colab con BUG-48 reprodujo (AUDITORIA §6); esa noche,
@@ -542,6 +542,10 @@ Córdoba (+206 %). El mapa incluye **19 cadenas** con **DIA (1.001 sucursales, l
 ---
 
 ## 13. Agenda metodológica para el paper (rigor científico — PENDIENTE de revisión)
+
+> **2026-10-26**: revisión con los datos de la canasta fija (`docs/REVISION_METODOLOGICA_2026-10-26_nb06.md`): costo en pesos con la CBA, comparador
+> con TACC barato, pesos de los subtipos, panel sin DIA, índices de precio de cada lado, disponibilidad,
+> concentración por lado y dentro de cada cadena, cadenas por tipo. Sus recomendaciones ordenan esta agenda.
 
 > Objetivo: este pipeline es la **base empírica** de un paper sobre la brecha celíaca
 > y sus determinantes (**tiempo, concentración de mercado, geografía, cadena**). Antes de

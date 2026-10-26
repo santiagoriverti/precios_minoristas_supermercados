@@ -540,7 +540,7 @@ Mismo análisis que el Notebook 02 (evolución vs. IPC, provincias, mapas, ranki
 
 Mide la **brecha** de precios entre productos **con TACC** y sus equivalentes **sin TACC**, y cómo se distribuye **en el tiempo** (mensual desde enero de 2022), **geográficamente** (provincia, región, AMBA) y **entre cadenas**, con una **canasta fija 2022-2026**.
 
-> **Documento técnico completo**: [`docs/BRECHA_CELIACA.md`](docs/BRECHA_CELIACA.md) (metodología, reglas de selección de la canasta fija en §14, salidas, limitaciones). Lista de productos con sus métricas: [`docs/brecha_celiaca/canasta_fija_2022_2026.csv`](docs/brecha_celiaca/canasta_fija_2022_2026.csv).
+> **Documento técnico completo**: [`docs/BRECHA_CELIACA.md`](docs/BRECHA_CELIACA.md) (metodología, reglas de selección de la canasta fija en §14, salidas, limitaciones). Lista de productos con sus métricas: [`docs/brecha_celiaca/canasta_fija_2022_2026.csv`](docs/brecha_celiaca/canasta_fija_2022_2026.csv). Revisión de datos y método frente al objetivo (2026-10-26): [`docs/REVISION_METODOLOGICA_2026-10-26_nb06.md`](docs/REVISION_METODOLOGICA_2026-10-26_nb06.md).
 
 ### Metodología
 - **Solo tipos con dicotomía celíaca** con productos sin TACC continuos desde 2022: fideos secos, galletitas dulces, galletitas saladas y crackers, rebozador y cereales rellenos (almohaditas). Nada de limpieza/higiene/otros alimentos: la brecha se reporta sobre esa canasta acotada, sin maquillarla debajo de productos sin dicotomía.
