@@ -1,6 +1,6 @@
 # Bugs Pendientes y Mejoras
 
-Última actualización: 2026-10-26 (tarde) — **nb06**: **BUG-48** resuelto (las tiendas online que el maestro carga como Supermercado o Autoservicio salen por el nombre; formato de las diferencias de la TPD; entrada 🔴 abajo); esperados nuevos en `docs/brecha_celiaca/simulacion_2026-10-26/`; **la corrida de Colab con BUG-48 dio igual a la simulación** (Excel, mapa, salida impresa y caché; `docs/AUDITORIA_2026-10-26_nb06.md` §6). Abierto menor: tres detalles de presentación de los gráficos (abajo). Antes ese día — **nb06**: la segunda corrida de Colab (con BUG-47 y la serie TPD) es **idéntica a la simulación** en el Excel (38 hojas), el mapa, la salida impresa y el caché (`docs/AUDITORIA_2026-10-26_nb06.md`): BUG-47 y la TPD quedan verificados en Colab. Hallazgo menor: dos tiendas online pasaban el filtro de sucursales web (BUG-48). Antes, 2026-10-23 (noche) — **nb06**: **serie TPD (hedónica)** de la brecha como robustez frente a la imputación de subtipos (CELDA 8b, entrada 🟣 abajo; `docs/BRECHA_CELIACA.md` §14.12). Con dato propio coincide con la descriptiva; en 2023 muestra cuánto pesa la imputación. Antes, 2026-10-23 (tarde) — **nb06**: la primera corrida de Colab con la canasta fija dio **igual a la
+Última actualización: 2026-10-26 (noche) — **nb06**: corregidos los tres detalles de presentación de los gráficos de la CELDA 9 (entrada 🟣 abajo); el Excel y los esperados no cambian; falta re-correr en Colab para tener los PNG nuevos. Antes, 2026-10-26 (tarde) — **nb06**: **BUG-48** resuelto (las tiendas online que el maestro carga como Supermercado o Autoservicio salen por el nombre; formato de las diferencias de la TPD; entrada 🔴 abajo); esperados nuevos en `docs/brecha_celiaca/simulacion_2026-10-26/`; **la corrida de Colab con BUG-48 dio igual a la simulación** (Excel, mapa, salida impresa y caché; `docs/AUDITORIA_2026-10-26_nb06.md` §6). Quedaban tres detalles de presentación de los gráficos (corregidos esa noche). Antes ese día — **nb06**: la segunda corrida de Colab (con BUG-47 y la serie TPD) es **idéntica a la simulación** en el Excel (38 hojas), el mapa, la salida impresa y el caché (`docs/AUDITORIA_2026-10-26_nb06.md`): BUG-47 y la TPD quedan verificados en Colab. Hallazgo menor: dos tiendas online pasaban el filtro de sucursales web (BUG-48). Antes, 2026-10-23 (noche) — **nb06**: **serie TPD (hedónica)** de la brecha como robustez frente a la imputación de subtipos (CELDA 8b, entrada 🟣 abajo; `docs/BRECHA_CELIACA.md` §14.12). Con dato propio coincide con la descriptiva; en 2023 muestra cuánto pesa la imputación. Antes, 2026-10-23 (tarde) — **nb06**: la primera corrida de Colab con la canasta fija dio **igual a la
 simulación** (29 hojas; `docs/AUDITORIA_2026-10-23_nb06.md`). Al revisarla, **BUG-47** resuelto: las comparaciones
 entre provincias, empresas, cadenas y sucursales (mapa) mezclaban composición de subtipos y la "concentración" agrupaba
 por un campo de localidad que DIA carga con el nombre de la provincia; ahora misma canasta de 12 subtipos en todos los
@@ -57,12 +57,6 @@ Los defectos abiertos que resuelve quedan marcados abajo (se verifican con la co
   todos los subtipo-mes, el pico de oct-dic 2023 es menor (+137% a +148% contra +161% a +170%: la descriptiva arrastra
   tirabuzón a +396% y mostachol a +152%); en el panel, los fideos de jun-2023 → feb-2024 tienen tan pocas sucursales que
   ninguna de las dos series los mide bien. La regla de la descriptiva sigue como está.
-- **nb06 — tres detalles de presentación de los gráficos** (2026-10-26, `docs/AUDITORIA_2026-10-26_nb06.md` §6;
-  no cambian ningún número): (1) en `brecha_mensual` las barras del eje derecho tapan las líneas y su grilla tacha la
-  leyenda; (2) en las barras horizontales (tipo, provincia, empresa, cadena) la grilla del eje y atraviesa las
-  etiquetas, que se salen del marco; (3) en `brecha_tpd_tipos` los ticks de almohaditas (de a 2,5) se redondean
-  ("+28%", "+22%", "+18%"). Arreglo en la CELDA 9, sin releer; los PNG nuevos piden otra corrida de Colab.
-  **Decisión del usuario.**
 - **nb09 — abiertos de la corrida v2** (2026-10-22, detalle y números en `docs/AUDITORIA_2026-10-22_nb09.md` §4):
   (1) el componente comercial del puntaje pesa igual a un comercio de 1 sucursal, una estación de servicio o Mercado
   Libre que a Carrefour, y limita el puntaje de 2.129 de los 2.496 productos ≥ 50 (top 100 = 56% bebidas); restringirlo a
@@ -288,6 +282,13 @@ de la Tecnológica** hasta que haya al menos dos cadenas con cobertura de durabl
 ---
 
 ## 🟢 Cambios y fixes 2026-10
+
+### 🟣 nb06 — gráficos: tres detalles de presentación (2026-10-26, noche) ✅ Resuelto (falta Colab, no relee)
+
+Encontrados al revisar los 11 PNG de la corrida de Colab con BUG-48 (`docs/AUDITORIA_2026-10-26_nb06.md` §6); el usuario
+pidió corregirlos. En la CELDA 9: (1) en `brecha_mensual` el eje de la brecha va encima del de las sucursales (`set_zorder`) y el eje derecho no tiene grilla; (2) en las barras horizontales (tipo, provincia, empresa, cadena) no hay grilla del eje y, las etiquetas tienen fondo blanco y se sacan los bordes de arriba y de la derecha (`_barras_horizontales`); (3) los ejes en % muestran un decimal cuando el tick no es entero (`_pct`: en almohaditas, +27,5%, +22,5%, +17,5%). Ningún número cambia: con la simulación `sim_v4` el Excel da
+las 35 hojas iguales a `docs/brecha_celiaca/simulacion_2026-10-26/`; los PNG se revisaron a ojo. Test del nb06 en OK.
+Los PNG nuevos salen con la próxima corrida de Colab.
 
 ### 🔴 BUG-48 — nb06: dos tiendas online dentro del universo (2026-10-26) ✅ Resuelto y verificado en Colab (2026-10-26)
 

@@ -124,5 +124,5 @@ detalles de presentación que no cambian ningún número:
 3. `brecha_tpd_tipos`: en el panel de almohaditas los ticks van de a 2,5 puntos y el formato `{x:+.0f}%` los redondea
    (27,5 → "+28%", 22,5 → "+22%", 17,5 → "+18%").
 
-Arreglarlos toca solo la CELDA 9: no relee y el Excel y los esperados no cambian; para tener los PNG nuevos hace falta
-otra corrida de Colab. **Decisión del usuario.**
+**Corregidos esa noche, a pedido del usuario**: (1) en `brecha_mensual` el eje de la brecha va encima del de las sucursales (`set_zorder`) y el eje derecho no tiene grilla; (2) en las barras horizontales (tipo, provincia, empresa, cadena) no hay grilla del eje y, las etiquetas tienen fondo blanco y se sacan los bordes de arriba y de la derecha (`_barras_horizontales`); (3) los ejes en % muestran un decimal cuando el tick no es entero (`_pct`: en almohaditas, +27,5%, +22,5%, +17,5%). El Excel no cambia (la simulación `sim_v4` da las 35
+hojas iguales a `simulacion_2026-10-26/`); los PNG nuevos salen con la próxima corrida de Colab.

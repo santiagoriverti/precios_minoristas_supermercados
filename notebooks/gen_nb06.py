@@ -1706,6 +1706,20 @@ def _guardar(_nombre):
     plt.savefig(_o, dpi=200, bbox_inches='tight', facecolor='white'); plt.show()
     print(f'Guardado: {_o.name}')
 
+def _pct(_ax):
+    # eje en %: sin decimales si el tick es entero y con uno si no (los ticks de a 2,5 no se redondean a +28%, +22%...)
+    _ax.yaxis.set_major_formatter(mticker.FuncFormatter(
+        lambda x, _: f'{x:+.0f}%' if abs(x - round(x)) < 1e-9 else f'{x:+.1f}%'))
+
+def _barras_horizontales(_ax):
+    # sin la grilla del eje y que pone el estilo (pasaba por el medio de las etiquetas de las barras) ni el marco de
+    # arriba y de la derecha (las etiquetas largas lo cruzaban)
+    _ax.grid(True, alpha=0.3, axis='x'); _ax.grid(False, axis='y'); _ax.set_axisbelow(True)
+    for _s in ('top', 'right'):
+        _ax.spines[_s].set_visible(False)
+
+_FONDO_ETIQUETA = dict(facecolor='white', edgecolor='none', alpha=0.85, pad=1)   # tapa la grilla detrás del texto
+
 # 1) Canasta mensual: todas las sucursales vs panel balanceado (+ sucursales del tipo con menos cobertura). Marcador
 #    vacío: mes con algún subtipo imputado con su último mes válido (hoja Imputaciones)
 if len(serie_mensual):
@@ -1723,10 +1737,12 @@ if len(serie_mensual):
             label='mes con algún subtipo imputado (último mes válido)')
     ax.set_ylabel('Brecha de la canasta (%)')
     ax.set_title('Brecha celíaca de la canasta (ponderada ENGHo) — canasta fija 2022-2026')
-    ax.yaxis.set_major_formatter(mticker.FuncFormatter(lambda x, _: f'{x:+.0f}%')); ax.grid(True, alpha=0.3)
+    _pct(ax); ax.grid(True, alpha=0.3)
     _a2 = ax.twinx()
     _a2.bar(_sm['f'], _sm['n_min'], width=20, color='#cccccc', alpha=0.35, label='sucursales del tipo con menos (der.)')
     _a2.set_ylim(0, max(1, _sm['n_min'].max()) * 3); _a2.set_ylabel('sucursales', color='#999')
+    _a2.grid(False)                                   # una sola grilla, la de la brecha
+    ax.set_zorder(_a2.get_zorder() + 1); ax.patch.set_visible(False)   # líneas y leyenda encima de las barras
     _l1, _b1 = ax.get_legend_handles_labels(); _l2, _b2 = _a2.get_legend_handles_labels()
     ax.legend(_l1 + _l2, _b1 + _b2, loc='upper left', fontsize=9)
     _guardar('brecha_mensual')
@@ -1743,7 +1759,7 @@ if len(brecha_tipo_mensual_bal):
                 color=_ln.get_color())   # con color explícito no consume un color del ciclo
     ax.plot([], [], ls='none', marker='o', ms=6, mfc='white', mec='#555', label='con algún subtipo imputado')
     ax.set_ylabel('Brecha (%)'); ax.set_title('Brecha mensual por tipo — panel balanceado')
-    ax.yaxis.set_major_formatter(mticker.FuncFormatter(lambda x, _: f'{x:+.0f}%'))
+    _pct(ax)
     ax.legend(fontsize=8, ncol=2); ax.grid(True, alpha=0.3)
     _guardar('brecha_tipo_mensual')
 
@@ -1754,10 +1770,10 @@ if len(brecha_tipo):
     ax.barh(_bt['tipo'], _bt['brecha_mediana'], color=plt.cm.RdYlGn_r(np.linspace(0.2, 0.9, len(_bt))),
             edgecolor='black', lw=0.4)
     for _i, (_, _r) in enumerate(_bt.iterrows()):
-        ax.text(_r['brecha_mediana'], _i, f'  {_r["brecha_mediana"]:+.0f}%  ({int(_r["n_sucursales"])} sucursales)',
-                va='center', fontsize=8)
+        ax.annotate(f'{_r["brecha_mediana"]:+.0f}%  ({int(_r["n_sucursales"])} sucursales)', (_r['brecha_mediana'], _i),
+                    xytext=(5, 0), textcoords='offset points', va='center', fontsize=8, bbox=_FONDO_ETIQUETA)
     ax.set_xlabel('Brecha mediana (%) — sin TACC vs con TACC, $/100 g'); ax.set_title('Brecha celíaca por tipo (2022 → hoy)')
-    ax.grid(True, alpha=0.3, axis='x')
+    _barras_horizontales(ax)
     _guardar('brecha_por_tipo')
 
 # 4) Canasta por año y región (todas las sucursales; misma canasta en todas las regiones). Marcador vacío: no confiable
@@ -1772,7 +1788,7 @@ if len(brecha_region_anual):
     ax.set_ylabel('Brecha de la canasta (%)')
     ax.set_title(f'Brecha celíaca de la canasta por región y año (marcador vacío: > {MAX_PESO_IMPUTADO}% del peso con la '
                  f'brecha nacional o < {MIN_SUC_AGG} sucursales)', fontsize=10)
-    ax.yaxis.set_major_formatter(mticker.FuncFormatter(lambda x, _: f'{x:+.0f}%'))
+    _pct(ax)
     ax.legend(fontsize=9); ax.grid(True, alpha=0.3)
     _guardar('brecha_region_anual')
 
@@ -1787,12 +1803,13 @@ for _df, _col, _tit, _nom in ((brecha_prov, 'provincia', 'provincia', 'brecha_pr
     ax.barh(_d[_col], _d['brecha_canasta'], color=plt.cm.RdYlGn_r(np.linspace(0.15, 0.9, len(_d))),
             edgecolor='black', lw=0.4)
     for _i, (_, _r) in enumerate(_d.iterrows()):
-        ax.text(_r['brecha_canasta'], _i, f' {_r["brecha_canasta"]:+.1f}% ({int(_r["n_sucursales"])} sucursales; '
-                f'{_r["peso_imputado_pct"]:.0f}% del peso con la brecha nacional)', va='center', fontsize=8)
+        ax.annotate(f'{_r["brecha_canasta"]:+.1f}% ({int(_r["n_sucursales"])} sucursales; '
+                    f'{_r["peso_imputado_pct"]:.0f}% del peso con la brecha nacional)', (_r['brecha_canasta'], _i),
+                    xytext=(5, 0), textcoords='offset points', va='center', fontsize=8, bbox=_FONDO_ETIQUETA)
     ax.set_xlabel('Brecha de la canasta (%)')
     ax.set_title(f'Brecha celíaca por {_tit} — {VENTANA_TXT}\n(misma canasta en todos; subtipos sin datos = brecha '
                  f'nacional, <= {MAX_PESO_IMPUTADO}% del peso; >= {MIN_SUC_AGG} sucursales)', fontsize=11)
-    ax.grid(True, alpha=0.3, axis='x')
+    _barras_horizontales(ax)
     _guardar(_nom)
 
 # 8) Brecha vs concentración del mercado local: HHI de empresas por departamento (cuota = sucursales)
@@ -1832,7 +1849,7 @@ if len(serie_tpd) and 'brecha_canasta_tpd_panel' in serie_tpd.columns:
         _ax.plot(_st.loc[_im, 'f'], _st.loc[_im, f'brecha_canasta_descriptiva_{_suf}'], ls='none', marker='D', ms=6,
                  mfc='white', mec=_col, color=_col, label='descriptiva: mes con algún subtipo imputado')
         _ax.set_title(_tit, fontsize=11, loc='left'); _ax.set_ylabel('Brecha de la canasta (%)')
-        _ax.yaxis.set_major_formatter(mticker.FuncFormatter(lambda x, _: f'{x:+.0f}%'))
+        _pct(_ax)
         _ax.legend(loc='upper left', fontsize=8); _ax.grid(True, alpha=0.3)
     fig.suptitle('Brecha celíaca de la canasta: serie TPD (hedónica) y serie descriptiva', y=1.0)
     _guardar('brecha_tpd')
@@ -1856,7 +1873,7 @@ if len(_btp):
         _ax.plot(_f[_im], _x['brecha_descriptiva'][_im], ls='none', marker='o', ms=5, mfc='white', mec=_C_BAL,
                  color=_C_BAL, label='descriptiva: subtipo imputado')
         _ax.set_title(_tp, fontsize=10, loc='left')
-        _ax.yaxis.set_major_formatter(mticker.FuncFormatter(lambda x, _: f'{x:+.0f}%')); _ax.grid(True, alpha=0.3)
+        _pct(_ax); _ax.grid(True, alpha=0.3)
     axs[0].legend(loc='upper right', fontsize=8, ncol=4)
     fig.suptitle('Brecha por tipo, panel balanceado: serie TPD (hedónica) y descriptiva', y=1.0)
     _guardar('brecha_tpd_tipos')"""))

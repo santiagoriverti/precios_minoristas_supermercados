@@ -7,7 +7,8 @@ enero de 2022), **geográficamente** (provincia, región, AMBA) y **entre cadena
 Última actualización: 2026-10-26 — la **segunda corrida de Colab** (BUG-47 y la serie TPD) dio igual a la simulación
 (`docs/AUDITORIA_2026-10-26_nb06.md`) y **BUG-48**: las tiendas online que el maestro carga como Supermercado o
 Autoservicio salen por el nombre (`SUCURSALES_NO_FISICAS`; el panel no cambia); esperados vigentes en
-`docs/brecha_celiaca/simulacion_2026-10-26/`, que la corrida de Colab con BUG-48 reprodujo (AUDITORIA §6). Antes,
+`docs/brecha_celiaca/simulacion_2026-10-26/`, que la corrida de Colab con BUG-48 reprodujo (AUDITORIA §6); esa noche,
+tres arreglos de presentación de los gráficos de la CELDA 9 (el Excel no cambia). Antes,
 2026-10-23 (noche) — **serie TPD (hedónica)** como robustez de la
 serie mensual frente a la imputación de subtipos (§3.9, §14.12). Antes, 2026-10-23 (tarde) — **primera corrida de
 Colab con la canasta fija: igual a la simulación** (29

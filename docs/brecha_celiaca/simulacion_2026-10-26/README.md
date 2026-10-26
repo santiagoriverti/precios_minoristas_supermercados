@@ -26,7 +26,8 @@ python -I -X utf8 docs/auditoria/scripts_nb06_2026-10/s16_comparar_colab.py <bre
 ```
 
 Con el notebook vigente y los mismos datos tiene que dar **35 hojas iguales** (la corrida de Colab del 2026-10-26 con
-BUG-48 las dio: `docs/AUDITORIA_2026-10-26_nb06.md` §6). Si difiere solo en `2026-10` (y lo que lo
+BUG-48 las dio: `docs/AUDITORIA_2026-10-26_nb06.md` §6; los arreglos de los gráficos de esa noche no cambian el Excel:
+estos esperados siguen valiendo). Si difiere solo en `2026-10` (y lo que lo
 incluye: últimos 12 meses, `Brecha_sucursal`, `Concentracion` y la serie TPD, que estima todos los meses juntos),
 cambió el `2026B.zip` del Drive (el mes en curso se lee siempre); si difieren `Concentracion` y `Brecha_sucursal` en el
 departamento, la caché de Georef del Drive es otra. Si difieren las hojas de todas las sucursales como en el párrafo de
