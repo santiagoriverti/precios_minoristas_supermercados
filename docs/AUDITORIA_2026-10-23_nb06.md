@@ -181,6 +181,9 @@ mueve la serie. Mientras tanto, los tramos imputados quedan marcados en los grá
 
 ## 5. Próxima corrida de Colab
 
+> **Hecha el 2026-10-26** (con BUG-47 y la serie TPD): idéntica a la simulación en las 35 hojas de los esperados, las 38
+> del Excel, el mapa, la salida impresa y el caché (`docs/AUDITORIA_2026-10-26_nb06.md`).
+
 Ejecutar todo sin tocar la CELDA 1: **no relee el SEPA** (el caché `brecha_v3_38349f0a` no cambia; ~5 min, oct-26 se
 lee siempre). La CELDA 7 toma el departamento de la caché de Georef del nb09 en el Drive (si no está, consulta la API,
 ~1 min). Comparar con los esperados nuevos:

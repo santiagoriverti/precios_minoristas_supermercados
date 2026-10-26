@@ -1,6 +1,6 @@
 # Bugs Pendientes y Mejoras
 
-Última actualización: 2026-10-23 (noche) — **nb06**: **serie TPD (hedónica)** de la brecha como robustez frente a la imputación de subtipos (CELDA 8b, entrada 🟣 abajo; `docs/BRECHA_CELIACA.md` §14.12). Con dato propio coincide con la descriptiva; en 2023 muestra cuánto pesa la imputación. Falta re-correr en Colab (no relee el SEPA). Antes, 2026-10-23 (tarde) — **nb06**: la primera corrida de Colab con la canasta fija dio **igual a la
+Última actualización: 2026-10-26 — **nb06**: la segunda corrida de Colab (con BUG-47 y la serie TPD) es **idéntica a la simulación** en el Excel (38 hojas), el mapa, la salida impresa y el caché (`docs/AUDITORIA_2026-10-26_nb06.md`): BUG-47 y la TPD quedan verificados en Colab. Hallazgo menor abierto: dos tiendas online pasan el filtro de sucursales web (abajo, "Defectos abiertos"). Antes, 2026-10-23 (noche) — **nb06**: **serie TPD (hedónica)** de la brecha como robustez frente a la imputación de subtipos (CELDA 8b, entrada 🟣 abajo; `docs/BRECHA_CELIACA.md` §14.12). Con dato propio coincide con la descriptiva; en 2023 muestra cuánto pesa la imputación. Antes, 2026-10-23 (tarde) — **nb06**: la primera corrida de Colab con la canasta fija dio **igual a la
 simulación** (29 hojas; `docs/AUDITORIA_2026-10-23_nb06.md`). Al revisarla, **BUG-47** resuelto: las comparaciones
 entre provincias, empresas, cadenas y sucursales (mapa) mezclaban composición de subtipos y la "concentración" agrupaba
 por un campo de localidad que DIA carga con el nombre de la provincia; ahora misma canasta de 12 subtipos en todos los
@@ -57,6 +57,13 @@ Los defectos abiertos que resuelve quedan marcados abajo (se verifican con la co
   todos los subtipo-mes, el pico de oct-dic 2023 es menor (+137% a +148% contra +161% a +170%: la descriptiva arrastra
   tirabuzón a +396% y mostachol a +152%); en el panel, los fideos de jun-2023 → feb-2024 tienen tan pocas sucursales que
   ninguna de las dos series los mide bien. La regla de la descriptiva sigue como está.
+- **nb06 — dos tiendas online en el universo** (2026-10-26, `docs/AUDITORIA_2026-10-26_nb06.md` §3.1, menor): el
+  filtro de sucursales web de la CELDA 7 mira `sucursales_tipo` y deja pasar "eCommerce" de DIA (15-1-90000, CABA,
+  tipo Supermercado, 55 subtipo-mes desde ago-2023) y la "Dark Store Mendoza" de Mini Libertad (16-2-6104, tipo
+  Autoservicio, 35 hasta dic-2024). No están en el panel balanceado; en la serie de todas las sucursales mueven la
+  mediana de un subtipo-mes < 0,3 pp (crackers de sep-2023, 3,3 pp); DIA eCommerce sale en el mapa. Arreglo: excluir
+  también por nombre (no relee; nuevos esperados y otra corrida de Colab). Junto con eso, dar formato a
+  `dif_tpd_menos_descriptiva_*_pp` en `Serie_TPD` (hoy sin formato). **Decisión del usuario.**
 - **nb09 — abiertos de la corrida v2** (2026-10-22, detalle y números en `docs/AUDITORIA_2026-10-22_nb09.md` §4):
   (1) el componente comercial del puntaje pesa igual a un comercio de 1 sucursal, una estación de servicio o Mercado
   Libre que a Carrefour, y limita el puntaje de 2.129 de los 2.496 productos ≥ 50 (top 100 = 56% bebidas); restringirlo a
@@ -283,7 +290,7 @@ de la Tecnológica** hasta que haya al menos dos cadenas con cobertura de durabl
 
 ## 🟢 Cambios y fixes 2026-10
 
-### 🟣 nb06 — serie TPD (hedónica) de la brecha, robustez frente a la imputación de subtipos (2026-10-23, noche) — falta Colab (no relee)
+### 🟣 nb06 — serie TPD (hedónica) de la brecha, robustez frente a la imputación de subtipos (2026-10-23, noche) — verificada en Colab (2026-10-26)
 
 Pedido del usuario: implementar la TPD/hedónica de BRECHA_CELIACA §3.9 como serie de robustez frente a la imputación
 de subtipos (abierto de abajo), con simulación y test. **CELDA 8b** nueva (detalle, validación y lectura: BRECHA_CELIACA
@@ -318,7 +325,7 @@ de subtipos (abierto de abajo), con simulación y test. **CELDA 8b** nueva (deta
   mide bien (el +174% de la TPD en oct-2023 sale de mover subtipos sin pares). Último mes (oct-2026, panel): TPD +119,0%
   (IC 95% +118,2% a +119,8%) contra +123,6% de la descriptiva.
 
-### 🔴 BUG-47 — nb06: las comparaciones entre grupos, el mapa por sucursal y la concentración mezclaban composición (2026-10-23) ✅ Resuelto (falta Colab, no relee)
+### 🔴 BUG-47 — nb06: las comparaciones entre grupos, el mapa por sucursal y la concentración mezclaban composición (2026-10-23) ✅ Resuelto y verificado en Colab (2026-10-26)
 
 Encontrado al revisar la primera corrida de Colab con la canasta fija (igual a la simulación en las 29 hojas:
 `docs/AUDITORIA_2026-10-23_nb06.md`). Los números clave (brecha por subtipo y por tipo, series nacionales mensuales y

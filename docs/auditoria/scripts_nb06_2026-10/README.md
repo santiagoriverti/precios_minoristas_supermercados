@@ -70,6 +70,14 @@ y los objetos de la simulación (`sim_final/`, iguales a Colab):
 | `r11_saladas_composicion.py <sim> <Excel> [tipo]` | Por qué la TPD de saladas queda debajo de la descriptiva: brecha por sucursal-mes de cada subtipo por año (mediana contra promedio geométrico) y composición de cada lado por producto y año con su nivel TPD (`TPD_productos`) |
 | `r12_tpd_vs_descriptiva_subtipo.py <sim> <Excel> [tipo] [desde] [hasta]` | TPD de cada subtipo del tipo (`TPD_subtipos`) contra la mediana del subtipo-mes antes de imputar, sus sucursales y el valor que arrastra la serie mensual (panel balanceado) |
 
+**Revisión completa de una corrida de Colab (2026-10-26, `docs/AUDITORIA_2026-10-26_nb06.md`)**, además de `s16`:
+
+| Script | Qué hace |
+|---|---|
+| `r13_comparar_excels.py <Excel A> <Excel B> [tol]` | Las 38 hojas celda por celda (también `Leeme`, `Comparacion_productos` y `Detalle_producto`, que `s16` deja afuera); si solo cambia el orden de filas casi empatadas, lo dice |
+| `r14_comparar_cache.py <zip del Drive> <carpeta vacía> <caché local brecha_v3_xxx>` | El caché de `output_brecha/_cache/` que baja el Drive contra el de la simulación: mismos meses y mismos datos (no extrae si el zip trae rutas peligrosas) |
+| `r15_comparar_mapas.py <mapa A> <mapa B>` | El mapa por sucursal sin los identificadores aleatorios de Folium, y el JSON de los popups (sucursales y mes de cada una) |
+
 **Salidas intermedias de la corrida del 2026-10-23** (precios extraídos, selección, verificación, simulación con el
 caché del nb06; ~315 MB): en la PC del INECO, `C:\Users\sriverti\proyectos\nb06_brecha_celiaca_20261023\` (README
 adentro). En otra PC se rehacen con los comandos de abajo (extracción ~70 min + lectura del nb06 ~40 min).

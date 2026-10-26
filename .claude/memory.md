@@ -6,12 +6,12 @@ Autor: Santiago Riverti — investigador independiente
 
 ---
 
-## 🟢 ESTADO ACTUAL / HANDOFF [2026-10-23 · noche] — leer esto primero
+## 🟢 ESTADO ACTUAL / HANDOFF [2026-10-26] — leer esto primero
 
 - **Repo**: `main` = `origin/main` al cierre (ver `git log`). Commits del 2026-10-23: `678e9b9` (nb06: canasta fija
   2022-2026 + estimador por subtipo + BUG-46), `b02871c` (documentación para retomar) y el de la tarde (revisión de la
-  primera corrida de Colab del nb06 + BUG-47) y el de la noche (serie TPD del nb06). **15 tests en OK** (el del nb06
-  tiene 30 controles). En una PC nueva:
+  primera corrida de Colab del nb06 + BUG-47) y el de la noche (`46e426b`, serie TPD del nb06); el 2026-10-26, la
+  revisión de la segunda corrida de Colab. **15 tests en OK** (el del nb06 tiene 30 controles). En una PC nueva:
   `git clone`, `pip install -r requirements.txt` y los tests de `CLAUDE.md`.
 - **Datos en la PC del INECO** (el usuario bajó el 23/10 todo el Drive; **desde la tarde del 23/10 están en
   `C:\Users\sriverti\Downloads\carga\`**): `2022A.zip` … `2026B.zip` (idénticos a `MyDrive/carga/`; el `2026B` trae
@@ -23,18 +23,19 @@ Autor: Santiago Riverti — investigador independiente
 
 **Líneas de trabajo, en orden de prioridad:**
 
-1. **Brecha celíaca (nb06) — lo último, 2026-10-23 (noche).** Implementada la **serie TPD (hedónica)** como robustez
-   de la serie mensual frente a la imputación de subtipos (CELDA 8b; BRECHA_CELIACA §14.12): por subtipo, `ln p =
-   α(celda sucursal-mes) + γ(producto) + β(mes)·sinTACC`, errores agrupados por sucursal, dos universos; subtipo-mes con
-   < 10 sucursales con los dos lados se mueve con los demás de su tipo. Test 30 controles; con datos reales = LSQR
-   independiente (r10, 1,3e-7 pp); esperados `simulacion_2026-10-23b/` (35 hojas; las 30 descriptivas no cambian).
-   Antes ese día: primera corrida de Colab = simulación (29 hojas) y BUG-47 (grupos y mapa con la misma canasta de 12
-   subtipos, HHI por departamento). **Siguiente**: (a) el usuario re-corre el nb06 en Colab (Ejecutar todo; ~5 min, no
-   relee) y se compara con `s16 ... docs/brecha_celiaca/simulacion_2026-10-23b` (esperado: **35 hojas iguales**); (b)
-   la regla de imputación de la descriptiva sigue como está (decisión del usuario; la TPD muestra que pesa en 2023 y que
-   los fideos del panel de jun-2023 → feb-2024 no se miden bien con ninguna); (c) agenda del paper: determinantes de la
-   prima (interacciones de la hedónica con HHI, región, cadena), prima neta de envase, robustez desde 2024. Detalle:
-   bloques "nb06 — serie TPD", "nb06 — corrida de Colab" y "nb06 — canasta fija" de abajo.
+1. **Brecha celíaca (nb06) — lo último, 2026-10-26.** La **segunda corrida de Colab** (notebook `46e426b`: canasta
+   fija, BUG-47 y serie TPD) es **idéntica a la simulación** en todo: 35 hojas contra los esperados (`s16`), las 38 hojas
+   celda por celda (`r13`), el mapa salvo los ids de Folium (`r15`), las 169 líneas de la salida impresa y el caché del
+   Drive (57 meses, mismos datos; `r14`) → BUG-47 y la TPD verificados en Colab (`docs/AUDITORIA_2026-10-26_nb06.md`).
+   La TPD (CELDA 8b, BRECHA_CELIACA §14.12): por subtipo, `ln p = α(celda sucursal-mes) + γ(producto) + β(mes)·sinTACC`,
+   CR1 por sucursal, dos universos, subtipo-mes con < 10 sucursales con pares se mueve con los demás de su tipo.
+   **Siguiente**: (a) decisión del usuario: excluir por nombre dos tiendas online que pasan el filtro web (DIA
+   "eCommerce" 15-1-90000 en CABA, Libertad "Dark Store Mendoza" 16-2-6104; no están en el panel, < 0,3 pp en la serie de
+   todas salvo crackers sep-2023 3,3 pp) y dar formato a `dif_tpd_menos_descriptiva_*_pp`: no relee, pide nuevos
+   esperados y otra corrida de Colab; (b) la regla de imputación de la descriptiva sigue como está (decisión del
+   usuario; la TPD muestra que pesa en 2023); (c) agenda del paper: determinantes de la prima (interacciones de la
+   hedónica con HHI, región, cadena), prima neta de envase, robustez desde 2024. Detalle: bloques "nb06 — segunda
+   corrida", "nb06 — serie TPD", "nb06 — corrida de Colab" y "nb06 — canasta fija" de abajo.
 2. **Pass-through del tipo de cambio (nb08 v2 + canasta de 775 productos).** Todo listo y pusheado; el
    usuario ya subió `MyDrive/carga/output_canasta/canasta_pass_through_2026-10.xlsx`. **Falta que corra el nb08 en
    Colab** (badge, Ejecutar todo, sin tocar la CELDA 1; ~1,5-2 h la primera vez, 58 meses). Cuando pase la salida
@@ -70,6 +71,24 @@ pass-through en `C:\Users\sriverti\proyectos\canasta_pass_through_20220101_20261
 **Reglas**: las de `CLAUDE.md` ("Reglas que muerden"): los `.ipynb` se regeneran con `gen_nbXX.py` (commit de los dos);
 scripts de edición escritos con Write (la shell se come las barras); commits solo con Santiago Riverti, sin atribución a
 Claude.
+
+## 🟢 nb06 — segunda corrida de Colab revisada [2026-10-26]
+
+- Insumos del usuario (en `C:\Users\sriverti\Downloads\`, copiados a
+  `C:\Users\sriverti\proyectos\nb06_brecha_celiaca_20261023\colab_20261026\` y revisados con `python -I`): salida
+  impresa, `brecha_celiaca_2026-10.xlsx`, `mapa_sucursales_brecha_102026.html` y `_cache-20261026T124728Z-1-001.zip`
+  (la carpeta `output_brecha/_cache/` del Drive: 57 parquet de `brecha_v3_38349f0a`, escritos el 23/10).
+- Todo igual a la simulación local `sim_v2`: s16 35/35 (1,4e-13); r13 38/38 (Brecha_sucursal: mismas filas, otro orden
+  en casi empates); r15 mapa igual sin los ids de Folium, JSON de 2.344 sucursales, JS OK con `node --check` (el bloque
+  `_pd_json` es JSON, no JS); salida impresa 169 líneas iguales a `s11_sim_tpd4`; r14 caché con los mismos datos (bytes
+  distintos). Gráficos no adjuntos: mismos datos que los locales.
+- Hallazgos: (1) dos tiendas online en el universo (arriba); (2) reclasificaciones de provincia = BUG-44 (las 7 con
+  datos bien; "Gualeguaychu" de la cadena 2002 con coordenadas de Río Cuarto, sin precios de la canasta); (3) 112
+  sucursales de la Cooperativa Obrera en el mapa con may-2026 (sus sin TACC salen del SEPA: dulces/saladas/rebozador
+  abr-2025, almohaditas ago-2025, fideos jun-2026) y 13 de Hipermercado Libertad (deja de publicar en jun-2026); (4)
+  `dif_tpd_menos_descriptiva_*_pp` sin formato numérico en `Serie_TPD`.
+- Trampas de esta revisión: la shell se come las barras invertidas de los heredocs (escribir los scripts con Write);
+  comparar Excel con `header=None` compara los números como texto (usar `r13`).
 
 ## 🟢 nb06 — serie TPD (hedónica) de la brecha [2026-10-23 noche]
 

@@ -435,6 +435,9 @@ coroplético; 11 Excel; 12 mapa.
 - **Serie TPD (2026-10-23, noche)**: test con 30 controles (4 de la TPD); con los datos reales, otro algoritmo
   (`r10_tpd_independiente.py`, LSQR sobre el diseño completo) da lo mismo que la CELDA 8b en los 1.297 subtipo-mes con
   dato propio (diferencia máxima 1,3e-7 pp). Esperados con la TPD: `simulacion_2026-10-23b/` (35 hojas; §14.12).
+- **Segunda corrida de Colab (2026-10-26)**: igual a la simulación en todo (35 hojas contra los esperados; las 38
+  hojas celda por celda, el mapa, la salida impresa y el caché del Drive con `r13`-`r15`): BUG-47 y la serie TPD
+  validados en Colab (`docs/AUDITORIA_2026-10-26_nb06.md`).
 
 ---
 
@@ -444,6 +447,9 @@ coroplético; 11 Excel; 12 mapa.
   comparaciones de sustitución (crackers de arroz contra crackers de trigo), pocas sucursales con rebozador, sucursales
   sin coordenadas en 2022, ago-oct 2026 del SEPA diario y precio de lista.
 - **Departamento**: falta shapefile departamental (hoy: provincia, región, AMBA y localidad).
+- **Dos tiendas online en el universo** (menor, `docs/AUDITORIA_2026-10-26_nb06.md` §3.1): DIA "eCommerce" (CABA) y la
+  "Dark Store Mendoza" de Libertad pasan el filtro de sucursales web (el maestro les pone tipo Supermercado o
+  Autoservicio). No están en el panel; en la serie de todas las sucursales cambian poco. Excluirlas por nombre no relee.
 - **Imputación de la serie mensual sin límite de meses** (abierto, decisión del usuario): un subtipo-mes con pocas
   sucursales arrastra su último mes válido; hay rachas de 7 a 14 meses (hoja `Imputaciones`, §14.11). Desde el
   2026-10-23 (noche) la serie TPD (§14.12) es la robustez: no arrastra y muestra en qué meses pesa la imputación.
@@ -461,7 +467,8 @@ coroplético; 11 Excel; 12 mapa.
 2. Correr el nb06 en Colab desde el badge del README (Ejecutar todo, sin tocar la CELDA 1).
 3. Revisar la corrida: `python -I -X utf8 docs/auditoria/scripts_nb06_2026-10/s16_comparar_colab.py <Excel>
    docs/brecha_celiaca/simulacion_2026-10-23b` (con los mismos zips y el notebook vigente, 35 hojas iguales) y la lista
-   de §14.9.
+   de §14.9; para revisar todo (las 38 hojas, el mapa y el zip del caché del Drive), `r13`-`r15` (como en
+   `docs/AUDITORIA_2026-10-26_nb06.md`).
 4. Para cambiar productos o reglas: scripts s7-s10 de `docs/auditoria/scripts_nb06_2026-10/` → CSV →
    `python notebooks/gen_nb06.py` → `python notebooks/test_brecha_celiaca.py` → simulación s11/s12 (s14/s15 para no
    releer) → nueva carpeta de resultados esperados → commit de CSV, generador, `.ipynb` y docs juntos.
@@ -1103,6 +1110,7 @@ las indicadoras y la covarianza agrupada escrita a mano (brecha por tipo, error 
 nivel de productos que nunca conviven. Con los datos reales, otro algoritmo (`r10_tpd_independiente.py`: LSQR sobre el
 diseño completo, sin normalizar ni descontar efectos) da lo mismo en los 1.297 subtipo-mes con dato propio de los dos
 universos (diferencia máxima 1,3e-7 pp). Resultados esperados: `simulacion_2026-10-23b/` (35 hojas, con las 5 de la TPD).
+La corrida de Colab del 2026-10-26 dio lo mismo en todo (`docs/AUDITORIA_2026-10-26_nb06.md`).
 
 **Resultados** (canasta, promedio de los meses de cada año):
 
