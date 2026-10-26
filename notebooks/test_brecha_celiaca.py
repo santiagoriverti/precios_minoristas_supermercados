@@ -46,8 +46,10 @@ SUCS = {  # (comercio, bandera, sucursal): (provincia declarada, lat, lon, tipo,
     ('15', '1', '301'): ('Provincia de Córdoba', -31.42, -64.18, 'Supermercado', 0.95),
     ('15', '1', '302'): ('Provincia de Mendoza', -31.40, -64.20, 'Supermercado', 1.05),        # mal declarada
     ('15', '1', '303'): ('Ciudad Autónoma de Buenos Aires', -34.61, -58.42, 'Web', 1.00),      # web: afuera
+    ('15', '1', '304'): ('Ciudad Autónoma de Buenos Aires', -34.63, -58.41, 'Supermercado', 1.00),  # online: afuera
     ('23', '1', '401'): ('Ciudad Autónoma de Buenos Aires', -34.58, -58.43, 'Autoservicio', 1.00),  # Axion: afuera
 }
+NOMBRE = {('15', '1', '304'): 'eCommerce'}   # tienda online que el maestro carga como Supermercado (BUG-48)
 POLI = {'ARC': ('Ciudad de Buenos Aires', -58.55, -58.33, -34.72, -34.52),
         'ARB': ('Buenos Aires', -63.5, -56.6, -41.0, -33.3),
         'ARX': ('Córdoba', -65.8, -61.7, -35.0, -29.5),
@@ -123,14 +125,16 @@ feats = [{'type': 'Feature', 'properties': {'id': k, 'name': n},
           'geometry': {'type': 'Polygon', 'coordinates': [[[x0, y0], [x1, y0], [x1, y1], [x0, y1], [x0, y0]]]}}
          for k, (n, x0, x1, y0, y1) in POLI.items()]
 (sepa / 'ar.json').write_text(json.dumps({'type': 'FeatureCollection', 'features': feats}), encoding='utf-8')
-ms = pd.DataFrame([{'id_comercio': c, 'id_bandera': b, 'id_sucursal': s, 'sucursales_nombre': f'Suc {c}-{s}',
+ms = pd.DataFrame([{'id_comercio': c, 'id_bandera': b, 'id_sucursal': s,
+                    'sucursales_nombre': NOMBRE.get((c, b, s), f'Suc {c}-{s}'),
                     'sucursales_tipo': t, 'sucursales_latitud': la, 'sucursales_longitud': lo,
                     'sucursales_localidad': 'Loc', 'PROVINCIA': pv}
                    for (c, b, s), (pv, la, lo, t, _n) in SUCS.items()])
 ms.to_excel(tmp / 'data' / 'maestro_sucursales_completo.xlsx', index=False)
 # caché de Georef del nb09: departamento de cada sucursal (la estación de servicio 401 no entra en el HHI)
 DEPTO = {('9', '1', '101'): '02001', ('9', '1', '102'): '02001', ('10', '1', '201'): '02001', ('23', '1', '401'): '02001',
-         ('10', '1', '202'): '06357', ('15', '1', '301'): '14014', ('15', '1', '302'): '14014', ('15', '1', '303'): '02001'}
+         ('10', '1', '202'): '06357', ('15', '1', '301'): '14014', ('15', '1', '302'): '14014', ('15', '1', '303'): '02001',
+         ('15', '1', '304'): '02001'}
 (sepa / 'output_trazabilidad' / '_cache_nb09').mkdir(parents=True)
 pd.DataFrame([{'suc': f'{c}|{b}|{s}', 'departamento_id': d, 'departamento': f'Depto {d}', 'municipio': 'M',
                'provincia_georef': 'P'} for (c, b, s), d in DEPTO.items()]).to_parquet(
@@ -198,7 +202,7 @@ M = M[[(e, m) not in FUERA_VIG for e, m in zip(M['id_producto'], M['mes'])]]
 dd = g['datos_dia'][['id_comercio', 'id_bandera', 'id_sucursal', 'ean_norm', 'mes', 'precio', 'dias']]
 cmp = M.merge(dd, left_on=['id_comercio', 'id_bandera', 'id_sucursal', 'id_producto', 'mes'],
               right_on=['id_comercio', 'id_bandera', 'id_sucursal', 'ean_norm', 'mes'], how='left', suffixes=('', '_nb'))
-cmp = cmp[~cmp['id_comercio'].isin(['23']) & ~((cmp['id_comercio'] == '15') & (cmp['id_sucursal'] == '303'))
+cmp = cmp[~cmp['id_comercio'].isin(['23']) & ~((cmp['id_comercio'] == '15') & cmp['id_sucursal'].isin(['303', '304']))
           & ~cmp['id_producto'].eq('7790000000080')]
 chk('mediana mensual exacta por sucursal x EAN (todas las partes, centavos en marzo)',
     cmp['precio_nb'].notna().all() and np.allclose(cmp['precio'], cmp['precio_nb'], rtol=1e-9))
@@ -206,8 +210,9 @@ chk('días con precio: enero 31 (no suma el archivo parcial de los días 1-5)',
     (cmp.loc[cmp['mes'] == '2026-01', 'dias_nb'] == 31).all())
 chk('enero usa el archivo COMPLETOb', any('COMPLETOb' in n for _z, n in g['_mapa_mes']['2026-01'])
     and len(g['_mapa_mes']['2026-01']) == 2)
-chk('Axion (23) y la sucursal web fuera', not g['bt_sm']['id_comercio'].eq('23').any()
-    and not g['bt_sm']['id_sucursal'].eq('303').any())
+chk('Axion (23), la sucursal web y la tienda online por el nombre ("eCommerce" con tipo Supermercado) fuera',
+    not g['bt_sm']['id_comercio'].eq('23').any() and not g['bt_sm']['id_sucursal'].isin(['303', '304']).any()
+    and not g['suc_geo']['id_sucursal'].isin(['303', '304']).any())
 chk('plausibilidad saca el EAN x10', set(g['plausibilidad']['ean_norm']) == {'7790000000080'})
 ce = g['control_ean'].set_index('ean_norm')
 chk('control de identidad marca el salto x2,5', bool(ce.loc['7790000000103', 'revisar'])
@@ -221,7 +226,7 @@ chk('cadenas: Vea, Carrefour, DIA', set(g['bt_sm']['cadena']) == {'Vea', 'Carref
 # brecha por sucursal x mes x tipo
 B = M.merge(pd.DataFrame([(e, v[0], v[1], v[2]) for e, v in P.items()], columns=['id_producto', 'tipo', 'rol', 'g']),
             on='id_producto')
-B = B[~B['id_comercio'].eq('23') & ~B['id_sucursal'].eq('303') & ~B['id_producto'].eq('7790000000080')]
+B = B[~B['id_comercio'].eq('23') & ~B['id_sucursal'].isin(['303', '304']) & ~B['id_producto'].eq('7790000000080')]
 B['p100'] = B['precio'] / B['g'] * 100
 B['prod'] = B['id_producto'].map(PROD_DE).fillna(B['id_producto'])   # producto con dos códigos: mediana de los dos
 B['sub'] = B['id_producto'].map(SUB_DE)

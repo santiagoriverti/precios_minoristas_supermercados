@@ -221,6 +221,9 @@ MIN_SUC_DEPTO = 5        # concentración: sucursales con brecha propia para mos
 # Comercios fuera del universo: estaciones de servicio (19, 3001, 4 Estación Lima, 23 Axion Energy), Mercado Libre
 # (2013) y farmacias (24 Farmacity / Simplicity)
 CADENAS_FILTRAR = {'19', '2013', '3001', '4', '23', '24'}
+# Sucursales que no son locales: además de las de tipo web o virtual, las que el maestro carga con tipo Supermercado o
+# Autoservicio y el nombre lo dice (DIA "eCommerce", Libertad "Dark Store Mendoza", "WEB"; BUG-48)
+SUCURSALES_NO_FISICAS = r'e-?commerce|dark ?store|\bweb\b|\bmeli\b|\bonline\b'
 
 RECLASIF_TOL_KM = 100   # provincia: se cambia solo si la sucursal cae a más de esto de su provincia declarada (BUG-44)
 AMBA_RADIO_KM = 90      # AMBA = CABA + Buenos Aires a <= AMBA_RADIO_KM del Obelisco (BUG-42)"""
@@ -897,10 +900,17 @@ def _km_obelisco(lat, lon):
 _cols_suc = ['id_comercio','id_bandera','id_sucursal','sucursales_nombre','sucursales_latitud','sucursales_longitud',
              'sucursales_localidad','PROVINCIA'] + (['sucursales_tipo'] if 'sucursales_tipo' in suc_pais.columns else [])
 suc_geo = suc_pais[_cols_suc].copy()
-if 'sucursales_tipo' in suc_geo.columns:
-    suc_geo = suc_geo[~suc_geo['sucursales_tipo'].astype(str).str.lower().str.contains('web|virtual')].copy()
 suc_geo['cadena'] = suc_geo.apply(asignar_cadena, axis=1)
 suc_geo['empresa'] = suc_geo['id_comercio'].map(asignar_empresa)
+# afuera las sucursales que no son locales: tipo web o virtual y, por el nombre, las que el maestro carga con tipo
+# Supermercado o Autoservicio (SUCURSALES_NO_FISICAS de la CELDA 1, BUG-48)
+_web = (suc_geo['sucursales_tipo'].astype(str).str.lower().str.contains('web|virtual')
+        if 'sucursales_tipo' in suc_geo.columns else pd.Series(False, index=suc_geo.index))
+_nom = suc_geo['sucursales_nombre'].astype(str).str.contains(SUCURSALES_NO_FISICAS, case=False, regex=True) & ~_web
+_lista = ', '.join(f'{_c} "{_n}"' for _c, _n in suc_geo.loc[_nom, ['cadena','sucursales_nombre']].itertuples(index=False))
+print(f'  Sucursales que no son locales, afuera: {int(_web.sum())} de tipo web o virtual y {int(_nom.sum())} por el '
+      f'nombre{": " + _lista if _lista else ""}')
+suc_geo = suc_geo[~(_web | _nom)].copy()
 suc_geo['PROVINCIA_NORM'] = suc_geo['PROVINCIA'].map(PROV_NORM).fillna(suc_geo['PROVINCIA'])
 _mask_caba = (suc_geo['PROVINCIA_NORM'].eq('CABA') & (
     (suc_geo['sucursales_latitud'] < -34.71) | (suc_geo['sucursales_latitud'] > -34.53) |
@@ -1938,6 +1948,10 @@ def auto_widths(ws):
             for row in ws.iter_rows(min_row=2, max_row=ws.max_row, min_col=ci, max_col=ci):
                 for cell in row:
                     cell.number_format = ('+0.0"%"' if 'brecha' in hdr else '#,##0.00')
+        elif hdr.endswith('_pp'):                # diferencias en puntos porcentuales (Serie_TPD)
+            for row in ws.iter_rows(min_row=2, max_row=ws.max_row, min_col=ci, max_col=ci):
+                for cell in row:
+                    cell.number_format = '+0.0" pp"'
 
 # ── Canasta (lo que entró) ────────────────────────────────────────────────────
 _obs = datos_dia.groupby('ean_norm').agg(meses_con_precio=('mes','nunique'), primer_mes=('mes','min'),

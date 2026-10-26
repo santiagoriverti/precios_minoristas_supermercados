@@ -29,10 +29,12 @@ Autor: Santiago Riverti — investigador independiente
    Drive (57 meses, mismos datos; `r14`) → BUG-47 y la TPD verificados en Colab (`docs/AUDITORIA_2026-10-26_nb06.md`).
    La TPD (CELDA 8b, BRECHA_CELIACA §14.12): por subtipo, `ln p = α(celda sucursal-mes) + γ(producto) + β(mes)·sinTACC`,
    CR1 por sucursal, dos universos, subtipo-mes con < 10 sucursales con pares se mueve con los demás de su tipo.
-   **Siguiente**: (a) decisión del usuario: excluir por nombre dos tiendas online que pasan el filtro web (DIA
-   "eCommerce" 15-1-90000 en CABA, Libertad "Dark Store Mendoza" 16-2-6104; no están en el panel, < 0,3 pp en la serie de
-   todas salvo crackers sep-2023 3,3 pp) y dar formato a `dif_tpd_menos_descriptiva_*_pp`: no relee, pide nuevos
-   esperados y otra corrida de Colab; (b) la regla de imputación de la descriptiva sigue como está (decisión del
+   Ese día, **BUG-48** aplicado: tiendas online afuera por el nombre (`SUCURSALES_NO_FISICAS`; DIA "eCommerce" y la
+   "Dark Store Mendoza" de Libertad, las únicas con datos) y formato `+0.0 pp` en `dif_tpd_menos_descriptiva_*_pp`;
+   simulación `sim_v3` (el panel no cambia; todas, como mucho 0,30 pp en un mes); esperados
+   `docs/brecha_celiaca/simulacion_2026-10-26/`. **Siguiente**: (a) el usuario re-corre el nb06 en Colab (no relee,
+   ~5 min) y se compara con `s16 ... docs/brecha_celiaca/simulacion_2026-10-26` (esperado: **35 hojas iguales**; la
+   CELDA 7 dice "9 de tipo web o virtual y 6 por el nombre"); (b) la regla de imputación de la descriptiva sigue como está (decisión del
    usuario; la TPD muestra que pesa en 2023); (c) agenda del paper: determinantes de la prima (interacciones de la
    hedónica con HHI, región, cadena), prima neta de envase, robustez desde 2024. Detalle: bloques "nb06 — segunda
    corrida", "nb06 — serie TPD", "nb06 — corrida de Colab" y "nb06 — canasta fija" de abajo.
@@ -87,6 +89,10 @@ Claude.
   sucursales de la Cooperativa Obrera en el mapa con may-2026 (sus sin TACC salen del SEPA: dulces/saladas/rebozador
   abr-2025, almohaditas ago-2025, fideos jun-2026) y 13 de Hipermercado Libertad (deja de publicar en jun-2026); (4)
   `dif_tpd_menos_descriptiva_*_pp` sin formato numérico en `Serie_TPD`.
+- BUG-48, el mismo día a pedido del usuario: `SUCURSALES_NO_FISICAS` (CELDA 1) y filtro por nombre en la CELDA 7 (6
+  sucursales del maestro; no toca ningún local), formato `_pp` (CELDA 11), sucursal sintética "eCommerce" en el test;
+  `sim_v3` (caché copiado de `sim_v2`, que queda como la referencia de la corrida de Colab validada) y esperados
+  `simulacion_2026-10-26/`; `simulacion_2026-10-23b/` queda como histórico.
 - Trampas de esta revisión: la shell se come las barras invertidas de los heredocs (escribir los scripts con Write);
   comparar Excel con `header=None` compara los números como texto (usar `r13`).
 
@@ -1572,7 +1578,7 @@ sucursales. La mediana nacional salta según cuál domine.
 palabra. Entraban 4 productos con 418 sucursales-EAN, **incluido un snack para perros de orejas
 de cerdo**. Como Carré tiene solo 4 candidatos legítimos, esos chorizos lo dominaban.
 
-**Fixes v5.6**: (a) regex de Carré corregido con `carr[eé]` en las tres alternativas + exc
+**Fixes v5.6**: (a) regex de Carré corregido con `\bcarr[eé]\b` en las tres alternativas + exc
 `chorizo|carrefour|snack|perro|mascota`; (b) **`rk` por tipo** (campo nuevo en TIPOS_FRESCOS):
 K=2,0 en los 17 cortes de Carne/Cerdo/Pollo, porque dentro de UN MES el mismo corte no varía 2×.
 **⚠️ Estos dos SÍ invalidan el caché** (tocan el universo de EANs y el filtro de lectura).

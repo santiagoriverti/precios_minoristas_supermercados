@@ -75,8 +75,10 @@ muchos decimales); el resto de las hojas tiene el encabezado, el panel congelado
 
 ## 4. Qué queda
 
-- Decidir si se excluyen las dos tiendas online (§3.1) y se ajusta el formato de §3.3: un cambio chico de las CELDAS 7 y
-  11, sin releer, con nuevos esperados y otra corrida de Colab (~5 min).
+- **Aplicado el mismo día, a pedido del usuario (BUG-48)**: las tiendas online salen también por el nombre
+  (`SUCURSALES_NO_FISICAS` en la CELDA 1: 6 sucursales del maestro, 2 con precios) y las columnas `_pp` tienen
+  formato. El panel no cambia; la serie de todas las sucursales, como mucho 0,30 pp en un mes. Esperados nuevos:
+  `docs/brecha_celiaca/simulacion_2026-10-26/`. Falta la corrida de Colab (~5 min, no relee).
 - La regla de imputación de la descriptiva sigue como está (decisión del usuario; la TPD muestra dónde pesa).
 - Agenda del paper (BRECHA_CELIACA §13): determinantes de la prima con la hedónica, prima neta de envase, robustez
   desde 2024.

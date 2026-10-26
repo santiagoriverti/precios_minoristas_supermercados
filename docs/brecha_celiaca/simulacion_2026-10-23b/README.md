@@ -1,5 +1,8 @@
 # Resultados esperados del nb06 con BUG-47 y la serie TPD (simulación del 2026-10-23, noche)
 
+> **Histórico**: son los del notebook `46e426b`, que la corrida de Colab del 2026-10-26 reprodujo en las 35 hojas.
+> Desde BUG-48 (tiendas online afuera por el nombre) los esperados vigentes están en `../simulacion_2026-10-26/`.
+
 Un CSV por hoja del Excel `brecha_celiaca_2026-10.xlsx` que generaron las **celdas reales** del notebook vigente (con
 BUG-47: misma canasta de 12 subtipos para provincias, regiones, empresas, cadenas y sucursales; concentración por
 departamento; y la serie TPD de la CELDA 8b, `docs/BRECHA_CELIACA.md` §14.12) sobre los **mismos datos** que la primera corrida de Colab: el caché del nb06 de los 57 meses cerrados

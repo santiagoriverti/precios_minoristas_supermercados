@@ -4,7 +4,12 @@ Documento técnico del **Notebook 06**. Mide la **brecha** de precios entre prod
 equivalentes **sin TACC**, dentro de cada supermercado, y cómo se distribuye **en el tiempo** (mensual desde
 enero de 2022), **geográficamente** (provincia, región, AMBA) y **entre cadenas**.
 
-Última actualización: 2026-10-23 (tarde) — **primera corrida de Colab con la canasta fija: igual a la simulación** (29
+Última actualización: 2026-10-26 — la **segunda corrida de Colab** (BUG-47 y la serie TPD) dio igual a la simulación
+(`docs/AUDITORIA_2026-10-26_nb06.md`) y **BUG-48**: las tiendas online que el maestro carga como Supermercado o
+Autoservicio salen por el nombre (`SUCURSALES_NO_FISICAS`; el panel no cambia); esperados vigentes en
+`docs/brecha_celiaca/simulacion_2026-10-26/`. Antes, 2026-10-23 (noche) — **serie TPD (hedónica)** como robustez de la
+serie mensual frente a la imputación de subtipos (§3.9, §14.12). Antes, 2026-10-23 (tarde) — **primera corrida de
+Colab con la canasta fija: igual a la simulación** (29
 hojas; canasta y estimador validados) y, al revisarla, **BUG-47**: provincias, regiones, empresas, cadenas y sucursales
 (mapa) se comparan ahora con la **misma canasta de 12 subtipos** (lo que un grupo no tiene, con la brecha nacional del
 período) y la concentración es el **HHI de empresas por departamento** (Georef). Las series nacionales y la brecha por
@@ -350,6 +355,7 @@ FRAC_SUBTIPO_MES = 0.5                # serie mensual: subtipo-mes con menos de 
 FRAC_MESES_PANEL = 0.7                # panel balanceado: sucursal x subtipo en >= 70% de los meses
 VENTANA_GEO_MESES = 12                # provincias, regiones, empresas y cadenas: últimos 12 meses (y por año)
 CADENAS_FILTRAR = {'19', '2013', '3001', '4', '23', '24'}   # estaciones de servicio, Mercado Libre, farmacias
+SUCURSALES_NO_FISICAS = r'e-?commerce|dark ?store|\bweb\b|\bmeli\b|\bonline\b'   # tiendas online por el nombre (BUG-48)
 RECLASIF_TOL_KM = 100; AMBA_RADIO_KM = 90
 ```
 
@@ -423,7 +429,7 @@ coroplético; 11 Excel; 12 mapa.
 
 - **Test** `notebooks/test_brecha_celiaca.py` (30 controles): corre las celdas reales sobre un SEPA sintético con cada
   trampa (archivo parcial duplicado, centavos, fila repetida, código viejo congelado, producto con dos códigos, EAN x10,
-  salto x2,5, estación de servicio, sucursal web, provincia mal declarada, subtipos con un lado faltante, subtipo-mes
+  salto x2,5, estación de servicio, sucursal web (por el tipo y, desde BUG-48, una tienda online por el nombre), provincia mal declarada, subtipos con un lado faltante, subtipo-mes
   faltante, caché en dos corridas) y compara cada número con fuerza bruta; desde BUG-47, también grupos, sucursales y
   concentración, y desde la serie TPD, la TPD contra mínimos cuadrados densos (§14.12).
 - **Simulación con datos reales** (2026-10-23): las celdas reales con los 58 meses de los zips del Drive coinciden
@@ -438,6 +444,9 @@ coroplético; 11 Excel; 12 mapa.
 - **Segunda corrida de Colab (2026-10-26)**: igual a la simulación en todo (35 hojas contra los esperados; las 38
   hojas celda por celda, el mapa, la salida impresa y el caché del Drive con `r13`-`r15`): BUG-47 y la serie TPD
   validados en Colab (`docs/AUDITORIA_2026-10-26_nb06.md`).
+- **BUG-48 (2026-10-26)**: el test saca una tienda online sintética por el nombre; con los datos reales (`sim_v3`) el
+  panel no cambia y la serie de todas las sucursales, como mucho 0,30 pp en un mes. Esperados vigentes:
+  `simulacion_2026-10-26/` (35 hojas). Falta re-correr en Colab (no relee).
 
 ---
 
@@ -447,9 +456,9 @@ coroplético; 11 Excel; 12 mapa.
   comparaciones de sustitución (crackers de arroz contra crackers de trigo), pocas sucursales con rebozador, sucursales
   sin coordenadas en 2022, ago-oct 2026 del SEPA diario y precio de lista.
 - **Departamento**: falta shapefile departamental (hoy: provincia, región, AMBA y localidad).
-- **Dos tiendas online en el universo** (menor, `docs/AUDITORIA_2026-10-26_nb06.md` §3.1): DIA "eCommerce" (CABA) y la
-  "Dark Store Mendoza" de Libertad pasan el filtro de sucursales web (el maestro les pone tipo Supermercado o
-  Autoservicio). No están en el panel; en la serie de todas las sucursales cambian poco. Excluirlas por nombre no relee.
+- **Tiendas online** (BUG-48, resuelto el 2026-10-26): las que el maestro carga como Supermercado o Autoservicio (DIA
+  "eCommerce", la "Dark Store Mendoza" de Libertad) salen por el nombre (`SUCURSALES_NO_FISICAS`); una tienda online
+  nueva con un nombre que no lo diga entraría (la CELDA 7 imprime las que saca).
 - **Imputación de la serie mensual sin límite de meses** (abierto, decisión del usuario): un subtipo-mes con pocas
   sucursales arrastra su último mes válido; hay rachas de 7 a 14 meses (hoja `Imputaciones`, §14.11). Desde el
   2026-10-23 (noche) la serie TPD (§14.12) es la robustez: no arrastra y muestra en qué meses pesa la imputación.
@@ -466,7 +475,7 @@ coroplético; 11 Excel; 12 mapa.
 1. Estado y próximos pasos: bloque ESTADO ACTUAL de `.claude/memory.md` (y su bloque "nb06 — canasta fija").
 2. Correr el nb06 en Colab desde el badge del README (Ejecutar todo, sin tocar la CELDA 1).
 3. Revisar la corrida: `python -I -X utf8 docs/auditoria/scripts_nb06_2026-10/s16_comparar_colab.py <Excel>
-   docs/brecha_celiaca/simulacion_2026-10-23b` (con los mismos zips y el notebook vigente, 35 hojas iguales) y la lista
+   docs/brecha_celiaca/simulacion_2026-10-26` (con los mismos zips y el notebook vigente, 35 hojas iguales) y la lista
    de §14.9; para revisar todo (las 38 hojas, el mapa y el zip del caché del Drive), `r13`-`r15` (como en
    `docs/AUDITORIA_2026-10-26_nb06.md`).
 4. Para cambiar productos o reglas: scripts s7-s10 de `docs/auditoria/scripts_nb06_2026-10/` → CSV →
@@ -924,14 +933,15 @@ solo con las provincias confiables), 11 (hoja `Imputaciones`; columnas nuevas en
 
 La simulación de 14.10 corrió las celdas reales con **los mismos zips del Drive**: la corrida de Colab tiene que dar
 los mismos números (salvo el último mes si el `2026B.zip` del Drive cambió). **La primera corrida (2026-10-23) dio 29
-hojas iguales a `simulacion_2026-10-23/`.** Con el notebook vigente (BUG-47, §14.11) la referencia es
-`simulacion_2026-10-23b/` (30 hojas). Comparación automática, hoja por hoja:
+hojas iguales a `simulacion_2026-10-23/` y la segunda (2026-10-26, con BUG-47 y la TPD), 35 iguales a
+`simulacion_2026-10-23b/`.** Con el notebook vigente (además, BUG-48) la referencia es `simulacion_2026-10-26/` (35
+hojas). Comparación automática, hoja por hoja:
 
 ```bash
-python -I -X utf8 docs/auditoria/scripts_nb06_2026-10/s16_comparar_colab.py <brecha_celiaca_2026-10.xlsx de Colab> docs/brecha_celiaca/simulacion_2026-10-23b
+python -I -X utf8 docs/auditoria/scripts_nb06_2026-10/s16_comparar_colab.py <brecha_celiaca_2026-10.xlsx de Colab> docs/brecha_celiaca/simulacion_2026-10-26
 ```
 
-(esperado: 30 hojas iguales). Después, la lectura de cada punto:
+(esperado: 35 hojas iguales; para revisar también las hojas grandes, el mapa y el caché, `r13`-`r15`). Después, la lectura de cada punto:
 
 1. **Lectura**: 58 meses (ene-2022 → oct-2026), el AVISO de ago-2024 parte 1 (se usa `COMPLETOb`), "meses en
    centavos: ninguno", los EANs sin ningún precio (esperado: ninguno).
@@ -950,6 +960,8 @@ python -I -X utf8 docs/auditoria/scripts_nb06_2026-10/s16_comparar_colab.py <bre
 10. **Serie TPD** (desde el 2026-10-23, noche; §14.12): en la CELDA 8b, `rango_completo` True en los 11 subtipos del
     panel y los 12 de todas; subtipo-mes movidos: panel con chips 14, mostachol 1, rebozador 6, spaghetti 1, tirabuzón 3;
     todas con chips 4, obleas 8; último mes (panel) TPD +119,0% (IC 95% +118,2% a +119,8%) contra +123,6%.
+11. **Sucursales que no son locales** (desde BUG-48): la CELDA 7 dice "afuera: 9 de tipo web o virtual y 6 por el
+    nombre" (DIA "eCommerce", la "Dark Store Mendoza" de Libertad y cuatro sin precios de la canasta).
 
 ### 14.10 Simulación con los zips del Drive (ene-2022 → oct-2026)
 
@@ -1110,7 +1122,9 @@ las indicadoras y la covarianza agrupada escrita a mano (brecha por tipo, error 
 nivel de productos que nunca conviven. Con los datos reales, otro algoritmo (`r10_tpd_independiente.py`: LSQR sobre el
 diseño completo, sin normalizar ni descontar efectos) da lo mismo en los 1.297 subtipo-mes con dato propio de los dos
 universos (diferencia máxima 1,3e-7 pp). Resultados esperados: `simulacion_2026-10-23b/` (35 hojas, con las 5 de la TPD).
-La corrida de Colab del 2026-10-26 dio lo mismo en todo (`docs/AUDITORIA_2026-10-26_nb06.md`).
+La corrida de Colab del 2026-10-26 dio lo mismo en todo (`docs/AUDITORIA_2026-10-26_nb06.md`). Desde BUG-48 los
+esperados vigentes están en `simulacion_2026-10-26/`: la TPD del panel no cambia y la de todas las sucursales, como
+mucho 0,01 pp en la canasta.
 
 **Resultados** (canasta, promedio de los meses de cada año):
 

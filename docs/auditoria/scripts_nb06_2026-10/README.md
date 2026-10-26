@@ -21,7 +21,7 @@ python -I -X utf8 s15_filtrar_cache.py <repo> sim_super/_cache/brecha_v3_<clave>
 python -I -X utf8 s11_simular_nb06.py <repo> <carpeta con los zips> <ar.json> sim_final 2022-01 --georef <georef_sucursales.parquet del nb09>
 python -I -X utf8 s12_comparar_simulacion.py <repo> precios_mes precios_mes_2 sim_final
 python -I -X utf8 s17_esperados.py sim_final/brecha_celiaca_2026-10.xlsx <repo>/docs/brecha_celiaca/simulacion_<fecha>
-python -I -X utf8 s16_comparar_colab.py <brecha_celiaca_2026-10.xlsx de Colab> <repo>/docs/brecha_celiaca/simulacion_2026-10-23b
+python -I -X utf8 s16_comparar_colab.py <brecha_celiaca_2026-10.xlsx de Colab> <repo>/docs/brecha_celiaca/simulacion_2026-10-26
 ```
 
 `precios_mes_2` existe porque el 2026-10-23 se hicieron dos extracciones (la segunda con 14 códigos viejos de Molinos

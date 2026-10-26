@@ -1,0 +1,30 @@
+serie,tipo,subtipo,desde,hasta,meses,sucursales_min,sucursales_max,brecha_arrastrada
+todas las sucursales,Fideos secos,Mostachol / penne,2022-12,2023-01,2,375,376,119.5862068965517
+todas las sucursales,Fideos secos,Mostachol / penne,2023-04,2024-03,12,120,424,152.2575757575758
+todas las sucursales,Fideos secos,Spaghetti,2023-12,2024-03,4,252,599,110.5250595234543
+todas las sucursales,Fideos secos,Tirabuzón / fusilli,2023-10,2023-11,2,266,394,396.3625769935076
+todas las sucursales,Fideos secos,Tirabuzón / fusilli,2025-04,2025-05,2,508,508,177.7777777777777
+todas las sucursales,Galletitas dulces,Con chips,2025-08,2026-04,9,8,12,110.9420582137747
+todas las sucursales,Galletitas dulces,Obleas,2023-03,2023-04,2,9,27,147.7037037037037
+todas las sucursales,Galletitas dulces,Obleas,2023-08,2023-08,1,61,61,260.6106106106106
+todas las sucursales,Galletitas dulces,Obleas,2023-12,2024-07,8,0,49,335.7487922705314
+todas las sucursales,Galletitas dulces,Pepas,2022-04,2022-09,6,43,142,88.19047619047622
+todas las sucursales,Galletitas dulces,Pepas,2023-11,2024-01,3,147,161,60.98269777891741
+todas las sucursales,Galletitas dulces,Rellenas,2023-09,2023-09,1,679,679,148.065596489202
+todas las sucursales,Pan rallado y rebozador,Rebozador,2022-04,2022-09,6,38,104,82.59435906494733
+todas las sucursales,Pan rallado y rebozador,Rebozador,2023-07,2023-11,5,34,90,87.75809419084273
+todas las sucursales,Pan rallado y rebozador,Rebozador,2024-01,2024-07,7,37,111,30.98445595854922
+panel balanceado,Fideos secos,Mostachol / penne,2023-04,2023-09,6,6,185,116.2698412698413
+panel balanceado,Fideos secos,Spaghetti,2023-07,2023-10,4,1,248,65.26717557251906
+panel balanceado,Fideos secos,Spaghetti,2024-01,2024-02,2,208,271,95.17003449975358
+panel balanceado,Fideos secos,Tirabuzón / fusilli,2023-06,2024-07,14,0,118,270.7402577077573
+panel balanceado,Galletitas dulces,Con chips,2023-06,2023-10,5,5,6,105.1187739463601
+panel balanceado,Galletitas dulces,Con chips,2024-01,2024-01,1,13,13,136.0244630071599
+panel balanceado,Galletitas dulces,Con chips,2025-08,2026-04,9,4,6,121.2666666666666
+panel balanceado,Galletitas dulces,Pepas,2024-04,2024-04,1,28,28,120.9827357237716
+panel balanceado,Galletitas dulces,"Secas (vainilla, limón, chocolate)",2022-06,2022-06,1,250,250,81.08243408610525
+panel balanceado,Pan rallado y rebozador,Rebozador,2022-06,2022-06,1,28,28,66.1728395061728
+panel balanceado,Pan rallado y rebozador,Rebozador,2022-08,2022-09,2,34,39,54.59175084175081
+panel balanceado,Pan rallado y rebozador,Rebozador,2023-05,2023-08,4,0,30,95.36019536019538
+panel balanceado,Pan rallado y rebozador,Rebozador,2023-12,2024-02,3,0,37,220.320143219588
+panel balanceado,Pan rallado y rebozador,Rebozador,2024-07,2024-10,4,4,32,126.8623340321454

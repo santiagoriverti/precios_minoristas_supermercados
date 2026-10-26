@@ -20,9 +20,11 @@ las series nacionales no cambian. Esa noche, la **serie TPD (hedónica)** como r
 imputación de subtipos (CELDA 8b, BRECHA_CELIACA §14.12): una regresión por subtipo con efectos de celda (sucursal-mes)
 y de producto, errores agrupados por sucursal. **La segunda corrida de Colab (2026-10-26) dio igual a la simulación**
 (35 hojas contra `docs/brecha_celiaca/simulacion_2026-10-23b/`; Excel completo, mapa y caché con `r13`-`r15`): BUG-47
-y la TPD verificados (`docs/AUDITORIA_2026-10-26_nb06.md`). Abiertos (decisión del usuario): la imputación sin límite
-de la serie descriptiva (la TPD muestra dónde pesa) y, menor, dos tiendas online que pasan el filtro de sucursales web.
-Test `test_brecha_celiaca.py` (30 controles).
+y la TPD verificados (`docs/AUDITORIA_2026-10-26_nb06.md`). Ese día, BUG-48: las tiendas online que el maestro carga
+como Supermercado o Autoservicio salen por el nombre (`SUCURSALES_NO_FISICAS`; el panel no cambia). **Falta re-correr
+en Colab** (no relee, ~5 min) y comparar con `docs/brecha_celiaca/simulacion_2026-10-26/` (35 hojas). Abierto
+(decisión del usuario): la imputación sin límite de la serie descriptiva (la TPD muestra dónde pesa). Test
+`test_brecha_celiaca.py` (30 controles).
 
 El **nb07** (`notebooks/07_evolucion_canastas_alternativas.ipynb`) es el motor del
 informe semanal: 6 canastas, índice encadenado, comparación con el IPC y aperturas por cadena/región.
@@ -90,8 +92,9 @@ relativo; la próxima corrida en Colab los muestra por primera vez.
    impresa, `canasta_diaria_pass_through_<desde>_<hasta>.xlsx` y `panel_diario_pass_through_<...>.parquet`; para el nb09,
    la salida impresa y los cuatro archivos de `output_trazabilidad/` (scripts en `docs/auditoria/scripts_nb09_2026-10/`,
    AUDITORIA_2026-10-22_nb09 §7); para el nb06, la salida impresa y `output_brecha/brecha_celiaca_<mes>.xlsx` (comparar
-   con `docs/auditoria/scripts_nb06_2026-10/s16_comparar_colab.py` contra `docs/brecha_celiaca/simulacion_2026-10-23b/`
-   —el notebook vigente, con BUG-47— y revisar con BRECHA_CELIACA §14.9; scripts de revisión r1-r8, AUDITORIA_2026-10-23_nb06). Descomprimir lo que
+   con `docs/auditoria/scripts_nb06_2026-10/s16_comparar_colab.py` contra `docs/brecha_celiaca/simulacion_2026-10-26/`
+   —el notebook vigente, con BUG-47, la serie TPD y BUG-48— y revisar con BRECHA_CELIACA §14.9; para revisar todo, el
+   zip del caché y el mapa: r13-r15, AUDITORIA_2026-10-26_nb06). Descomprimir lo que
    pase el usuario en una carpeta propia y correr los scripts con `python -I` (datos no confiables). Para simular
    celdas con datos reales en una PC hacen falta, además: `ar.json` (bajarlo del Drive, `MyDrive/carga/ar.json`; en
    la PC del INECO hay copia en `C:\Users\sriverti\Desktop\INECO\Otros\ar.json`) y los zips semestrales (Drive
@@ -214,7 +217,8 @@ relativo; la próxima corrida en Colab los muestra por primera vez.
   hacía que la canasta dependiera del `maestro_sepa_completo.csv.gz` que hubiera en el Drive. **La brecha se calcula
   por subtipo** (nunca la mediana del tipo entero: mezcla snacks y crackers según el surtido) y se agrega subtipo → tipo
   → canasta; si se cambia la canasta o el estimador, rehacer la simulación (s11/s12) y los resultados esperados de
-  `docs/brecha_celiaca/simulacion_2026-10-23/` (otra carpeta con la fecha nueva) antes de pedir una corrida de Colab.
+  `docs/brecha_celiaca/simulacion_<fecha>/` (otra carpeta con la fecha nueva; la vigente es `simulacion_2026-10-26/`)
+  antes de pedir una corrida de Colab.
   En 2023 las marcas masivas con TACC tenían precios controlados (la brecha de 2023 está inflada, §14.8 de
   BRECHA_CELIACA): no "corregirlo" sacando productos.
 - **nb06, comparar grupos (BUG-47)**: provincias, regiones, empresas, cadenas y sucursales se comparan con la MISMA

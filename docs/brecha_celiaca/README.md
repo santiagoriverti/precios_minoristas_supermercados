@@ -7,9 +7,10 @@ CELDA 1. Reglas, fuentes y advertencias: `docs/BRECHA_CELIACA.md` §14. Scripts 
 
 `simulacion_2026-10-23/` tiene los **resultados esperados** del nb06 con esta canasta y los zips del Drive del 23/10 (un
 CSV por hoja del Excel, y cómo compararlos con una corrida de Colab: `s16_comparar_colab.py`); la primera corrida de
-Colab dio igual en las 29 hojas. `simulacion_2026-10-23b/` son los esperados del notebook **vigente** (BUG-47: grupos y
-sucursales con la misma canasta de subtipos, concentración por departamento; serie TPD de robustez; 35 hojas): contra
-esa carpeta se compara la próxima corrida.
+Colab dio igual en las 29 hojas. `simulacion_2026-10-23b/` son los esperados del notebook `46e426b` (BUG-47 y serie
+TPD; la corrida de Colab del 2026-10-26 dio igual en las 35 hojas). `simulacion_2026-10-26/` son los del notebook
+**vigente** (además, BUG-48: afuera las tiendas online por el nombre; 35 hojas): contra esa carpeta se compara la
+próxima corrida.
 
 Para cambiar la canasta: editar el CSV (o rehacerlo con s9 y s10), correr `python notebooks/gen_nb06.py` y
 `python notebooks/test_brecha_celiaca.py`, y commitear el CSV, el generador y el `.ipynb` juntos. Agregar o sacar un

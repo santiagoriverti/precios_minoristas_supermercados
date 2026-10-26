@@ -1,6 +1,6 @@
 # Bugs Pendientes y Mejoras
 
-Última actualización: 2026-10-26 — **nb06**: la segunda corrida de Colab (con BUG-47 y la serie TPD) es **idéntica a la simulación** en el Excel (38 hojas), el mapa, la salida impresa y el caché (`docs/AUDITORIA_2026-10-26_nb06.md`): BUG-47 y la TPD quedan verificados en Colab. Hallazgo menor abierto: dos tiendas online pasan el filtro de sucursales web (abajo, "Defectos abiertos"). Antes, 2026-10-23 (noche) — **nb06**: **serie TPD (hedónica)** de la brecha como robustez frente a la imputación de subtipos (CELDA 8b, entrada 🟣 abajo; `docs/BRECHA_CELIACA.md` §14.12). Con dato propio coincide con la descriptiva; en 2023 muestra cuánto pesa la imputación. Antes, 2026-10-23 (tarde) — **nb06**: la primera corrida de Colab con la canasta fija dio **igual a la
+Última actualización: 2026-10-26 (tarde) — **nb06**: **BUG-48** resuelto (las tiendas online que el maestro carga como Supermercado o Autoservicio salen por el nombre; formato de las diferencias de la TPD; entrada 🔴 abajo); esperados nuevos en `docs/brecha_celiaca/simulacion_2026-10-26/`; falta re-correr en Colab (no relee). Antes ese día — **nb06**: la segunda corrida de Colab (con BUG-47 y la serie TPD) es **idéntica a la simulación** en el Excel (38 hojas), el mapa, la salida impresa y el caché (`docs/AUDITORIA_2026-10-26_nb06.md`): BUG-47 y la TPD quedan verificados en Colab. Hallazgo menor: dos tiendas online pasaban el filtro de sucursales web (BUG-48). Antes, 2026-10-23 (noche) — **nb06**: **serie TPD (hedónica)** de la brecha como robustez frente a la imputación de subtipos (CELDA 8b, entrada 🟣 abajo; `docs/BRECHA_CELIACA.md` §14.12). Con dato propio coincide con la descriptiva; en 2023 muestra cuánto pesa la imputación. Antes, 2026-10-23 (tarde) — **nb06**: la primera corrida de Colab con la canasta fija dio **igual a la
 simulación** (29 hojas; `docs/AUDITORIA_2026-10-23_nb06.md`). Al revisarla, **BUG-47** resuelto: las comparaciones
 entre provincias, empresas, cadenas y sucursales (mapa) mezclaban composición de subtipos y la "concentración" agrupaba
 por un campo de localidad que DIA carga con el nombre de la provincia; ahora misma canasta de 12 subtipos en todos los
@@ -57,13 +57,6 @@ Los defectos abiertos que resuelve quedan marcados abajo (se verifican con la co
   todos los subtipo-mes, el pico de oct-dic 2023 es menor (+137% a +148% contra +161% a +170%: la descriptiva arrastra
   tirabuzón a +396% y mostachol a +152%); en el panel, los fideos de jun-2023 → feb-2024 tienen tan pocas sucursales que
   ninguna de las dos series los mide bien. La regla de la descriptiva sigue como está.
-- **nb06 — dos tiendas online en el universo** (2026-10-26, `docs/AUDITORIA_2026-10-26_nb06.md` §3.1, menor): el
-  filtro de sucursales web de la CELDA 7 mira `sucursales_tipo` y deja pasar "eCommerce" de DIA (15-1-90000, CABA,
-  tipo Supermercado, 55 subtipo-mes desde ago-2023) y la "Dark Store Mendoza" de Mini Libertad (16-2-6104, tipo
-  Autoservicio, 35 hasta dic-2024). No están en el panel balanceado; en la serie de todas las sucursales mueven la
-  mediana de un subtipo-mes < 0,3 pp (crackers de sep-2023, 3,3 pp); DIA eCommerce sale en el mapa. Arreglo: excluir
-  también por nombre (no relee; nuevos esperados y otra corrida de Colab). Junto con eso, dar formato a
-  `dif_tpd_menos_descriptiva_*_pp` en `Serie_TPD` (hoy sin formato). **Decisión del usuario.**
 - **nb09 — abiertos de la corrida v2** (2026-10-22, detalle y números en `docs/AUDITORIA_2026-10-22_nb09.md` §4):
   (1) el componente comercial del puntaje pesa igual a un comercio de 1 sucursal, una estación de servicio o Mercado
   Libre que a Carrefour, y limita el puntaje de 2.129 de los 2.496 productos ≥ 50 (top 100 = 56% bebidas); restringirlo a
@@ -289,6 +282,27 @@ de la Tecnológica** hasta que haya al menos dos cadenas con cobertura de durabl
 ---
 
 ## 🟢 Cambios y fixes 2026-10
+
+### 🔴 BUG-48 — nb06: dos tiendas online dentro del universo (2026-10-26) ✅ Resuelto (falta Colab, no relee)
+
+Encontrado al revisar la segunda corrida de Colab (`docs/AUDITORIA_2026-10-26_nb06.md` §3.1); el usuario pidió
+arreglarlo. El filtro de sucursales web de la CELDA 7 miraba solo `sucursales_tipo` ("web" o "virtual"), y el maestro
+carga con tipo Supermercado o Autoservicio a algunas tiendas que no son locales. Dos tenían precios de la canasta: DIA
+"eCommerce" (15-1-90000, CABA, 55 subtipo-mes desde ago-2023; salía en el mapa) y la "Dark Store Mendoza" de Mini
+Libertad (16-2-6104, 35 hasta dic-2024). **Ahora** también salen por el nombre: `SUCURSALES_NO_FISICAS` en la CELDA 1
+("ecommerce", "dark store" o las palabras "web", "meli" u "online"), y la CELDA 7 imprime cuáles ("Sucursales que no son
+locales, afuera: 9 de tipo web o virtual y 6 por el nombre": esas dos, "Web" y "WEB" de las cadenas 2002 y 2005,
+"PAIS-WEB-MELI-ME" de la 2011 y "CASTROL MELI" de Axion, estas cuatro sin precios de la canasta). Probado contra los
+3.611 nombres del maestro: no toca ningún local. Además, las columnas `dif_tpd_menos_descriptiva_*_pp` de `Serie_TPD`
+tienen formato (+0,0 pp).
+
+Efecto (simulación `sim_v3` con el caché, 4,3 min): el **panel balanceado no cambia** (ni la descriptiva ni la TPD); la
+serie de la canasta de todas las sucursales cambia en 4 meses (máximo 0,30 pp en sep-2023; por año, 0,01 pp), la brecha
+por tipo y mes en 4 tipo-mes (máximo 1,05 pp, saladas de sep-2023), la TPD de todas las sucursales como mucho 0,01 pp en
+la canasta; CABA +124,28% → +124,29%; la concentración en 5 departamentos (Spearman −0,11 → −0,10);
+`Brecha_sucursal` 2.175 filas y el mapa 2.343 sucursales. Verificado: test con 30 controles (una sucursal sintética
+"eCommerce" con tipo Supermercado queda afuera y el HHI de su departamento no la cuenta). Esperados nuevos:
+`docs/brecha_celiaca/simulacion_2026-10-26/` (35 hojas; 10 iguales a los anteriores, 25 con esos cambios chicos).
 
 ### 🟣 nb06 — serie TPD (hedónica) de la brecha, robustez frente a la imputación de subtipos (2026-10-23, noche) — verificada en Colab (2026-10-26)
 
