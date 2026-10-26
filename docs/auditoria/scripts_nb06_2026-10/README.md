@@ -102,6 +102,9 @@ mano con el listado ALG de ANMAT (`listadoalg.anmat.gob.ar`).
 | `r25_regex_subtipos.py <seleccion.parquet>` | Efecto del error `tita\b` (atrapaba "galletita") y lo que en saladas cae fuera por no coincidir con ningún patrón |
 | `r26_alternativas.py <canasta.csv> <precios_mes> <precios_mes_2> <sim> <salida.csv>` | Brecha con cada corrección posible sobre la canasta del 2026-10-23 (estimador del nb06 sin imputación; reproduce `sim_bt_sub` exacto) |
 | `r27_comparar_canastas.py <precios_mes> <precios_mes_2> <sim> <salida.csv> nombre=canasta.csv[+eans] ...` | Lo mismo para canastas armadas con s10 (por subtipo, tipo y canasta; sucursal-meses con los dos lados) |
+| `r29_cobertura_subtipos.py <sim> <cat_20261022.parquet>` | Sucursales con los dos lados por subtipo y año, y en cuántas sucursales del sin TACC está cada candidato con TACC el 22/10 (con chips, obleas, pepas) |
+| `r30_tpd_panel_alternativa.py <carpeta de esperados>` | TPD del panel con el subtipo sin pares movido con el MISMO subtipo en todas las sucursales (en lugar de con los demás de su tipo): subtipo-mes, tipo y canasta |
+| `r31_panel_con_todas.py <sim> <Excel>` | La misma idea en la descriptiva del panel (imputar con la variación del subtipo en todas las sucursales en lugar de arrastrar) |
 | `r28_numeros_clave.py <carpeta de esperados> [otras ...]` | Números clave de una o varias carpetas de esperados (s17), lado a lado: brecha por tipo y subtipo, canasta por año, grupos confiables, concentración, imputaciones y TPD (la tabla del README de cada carpeta) |
 
 **Salidas intermedias de la corrida del 2026-10-23** (precios extraídos, selección, verificación, simulación con el

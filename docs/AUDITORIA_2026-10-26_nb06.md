@@ -136,3 +136,20 @@ Colab (`brecha_mensual` sin las barras encima ni la doble grilla, las barras hor
 etiquetas y almohaditas con +27,5%, +22,5%...).
 
 El usuario pidió además revisar datos y método frente al objetivo del notebook: `docs/REVISION_METODOLOGICA_2026-10-26_nb06.md`.
+
+## 8. Quinta corrida de Colab, con la canasta corregida (BUG-49, 2026-10-26, noche)
+
+El notebook con la canasta corregida por la auditoría de la selección (66 productos, 77 códigos;
+`docs/AUDITORIA_SELECCION_2026-10-26_nb06.md`) releyó los 58 meses en Colab: 47 min, caché `brecha_v3_492a002c`.
+Copia en `C:\Users\sriverti\proyectos\nb06_brecha_celiaca_20261023\colab_20261026d\`. **Es idéntica a la simulación
+`sim_v5`:**
+
+- **Excel:** 35 hojas iguales a `docs/brecha_celiaca/simulacion_2026-10-26b/` (`s16`) y las 38 celda por celda (`r13`).
+- **Mapa:** igual salvo los ids de Folium (`r15`; 2.380 sucursales).
+- **Caché:** 57 meses con los mismos datos (`r14`).
+- **Salida impresa:** las mismas cifras ("EANs con datos: 77/77", 53.278 observaciones fuera de la vigencia,
+  Brecha_sucursal 2.324).
+
+Los 11 gráficos se ven bien. La lectura de los resultados y qué se puede mejorar, con los productos y la metodología,
+está en `docs/AUDITORIA_SELECCION_2026-10-26_nb06.md` §7. Lo más importante es que la TPD del panel en oct-2023 sigue
+siendo un artefacto (spaghetti sin pares movido con los demás subtipos: −38%).

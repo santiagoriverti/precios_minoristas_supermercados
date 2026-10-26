@@ -92,7 +92,8 @@ completa: `docs/BRECHA_CELIACA.md` §14.13. Lo principal:
   sin TACC Matarazzo.
 - **El penne de todas las sucursales queda imputado 16 meses** (2022-12 → 2024-03). Sin Blue Patna, su lado sin TACC
   es solo Matarazzo, de poca cobertura hasta 2024.
-- **El pico de la TPD del panel en oct-2023 baja de +174% a +114%.** Salía de muy pocas sucursales.
+- **La TPD del panel en oct-2023 pasa de +174% a +114%, pero sigue siendo un artefacto** (§7): el spaghetti del panel
+  no tiene pares ese mes y, movido con los demás subtipos, queda en −38%.
 
 La variante que deja las dos marcas con TACC en spaghetti y penne (`sim_v5b`) cambia el nivel de esos dos subtipos
 (+114,9% y +133,1%) pero no el de los fideos (+161,3%). Canasta, grupos, imputaciones y TPD quedan a menos de 1 pp. Se
@@ -123,3 +124,79 @@ mantiene la regla espejada.
 `docs/auditoria/scripts_nb06_2026-10/` (README): `r20` etiquetas por cadena, `r21`-`r22` descartados y los que pasan,
 `r23` marcas dudosas en los maestros, `r24`-`r25` reglas de subtipo, `r26` correcciones sobre la canasta del 2026-10-23 y
 `r27` comparación de canastas armadas con s10. Los cambios de `s9_seleccion.py` están comentados en el código.
+
+## 7. La corrida de Colab con la canasta corregida y qué se puede mejorar (2026-10-26, noche)
+
+**La corrida es idéntica a la simulación.**
+
+- **Excel:** 35 hojas iguales a `simulacion_2026-10-26b/` (`s16`) y las 38 celda por celda contra `sim_v5` (`r13`).
+- **Mapa:** igual salvo los identificadores de Folium (`r15`).
+- **Caché:** 57 meses con los mismos datos (`r14`).
+- **Salida impresa:** las mismas cifras.
+
+Los 11 gráficos se ven bien. El usuario pidió revisar con los resultados si los productos y la metodología están bien
+o se pueden mejorar.
+
+### 7.1 Lo que dicen los resultados frente al objetivo
+
+- **Cuánto más paga un celíaco**: en los últimos 12 meses, la canasta da +118%; la TPD de oct-2026, +115% a +116%.
+  Por tipo (2022-2026): fideos +161%, galletitas dulces +108%, saladas +84%, rebozador +84%, almohaditas +26%.
+- **Evolución**: todas las sucursales y panel balanceado.
+  - 2022: +119% y +111%.
+  - 2023: inflada del lado con TACC por los precios controlados; la TPD de todas da +113%.
+  - 2024: +116% y +105%.
+  - 2025, el mínimo: +100% y +97%.
+  - 2026: +120% y +114%.
+- **De un mes a otro** la brecha se mueve sobre todo por ajustes escalonados de pocas marcas con TACC. Criollitas subió
+  75% entre nov-2022 y ene-2023 (de $48,6 a $85,1 por 100 g); la Saladix calabresa, de $114 a $219 en un mes. En esos
+  meses la brecha de las saladas cae de ~+89% a ~+32% en el panel y vuelve a subir: es real, pero conviene leer
+  promedios anuales o trimestrales.
+- **Geografía**: regiones de +104% (Patagonia) a +121% (AMBA); provincias de +107% (Chubut) a +121% (CABA).
+- **Cadenas**: solo dos empresas son confiables (Cencosud +116%, Carrefour +121%) y cinco cadenas (+114% a +120%). Con
+  esta canasta, la comparación entre cadenas casi no se puede hacer.
+- **Concentración**: sin relación (Spearman +0,12; terciles de HHI +119%, +123%, +122%).
+
+### 7.2 Problemas que muestran los resultados
+
+1. **TPD del panel en oct-2023: un artefacto.** El spaghetti del panel no tiene pares ese mes y se mueve con el penne y
+   el tirabuzón, que caen por el salto de precio de Molinos (el tirabuzón pasa de +382% a +88%): queda en −38%. Los
+   fideos del panel dan +38% y la canasta +114%.
+   - **La alternativa**: mover el subtipo sin pares con el MISMO subtipo en todas las sucursales, donde tiene 1.000
+     sucursales con pares. Da spaghetti +93%, fideos +101% y canasta +122%. También cambia las con chips movidas de
+     2023: +58% a +92% en lugar de +120% a +172%, que salían de las demás galletitas dulces.
+   - **Efecto**: los promedios anuales no cambian (±0,5 pp) y el desvío de la variación mensual de la canasta del panel
+     baja de 8,6 a 7,9 pp (`r30`).
+   - **En la descriptiva del panel**, la misma idea casi no cambia nada: ≤0,4 pp por año (`r31`).
+2. **Con chips es frágil.** Tiene 100 a 220 sucursales con los dos lados por mes y 9 meses imputados en 2025-2026 (8 a
+   12 sucursales). Par Nor coincide poco con las chips Smams. Pepitos 119 g, en cambio, está en 802 de las 813
+   sucursales con chips Smams el 22/10 (Par Nor en 538, Toddy en 619; `r29`).
+3. **Saladas: la TPD queda 4 a 24 pp debajo de la descriptiva** (2022: +73% contra +96%). El subtipo crackers mezcla
+   dos niveles: las galletas de arroz Grandiet cuestan ~2 veces el con TACC y los crackers Smams ~2,8 veces, así que la
+   mediana de cada sucursal depende de cuál tiene. Sin las galletas de arroz, los crackers dan +205% en lugar de +168%.
+4. **Imputación de la descriptiva.** El penne de todas las sucursales queda imputado 16 meses por un cambio de escala:
+   el sin TACC Matarazzo pasó de 300-550 a 1.200-1.300 sucursales por día. Se probaron variantes (límite de meses,
+   referencia local, dato propio después; `r6`): mueven los años hasta 4 pp sin bajar el ruido, ninguna es claramente
+   mejor. La TPD no imputa: es la referencia para 2023-2024.
+5. **Subtipos chicos, con ruido.**
+   - Obleas: el sin TACC (Santa María) está en 294 sucursales.
+   - Pepas: el con TACC (Trío) está en 316 de las 1.227 sucursales con pepas Smams, y no hay otro con TACC continuo.
+   - Rebozador: 110 a 320 sucursales por mes.
+
+### 7.3 Recomendaciones, por prioridad
+
+1. **TPD del panel**: mover el subtipo sin pares con el mismo subtipo en todas las sucursales y, si ahí tampoco hay
+   dato, con los demás de su tipo, como hoy. Cambia solo la CELDA 8b: no relee el SEPA y Colab no relee.
+2. **Con chips**: empalmar Pepitos 119 g (`7622201808662` → `7622201503260` → `7622201735906`) como comparador, en
+   lugar de Par Nor o junto a él. Hay que extraer los dos códigos viejos de los zips, verificar los precios (s10) y
+   releer.
+3. **Obleas**: Opera 92 g, del tamaño de la Santa María de 90 g. Está en 272 de sus 294 sucursales y da obleas +107% en
+   lugar de +126%.
+4. **Crackers**: decidir las galletas de arroz. Sacarlas hace el subtipo homogéneo y acerca la TPD a la descriptiva;
+   dejarlas mide la sustitución que hace el celíaco. Una puede ser la cifra principal y la otra, la de sensibilidad.
+5. **Cadenas y concentración**: estimar la prima por empresa y su relación con el HHI con la hedónica (§3.9 de
+   BRECHA_CELIACA: interacciones sin TACC × empresa y sin TACC × HHI). Usa los productos de cada cadena, sin completar
+   con la brecha nacional, y responde las dos preguntas que la descriptiva no puede responder con dos empresas
+   confiables.
+6. **Lectura**: promedios anuales o trimestrales; 2023 con la TPD de todas las sucursales.
+
+Scripts nuevos: `r29_cobertura_subtipos.py`, `r30_tpd_panel_alternativa.py` y `r31_panel_con_todas.py`.

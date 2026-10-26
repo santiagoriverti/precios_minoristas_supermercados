@@ -38,9 +38,19 @@ Autor: Santiago Riverti — investigador independiente
      `docs/brecha_celiaca/simulacion_2026-10-26b/`. Fideos +172,3% → +160,6%; canasta de los últimos 12 meses +122,7% →
      +118,0%; ChangoMas deja de ser confiable (su +140% era Blue Patna); 2.324 sucursales; penne imputado 16 meses en
      todas las sucursales (BRECHA_CELIACA §14.13).
-   - **Siguiente**: (a) **corrida de Colab** (relee los 58 meses, caché `brecha_v3_492a002c`) → `s16` contra
-     `simulacion_2026-10-26b`; (b) el usuario decide las propuestas de la auditoría (obleas 92 g, crackers sin galletas
-     de arroz, empalmar Pepitos y otros líderes, vainillas).
+   - **Colab (noche)**: la corrida con la canasta corregida dio IGUAL a la simulación (Excel 35/35 y 38/38, mapa,
+     caché, salida; AUDITORIA_2026-10-26 §8; copia en `colab_20261026d/`).
+   - **Revisión de los resultados** (AUDITORIA_SELECCION §7, `r29`-`r31`):
+     - TPD del panel en oct-2023: artefacto (spaghetti sin pares, movido con los demás subtipos: −38%). La
+       propuesta es moverlo con el mismo subtipo en todas las sucursales.
+     - Con chips frágil (Pepitos sí está donde están las chips Smams).
+     - Saladas: TPD 4 a 24 pp debajo de la descriptiva (galletas de arroz mezcladas con crackers).
+     - Solo dos empresas confiables: hace falta la hedónica por cadena y HHI.
+   - **Siguiente**: el usuario decide.
+     - Corrección de la TPD del panel (no relee; cambia la CELDA 8b).
+     - Pepitos, para lo que hay que extraer sus códigos viejos y releer.
+     - Obleas 92 g, galletas de arroz y vainillas.
+     - La hedónica por cadena y HHI.
 
    Antes (2026-10-26): la **segunda corrida de Colab** (notebook `46e426b`: canasta
    fija, BUG-47 y serie TPD) es **idéntica a la simulación** en todo: 35 hojas contra los esperados (`s16`), las 38 hojas

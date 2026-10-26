@@ -952,7 +952,9 @@ La simulación de 14.10 corrió las celdas reales con **los mismos zips del Driv
 los mismos números (salvo el último mes si el `2026B.zip` del Drive cambió). **La primera corrida (2026-10-23) dio 29
 hojas iguales a `simulacion_2026-10-23/` y la segunda (2026-10-26, con BUG-47 y la TPD), 35 iguales a
 `simulacion_2026-10-23b/`.** Con BUG-48 la referencia fue `simulacion_2026-10-26/` (las corridas de Colab de esa tarde
-y esa noche dieron igual); con la canasta corregida (BUG-49, §14.13) es `simulacion_2026-10-26b/` (35 hojas).
+y esa noche dieron igual); con la canasta corregida (BUG-49, §14.13) es `simulacion_2026-10-26b/` (35 hojas). **La
+corrida de Colab con la canasta corregida (2026-10-26, noche) dio 35 hojas iguales** (y el Excel, el mapa, el caché y
+la salida impresa iguales a la simulación; AUDITORIA_2026-10-26 §8).
 Comparación automática, hoja por hoja:
 
 ```bash
@@ -1280,9 +1282,11 @@ Lectura:
    Matarazzo, que tenía 300-550 sucursales por día en 2022-2023 y 1.200-1.300 desde mayo de 2024. Por la regla de la
    mitad de las sucursales habituales, esos meses se arrastran. La TPD no imputa: el penne del panel se mueve con los
    demás subtipos en 6 meses.
-5. **El pico de 2023 de la TPD del panel se achica.** Pasa de +174,0% a +114,2% en oct-2023 (y de +161,7% a +140,3% en
-   sep-2023). Salía de muy pocas sucursales (§14.12, lectura 3); con la canasta corregida, la TPD del panel en 2023
-   (+108,8%) queda cerca de la descriptiva.
+5. **La TPD del panel en oct-2023 sigue siendo un artefacto, ahora hacia abajo** (corregido al revisar la corrida de
+   Colab, §14.14). Antes daba +174,0% por el spaghetti de una sola sucursal (§14.12, lectura 3). Ahora el spaghetti del
+   panel no tiene pares ese mes y se mueve con el penne y el tirabuzón, que caen por el salto de precio de Molinos: queda
+   en −38%. Los fideos del panel dan entonces +38% y la canasta +114,2%. Para 2023, leer la TPD de todas las
+   sucursales.
 6. **Concentración.** El Spearman pasa de −0,10 a +0,12 (terciles de HHI: +118,9%, +123,1%, +122,4%). Sigue sin haber
    una relación clara.
 7. **Spaghetti y penne con una sola marca con TACC.** Es lo que da la composición espejada con un solo sin TACC: el
@@ -1297,3 +1301,30 @@ Lectura:
 - crackers sin las galletas de arroz;
 - empalmar los códigos de los líderes con TACC (Pepitos);
 - un subtipo de vainillas.
+
+### 14.14 La corrida de Colab con la canasta corregida y qué mejorar (2026-10-26, noche)
+
+La corrida de Colab con la canasta corregida es **idéntica a la simulación** en el Excel, el mapa, el caché y la salida
+impresa (AUDITORIA_2026-10-26 §8). La revisión de los resultados está en `docs/AUDITORIA_SELECCION_2026-10-26_nb06.md`
+§7. Problemas encontrados:
+
+1. **La TPD del panel en oct-2023 es un artefacto.** El spaghetti sin pares se mueve con el penne y el tirabuzón, que
+   caen por el salto de Molinos, y queda en −38%. Moverlo con el mismo subtipo en todas las sucursales da +93%, fideos
+   +101% y canasta +122% (en lugar de +114%). Los promedios anuales no cambian y el ruido baja de 8,6 a 7,9 pp.
+2. **Con chips es frágil.** Tiene 100 a 220 sucursales con pares por mes y 9 meses imputados en 2025-2026. Pepitos
+   119 g está donde están las chips Smams (802 de 813 sucursales el 22/10); Par Nor no (538).
+3. **Saladas: la TPD queda 4 a 24 pp debajo de la descriptiva**, por mezclar galletas de arroz (~2 veces el con TACC)
+   y crackers Smams (~2,8 veces) en un subtipo.
+4. **Hay pocas sucursales en obleas, pepas y rebozador.**
+5. **Solo dos empresas confiables:** la comparación entre cadenas y la concentración piden la hedónica con
+   interacciones (§3.9).
+
+Recomendaciones, por prioridad:
+
+1. TPD del panel: mover el subtipo sin pares con el mismo subtipo en todas las sucursales. Solo cambia la CELDA 8b y
+   no relee.
+2. Pepitos como comparador de con chips (empalme de sus tres códigos).
+3. Opera 92 g en obleas.
+4. Decidir las galletas de arroz.
+5. Hedónica por cadena y HHI.
+6. Leer promedios anuales o trimestrales, y 2023 con la TPD de todas las sucursales.

@@ -30,8 +30,10 @@ del usuario). Abierto también: la imputación sin límite de la serie descripti
 `docs/AUDITORIA_SELECCION_2026-10-26_nb06.md`)**: la etiqueta sin TACC se contrastó con el listado ALG de ANMAT y se
 corrigieron cuatro errores de las reglas de s9 (`\btita\b`, Blue Patna al huevo, el tirabuzón sin TACC Matarazzo en el
 cambio de código de Molinos, sabores de Lasfor). Canasta de **66 productos (77 códigos)**, simulación con los 58 meses
-releídos y esperados vigentes en `docs/brecha_celiaca/simulacion_2026-10-26b/`. **Falta la corrida de Colab** (relee
-los 58 meses). Quedan cuatro propuestas de diseño para el usuario (AUDITORIA_SELECCION §4).
+releídos y esperados vigentes en `docs/brecha_celiaca/simulacion_2026-10-26b/`; **la corrida de Colab de esa noche dio
+igual a la simulación** (AUDITORIA_2026-10-26 §8). En la revisión de sus resultados (AUDITORIA_SELECCION §7) apareció
+un artefacto de la TPD del panel en oct-2023. Quedan para el usuario la corrección de esa TPD (no relee) y las
+propuestas de productos: Pepitos, obleas 92 g, galletas de arroz y vainillas.
 
 El **nb07** (`notebooks/07_evolucion_canastas_alternativas.ipynb`) es el motor del
 informe semanal: 6 canastas, índice encadenado, comparación con el IPC y aperturas por cadena/región.
