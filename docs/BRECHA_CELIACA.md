@@ -4,7 +4,7 @@ Documento técnico del **Notebook 06**. Mide la **brecha** de precios entre prod
 equivalentes **sin TACC**, dentro de cada supermercado, y cómo se distribuye **en el tiempo** (mensual desde
 enero de 2022), **geográficamente** (provincia, región, AMBA) y **entre cadenas**.
 
-Última actualización: 2026-10-26 (noche) — después de la corrida de Colab con la canasta corregida, **TPD del panel corregida** (el subtipo sin pares se mueve con el mismo subtipo en todas las sucursales), **Pepitos como comparador de con chips** (empalme de sus tres códigos) y **la Opera de 92 g junto a la de 220 g en obleas** (§14.15): 67 productos (80 códigos), esperados vigentes en `docs/brecha_celiaca/simulacion_2026-10-26c/`; falta la corrida de Colab. Antes, 2026-10-26 (auditoría de la selección) — **canasta corregida (BUG-49)**: la selección se contrastó con el listado ALG de ANMAT y se corrigieron cuatro errores de las reglas (§14.3, §14.13; `docs/AUDITORIA_SELECCION_2026-10-26_nb06.md`): 66 productos (77 códigos), simulación con los 58 meses releídos y esperados vigentes en `docs/brecha_celiaca/simulacion_2026-10-26b/`; falta la corrida de Colab. Antes, 2026-10-26 (cierre) — **revisión de datos y método frente al objetivo** (`docs/REVISION_METODOLOGICA_2026-10-26_nb06.md`): qué responde bien el nb06 y qué falta para cada pregunta (cuánto más paga un celíaco, evolución, geografía, concentración, cadenas), con recomendaciones priorizadas; la cuarta corrida de Colab (gráficos) dio igual a la simulación. Antes, 2026-10-26 — la **segunda corrida de Colab** (BUG-47 y la serie TPD) dio igual a la simulación
+Última actualización: 2026-10-27 — **panel de expertos** (`docs/EVALUACION_EXPERTOS_2026-10-27_nb06.md`): la canasta fija mide bien la prima de precio de los envasados sin TACC (+103% en los últimos 12 meses, IC 95% +102,6% a +103,5%) pero no el costo de la dieta (41% del gasto en artículos con gluten; falta el pan). Cambios: **equivalentes primero** (las galletas de arroz salen de crackers; 62 productos en 43 líneas, 75 códigos; §14.17), **precios de una empresa fuera de escala** (CELDA 7), **análisis complementarios** (CELDA 8c: sensibilidad, índices de cada lado con el IPC, disponibilidad, IC por bootstrap, competencia local, hedónica de región y empresa, costo con la CBA y datos para el análisis propio; §15) y la hoja **`Resumen`**. Esperados vigentes en `docs/brecha_celiaca/simulacion_2026-10-27/`; falta la corrida de Colab (relee los 58 meses: cambian los códigos). Antes, 2026-10-26 (noche) — después de la corrida de Colab con la canasta corregida, **TPD del panel corregida** (el subtipo sin pares se mueve con el mismo subtipo en todas las sucursales), **Pepitos como comparador de con chips** (empalme de sus tres códigos) y **la Opera de 92 g junto a la de 220 g en obleas** (§14.15): 67 productos (80 códigos), esperados vigentes en `docs/brecha_celiaca/simulacion_2026-10-26c/`; falta la corrida de Colab. Antes, 2026-10-26 (auditoría de la selección) — **canasta corregida (BUG-49)**: la selección se contrastó con el listado ALG de ANMAT y se corrigieron cuatro errores de las reglas (§14.3, §14.13; `docs/AUDITORIA_SELECCION_2026-10-26_nb06.md`): 66 productos (77 códigos), simulación con los 58 meses releídos y esperados vigentes en `docs/brecha_celiaca/simulacion_2026-10-26b/`; falta la corrida de Colab. Antes, 2026-10-26 (cierre) — **revisión de datos y método frente al objetivo** (`docs/REVISION_METODOLOGICA_2026-10-26_nb06.md`): qué responde bien el nb06 y qué falta para cada pregunta (cuánto más paga un celíaco, evolución, geografía, concentración, cadenas), con recomendaciones priorizadas; la cuarta corrida de Colab (gráficos) dio igual a la simulación. Antes, 2026-10-26 — la **segunda corrida de Colab** (BUG-47 y la serie TPD) dio igual a la simulación
 (`docs/AUDITORIA_2026-10-26_nb06.md`) y **BUG-48**: las tiendas online que el maestro carga como Supermercado o
 Autoservicio salen por el nombre (`SUCURSALES_NO_FISICAS`; el panel no cambia); esperados vigentes en
 `docs/brecha_celiaca/simulacion_2026-10-26/`, que la corrida de Colab con BUG-48 reprodujo (AUDITORIA §6); esa noche,
@@ -405,7 +405,9 @@ Los EANs concretos están en la CELDA 1 de `notebooks/gen_nb06.py` (fuente) y de
 | `brecha_concentracion_MMAAAA.png` / `mapa_brecha_MMAAAA.png` | Brecha vs. HHI de empresas por departamento (Georef); mapa coroplético por provincia (gris: no confiable) |
 | `brecha_tpd_MMAAAA.png` / `brecha_tpd_tipos_MMAAAA.png` | Serie TPD (hedónica, §14.12) con su IC 95% contra la descriptiva: canasta (panel balanceado y todas las sucursales) y cada tipo (panel); marcador vacío = mes con algún subtipo imputado en la descriptiva |
 | `mapa_sucursales_brecha_MMAAAA.html` | Mapa Folium por sucursal (último dato de cada una en los últimos 6 meses): color por la canasta comparable (lo que la sucursal no tiene, con la brecha nacional del mes; el popup dice qué parte se midió ahí), productos comparados por subtipo, filtro por cadena, mosaicos Esri y límites del `ar.json` local (popups lazy-load) |
-| `brecha_celiaca_YYYY-MM.xlsx` | 38 hojas (la hoja `Leeme` las explica): `Canasta`, `Ponderaciones`, `Cobertura` y `Cobertura_mensual`; **`Brecha_subtipo`**, `Brecha_subtipo_anual` y `Brecha_subtipo_anual_balanc`; `Brecha_tipo`, `Brecha_tipo_mes` y `Brecha_tipo_anual` (y sus versiones con panel balanceado); `Serie_canasta`, `Serie_canasta_balanceada`, `Canasta_anual` y `Canasta_anual_balanceada` (con `peso_imputado_pct`); **serie TPD** (`Serie_TPD`, `Brecha_tipo_TPD`, `TPD_subtipos`, `TPD_anual`, `TPD_productos`; §14.12); provincia, región, empresa y cadena (últimos 12 meses, con y sin desagregar por tipo) y región y empresa por año; `Concentracion` (por departamento); `Brecha_sucursal`, `Comparacion_productos` y `Detalle_producto` (último mes); **`Imputaciones`** (rachas de subtipos imputados en la serie mensual); `Control_EAN` y `Plausibilidad` |
+| `indices_lados_MMAAAA.png` / `disponibilidad_region_MMAAAA.png` / `ic_grupos_MMAAAA.png` / `sensibilidad_MMAAAA.png` / `hedonica_grupos_MMAAAA.png` | Análisis complementarios (CELDA 8c, §15): índices de cada lado contra el IPC, disponibilidad del sin TACC por región, brecha de cada región y empresa con su IC 95%, sensibilidad a cada decisión de diseño y efectos de región y empresa con los mismos productos (en gris, los grupos con poco dato) |
+| `datos/` | Paneles para el análisis propio (parquet y csv.gz, §15): `panel_sucursal_mes_subtipo`, `panel_producto_sucursal_mes` y `sucursales.csv` |
+| `brecha_celiaca_YYYY-MM.xlsx` | 51 hojas (la hoja `Leeme` las explica; **`Resumen`**, la segunda, tiene los números principales con su IC y la hoja de cada detalle): `Canasta`, `Ponderaciones`, `Cobertura` y `Cobertura_mensual`; **`Brecha_subtipo`**, `Brecha_subtipo_anual` y `Brecha_subtipo_anual_balanc`; `Brecha_tipo`, `Brecha_tipo_mes` y `Brecha_tipo_anual` (y sus versiones con panel balanceado); `Serie_canasta`, `Serie_canasta_balanceada`, `Canasta_anual` y `Canasta_anual_balanceada` (con `peso_imputado_pct`); **serie TPD** (`Serie_TPD`, `Brecha_tipo_TPD`, `TPD_subtipos`, `TPD_anual`, `TPD_productos`; §14.12); provincia, región, empresa y cadena (últimos 12 meses, con y sin desagregar por tipo) y región y empresa por año; `Concentracion` (por departamento); `Brecha_sucursal`, `Comparacion_productos` y `Detalle_producto` (último mes); **`Imputaciones`** (rachas de subtipos imputados en la serie mensual); `Control_EAN`, `Plausibilidad` y `Precios_atipicos`; y las de la CELDA 8c (§15): `Sensibilidad`, `Indices_lados` y `Indices_lados_anual`, `Disponibilidad` y `Disponibilidad_mensual`, `IC_grupos`, `Hedonica_grupos`, `Concentracion_modelos`, `Competencia_local`, `Costo_CBA` y `Costo_CBA_mensual` |
 
 Para la evolución temporal, usar las series del **panel balanceado** (y mirar `Imputaciones`: los tramos con un subtipo
 arrastrado varios meses) y compararlas con la **serie TPD** (`Serie_TPD`, `TPD_anual`): donde coinciden, la evolución no
@@ -415,13 +417,13 @@ depende de la imputación; para comparar grupos, solo los `confiable`.
 
 ## 8. Arquitectura (celdas del generador)
 
-`notebooks/gen_nb06.py` → `06_evolucion_brecha_celiaca.ipynb` (14 celdas: una de texto y 13 de código). Qué hace cada
+`notebooks/gen_nb06.py` → `06_evolucion_brecha_celiaca.ipynb` (15 celdas: una de texto y 14 de código). Qué hace cada
 una y qué cambió el 2026-10-23: §14.7. En resumen: CELDA 1 config; 2 setup (Drive, imports); 3 maestros (sucursales,
 nombres de comercios y empresas, regiones); 4 la canasta (TIPOS, gramos, subtipos); 5 zips (un archivo por parte de cada
 mes); 6 lectura mensual con caché por mes (mediana exacta de los días, líneas filtradas por EAN); 7 vigencias,
 plausibilidad, control de identidad, brecha por sucursal × mes × subtipo y tipo, geografía, pesos ENGHo; 8
-agregaciones subtipo → tipo → canasta (mes, año, panel, grupos); 8b serie TPD (hedónica, §14.12); 9-10 gráficos y
-coroplético; 11 Excel; 12 mapa.
+agregaciones subtipo → tipo → canasta (mes, año, panel, grupos); 8b serie TPD (hedónica, §14.12); 8c análisis
+complementarios (§15); 9-10 gráficos y coroplético; 11 Excel (con la hoja `Resumen`); 12 mapa.
 
 `_pmean` = media con outliers fuera (banda `[mediana/4, mediana×4]`), la misma que nb02/nb05.
 
@@ -1488,3 +1490,185 @@ Lectura:
    7,9 pp.
 6. **Lo que queda** (AUDITORIA_SELECCION §9): las galletas de arroz, las vainillas, los pesos de los subtipos (como
    sensibilidad), una canasta de oferta actual con pan, premezclas y alfajores, y la hedónica por cadena y HHI.
+
+### 14.17 Equivalentes primero y precios de una empresa fuera de escala (2026-10-27)
+
+Panel de expertos (`docs/EVALUACION_EXPERTOS_2026-10-27_nb06.md`). Tres cambios:
+
+1. **Equivalentes primero** (regla 8 de §14.3, en s10). El lado sin TACC de un subtipo lleva la versión sin TACC del
+   mismo producto cuando hay una que cumple todas las reglas. Un **sustituto** (galletas o tostadas de arroz: otro
+   producto, naturalmente sin gluten, que también compra quien no es celíaco) entra solo si el subtipo no tiene
+   equivalente.
+   - En crackers salen las 4 galletas de arroz Grandiet (estaban los crackers Smams) y, por la composición espejada,
+     las Mini Crackers Paseo. El subtipo pasa a llamarse **Crackers**.
+   - En saborizadas siguen las galletas de arroz saborizadas: no hay galletitas saborizadas sin TACC continuas.
+   - Lo que queda afuera va a `productos_sensibilidad.csv` (los ADICIONALES de la CELDA 1) y a los escenarios de la
+     hoja `Sensibilidad` (§15.1).
+   - **Canasta**: 62 productos en 43 líneas (75 códigos).
+2. **Misma marca primero, con tope** (regla 8). Una marca con k sin TACC en el subtipo tiene a lo sumo k lugares del
+   lado con TACC; si no, una marca con muchos con TACC llenaba el lado. La canasta fija no cambia (s10 da los mismos CSV
+   byte a byte); importa en la canasta amplia (§16).
+3. **Precios de una empresa fuera de escala** (CELDA 7, `FACTOR_EMPRESA = 2.5`, hoja `Precios_atipicos`).
+   - Para cada código y mes, la mediana de cada empresa contra la mediana entre empresas (una por empresa, con ≥ 3).
+     Fuera de [1/2,5; 2,5] se descartan esas observaciones: 37 empresa-código-mes, 1.505 observaciones.
+   - Caso que lo motivó: DIA, sep-2026, chips Smams a $860 contra ~$2.550 en las demás. DIA tiene la mayoría de las
+     sucursales, así que su precio era la mediana nacional y el filtro de plausibilidad por EAN no lo veía.
+   - Las medianas de la descriptiva lo resisten; la TPD y la hedónica (mínimos cuadrados), no.
+   - Elección del factor: el 0,56% de las empresa-código-mes queda fuera de ×2,5 y el 0,81% fuera de ×2. Entre ×2 y
+     ×2,5 hay sobre todo cadenas chicas con precios persistentes y los meses de la devaluación de dic-2023.
+
+Simulación `sim_v9` con las celdas reales sobre los 58 meses. `s12` da lo mismo en los 3.244.531 precios, en los días
+y en todas las brechas; los atípicos coinciden (37 y 37). Esperados en `docs/brecha_celiaca/simulacion_2026-10-27/`
+(48 hojas en CSV). Los 15 tests dan OK (el del nb06, 42 controles).
+
+| | Canasta del 2026-10-26d | Vigente |
+|---|---|---|
+| Crackers / saladas, 2022-2026 | +166,9% / +77,9% | +195,4% / +87,2% |
+| Fideos / dulces / rebozador / cereales, 2022-2026 | +132,1% / +87,1% / +83,5% / +25,8% | Iguales |
+| Canasta por año, todas las sucursales (2022 a 2026) | 104,8 / 100,8 / 102,0 / 85,0 / 102,2 | 106,2 / 102,3 / 105,2 / 87,0 / 105,3 |
+| Canasta por año, panel balanceado | 92,7 / 92,4 / 86,1 / 79,7 / 96,2 | 96,9 / 92,1 / 88,0 / 81,2 / 99,0 |
+| Últimos 12 meses (serie mensual, todas / panel) | +99,4% / +98,2% | +103,6% / +100,9% |
+| TPD oct-2026, panel / todas | +98,4% / +100,1% | +102,6% / +103,4% |
+| Regiones | Patagonia +89,0% a AMBA +102,4% | Patagonia +89,4% a Cuyo +106,6% |
+| Empresas confiables | Carrefour +100,9%, Cencosud +101,4% | Carrefour +104,4%, Cencosud +106,6% |
+| Provincias confiables | Chubut +89,3% a Córdoba +105,7% | Chubut +90,1% a Córdoba +111,1% |
+
+Cambian los códigos: **Colab relee los 58 meses** (caché `brecha_v3_5fc88a8c`, con los 25 ADICIONALES).
+
+---
+
+## 15. Análisis complementarios (CELDA 8c, 2026-10-27)
+
+El panel de expertos pidió responder cada pregunta del objetivo con una medida directa, no solo con la brecha de la
+canasta. La CELDA 8c corre después de la serie TPD y usa los mismos datos (`datos_dia`, `bt_v`, `bt_sub`); sus hojas
+se explican en la `Leeme`. Configuración en la CELDA 1.
+
+### 15.1 Sensibilidad (hoja `Sensibilidad`)
+
+La brecha nacional de los últimos `VENTANA_GEO_MESES` meses, con la misma canasta de subtipos que los grupos, cambiando
+**una** decisión por vez (`ESCENARIOS_SENSIBILIDAD`, combinables):
+
+| Clave | Qué cambia |
+|---|---|
+| `agregar: 'sustitutos'` | Suma los sustitutos que quedaron afuera (galletas de arroz en crackers) |
+| `quitar_sustitutos: True` | Saca los sustitutos de la canasta (el subtipo que se queda sin un lado sale) |
+| `agregar: 'todos'` | Suma todos los ADICIONALES (los que cumplen las reglas y la composición espejada dejó afuera), con sus líneas `LINEA_TODOS` |
+| `sin_lineas: True` | Cada sabor cuenta como un producto (`PRODUCTO_SIN_LINEA`) |
+| `pesos_subtipo: 'disponibilidad'` | Cada subtipo pesa por sus sucursal-meses con los dos lados, en lugar de pesos iguales |
+| `estimador: 'minimo'` / `'nacional'` | Lo más barato de cada lado en la sucursal / cociente de las medianas nacionales de cada lado |
+
+Los ADICIONALES se leen con la canasta (cambian la clave del caché), pasan por las mismas reglas de la CELDA 7 y nunca
+entran en la brecha principal.
+
+### 15.2 Índices de precio de cada lado (hojas `Indices_lados`, `Indices_lados_anual`)
+
+Por subtipo y lado, un índice de efectos fijos sobre los mismos productos en la misma sucursal:
+ln p(producto, sucursal, mes) = efecto del ítem (el producto en esa sucursal) + efecto del mes. Cada ítem se compara
+consigo mismo, también entre meses no seguidos.
+
+- Encadenar mes a mes perdía al sin TACC que falta unos meses y vuelve más caro; como los sin TACC entran y salen más,
+  su índice derivaba para abajo.
+- Tipo = promedio geométrico de sus subtipos; canasta = pesos ENGHo; `sin_sobre_con` = evolución relativa (> 100: los
+  sin TACC subieron más). Tiene correlación 0,92 con la TPD de todas las sucursales.
+- El IPC del INDEC (`IPC_XLSX`, en `SEPA_DIR`: nivel general y alimentos) se rebasa al primer mes.
+
+### 15.3 Disponibilidad (hojas `Disponibilidad`, `Disponibilidad_mensual`)
+
+De las sucursal-meses que venden el tipo con TACC (productos de la canasta), % que vende también el sin TACC, por tipo y
+ponderada (ENGHo). Por país, región, provincia, empresa y cadena, en los últimos meses, y el país mes a mes. Dos
+medidas: `sucursal-meses` y `sucursales (alguna vez)`. La brecha solo se mide donde están los dos lados: no encontrar
+el producto también es un costo.
+
+### 15.4 Intervalos de confianza (hoja `IC_grupos`)
+
+Bootstrap por sucursal (`BOOT_B` réplicas, semilla `BOOT_SEED`): se remuestrean sucursales con reposición y se recalcula
+la canasta de cada grupo con la misma canasta de subtipos. Percentiles 2,5 y 97,5 de la brecha y de su diferencia con
+el país (`difiere_del_pais` = el IC de la diferencia no incluye el 0). Con la semilla fija, dos corridas dan lo mismo.
+
+### 15.5 Competencia local y concentración (hojas `Competencia_local`, `Concentracion_modelos`)
+
+- Para cada sucursal con coordenadas: sucursales y empresas a ≤ `RADIO_COMPETENCIA_KM` (haversine), empresas rivales,
+  HHI local y del departamento, y la mediana de su brecha comparable.
+- Regresiones por sucursal (con ≥ 50% del peso medido en ella), con errores agrupados por departamento (CR1):
+  - variables: log(1 + brecha comparable) y el nivel de cada lado (log del precio de la sucursal contra la mediana
+    nacional del subtipo y mes);
+  - medidas: HHI del departamento, HHI local y empresas rivales;
+  - controles: ninguno, empresa, y empresa y región.
+
+### 15.6 Hedónica de grupos (hoja `Hedonica_grupos`)
+
+Corte transversal de los últimos meses: ln p(producto, sucursal, mes) = efecto de la celda (sucursal × mes × subtipo) +
+efecto del producto + sinTACC × (región + empresa [+ HHI del departamento o empresas rivales]).
+
+- Con la celda, cada sin TACC se compara con los con TACC de su subtipo en el mismo súper y mes; con el producto, los
+  mismos productos en todos los grupos (el surtido no mueve el resultado).
+- La región y la empresa se controlan entre sí; `efecto_pct` = exp(coef) − 1 sobre 1 + brecha, contra la base (la
+  región y la empresa con más observaciones; Carrefour si está).
+- Pesos: cada subtipo como en la canasta, repartido entre sus celdas; en la celda, cada lado suma lo mismo.
+- Empresas con menos de 20 sucursales: "Otras". Errores agrupados por departamento.
+- `confiable` = el grupo tiene celdas en la mitad de los subtipos o más, cada uno en la mitad de los meses o más
+  (`subtipos_del_grupo`). En oct-2026 no lo son DIA (3 subtipos en ≤ 3 meses), Toledo y Cooperativa Obrera. El gráfico
+  los pinta en gris.
+
+### 15.7 Costo con la Canasta Básica Alimentaria (hojas `Costo_CBA`, `Costo_CBA_mensual`)
+
+Gramos por adulto equivalente por mes de la CBA del INDEC (GBA) de los ítems con gluten (`CBA_ITEMS`). El precio de
+cada lado es la mediana nacional, entre las sucursal-meses con los dos lados, de los subtipos del ítem (promedio
+geométrico) en los últimos `MESES_CBA` meses. Costo extra por adulto equivalente y por hogar tipo (`CBA_AE_HOGAR` =
+3,09). Con la canasta fija es una **cota inferior**: pan (6.750 g) y harina (1.080 g) no tienen precio.
+
+### 15.8 Datos para el análisis propio (`OUTPUT_DIR/datos/`, `EXPORTAR_DATOS`)
+
+| Archivo | Una fila por | Columnas principales |
+|---|---|---|
+| `panel_sucursal_mes_subtipo` (.parquet, .csv.gz) | sucursal × mes × subtipo con los dos lados | precios de cada lado ($/100 g), brecha, región, provincia, empresa, cadena, departamento, HHI del departamento y local, empresas rivales, sucursales en el radio, coordenadas |
+| `panel_producto_sucursal_mes` (.parquet, .csv.gz) | producto × sucursal × mes | código, descripción, producto (línea), tipo, subtipo, lado, precio mediano del mes, $/100 g, días con precio |
+| `sucursales.csv` | sucursal | empresa, cadena, región, provincia, departamento, competencia local, brecha comparable mediana, nombre, localidad, coordenadas |
+
+Se unen por `suc_key` (`id_comercio|id_bandera|id_sucursal`). El panel de productos tiene ~3,2 millones de filas: no
+entra en Excel; usar Python, R o Stata.
+
+### 15.9 Hoja `Resumen`
+
+La segunda hoja del Excel: los números principales con su IC 95% cuando lo hay y la hoja de cada detalle (nivel,
+evolución, índices, tipos, regiones y provincias, cadenas con la canasta propia y con la hedónica, concentración,
+disponibilidad, costo, sensibilidad y calidad de datos). Las empresas con la canasta propia, solo las confiables.
+
+### 15.10 Validación
+
+`notebooks/test_brecha_celiaca.py` (42 controles) contrasta con fuerza bruta sobre un SEPA sintético:
+
+- los atípicos por empresa;
+- cada escenario de sensibilidad;
+- los índices de efectos fijos (mínimos cuadrados densos) y el IPC rebasado;
+- las dos medidas de disponibilidad;
+- el bootstrap (determinístico con la semilla);
+- la competencia por haversine;
+- la hedónica: sin ruido recupera exactos los efectos de región, empresa y HHI;
+- el costo con la CBA;
+- las hojas, los gráficos, los paneles de `datos/` y el `Resumen`.
+
+Con los datos reales, la simulación `sim_v9` (s11) y el cálculo independiente (s12) coinciden.
+
+---
+
+## 16. Canasta amplia de la oferta actual (nb06b; en preparación, 2026-10-27)
+
+Es la recomendación principal del panel de expertos (`docs/EVALUACION_EXPERTOS_2026-10-27_nb06.md` §10.2). La canasta
+fija pesa el 41% del gasto en artículos con gluten de la ENGHo. La canasta amplia aplica las mismas reglas (s9 + s10)
+sobre los últimos 15 meses (ago-2025 → oct-2026) y suma los tipos que no tienen continuidad desde 2022:
+
+| Tipo nuevo | % del gasto en alimentos (ENGHo 2017/18) | Artículos |
+|---|---|---|
+| Pan envasado | 0,792 | A0111109, A0111110, A0111113, A0111118 |
+| Harinas y premezclas | 0,726 | A0111210 (harina de trigo), A0111211 (mezclas para pizza y ñoquis), A0119205 (polvo para bizcochuelo) |
+| Alfajores | 0,549 | A0118401 |
+| Tapas de empanadas y tartas | 0,520 | A0111311, A0111312 |
+
+Con los cinco tipos de la canasta fija cubre el 62% del gasto en artículos con gluten; el pan francés fresco (4,7%) no
+está en el SEPA. Mide el **nivel** de la brecha y su distribución entre regiones, cadenas y mercados con más productos
+y sucursales; la **evolución** 2022-2026 sigue siendo la de la canasta fija.
+
+**Estado**: `s18_canasta_amplia.py` arma la selección sobre la lectura amplia del SEPA (1.781 candidatos, caché
+`brecha_v3_6659af73`). Falta resolver los gramos de las presentaciones por unidades con el catálogo de las cadenas,
+separar alfajores individuales de cajas y generar el notebook 06b con el mismo generador.

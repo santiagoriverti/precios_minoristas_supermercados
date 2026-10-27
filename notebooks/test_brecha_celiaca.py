@@ -68,7 +68,11 @@ P = {
     '7790000000097': ('Galletitas dulces', 'sin', 105, 1600, (1, 2, 3)),
     '7790000000103': ('Galletitas dulces', 'sin', 150, 1500, (1, 2, 3)),     # salta x2,5 en marzo
     '7799999999998': ('otro', 'tacc', 100, 500, (1, 2, 3)),                  # fuera de la canasta
+    '7790000000134': ('Fideos secos', 'sin', 500, 950, (1, 2, 3)),           # ADICIONAL (sensibilidad, CELDA 8c)
 }
+ADIC = {'7790000000134': {'tipo': 'Fideos secos', 'lado': 'sin_tacc', 'subtipo': 'A', 'gramos': 500, 'desde': None,
+                          'hasta': None, 'linea_todos': 'Adicional 134', 'motivo': 'composición espejada',
+                          'descripcion': 'Producto 134'}}
 FALTA = {(('15', '1', '301'), '7790000000059'), (('9', '1', '102'), '7790000000103')}
 PESOS = {'Fideos secos': 1.503, 'Galletitas dulces': 1.717}
 DIAS = pd.date_range('2026-01-01', '2026-03-31')
@@ -79,6 +83,8 @@ def precio(s, e, d):
     salto = 2.5 if (e == '7790000000103' and d.month == 3) else 1.0
     if e == '7790000000028' and d.month == 2:      # código viejo con precio congelado después del cambio
         salto = 0.3
+    if e == '7790000000097' and s[0] == '15' and d.month == 2:   # toda una cadena (DIA) al triple: precio fuera de escala
+        salto = 3.0
     ruido = 1 + 0.02 * np.sin(d.day * 1.7 + int(e[-3:]) % 7) + 0.01 * np.cos(int(s[2]) % 13 + d.day)
     return base * g / 100 * SUCS[s][4] * infl * salto * ruido
 
@@ -121,6 +127,10 @@ with zipfile.ZipFile(sepa / '2026A.zip', 'w') as zf:
             usados.append((mes, w, mes == 3))
             if (mes, parte) == (1, 1):     # parcial (días 1-5) de la misma parte: no se usa ni se suma
                 zf.writestr('012026_pais_parte1COMPLETO.csv.gz', gz(tabla(1, [d for d in dd if d.day <= 5])))
+pd.DataFrame({'date': pd.to_datetime(['2025-12-01', '2026-01-01', '2026-02-01', '2026-03-01']),
+              'Nivel general': [100.0, 102.0, 105.0, 107.0], 'Alimentos y bebidas no alcohólicas': [100.0, 103.0, 104.0,
+                                                                                                   110.0]}).to_excel(
+    sepa / 'IPC.xlsx', sheet_name='IPC', index=False)
 feats = [{'type': 'Feature', 'properties': {'id': k, 'name': n},
           'geometry': {'type': 'Polygon', 'coordinates': [[[x0, y0], [x1, y0], [x1, y1], [x0, y1], [x0, y0]]]}}
          for k, (n, x0, x1, y0, y1) in POLI.items()]
@@ -145,10 +155,10 @@ mp = pd.DataFrame([{'producto_sepa_id': e, 'producto_descripcion': f'Producto {e
 mp.to_excel(tmp / 'data' / 'Maestro de Productos Interno.xlsx', index=False)
 
 TIPOS = {t: {'peso': PESOS[t],
-             'tacc': {e: f'Producto {e[-3:]}' for e, v in P.items() if v[0] == t and v[1] == 'tacc'},
-             'sin_tacc': {e: f'Producto {e[-3:]}' for e, v in P.items() if v[0] == t and v[1] == 'sin'}}
+             'tacc': {e: f'Producto {e[-3:]}' for e, v in P.items() if v[0] == t and v[1] == 'tacc' and e not in ADIC},
+             'sin_tacc': {e: f'Producto {e[-3:]}' for e, v in P.items() if v[0] == t and v[1] == 'sin' and e not in ADIC}}
          for t in PESOS}
-GRAMOS = {e: v[2] for e, v in P.items() if v[0] in PESOS}
+GRAMOS = {e: v[2] for e, v in P.items() if v[0] in PESOS and e not in ADIC}
 VIGENCIA = {'7790000000028': (None, '2026-01'), '7790000000035': ('2026-02', None)}
 FUERA_VIG = {('7790000000028', '2026-02')}
 PRODUCTO = {'Fideo sin TACC X': ['7790000000042', '7790000000110'],
@@ -169,7 +179,10 @@ def correr():
     exec(cells[0], g)
     g.update(SEPA_DIR=str(sepa), OUTPUT_DIR=str(out), TIPOS=TIPOS, GRAMOS=GRAMOS, VIGENCIA=VIGENCIA,
              PRODUCTO=PRODUCTO, SUBTIPO=SUBTIPO, MES_INICIO_HISTORICO='2026-01', MIN_SUC_AGG=1, MIN_SUC_SUBTIPO=1,
-             VENTANA_GEO_MESES=12, USAR_GEOREF=False, MIN_SUC_DEPTO=1)
+             VENTANA_GEO_MESES=12, USAR_GEOREF=False, MIN_SUC_DEPTO=1,
+             ADICIONALES=ADIC, LINEA_TODOS={}, SUSTITUTOS={'7790000000097'}, PRODUCTO_SIN_LINEA=PRODUCTO,
+             BOOT_B=30, RADIO_COMPETENCIA_KM=5, MESES_CBA=2,
+             CBA_ITEMS=[('Fideos', 'Fideos secos', None, 1740), ('Galletitas dulces', 'Galletitas dulces', None, 210)])
     for c in cells[1:]:
         exec(c, g)
     return g
@@ -197,8 +210,18 @@ L = pd.concat(largo, ignore_index=True)
 L = L.groupby(['id_comercio', 'id_bandera', 'id_sucursal', 'id_producto', 'mes', 'dia'], as_index=False)['precio'].median()
 M = L.groupby(['id_comercio', 'id_bandera', 'id_sucursal', 'id_producto', 'mes'], as_index=False).agg(
     precio=('precio', 'median'), dias=('precio', 'size'))
+M_ADIC = M[M['id_producto'].isin(ADIC)].copy()        # el producto adicional (sensibilidad), aparte
 M = M[M['id_producto'].isin(GRAMOS)]
 M = M[[(e, m) not in FUERA_VIG for e, m in zip(M['id_producto'], M['mes'])]]
+# precios de una empresa fuera de escala (CELDA 7): la mediana de cada empresa para el código y mes contra la mediana
+# entre empresas (sucursales del maestro, sin Axion ni el EAN de la plausibilidad); fuera de x2,5 se descarta
+EMPR = {'9': 'Cencosud', '10': 'Carrefour', '15': 'DIA'}
+_mf = M[~M['id_comercio'].eq('23') & ~M['id_producto'].eq('7790000000080')]
+_mf = _mf.assign(emp=_mf['id_comercio'].map(EMPR), p100=_mf['precio'] / _mf['id_producto'].map(GRAMOS) * 100)
+_ce = _mf.groupby(['id_producto', 'mes', 'emp'])['p100'].median()
+_ce = _ce / _ce.groupby(level=['id_producto', 'mes']).transform('median')
+ATIP = set(_ce[(_ce > 2.5) | (_ce < 1 / 2.5)].index)
+M = M[[(e, m, EMPR.get(c)) not in ATIP for e, m, c in zip(M['id_producto'], M['mes'], M['id_comercio'])]]
 dd = g['datos_dia'][['id_comercio', 'id_bandera', 'id_sucursal', 'ean_norm', 'mes', 'precio', 'dias']]
 cmp = M.merge(dd, left_on=['id_comercio', 'id_bandera', 'id_sucursal', 'id_producto', 'mes'],
               right_on=['id_comercio', 'id_bandera', 'id_sucursal', 'ean_norm', 'mes'], how='left', suffixes=('', '_nb'))
@@ -214,6 +237,11 @@ chk('Axion (23), la sucursal web y la tienda online por el nombre ("eCommerce" c
     not g['bt_sm']['id_comercio'].eq('23').any() and not g['bt_sm']['id_sucursal'].isin(['303', '304']).any()
     and not g['suc_geo']['id_sucursal'].isin(['303', '304']).any())
 chk('plausibilidad saca el EAN x10', set(g['plausibilidad']['ean_norm']) == {'7790000000080'})
+chk('precio de una empresa fuera de escala: DIA al triple en febrero (un código) afuera, solo esas observaciones',
+    ATIP == {('7790000000097', '2026-02', 'DIA')} and len(g['precios_atipicos']) == 1
+    and g['precios_atipicos'].iloc[0][['ean_norm', 'mes', 'empresa']].tolist() == ['7790000000097', '2026-02', 'DIA']
+    and not ((g['datos_dia']['ean_norm'] == '7790000000097') & (g['datos_dia']['mes'] == '2026-02')
+             & (g['datos_dia']['id_comercio'] == '15')).any())
 ce = g['control_ean'].set_index('ean_norm')
 chk('control de identidad marca el salto x2,5', bool(ce.loc['7790000000103', 'revisar'])
     and not ce.drop(index='7790000000103')['revisar'].any())
@@ -302,10 +330,13 @@ for suc, mes in g['brecha_suc_mes'][['suc_key', 'mes']].itertuples(index=False):
         rel += W[t] * np.exp(np.mean(lg))
     fb[(suc, mes)] = ((rel - 1) * 100, 100 * propio)
 bsm = g['brecha_suc_mes'].set_index(['suc_key', 'mes'])
-chk('canasta comparable por sucursal (falta el subtipo B en la 301 y el D en la 102: brecha nacional del mes)',
+chk('canasta comparable por sucursal (falta el subtipo B en la 301, el D en la 102 y, en febrero, el C en la 301 por el '
+    'precio fuera de escala: brecha nacional del mes)',
     all(abs(bsm.loc[k, 'brecha_comparable'] - v[0]) < 1e-9 and abs(bsm.loc[k, 'peso_propio_pct'] - v[1]) < 1e-9
         for k, v in fb.items())
-    and abs(bsm.loc[('15|1|301', '2026-02'), 'peso_propio_pct'] - 100 * (1 - W['Fideos secos'] / 2)) < 1e-9)
+    and abs(bsm.loc[('15|1|301', '2026-01'), 'peso_propio_pct'] - 100 * (1 - W['Fideos secos'] / 2)) < 1e-9
+    and abs(bsm.loc[('15|1|301', '2026-02'), 'peso_propio_pct']
+            - 100 * (1 - W['Fideos secos'] / 2 - W['Galletitas dulces'] / 2)) < 1e-9)
 
 # grupos con la MISMA canasta: el subtipo con < MIN_SUC_SUBTIPO sucursales en el grupo toma la brecha nacional
 _rows = []
@@ -536,6 +567,180 @@ faltan_h = {'Leeme', 'Canasta', 'Ponderaciones', 'Brecha_subtipo', 'Brecha_subti
             'Plausibilidad', 'Brecha_tipo_mes_balanceado', 'Cobertura_mensual'} - set(x.sheet_names)
 chk(f'hojas del Excel (faltan {sorted(faltan_h)})', not faltan_h)
 chk('mapa por sucursal', (out / 'mapa_sucursales_brecha_032026.html').exists())
+
+# ── CELDA 8c: análisis complementarios ──────────────────────────────────────────
+def canasta_bf(ss, pesos=None):
+    # brecha nacional del período: mediana de cada subtipo entre sucursal-meses, tipo = promedio geométrico (pesos
+    # iguales o por sucursal-meses), canasta ENGHo
+    m = ss.groupby(['tipo', 'sub'])['brecha'].agg(['median', 'size'])
+    t = {}
+    for tp, x in m.groupby(level='tipo'):
+        wts = x['size'].to_numpy(float) if pesos == 'disp' else np.ones(len(x))
+        t[tp] = np.expm1(np.average(np.log1p(x['median'] / 100), weights=wts))
+    return 100 * (sum(W[k] * (1 + v) for k, v in t.items()) / sum(W[k] for k in t) - 1)
+
+def ss_desde(bb, modo='mediana'):
+    p = bb.groupby(_kb + ['prod'])['p100'].median()
+    if modo == 'minimo':
+        mm = p.groupby(level=_kb).transform('median')
+        p = p[(p >= mm / 4) & (p <= mm * 4)]
+        s = p.groupby(level=_kb).min()
+    else:
+        s = p.groupby(level=_kb).median()
+    s = s.unstack('rol').dropna()
+    s['brecha'] = (s['sin'] / s['tacc'] - 1) * 100
+    return s.reset_index()
+
+sens = g['sensibilidad'].set_index('escenario')['brecha_canasta']
+E8 = g['ESCENARIOS_SENSIBILIDAD']
+_nom = {v_.get('agregar', '') + str(v_.get('quitar_sustitutos', '')) + v_.get('estimador', '') + v_.get('pesos_subtipo', ''): k_
+        for k_, v_ in E8.items()}
+# adicional: el producto 134 en el lado sin TACC del subtipo A (escenario "todos")
+Ba = M_ADIC.merge(pd.DataFrame([('7790000000134', 'Fideos secos', 'sin', 500)], columns=['id_producto', 'tipo', 'rol', 'g']),
+                  on='id_producto')
+Ba = Ba[~Ba['id_comercio'].eq('23') & ~Ba['id_sucursal'].isin(['303', '304'])]
+Ba = Ba.assign(p100=Ba['precio'] / Ba['g'] * 100, prod='Adicional 134', sub='A')
+chk('sensibilidad: el escenario principal = la brecha nacional de la CELDA 8 = fuerza bruta',
+    abs(sens.iloc[0] - canasta_bf(SS.assign(sub=SS['sub']))) < 1e-9
+    and abs(sens.iloc[0] - g['_canasta_nac'](g['bt_v'])[0]) < 1e-9)
+chk('sensibilidad: todos los productos (con el ADICIONAL), sin sustitutos, el más barato, el cociente nacional y pesos '
+    'por disponibilidad = fuerza bruta',
+    abs(sens[_nom['todos']] - canasta_bf(ss_desde(pd.concat([B, Ba], ignore_index=True)))) < 1e-9
+    and abs(sens[_nom['True']] - canasta_bf(ss_desde(B[~B['id_producto'].eq('7790000000097')]))) < 1e-9
+    and abs(sens[_nom['minimo']] - canasta_bf(ss_desde(B, 'minimo'))) < 1e-9
+    and abs(sens[_nom['disponibilidad']] - canasta_bf(SS, 'disp')) < 1e-9
+    and abs(sens[_nom['nacional']] - canasta_bf(
+        B.groupby(_kb + ['prod'])['p100'].median().groupby(level=_kb).median()
+        .groupby(level=['tipo', 'sub', 'rol']).median().unstack('rol').dropna()
+        .assign(brecha=lambda d: (d['sin'] / d['tacc'] - 1) * 100).reset_index())) < 1e-9)
+
+# índices de cada lado: por subtipo y lado, mínimos cuadrados densos de ln p con una indicadora por ítem (producto en la
+# sucursal) y por mes (sin la del primero); tipo = promedio de sus subtipos (en logs), canasta = pesos ENGHo; IPC rebasado
+PM = B.groupby(['id_comercio', 'id_bandera', 'id_sucursal', 'mes', 'tipo', 'sub', 'rol', 'prod'])['p100'].median().reset_index()
+MS_ = sorted(PM['mes'].unique())
+tau = {}
+for (tp, sb, rl), x in PM.groupby(['tipo', 'sub', 'rol']):
+    it = (x['id_comercio'] + x['id_sucursal'] + x['prod']).to_numpy()
+    items = sorted(set(it))
+    X = np.zeros((len(x), len(items) + len(MS_) - 1))
+    for r_, (i_, m_) in enumerate(zip(it, x['mes'])):
+        X[r_, items.index(i_)] = 1
+        if m_ != MS_[0]:
+            X[r_, len(items) + MS_.index(m_) - 1] = 1
+    cf = np.linalg.lstsq(X, np.log(x['p100'].to_numpy()), rcond=None)[0]
+    tau[(tp, sb, rl)] = np.r_[0.0, cf[len(items):]]
+ti = {(tp, rl, k): 100 * np.exp(np.mean([tau[(tp, sb, rl)][k] for (t2, sb, r2) in tau if t2 == tp and r2 == rl]))
+      for (tp, sb, rl) in tau for k in range(len(MS_))}
+il = g['indices_lados']
+ilc = il[il['nivel'] == 'Canasta'].set_index('mes')
+ok_i = abs(ilc.loc['2026-01', 'indice_con_tacc'] - 100) < 1e-9
+for i, mes in ((1, '2026-02'), (2, '2026-03')):
+    for rol, col in (('tacc', 'indice_con_tacc'), ('sin', 'indice_sin_tacc')):
+        esp = sum(W[t] * ti[(t, rol, i)] for t in PESOS) / W.sum()
+        ok_i &= abs(ilc.loc[mes, col] - esp) < 1e-8
+chk('índices de cada lado (efectos fijos de ítem y mes) = mínimos cuadrados densos; IPC del INDEC rebasado',
+    ok_i and abs(ilc.loc['2026-01', 'ipc_alimentos'] - 100) < 1e-9
+    and abs(ilc.loc['2026-03', 'ipc_alimentos'] - 100 * 110 / 103) < 1e-9
+    and abs(ilc.loc['2026-02', 'sin_sobre_con'] - 100 * ilc.loc['2026-02', 'indice_sin_tacc'] / ilc.loc['2026-02', 'indice_con_tacc']) < 1e-9)
+
+# disponibilidad: de las sucursal-meses con el tipo con TACC, las que tienen también el sin TACC
+lad0 = B.groupby(['id_comercio', 'id_bandera', 'id_sucursal', 'mes', 'tipo'])['rol'].agg(set)
+lad0 = lad0[lad0.map(lambda s: 'tacc' in s)].map(lambda s: 'sin' in s)
+lad = lad0.groupby(level='tipo').mean()
+lads = lad0.groupby(level=['id_comercio', 'id_bandera', 'id_sucursal', 'tipo']).max().groupby(level='tipo').mean()
+dpi = g['disponibilidad'].set_index(['agrupacion', 'grupo', 'medida'])
+dp, dps = dpi.loc[('País', 'País', 'sucursal-meses')], dpi.loc[('País', 'País', 'sucursales (alguna vez)')]
+chk('disponibilidad del país por tipo y ponderada (sucursal-meses y sucursales) = fuerza bruta',
+    all(abs(dp[f'disponibilidad_{t}_pct'] - 100 * lad[t]) < 1e-9 for t in PESOS)
+    and all(abs(dps[f'disponibilidad_{t}_pct'] - 100 * lads[t]) < 1e-9 for t in PESOS)
+    and abs(dp['disponibilidad_ponderada_pct'] - 100 * sum(W[t] * lad[t] for t in PESOS) / W.sum()) < 1e-9)
+
+# intervalos de confianza: réplicas con semilla fija (las dos corridas iguales) y el país adentro de su intervalo
+icg, icg2 = g['ic_grupos'], g2['ic_grupos']
+ip = icg.set_index(['agrupacion', 'grupo']).loc[('País', 'País')]
+chk('IC por bootstrap: 30 réplicas, el país adentro de su IC y las dos corridas iguales (semilla fija)',
+    ip['replicas'] == 30 and ip['ic95_inf'] <= ip['brecha_canasta'] <= ip['ic95_sup']
+    and icg.equals(icg2) and {'Región', 'Empresa', 'Cadena', 'Provincia'} <= set(icg['agrupacion']))
+
+# competencia local: sucursales y empresas a <= 5 km (haversine), con la misma sucursal
+cl = g['competencia_local'].set_index('suc_key')
+sg2 = g['suc_geo'][~g['suc_geo']['id_comercio'].isin(g['CADENAS_FILTRAR'])].set_index('suc_key')
+def km(a, b):
+    la1, lo1, la2, lo2 = map(np.radians, (a[0], a[1], b[0], b[1]))
+    h = np.sin((la2 - la1) / 2) ** 2 + np.cos(la1) * np.cos(la2) * np.sin((lo2 - lo1) / 2) ** 2
+    return 2 * 6371 * np.arcsin(np.sqrt(h))
+ok_c = True
+for k, r in sg2.iterrows():
+    cerca = [k2 for k2, r2 in sg2.iterrows()
+             if km((r['sucursales_latitud'], r['sucursales_longitud']), (r2['sucursales_latitud'], r2['sucursales_longitud'])) <= 5]
+    emps = sg2.loc[cerca, 'empresa'].value_counts()
+    ok_c &= (cl.loc[k, 'sucursales_en_radio'] == len(cerca) and cl.loc[k, 'empresas_en_radio'] == len(emps)
+             and abs(cl.loc[k, 'hhi_local'] - ((emps / len(cerca)) ** 2).sum()) < 1e-12)
+chk('competencia local: sucursales, empresas y HHI a <= 5 km = fuerza bruta', ok_c and len(cl) == len(sg2))
+
+# hedónica de grupos: sin ruido recupera exacto los efectos de región, empresa y HHI puestos a mano
+rng3 = np.random.default_rng(5)
+SUCH = [(f's{i}', ['R1', 'R1', 'R2', 'R3'][i % 4], ['Carrefour', 'E2', 'E3'][i % 3], f'd{i % 20}') for i in range(60)]
+HHI = {f'd{j}': 0.2 + 0.03 * j for j in range(20)}
+BR, BE, LAM = {'R1': 0, 'R2': .10, 'R3': -.05}, {'Carrefour': 0, 'E2': .20, 'E3': .05}, .03
+GAMH = {p: rng3.normal(0, .3) + (0.7 if p.endswith(('3', '4')) else 0) for p in ('a1', 'a2', 'a3', 'a4', 'b1', 'b2', 'b3', 'b4')}
+filas_h = []
+for s, rg, em, dp_ in SUCH:
+    for mes in ('2026-01', '2026-02'):
+        for sub, prods in (('A', ('a1', 'a2', 'a3', 'a4')), ('B', ('b1', 'b2', 'b3', 'b4'))):
+            alfa = rng3.normal(0, .2)
+            for p in prods:
+                sin = p.endswith(('3', '4'))
+                for lam, lista in ((0.0, 'h0'), (LAM, 'h1')):
+                    lp = alfa + GAMH[p] + sin * (BR[rg] + BE[em] + lam * (HHI[dp_] - 0.485) * 10)
+                    filas_h.append({'lista': lista, 'suc_key': s, 'mes': mes, 'subtipo': sub, 'rol': 'sin' if sin else 'tacc',
+                                    'producto': p, 'precio_100': float(np.exp(lp)), 'w': 1.0, 'region': rg, 'empresa': em,
+                                    'departamento_id': dp_, 'hhi_departamento': HHI[dp_],
+                                    'empresas_rivales_en_radio': int(rng3.integers(0, 5))})
+PH = pd.DataFrame(filas_h)
+h0 = g['_hedonica_grupos'](PH[PH['lista'] == 'h0'].drop(columns='lista'))[0].set_index(['modelo', 'termino'])
+h1 = g['_hedonica_grupos'](PH[PH['lista'] == 'h1'].drop(columns='lista'))[0].set_index(['modelo', 'termino'])
+m0, m1 = 'región y empresa', 'región, empresa y HHI del departamento'
+chk('hedónica de grupos: sin ruido recupera exactos los efectos de región y empresa (y el del HHI en su modelo)',
+    all(abs(h0.loc[(m0, r_), 'coef_log'] - v_) < 1e-9 for r_, v_ in (('R2', .10), ('R3', -.05), ('E2', .20), ('E3', .05)))
+    and all(abs(h1.loc[(m1, r_), 'coef_log'] - v_) < 1e-9 for r_, v_ in (('R2', .10), ('R3', -.05), ('E2', .20), ('E3', .05)))
+    and abs(h1.loc[(m1, 'HHI del departamento (+0,1)'), 'coef_log'] - LAM) < 1e-9
+    and abs(h0.loc[(m1, 'HHI del departamento (+0,1)'), 'coef_log']) < 1e-9
+    and (h0['error_estandar_log'] < 1e-6).all() and (h0['departamentos'] == 20).all())
+
+# costo con la CBA: mediana de cada lado de los subtipos del ítem en los últimos 2 meses, promedio geométrico
+cb = g['costo_cba'].set_index('item_cba')
+u2 = bt_sub_ = g['bt_sub'][g['bt_sub']['mes'].isin(['2026-02', '2026-03'])]
+ok_k = True
+for it, tp, gr in (('Fideos', 'Fideos secos', 1740), ('Galletitas dulces', 'Galletitas dulces', 210)):
+    s_ = u2[u2['tipo'] == tp].groupby('subtipo')[['tacc', 'sin']].median()
+    pc, ps = np.exp(np.log(s_['tacc']).mean()), np.exp(np.log(s_['sin']).mean())
+    ok_k &= abs(cb.loc[it, 'costo_extra_ae'] - (ps - pc) * gr / 100) < 1e-6 and abs(
+        cb.loc[it, 'costo_extra_hogar_tipo'] - 3.09 * (ps - pc) * gr / 100) < 1e-6
+chk('costo con la CBA por adulto equivalente y hogar tipo = fuerza bruta (y la fila Total)',
+    ok_k and abs(cb.loc['Total', 'costo_extra_ae'] - cb.drop(index='Total')['costo_extra_ae'].sum()) < 1e-6
+    and len(g['costo_cba_mensual']) == 3)
+xs = set(pd.ExcelFile(out / 'brecha_celiaca_2026-03.xlsx').sheet_names)
+chk('CELDA 8c: hojas, gráficos y datos para el análisis propio',
+    {'Sensibilidad', 'Indices_lados', 'Indices_lados_anual', 'Disponibilidad', 'Disponibilidad_mensual', 'IC_grupos',
+     'Hedonica_grupos', 'Concentracion_modelos', 'Competencia_local', 'Costo_CBA', 'Costo_CBA_mensual'} <= xs
+    and all((out / f'{n}_032026.png').exists() for n in ('indices_lados', 'disponibilidad_region', 'ic_grupos', 'sensibilidad'))
+    and all((out / 'datos' / f).exists() for f in ('panel_sucursal_mes_subtipo.parquet', 'panel_sucursal_mes_subtipo.csv.gz',
+                                                   'panel_producto_sucursal_mes.parquet', 'sucursales.csv'))
+    and len(pd.read_parquet(out / 'datos' / 'panel_sucursal_mes_subtipo.parquet')) == len(g['bt_sub']))
+
+# hoja Resumen: cada número es el de su hoja (la brecha del país con su IC, el último mes del panel y la calidad de datos)
+rs = pd.read_excel(out / 'brecha_celiaca_2026-03.xlsx', sheet_name='Resumen')
+icp = g['ic_grupos'][g['ic_grupos']['agrupacion'] == 'País'].iloc[0]
+sb_ = g['serie_mensual_bal'].sort_values('mes').iloc[-1]
+fila = lambda tema, txt: rs[(rs['tema'] == tema) & rs['indicador'].str.contains(txt, regex=False)]
+chk('hoja Resumen = los números de cada hoja (país con IC, último mes del panel, atípicos, tipos)',
+    pd.ExcelFile(out / 'brecha_celiaca_2026-03.xlsx').sheet_names[:2] == ['Leeme', 'Resumen']
+    and abs(fila('Nivel', 'todas las sucursales')['valor'].iloc[0] - round(icp['brecha_canasta'], 1)) < 1e-9
+    and abs(fila('Nivel', 'todas las sucursales')['ic95_inf'].iloc[0] - round(icp['ic95_inf'], 1)) < 1e-9
+    and abs(fila('Nivel', 'descriptiva')['valor'].iloc[0] - round(sb_['brecha_canasta'], 1)) < 1e-9
+    and fila('Calidad de datos', 'fuera de escala')['valor'].iloc[0] == len(g['precios_atipicos'])
+    and len(rs[rs['tema'] == 'Por tipo (todo el período)']) == len(g['brecha_tipo']))
 
 print()
 if errores:

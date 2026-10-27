@@ -2,7 +2,9 @@
 # compararlos con un cálculo independiente (s12_comparar_simulacion.py). Mide tiempo y pico de RAM de cada celda.
 # Uso: python -I -X utf8 s11_simular_nb06.py <repo> <carpeta con YYYYA.zip/YYYYB.zip> <ar.json> <salida>
 #                                           [mes_inicio] [--config canasta.json] [--hasta-celda N] [--georef parquet]
+#                                           [--ipc IPC.xlsx]
 #   --georef: georef_sucursales.parquet del nb09 (departamento de cada sucursal; concentración de la CELDA 8)
+#   --ipc: IPC.xlsx del INDEC (hoja Indices_lados), si no está en la carpeta de los zips
 #   --config: TIPOS/GRAMOS/VIGENCIA/PRODUCTO/SUBTIPO de un JSON en lugar de los de la CELDA 1 (p. ej. un superconjunto
 #             de candidatos para armar el caché una sola vez)
 #   --hasta-celda: corre hasta esa celda de código inclusive (5 = lectura) y no guarda objetos
@@ -24,6 +26,9 @@ if '--hasta-celda' in args:
     i = args.index('--hasta-celda'); HASTA = int(args[i + 1]); del args[i:i + 2]
 if '--georef' in args:       # georef_sucursales.parquet del nb09 (departamento de cada sucursal, para la concentración)
     i = args.index('--georef'); GEOREF = Path(args[i + 1]); del args[i:i + 2]
+IPC = None
+if '--ipc' in args:          # IPC.xlsx del INDEC fuera de la carpeta de los zips
+    i = args.index('--ipc'); IPC = Path(args[i + 1]); del args[i:i + 2]
 REPO, CARGA, AR, OUT = (Path(a) for a in args[:4])
 DESDE = args[4] if len(args) > 4 else '2022-01'
 OUT.mkdir(parents=True, exist_ok=True)
@@ -47,6 +52,8 @@ g = {}
 t0 = time.time()
 exec(cells[0], g)
 g.update(SEPA_DIR=str(CARGA), OUTPUT_DIR=str(OUT), MES_INICIO_HISTORICO=DESDE)
+if IPC is not None:
+    g['IPC_XLSX'] = str(IPC.resolve())
 if CFG:
     c = json.loads(CFG.read_text(encoding='utf-8'))
     g.update(TIPOS=c['TIPOS'], GRAMOS=c['GRAMOS'], VIGENCIA={k: tuple(v) for k, v in c['VIGENCIA'].items()},
@@ -72,7 +79,9 @@ for k in ('datos_dia', 'bt_sm', 'bt_sub', 'brecha_subtipo', 'brecha_subtipo_anua
           'ponderaciones', 'cobertura_mensual', 'suc_geo', 'brecha_tipo_anual', 'serie_anual', 'serie_anual_bal',
           'brecha_tipo_anual_bal', 'brecha_region_anual', 'brecha_empresa_anual', 'brecha_cadena', 'cobertura_tipo',
           'imputaciones', 'concentracion', 'brecha_suc_mes', 'serie_tpd', 'brecha_tipo_tpd', 'tpd_productos',
-          'tpd_ajuste', 'tpd_anual', 'tpd_subtipos'):
+          'tpd_ajuste', 'tpd_anual', 'tpd_subtipos', 'precios_atipicos', 'sensibilidad', 'indices_lados',
+          'indices_lados_anual', 'disponibilidad', 'disponibilidad_mensual', 'ic_grupos', 'hedonica_grupos',
+          'concentracion_modelos', 'competencia_local', 'costo_cba', 'costo_cba_mensual'):
     if k not in g:
         print(f'  (no existe {k})'); continue
     try:

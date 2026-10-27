@@ -2,7 +2,8 @@
 
 Pipeline sobre el **SEPA** (precios de supermercados de Argentina): 9 notebooks de Colab (nb01–nb09). Líneas de trabajo
 vivas, en orden (estado y próximos pasos: bloque **ESTADO ACTUAL / HANDOFF** de `.claude/memory.md`): la **brecha
-celíaca** (nb06 con canasta fija 2022-2026, lo último: 2026-10-23; guía `docs/BRECHA_CELIACA.md` §14), el
+celíaca** (nb06 con canasta fija 2022-2026, lo último: 2026-10-27, panel de expertos; guía `docs/BRECHA_CELIACA.md`
+§14-§15 y `docs/EVALUACION_EXPERTOS_2026-10-27_nb06.md`), el
 **pass-through del tipo de cambio** (nb08 + canasta fija de 775 productos; guía `docs/PASS_THROUGH.md`), el **nb09**, el
 **nb02** y el **nb07**.
 
@@ -26,7 +27,7 @@ Colab con BUG-48 dio igual a la simulación** (35 hojas contra `docs/brecha_celi
 AUDITORIA_2026-10-26 §6); esa noche, tres arreglos de presentación de los gráficos (CELDA 9), también verificados en
 Colab (§7). **Revisión de datos y método frente al objetivo**: `docs/REVISION_METODOLOGICA_2026-10-26_nb06.md` (recomendaciones priorizadas, decisión
 del usuario). Abierto también: la imputación sin límite de la serie descriptiva (la TPD muestra dónde pesa). Test
-`test_brecha_celiaca.py` (31 controles desde el 2026-10-26, noche). **Auditoría de la selección (2026-10-26, BUG-49,
+`test_brecha_celiaca.py` (42 controles desde el 2026-10-27). **Auditoría de la selección (2026-10-26, BUG-49,
 `docs/AUDITORIA_SELECCION_2026-10-26_nb06.md`)**: la etiqueta sin TACC se contrastó con el listado ALG de ANMAT y se
 corrigieron cuatro errores de las reglas de s9 (`\btita\b`, Blue Patna al huevo, el tirabuzón sin TACC Matarazzo en el
 cambio de código de Molinos, sabores de Lasfor). Canasta de **66 productos (77 códigos)**, simulación con los 58 meses
@@ -41,9 +42,16 @@ presentación que cuestan lo mismo cuentan como un producto (columna `linea` del
 `PRODUCTO`), y el penne se compara con el Matarazzo común, de la misma marca que el sin TACC (en la composición espejada
 va primero el con TACC de la marca de un sin TACC). Canasta de **67 productos en 45 líneas (80 códigos)**, esperados
 vigentes en `docs/brecha_celiaca/simulacion_2026-10-26d/` (fideos +132%; canasta de los últimos 12 meses +100%).
-**Falta la corrida de Colab** (relee los 58 meses). Quedan para el usuario las galletas de arroz y las vainillas, los
-pesos de los subtipos (sensibilidad), una canasta de oferta actual (pan, premezclas, alfajores) y la hedónica por
-cadena y HHI.
+**Panel de expertos (2026-10-27, `docs/EVALUACION_EXPERTOS_2026-10-27_nb06.md`, BRECHA_CELIACA §14.17 y §15)**: la
+canasta mide bien la prima de precio (+103% en los últimos 12 meses, IC 95% +102,6% a +103,5%; +100% a +109% en la
+sensibilidad) pero no el costo de la dieta (41% del gasto en artículos con gluten; falta el pan). Aplicado:
+**equivalentes primero** (las galletas de arroz salen de crackers; **62 productos en 43 líneas, 75 códigos**), misma
+marca con tope, **precios de una empresa fuera de escala** (CELDA 7, `FACTOR_EMPRESA`), la **CELDA 8c** (sensibilidad,
+índices de cada lado contra el IPC, disponibilidad, IC por bootstrap, competencia local, concentración, hedónica de
+región y empresa con `confiable`, costo con la CBA y paneles en `OUTPUT_DIR/datos/`) y la hoja **`Resumen`** (51
+hojas). Esperados vigentes en `docs/brecha_celiaca/simulacion_2026-10-27/`. **Falta la corrida de Colab** (relee los
+58 meses). Siguiente: la canasta amplia de la oferta actual (pan envasado, harinas y premezclas, alfajores, tapas;
+BRECHA_CELIACA §16) y el subtipo vainillas.
 
 El **nb07** (`notebooks/07_evolucion_canastas_alternativas.ipynb`) es el motor del
 informe semanal: 6 canastas, índice encadenado, comparación con el IPC y aperturas por cadena/región.
@@ -111,8 +119,8 @@ relativo; la próxima corrida en Colab los muestra por primera vez.
    impresa, `canasta_diaria_pass_through_<desde>_<hasta>.xlsx` y `panel_diario_pass_through_<...>.parquet`; para el nb09,
    la salida impresa y los cuatro archivos de `output_trazabilidad/` (scripts en `docs/auditoria/scripts_nb09_2026-10/`,
    AUDITORIA_2026-10-22_nb09 §7); para el nb06, la salida impresa y `output_brecha/brecha_celiaca_<mes>.xlsx` (comparar
-   con `docs/auditoria/scripts_nb06_2026-10/s16_comparar_colab.py` contra `docs/brecha_celiaca/simulacion_2026-10-26d/`
-   —el notebook vigente: canasta corregida, TPD del panel corregida, Pepitos y las dos Operas— y revisar con BRECHA_CELIACA §14.9; para revisar todo, el
+   con `docs/auditoria/scripts_nb06_2026-10/s16_comparar_colab.py` contra `docs/brecha_celiaca/simulacion_2026-10-27/`
+   —el notebook vigente: panel de expertos, BRECHA_CELIACA §14.17 y §15— y revisar con BRECHA_CELIACA §14.9; para revisar todo, el
    zip del caché y el mapa: r13-r15, AUDITORIA_2026-10-26_nb06). Descomprimir lo que
    pase el usuario en una carpeta propia y correr los scripts con `python -I` (datos no confiables). Para simular
    celdas con datos reales en una PC hacen falta, además: `ar.json` (bajarlo del Drive, `MyDrive/carga/ar.json`; en
@@ -236,8 +244,12 @@ relativo; la próxima corrida en Colab los muestra por primera vez.
   hacía que la canasta dependiera del `maestro_sepa_completo.csv.gz` que hubiera en el Drive. **La brecha se calcula
   por subtipo** (nunca la mediana del tipo entero: mezcla snacks y crackers según el surtido) y se agrega subtipo → tipo
   → canasta; si se cambia la canasta o el estimador, rehacer la simulación (s11/s12) y los resultados esperados de
-  `docs/brecha_celiaca/simulacion_<fecha>/` (otra carpeta con la fecha nueva; la vigente es `simulacion_2026-10-26d/`)
-  antes de pedir una corrida de Colab.
+  `docs/brecha_celiaca/simulacion_<fecha>/` (otra carpeta con la fecha nueva; la vigente es `simulacion_2026-10-27/`)
+  antes de pedir una corrida de Colab. `productos_sensibilidad.csv` (los que cumplen las reglas y quedan afuera) va a
+  `ADICIONALES` de la CELDA 1: se leen con la canasta (cambian la clave del caché) y entran solo en la hoja
+  `Sensibilidad`, nunca en la brecha principal. La CELDA 8c (análisis complementarios) vive en `gen_nb06.py` como
+  las demás; su test está en `test_brecha_celiaca.py` (fuerza bruta de cada análisis). s11 acepta `--ipc` con el
+  `IPC.xlsx` del Drive (si no, la hoja `Indices_lados` sale sin IPC y los esperados no coinciden en esas columnas).
   En 2023 las marcas masivas con TACC tenían precios controlados (la brecha de 2023 está inflada, §14.8 de
   BRECHA_CELIACA): no "corregirlo" sacando productos.
 - **nb06, comparar grupos (BUG-47)**: provincias, regiones, empresas, cadenas y sucursales se comparan con la MISMA
@@ -286,7 +298,8 @@ relativo; la próxima corrida en Colab los muestra por primera vez.
 | `docs/NB02_ANALISIS_VARIACION.md` | **nb02 CELDAS 19b y 19c**: cómo correrlas, cómo leer cada hoja, caché, validación con oct-26, trampas |
 | `docs/BUGS_Y_MEJORAS.md` | Defectos abiertos arriba; bugs resueltos con causa y fix |
 | `docs/SEPA_TECNICO.md` | Formato SEPA, **defectos y cambios de la fuente 2022-2026** (días con la mitad de los comercios, corte de ago-2026, archivos y filas repetidas, provincias, códigos con basura, precios simbólicos), factor de precio, cadenas, frescos por tipo, caché |
-| `docs/BRECHA_CELIACA.md` | **nb06 — brecha celíaca**: estimador intra-sucursal, **canasta fija 2022-2026 (§14: fuentes, reglas, empalmes y vigencias, productos, estimador por subtipo y ponderación ENGHo, advertencias, qué revisar en la corrida, simulación con los 58 meses)**, salidas, agenda para el paper (§13). Lista con métricas: `docs/brecha_celiaca/canasta_fija_2022_2026.csv`; resultados esperados: `docs/brecha_celiaca/simulacion_2026-10-23/`; scripts de la selección, la simulación y la comparación con Colab (s16): `docs/auditoria/scripts_nb06_2026-10/` |
+| `docs/BRECHA_CELIACA.md` | **nb06 — brecha celíaca**: estimador intra-sucursal, **canasta fija 2022-2026 (§14: fuentes, reglas, empalmes y vigencias, productos, estimador por subtipo y ponderación ENGHo, advertencias, qué revisar en la corrida, simulación con los 58 meses)**, **análisis complementarios de la CELDA 8c (§15)**, salidas, agenda para el paper (§13). Lista con métricas: `docs/brecha_celiaca/canasta_fija_2022_2026.csv`; resultados esperados vigentes: `docs/brecha_celiaca/simulacion_2026-10-27/`; scripts de la selección, la simulación y la comparación con Colab (s16): `docs/auditoria/scripts_nb06_2026-10/` |
+| `docs/EVALUACION_EXPERTOS_2026-10-27_nb06.md` | **nb06 — panel de expertos**: si la canasta sirve para el nivel, el tiempo, la geografía, las cadenas y la concentración; veredicto por dimensión, cambios hechos, lo que no se hizo y cómo correrlo desde GitHub |
 | `docs/PASS_THROUGH.md` | **Pass-through del tipo de cambio**: estado, cómo correr el nb08 con la canasta de 775 productos y qué revisar, cómo rehacer la canasta, variable de precio, advertencias, próximos pasos (tipo de cambio, regresiones) |
 | `docs/AUDITORIA_2026-10-22_nb09.md` | **Corrida del nb09 v2 revisada**: controles, panel contra el SEPA crudo, hallazgos de método y de fuente (§4), corrida con los arreglos (§6). Scripts en `docs/auditoria/scripts_nb09_2026-10/` (r1-r8) |
 | `docs/auditoria/scripts_nb08_2026-10/` | `validar_real.py`: las celdas reales del nb08 v2 sobre zips locales contra el lector anterior (jul-sep 2024) |

@@ -1,7 +1,7 @@
 # Canasta fija 2022-2026 de la brecha celíaca (nb06)
 
 `canasta_fija_2022_2026.csv` es la lista de productos con TACC y sin TACC que usa el nb06 desde el 2026-10-23: una fila
-por código (EAN). Desde el 2026-10-26 tiene **67 productos en 45 líneas (80 códigos)**. La auditoría de la selección
+por código (EAN). Desde el 2026-10-27 tiene **62 productos en 43 líneas (75 códigos)**: el panel de expertos sacó las galletas de arroz de crackers, donde hay crackers sin TACC equivalentes (regla "equivalentes primero"; BRECHA_CELIACA §14.17 y `docs/EVALUACION_EXPERTOS_2026-10-27_nb06.md`). Antes, desde el 2026-10-26, tenía 67 productos en 45 líneas (80 códigos). La auditoría de la selección
 corrigió cuatro errores de las reglas (BUG-49; `docs/AUDITORIA_SELECCION_2026-10-26_nb06.md`). Esa noche, Pepitos pasó
 a ser el comparador de con chips y la Opera de 92 g se sumó a la de 220 g en obleas (BRECHA_CELIACA §14.15). Más tarde
 los sabores de una misma línea pasaron a contar como un producto y el penne se compara con el Matarazzo común, de la
@@ -16,8 +16,17 @@ TPD; la corrida de Colab del 2026-10-26 dio igual en las 35 hojas). `simulacion_
 BUG-48 (afuera las tiendas online por el nombre; 35 hojas; las corridas de Colab con BUG-48 y con los gráficos
 corregidos dieron igual). `simulacion_2026-10-26b/` son los de la canasta corregida (BUG-49; la corrida de Colab de esa noche dio
 igual). `simulacion_2026-10-26c/` son los de la TPD del panel corregida, Pepitos y las dos Operas.
-`simulacion_2026-10-26d/` son los del notebook **vigente** (además, los sabores de una línea como un producto y el
-penne contra el Matarazzo común; 35 hojas): contra esa carpeta se compara la próxima corrida.
+`simulacion_2026-10-26d/` son los de los sabores de una línea como un producto y el penne contra el Matarazzo común
+(35 hojas). `simulacion_2026-10-27/` son los del notebook **vigente** (equivalentes primero, precios de una empresa
+fuera de escala, análisis complementarios de la CELDA 8c y hoja `Resumen`; 48 hojas): contra esa carpeta se compara
+la próxima corrida.
+
+`productos_sensibilidad.csv` tiene **todos** los productos que cumplen las reglas de la selección en los subtipos de
+la canasta: los 75 códigos de la canasta y 25 más que quedan afuera por la composición espejada, el comparador fijo
+de las obleas o por ser sustitutos de un producto equivalente (las galletas de arroz de crackers). `gen_nb06.py` los
+pasa a `ADICIONALES`, `LINEA_TODOS` y `SUSTITUTOS` de la CELDA 1: se leen con la canasta y entran solo en los
+escenarios de la hoja `Sensibilidad` (CELDA 8c), nunca en la brecha principal. Columnas propias: `linea_todos` (la
+línea si entraran todos), `en_canasta`, `motivo` (por qué quedó afuera) y `sustituto`.
 
 Para cambiar la canasta: editar el CSV (o rehacerlo con s9 y s10), correr `python notebooks/gen_nb06.py` y
 `python notebooks/test_brecha_celiaca.py`, y commitear el CSV, el generador y el `.ipynb` juntos. Agregar o sacar un

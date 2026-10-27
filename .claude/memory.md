@@ -6,12 +6,13 @@ Autor: Santiago Riverti — investigador independiente
 
 ---
 
-## 🟢 ESTADO ACTUAL / HANDOFF [2026-10-26] — leer esto primero
+## 🟢 ESTADO ACTUAL / HANDOFF [2026-10-27] — leer esto primero
 
 - **Repo**: `main` = `origin/main` al cierre (ver `git log`). Commits del 2026-10-23: `678e9b9` (nb06: canasta fija
   2022-2026 + estimador por subtipo + BUG-46), `b02871c` (documentación para retomar) y el de la tarde (revisión de la
   primera corrida de Colab del nb06 + BUG-47) y el de la noche (`46e426b`, serie TPD del nb06); el 2026-10-26, la
-  revisión de la segunda corrida de Colab. **15 tests en OK** (el del nb06 tiene 31 controles desde el 2026-10-26, noche). En una PC nueva:
+  revisión de la segunda corrida de Colab; el 2026-10-27, el panel de expertos del nb06. **15 tests en OK** (el del nb06
+  tiene 42 controles desde el 2026-10-27). En una PC nueva:
   `git clone`, `pip install -r requirements.txt` y los tests de `CLAUDE.md`.
 - **Datos en la PC del INECO** (el usuario bajó el 23/10 todo el Drive; **desde la tarde del 23/10 están en
   `C:\Users\sriverti\Downloads\carga\`**): `2022A.zip` … `2026B.zip` (idénticos a `MyDrive/carga/`; el `2026B` trae
@@ -21,11 +22,40 @@ Autor: Santiago Riverti — investigador independiente
   `C:\Users\sriverti\proyectos\nb06_brecha_celiaca_20261023\` (README adentro; `simulacion/sim_v2/` = el notebook
   vigente con el caché, `georef_sucursales.parquet` = la caché de Georef del nb09; en otra PC se rehace con s7-s15).
   Desde el 2026-10-26 (BUG-49): `canasta_v9/` (canasta corregida), `seleccion/seleccion_v9*`, `simulacion/sim_super_v9/`
-  (lectura de los 116 candidatos, caché `brecha_v3_80a827f5`) y `simulacion/sim_v5/` (= los esperados vigentes).
+  (lectura de los 116 candidatos, caché `brecha_v3_80a827f5`) y `simulacion/sim_v5/`. Desde el 2026-10-27:
+  `canasta_v12/` (= la canasta vigente; `canasta_v13/` es la misma con la regla de misma marca con tope),
+  `simulacion/sim_v9/` (= los esperados vigentes, caché `brecha_v3_5fc88a8c` con los 25 ADICIONALES; `datos/` con los
+  paneles), `simulacion/sim_super_amplia/` (lectura amplia de 1.781 candidatos, ago-2025 → oct-2026, caché
+  `brecha_v3_6659af73`) y `canasta_amplia_v1/` (primera canasta amplia, s18). El `IPC.xlsx` del Drive, extraído, en
+  `C:\Users\sriverti\proyectos\carga_extraido_20261026\` (s11 `--ipc`).
 
 **Líneas de trabajo, en orden de prioridad:**
 
-1. **Brecha celíaca (nb06) — lo último, 2026-10-26 (auditoría de la selección, BUG-49).** El usuario pidió revisar la
+1. **Brecha celíaca (nb06) — lo último, 2026-10-27: panel de expertos** (`docs/EVALUACION_EXPERTOS_2026-10-27_nb06.md`;
+   BRECHA_CELIACA §14.17 y §15). El usuario pidió evaluar, como un equipo de expertos en estadística y economía, si
+   los productos y canastas sirven para la brecha y su distribución (tiempo, geografía, cadena, concentración) y
+   dejar el notebook listo para correr desde GitHub con el Excel y los datos para el análisis propio.
+   - **Veredicto**: mide bien la prima de precio (+103,1% en los últimos 12 meses, IC 95% +102,6% a +103,5%; siete de
+     ocho escenarios de sensibilidad entre +100% y +109%; "solo equivalentes" +134%, por las galletas de arroz de
+     saborizadas), el tiempo y las regiones (Patagonia +89%, casi dos tercios por surtido). No mide el costo de la
+     dieta (41% del gasto en artículos con gluten de la ENGHo; falta el pan). Cadenas: con la canasta propia solo
+     Carrefour y Cencosud son confiables; con los mismos productos (hedónica) las grandes difieren de −3,6% a +0,7%
+     (DIA, poco dato: 3 subtipos en 3 meses). Concentración: sin efecto con empresa y región (p = 0,26 a 0,81).
+     Disponibilidad del sin TACC: 68% de las sucursal-meses (DIA 42%). CBA: +$18.815 por adulto equivalente por mes.
+   - **Aplicado**: equivalentes primero en s10 (las galletas de arroz salen de crackers; 62 productos en 43 líneas,
+     75 códigos); misma marca con tope (no cambia la canasta fija); precios de una empresa fuera de escala (CELDA 7,
+     `FACTOR_EMPRESA = 2.5`; 37 casos, DIA sep-2026); CELDA 8c (sensibilidad, índices de cada lado por efectos fijos
+     contra el IPC, disponibilidad, IC por bootstrap, competencia local, concentración, hedónica de región y empresa
+     con `confiable`, costo con la CBA, paneles en `datos/`); hoja `Resumen`; `IPC_XLSX`; test de 42 controles.
+   - **Validación**: `sim_v9` = `s12` en los 3.244.531 precios y todas las brechas; esperados VIGENTES
+     `docs/brecha_celiaca/simulacion_2026-10-27/`. **Falta Colab** (relee los 58 meses, caché `brecha_v3_5fc88a8c`).
+   - **Siguiente**: (a) corrida de Colab → `s16` contra `simulacion_2026-10-27`; (b) la canasta amplia de la oferta
+     actual (pan envasado, harinas y premezclas, alfajores, tapas; s18, BRECHA_CELIACA §16); (c) el subtipo vainillas.
+   - **Reglas nuevas**: un análisis nuevo del nb06 va en la CELDA 8c de `gen_nb06.py` y tiene su fuerza bruta en
+     `test_brecha_celiaca.py`; la simulación necesita `--ipc` para que `Indices_lados` coincida con Colab; el
+     hedónico de un grupo con pocas celdas no se interpreta (columna `confiable`).
+
+   Antes, 2026-10-26 (auditoría de la selección, BUG-49). El usuario pidió revisar la
    selección de productos con la carpeta `carga` (`docs/AUDITORIA_SELECCION_2026-10-26_nb06.md`, scripts `r20`-`r28`).
    - **Etiqueta**: contrastada con el listado ALG de ANMAT (`listadoalg.anmat.gob.ar`, buscador por marca en el
      navegador). Ningún con TACC está etiquetado sin TACC; Lasfor no tiene ALG y Snuks es su línea sin TACC.
@@ -67,11 +97,11 @@ Autor: Santiago Riverti — investigador independiente
        meses +100% (antes +111%); Carrefour y Cencosud a 0,5 pp.
      - Pendientes que se vieron (§9): galletas de arroz (en saborizadas son todo el lado sin TACC), pesos de los
        subtipos como sensibilidad, canasta de oferta actual con pan, premezclas y alfajores.
-   - **Siguiente**:
+   - **Siguiente** (de entonces; reemplazado por el panel de expertos del 2026-10-27, arriba):
      - (a) Corrida de Colab (relee los 58 meses) → `s16` contra `simulacion_2026-10-26d`.
      - (b) El usuario decide las galletas de arroz y las vainillas. Toddy y las vainillas ya están leídos en
        `sim_super_v10`.
-     - (c) La hedónica por cadena y HHI.
+     - (c) La hedónica por cadena y HHI (hecha el 2026-10-27).
 
    Antes (2026-10-26): la **segunda corrida de Colab** (notebook `46e426b`: canasta
    fija, BUG-47 y serie TPD) es **idéntica a la simulación** en todo: 35 hojas contra los esperados (`s16`), las 38 hojas

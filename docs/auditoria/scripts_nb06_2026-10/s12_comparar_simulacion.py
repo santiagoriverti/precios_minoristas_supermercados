@@ -28,8 +28,12 @@ P = pd.concat([pd.read_parquet(f, filters=[('ean', 'in', sorted(ROL))]) for f in
 P = P[~P['id_comercio'].isin(FILT)].drop_duplicates(['id_comercio', 'id_bandera', 'id_sucursal', 'ean', 'mes'])
 P = P[[(VIG.get(e, (None, None))[0] is None or m >= VIG[e][0]) and (VIG.get(e, (None, None))[1] is None or m <= VIG[e][1])
        for e, m in zip(P['ean'], P['mes'])]]
-sg = pd.read_parquet(SIM / 'sim_suc_geo.parquet')[['id_comercio', 'id_bandera', 'id_sucursal']]
-P = P.merge(sg, on=['id_comercio', 'id_bandera', 'id_sucursal'])          # mismo universo de sucursales
+# sucursales del maestro con coordenadas (las que lee la CELDA 6); el universo de la CELDA 7 se aplica después
+ms = pd.read_excel(REPO / 'data' / 'maestro_sucursales_completo.xlsx')
+for c in ('id_comercio', 'id_bandera', 'id_sucursal'):
+    ms[c] = ms[c].astype(str)
+ms = ms[ms['sucursales_latitud'].between(-55, -22) & ms['sucursales_longitud'].between(-73, -53)]
+P = P.merge(ms[['id_comercio', 'id_bandera', 'id_sucursal']].drop_duplicates(), on=['id_comercio', 'id_bandera', 'id_sucursal'])
 P['rol'] = P['ean'].map(lambda e: ROL[e][0]); P['tipo'] = P['ean'].map(lambda e: ROL[e][1])
 P['p100'] = P['precio_mediana'] / P['ean'].map(GR) * 100
 # filtro de plausibilidad (misma regla)
@@ -38,6 +42,27 @@ em['_rel'] = em['_p'] / em.groupby(['tipo', 'rol', 'mes'])['_p'].transform('medi
 emr = em.groupby('ean')['_rel'].median()
 bad = set(emr[(emr < 1 / g['FACTOR_PLAUS']) | (emr > g['FACTOR_PLAUS'])].index)
 P = P[~P['ean'].isin(bad)]
+# precios de una empresa fuera de escala (misma regla de la CELDA 7): mediana de la empresa para el código y mes contra
+# la mediana entre empresas (con >= 3), fuera de [1/FACTOR_EMPRESA, FACTOR_EMPRESA]. Los nombres de las empresas salen
+# de los diccionarios de la CELDA 3
+c3 = cells[2]
+emp = {}
+for nombre in ('NOMBRES_SIMPLES', 'EMPRESAS'):
+    i = c3.index(nombre + ' = {')
+    exec(c3[i:c3.index('}', i) + 1], emp)
+P['empresa'] = P['id_comercio'].map(lambda c: emp['EMPRESAS'].get(c) or emp['NOMBRES_SIMPLES'].get(c) or f'Cadena {c}')
+FE = g.get('FACTOR_EMPRESA', 2.5)
+ce = P.groupby(['ean', 'mes', 'empresa'])['p100'].median().rename('pe').reset_index()
+ce['ne'] = ce.groupby(['ean', 'mes'])['empresa'].transform('size')
+ce['rel'] = ce['pe'] / ce.groupby(['ean', 'mes'])['pe'].transform('median')
+at = ce[(ce['ne'] >= 3) & ((ce['rel'] > FE) | (ce['rel'] < 1 / FE))]
+P = P.merge(at[['ean', 'mes', 'empresa']].assign(_at=1), on=['ean', 'mes', 'empresa'], how='left')
+P = P[P['_at'].isna()].drop(columns='_at')
+_at_nb = SIM / 'sim_precios_atipicos.parquet'
+print(f'Precios de una empresa fuera de escala: independiente {len(at)} empresa-código-mes | nb06 '
+      f'{len(pd.read_parquet(_at_nb)) if _at_nb.exists() else "?"}')
+sg = pd.read_parquet(SIM / 'sim_suc_geo.parquet')[['id_comercio', 'id_bandera', 'id_sucursal']]
+P = P.merge(sg, on=['id_comercio', 'id_bandera', 'id_sucursal'])          # mismo universo de sucursales
 P['prod'] = P['ean'].map(PROD).fillna(P['ean'])          # producto con dos códigos: cuenta una vez
 P['subtipo'] = P['ean'].map(SUB)
 _ks = ['id_comercio', 'id_bandera', 'id_sucursal', 'mes', 'tipo']
