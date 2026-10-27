@@ -1,0 +1,1293 @@
+empresa,anio,tipo,subtipo,lado,producto,descripcion,celdas_con_el_producto,celdas_de_la_empresa,pct_celdas
+Carrefour,2022,Fideos secos,Mostachol / penne,con TACC,Penne rigate Matarazzo 500 g,Penne rigate Matarazzo 500 g,1905,1905,100.0
+Carrefour,2022,Fideos secos,Mostachol / penne,sin TACC,Penne rigate sin TACC Matarazzo 500 g,Penne rigate sin TACC Matarazzo 500 g,1905,1905,100.0
+Carrefour,2022,Fideos secos,Spaghetti,con TACC,Spaghetti Matarazzo 500 g,Spaghetti Matarazzo 500 g,6746,6746,100.0
+Carrefour,2022,Fideos secos,Spaghetti,sin TACC,Spaghetti sin TACC Matarazzo 500 g,Spaghetti sin TACC Matarazzo 500 g,6746,6746,100.0
+Carrefour,2022,Galletitas dulces,Con chips,con TACC,Pepitos 119 g,Pepitos 119 g,1921,1921,100.0
+Carrefour,2022,Galletitas dulces,Con chips,sin TACC,7798181511004,Galletitas Con Chips de Chocolate Smams 150 Gr,1921,1921,100.0
+Carrefour,2022,Galletitas dulces,Pepas,con TACC,7791787100924,Galletitas Dulces Pepas Trío 320 Gr,842,842,100.0
+Carrefour,2022,Galletitas dulces,Pepas,sin TACC,7798181510786,Pepas de Membrillo sin TACC Smams 150 Gr,842,842,100.0
+Carrefour,2022,Galletitas dulces,Rellenas,con TACC,7790040133259,Galletitas Vainilla Rellenas Limón Maná 152 Gr,4937,5517,89.48704005800253
+Carrefour,2022,Galletitas dulces,Rellenas,con TACC,7790040133488,Galletitas Rellena Sabor Frambuesa Sonrisas 108 Gr,4347,5517,78.79282218597064
+Carrefour,2022,Galletitas dulces,Rellenas,con TACC,7622300742645,Galletitas Vainilla con Relleno de Limón Duquesa 115 Gr,2650,5517,48.03335145912634
+Carrefour,2022,Galletitas dulces,Rellenas,sin TACC,Galletitas rellenas sin TACC Smams 105 g (3 variantes),Galletitas rellenas sin TACC Smams 105 g (3 variantes),5517,5517,100.0
+Carrefour,2022,Galletitas dulces,"Secas (vainilla, limón, chocolate)",con TACC,7622201808860,Galletitas Dulces Boca de Dama Terrabusi 170 Gr,1092,1120,97.5
+Carrefour,2022,Galletitas dulces,"Secas (vainilla, limón, chocolate)",con TACC,7622201808884,Galletitas Anillos Clásicos Terrabusi 170 Gr,723,1120,64.55357142857143
+Carrefour,2022,Galletitas dulces,"Secas (vainilla, limón, chocolate)",con TACC,7791787000644,Galletitas Frolitas Trio 300 Gr,601,1120,53.66071428571428
+Carrefour,2022,Galletitas dulces,"Secas (vainilla, limón, chocolate)",con TACC,7792200000791,Galletitas Sconcitos 9 de Oro 200 Gr,151,1120,13.48214285714286
+Carrefour,2022,Galletitas dulces,"Secas (vainilla, limón, chocolate)",sin TACC,Galletitas sin TACC Santa María 200 g (2 variantes),Galletitas sin TACC Santa María 200 g (2 variantes),870,1120,77.67857142857143
+Carrefour,2022,Galletitas dulces,"Secas (vainilla, limón, chocolate)",sin TACC,7798181510847,Galletitas Colegial Vainilla Samms 150 Gr,466,1120,41.60714285714285
+Carrefour,2022,Galletitas saladas y crackers,Crackers,con TACC,7790040377707,Galletitas Original Crackers Criollitas 100 Gr,4105,5157,79.6005429513283
+Carrefour,2022,Galletitas saladas y crackers,Crackers,con TACC,7790045001133,Galletitas Crackers Naturalmente Granix 200 Gr,3028,5157,58.71630793096762
+Carrefour,2022,Galletitas saladas y crackers,Crackers,con TACC,7792180006462,Galletitas Mini Marineras Paseo 220 Gr,441,5157,8.551483420593367
+Carrefour,2022,Galletitas saladas y crackers,Crackers,sin TACC,Crackers sin TACC Smams 150 g (3 variantes),Crackers sin TACC Smams 150 g (3 variantes),5157,5157,100.0
+Carrefour,2022,Galletitas saladas y crackers,Saborizadas / snack,con TACC,Galletitas saborizadas Saladix 100 g (3 variantes),Galletitas saborizadas Saladix 100 g (3 variantes),1939,2033,95.37629119527791
+Carrefour,2022,Galletitas saladas y crackers,Saborizadas / snack,con TACC,7790040719804,Galletitas Original Rex 125 Gr,1729,2033,85.04672897196262
+Carrefour,2022,Galletitas saladas y crackers,Saborizadas / snack,con TACC,7790040003569,Galletitas Saladas Tipo Snacks Rex 75 Gr,1656,2033,81.45597638957206
+Carrefour,2022,Galletitas saladas y crackers,Saborizadas / snack,con TACC,7790040003606,Galletitas Kesitas 75 Gr,1555,2033,76.4879488440728
+Carrefour,2022,Galletitas saladas y crackers,Saborizadas / snack,sin TACC,7797330102971,Galletas de Arroz Pizza Grandiet 100 Gr,1920,2033,94.44171175602558
+Carrefour,2022,Galletitas saladas y crackers,Saborizadas / snack,sin TACC,Galletas de arroz saborizadas Crisppino 100 g (2 variantes),Galletas de arroz saborizadas Crisppino 100 g (2 variantes),1896,2033,93.26119035907526
+Carrefour,2022,Galletitas saladas y crackers,Saborizadas / snack,sin TACC,Galletas de arroz saborizadas Crisppino Minis 50 g (3 variantes),Galletas de arroz saborizadas Crisppino Minis 50 g (3 variantes),1686,2033,82.93162813575996
+Carrefour,2022,Pan rallado y rebozador,Rebozador,con TACC,7792180004765,Rebozador Freir Fortificado Mamá Cocina Plus 500 Gr,1169,1171,99.82920580700257
+Carrefour,2022,Pan rallado y rebozador,Rebozador,con TACC,7792180004796,Rebozador Horno Fortificado Mamá Cocina Plus 1 Kg,196,1171,16.73783091374893
+Carrefour,2022,Pan rallado y rebozador,Rebozador,sin TACC,7798128410087,Rebozador Aglu 450 Gr,1117,1171,95.38855678906917
+Carrefour,2022,Pan rallado y rebozador,Rebozador,sin TACC,7798193377285,Rebozador Naturalsur 500 Gr,334,1171,28.52263023057216
+Carrefour,2023,Fideos secos,Mostachol / penne,con TACC,Penne rigate Matarazzo 500 g,Penne rigate Matarazzo 500 g,423,423,100.0
+Carrefour,2023,Fideos secos,Mostachol / penne,sin TACC,Penne rigate sin TACC Matarazzo 500 g,Penne rigate sin TACC Matarazzo 500 g,423,423,100.0
+Carrefour,2023,Fideos secos,Spaghetti,con TACC,Spaghetti Matarazzo 500 g,Spaghetti Matarazzo 500 g,3829,3829,100.0
+Carrefour,2023,Fideos secos,Spaghetti,sin TACC,Spaghetti sin TACC Matarazzo 500 g,Spaghetti sin TACC Matarazzo 500 g,3829,3829,100.0
+Carrefour,2023,Galletitas dulces,Con chips,con TACC,Pepitos 119 g,Pepitos 119 g,3820,3820,100.0
+Carrefour,2023,Galletitas dulces,Con chips,sin TACC,7798181511004,Galletitas Con Chips de Chocolate Smams 150 Gr,3820,3820,100.0
+Carrefour,2023,Galletitas dulces,Pepas,con TACC,7791787100924,Galletitas Dulces Pepas Trío 320 Gr,362,362,100.0
+Carrefour,2023,Galletitas dulces,Pepas,sin TACC,7798181510786,Pepas de Membrillo sin TACC Smams 150 Gr,362,362,100.0
+Carrefour,2023,Galletitas dulces,Rellenas,con TACC,7790040133488,Galletitas Rellena Sabor Frambuesa Sonrisas 108 Gr,4168,5425,76.82949308755761
+Carrefour,2023,Galletitas dulces,Rellenas,con TACC,7790040133259,Galletitas Vainilla Rellenas Limón Maná 152 Gr,1997,5425,36.8110599078341
+Carrefour,2023,Galletitas dulces,Rellenas,con TACC,7622300742645,Galletitas Vainilla con Relleno de Limón Duquesa 115 Gr,1669,5425,30.76497695852535
+Carrefour,2023,Galletitas dulces,Rellenas,sin TACC,Galletitas rellenas sin TACC Smams 105 g (3 variantes),Galletitas rellenas sin TACC Smams 105 g (3 variantes),5425,5425,100.0
+Carrefour,2023,Galletitas dulces,"Secas (vainilla, limón, chocolate)",con TACC,7622201808884,Galletitas Anillos Clásicos Terrabusi 170 Gr,1917,2027,94.57326097681302
+Carrefour,2023,Galletitas dulces,"Secas (vainilla, limón, chocolate)",con TACC,7792200000791,Galletitas Sconcitos 9 de Oro 200 Gr,1747,2027,86.18648248643315
+Carrefour,2023,Galletitas dulces,"Secas (vainilla, limón, chocolate)",con TACC,7622201808860,Galletitas Dulces Boca de Dama Terrabusi 170 Gr,1292,2027,63.73951652688702
+Carrefour,2023,Galletitas dulces,"Secas (vainilla, limón, chocolate)",con TACC,7791787000644,Galletitas Frolitas Trio 300 Gr,196,2027,9.669462259496793
+Carrefour,2023,Galletitas dulces,"Secas (vainilla, limón, chocolate)",sin TACC,7798181510847,Galletitas Colegial Vainilla Samms 150 Gr,2012,2027,99.25999013320178
+Carrefour,2023,Galletitas dulces,"Secas (vainilla, limón, chocolate)",sin TACC,Galletitas sin TACC Santa María 200 g (2 variantes),Galletitas sin TACC Santa María 200 g (2 variantes),1083,2027,53.42871238283177
+Carrefour,2023,Galletitas dulces,"Secas (vainilla, limón, chocolate)",sin TACC,7798128410070,Galletitas Sabor Limón Aglu 150 Gr,814,2027,40.15786877158362
+Carrefour,2023,Galletitas saladas y crackers,Crackers,con TACC,7792180006462,Galletitas Mini Marineras Paseo 220 Gr,1840,2962,62.12018906144497
+Carrefour,2023,Galletitas saladas y crackers,Crackers,con TACC,7790040377707,Galletitas Original Crackers Criollitas 100 Gr,1417,2962,47.83929777177583
+Carrefour,2023,Galletitas saladas y crackers,Crackers,con TACC,7790045001133,Galletitas Crackers Naturalmente Granix 200 Gr,179,2962,6.043214044564484
+Carrefour,2023,Galletitas saladas y crackers,Crackers,sin TACC,Crackers sin TACC Smams 150 g (3 variantes),Crackers sin TACC Smams 150 g (3 variantes),2962,2962,100.0
+Carrefour,2023,Galletitas saladas y crackers,Saborizadas / snack,con TACC,Galletitas saborizadas Saladix 100 g (3 variantes),Galletitas saborizadas Saladix 100 g (3 variantes),1948,2009,96.96366351418617
+Carrefour,2023,Galletitas saladas y crackers,Saborizadas / snack,con TACC,7790040719804,Galletitas Original Rex 125 Gr,1701,2009,84.66898954703832
+Carrefour,2023,Galletitas saladas y crackers,Saborizadas / snack,con TACC,7790040003569,Galletitas Saladas Tipo Snacks Rex 75 Gr,1596,2009,79.44250871080139
+Carrefour,2023,Galletitas saladas y crackers,Saborizadas / snack,con TACC,7790040003606,Galletitas Kesitas 75 Gr,1145,2009,56.99352911896466
+Carrefour,2023,Galletitas saladas y crackers,Saborizadas / snack,sin TACC,Galletas de arroz saborizadas Crisppino Minis 50 g (3 variantes),Galletas de arroz saborizadas Crisppino Minis 50 g (3 variantes),1891,2009,94.12643106022897
+Carrefour,2023,Galletitas saladas y crackers,Saborizadas / snack,sin TACC,Galletas de arroz saborizadas Crisppino 100 g (2 variantes),Galletas de arroz saborizadas Crisppino 100 g (2 variantes),1792,2009,89.19860627177701
+Carrefour,2023,Galletitas saladas y crackers,Saborizadas / snack,sin TACC,7797330102971,Galletas de Arroz Pizza Grandiet 100 Gr,1606,2009,79.940268790443
+Carrefour,2023,Pan rallado y rebozador,Rebozador,con TACC,7792180004796,Rebozador Horno Fortificado Mamá Cocina Plus 1 Kg,966,983,98.2706002034588
+Carrefour,2023,Pan rallado y rebozador,Rebozador,con TACC,7792180004765,Rebozador Freir Fortificado Mamá Cocina Plus 500 Gr,692,983,70.3967446592065
+Carrefour,2023,Pan rallado y rebozador,Rebozador,sin TACC,7798128410087,Rebozador Aglu 450 Gr,983,983,100.0
+Carrefour,2023,Pan rallado y rebozador,Rebozador,sin TACC,7798193377285,Rebozador Naturalsur 500 Gr,108,983,10.98677517802645
+Carrefour,2024,Cereales rellenos (almohaditas),Almohaditas rellenas,con TACC,Almohaditas rellenas Lasfor 200 g (4 variantes),Almohaditas rellenas Lasfor 200 g (4 variantes),280,280,100.0
+Carrefour,2024,Cereales rellenos (almohaditas),Almohaditas rellenas,sin TACC,Almohaditas rellenas sin TACC Snuks 240 g (4 variantes),Almohaditas rellenas sin TACC Snuks 240 g (4 variantes),280,280,100.0
+Carrefour,2024,Fideos secos,Mostachol / penne,con TACC,Penne rigate Matarazzo 500 g,Penne rigate Matarazzo 500 g,1163,1163,100.0
+Carrefour,2024,Fideos secos,Mostachol / penne,sin TACC,Penne rigate sin TACC Matarazzo 500 g,Penne rigate sin TACC Matarazzo 500 g,1163,1163,100.0
+Carrefour,2024,Fideos secos,Spaghetti,con TACC,Spaghetti Matarazzo 500 g,Spaghetti Matarazzo 500 g,5058,5058,100.0
+Carrefour,2024,Fideos secos,Spaghetti,sin TACC,Spaghetti sin TACC Matarazzo 500 g,Spaghetti sin TACC Matarazzo 500 g,5058,5058,100.0
+Carrefour,2024,Galletitas dulces,Con chips,con TACC,Pepitos 119 g,Pepitos 119 g,2847,2847,100.0
+Carrefour,2024,Galletitas dulces,Con chips,sin TACC,7798181511004,Galletitas Con Chips de Chocolate Smams 150 Gr,2847,2847,100.0
+Carrefour,2024,Galletitas dulces,Obleas,con TACC,7790040008175,Galletitas Obleas Clásicas Opera 220 Gr,467,469,99.57356076759062
+Carrefour,2024,Galletitas dulces,Obleas,con TACC,77903518,Galletitas Obleas Rellena Opera 92 Gr,464,469,98.93390191897655
+Carrefour,2024,Galletitas dulces,Obleas,sin TACC,7798079230833,Obleas Limón Santa María 90 Gr,469,469,100.0
+Carrefour,2024,Galletitas dulces,Pepas,con TACC,7791787100924,Galletitas Dulces Pepas Trío 320 Gr,1639,1639,100.0
+Carrefour,2024,Galletitas dulces,Pepas,sin TACC,7798181510786,Pepas de Membrillo sin TACC Smams 150 Gr,1639,1639,100.0
+Carrefour,2024,Galletitas dulces,Rellenas,con TACC,7622300742645,Galletitas Vainilla con Relleno de Limón Duquesa 115 Gr,5985,6275,95.37848605577689
+Carrefour,2024,Galletitas dulces,Rellenas,con TACC,7790040133488,Galletitas Rellena Sabor Frambuesa Sonrisas 108 Gr,5694,6275,90.7410358565737
+Carrefour,2024,Galletitas dulces,Rellenas,con TACC,7790040133259,Galletitas Vainilla Rellenas Limón Maná 152 Gr,642,6275,10.23107569721116
+Carrefour,2024,Galletitas dulces,Rellenas,sin TACC,Galletitas rellenas sin TACC Smams 105 g (3 variantes),Galletitas rellenas sin TACC Smams 105 g (3 variantes),6275,6275,100.0
+Carrefour,2024,Galletitas dulces,"Secas (vainilla, limón, chocolate)",con TACC,7622201808860,Galletitas Dulces Boca de Dama Terrabusi 170 Gr,1892,1950,97.02564102564102
+Carrefour,2024,Galletitas dulces,"Secas (vainilla, limón, chocolate)",con TACC,7622201808884,Galletitas Anillos Clásicos Terrabusi 170 Gr,1511,1950,77.48717948717949
+Carrefour,2024,Galletitas dulces,"Secas (vainilla, limón, chocolate)",con TACC,7791787000644,Galletitas Frolitas Trio 300 Gr,1339,1950,68.66666666666667
+Carrefour,2024,Galletitas dulces,"Secas (vainilla, limón, chocolate)",con TACC,7792200000791,Galletitas Sconcitos 9 de Oro 200 Gr,1178,1950,60.41025641025641
+Carrefour,2024,Galletitas dulces,"Secas (vainilla, limón, chocolate)",sin TACC,Galletitas sin TACC Santa María 200 g (2 variantes),Galletitas sin TACC Santa María 200 g (2 variantes),1927,1950,98.82051282051282
+Carrefour,2024,Galletitas dulces,"Secas (vainilla, limón, chocolate)",sin TACC,7798181510847,Galletitas Colegial Vainilla Samms 150 Gr,1898,1950,97.33333333333333
+Carrefour,2024,Galletitas dulces,"Secas (vainilla, limón, chocolate)",sin TACC,7798128410070,Galletitas Sabor Limón Aglu 150 Gr,1882,1950,96.51282051282051
+Carrefour,2024,Galletitas saladas y crackers,Crackers,con TACC,7790040377707,Galletitas Original Crackers Criollitas 100 Gr,3896,3899,99.92305719415235
+Carrefour,2024,Galletitas saladas y crackers,Crackers,con TACC,7790045001133,Galletitas Crackers Naturalmente Granix 200 Gr,477,3899,12.23390612977687
+Carrefour,2024,Galletitas saladas y crackers,Crackers,sin TACC,Crackers sin TACC Smams 150 g (3 variantes),Crackers sin TACC Smams 150 g (3 variantes),3899,3899,100.0
+Carrefour,2024,Galletitas saladas y crackers,Saborizadas / snack,con TACC,7790040719804,Galletitas Original Rex 125 Gr,1903,1939,98.14337287261475
+Carrefour,2024,Galletitas saladas y crackers,Saborizadas / snack,con TACC,Galletitas saborizadas Saladix 100 g (3 variantes),Galletitas saborizadas Saladix 100 g (3 variantes),1774,1939,91.49045899948428
+Carrefour,2024,Galletitas saladas y crackers,Saborizadas / snack,con TACC,7790040003606,Galletitas Kesitas 75 Gr,1403,1939,72.35688499226406
+Carrefour,2024,Galletitas saladas y crackers,Saborizadas / snack,con TACC,7790040003569,Galletitas Saladas Tipo Snacks Rex 75 Gr,1356,1939,69.9329551315111
+Carrefour,2024,Galletitas saladas y crackers,Saborizadas / snack,sin TACC,Galletas de arroz saborizadas Crisppino Minis 50 g (3 variantes),Galletas de arroz saborizadas Crisppino Minis 50 g (3 variantes),1885,1939,97.21505930892212
+Carrefour,2024,Galletitas saladas y crackers,Saborizadas / snack,sin TACC,Galletas de arroz saborizadas Crisppino 100 g (2 variantes),Galletas de arroz saborizadas Crisppino 100 g (2 variantes),1834,1939,94.58483754512635
+Carrefour,2024,Galletitas saladas y crackers,Saborizadas / snack,sin TACC,7797330102971,Galletas de Arroz Pizza Grandiet 100 Gr,452,1939,23.31098504383703
+Carrefour,2024,Pan rallado y rebozador,Rebozador,con TACC,7792180004765,Rebozador Freir Fortificado Mamá Cocina Plus 500 Gr,736,750,98.13333333333334
+Carrefour,2024,Pan rallado y rebozador,Rebozador,con TACC,7792180004796,Rebozador Horno Fortificado Mamá Cocina Plus 1 Kg,691,750,92.13333333333334
+Carrefour,2024,Pan rallado y rebozador,Rebozador,sin TACC,7798128410087,Rebozador Aglu 450 Gr,750,750,100.0
+Carrefour,2025,Cereales rellenos (almohaditas),Almohaditas rellenas,con TACC,Almohaditas rellenas Lasfor 200 g (4 variantes),Almohaditas rellenas Lasfor 200 g (4 variantes),1278,1278,100.0
+Carrefour,2025,Cereales rellenos (almohaditas),Almohaditas rellenas,sin TACC,Almohaditas rellenas sin TACC Snuks 240 g (4 variantes),Almohaditas rellenas sin TACC Snuks 240 g (4 variantes),1278,1278,100.0
+Carrefour,2025,Fideos secos,Mostachol / penne,con TACC,Penne rigate Matarazzo 500 g,Penne rigate Matarazzo 500 g,4753,4753,100.0
+Carrefour,2025,Fideos secos,Mostachol / penne,sin TACC,Penne rigate sin TACC Matarazzo 500 g,Penne rigate sin TACC Matarazzo 500 g,4753,4753,100.0
+Carrefour,2025,Fideos secos,Spaghetti,con TACC,Spaghetti Matarazzo 500 g,Spaghetti Matarazzo 500 g,6748,6748,100.0
+Carrefour,2025,Fideos secos,Spaghetti,sin TACC,Spaghetti sin TACC Matarazzo 500 g,Spaghetti sin TACC Matarazzo 500 g,6748,6748,100.0
+Carrefour,2025,Fideos secos,Tirabuzón / fusilli,con TACC,Tirabuzones Lucchetti 500 g,Tirabuzones Lucchetti 500 g,3863,3864,99.97412008281573
+Carrefour,2025,Fideos secos,Tirabuzón / fusilli,con TACC,Tirabuzones Matarazzo 500 g,Tirabuzones Matarazzo 500 g,3843,3864,99.45652173913044
+Carrefour,2025,Fideos secos,Tirabuzón / fusilli,sin TACC,Fusilli sin TACC Wakas (4 variantes),Fusilli sin TACC Wakas (4 variantes),3852,3864,99.68944099378882
+Carrefour,2025,Fideos secos,Tirabuzón / fusilli,sin TACC,Tirabuzón sin TACC Matarazzo 500 g,Tirabuzón sin TACC Matarazzo 500 g,1086,3864,28.1055900621118
+Carrefour,2025,Galletitas dulces,Con chips,con TACC,Pepitos 119 g,Pepitos 119 g,4333,4333,100.0
+Carrefour,2025,Galletitas dulces,Con chips,sin TACC,7798181511004,Galletitas Con Chips de Chocolate Smams 150 Gr,4333,4333,100.0
+Carrefour,2025,Galletitas dulces,Obleas,con TACC,77903518,Galletitas Obleas Rellena Opera 92 Gr,645,646,99.84520123839009
+Carrefour,2025,Galletitas dulces,Obleas,con TACC,7790040008175,Galletitas Obleas Clásicas Opera 220 Gr,643,646,99.53560371517028
+Carrefour,2025,Galletitas dulces,Obleas,sin TACC,7798079230833,Obleas Limón Santa María 90 Gr,646,646,100.0
+Carrefour,2025,Galletitas dulces,Pepas,con TACC,7791787100924,Galletitas Dulces Pepas Trío 320 Gr,18,18,100.0
+Carrefour,2025,Galletitas dulces,Pepas,sin TACC,7798181510786,Pepas de Membrillo sin TACC Smams 150 Gr,18,18,100.0
+Carrefour,2025,Galletitas dulces,Rellenas,con TACC,7790040133488,Galletitas Rellena Sabor Frambuesa Sonrisas 108 Gr,6773,6776,99.95572609208973
+Carrefour,2025,Galletitas dulces,Rellenas,con TACC,7622300742645,Galletitas Vainilla con Relleno de Limón Duquesa 115 Gr,6357,6776,93.8164108618654
+Carrefour,2025,Galletitas dulces,Rellenas,con TACC,7790040133259,Galletitas Vainilla Rellenas Limón Maná 152 Gr,1741,6776,25.69362455726092
+Carrefour,2025,Galletitas dulces,Rellenas,sin TACC,Galletitas rellenas sin TACC Smams 105 g (3 variantes),Galletitas rellenas sin TACC Smams 105 g (3 variantes),6776,6776,100.0
+Carrefour,2025,Galletitas dulces,"Secas (vainilla, limón, chocolate)",con TACC,7622201808884,Galletitas Anillos Clásicos Terrabusi 170 Gr,5263,5263,100.0
+Carrefour,2025,Galletitas dulces,"Secas (vainilla, limón, chocolate)",con TACC,7622201808860,Galletitas Dulces Boca de Dama Terrabusi 170 Gr,5259,5263,99.92399771993159
+Carrefour,2025,Galletitas dulces,"Secas (vainilla, limón, chocolate)",con TACC,7791787000644,Galletitas Frolitas Trio 300 Gr,1835,5263,34.86604598137944
+Carrefour,2025,Galletitas dulces,"Secas (vainilla, limón, chocolate)",sin TACC,Galletitas sin TACC Santa María 200 g (2 variantes),Galletitas sin TACC Santa María 200 g (2 variantes),4793,5263,91.06973209196276
+Carrefour,2025,Galletitas dulces,"Secas (vainilla, limón, chocolate)",sin TACC,7798181510847,Galletitas Colegial Vainilla Samms 150 Gr,3674,5263,69.80809424282728
+Carrefour,2025,Galletitas dulces,"Secas (vainilla, limón, chocolate)",sin TACC,7798128410070,Galletitas Sabor Limón Aglu 150 Gr,1831,5263,34.79004370131104
+Carrefour,2025,Galletitas saladas y crackers,Crackers,con TACC,7790040377707,Galletitas Original Crackers Criollitas 100 Gr,6763,6772,99.86709982279976
+Carrefour,2025,Galletitas saladas y crackers,Crackers,con TACC,7790045001133,Galletitas Crackers Naturalmente Granix 200 Gr,2129,6772,31.43827525103367
+Carrefour,2025,Galletitas saladas y crackers,Crackers,sin TACC,Crackers sin TACC Smams 150 g (3 variantes),Crackers sin TACC Smams 150 g (3 variantes),6772,6772,100.0
+Carrefour,2025,Galletitas saladas y crackers,Saborizadas / snack,con TACC,7790040719804,Galletitas Original Rex 125 Gr,1930,1934,99.79317476732162
+Carrefour,2025,Galletitas saladas y crackers,Saborizadas / snack,con TACC,7790040003569,Galletitas Saladas Tipo Snacks Rex 75 Gr,1928,1934,99.68976215098242
+Carrefour,2025,Galletitas saladas y crackers,Saborizadas / snack,con TACC,7790040003606,Galletitas Kesitas 75 Gr,1869,1934,96.63908996897622
+Carrefour,2025,Galletitas saladas y crackers,Saborizadas / snack,con TACC,Galletitas saborizadas Saladix 100 g (3 variantes),Galletitas saborizadas Saladix 100 g (3 variantes),1662,1934,85.9358841778697
+Carrefour,2025,Galletitas saladas y crackers,Saborizadas / snack,sin TACC,Galletas de arroz saborizadas Crisppino Minis 50 g (3 variantes),Galletas de arroz saborizadas Crisppino Minis 50 g (3 variantes),1927,1934,99.63805584281282
+Carrefour,2025,Galletitas saladas y crackers,Saborizadas / snack,sin TACC,Galletas de arroz saborizadas Crisppino 100 g (2 variantes),Galletas de arroz saborizadas Crisppino 100 g (2 variantes),1800,1934,93.07135470527405
+Carrefour,2025,Galletitas saladas y crackers,Saborizadas / snack,sin TACC,7797330102971,Galletas de Arroz Pizza Grandiet 100 Gr,1768,1934,91.41675284384695
+Carrefour,2025,Pan rallado y rebozador,Rebozador,con TACC,7792180004765,Rebozador Freir Fortificado Mamá Cocina Plus 500 Gr,1552,1553,99.93560849967804
+Carrefour,2025,Pan rallado y rebozador,Rebozador,con TACC,7792180004796,Rebozador Horno Fortificado Mamá Cocina Plus 1 Kg,1270,1553,81.77720540888603
+Carrefour,2025,Pan rallado y rebozador,Rebozador,sin TACC,7798128410087,Rebozador Aglu 450 Gr,1553,1553,100.0
+Carrefour,2026,Cereales rellenos (almohaditas),Almohaditas rellenas,con TACC,Almohaditas rellenas Lasfor 200 g (4 variantes),Almohaditas rellenas Lasfor 200 g (4 variantes),994,994,100.0
+Carrefour,2026,Cereales rellenos (almohaditas),Almohaditas rellenas,sin TACC,Almohaditas rellenas sin TACC Snuks 240 g (4 variantes),Almohaditas rellenas sin TACC Snuks 240 g (4 variantes),994,994,100.0
+Carrefour,2026,Fideos secos,Mostachol / penne,con TACC,Penne rigate Matarazzo 500 g,Penne rigate Matarazzo 500 g,4951,4951,100.0
+Carrefour,2026,Fideos secos,Mostachol / penne,sin TACC,Penne rigate sin TACC Matarazzo 500 g,Penne rigate sin TACC Matarazzo 500 g,4951,4951,100.0
+Carrefour,2026,Fideos secos,Spaghetti,con TACC,Spaghetti Matarazzo 500 g,Spaghetti Matarazzo 500 g,5548,5548,100.0
+Carrefour,2026,Fideos secos,Spaghetti,sin TACC,Spaghetti sin TACC Matarazzo 500 g,Spaghetti sin TACC Matarazzo 500 g,5548,5548,100.0
+Carrefour,2026,Fideos secos,Tirabuzón / fusilli,con TACC,Tirabuzones Lucchetti 500 g,Tirabuzones Lucchetti 500 g,5552,5553,99.98199171618944
+Carrefour,2026,Fideos secos,Tirabuzón / fusilli,con TACC,Tirabuzones Matarazzo 500 g,Tirabuzones Matarazzo 500 g,5513,5553,99.27966864757789
+Carrefour,2026,Fideos secos,Tirabuzón / fusilli,sin TACC,Fusilli sin TACC Wakas (4 variantes),Fusilli sin TACC Wakas (4 variantes),5544,5553,99.83792544570503
+Carrefour,2026,Fideos secos,Tirabuzón / fusilli,sin TACC,Tirabuzón sin TACC Matarazzo 500 g,Tirabuzón sin TACC Matarazzo 500 g,3492,5553,62.88492706645057
+Carrefour,2026,Galletitas dulces,Con chips,con TACC,Pepitos 119 g,Pepitos 119 g,5521,5521,100.0
+Carrefour,2026,Galletitas dulces,Con chips,sin TACC,7798181511004,Galletitas Con Chips de Chocolate Smams 150 Gr,5521,5521,100.0
+Carrefour,2026,Galletitas dulces,Obleas,con TACC,77903518,Galletitas Obleas Rellena Opera 92 Gr,1419,1422,99.78902953586498
+Carrefour,2026,Galletitas dulces,Obleas,con TACC,7790040008175,Galletitas Obleas Clásicas Opera 220 Gr,1418,1422,99.71870604781998
+Carrefour,2026,Galletitas dulces,Obleas,sin TACC,7798079230833,Obleas Limón Santa María 90 Gr,1422,1422,100.0
+Carrefour,2026,Galletitas dulces,Rellenas,con TACC,7790040133488,Galletitas Rellena Sabor Frambuesa Sonrisas 108 Gr,5489,5510,99.61887477313975
+Carrefour,2026,Galletitas dulces,Rellenas,con TACC,7622300742645,Galletitas Vainilla con Relleno de Limón Duquesa 115 Gr,5223,5510,94.7912885662432
+Carrefour,2026,Galletitas dulces,Rellenas,con TACC,7790040133259,Galletitas Vainilla Rellenas Limón Maná 152 Gr,1449,5510,26.29764065335753
+Carrefour,2026,Galletitas dulces,Rellenas,sin TACC,Galletitas rellenas sin TACC Smams 105 g (3 variantes),Galletitas rellenas sin TACC Smams 105 g (3 variantes),5510,5510,100.0
+Carrefour,2026,Galletitas dulces,"Secas (vainilla, limón, chocolate)",con TACC,7622201808884,Galletitas Anillos Clásicos Terrabusi 170 Gr,3927,3928,99.9745417515275
+Carrefour,2026,Galletitas dulces,"Secas (vainilla, limón, chocolate)",con TACC,7622201808860,Galletitas Dulces Boca de Dama Terrabusi 170 Gr,3926,3928,99.949083503055
+Carrefour,2026,Galletitas dulces,"Secas (vainilla, limón, chocolate)",con TACC,7791787000644,Galletitas Frolitas Trio 300 Gr,1512,3928,38.4928716904277
+Carrefour,2026,Galletitas dulces,"Secas (vainilla, limón, chocolate)",sin TACC,Galletitas sin TACC Santa María 200 g (2 variantes),Galletitas sin TACC Santa María 200 g (2 variantes),3208,3928,81.67006109979633
+Carrefour,2026,Galletitas dulces,"Secas (vainilla, limón, chocolate)",sin TACC,7798128410070,Galletitas Sabor Limón Aglu 150 Gr,2792,3928,71.07942973523421
+Carrefour,2026,Galletitas dulces,"Secas (vainilla, limón, chocolate)",sin TACC,7798181510847,Galletitas Colegial Vainilla Samms 150 Gr,2266,3928,57.68839103869654
+Carrefour,2026,Galletitas saladas y crackers,Crackers,con TACC,7790040377707,Galletitas Original Crackers Criollitas 100 Gr,5547,5548,99.98197548666187
+Carrefour,2026,Galletitas saladas y crackers,Crackers,con TACC,7790045001133,Galletitas Crackers Naturalmente Granix 200 Gr,1600,5548,28.83922134102379
+Carrefour,2026,Galletitas saladas y crackers,Crackers,con TACC,7792180006462,Galletitas Mini Marineras Paseo 220 Gr,210,5548,3.785147801009373
+Carrefour,2026,Galletitas saladas y crackers,Crackers,sin TACC,Crackers sin TACC Smams 150 g (3 variantes),Crackers sin TACC Smams 150 g (3 variantes),5548,5548,100.0
+Carrefour,2026,Galletitas saladas y crackers,Saborizadas / snack,con TACC,Galletitas saborizadas Saladix 100 g (3 variantes),Galletitas saborizadas Saladix 100 g (3 variantes),1498,1498,100.0
+Carrefour,2026,Galletitas saladas y crackers,Saborizadas / snack,con TACC,7790040719804,Galletitas Original Rex 125 Gr,1497,1498,99.93324432576769
+Carrefour,2026,Galletitas saladas y crackers,Saborizadas / snack,con TACC,7790040003569,Galletitas Saladas Tipo Snacks Rex 75 Gr,1496,1498,99.86648865153538
+Carrefour,2026,Galletitas saladas y crackers,Saborizadas / snack,con TACC,7790040003606,Galletitas Kesitas 75 Gr,1481,1498,98.86515353805073
+Carrefour,2026,Galletitas saladas y crackers,Saborizadas / snack,sin TACC,Galletas de arroz saborizadas Crisppino Minis 50 g (3 variantes),Galletas de arroz saborizadas Crisppino Minis 50 g (3 variantes),1496,1498,99.86648865153538
+Carrefour,2026,Galletitas saladas y crackers,Saborizadas / snack,sin TACC,7797330102971,Galletas de Arroz Pizza Grandiet 100 Gr,1366,1498,91.18825100133512
+Carrefour,2026,Galletitas saladas y crackers,Saborizadas / snack,sin TACC,Galletas de arroz saborizadas Crisppino 100 g (2 variantes),Galletas de arroz saborizadas Crisppino 100 g (2 variantes),937,1498,62.55006675567423
+Carrefour,2026,Pan rallado y rebozador,Rebozador,con TACC,7792180004765,Rebozador Freir Fortificado Mamá Cocina Plus 500 Gr,1527,1529,99.86919555264879
+Carrefour,2026,Pan rallado y rebozador,Rebozador,con TACC,7792180004796,Rebozador Horno Fortificado Mamá Cocina Plus 1 Kg,1476,1529,96.53368214519294
+Carrefour,2026,Pan rallado y rebozador,Rebozador,sin TACC,7798128410087,Rebozador Aglu 450 Gr,1529,1529,100.0
+"Cencosud (Vea, Disco, Jumbo)",2022,Fideos secos,Spaghetti,con TACC,Spaghetti Matarazzo 500 g,Spaghetti Matarazzo 500 g,479,479,100.0
+"Cencosud (Vea, Disco, Jumbo)",2022,Fideos secos,Spaghetti,sin TACC,Spaghetti sin TACC Matarazzo 500 g,Spaghetti sin TACC Matarazzo 500 g,479,479,100.0
+"Cencosud (Vea, Disco, Jumbo)",2022,Fideos secos,Tirabuzón / fusilli,con TACC,Tirabuzones Lucchetti 500 g,Tirabuzones Lucchetti 500 g,3021,3023,99.93384055573934
+"Cencosud (Vea, Disco, Jumbo)",2022,Fideos secos,Tirabuzón / fusilli,con TACC,Tirabuzones Matarazzo 500 g,Tirabuzones Matarazzo 500 g,764,3023,25.27290770757526
+"Cencosud (Vea, Disco, Jumbo)",2022,Fideos secos,Tirabuzón / fusilli,sin TACC,Fusilli sin TACC Wakas (4 variantes),Fusilli sin TACC Wakas (4 variantes),2877,3023,95.17036056897122
+"Cencosud (Vea, Disco, Jumbo)",2022,Fideos secos,Tirabuzón / fusilli,sin TACC,Tirabuzón sin TACC Matarazzo 500 g,Tirabuzón sin TACC Matarazzo 500 g,2491,3023,82.40158782666225
+"Cencosud (Vea, Disco, Jumbo)",2022,Galletitas dulces,"Secas (vainilla, limón, chocolate)",con TACC,7622201808860,Galletitas Dulces Boca de Dama Terrabusi 170 Gr,1203,1203,100.0
+"Cencosud (Vea, Disco, Jumbo)",2022,Galletitas dulces,"Secas (vainilla, limón, chocolate)",sin TACC,7798128410070,Galletitas Sabor Limón Aglu 150 Gr,1199,1203,99.66749792186201
+"Cencosud (Vea, Disco, Jumbo)",2022,Galletitas dulces,"Secas (vainilla, limón, chocolate)",sin TACC,Galletitas sin TACC Santa María 200 g (2 variantes),Galletitas sin TACC Santa María 200 g (2 variantes),22,1203,1.828761429758936
+"Cencosud (Vea, Disco, Jumbo)",2022,Galletitas saladas y crackers,Crackers,con TACC,7790045001133,Galletitas Crackers Naturalmente Granix 200 Gr,2994,3067,97.61982393218129
+"Cencosud (Vea, Disco, Jumbo)",2022,Galletitas saladas y crackers,Crackers,con TACC,7790040377707,Galletitas Original Crackers Criollitas 100 Gr,2738,3067,89.2729051190088
+"Cencosud (Vea, Disco, Jumbo)",2022,Galletitas saladas y crackers,Crackers,sin TACC,Crackers sin TACC Smams 150 g (3 variantes),Crackers sin TACC Smams 150 g (3 variantes),3067,3067,100.0
+"Cencosud (Vea, Disco, Jumbo)",2022,Galletitas saladas y crackers,Saborizadas / snack,con TACC,7790040003606,Galletitas Kesitas 75 Gr,1360,1816,74.8898678414097
+"Cencosud (Vea, Disco, Jumbo)",2022,Galletitas saladas y crackers,Saborizadas / snack,con TACC,7790040003569,Galletitas Saladas Tipo Snacks Rex 75 Gr,1358,1816,74.77973568281938
+"Cencosud (Vea, Disco, Jumbo)",2022,Galletitas saladas y crackers,Saborizadas / snack,con TACC,7790040719804,Galletitas Original Rex 125 Gr,1167,1816,64.26211453744493
+"Cencosud (Vea, Disco, Jumbo)",2022,Galletitas saladas y crackers,Saborizadas / snack,con TACC,Galletitas saborizadas Saladix 100 g (3 variantes),Galletitas saborizadas Saladix 100 g (3 variantes),1047,1816,57.65418502202643
+"Cencosud (Vea, Disco, Jumbo)",2022,Galletitas saladas y crackers,Saborizadas / snack,sin TACC,Galletas de arroz saborizadas Crisppino 100 g (2 variantes),Galletas de arroz saborizadas Crisppino 100 g (2 variantes),1477,1816,81.33259911894272
+"Cencosud (Vea, Disco, Jumbo)",2022,Galletitas saladas y crackers,Saborizadas / snack,sin TACC,7797330102971,Galletas de Arroz Pizza Grandiet 100 Gr,673,1816,37.05947136563876
+"Cencosud (Vea, Disco, Jumbo)",2022,Pan rallado y rebozador,Rebozador,con TACC,7792180004765,Rebozador Freir Fortificado Mamá Cocina Plus 500 Gr,531,531,100.0
+"Cencosud (Vea, Disco, Jumbo)",2022,Pan rallado y rebozador,Rebozador,sin TACC,7798128410087,Rebozador Aglu 450 Gr,531,531,100.0
+"Cencosud (Vea, Disco, Jumbo)",2023,Fideos secos,Spaghetti,con TACC,Spaghetti Matarazzo 500 g,Spaghetti Matarazzo 500 g,946,946,100.0
+"Cencosud (Vea, Disco, Jumbo)",2023,Fideos secos,Spaghetti,sin TACC,Spaghetti sin TACC Matarazzo 500 g,Spaghetti sin TACC Matarazzo 500 g,946,946,100.0
+"Cencosud (Vea, Disco, Jumbo)",2023,Fideos secos,Tirabuzón / fusilli,con TACC,Tirabuzones Lucchetti 500 g,Tirabuzones Lucchetti 500 g,1273,1319,96.51250947687642
+"Cencosud (Vea, Disco, Jumbo)",2023,Fideos secos,Tirabuzón / fusilli,con TACC,Tirabuzones Matarazzo 500 g,Tirabuzones Matarazzo 500 g,953,1319,72.25170583775588
+"Cencosud (Vea, Disco, Jumbo)",2023,Fideos secos,Tirabuzón / fusilli,sin TACC,Fusilli sin TACC Wakas (4 variantes),Fusilli sin TACC Wakas (4 variantes),1318,1319,99.92418498862774
+"Cencosud (Vea, Disco, Jumbo)",2023,Fideos secos,Tirabuzón / fusilli,sin TACC,Tirabuzón sin TACC Matarazzo 500 g,Tirabuzón sin TACC Matarazzo 500 g,88,1319,6.67172100075815
+"Cencosud (Vea, Disco, Jumbo)",2023,Galletitas dulces,Obleas,con TACC,7790040008175,Galletitas Obleas Clásicas Opera 220 Gr,207,208,99.51923076923077
+"Cencosud (Vea, Disco, Jumbo)",2023,Galletitas dulces,Obleas,con TACC,77903518,Galletitas Obleas Rellena Opera 92 Gr,4,208,1.923076923076923
+"Cencosud (Vea, Disco, Jumbo)",2023,Galletitas dulces,Obleas,sin TACC,7798079230833,Obleas Limón Santa María 90 Gr,208,208,100.0
+"Cencosud (Vea, Disco, Jumbo)",2023,Galletitas dulces,Pepas,con TACC,7791787100924,Galletitas Dulces Pepas Trío 320 Gr,659,659,100.0
+"Cencosud (Vea, Disco, Jumbo)",2023,Galletitas dulces,Pepas,sin TACC,7798181510786,Pepas de Membrillo sin TACC Smams 150 Gr,659,659,100.0
+"Cencosud (Vea, Disco, Jumbo)",2023,Galletitas dulces,Rellenas,con TACC,7790040133488,Galletitas Rellena Sabor Frambuesa Sonrisas 108 Gr,1800,1855,97.03504043126685
+"Cencosud (Vea, Disco, Jumbo)",2023,Galletitas dulces,Rellenas,con TACC,7790040133259,Galletitas Vainilla Rellenas Limón Maná 152 Gr,447,1855,24.09703504043127
+"Cencosud (Vea, Disco, Jumbo)",2023,Galletitas dulces,Rellenas,con TACC,7622300742645,Galletitas Vainilla con Relleno de Limón Duquesa 115 Gr,185,1855,9.973045822102426
+"Cencosud (Vea, Disco, Jumbo)",2023,Galletitas dulces,Rellenas,sin TACC,Galletitas rellenas sin TACC Smams 105 g (3 variantes),Galletitas rellenas sin TACC Smams 105 g (3 variantes),1855,1855,100.0
+"Cencosud (Vea, Disco, Jumbo)",2023,Galletitas dulces,"Secas (vainilla, limón, chocolate)",con TACC,7792200000791,Galletitas Sconcitos 9 de Oro 200 Gr,2449,2635,92.94117647058823
+"Cencosud (Vea, Disco, Jumbo)",2023,Galletitas dulces,"Secas (vainilla, limón, chocolate)",con TACC,7622201808884,Galletitas Anillos Clásicos Terrabusi 170 Gr,2304,2635,87.43833017077799
+"Cencosud (Vea, Disco, Jumbo)",2023,Galletitas dulces,"Secas (vainilla, limón, chocolate)",con TACC,7791787000644,Galletitas Frolitas Trio 300 Gr,1311,2635,49.75332068311195
+"Cencosud (Vea, Disco, Jumbo)",2023,Galletitas dulces,"Secas (vainilla, limón, chocolate)",con TACC,7622201808860,Galletitas Dulces Boca de Dama Terrabusi 170 Gr,945,2635,35.86337760910816
+"Cencosud (Vea, Disco, Jumbo)",2023,Galletitas dulces,"Secas (vainilla, limón, chocolate)",sin TACC,7798128410070,Galletitas Sabor Limón Aglu 150 Gr,1663,2635,63.11195445920303
+"Cencosud (Vea, Disco, Jumbo)",2023,Galletitas dulces,"Secas (vainilla, limón, chocolate)",sin TACC,7798181510847,Galletitas Colegial Vainilla Samms 150 Gr,777,2635,29.4876660341556
+"Cencosud (Vea, Disco, Jumbo)",2023,Galletitas dulces,"Secas (vainilla, limón, chocolate)",sin TACC,Galletitas sin TACC Santa María 200 g (2 variantes),Galletitas sin TACC Santa María 200 g (2 variantes),252,2635,9.563567362428843
+"Cencosud (Vea, Disco, Jumbo)",2023,Galletitas saladas y crackers,Crackers,con TACC,7790045001133,Galletitas Crackers Naturalmente Granix 200 Gr,2292,2620,87.48091603053435
+"Cencosud (Vea, Disco, Jumbo)",2023,Galletitas saladas y crackers,Crackers,con TACC,7792180006462,Galletitas Mini Marineras Paseo 220 Gr,1975,2620,75.38167938931298
+"Cencosud (Vea, Disco, Jumbo)",2023,Galletitas saladas y crackers,Crackers,con TACC,7790040377707,Galletitas Original Crackers Criollitas 100 Gr,351,2620,13.3969465648855
+"Cencosud (Vea, Disco, Jumbo)",2023,Galletitas saladas y crackers,Crackers,sin TACC,Crackers sin TACC Smams 150 g (3 variantes),Crackers sin TACC Smams 150 g (3 variantes),2620,2620,100.0
+"Cencosud (Vea, Disco, Jumbo)",2023,Galletitas saladas y crackers,Saborizadas / snack,con TACC,Galletitas saborizadas Saladix 100 g (3 variantes),Galletitas saborizadas Saladix 100 g (3 variantes),2058,2145,95.94405594405595
+"Cencosud (Vea, Disco, Jumbo)",2023,Galletitas saladas y crackers,Saborizadas / snack,con TACC,7790040003606,Galletitas Kesitas 75 Gr,1833,2145,85.45454545454545
+"Cencosud (Vea, Disco, Jumbo)",2023,Galletitas saladas y crackers,Saborizadas / snack,con TACC,7790040719804,Galletitas Original Rex 125 Gr,1452,2145,67.6923076923077
+"Cencosud (Vea, Disco, Jumbo)",2023,Galletitas saladas y crackers,Saborizadas / snack,con TACC,7790040003569,Galletitas Saladas Tipo Snacks Rex 75 Gr,643,2145,29.97668997668998
+"Cencosud (Vea, Disco, Jumbo)",2023,Galletitas saladas y crackers,Saborizadas / snack,sin TACC,Galletas de arroz saborizadas Crisppino Minis 50 g (3 variantes),Galletas de arroz saborizadas Crisppino Minis 50 g (3 variantes),1310,2145,61.07226107226107
+"Cencosud (Vea, Disco, Jumbo)",2023,Galletitas saladas y crackers,Saborizadas / snack,sin TACC,Galletas de arroz saborizadas Crisppino 100 g (2 variantes),Galletas de arroz saborizadas Crisppino 100 g (2 variantes),771,2145,35.94405594405595
+"Cencosud (Vea, Disco, Jumbo)",2023,Galletitas saladas y crackers,Saborizadas / snack,sin TACC,7797330102971,Galletas de Arroz Pizza Grandiet 100 Gr,328,2145,15.29137529137529
+"Cencosud (Vea, Disco, Jumbo)",2023,Pan rallado y rebozador,Rebozador,con TACC,7792180004765,Rebozador Freir Fortificado Mamá Cocina Plus 500 Gr,1272,1393,91.31371141421393
+"Cencosud (Vea, Disco, Jumbo)",2023,Pan rallado y rebozador,Rebozador,con TACC,7792180004796,Rebozador Horno Fortificado Mamá Cocina Plus 1 Kg,1269,1393,91.09834888729361
+"Cencosud (Vea, Disco, Jumbo)",2023,Pan rallado y rebozador,Rebozador,sin TACC,7798128410087,Rebozador Aglu 450 Gr,1343,1393,96.41062455132807
+"Cencosud (Vea, Disco, Jumbo)",2023,Pan rallado y rebozador,Rebozador,sin TACC,7798193377285,Rebozador Naturalsur 500 Gr,553,1393,39.69849246231156
+"Cencosud (Vea, Disco, Jumbo)",2024,Cereales rellenos (almohaditas),Almohaditas rellenas,con TACC,Almohaditas rellenas Lasfor 200 g (4 variantes),Almohaditas rellenas Lasfor 200 g (4 variantes),1145,1145,100.0
+"Cencosud (Vea, Disco, Jumbo)",2024,Cereales rellenos (almohaditas),Almohaditas rellenas,sin TACC,Almohaditas rellenas sin TACC Snuks 240 g (4 variantes),Almohaditas rellenas sin TACC Snuks 240 g (4 variantes),1145,1145,100.0
+"Cencosud (Vea, Disco, Jumbo)",2024,Fideos secos,Mostachol / penne,con TACC,Penne rigate Matarazzo 500 g,Penne rigate Matarazzo 500 g,1254,1254,100.0
+"Cencosud (Vea, Disco, Jumbo)",2024,Fideos secos,Mostachol / penne,sin TACC,Penne rigate sin TACC Matarazzo 500 g,Penne rigate sin TACC Matarazzo 500 g,1254,1254,100.0
+"Cencosud (Vea, Disco, Jumbo)",2024,Fideos secos,Spaghetti,con TACC,Spaghetti Matarazzo 500 g,Spaghetti Matarazzo 500 g,850,850,100.0
+"Cencosud (Vea, Disco, Jumbo)",2024,Fideos secos,Spaghetti,sin TACC,Spaghetti sin TACC Matarazzo 500 g,Spaghetti sin TACC Matarazzo 500 g,850,850,100.0
+"Cencosud (Vea, Disco, Jumbo)",2024,Fideos secos,Tirabuzón / fusilli,con TACC,Tirabuzones Lucchetti 500 g,Tirabuzones Lucchetti 500 g,1327,1330,99.77443609022556
+"Cencosud (Vea, Disco, Jumbo)",2024,Fideos secos,Tirabuzón / fusilli,con TACC,Tirabuzones Matarazzo 500 g,Tirabuzones Matarazzo 500 g,1174,1330,88.27067669172932
+"Cencosud (Vea, Disco, Jumbo)",2024,Fideos secos,Tirabuzón / fusilli,sin TACC,Fusilli sin TACC Wakas (4 variantes),Fusilli sin TACC Wakas (4 variantes),1325,1330,99.62406015037594
+"Cencosud (Vea, Disco, Jumbo)",2024,Fideos secos,Tirabuzón / fusilli,sin TACC,Tirabuzón sin TACC Matarazzo 500 g,Tirabuzón sin TACC Matarazzo 500 g,1254,1330,94.28571428571429
+"Cencosud (Vea, Disco, Jumbo)",2024,Galletitas dulces,Obleas,con TACC,7790040008175,Galletitas Obleas Clásicas Opera 220 Gr,624,624,100.0
+"Cencosud (Vea, Disco, Jumbo)",2024,Galletitas dulces,Obleas,con TACC,77903518,Galletitas Obleas Rellena Opera 92 Gr,514,624,82.37179487179488
+"Cencosud (Vea, Disco, Jumbo)",2024,Galletitas dulces,Obleas,sin TACC,7798079230833,Obleas Limón Santa María 90 Gr,624,624,100.0
+"Cencosud (Vea, Disco, Jumbo)",2024,Galletitas dulces,Pepas,con TACC,7791787100924,Galletitas Dulces Pepas Trío 320 Gr,1002,1002,100.0
+"Cencosud (Vea, Disco, Jumbo)",2024,Galletitas dulces,Pepas,sin TACC,7798181510786,Pepas de Membrillo sin TACC Smams 150 Gr,1002,1002,100.0
+"Cencosud (Vea, Disco, Jumbo)",2024,Galletitas dulces,Rellenas,con TACC,7790040133488,Galletitas Rellena Sabor Frambuesa Sonrisas 108 Gr,2776,2950,94.10169491525424
+"Cencosud (Vea, Disco, Jumbo)",2024,Galletitas dulces,Rellenas,con TACC,7790040133259,Galletitas Vainilla Rellenas Limón Maná 152 Gr,1307,2950,44.30508474576271
+"Cencosud (Vea, Disco, Jumbo)",2024,Galletitas dulces,Rellenas,con TACC,7622300742645,Galletitas Vainilla con Relleno de Limón Duquesa 115 Gr,1254,2950,42.50847457627118
+"Cencosud (Vea, Disco, Jumbo)",2024,Galletitas dulces,Rellenas,sin TACC,Galletitas rellenas sin TACC Smams 105 g (3 variantes),Galletitas rellenas sin TACC Smams 105 g (3 variantes),2950,2950,100.0
+"Cencosud (Vea, Disco, Jumbo)",2024,Galletitas dulces,"Secas (vainilla, limón, chocolate)",con TACC,7622201808884,Galletitas Anillos Clásicos Terrabusi 170 Gr,2982,3004,99.2676431424767
+"Cencosud (Vea, Disco, Jumbo)",2024,Galletitas dulces,"Secas (vainilla, limón, chocolate)",con TACC,7792200000791,Galletitas Sconcitos 9 de Oro 200 Gr,2761,3004,91.91078561917443
+"Cencosud (Vea, Disco, Jumbo)",2024,Galletitas dulces,"Secas (vainilla, limón, chocolate)",con TACC,7622201808860,Galletitas Dulces Boca de Dama Terrabusi 170 Gr,2248,3004,74.83355525965379
+"Cencosud (Vea, Disco, Jumbo)",2024,Galletitas dulces,"Secas (vainilla, limón, chocolate)",con TACC,7791787000644,Galletitas Frolitas Trio 300 Gr,1134,3004,37.7496671105193
+"Cencosud (Vea, Disco, Jumbo)",2024,Galletitas dulces,"Secas (vainilla, limón, chocolate)",sin TACC,7798181510847,Galletitas Colegial Vainilla Samms 150 Gr,2916,3004,97.07057256990679
+"Cencosud (Vea, Disco, Jumbo)",2024,Galletitas dulces,"Secas (vainilla, limón, chocolate)",sin TACC,7798128410070,Galletitas Sabor Limón Aglu 150 Gr,1266,3004,42.14380825565912
+"Cencosud (Vea, Disco, Jumbo)",2024,Galletitas dulces,"Secas (vainilla, limón, chocolate)",sin TACC,Galletitas sin TACC Santa María 200 g (2 variantes),Galletitas sin TACC Santa María 200 g (2 variantes),465,3004,15.47936085219707
+"Cencosud (Vea, Disco, Jumbo)",2024,Galletitas saladas y crackers,Crackers,con TACC,7790040377707,Galletitas Original Crackers Criollitas 100 Gr,1974,2362,83.57324301439458
+"Cencosud (Vea, Disco, Jumbo)",2024,Galletitas saladas y crackers,Crackers,con TACC,7790045001133,Galletitas Crackers Naturalmente Granix 200 Gr,1951,2362,82.59949195596951
+"Cencosud (Vea, Disco, Jumbo)",2024,Galletitas saladas y crackers,Crackers,con TACC,7792180006462,Galletitas Mini Marineras Paseo 220 Gr,939,2362,39.75444538526672
+"Cencosud (Vea, Disco, Jumbo)",2024,Galletitas saladas y crackers,Crackers,sin TACC,Crackers sin TACC Smams 150 g (3 variantes),Crackers sin TACC Smams 150 g (3 variantes),2362,2362,100.0
+"Cencosud (Vea, Disco, Jumbo)",2024,Galletitas saladas y crackers,Saborizadas / snack,con TACC,7790040003569,Galletitas Saladas Tipo Snacks Rex 75 Gr,3101,3182,97.4544311753614
+"Cencosud (Vea, Disco, Jumbo)",2024,Galletitas saladas y crackers,Saborizadas / snack,con TACC,Galletitas saborizadas Saladix 100 g (3 variantes),Galletitas saborizadas Saladix 100 g (3 variantes),3061,3182,96.19736015084852
+"Cencosud (Vea, Disco, Jumbo)",2024,Galletitas saladas y crackers,Saborizadas / snack,con TACC,7790040719804,Galletitas Original Rex 125 Gr,2039,3182,64.0791954745443
+"Cencosud (Vea, Disco, Jumbo)",2024,Galletitas saladas y crackers,Saborizadas / snack,con TACC,7790040003606,Galletitas Kesitas 75 Gr,1050,3182,32.99811439346323
+"Cencosud (Vea, Disco, Jumbo)",2024,Galletitas saladas y crackers,Saborizadas / snack,sin TACC,Galletas de arroz saborizadas Crisppino 100 g (2 variantes),Galletas de arroz saborizadas Crisppino 100 g (2 variantes),3157,3182,99.21433060967945
+"Cencosud (Vea, Disco, Jumbo)",2024,Galletitas saladas y crackers,Saborizadas / snack,sin TACC,Galletas de arroz saborizadas Crisppino Minis 50 g (3 variantes),Galletas de arroz saborizadas Crisppino Minis 50 g (3 variantes),1286,3182,40.41483343808925
+"Cencosud (Vea, Disco, Jumbo)",2024,Galletitas saladas y crackers,Saborizadas / snack,sin TACC,7797330102971,Galletas de Arroz Pizza Grandiet 100 Gr,283,3182,8.893777498428662
+"Cencosud (Vea, Disco, Jumbo)",2024,Pan rallado y rebozador,Rebozador,con TACC,7792180004796,Rebozador Horno Fortificado Mamá Cocina Plus 1 Kg,567,567,100.0
+"Cencosud (Vea, Disco, Jumbo)",2024,Pan rallado y rebozador,Rebozador,con TACC,7792180004765,Rebozador Freir Fortificado Mamá Cocina Plus 500 Gr,536,567,94.5326278659612
+"Cencosud (Vea, Disco, Jumbo)",2024,Pan rallado y rebozador,Rebozador,sin TACC,7798193377285,Rebozador Naturalsur 500 Gr,535,567,94.35626102292768
+"Cencosud (Vea, Disco, Jumbo)",2024,Pan rallado y rebozador,Rebozador,sin TACC,7798128410087,Rebozador Aglu 450 Gr,532,567,93.82716049382717
+"Cencosud (Vea, Disco, Jumbo)",2025,Cereales rellenos (almohaditas),Almohaditas rellenas,con TACC,Almohaditas rellenas Lasfor 200 g (4 variantes),Almohaditas rellenas Lasfor 200 g (4 variantes),2897,2897,100.0
+"Cencosud (Vea, Disco, Jumbo)",2025,Cereales rellenos (almohaditas),Almohaditas rellenas,sin TACC,Almohaditas rellenas sin TACC Snuks 240 g (4 variantes),Almohaditas rellenas sin TACC Snuks 240 g (4 variantes),2897,2897,100.0
+"Cencosud (Vea, Disco, Jumbo)",2025,Fideos secos,Mostachol / penne,con TACC,Penne rigate Matarazzo 500 g,Penne rigate Matarazzo 500 g,2968,2968,100.0
+"Cencosud (Vea, Disco, Jumbo)",2025,Fideos secos,Mostachol / penne,sin TACC,Penne rigate sin TACC Matarazzo 500 g,Penne rigate sin TACC Matarazzo 500 g,2968,2968,100.0
+"Cencosud (Vea, Disco, Jumbo)",2025,Fideos secos,Spaghetti,con TACC,Spaghetti Matarazzo 500 g,Spaghetti Matarazzo 500 g,3145,3145,100.0
+"Cencosud (Vea, Disco, Jumbo)",2025,Fideos secos,Spaghetti,sin TACC,Spaghetti sin TACC Matarazzo 500 g,Spaghetti sin TACC Matarazzo 500 g,3145,3145,100.0
+"Cencosud (Vea, Disco, Jumbo)",2025,Fideos secos,Tirabuzón / fusilli,con TACC,Tirabuzones Lucchetti 500 g,Tirabuzones Lucchetti 500 g,3168,3174,99.8109640831758
+"Cencosud (Vea, Disco, Jumbo)",2025,Fideos secos,Tirabuzón / fusilli,con TACC,Tirabuzones Matarazzo 500 g,Tirabuzones Matarazzo 500 g,2923,3174,92.09199747952111
+"Cencosud (Vea, Disco, Jumbo)",2025,Fideos secos,Tirabuzón / fusilli,sin TACC,Fusilli sin TACC Wakas (4 variantes),Fusilli sin TACC Wakas (4 variantes),3131,3174,98.64524259609325
+"Cencosud (Vea, Disco, Jumbo)",2025,Fideos secos,Tirabuzón / fusilli,sin TACC,Tirabuzón sin TACC Matarazzo 500 g,Tirabuzón sin TACC Matarazzo 500 g,3022,3174,95.21109010712036
+"Cencosud (Vea, Disco, Jumbo)",2025,Galletitas dulces,Obleas,con TACC,7790040008175,Galletitas Obleas Clásicas Opera 220 Gr,1611,1611,100.0
+"Cencosud (Vea, Disco, Jumbo)",2025,Galletitas dulces,Obleas,con TACC,77903518,Galletitas Obleas Rellena Opera 92 Gr,1315,1611,81.62631905648665
+"Cencosud (Vea, Disco, Jumbo)",2025,Galletitas dulces,Obleas,sin TACC,7798079230833,Obleas Limón Santa María 90 Gr,1611,1611,100.0
+"Cencosud (Vea, Disco, Jumbo)",2025,Galletitas dulces,Pepas,con TACC,7791787100924,Galletitas Dulces Pepas Trío 320 Gr,2390,2390,100.0
+"Cencosud (Vea, Disco, Jumbo)",2025,Galletitas dulces,Pepas,sin TACC,7798181510786,Pepas de Membrillo sin TACC Smams 150 Gr,2390,2390,100.0
+"Cencosud (Vea, Disco, Jumbo)",2025,Galletitas dulces,Rellenas,con TACC,7790040133259,Galletitas Vainilla Rellenas Limón Maná 152 Gr,2933,2945,99.5925297113752
+"Cencosud (Vea, Disco, Jumbo)",2025,Galletitas dulces,Rellenas,con TACC,7622300742645,Galletitas Vainilla con Relleno de Limón Duquesa 115 Gr,2884,2945,97.92869269949067
+"Cencosud (Vea, Disco, Jumbo)",2025,Galletitas dulces,Rellenas,con TACC,7790040133488,Galletitas Rellena Sabor Frambuesa Sonrisas 108 Gr,2879,2945,97.75891341256367
+"Cencosud (Vea, Disco, Jumbo)",2025,Galletitas dulces,Rellenas,sin TACC,Galletitas rellenas sin TACC Smams 105 g (3 variantes),Galletitas rellenas sin TACC Smams 105 g (3 variantes),2945,2945,100.0
+"Cencosud (Vea, Disco, Jumbo)",2025,Galletitas dulces,"Secas (vainilla, limón, chocolate)",con TACC,7622201808884,Galletitas Anillos Clásicos Terrabusi 170 Gr,3095,3107,99.61377534599292
+"Cencosud (Vea, Disco, Jumbo)",2025,Galletitas dulces,"Secas (vainilla, limón, chocolate)",con TACC,7792200000791,Galletitas Sconcitos 9 de Oro 200 Gr,2952,3107,95.01126488574187
+"Cencosud (Vea, Disco, Jumbo)",2025,Galletitas dulces,"Secas (vainilla, limón, chocolate)",con TACC,7622201808860,Galletitas Dulces Boca de Dama Terrabusi 170 Gr,2762,3107,88.89604119729643
+"Cencosud (Vea, Disco, Jumbo)",2025,Galletitas dulces,"Secas (vainilla, limón, chocolate)",con TACC,7791787000644,Galletitas Frolitas Trio 300 Gr,2756,3107,88.7029288702929
+"Cencosud (Vea, Disco, Jumbo)",2025,Galletitas dulces,"Secas (vainilla, limón, chocolate)",sin TACC,7798181510847,Galletitas Colegial Vainilla Samms 150 Gr,2853,3107,91.82491149018345
+"Cencosud (Vea, Disco, Jumbo)",2025,Galletitas dulces,"Secas (vainilla, limón, chocolate)",sin TACC,7798128410070,Galletitas Sabor Limón Aglu 150 Gr,2787,3107,89.7006758931445
+"Cencosud (Vea, Disco, Jumbo)",2025,Galletitas dulces,"Secas (vainilla, limón, chocolate)",sin TACC,Galletitas sin TACC Santa María 200 g (2 variantes),Galletitas sin TACC Santa María 200 g (2 variantes),1401,3107,45.09172835532668
+"Cencosud (Vea, Disco, Jumbo)",2025,Galletitas saladas y crackers,Crackers,con TACC,7790045001133,Galletitas Crackers Naturalmente Granix 200 Gr,2178,2219,98.15232086525462
+"Cencosud (Vea, Disco, Jumbo)",2025,Galletitas saladas y crackers,Crackers,con TACC,7790040377707,Galletitas Original Crackers Criollitas 100 Gr,2021,2219,91.0770617395223
+"Cencosud (Vea, Disco, Jumbo)",2025,Galletitas saladas y crackers,Crackers,con TACC,7792180006462,Galletitas Mini Marineras Paseo 220 Gr,1693,2219,76.29562866155926
+"Cencosud (Vea, Disco, Jumbo)",2025,Galletitas saladas y crackers,Crackers,sin TACC,Crackers sin TACC Smams 150 g (3 variantes),Crackers sin TACC Smams 150 g (3 variantes),2219,2219,100.0
+"Cencosud (Vea, Disco, Jumbo)",2025,Galletitas saladas y crackers,Saborizadas / snack,con TACC,Galletitas saborizadas Saladix 100 g (3 variantes),Galletitas saborizadas Saladix 100 g (3 variantes),3033,3134,96.77728142948308
+"Cencosud (Vea, Disco, Jumbo)",2025,Galletitas saladas y crackers,Saborizadas / snack,con TACC,7790040003569,Galletitas Saladas Tipo Snacks Rex 75 Gr,2998,3134,95.66049776643267
+"Cencosud (Vea, Disco, Jumbo)",2025,Galletitas saladas y crackers,Saborizadas / snack,con TACC,7790040003606,Galletitas Kesitas 75 Gr,2728,3134,87.04530950861519
+"Cencosud (Vea, Disco, Jumbo)",2025,Galletitas saladas y crackers,Saborizadas / snack,con TACC,7790040719804,Galletitas Original Rex 125 Gr,2121,3134,67.67708998085514
+"Cencosud (Vea, Disco, Jumbo)",2025,Galletitas saladas y crackers,Saborizadas / snack,sin TACC,Galletas de arroz saborizadas Crisppino 100 g (2 variantes),Galletas de arroz saborizadas Crisppino 100 g (2 variantes),3116,3134,99.4256541161455
+"Cencosud (Vea, Disco, Jumbo)",2025,Galletitas saladas y crackers,Saborizadas / snack,sin TACC,Galletas de arroz saborizadas Crisppino Minis 50 g (3 variantes),Galletas de arroz saborizadas Crisppino Minis 50 g (3 variantes),3106,3134,99.10657306955967
+"Cencosud (Vea, Disco, Jumbo)",2025,Galletitas saladas y crackers,Saborizadas / snack,sin TACC,7797330102971,Galletas de Arroz Pizza Grandiet 100 Gr,670,3134,21.3784301212508
+"Cencosud (Vea, Disco, Jumbo)",2025,Pan rallado y rebozador,Rebozador,con TACC,7792180004765,Rebozador Freir Fortificado Mamá Cocina Plus 500 Gr,1614,1657,97.40494870247436
+"Cencosud (Vea, Disco, Jumbo)",2025,Pan rallado y rebozador,Rebozador,con TACC,7792180004796,Rebozador Horno Fortificado Mamá Cocina Plus 1 Kg,1468,1657,88.59384429692214
+"Cencosud (Vea, Disco, Jumbo)",2025,Pan rallado y rebozador,Rebozador,sin TACC,7798193377285,Rebozador Naturalsur 500 Gr,1614,1657,97.40494870247436
+"Cencosud (Vea, Disco, Jumbo)",2025,Pan rallado y rebozador,Rebozador,sin TACC,7798128410087,Rebozador Aglu 450 Gr,1222,1657,73.74773687386843
+"Cencosud (Vea, Disco, Jumbo)",2026,Cereales rellenos (almohaditas),Almohaditas rellenas,con TACC,Almohaditas rellenas Lasfor 200 g (4 variantes),Almohaditas rellenas Lasfor 200 g (4 variantes),2449,2449,100.0
+"Cencosud (Vea, Disco, Jumbo)",2026,Cereales rellenos (almohaditas),Almohaditas rellenas,sin TACC,Almohaditas rellenas sin TACC Snuks 240 g (4 variantes),Almohaditas rellenas sin TACC Snuks 240 g (4 variantes),2449,2449,100.0
+"Cencosud (Vea, Disco, Jumbo)",2026,Fideos secos,Mostachol / penne,con TACC,Penne rigate Matarazzo 500 g,Penne rigate Matarazzo 500 g,1970,1970,100.0
+"Cencosud (Vea, Disco, Jumbo)",2026,Fideos secos,Mostachol / penne,sin TACC,Penne rigate sin TACC Matarazzo 500 g,Penne rigate sin TACC Matarazzo 500 g,1970,1970,100.0
+"Cencosud (Vea, Disco, Jumbo)",2026,Fideos secos,Spaghetti,con TACC,Spaghetti Matarazzo 500 g,Spaghetti Matarazzo 500 g,2538,2538,100.0
+"Cencosud (Vea, Disco, Jumbo)",2026,Fideos secos,Spaghetti,sin TACC,Spaghetti sin TACC Matarazzo 500 g,Spaghetti sin TACC Matarazzo 500 g,2538,2538,100.0
+"Cencosud (Vea, Disco, Jumbo)",2026,Fideos secos,Tirabuzón / fusilli,con TACC,Tirabuzones Matarazzo 500 g,Tirabuzones Matarazzo 500 g,2543,2543,100.0
+"Cencosud (Vea, Disco, Jumbo)",2026,Fideos secos,Tirabuzón / fusilli,con TACC,Tirabuzones Lucchetti 500 g,Tirabuzones Lucchetti 500 g,2539,2543,99.84270546598506
+"Cencosud (Vea, Disco, Jumbo)",2026,Fideos secos,Tirabuzón / fusilli,sin TACC,Fusilli sin TACC Wakas (4 variantes),Fusilli sin TACC Wakas (4 variantes),2498,2543,98.23043649233189
+"Cencosud (Vea, Disco, Jumbo)",2026,Fideos secos,Tirabuzón / fusilli,sin TACC,Tirabuzón sin TACC Matarazzo 500 g,Tirabuzón sin TACC Matarazzo 500 g,2350,2543,92.410538733779
+"Cencosud (Vea, Disco, Jumbo)",2026,Galletitas dulces,Obleas,con TACC,7790040008175,Galletitas Obleas Clásicas Opera 220 Gr,1659,1659,100.0
+"Cencosud (Vea, Disco, Jumbo)",2026,Galletitas dulces,Obleas,con TACC,77903518,Galletitas Obleas Rellena Opera 92 Gr,560,1659,33.75527426160338
+"Cencosud (Vea, Disco, Jumbo)",2026,Galletitas dulces,Obleas,sin TACC,7798079230833,Obleas Limón Santa María 90 Gr,1659,1659,100.0
+"Cencosud (Vea, Disco, Jumbo)",2026,Galletitas dulces,Pepas,con TACC,7791787100924,Galletitas Dulces Pepas Trío 320 Gr,1939,1939,100.0
+"Cencosud (Vea, Disco, Jumbo)",2026,Galletitas dulces,Pepas,sin TACC,7798181510786,Pepas de Membrillo sin TACC Smams 150 Gr,1939,1939,100.0
+"Cencosud (Vea, Disco, Jumbo)",2026,Galletitas dulces,Rellenas,con TACC,7790040133488,Galletitas Rellena Sabor Frambuesa Sonrisas 108 Gr,2351,2351,100.0
+"Cencosud (Vea, Disco, Jumbo)",2026,Galletitas dulces,Rellenas,con TACC,7622300742645,Galletitas Vainilla con Relleno de Limón Duquesa 115 Gr,2306,2351,98.0859208847299
+"Cencosud (Vea, Disco, Jumbo)",2026,Galletitas dulces,Rellenas,con TACC,7790040133259,Galletitas Vainilla Rellenas Limón Maná 152 Gr,1032,2351,43.89621437686091
+"Cencosud (Vea, Disco, Jumbo)",2026,Galletitas dulces,Rellenas,sin TACC,Galletitas rellenas sin TACC Smams 105 g (3 variantes),Galletitas rellenas sin TACC Smams 105 g (3 variantes),2351,2351,100.0
+"Cencosud (Vea, Disco, Jumbo)",2026,Galletitas dulces,"Secas (vainilla, limón, chocolate)",con TACC,7622201808860,Galletitas Dulces Boca de Dama Terrabusi 170 Gr,2501,2506,99.80047885075818
+"Cencosud (Vea, Disco, Jumbo)",2026,Galletitas dulces,"Secas (vainilla, limón, chocolate)",con TACC,7622201808884,Galletitas Anillos Clásicos Terrabusi 170 Gr,2466,2506,98.40383080606544
+"Cencosud (Vea, Disco, Jumbo)",2026,Galletitas dulces,"Secas (vainilla, limón, chocolate)",con TACC,7791787000644,Galletitas Frolitas Trio 300 Gr,2250,2506,89.78451715881883
+"Cencosud (Vea, Disco, Jumbo)",2026,Galletitas dulces,"Secas (vainilla, limón, chocolate)",con TACC,7792200000791,Galletitas Sconcitos 9 de Oro 200 Gr,1359,2506,54.22984836392658
+"Cencosud (Vea, Disco, Jumbo)",2026,Galletitas dulces,"Secas (vainilla, limón, chocolate)",sin TACC,7798128410070,Galletitas Sabor Limón Aglu 150 Gr,2412,2506,96.2490023942538
+"Cencosud (Vea, Disco, Jumbo)",2026,Galletitas dulces,"Secas (vainilla, limón, chocolate)",sin TACC,7798181510847,Galletitas Colegial Vainilla Samms 150 Gr,2290,2506,91.38068635275339
+"Cencosud (Vea, Disco, Jumbo)",2026,Galletitas dulces,"Secas (vainilla, limón, chocolate)",sin TACC,Galletitas sin TACC Santa María 200 g (2 variantes),Galletitas sin TACC Santa María 200 g (2 variantes),1341,2506,53.51157222665603
+"Cencosud (Vea, Disco, Jumbo)",2026,Galletitas saladas y crackers,Crackers,con TACC,7790045001133,Galletitas Crackers Naturalmente Granix 200 Gr,1761,1799,97.88771539744302
+"Cencosud (Vea, Disco, Jumbo)",2026,Galletitas saladas y crackers,Crackers,con TACC,7790040377707,Galletitas Original Crackers Criollitas 100 Gr,1573,1799,87.43746525847693
+"Cencosud (Vea, Disco, Jumbo)",2026,Galletitas saladas y crackers,Crackers,con TACC,7792180006462,Galletitas Mini Marineras Paseo 220 Gr,1079,1799,59.97776542523624
+"Cencosud (Vea, Disco, Jumbo)",2026,Galletitas saladas y crackers,Crackers,sin TACC,Crackers sin TACC Smams 150 g (3 variantes),Crackers sin TACC Smams 150 g (3 variantes),1799,1799,100.0
+"Cencosud (Vea, Disco, Jumbo)",2026,Galletitas saladas y crackers,Saborizadas / snack,con TACC,7790040003569,Galletitas Saladas Tipo Snacks Rex 75 Gr,2491,2499,99.6798719487795
+"Cencosud (Vea, Disco, Jumbo)",2026,Galletitas saladas y crackers,Saborizadas / snack,con TACC,7790040003606,Galletitas Kesitas 75 Gr,2477,2499,99.11964785914365
+"Cencosud (Vea, Disco, Jumbo)",2026,Galletitas saladas y crackers,Saborizadas / snack,con TACC,Galletitas saborizadas Saladix 100 g (3 variantes),Galletitas saborizadas Saladix 100 g (3 variantes),2448,2499,97.95918367346938
+"Cencosud (Vea, Disco, Jumbo)",2026,Galletitas saladas y crackers,Saborizadas / snack,con TACC,7790040719804,Galletitas Original Rex 125 Gr,2031,2499,81.27250900360144
+"Cencosud (Vea, Disco, Jumbo)",2026,Galletitas saladas y crackers,Saborizadas / snack,sin TACC,Galletas de arroz saborizadas Crisppino 100 g (2 variantes),Galletas de arroz saborizadas Crisppino 100 g (2 variantes),2487,2499,99.51980792316927
+"Cencosud (Vea, Disco, Jumbo)",2026,Galletitas saladas y crackers,Saborizadas / snack,sin TACC,Galletas de arroz saborizadas Crisppino Minis 50 g (3 variantes),Galletas de arroz saborizadas Crisppino Minis 50 g (3 variantes),2478,2499,99.15966386554622
+"Cencosud (Vea, Disco, Jumbo)",2026,Galletitas saladas y crackers,Saborizadas / snack,sin TACC,7797330102971,Galletas de Arroz Pizza Grandiet 100 Gr,557,2499,22.28891556622649
+"Cencosud (Vea, Disco, Jumbo)",2026,Pan rallado y rebozador,Rebozador,con TACC,7792180004796,Rebozador Horno Fortificado Mamá Cocina Plus 1 Kg,1364,1554,87.77348777348777
+"Cencosud (Vea, Disco, Jumbo)",2026,Pan rallado y rebozador,Rebozador,con TACC,7792180004765,Rebozador Freir Fortificado Mamá Cocina Plus 500 Gr,1118,1554,71.94337194337194
+"Cencosud (Vea, Disco, Jumbo)",2026,Pan rallado y rebozador,Rebozador,sin TACC,7798193377285,Rebozador Naturalsur 500 Gr,1483,1554,95.43114543114542
+"Cencosud (Vea, Disco, Jumbo)",2026,Pan rallado y rebozador,Rebozador,sin TACC,7798128410087,Rebozador Aglu 450 Gr,919,1554,59.13770913770914
+ChangoMas,2022,Fideos secos,Mostachol / penne,con TACC,Penne rigate Matarazzo 500 g,Penne rigate Matarazzo 500 g,374,374,100.0
+ChangoMas,2022,Fideos secos,Mostachol / penne,sin TACC,Penne rigate sin TACC Matarazzo 500 g,Penne rigate sin TACC Matarazzo 500 g,374,374,100.0
+ChangoMas,2022,Fideos secos,Spaghetti,con TACC,Spaghetti Matarazzo 500 g,Spaghetti Matarazzo 500 g,964,964,100.0
+ChangoMas,2022,Fideos secos,Spaghetti,sin TACC,Spaghetti sin TACC Matarazzo 500 g,Spaghetti sin TACC Matarazzo 500 g,964,964,100.0
+ChangoMas,2022,Fideos secos,Tirabuzón / fusilli,con TACC,Tirabuzones Matarazzo 500 g,Tirabuzones Matarazzo 500 g,1059,1067,99.2502343017807
+ChangoMas,2022,Fideos secos,Tirabuzón / fusilli,con TACC,Tirabuzones Lucchetti 500 g,Tirabuzones Lucchetti 500 g,1038,1067,97.28209934395501
+ChangoMas,2022,Fideos secos,Tirabuzón / fusilli,sin TACC,Fusilli sin TACC Wakas (4 variantes),Fusilli sin TACC Wakas (4 variantes),1067,1067,100.0
+ChangoMas,2022,Fideos secos,Tirabuzón / fusilli,sin TACC,Tirabuzón sin TACC Matarazzo 500 g,Tirabuzón sin TACC Matarazzo 500 g,1001,1067,93.81443298969072
+ChangoMas,2022,Galletitas dulces,Rellenas,con TACC,7790040133488,Galletitas Rellena Sabor Frambuesa Sonrisas 108 Gr,89,89,100.0
+ChangoMas,2022,Galletitas dulces,Rellenas,con TACC,7622300742645,Galletitas Vainilla con Relleno de Limón Duquesa 115 Gr,84,89,94.38202247191012
+ChangoMas,2022,Galletitas dulces,Rellenas,sin TACC,Galletitas rellenas sin TACC Smams 105 g (3 variantes),Galletitas rellenas sin TACC Smams 105 g (3 variantes),89,89,100.0
+ChangoMas,2022,Galletitas dulces,"Secas (vainilla, limón, chocolate)",con TACC,7622201808884,Galletitas Anillos Clásicos Terrabusi 170 Gr,1066,1066,100.0
+ChangoMas,2022,Galletitas dulces,"Secas (vainilla, limón, chocolate)",con TACC,7622201808860,Galletitas Dulces Boca de Dama Terrabusi 170 Gr,1065,1066,99.906191369606
+ChangoMas,2022,Galletitas dulces,"Secas (vainilla, limón, chocolate)",con TACC,7791787000644,Galletitas Frolitas Trio 300 Gr,809,1066,75.89118198874296
+ChangoMas,2022,Galletitas dulces,"Secas (vainilla, limón, chocolate)",sin TACC,7798128410070,Galletitas Sabor Limón Aglu 150 Gr,1040,1066,97.5609756097561
+ChangoMas,2022,Galletitas dulces,"Secas (vainilla, limón, chocolate)",sin TACC,Galletitas sin TACC Santa María 200 g (2 variantes),Galletitas sin TACC Santa María 200 g (2 variantes),1016,1066,95.30956848030019
+ChangoMas,2022,Galletitas saladas y crackers,Crackers,con TACC,7790040377707,Galletitas Original Crackers Criollitas 100 Gr,995,995,100.0
+ChangoMas,2022,Galletitas saladas y crackers,Crackers,sin TACC,Crackers sin TACC Smams 150 g (3 variantes),Crackers sin TACC Smams 150 g (3 variantes),995,995,100.0
+ChangoMas,2022,Galletitas saladas y crackers,Saborizadas / snack,con TACC,7790040003606,Galletitas Kesitas 75 Gr,1053,1061,99.24599434495758
+ChangoMas,2022,Galletitas saladas y crackers,Saborizadas / snack,con TACC,7790040003569,Galletitas Saladas Tipo Snacks Rex 75 Gr,1031,1061,97.17247879359095
+ChangoMas,2022,Galletitas saladas y crackers,Saborizadas / snack,con TACC,Galletitas saborizadas Saladix 100 g (3 variantes),Galletitas saborizadas Saladix 100 g (3 variantes),87,1061,8.19981149858624
+ChangoMas,2022,Galletitas saladas y crackers,Saborizadas / snack,con TACC,7790040719804,Galletitas Original Rex 125 Gr,31,1061,2.92177191328935
+ChangoMas,2022,Galletitas saladas y crackers,Saborizadas / snack,sin TACC,Galletas de arroz saborizadas Crisppino Minis 50 g (3 variantes),Galletas de arroz saborizadas Crisppino Minis 50 g (3 variantes),1061,1061,100.0
+ChangoMas,2022,Pan rallado y rebozador,Rebozador,con TACC,7792180004765,Rebozador Freir Fortificado Mamá Cocina Plus 500 Gr,73,73,100.0
+ChangoMas,2022,Pan rallado y rebozador,Rebozador,sin TACC,7798128410087,Rebozador Aglu 450 Gr,73,73,100.0
+ChangoMas,2023,Fideos secos,Mostachol / penne,con TACC,Penne rigate Matarazzo 500 g,Penne rigate Matarazzo 500 g,477,477,100.0
+ChangoMas,2023,Fideos secos,Mostachol / penne,sin TACC,Penne rigate sin TACC Matarazzo 500 g,Penne rigate sin TACC Matarazzo 500 g,477,477,100.0
+ChangoMas,2023,Fideos secos,Spaghetti,con TACC,Spaghetti Matarazzo 500 g,Spaghetti Matarazzo 500 g,736,736,100.0
+ChangoMas,2023,Fideos secos,Spaghetti,sin TACC,Spaghetti sin TACC Matarazzo 500 g,Spaghetti sin TACC Matarazzo 500 g,736,736,100.0
+ChangoMas,2023,Fideos secos,Tirabuzón / fusilli,con TACC,Tirabuzones Lucchetti 500 g,Tirabuzones Lucchetti 500 g,798,798,100.0
+ChangoMas,2023,Fideos secos,Tirabuzón / fusilli,con TACC,Tirabuzones Matarazzo 500 g,Tirabuzones Matarazzo 500 g,781,798,97.86967418546367
+ChangoMas,2023,Fideos secos,Tirabuzón / fusilli,sin TACC,Fusilli sin TACC Wakas (4 variantes),Fusilli sin TACC Wakas (4 variantes),798,798,100.0
+ChangoMas,2023,Fideos secos,Tirabuzón / fusilli,sin TACC,Tirabuzón sin TACC Matarazzo 500 g,Tirabuzón sin TACC Matarazzo 500 g,507,798,63.53383458646616
+ChangoMas,2023,Galletitas dulces,"Secas (vainilla, limón, chocolate)",con TACC,7622201808860,Galletitas Dulces Boca de Dama Terrabusi 170 Gr,563,563,100.0
+ChangoMas,2023,Galletitas dulces,"Secas (vainilla, limón, chocolate)",con TACC,7622201808884,Galletitas Anillos Clásicos Terrabusi 170 Gr,563,563,100.0
+ChangoMas,2023,Galletitas dulces,"Secas (vainilla, limón, chocolate)",con TACC,7792200000791,Galletitas Sconcitos 9 de Oro 200 Gr,528,563,93.78330373001776
+ChangoMas,2023,Galletitas dulces,"Secas (vainilla, limón, chocolate)",con TACC,7791787000644,Galletitas Frolitas Trio 300 Gr,423,563,75.13321492007105
+ChangoMas,2023,Galletitas dulces,"Secas (vainilla, limón, chocolate)",sin TACC,Galletitas sin TACC Santa María 200 g (2 variantes),Galletitas sin TACC Santa María 200 g (2 variantes),537,563,95.38188277087033
+ChangoMas,2023,Galletitas dulces,"Secas (vainilla, limón, chocolate)",sin TACC,7798128410070,Galletitas Sabor Limón Aglu 150 Gr,140,563,24.86678507992895
+ChangoMas,2023,Galletitas saladas y crackers,Crackers,con TACC,7792180006462,Galletitas Mini Marineras Paseo 220 Gr,1023,1028,99.5136186770428
+ChangoMas,2023,Galletitas saladas y crackers,Crackers,con TACC,7790040377707,Galletitas Original Crackers Criollitas 100 Gr,788,1028,76.65369649805447
+ChangoMas,2023,Galletitas saladas y crackers,Crackers,sin TACC,Crackers sin TACC Smams 150 g (3 variantes),Crackers sin TACC Smams 150 g (3 variantes),1028,1028,100.0
+ChangoMas,2023,Galletitas saladas y crackers,Saborizadas / snack,con TACC,7790040003606,Galletitas Kesitas 75 Gr,605,612,98.85620915032679
+ChangoMas,2023,Galletitas saladas y crackers,Saborizadas / snack,con TACC,7790040719804,Galletitas Original Rex 125 Gr,273,612,44.6078431372549
+ChangoMas,2023,Galletitas saladas y crackers,Saborizadas / snack,con TACC,Galletitas saborizadas Saladix 100 g (3 variantes),Galletitas saborizadas Saladix 100 g (3 variantes),250,612,40.84967320261438
+ChangoMas,2023,Galletitas saladas y crackers,Saborizadas / snack,con TACC,7790040003569,Galletitas Saladas Tipo Snacks Rex 75 Gr,247,612,40.35947712418301
+ChangoMas,2023,Galletitas saladas y crackers,Saborizadas / snack,sin TACC,Galletas de arroz saborizadas Crisppino Minis 50 g (3 variantes),Galletas de arroz saborizadas Crisppino Minis 50 g (3 variantes),612,612,100.0
+ChangoMas,2023,Pan rallado y rebozador,Rebozador,con TACC,7792180004765,Rebozador Freir Fortificado Mamá Cocina Plus 500 Gr,286,286,100.0
+ChangoMas,2023,Pan rallado y rebozador,Rebozador,con TACC,7792180004796,Rebozador Horno Fortificado Mamá Cocina Plus 1 Kg,149,286,52.0979020979021
+ChangoMas,2023,Pan rallado y rebozador,Rebozador,sin TACC,7798128410087,Rebozador Aglu 450 Gr,286,286,100.0
+ChangoMas,2024,Galletitas dulces,"Secas (vainilla, limón, chocolate)",con TACC,7622201808860,Galletitas Dulces Boca de Dama Terrabusi 170 Gr,178,178,100.0
+ChangoMas,2024,Galletitas dulces,"Secas (vainilla, limón, chocolate)",con TACC,7622201808884,Galletitas Anillos Clásicos Terrabusi 170 Gr,178,178,100.0
+ChangoMas,2024,Galletitas dulces,"Secas (vainilla, limón, chocolate)",con TACC,7791787000644,Galletitas Frolitas Trio 300 Gr,178,178,100.0
+ChangoMas,2024,Galletitas dulces,"Secas (vainilla, limón, chocolate)",con TACC,7792200000791,Galletitas Sconcitos 9 de Oro 200 Gr,178,178,100.0
+ChangoMas,2024,Galletitas dulces,"Secas (vainilla, limón, chocolate)",sin TACC,Galletitas sin TACC Santa María 200 g (2 variantes),Galletitas sin TACC Santa María 200 g (2 variantes),178,178,100.0
+ChangoMas,2024,Galletitas saladas y crackers,Crackers,con TACC,7792180006462,Galletitas Mini Marineras Paseo 220 Gr,801,801,100.0
+ChangoMas,2024,Galletitas saladas y crackers,Crackers,sin TACC,Crackers sin TACC Smams 150 g (3 variantes),Crackers sin TACC Smams 150 g (3 variantes),801,801,100.0
+ChangoMas,2024,Pan rallado y rebozador,Rebozador,con TACC,7792180004765,Rebozador Freir Fortificado Mamá Cocina Plus 500 Gr,89,89,100.0
+ChangoMas,2024,Pan rallado y rebozador,Rebozador,con TACC,7792180004796,Rebozador Horno Fortificado Mamá Cocina Plus 1 Kg,89,89,100.0
+ChangoMas,2024,Pan rallado y rebozador,Rebozador,sin TACC,7798128410087,Rebozador Aglu 450 Gr,89,89,100.0
+ChangoMas,2025,Cereales rellenos (almohaditas),Almohaditas rellenas,con TACC,Almohaditas rellenas Lasfor 200 g (4 variantes),Almohaditas rellenas Lasfor 200 g (4 variantes),623,623,100.0
+ChangoMas,2025,Cereales rellenos (almohaditas),Almohaditas rellenas,sin TACC,Almohaditas rellenas sin TACC Snuks 240 g (4 variantes),Almohaditas rellenas sin TACC Snuks 240 g (4 variantes),623,623,100.0
+ChangoMas,2025,Fideos secos,Tirabuzón / fusilli,con TACC,Tirabuzones Matarazzo 500 g,Tirabuzones Matarazzo 500 g,623,623,100.0
+ChangoMas,2025,Fideos secos,Tirabuzón / fusilli,sin TACC,Fusilli sin TACC Wakas (4 variantes),Fusilli sin TACC Wakas (4 variantes),623,623,100.0
+ChangoMas,2025,Galletitas dulces,Obleas,con TACC,7790040008175,Galletitas Obleas Clásicas Opera 220 Gr,623,623,100.0
+ChangoMas,2025,Galletitas dulces,Obleas,sin TACC,7798079230833,Obleas Limón Santa María 90 Gr,623,623,100.0
+ChangoMas,2025,Galletitas dulces,Rellenas,con TACC,7790040133259,Galletitas Vainilla Rellenas Limón Maná 152 Gr,623,623,100.0
+ChangoMas,2025,Galletitas dulces,Rellenas,sin TACC,Galletitas rellenas sin TACC Smams 105 g (3 variantes),Galletitas rellenas sin TACC Smams 105 g (3 variantes),623,623,100.0
+ChangoMas,2025,Galletitas dulces,"Secas (vainilla, limón, chocolate)",con TACC,7622201808860,Galletitas Dulces Boca de Dama Terrabusi 170 Gr,979,979,100.0
+ChangoMas,2025,Galletitas dulces,"Secas (vainilla, limón, chocolate)",con TACC,7792200000791,Galletitas Sconcitos 9 de Oro 200 Gr,979,979,100.0
+ChangoMas,2025,Galletitas dulces,"Secas (vainilla, limón, chocolate)",con TACC,7622201808884,Galletitas Anillos Clásicos Terrabusi 170 Gr,356,979,36.36363636363637
+ChangoMas,2025,Galletitas dulces,"Secas (vainilla, limón, chocolate)",con TACC,7791787000644,Galletitas Frolitas Trio 300 Gr,356,979,36.36363636363637
+ChangoMas,2025,Galletitas dulces,"Secas (vainilla, limón, chocolate)",sin TACC,Galletitas sin TACC Santa María 200 g (2 variantes),Galletitas sin TACC Santa María 200 g (2 variantes),979,979,100.0
+ChangoMas,2025,Galletitas dulces,"Secas (vainilla, limón, chocolate)",sin TACC,7798181510847,Galletitas Colegial Vainilla Samms 150 Gr,623,979,63.63636363636363
+ChangoMas,2025,Galletitas saladas y crackers,Crackers,con TACC,7792180006462,Galletitas Mini Marineras Paseo 220 Gr,356,356,100.0
+ChangoMas,2025,Galletitas saladas y crackers,Crackers,sin TACC,Crackers sin TACC Smams 150 g (3 variantes),Crackers sin TACC Smams 150 g (3 variantes),356,356,100.0
+ChangoMas,2025,Galletitas saladas y crackers,Saborizadas / snack,con TACC,7790040003569,Galletitas Saladas Tipo Snacks Rex 75 Gr,623,623,100.0
+ChangoMas,2025,Galletitas saladas y crackers,Saborizadas / snack,con TACC,Galletitas saborizadas Saladix 100 g (3 variantes),Galletitas saborizadas Saladix 100 g (3 variantes),89,623,14.28571428571429
+ChangoMas,2025,Galletitas saladas y crackers,Saborizadas / snack,sin TACC,Galletas de arroz saborizadas Crisppino 100 g (2 variantes),Galletas de arroz saborizadas Crisppino 100 g (2 variantes),623,623,100.0
+ChangoMas,2025,Galletitas saladas y crackers,Saborizadas / snack,sin TACC,Galletas de arroz saborizadas Crisppino Minis 50 g (3 variantes),Galletas de arroz saborizadas Crisppino Minis 50 g (3 variantes),623,623,100.0
+ChangoMas,2026,Cereales rellenos (almohaditas),Almohaditas rellenas,con TACC,Almohaditas rellenas Lasfor 200 g (4 variantes),Almohaditas rellenas Lasfor 200 g (4 variantes),890,890,100.0
+ChangoMas,2026,Cereales rellenos (almohaditas),Almohaditas rellenas,sin TACC,Almohaditas rellenas sin TACC Snuks 240 g (4 variantes),Almohaditas rellenas sin TACC Snuks 240 g (4 variantes),890,890,100.0
+ChangoMas,2026,Fideos secos,Tirabuzón / fusilli,con TACC,Tirabuzones Matarazzo 500 g,Tirabuzones Matarazzo 500 g,890,890,100.0
+ChangoMas,2026,Fideos secos,Tirabuzón / fusilli,sin TACC,Fusilli sin TACC Wakas (4 variantes),Fusilli sin TACC Wakas (4 variantes),890,890,100.0
+ChangoMas,2026,Galletitas dulces,Obleas,con TACC,7790040008175,Galletitas Obleas Clásicas Opera 220 Gr,445,445,100.0
+ChangoMas,2026,Galletitas dulces,Obleas,sin TACC,7798079230833,Obleas Limón Santa María 90 Gr,445,445,100.0
+ChangoMas,2026,Galletitas dulces,Rellenas,con TACC,7790040133259,Galletitas Vainilla Rellenas Limón Maná 152 Gr,890,890,100.0
+ChangoMas,2026,Galletitas dulces,Rellenas,sin TACC,Galletitas rellenas sin TACC Smams 105 g (3 variantes),Galletitas rellenas sin TACC Smams 105 g (3 variantes),890,890,100.0
+ChangoMas,2026,Galletitas dulces,"Secas (vainilla, limón, chocolate)",con TACC,7622201808860,Galletitas Dulces Boca de Dama Terrabusi 170 Gr,890,890,100.0
+ChangoMas,2026,Galletitas dulces,"Secas (vainilla, limón, chocolate)",con TACC,7792200000791,Galletitas Sconcitos 9 de Oro 200 Gr,890,890,100.0
+ChangoMas,2026,Galletitas dulces,"Secas (vainilla, limón, chocolate)",sin TACC,7798181510847,Galletitas Colegial Vainilla Samms 150 Gr,890,890,100.0
+ChangoMas,2026,Galletitas dulces,"Secas (vainilla, limón, chocolate)",sin TACC,Galletitas sin TACC Santa María 200 g (2 variantes),Galletitas sin TACC Santa María 200 g (2 variantes),445,890,50.0
+ChangoMas,2026,Galletitas saladas y crackers,Saborizadas / snack,con TACC,7790040003569,Galletitas Saladas Tipo Snacks Rex 75 Gr,356,356,100.0
+ChangoMas,2026,Galletitas saladas y crackers,Saborizadas / snack,con TACC,Galletitas saborizadas Saladix 100 g (3 variantes),Galletitas saborizadas Saladix 100 g (3 variantes),356,356,100.0
+ChangoMas,2026,Galletitas saladas y crackers,Saborizadas / snack,sin TACC,Galletas de arroz saborizadas Crisppino Minis 50 g (3 variantes),Galletas de arroz saborizadas Crisppino Minis 50 g (3 variantes),356,356,100.0
+Cooperativa Obrera,2022,Cereales rellenos (almohaditas),Almohaditas rellenas,con TACC,Almohaditas rellenas Lasfor 200 g (4 variantes),Almohaditas rellenas Lasfor 200 g (4 variantes),794,794,100.0
+Cooperativa Obrera,2022,Cereales rellenos (almohaditas),Almohaditas rellenas,sin TACC,Almohaditas rellenas sin TACC Snuks 240 g (4 variantes),Almohaditas rellenas sin TACC Snuks 240 g (4 variantes),794,794,100.0
+Cooperativa Obrera,2022,Fideos secos,Spaghetti,con TACC,Spaghetti Matarazzo 500 g,Spaghetti Matarazzo 500 g,1390,1390,100.0
+Cooperativa Obrera,2022,Fideos secos,Spaghetti,sin TACC,Spaghetti sin TACC Matarazzo 500 g,Spaghetti sin TACC Matarazzo 500 g,1390,1390,100.0
+Cooperativa Obrera,2022,Fideos secos,Tirabuzón / fusilli,con TACC,Tirabuzones Lucchetti 500 g,Tirabuzones Lucchetti 500 g,1697,1697,100.0
+Cooperativa Obrera,2022,Fideos secos,Tirabuzón / fusilli,con TACC,Tirabuzones Matarazzo 500 g,Tirabuzones Matarazzo 500 g,1697,1697,100.0
+Cooperativa Obrera,2022,Fideos secos,Tirabuzón / fusilli,sin TACC,Fusilli sin TACC Wakas (4 variantes),Fusilli sin TACC Wakas (4 variantes),1568,1697,92.39835002946376
+Cooperativa Obrera,2022,Fideos secos,Tirabuzón / fusilli,sin TACC,Tirabuzón sin TACC Matarazzo 500 g,Tirabuzón sin TACC Matarazzo 500 g,1390,1697,81.90925162050678
+Cooperativa Obrera,2022,Galletitas dulces,Rellenas,con TACC,7790040133488,Galletitas Rellena Sabor Frambuesa Sonrisas 108 Gr,1542,1542,100.0
+Cooperativa Obrera,2022,Galletitas dulces,Rellenas,con TACC,7790040133259,Galletitas Vainilla Rellenas Limón Maná 152 Gr,1455,1542,94.3579766536965
+Cooperativa Obrera,2022,Galletitas dulces,Rellenas,con TACC,7622300742645,Galletitas Vainilla con Relleno de Limón Duquesa 115 Gr,1287,1542,83.46303501945525
+Cooperativa Obrera,2022,Galletitas dulces,Rellenas,sin TACC,Galletitas rellenas sin TACC Smams 105 g (3 variantes),Galletitas rellenas sin TACC Smams 105 g (3 variantes),1542,1542,100.0
+Cooperativa Obrera,2022,Galletitas dulces,"Secas (vainilla, limón, chocolate)",con TACC,7622201808884,Galletitas Anillos Clásicos Terrabusi 170 Gr,850,850,100.0
+Cooperativa Obrera,2022,Galletitas dulces,"Secas (vainilla, limón, chocolate)",con TACC,7792200000791,Galletitas Sconcitos 9 de Oro 200 Gr,850,850,100.0
+Cooperativa Obrera,2022,Galletitas dulces,"Secas (vainilla, limón, chocolate)",con TACC,7622201808860,Galletitas Dulces Boca de Dama Terrabusi 170 Gr,849,850,99.88235294117646
+Cooperativa Obrera,2022,Galletitas dulces,"Secas (vainilla, limón, chocolate)",sin TACC,7798181510847,Galletitas Colegial Vainilla Samms 150 Gr,746,850,87.76470588235294
+Cooperativa Obrera,2022,Galletitas dulces,"Secas (vainilla, limón, chocolate)",sin TACC,7798128410070,Galletitas Sabor Limón Aglu 150 Gr,453,850,53.29411764705883
+Cooperativa Obrera,2022,Galletitas saladas y crackers,Crackers,con TACC,7790040377707,Galletitas Original Crackers Criollitas 100 Gr,1689,1692,99.822695035461
+Cooperativa Obrera,2022,Galletitas saladas y crackers,Crackers,con TACC,7792180006462,Galletitas Mini Marineras Paseo 220 Gr,1553,1692,91.78486997635933
+Cooperativa Obrera,2022,Galletitas saladas y crackers,Crackers,con TACC,7790045001133,Galletitas Crackers Naturalmente Granix 200 Gr,1526,1692,90.18912529550828
+Cooperativa Obrera,2022,Galletitas saladas y crackers,Crackers,sin TACC,Crackers sin TACC Smams 150 g (3 variantes),Crackers sin TACC Smams 150 g (3 variantes),1692,1692,100.0
+Cooperativa Obrera,2023,Cereales rellenos (almohaditas),Almohaditas rellenas,con TACC,Almohaditas rellenas Lasfor 200 g (4 variantes),Almohaditas rellenas Lasfor 200 g (4 variantes),836,836,100.0
+Cooperativa Obrera,2023,Cereales rellenos (almohaditas),Almohaditas rellenas,sin TACC,Almohaditas rellenas sin TACC Snuks 240 g (4 variantes),Almohaditas rellenas sin TACC Snuks 240 g (4 variantes),836,836,100.0
+Cooperativa Obrera,2023,Fideos secos,Spaghetti,con TACC,Spaghetti Matarazzo 500 g,Spaghetti Matarazzo 500 g,1050,1050,100.0
+Cooperativa Obrera,2023,Fideos secos,Spaghetti,sin TACC,Spaghetti sin TACC Matarazzo 500 g,Spaghetti sin TACC Matarazzo 500 g,1050,1050,100.0
+Cooperativa Obrera,2023,Fideos secos,Tirabuzón / fusilli,con TACC,Tirabuzones Lucchetti 500 g,Tirabuzones Lucchetti 500 g,1662,1663,99.93986770895971
+Cooperativa Obrera,2023,Fideos secos,Tirabuzón / fusilli,con TACC,Tirabuzones Matarazzo 500 g,Tirabuzones Matarazzo 500 g,1091,1663,65.6043295249549
+Cooperativa Obrera,2023,Fideos secos,Tirabuzón / fusilli,sin TACC,Fusilli sin TACC Wakas (4 variantes),Fusilli sin TACC Wakas (4 variantes),1594,1663,95.85087191822008
+Cooperativa Obrera,2023,Fideos secos,Tirabuzón / fusilli,sin TACC,Tirabuzón sin TACC Matarazzo 500 g,Tirabuzón sin TACC Matarazzo 500 g,729,1663,43.83644016837042
+Cooperativa Obrera,2023,Galletitas dulces,Con chips,con TACC,Pepitos 119 g,Pepitos 119 g,104,104,100.0
+Cooperativa Obrera,2023,Galletitas dulces,Con chips,sin TACC,7798181511004,Galletitas Con Chips de Chocolate Smams 150 Gr,104,104,100.0
+Cooperativa Obrera,2023,Galletitas dulces,Rellenas,con TACC,7790040133488,Galletitas Rellena Sabor Frambuesa Sonrisas 108 Gr,1495,1588,94.14357682619648
+Cooperativa Obrera,2023,Galletitas dulces,Rellenas,con TACC,7790040133259,Galletitas Vainilla Rellenas Limón Maná 152 Gr,1013,1588,63.79093198992443
+Cooperativa Obrera,2023,Galletitas dulces,Rellenas,con TACC,7622300742645,Galletitas Vainilla con Relleno de Limón Duquesa 115 Gr,970,1588,61.0831234256927
+Cooperativa Obrera,2023,Galletitas dulces,Rellenas,sin TACC,Galletitas rellenas sin TACC Smams 105 g (3 variantes),Galletitas rellenas sin TACC Smams 105 g (3 variantes),1588,1588,100.0
+Cooperativa Obrera,2023,Galletitas dulces,"Secas (vainilla, limón, chocolate)",con TACC,7622201808884,Galletitas Anillos Clásicos Terrabusi 170 Gr,984,984,100.0
+Cooperativa Obrera,2023,Galletitas dulces,"Secas (vainilla, limón, chocolate)",con TACC,7792200000791,Galletitas Sconcitos 9 de Oro 200 Gr,984,984,100.0
+Cooperativa Obrera,2023,Galletitas dulces,"Secas (vainilla, limón, chocolate)",con TACC,7622201808860,Galletitas Dulces Boca de Dama Terrabusi 170 Gr,612,984,62.19512195121951
+Cooperativa Obrera,2023,Galletitas dulces,"Secas (vainilla, limón, chocolate)",sin TACC,7798181510847,Galletitas Colegial Vainilla Samms 150 Gr,845,984,85.8739837398374
+Cooperativa Obrera,2023,Galletitas dulces,"Secas (vainilla, limón, chocolate)",sin TACC,7798128410070,Galletitas Sabor Limón Aglu 150 Gr,581,984,59.04471544715447
+Cooperativa Obrera,2023,Galletitas saladas y crackers,Crackers,con TACC,7792180006462,Galletitas Mini Marineras Paseo 220 Gr,1588,1588,100.0
+Cooperativa Obrera,2023,Galletitas saladas y crackers,Crackers,con TACC,7790045001133,Galletitas Crackers Naturalmente Granix 200 Gr,1427,1588,89.86146095717883
+Cooperativa Obrera,2023,Galletitas saladas y crackers,Crackers,con TACC,7790040377707,Galletitas Original Crackers Criollitas 100 Gr,1081,1588,68.07304785894206
+Cooperativa Obrera,2023,Galletitas saladas y crackers,Crackers,sin TACC,Crackers sin TACC Smams 150 g (3 variantes),Crackers sin TACC Smams 150 g (3 variantes),1588,1588,100.0
+Cooperativa Obrera,2024,Cereales rellenos (almohaditas),Almohaditas rellenas,con TACC,Almohaditas rellenas Lasfor 200 g (4 variantes),Almohaditas rellenas Lasfor 200 g (4 variantes),797,797,100.0
+Cooperativa Obrera,2024,Cereales rellenos (almohaditas),Almohaditas rellenas,sin TACC,Almohaditas rellenas sin TACC Snuks 240 g (4 variantes),Almohaditas rellenas sin TACC Snuks 240 g (4 variantes),797,797,100.0
+Cooperativa Obrera,2024,Fideos secos,Spaghetti,con TACC,Spaghetti Matarazzo 500 g,Spaghetti Matarazzo 500 g,403,403,100.0
+Cooperativa Obrera,2024,Fideos secos,Spaghetti,sin TACC,Spaghetti sin TACC Matarazzo 500 g,Spaghetti sin TACC Matarazzo 500 g,403,403,100.0
+Cooperativa Obrera,2024,Fideos secos,Tirabuzón / fusilli,con TACC,Tirabuzones Lucchetti 500 g,Tirabuzones Lucchetti 500 g,1499,1499,100.0
+Cooperativa Obrera,2024,Fideos secos,Tirabuzón / fusilli,con TACC,Tirabuzones Matarazzo 500 g,Tirabuzones Matarazzo 500 g,1499,1499,100.0
+Cooperativa Obrera,2024,Fideos secos,Tirabuzón / fusilli,sin TACC,Fusilli sin TACC Wakas (4 variantes),Fusilli sin TACC Wakas (4 variantes),1474,1499,98.33222148098733
+Cooperativa Obrera,2024,Fideos secos,Tirabuzón / fusilli,sin TACC,Tirabuzón sin TACC Matarazzo 500 g,Tirabuzón sin TACC Matarazzo 500 g,863,1499,57.57171447631755
+Cooperativa Obrera,2024,Galletitas dulces,Con chips,con TACC,Pepitos 119 g,Pepitos 119 g,362,362,100.0
+Cooperativa Obrera,2024,Galletitas dulces,Con chips,sin TACC,7798181511004,Galletitas Con Chips de Chocolate Smams 150 Gr,362,362,100.0
+Cooperativa Obrera,2024,Galletitas dulces,Rellenas,con TACC,7790040133488,Galletitas Rellena Sabor Frambuesa Sonrisas 108 Gr,1478,1478,100.0
+Cooperativa Obrera,2024,Galletitas dulces,Rellenas,con TACC,7790040133259,Galletitas Vainilla Rellenas Limón Maná 152 Gr,1400,1478,94.72259810554804
+Cooperativa Obrera,2024,Galletitas dulces,Rellenas,con TACC,7622300742645,Galletitas Vainilla con Relleno de Limón Duquesa 115 Gr,797,1478,53.92422192151556
+Cooperativa Obrera,2024,Galletitas dulces,Rellenas,sin TACC,Galletitas rellenas sin TACC Smams 105 g (3 variantes),Galletitas rellenas sin TACC Smams 105 g (3 variantes),1478,1478,100.0
+Cooperativa Obrera,2024,Galletitas dulces,"Secas (vainilla, limón, chocolate)",con TACC,7622201808884,Galletitas Anillos Clásicos Terrabusi 170 Gr,1034,1034,100.0
+Cooperativa Obrera,2024,Galletitas dulces,"Secas (vainilla, limón, chocolate)",con TACC,7622201808860,Galletitas Dulces Boca de Dama Terrabusi 170 Gr,849,1034,82.1083172147002
+Cooperativa Obrera,2024,Galletitas dulces,"Secas (vainilla, limón, chocolate)",con TACC,7792200000791,Galletitas Sconcitos 9 de Oro 200 Gr,476,1034,46.03481624758221
+Cooperativa Obrera,2024,Galletitas dulces,"Secas (vainilla, limón, chocolate)",sin TACC,7798128410070,Galletitas Sabor Limón Aglu 150 Gr,962,1034,93.03675048355899
+Cooperativa Obrera,2024,Galletitas dulces,"Secas (vainilla, limón, chocolate)",sin TACC,7798181510847,Galletitas Colegial Vainilla Samms 150 Gr,797,1034,77.07930367504835
+Cooperativa Obrera,2024,Galletitas saladas y crackers,Crackers,con TACC,7790045001133,Galletitas Crackers Naturalmente Granix 200 Gr,1401,1450,96.62068965517241
+Cooperativa Obrera,2024,Galletitas saladas y crackers,Crackers,con TACC,7790040377707,Galletitas Original Crackers Criollitas 100 Gr,1299,1450,89.58620689655173
+Cooperativa Obrera,2024,Galletitas saladas y crackers,Crackers,con TACC,7792180006462,Galletitas Mini Marineras Paseo 220 Gr,1169,1450,80.62068965517241
+Cooperativa Obrera,2024,Galletitas saladas y crackers,Crackers,sin TACC,Crackers sin TACC Smams 150 g (3 variantes),Crackers sin TACC Smams 150 g (3 variantes),1450,1450,100.0
+Cooperativa Obrera,2025,Cereales rellenos (almohaditas),Almohaditas rellenas,con TACC,Almohaditas rellenas Lasfor 200 g (4 variantes),Almohaditas rellenas Lasfor 200 g (4 variantes),217,217,100.0
+Cooperativa Obrera,2025,Cereales rellenos (almohaditas),Almohaditas rellenas,sin TACC,Almohaditas rellenas sin TACC Snuks 240 g (4 variantes),Almohaditas rellenas sin TACC Snuks 240 g (4 variantes),217,217,100.0
+Cooperativa Obrera,2025,Fideos secos,Spaghetti,con TACC,Spaghetti Matarazzo 500 g,Spaghetti Matarazzo 500 g,779,779,100.0
+Cooperativa Obrera,2025,Fideos secos,Spaghetti,sin TACC,Spaghetti sin TACC Matarazzo 500 g,Spaghetti sin TACC Matarazzo 500 g,779,779,100.0
+Cooperativa Obrera,2025,Fideos secos,Tirabuzón / fusilli,con TACC,Tirabuzones Lucchetti 500 g,Tirabuzones Lucchetti 500 g,1770,1770,100.0
+Cooperativa Obrera,2025,Fideos secos,Tirabuzón / fusilli,con TACC,Tirabuzones Matarazzo 500 g,Tirabuzones Matarazzo 500 g,1770,1770,100.0
+Cooperativa Obrera,2025,Fideos secos,Tirabuzón / fusilli,sin TACC,Tirabuzón sin TACC Matarazzo 500 g,Tirabuzón sin TACC Matarazzo 500 g,1770,1770,100.0
+Cooperativa Obrera,2025,Fideos secos,Tirabuzón / fusilli,sin TACC,Fusilli sin TACC Wakas (4 variantes),Fusilli sin TACC Wakas (4 variantes),383,1770,21.63841807909604
+Cooperativa Obrera,2025,Galletitas dulces,Con chips,con TACC,Pepitos 119 g,Pepitos 119 g,140,140,100.0
+Cooperativa Obrera,2025,Galletitas dulces,Con chips,sin TACC,7798181511004,Galletitas Con Chips de Chocolate Smams 150 Gr,140,140,100.0
+Cooperativa Obrera,2025,Galletitas dulces,Rellenas,con TACC,7790040133488,Galletitas Rellena Sabor Frambuesa Sonrisas 108 Gr,408,408,100.0
+Cooperativa Obrera,2025,Galletitas dulces,Rellenas,con TACC,7790040133259,Galletitas Vainilla Rellenas Limón Maná 152 Gr,388,408,95.09803921568627
+Cooperativa Obrera,2025,Galletitas dulces,Rellenas,con TACC,7622300742645,Galletitas Vainilla con Relleno de Limón Duquesa 115 Gr,232,408,56.86274509803921
+Cooperativa Obrera,2025,Galletitas dulces,Rellenas,sin TACC,Galletitas rellenas sin TACC Smams 105 g (3 variantes),Galletitas rellenas sin TACC Smams 105 g (3 variantes),408,408,100.0
+Cooperativa Obrera,2025,Galletitas dulces,"Secas (vainilla, limón, chocolate)",con TACC,7622201808884,Galletitas Anillos Clásicos Terrabusi 170 Gr,283,283,100.0
+Cooperativa Obrera,2025,Galletitas dulces,"Secas (vainilla, limón, chocolate)",con TACC,7792200000791,Galletitas Sconcitos 9 de Oro 200 Gr,272,283,96.113074204947
+Cooperativa Obrera,2025,Galletitas dulces,"Secas (vainilla, limón, chocolate)",con TACC,7622201808860,Galletitas Dulces Boca de Dama Terrabusi 170 Gr,257,283,90.81272084805654
+Cooperativa Obrera,2025,Galletitas dulces,"Secas (vainilla, limón, chocolate)",sin TACC,7798128410070,Galletitas Sabor Limón Aglu 150 Gr,283,283,100.0
+Cooperativa Obrera,2025,Galletitas dulces,"Secas (vainilla, limón, chocolate)",sin TACC,7798181510847,Galletitas Colegial Vainilla Samms 150 Gr,217,283,76.67844522968198
+Cooperativa Obrera,2025,Galletitas saladas y crackers,Crackers,con TACC,7790045001133,Galletitas Crackers Naturalmente Granix 200 Gr,388,388,100.0
+Cooperativa Obrera,2025,Galletitas saladas y crackers,Crackers,con TACC,7792180006462,Galletitas Mini Marineras Paseo 220 Gr,324,388,83.50515463917526
+Cooperativa Obrera,2025,Galletitas saladas y crackers,Crackers,con TACC,7790040377707,Galletitas Original Crackers Criollitas 100 Gr,280,388,72.16494845360825
+Cooperativa Obrera,2025,Galletitas saladas y crackers,Crackers,sin TACC,Crackers sin TACC Smams 150 g (3 variantes),Crackers sin TACC Smams 150 g (3 variantes),388,388,100.0
+Cooperativa Obrera,2026,Fideos secos,Spaghetti,con TACC,Spaghetti Matarazzo 500 g,Spaghetti Matarazzo 500 g,550,550,100.0
+Cooperativa Obrera,2026,Fideos secos,Spaghetti,sin TACC,Spaghetti sin TACC Matarazzo 500 g,Spaghetti sin TACC Matarazzo 500 g,550,550,100.0
+Cooperativa Obrera,2026,Fideos secos,Tirabuzón / fusilli,con TACC,Tirabuzones Lucchetti 500 g,Tirabuzones Lucchetti 500 g,1468,1468,100.0
+Cooperativa Obrera,2026,Fideos secos,Tirabuzón / fusilli,con TACC,Tirabuzones Matarazzo 500 g,Tirabuzones Matarazzo 500 g,1468,1468,100.0
+Cooperativa Obrera,2026,Fideos secos,Tirabuzón / fusilli,sin TACC,Tirabuzón sin TACC Matarazzo 500 g,Tirabuzón sin TACC Matarazzo 500 g,1468,1468,100.0
+Coto,2022,Cereales rellenos (almohaditas),Almohaditas rellenas,con TACC,Almohaditas rellenas Lasfor 200 g (4 variantes),Almohaditas rellenas Lasfor 200 g (4 variantes),792,792,100.0
+Coto,2022,Cereales rellenos (almohaditas),Almohaditas rellenas,sin TACC,Almohaditas rellenas sin TACC Snuks 240 g (4 variantes),Almohaditas rellenas sin TACC Snuks 240 g (4 variantes),792,792,100.0
+Coto,2022,Fideos secos,Mostachol / penne,con TACC,Penne rigate Matarazzo 500 g,Penne rigate Matarazzo 500 g,1424,1424,100.0
+Coto,2022,Fideos secos,Mostachol / penne,sin TACC,Penne rigate sin TACC Matarazzo 500 g,Penne rigate sin TACC Matarazzo 500 g,1424,1424,100.0
+Coto,2022,Fideos secos,Spaghetti,con TACC,Spaghetti Matarazzo 500 g,Spaghetti Matarazzo 500 g,359,359,100.0
+Coto,2022,Fideos secos,Spaghetti,sin TACC,Spaghetti sin TACC Matarazzo 500 g,Spaghetti sin TACC Matarazzo 500 g,359,359,100.0
+Coto,2022,Fideos secos,Tirabuzón / fusilli,con TACC,Tirabuzones Matarazzo 500 g,Tirabuzones Matarazzo 500 g,690,691,99.85528219971056
+Coto,2022,Fideos secos,Tirabuzón / fusilli,con TACC,Tirabuzones Lucchetti 500 g,Tirabuzones Lucchetti 500 g,425,691,61.50506512301013
+Coto,2022,Fideos secos,Tirabuzón / fusilli,sin TACC,Fusilli sin TACC Wakas (4 variantes),Fusilli sin TACC Wakas (4 variantes),690,691,99.85528219971056
+Coto,2022,Fideos secos,Tirabuzón / fusilli,sin TACC,Tirabuzón sin TACC Matarazzo 500 g,Tirabuzón sin TACC Matarazzo 500 g,146,691,21.1287988422576
+Coto,2022,Galletitas saladas y crackers,Saborizadas / snack,con TACC,7790040719804,Galletitas Original Rex 125 Gr,737,1093,67.42909423604758
+Coto,2022,Galletitas saladas y crackers,Saborizadas / snack,con TACC,Galletitas saborizadas Saladix 100 g (3 variantes),Galletitas saborizadas Saladix 100 g (3 variantes),593,1093,54.25434583714547
+Coto,2022,Galletitas saladas y crackers,Saborizadas / snack,con TACC,7790040003569,Galletitas Saladas Tipo Snacks Rex 75 Gr,498,1093,45.56267154620311
+Coto,2022,Galletitas saladas y crackers,Saborizadas / snack,con TACC,7790040003606,Galletitas Kesitas 75 Gr,396,1093,36.23055809698079
+Coto,2022,Galletitas saladas y crackers,Saborizadas / snack,sin TACC,7797330102971,Galletas de Arroz Pizza Grandiet 100 Gr,1093,1093,100.0
+Coto,2022,Pan rallado y rebozador,Rebozador,con TACC,7792180004765,Rebozador Freir Fortificado Mamá Cocina Plus 500 Gr,52,52,100.0
+Coto,2022,Pan rallado y rebozador,Rebozador,con TACC,7792180004796,Rebozador Horno Fortificado Mamá Cocina Plus 1 Kg,52,52,100.0
+Coto,2022,Pan rallado y rebozador,Rebozador,sin TACC,7798193377285,Rebozador Naturalsur 500 Gr,52,52,100.0
+Coto,2023,Cereales rellenos (almohaditas),Almohaditas rellenas,con TACC,Almohaditas rellenas Lasfor 200 g (4 variantes),Almohaditas rellenas Lasfor 200 g (4 variantes),804,804,100.0
+Coto,2023,Cereales rellenos (almohaditas),Almohaditas rellenas,sin TACC,Almohaditas rellenas sin TACC Snuks 240 g (4 variantes),Almohaditas rellenas sin TACC Snuks 240 g (4 variantes),804,804,100.0
+Coto,2023,Fideos secos,Mostachol / penne,con TACC,Penne rigate Matarazzo 500 g,Penne rigate Matarazzo 500 g,769,769,100.0
+Coto,2023,Fideos secos,Mostachol / penne,sin TACC,Penne rigate sin TACC Matarazzo 500 g,Penne rigate sin TACC Matarazzo 500 g,769,769,100.0
+Coto,2023,Fideos secos,Spaghetti,con TACC,Spaghetti Matarazzo 500 g,Spaghetti Matarazzo 500 g,204,204,100.0
+Coto,2023,Fideos secos,Spaghetti,sin TACC,Spaghetti sin TACC Matarazzo 500 g,Spaghetti sin TACC Matarazzo 500 g,204,204,100.0
+Coto,2023,Fideos secos,Tirabuzón / fusilli,con TACC,Tirabuzones Lucchetti 500 g,Tirabuzones Lucchetti 500 g,596,596,100.0
+Coto,2023,Fideos secos,Tirabuzón / fusilli,con TACC,Tirabuzones Matarazzo 500 g,Tirabuzones Matarazzo 500 g,417,596,69.96644295302013
+Coto,2023,Fideos secos,Tirabuzón / fusilli,sin TACC,Fusilli sin TACC Wakas (4 variantes),Fusilli sin TACC Wakas (4 variantes),596,596,100.0
+Coto,2023,Galletitas saladas y crackers,Saborizadas / snack,con TACC,Galletitas saborizadas Saladix 100 g (3 variantes),Galletitas saborizadas Saladix 100 g (3 variantes),1143,1143,100.0
+Coto,2023,Galletitas saladas y crackers,Saborizadas / snack,con TACC,7790040003569,Galletitas Saladas Tipo Snacks Rex 75 Gr,942,1143,82.41469816272966
+Coto,2023,Galletitas saladas y crackers,Saborizadas / snack,con TACC,7790040719804,Galletitas Original Rex 125 Gr,824,1143,72.09098862642169
+Coto,2023,Galletitas saladas y crackers,Saborizadas / snack,con TACC,7790040003606,Galletitas Kesitas 75 Gr,634,1143,55.46806649168854
+Coto,2023,Galletitas saladas y crackers,Saborizadas / snack,sin TACC,7797330102971,Galletas de Arroz Pizza Grandiet 100 Gr,1143,1143,100.0
+Coto,2023,Pan rallado y rebozador,Rebozador,con TACC,7792180004765,Rebozador Freir Fortificado Mamá Cocina Plus 500 Gr,211,211,100.0
+Coto,2023,Pan rallado y rebozador,Rebozador,con TACC,7792180004796,Rebozador Horno Fortificado Mamá Cocina Plus 1 Kg,211,211,100.0
+Coto,2023,Pan rallado y rebozador,Rebozador,sin TACC,7798193377285,Rebozador Naturalsur 500 Gr,211,211,100.0
+Coto,2024,Cereales rellenos (almohaditas),Almohaditas rellenas,con TACC,Almohaditas rellenas Lasfor 200 g (4 variantes),Almohaditas rellenas Lasfor 200 g (4 variantes),1110,1110,100.0
+Coto,2024,Cereales rellenos (almohaditas),Almohaditas rellenas,sin TACC,Almohaditas rellenas sin TACC Snuks 240 g (4 variantes),Almohaditas rellenas sin TACC Snuks 240 g (4 variantes),1110,1110,100.0
+Coto,2024,Fideos secos,Mostachol / penne,con TACC,Penne rigate Matarazzo 500 g,Penne rigate Matarazzo 500 g,1026,1026,100.0
+Coto,2024,Fideos secos,Mostachol / penne,sin TACC,Penne rigate sin TACC Matarazzo 500 g,Penne rigate sin TACC Matarazzo 500 g,1026,1026,100.0
+Coto,2024,Fideos secos,Spaghetti,con TACC,Spaghetti Matarazzo 500 g,Spaghetti Matarazzo 500 g,1081,1081,100.0
+Coto,2024,Fideos secos,Spaghetti,sin TACC,Spaghetti sin TACC Matarazzo 500 g,Spaghetti sin TACC Matarazzo 500 g,1081,1081,100.0
+Coto,2024,Fideos secos,Tirabuzón / fusilli,con TACC,Tirabuzones Lucchetti 500 g,Tirabuzones Lucchetti 500 g,1284,1284,100.0
+Coto,2024,Fideos secos,Tirabuzón / fusilli,con TACC,Tirabuzones Matarazzo 500 g,Tirabuzones Matarazzo 500 g,1280,1284,99.68847352024922
+Coto,2024,Fideos secos,Tirabuzón / fusilli,sin TACC,Fusilli sin TACC Wakas (4 variantes),Fusilli sin TACC Wakas (4 variantes),1238,1284,96.41744548286604
+Coto,2024,Fideos secos,Tirabuzón / fusilli,sin TACC,Tirabuzón sin TACC Matarazzo 500 g,Tirabuzón sin TACC Matarazzo 500 g,267,1284,20.79439252336449
+Coto,2024,Galletitas dulces,"Secas (vainilla, limón, chocolate)",con TACC,7622201808884,Galletitas Anillos Clásicos Terrabusi 170 Gr,70,70,100.0
+Coto,2024,Galletitas dulces,"Secas (vainilla, limón, chocolate)",con TACC,7792200000791,Galletitas Sconcitos 9 de Oro 200 Gr,70,70,100.0
+Coto,2024,Galletitas dulces,"Secas (vainilla, limón, chocolate)",con TACC,7791787000644,Galletitas Frolitas Trio 300 Gr,68,70,97.14285714285714
+Coto,2024,Galletitas dulces,"Secas (vainilla, limón, chocolate)",con TACC,7622201808860,Galletitas Dulces Boca de Dama Terrabusi 170 Gr,55,70,78.57142857142857
+Coto,2024,Galletitas dulces,"Secas (vainilla, limón, chocolate)",sin TACC,7798181510847,Galletitas Colegial Vainilla Samms 150 Gr,70,70,100.0
+Coto,2024,Galletitas saladas y crackers,Saborizadas / snack,con TACC,Galletitas saborizadas Saladix 100 g (3 variantes),Galletitas saborizadas Saladix 100 g (3 variantes),911,911,100.0
+Coto,2024,Galletitas saladas y crackers,Saborizadas / snack,con TACC,7790040719804,Galletitas Original Rex 125 Gr,909,911,99.78046103183316
+Coto,2024,Galletitas saladas y crackers,Saborizadas / snack,con TACC,7790040003569,Galletitas Saladas Tipo Snacks Rex 75 Gr,887,911,97.36553238199781
+Coto,2024,Galletitas saladas y crackers,Saborizadas / snack,con TACC,7790040003606,Galletitas Kesitas 75 Gr,887,911,97.36553238199781
+Coto,2024,Galletitas saladas y crackers,Saborizadas / snack,sin TACC,7797330102971,Galletas de Arroz Pizza Grandiet 100 Gr,911,911,100.0
+Coto,2025,Cereales rellenos (almohaditas),Almohaditas rellenas,con TACC,Almohaditas rellenas Lasfor 200 g (4 variantes),Almohaditas rellenas Lasfor 200 g (4 variantes),1223,1223,100.0
+Coto,2025,Cereales rellenos (almohaditas),Almohaditas rellenas,sin TACC,Almohaditas rellenas sin TACC Snuks 240 g (4 variantes),Almohaditas rellenas sin TACC Snuks 240 g (4 variantes),1223,1223,100.0
+Coto,2025,Fideos secos,Mostachol / penne,con TACC,Penne rigate Matarazzo 500 g,Penne rigate Matarazzo 500 g,1441,1441,100.0
+Coto,2025,Fideos secos,Mostachol / penne,sin TACC,Penne rigate sin TACC Matarazzo 500 g,Penne rigate sin TACC Matarazzo 500 g,1441,1441,100.0
+Coto,2025,Fideos secos,Tirabuzón / fusilli,con TACC,Tirabuzones Lucchetti 500 g,Tirabuzones Lucchetti 500 g,1327,1327,100.0
+Coto,2025,Fideos secos,Tirabuzón / fusilli,con TACC,Tirabuzones Matarazzo 500 g,Tirabuzones Matarazzo 500 g,1327,1327,100.0
+Coto,2025,Fideos secos,Tirabuzón / fusilli,sin TACC,Tirabuzón sin TACC Matarazzo 500 g,Tirabuzón sin TACC Matarazzo 500 g,721,1327,54.33308214016579
+Coto,2025,Fideos secos,Tirabuzón / fusilli,sin TACC,Fusilli sin TACC Wakas (4 variantes),Fusilli sin TACC Wakas (4 variantes),708,1327,53.353428786737
+Coto,2025,Galletitas dulces,Con chips,con TACC,Pepitos 119 g,Pepitos 119 g,281,281,100.0
+Coto,2025,Galletitas dulces,Con chips,sin TACC,7798181511004,Galletitas Con Chips de Chocolate Smams 150 Gr,281,281,100.0
+Coto,2025,Galletitas dulces,Pepas,con TACC,7791787100924,Galletitas Dulces Pepas Trío 320 Gr,190,190,100.0
+Coto,2025,Galletitas dulces,Pepas,sin TACC,7798181510786,Pepas de Membrillo sin TACC Smams 150 Gr,190,190,100.0
+Coto,2025,Galletitas dulces,Rellenas,con TACC,7790040133488,Galletitas Rellena Sabor Frambuesa Sonrisas 108 Gr,307,307,100.0
+Coto,2025,Galletitas dulces,Rellenas,con TACC,7790040133259,Galletitas Vainilla Rellenas Limón Maná 152 Gr,306,307,99.6742671009772
+Coto,2025,Galletitas dulces,Rellenas,con TACC,7622300742645,Galletitas Vainilla con Relleno de Limón Duquesa 115 Gr,297,307,96.74267100977198
+Coto,2025,Galletitas dulces,Rellenas,sin TACC,Galletitas rellenas sin TACC Smams 105 g (3 variantes),Galletitas rellenas sin TACC Smams 105 g (3 variantes),307,307,100.0
+Coto,2025,Galletitas dulces,"Secas (vainilla, limón, chocolate)",con TACC,7622201808884,Galletitas Anillos Clásicos Terrabusi 170 Gr,846,846,100.0
+Coto,2025,Galletitas dulces,"Secas (vainilla, limón, chocolate)",con TACC,7792200000791,Galletitas Sconcitos 9 de Oro 200 Gr,846,846,100.0
+Coto,2025,Galletitas dulces,"Secas (vainilla, limón, chocolate)",con TACC,7622201808860,Galletitas Dulces Boca de Dama Terrabusi 170 Gr,822,846,97.16312056737588
+Coto,2025,Galletitas dulces,"Secas (vainilla, limón, chocolate)",con TACC,7791787000644,Galletitas Frolitas Trio 300 Gr,454,846,53.66430260047282
+Coto,2025,Galletitas dulces,"Secas (vainilla, limón, chocolate)",sin TACC,7798181510847,Galletitas Colegial Vainilla Samms 150 Gr,846,846,100.0
+Coto,2025,Galletitas saladas y crackers,Crackers,con TACC,7790040377707,Galletitas Original Crackers Criollitas 100 Gr,551,551,100.0
+Coto,2025,Galletitas saladas y crackers,Crackers,con TACC,7792180006462,Galletitas Mini Marineras Paseo 220 Gr,276,551,50.09074410163339
+Coto,2025,Galletitas saladas y crackers,Crackers,con TACC,7790045001133,Galletitas Crackers Naturalmente Granix 200 Gr,232,551,42.10526315789474
+Coto,2025,Galletitas saladas y crackers,Crackers,sin TACC,Crackers sin TACC Smams 150 g (3 variantes),Crackers sin TACC Smams 150 g (3 variantes),551,551,100.0
+Coto,2025,Galletitas saladas y crackers,Saborizadas / snack,con TACC,7790040003569,Galletitas Saladas Tipo Snacks Rex 75 Gr,303,303,100.0
+Coto,2025,Galletitas saladas y crackers,Saborizadas / snack,con TACC,7790040003606,Galletitas Kesitas 75 Gr,303,303,100.0
+Coto,2025,Galletitas saladas y crackers,Saborizadas / snack,con TACC,7790040719804,Galletitas Original Rex 125 Gr,303,303,100.0
+Coto,2025,Galletitas saladas y crackers,Saborizadas / snack,con TACC,Galletitas saborizadas Saladix 100 g (3 variantes),Galletitas saborizadas Saladix 100 g (3 variantes),301,303,99.33993399339934
+Coto,2025,Galletitas saladas y crackers,Saborizadas / snack,sin TACC,7797330102971,Galletas de Arroz Pizza Grandiet 100 Gr,303,303,100.0
+Coto,2026,Cereales rellenos (almohaditas),Almohaditas rellenas,con TACC,Almohaditas rellenas Lasfor 200 g (4 variantes),Almohaditas rellenas Lasfor 200 g (4 variantes),1019,1019,100.0
+Coto,2026,Cereales rellenos (almohaditas),Almohaditas rellenas,sin TACC,Almohaditas rellenas sin TACC Snuks 240 g (4 variantes),Almohaditas rellenas sin TACC Snuks 240 g (4 variantes),1019,1019,100.0
+Coto,2026,Fideos secos,Mostachol / penne,con TACC,Penne rigate Matarazzo 500 g,Penne rigate Matarazzo 500 g,1190,1190,100.0
+Coto,2026,Fideos secos,Mostachol / penne,sin TACC,Penne rigate sin TACC Matarazzo 500 g,Penne rigate sin TACC Matarazzo 500 g,1190,1190,100.0
+Coto,2026,Fideos secos,Spaghetti,con TACC,Spaghetti Matarazzo 500 g,Spaghetti Matarazzo 500 g,1068,1068,100.0
+Coto,2026,Fideos secos,Spaghetti,sin TACC,Spaghetti sin TACC Matarazzo 500 g,Spaghetti sin TACC Matarazzo 500 g,1068,1068,100.0
+Coto,2026,Fideos secos,Tirabuzón / fusilli,con TACC,Tirabuzones Lucchetti 500 g,Tirabuzones Lucchetti 500 g,1186,1186,100.0
+Coto,2026,Fideos secos,Tirabuzón / fusilli,con TACC,Tirabuzones Matarazzo 500 g,Tirabuzones Matarazzo 500 g,1186,1186,100.0
+Coto,2026,Fideos secos,Tirabuzón / fusilli,sin TACC,Tirabuzón sin TACC Matarazzo 500 g,Tirabuzón sin TACC Matarazzo 500 g,1186,1186,100.0
+Coto,2026,Galletitas dulces,Con chips,con TACC,Pepitos 119 g,Pepitos 119 g,285,285,100.0
+Coto,2026,Galletitas dulces,Con chips,sin TACC,7798181511004,Galletitas Con Chips de Chocolate Smams 150 Gr,285,285,100.0
+Coto,2026,Galletitas dulces,Rellenas,con TACC,7790040133488,Galletitas Rellena Sabor Frambuesa Sonrisas 108 Gr,440,440,100.0
+Coto,2026,Galletitas dulces,Rellenas,con TACC,7790040133259,Galletitas Vainilla Rellenas Limón Maná 152 Gr,439,440,99.77272727272727
+Coto,2026,Galletitas dulces,Rellenas,con TACC,7622300742645,Galletitas Vainilla con Relleno de Limón Duquesa 115 Gr,420,440,95.45454545454545
+Coto,2026,Galletitas dulces,Rellenas,sin TACC,Galletitas rellenas sin TACC Smams 105 g (3 variantes),Galletitas rellenas sin TACC Smams 105 g (3 variantes),440,440,100.0
+Coto,2026,Galletitas dulces,"Secas (vainilla, limón, chocolate)",con TACC,7622201808884,Galletitas Anillos Clásicos Terrabusi 170 Gr,712,712,100.0
+Coto,2026,Galletitas dulces,"Secas (vainilla, limón, chocolate)",con TACC,7792200000791,Galletitas Sconcitos 9 de Oro 200 Gr,712,712,100.0
+Coto,2026,Galletitas dulces,"Secas (vainilla, limón, chocolate)",con TACC,7622201808860,Galletitas Dulces Boca de Dama Terrabusi 170 Gr,692,712,97.19101123595506
+Coto,2026,Galletitas dulces,"Secas (vainilla, limón, chocolate)",sin TACC,7798181510847,Galletitas Colegial Vainilla Samms 150 Gr,712,712,100.0
+Coto,2026,Galletitas saladas y crackers,Crackers,con TACC,7790040377707,Galletitas Original Crackers Criollitas 100 Gr,690,690,100.0
+Coto,2026,Galletitas saladas y crackers,Crackers,con TACC,7792180006462,Galletitas Mini Marineras Paseo 220 Gr,689,690,99.85507246376811
+Coto,2026,Galletitas saladas y crackers,Crackers,con TACC,7790045001133,Galletitas Crackers Naturalmente Granix 200 Gr,646,690,93.6231884057971
+Coto,2026,Galletitas saladas y crackers,Crackers,sin TACC,Crackers sin TACC Smams 150 g (3 variantes),Crackers sin TACC Smams 150 g (3 variantes),690,690,100.0
+DIA,2022,Fideos secos,Spaghetti,con TACC,Spaghetti Matarazzo 500 g,Spaghetti Matarazzo 500 g,10365,10365,100.0
+DIA,2022,Fideos secos,Spaghetti,sin TACC,Spaghetti sin TACC Matarazzo 500 g,Spaghetti sin TACC Matarazzo 500 g,10365,10365,100.0
+DIA,2022,Fideos secos,Tirabuzón / fusilli,con TACC,Tirabuzones Lucchetti 500 g,Tirabuzones Lucchetti 500 g,10365,10365,100.0
+DIA,2022,Fideos secos,Tirabuzón / fusilli,con TACC,Tirabuzones Matarazzo 500 g,Tirabuzones Matarazzo 500 g,10365,10365,100.0
+DIA,2022,Fideos secos,Tirabuzón / fusilli,sin TACC,Fusilli sin TACC Wakas (4 variantes),Fusilli sin TACC Wakas (4 variantes),10365,10365,100.0
+DIA,2022,Fideos secos,Tirabuzón / fusilli,sin TACC,Tirabuzón sin TACC Matarazzo 500 g,Tirabuzón sin TACC Matarazzo 500 g,10365,10365,100.0
+DIA,2022,Galletitas dulces,Con chips,con TACC,Pepitos 119 g,Pepitos 119 g,10364,10364,100.0
+DIA,2022,Galletitas dulces,Con chips,sin TACC,7798181511004,Galletitas Con Chips de Chocolate Smams 150 Gr,10364,10364,100.0
+DIA,2022,Galletitas dulces,Rellenas,con TACC,7790040133259,Galletitas Vainilla Rellenas Limón Maná 152 Gr,10365,10365,100.0
+DIA,2022,Galletitas dulces,Rellenas,con TACC,7790040133488,Galletitas Rellena Sabor Frambuesa Sonrisas 108 Gr,10365,10365,100.0
+DIA,2022,Galletitas dulces,Rellenas,con TACC,7622300742645,Galletitas Vainilla con Relleno de Limón Duquesa 115 Gr,4548,10365,43.87843704775688
+DIA,2022,Galletitas dulces,Rellenas,sin TACC,Galletitas rellenas sin TACC Smams 105 g (3 variantes),Galletitas rellenas sin TACC Smams 105 g (3 variantes),10365,10365,100.0
+DIA,2022,Galletitas saladas y crackers,Crackers,con TACC,7790040377707,Galletitas Original Crackers Criollitas 100 Gr,10357,10357,100.0
+DIA,2022,Galletitas saladas y crackers,Crackers,sin TACC,Crackers sin TACC Smams 150 g (3 variantes),Crackers sin TACC Smams 150 g (3 variantes),10357,10357,100.0
+DIA,2023,Fideos secos,Spaghetti,con TACC,Spaghetti Matarazzo 500 g,Spaghetti Matarazzo 500 g,10697,10697,100.0
+DIA,2023,Fideos secos,Spaghetti,sin TACC,Spaghetti sin TACC Matarazzo 500 g,Spaghetti sin TACC Matarazzo 500 g,10697,10697,100.0
+DIA,2023,Fideos secos,Tirabuzón / fusilli,con TACC,Tirabuzones Lucchetti 500 g,Tirabuzones Lucchetti 500 g,9718,9718,100.0
+DIA,2023,Fideos secos,Tirabuzón / fusilli,con TACC,Tirabuzones Matarazzo 500 g,Tirabuzones Matarazzo 500 g,5789,9718,59.56987034369212
+DIA,2023,Fideos secos,Tirabuzón / fusilli,sin TACC,Fusilli sin TACC Wakas (4 variantes),Fusilli sin TACC Wakas (4 variantes),9712,9718,99.93825890100844
+DIA,2023,Fideos secos,Tirabuzón / fusilli,sin TACC,Tirabuzón sin TACC Matarazzo 500 g,Tirabuzón sin TACC Matarazzo 500 g,8696,9718,89.48343280510393
+DIA,2023,Galletitas dulces,Con chips,con TACC,Pepitos 119 g,Pepitos 119 g,2839,2839,100.0
+DIA,2023,Galletitas dulces,Con chips,sin TACC,7798181511004,Galletitas Con Chips de Chocolate Smams 150 Gr,2839,2839,100.0
+DIA,2023,Galletitas dulces,Rellenas,con TACC,7622300742645,Galletitas Vainilla con Relleno de Limón Duquesa 115 Gr,5789,5789,100.0
+DIA,2023,Galletitas dulces,Rellenas,con TACC,7790040133488,Galletitas Rellena Sabor Frambuesa Sonrisas 108 Gr,5789,5789,100.0
+DIA,2023,Galletitas dulces,Rellenas,con TACC,7790040133259,Galletitas Vainilla Rellenas Limón Maná 152 Gr,1888,5789,32.61357747452065
+DIA,2023,Galletitas dulces,Rellenas,sin TACC,Galletitas rellenas sin TACC Smams 105 g (3 variantes),Galletitas rellenas sin TACC Smams 105 g (3 variantes),5789,5789,100.0
+DIA,2023,Galletitas saladas y crackers,Crackers,con TACC,7790040377707,Galletitas Original Crackers Criollitas 100 Gr,6862,6862,100.0
+DIA,2023,Galletitas saladas y crackers,Crackers,con TACC,7792180006462,Galletitas Mini Marineras Paseo 220 Gr,4015,6862,58.51063829787234
+DIA,2023,Galletitas saladas y crackers,Crackers,sin TACC,Crackers sin TACC Smams 150 g (3 variantes),Crackers sin TACC Smams 150 g (3 variantes),6862,6862,100.0
+DIA,2024,Fideos secos,Tirabuzón / fusilli,con TACC,Tirabuzones Matarazzo 500 g,Tirabuzones Matarazzo 500 g,7191,7191,100.0
+DIA,2024,Fideos secos,Tirabuzón / fusilli,con TACC,Tirabuzones Lucchetti 500 g,Tirabuzones Lucchetti 500 g,7189,7191,99.9721874565429
+DIA,2024,Fideos secos,Tirabuzón / fusilli,sin TACC,Fusilli sin TACC Wakas (4 variantes),Fusilli sin TACC Wakas (4 variantes),7191,7191,100.0
+DIA,2024,Galletitas dulces,Rellenas,con TACC,7622300742645,Galletitas Vainilla con Relleno de Limón Duquesa 115 Gr,12363,12363,100.0
+DIA,2024,Galletitas dulces,Rellenas,con TACC,7790040133488,Galletitas Rellena Sabor Frambuesa Sonrisas 108 Gr,11325,12363,91.60397961659791
+DIA,2024,Galletitas dulces,Rellenas,con TACC,7790040133259,Galletitas Vainilla Rellenas Limón Maná 152 Gr,8223,12363,66.51298228585294
+DIA,2024,Galletitas dulces,Rellenas,sin TACC,Galletitas rellenas sin TACC Smams 105 g (3 variantes),Galletitas rellenas sin TACC Smams 105 g (3 variantes),12363,12363,100.0
+DIA,2024,Galletitas saladas y crackers,Crackers,con TACC,7790040377707,Galletitas Original Crackers Criollitas 100 Gr,3067,3067,100.0
+DIA,2024,Galletitas saladas y crackers,Crackers,sin TACC,Crackers sin TACC Smams 150 g (3 variantes),Crackers sin TACC Smams 150 g (3 variantes),3067,3067,100.0
+DIA,2025,Fideos secos,Spaghetti,con TACC,Spaghetti Matarazzo 500 g,Spaghetti Matarazzo 500 g,4067,4067,100.0
+DIA,2025,Fideos secos,Spaghetti,sin TACC,Spaghetti sin TACC Matarazzo 500 g,Spaghetti sin TACC Matarazzo 500 g,4067,4067,100.0
+DIA,2025,Galletitas dulces,Rellenas,con TACC,7622300742645,Galletitas Vainilla con Relleno de Limón Duquesa 115 Gr,2063,2063,100.0
+DIA,2025,Galletitas dulces,Rellenas,con TACC,7790040133488,Galletitas Rellena Sabor Frambuesa Sonrisas 108 Gr,2063,2063,100.0
+DIA,2025,Galletitas dulces,Rellenas,sin TACC,Galletitas rellenas sin TACC Smams 105 g (3 variantes),Galletitas rellenas sin TACC Smams 105 g (3 variantes),2063,2063,100.0
+DIA,2026,Fideos secos,Spaghetti,con TACC,Spaghetti Matarazzo 500 g,Spaghetti Matarazzo 500 g,2896,2896,100.0
+DIA,2026,Fideos secos,Spaghetti,sin TACC,Spaghetti sin TACC Matarazzo 500 g,Spaghetti sin TACC Matarazzo 500 g,2896,2896,100.0
+DIA,2026,Galletitas dulces,Con chips,con TACC,Pepitos 119 g,Pepitos 119 g,954,954,100.0
+DIA,2026,Galletitas dulces,Con chips,sin TACC,7798181511004,Galletitas Con Chips de Chocolate Smams 150 Gr,954,954,100.0
+DIA,2026,Galletitas dulces,Rellenas,con TACC,7622300742645,Galletitas Vainilla con Relleno de Limón Duquesa 115 Gr,1907,1907,100.0
+DIA,2026,Galletitas dulces,Rellenas,con TACC,7790040133259,Galletitas Vainilla Rellenas Limón Maná 152 Gr,1907,1907,100.0
+DIA,2026,Galletitas dulces,Rellenas,con TACC,7790040133488,Galletitas Rellena Sabor Frambuesa Sonrisas 108 Gr,1907,1907,100.0
+DIA,2026,Galletitas dulces,Rellenas,sin TACC,Galletitas rellenas sin TACC Smams 105 g (3 variantes),Galletitas rellenas sin TACC Smams 105 g (3 variantes),1907,1907,100.0
+Deheza,2022,Galletitas saladas y crackers,Saborizadas / snack,con TACC,Galletitas saborizadas Saladix 100 g (3 variantes),Galletitas saborizadas Saladix 100 g (3 variantes),492,492,100.0
+Deheza,2022,Galletitas saladas y crackers,Saborizadas / snack,sin TACC,Galletas de arroz saborizadas Crisppino Minis 50 g (3 variantes),Galletas de arroz saborizadas Crisppino Minis 50 g (3 variantes),492,492,100.0
+Deheza,2023,Galletitas saladas y crackers,Saborizadas / snack,con TACC,Galletitas saborizadas Saladix 100 g (3 variantes),Galletitas saborizadas Saladix 100 g (3 variantes),328,328,100.0
+Deheza,2023,Galletitas saladas y crackers,Saborizadas / snack,sin TACC,Galletas de arroz saborizadas Crisppino Minis 50 g (3 variantes),Galletas de arroz saborizadas Crisppino Minis 50 g (3 variantes),328,328,100.0
+La Agrícola Regional,2022,Fideos secos,Tirabuzón / fusilli,con TACC,Tirabuzones Lucchetti 500 g,Tirabuzones Lucchetti 500 g,39,39,100.0
+La Agrícola Regional,2022,Fideos secos,Tirabuzón / fusilli,con TACC,Tirabuzones Matarazzo 500 g,Tirabuzones Matarazzo 500 g,39,39,100.0
+La Agrícola Regional,2022,Fideos secos,Tirabuzón / fusilli,sin TACC,Fusilli sin TACC Wakas (4 variantes),Fusilli sin TACC Wakas (4 variantes),39,39,100.0
+La Agrícola Regional,2022,Galletitas dulces,Rellenas,con TACC,7622300742645,Galletitas Vainilla con Relleno de Limón Duquesa 115 Gr,14,14,100.0
+La Agrícola Regional,2022,Galletitas dulces,Rellenas,sin TACC,Galletitas rellenas sin TACC Smams 105 g (3 variantes),Galletitas rellenas sin TACC Smams 105 g (3 variantes),14,14,100.0
+La Agrícola Regional,2022,Galletitas saladas y crackers,Crackers,con TACC,7790045001133,Galletitas Crackers Naturalmente Granix 200 Gr,34,34,100.0
+La Agrícola Regional,2022,Galletitas saladas y crackers,Crackers,con TACC,7790040377707,Galletitas Original Crackers Criollitas 100 Gr,1,34,2.941176470588236
+La Agrícola Regional,2022,Galletitas saladas y crackers,Crackers,sin TACC,Crackers sin TACC Smams 150 g (3 variantes),Crackers sin TACC Smams 150 g (3 variantes),34,34,100.0
+La Agrícola Regional,2023,Fideos secos,Tirabuzón / fusilli,con TACC,Tirabuzones Matarazzo 500 g,Tirabuzones Matarazzo 500 g,17,17,100.0
+La Agrícola Regional,2023,Fideos secos,Tirabuzón / fusilli,con TACC,Tirabuzones Lucchetti 500 g,Tirabuzones Lucchetti 500 g,13,17,76.47058823529412
+La Agrícola Regional,2023,Fideos secos,Tirabuzón / fusilli,sin TACC,Fusilli sin TACC Wakas (4 variantes),Fusilli sin TACC Wakas (4 variantes),17,17,100.0
+La Agrícola Regional,2023,Galletitas dulces,Rellenas,con TACC,7622300742645,Galletitas Vainilla con Relleno de Limón Duquesa 115 Gr,20,20,100.0
+La Agrícola Regional,2023,Galletitas dulces,Rellenas,sin TACC,Galletitas rellenas sin TACC Smams 105 g (3 variantes),Galletitas rellenas sin TACC Smams 105 g (3 variantes),20,20,100.0
+La Agrícola Regional,2023,Galletitas saladas y crackers,Crackers,con TACC,7790045001133,Galletitas Crackers Naturalmente Granix 200 Gr,36,36,100.0
+La Agrícola Regional,2023,Galletitas saladas y crackers,Crackers,con TACC,7790040377707,Galletitas Original Crackers Criollitas 100 Gr,9,36,25.0
+La Agrícola Regional,2023,Galletitas saladas y crackers,Crackers,sin TACC,Crackers sin TACC Smams 150 g (3 variantes),Crackers sin TACC Smams 150 g (3 variantes),36,36,100.0
+La Agrícola Regional,2024,Galletitas dulces,Rellenas,con TACC,7622300742645,Galletitas Vainilla con Relleno de Limón Duquesa 115 Gr,21,21,100.0
+La Agrícola Regional,2024,Galletitas dulces,Rellenas,sin TACC,Galletitas rellenas sin TACC Smams 105 g (3 variantes),Galletitas rellenas sin TACC Smams 105 g (3 variantes),21,21,100.0
+La Agrícola Regional,2024,Galletitas saladas y crackers,Crackers,con TACC,7790045001133,Galletitas Crackers Naturalmente Granix 200 Gr,37,40,92.5
+La Agrícola Regional,2024,Galletitas saladas y crackers,Crackers,con TACC,7790040377707,Galletitas Original Crackers Criollitas 100 Gr,21,40,52.5
+La Agrícola Regional,2024,Galletitas saladas y crackers,Crackers,sin TACC,Crackers sin TACC Smams 150 g (3 variantes),Crackers sin TACC Smams 150 g (3 variantes),40,40,100.0
+La Agrícola Regional,2025,Galletitas dulces,Rellenas,con TACC,7622300742645,Galletitas Vainilla con Relleno de Limón Duquesa 115 Gr,23,23,100.0
+La Agrícola Regional,2025,Galletitas dulces,Rellenas,sin TACC,Galletitas rellenas sin TACC Smams 105 g (3 variantes),Galletitas rellenas sin TACC Smams 105 g (3 variantes),23,23,100.0
+La Agrícola Regional,2025,Galletitas saladas y crackers,Crackers,con TACC,7790045001133,Galletitas Crackers Naturalmente Granix 200 Gr,34,34,100.0
+La Agrícola Regional,2025,Galletitas saladas y crackers,Crackers,con TACC,7790040377707,Galletitas Original Crackers Criollitas 100 Gr,11,34,32.35294117647059
+La Agrícola Regional,2025,Galletitas saladas y crackers,Crackers,sin TACC,Crackers sin TACC Smams 150 g (3 variantes),Crackers sin TACC Smams 150 g (3 variantes),34,34,100.0
+La Agrícola Regional,2026,Galletitas dulces,Rellenas,con TACC,7622300742645,Galletitas Vainilla con Relleno de Limón Duquesa 115 Gr,21,21,100.0
+La Agrícola Regional,2026,Galletitas dulces,Rellenas,sin TACC,Galletitas rellenas sin TACC Smams 105 g (3 variantes),Galletitas rellenas sin TACC Smams 105 g (3 variantes),21,21,100.0
+La Agrícola Regional,2026,Galletitas saladas y crackers,Crackers,con TACC,7790045001133,Galletitas Crackers Naturalmente Granix 200 Gr,15,16,93.75
+La Agrícola Regional,2026,Galletitas saladas y crackers,Crackers,con TACC,7790040377707,Galletitas Original Crackers Criollitas 100 Gr,7,16,43.75
+La Agrícola Regional,2026,Galletitas saladas y crackers,Crackers,sin TACC,Crackers sin TACC Smams 150 g (3 variantes),Crackers sin TACC Smams 150 g (3 variantes),16,16,100.0
+La Anónima,2022,Cereales rellenos (almohaditas),Almohaditas rellenas,con TACC,Almohaditas rellenas Lasfor 200 g (4 variantes),Almohaditas rellenas Lasfor 200 g (4 variantes),1313,1313,100.0
+La Anónima,2022,Cereales rellenos (almohaditas),Almohaditas rellenas,sin TACC,Almohaditas rellenas sin TACC Snuks 240 g (4 variantes),Almohaditas rellenas sin TACC Snuks 240 g (4 variantes),1313,1313,100.0
+La Anónima,2022,Fideos secos,Mostachol / penne,con TACC,Penne rigate Matarazzo 500 g,Penne rigate Matarazzo 500 g,1728,1728,100.0
+La Anónima,2022,Fideos secos,Mostachol / penne,sin TACC,Penne rigate sin TACC Matarazzo 500 g,Penne rigate sin TACC Matarazzo 500 g,1728,1728,100.0
+La Anónima,2022,Fideos secos,Spaghetti,con TACC,Spaghetti Matarazzo 500 g,Spaghetti Matarazzo 500 g,1761,1761,100.0
+La Anónima,2022,Fideos secos,Spaghetti,sin TACC,Spaghetti sin TACC Matarazzo 500 g,Spaghetti sin TACC Matarazzo 500 g,1761,1761,100.0
+La Anónima,2022,Fideos secos,Tirabuzón / fusilli,con TACC,Tirabuzones Matarazzo 500 g,Tirabuzones Matarazzo 500 g,1676,1681,99.70255800118977
+La Anónima,2022,Fideos secos,Tirabuzón / fusilli,con TACC,Tirabuzones Lucchetti 500 g,Tirabuzones Lucchetti 500 g,1644,1681,97.79892920880428
+La Anónima,2022,Fideos secos,Tirabuzón / fusilli,sin TACC,Fusilli sin TACC Wakas (4 variantes),Fusilli sin TACC Wakas (4 variantes),1478,1681,87.92385484830459
+La Anónima,2022,Fideos secos,Tirabuzón / fusilli,sin TACC,Tirabuzón sin TACC Matarazzo 500 g,Tirabuzón sin TACC Matarazzo 500 g,1478,1681,87.92385484830459
+La Anónima,2022,Galletitas dulces,Con chips,con TACC,Pepitos 119 g,Pepitos 119 g,1006,1006,100.0
+La Anónima,2022,Galletitas dulces,Con chips,sin TACC,7798181511004,Galletitas Con Chips de Chocolate Smams 150 Gr,1006,1006,100.0
+La Anónima,2022,Galletitas dulces,Obleas,con TACC,7790040008175,Galletitas Obleas Clásicas Opera 220 Gr,1181,1181,100.0
+La Anónima,2022,Galletitas dulces,Obleas,con TACC,77903518,Galletitas Obleas Rellena Opera 92 Gr,825,1181,69.85605419136326
+La Anónima,2022,Galletitas dulces,Obleas,sin TACC,7798079230833,Obleas Limón Santa María 90 Gr,1181,1181,100.0
+La Anónima,2022,Galletitas dulces,Pepas,con TACC,7791787100924,Galletitas Dulces Pepas Trío 320 Gr,1232,1232,100.0
+La Anónima,2022,Galletitas dulces,Pepas,sin TACC,7798181510786,Pepas de Membrillo sin TACC Smams 150 Gr,1232,1232,100.0
+La Anónima,2022,Galletitas dulces,Rellenas,con TACC,7790040133488,Galletitas Rellena Sabor Frambuesa Sonrisas 108 Gr,1459,1466,99.5225102319236
+La Anónima,2022,Galletitas dulces,Rellenas,con TACC,7790040133259,Galletitas Vainilla Rellenas Limón Maná 152 Gr,1371,1466,93.51978171896316
+La Anónima,2022,Galletitas dulces,Rellenas,con TACC,7622300742645,Galletitas Vainilla con Relleno de Limón Duquesa 115 Gr,1310,1466,89.35879945429741
+La Anónima,2022,Galletitas dulces,Rellenas,sin TACC,Galletitas rellenas sin TACC Smams 105 g (3 variantes),Galletitas rellenas sin TACC Smams 105 g (3 variantes),1466,1466,100.0
+La Anónima,2022,Galletitas dulces,"Secas (vainilla, limón, chocolate)",con TACC,7622201808884,Galletitas Anillos Clásicos Terrabusi 170 Gr,1682,1683,99.94058229352348
+La Anónima,2022,Galletitas dulces,"Secas (vainilla, limón, chocolate)",con TACC,7792200000791,Galletitas Sconcitos 9 de Oro 200 Gr,1673,1683,99.4058229352347
+La Anónima,2022,Galletitas dulces,"Secas (vainilla, limón, chocolate)",con TACC,7791787000644,Galletitas Frolitas Trio 300 Gr,1604,1683,95.30600118835413
+La Anónima,2022,Galletitas dulces,"Secas (vainilla, limón, chocolate)",con TACC,7622201808860,Galletitas Dulces Boca de Dama Terrabusi 170 Gr,1594,1683,94.71182412358883
+La Anónima,2022,Galletitas dulces,"Secas (vainilla, limón, chocolate)",sin TACC,Galletitas sin TACC Santa María 200 g (2 variantes),Galletitas sin TACC Santa María 200 g (2 variantes),1542,1683,91.62210338680927
+La Anónima,2022,Galletitas dulces,"Secas (vainilla, limón, chocolate)",sin TACC,7798181510847,Galletitas Colegial Vainilla Samms 150 Gr,1487,1683,88.35412953060012
+La Anónima,2022,Galletitas saladas y crackers,Crackers,con TACC,7790045001133,Galletitas Crackers Naturalmente Granix 200 Gr,1584,1609,98.44623990055935
+La Anónima,2022,Galletitas saladas y crackers,Crackers,con TACC,7790040377707,Galletitas Original Crackers Criollitas 100 Gr,1077,1609,66.93598508390305
+La Anónima,2022,Galletitas saladas y crackers,Crackers,sin TACC,Crackers sin TACC Smams 150 g (3 variantes),Crackers sin TACC Smams 150 g (3 variantes),1609,1609,100.0
+La Anónima,2022,Galletitas saladas y crackers,Saborizadas / snack,con TACC,7790040003606,Galletitas Kesitas 75 Gr,1496,1514,98.8110964332893
+La Anónima,2022,Galletitas saladas y crackers,Saborizadas / snack,con TACC,7790040003569,Galletitas Saladas Tipo Snacks Rex 75 Gr,1255,1514,82.89299867899604
+La Anónima,2022,Galletitas saladas y crackers,Saborizadas / snack,sin TACC,Galletas de arroz saborizadas Crisppino 100 g (2 variantes),Galletas de arroz saborizadas Crisppino 100 g (2 variantes),1497,1514,98.8771466314399
+La Anónima,2022,Galletitas saladas y crackers,Saborizadas / snack,sin TACC,Galletas de arroz saborizadas Crisppino Minis 50 g (3 variantes),Galletas de arroz saborizadas Crisppino Minis 50 g (3 variantes),1474,1514,97.35799207397622
+La Anónima,2023,Cereales rellenos (almohaditas),Almohaditas rellenas,con TACC,Almohaditas rellenas Lasfor 200 g (4 variantes),Almohaditas rellenas Lasfor 200 g (4 variantes),1390,1390,100.0
+La Anónima,2023,Cereales rellenos (almohaditas),Almohaditas rellenas,sin TACC,Almohaditas rellenas sin TACC Snuks 240 g (4 variantes),Almohaditas rellenas sin TACC Snuks 240 g (4 variantes),1390,1390,100.0
+La Anónima,2023,Fideos secos,Mostachol / penne,con TACC,Penne rigate Matarazzo 500 g,Penne rigate Matarazzo 500 g,1031,1031,100.0
+La Anónima,2023,Fideos secos,Mostachol / penne,sin TACC,Penne rigate sin TACC Matarazzo 500 g,Penne rigate sin TACC Matarazzo 500 g,1031,1031,100.0
+La Anónima,2023,Fideos secos,Spaghetti,con TACC,Spaghetti Matarazzo 500 g,Spaghetti Matarazzo 500 g,761,761,100.0
+La Anónima,2023,Fideos secos,Spaghetti,sin TACC,Spaghetti sin TACC Matarazzo 500 g,Spaghetti sin TACC Matarazzo 500 g,761,761,100.0
+La Anónima,2023,Fideos secos,Tirabuzón / fusilli,con TACC,Tirabuzones Lucchetti 500 g,Tirabuzones Lucchetti 500 g,1210,1213,99.75267930750206
+La Anónima,2023,Fideos secos,Tirabuzón / fusilli,con TACC,Tirabuzones Matarazzo 500 g,Tirabuzones Matarazzo 500 g,457,1213,37.67518549051938
+La Anónima,2023,Fideos secos,Tirabuzón / fusilli,sin TACC,Fusilli sin TACC Wakas (4 variantes),Fusilli sin TACC Wakas (4 variantes),1109,1213,91.42621599340478
+La Anónima,2023,Fideos secos,Tirabuzón / fusilli,sin TACC,Tirabuzón sin TACC Matarazzo 500 g,Tirabuzón sin TACC Matarazzo 500 g,731,1213,60.26380873866447
+La Anónima,2023,Galletitas dulces,Con chips,con TACC,Pepitos 119 g,Pepitos 119 g,1704,1704,100.0
+La Anónima,2023,Galletitas dulces,Con chips,sin TACC,7798181511004,Galletitas Con Chips de Chocolate Smams 150 Gr,1704,1704,100.0
+La Anónima,2023,Galletitas dulces,Obleas,con TACC,7790040008175,Galletitas Obleas Clásicas Opera 220 Gr,866,866,100.0
+La Anónima,2023,Galletitas dulces,Obleas,con TACC,77903518,Galletitas Obleas Rellena Opera 92 Gr,157,866,18.12933025404157
+La Anónima,2023,Galletitas dulces,Obleas,sin TACC,7798079230833,Obleas Limón Santa María 90 Gr,866,866,100.0
+La Anónima,2023,Galletitas dulces,Pepas,con TACC,7791787100924,Galletitas Dulces Pepas Trío 320 Gr,1713,1713,100.0
+La Anónima,2023,Galletitas dulces,Pepas,sin TACC,7798181510786,Pepas de Membrillo sin TACC Smams 150 Gr,1713,1713,100.0
+La Anónima,2023,Galletitas dulces,Rellenas,con TACC,7790040133488,Galletitas Rellena Sabor Frambuesa Sonrisas 108 Gr,1634,1726,94.66975666280418
+La Anónima,2023,Galletitas dulces,Rellenas,con TACC,7622300742645,Galletitas Vainilla con Relleno de Limón Duquesa 115 Gr,1308,1726,75.78215527230591
+La Anónima,2023,Galletitas dulces,Rellenas,con TACC,7790040133259,Galletitas Vainilla Rellenas Limón Maná 152 Gr,737,1726,42.69988412514484
+La Anónima,2023,Galletitas dulces,Rellenas,sin TACC,Galletitas rellenas sin TACC Smams 105 g (3 variantes),Galletitas rellenas sin TACC Smams 105 g (3 variantes),1726,1726,100.0
+La Anónima,2023,Galletitas dulces,"Secas (vainilla, limón, chocolate)",con TACC,7622201808884,Galletitas Anillos Clásicos Terrabusi 170 Gr,1607,1607,100.0
+La Anónima,2023,Galletitas dulces,"Secas (vainilla, limón, chocolate)",con TACC,7792200000791,Galletitas Sconcitos 9 de Oro 200 Gr,1603,1607,99.75108898568762
+La Anónima,2023,Galletitas dulces,"Secas (vainilla, limón, chocolate)",con TACC,7791787000644,Galletitas Frolitas Trio 300 Gr,1524,1607,94.83509645301804
+La Anónima,2023,Galletitas dulces,"Secas (vainilla, limón, chocolate)",con TACC,7622201808860,Galletitas Dulces Boca de Dama Terrabusi 170 Gr,1521,1607,94.64841319228375
+La Anónima,2023,Galletitas dulces,"Secas (vainilla, limón, chocolate)",sin TACC,7798181510847,Galletitas Colegial Vainilla Samms 150 Gr,1343,1607,83.5718730553827
+La Anónima,2023,Galletitas dulces,"Secas (vainilla, limón, chocolate)",sin TACC,Galletitas sin TACC Santa María 200 g (2 variantes),Galletitas sin TACC Santa María 200 g (2 variantes),1142,1607,71.06409458618543
+La Anónima,2023,Galletitas saladas y crackers,Crackers,con TACC,7790045001133,Galletitas Crackers Naturalmente Granix 200 Gr,1709,1820,93.9010989010989
+La Anónima,2023,Galletitas saladas y crackers,Crackers,con TACC,7790040377707,Galletitas Original Crackers Criollitas 100 Gr,1065,1820,58.51648351648352
+La Anónima,2023,Galletitas saladas y crackers,Crackers,con TACC,7792180006462,Galletitas Mini Marineras Paseo 220 Gr,466,1820,25.60439560439561
+La Anónima,2023,Galletitas saladas y crackers,Crackers,sin TACC,Crackers sin TACC Smams 150 g (3 variantes),Crackers sin TACC Smams 150 g (3 variantes),1820,1820,100.0
+La Anónima,2023,Galletitas saladas y crackers,Saborizadas / snack,con TACC,7790040003606,Galletitas Kesitas 75 Gr,1371,1371,100.0
+La Anónima,2023,Galletitas saladas y crackers,Saborizadas / snack,sin TACC,Galletas de arroz saborizadas Crisppino 100 g (2 variantes),Galletas de arroz saborizadas Crisppino 100 g (2 variantes),1362,1371,99.34354485776805
+La Anónima,2023,Galletitas saladas y crackers,Saborizadas / snack,sin TACC,Galletas de arroz saborizadas Crisppino Minis 50 g (3 variantes),Galletas de arroz saborizadas Crisppino Minis 50 g (3 variantes),1311,1371,95.62363238512035
+La Anónima,2024,Cereales rellenos (almohaditas),Almohaditas rellenas,con TACC,Almohaditas rellenas Lasfor 200 g (4 variantes),Almohaditas rellenas Lasfor 200 g (4 variantes),1442,1442,100.0
+La Anónima,2024,Cereales rellenos (almohaditas),Almohaditas rellenas,sin TACC,Almohaditas rellenas sin TACC Snuks 240 g (4 variantes),Almohaditas rellenas sin TACC Snuks 240 g (4 variantes),1442,1442,100.0
+La Anónima,2024,Fideos secos,Mostachol / penne,con TACC,Penne rigate Matarazzo 500 g,Penne rigate Matarazzo 500 g,1855,1855,100.0
+La Anónima,2024,Fideos secos,Mostachol / penne,sin TACC,Penne rigate sin TACC Matarazzo 500 g,Penne rigate sin TACC Matarazzo 500 g,1855,1855,100.0
+La Anónima,2024,Fideos secos,Spaghetti,con TACC,Spaghetti Matarazzo 500 g,Spaghetti Matarazzo 500 g,796,796,100.0
+La Anónima,2024,Fideos secos,Spaghetti,sin TACC,Spaghetti sin TACC Matarazzo 500 g,Spaghetti sin TACC Matarazzo 500 g,796,796,100.0
+La Anónima,2024,Fideos secos,Tirabuzón / fusilli,con TACC,Tirabuzones Matarazzo 500 g,Tirabuzones Matarazzo 500 g,1874,1903,98.47609038360484
+La Anónima,2024,Fideos secos,Tirabuzón / fusilli,con TACC,Tirabuzones Lucchetti 500 g,Tirabuzones Lucchetti 500 g,1827,1903,96.00630583289542
+La Anónima,2024,Fideos secos,Tirabuzón / fusilli,sin TACC,Tirabuzón sin TACC Matarazzo 500 g,Tirabuzón sin TACC Matarazzo 500 g,1903,1903,100.0
+La Anónima,2024,Fideos secos,Tirabuzón / fusilli,sin TACC,Fusilli sin TACC Wakas (4 variantes),Fusilli sin TACC Wakas (4 variantes),536,1903,28.16605359957961
+La Anónima,2024,Galletitas dulces,Con chips,con TACC,Pepitos 119 g,Pepitos 119 g,1727,1727,100.0
+La Anónima,2024,Galletitas dulces,Con chips,sin TACC,7798181511004,Galletitas Con Chips de Chocolate Smams 150 Gr,1727,1727,100.0
+La Anónima,2024,Galletitas dulces,Pepas,con TACC,7791787100924,Galletitas Dulces Pepas Trío 320 Gr,1601,1601,100.0
+La Anónima,2024,Galletitas dulces,Pepas,sin TACC,7798181510786,Pepas de Membrillo sin TACC Smams 150 Gr,1601,1601,100.0
+La Anónima,2024,Galletitas dulces,Rellenas,con TACC,7622300742645,Galletitas Vainilla con Relleno de Limón Duquesa 115 Gr,1747,1747,100.0
+La Anónima,2024,Galletitas dulces,Rellenas,con TACC,7790040133488,Galletitas Rellena Sabor Frambuesa Sonrisas 108 Gr,1737,1747,99.42759015455066
+La Anónima,2024,Galletitas dulces,Rellenas,con TACC,7790040133259,Galletitas Vainilla Rellenas Limón Maná 152 Gr,1263,1747,72.29536348025186
+La Anónima,2024,Galletitas dulces,Rellenas,sin TACC,Galletitas rellenas sin TACC Smams 105 g (3 variantes),Galletitas rellenas sin TACC Smams 105 g (3 variantes),1747,1747,100.0
+La Anónima,2024,Galletitas dulces,"Secas (vainilla, limón, chocolate)",con TACC,7622201808884,Galletitas Anillos Clásicos Terrabusi 170 Gr,1371,1371,100.0
+La Anónima,2024,Galletitas dulces,"Secas (vainilla, limón, chocolate)",con TACC,7792200000791,Galletitas Sconcitos 9 de Oro 200 Gr,1371,1371,100.0
+La Anónima,2024,Galletitas dulces,"Secas (vainilla, limón, chocolate)",con TACC,7622201808860,Galletitas Dulces Boca de Dama Terrabusi 170 Gr,1363,1371,99.41648431801605
+La Anónima,2024,Galletitas dulces,"Secas (vainilla, limón, chocolate)",con TACC,7791787000644,Galletitas Frolitas Trio 300 Gr,543,1371,39.60612691466083
+La Anónima,2024,Galletitas dulces,"Secas (vainilla, limón, chocolate)",sin TACC,7798181510847,Galletitas Colegial Vainilla Samms 150 Gr,1371,1371,100.0
+La Anónima,2024,Galletitas saladas y crackers,Crackers,con TACC,7790040377707,Galletitas Original Crackers Criollitas 100 Gr,1802,1851,97.35278227984873
+La Anónima,2024,Galletitas saladas y crackers,Crackers,con TACC,7790045001133,Galletitas Crackers Naturalmente Granix 200 Gr,1802,1851,97.35278227984873
+La Anónima,2024,Galletitas saladas y crackers,Crackers,con TACC,7792180006462,Galletitas Mini Marineras Paseo 220 Gr,1697,1851,91.68017287952458
+La Anónima,2024,Galletitas saladas y crackers,Crackers,sin TACC,Crackers sin TACC Smams 150 g (3 variantes),Crackers sin TACC Smams 150 g (3 variantes),1851,1851,100.0
+La Anónima,2024,Galletitas saladas y crackers,Saborizadas / snack,con TACC,7790040003606,Galletitas Kesitas 75 Gr,1390,1390,100.0
+La Anónima,2024,Galletitas saladas y crackers,Saborizadas / snack,con TACC,7790040003569,Galletitas Saladas Tipo Snacks Rex 75 Gr,794,1390,57.12230215827338
+La Anónima,2024,Galletitas saladas y crackers,Saborizadas / snack,sin TACC,Galletas de arroz saborizadas Crisppino 100 g (2 variantes),Galletas de arroz saborizadas Crisppino 100 g (2 variantes),1380,1390,99.28057553956835
+La Anónima,2024,Galletitas saladas y crackers,Saborizadas / snack,sin TACC,Galletas de arroz saborizadas Crisppino Minis 50 g (3 variantes),Galletas de arroz saborizadas Crisppino Minis 50 g (3 variantes),1342,1390,96.54676258992805
+La Anónima,2025,Cereales rellenos (almohaditas),Almohaditas rellenas,con TACC,Almohaditas rellenas Lasfor 200 g (4 variantes),Almohaditas rellenas Lasfor 200 g (4 variantes),1419,1419,100.0
+La Anónima,2025,Cereales rellenos (almohaditas),Almohaditas rellenas,sin TACC,Almohaditas rellenas sin TACC Snuks 240 g (4 variantes),Almohaditas rellenas sin TACC Snuks 240 g (4 variantes),1419,1419,100.0
+La Anónima,2025,Fideos secos,Mostachol / penne,con TACC,Penne rigate Matarazzo 500 g,Penne rigate Matarazzo 500 g,1912,1912,100.0
+La Anónima,2025,Fideos secos,Mostachol / penne,sin TACC,Penne rigate sin TACC Matarazzo 500 g,Penne rigate sin TACC Matarazzo 500 g,1912,1912,100.0
+La Anónima,2025,Fideos secos,Spaghetti,con TACC,Spaghetti Matarazzo 500 g,Spaghetti Matarazzo 500 g,1496,1496,100.0
+La Anónima,2025,Fideos secos,Spaghetti,sin TACC,Spaghetti sin TACC Matarazzo 500 g,Spaghetti sin TACC Matarazzo 500 g,1496,1496,100.0
+La Anónima,2025,Fideos secos,Tirabuzón / fusilli,con TACC,Tirabuzones Lucchetti 500 g,Tirabuzones Lucchetti 500 g,2028,2028,100.0
+La Anónima,2025,Fideos secos,Tirabuzón / fusilli,con TACC,Tirabuzones Matarazzo 500 g,Tirabuzones Matarazzo 500 g,2028,2028,100.0
+La Anónima,2025,Fideos secos,Tirabuzón / fusilli,sin TACC,Tirabuzón sin TACC Matarazzo 500 g,Tirabuzón sin TACC Matarazzo 500 g,2028,2028,100.0
+La Anónima,2025,Fideos secos,Tirabuzón / fusilli,sin TACC,Fusilli sin TACC Wakas (4 variantes),Fusilli sin TACC Wakas (4 variantes),1456,2028,71.7948717948718
+La Anónima,2025,Galletitas dulces,Con chips,con TACC,Pepitos 119 g,Pepitos 119 g,1782,1782,100.0
+La Anónima,2025,Galletitas dulces,Con chips,sin TACC,7798181511004,Galletitas Con Chips de Chocolate Smams 150 Gr,1782,1782,100.0
+La Anónima,2025,Galletitas dulces,Pepas,con TACC,7791787100924,Galletitas Dulces Pepas Trío 320 Gr,1780,1780,100.0
+La Anónima,2025,Galletitas dulces,Pepas,sin TACC,7798181510786,Pepas de Membrillo sin TACC Smams 150 Gr,1780,1780,100.0
+La Anónima,2025,Galletitas dulces,Rellenas,con TACC,7790040133488,Galletitas Rellena Sabor Frambuesa Sonrisas 108 Gr,1752,1752,100.0
+La Anónima,2025,Galletitas dulces,Rellenas,con TACC,7622300742645,Galletitas Vainilla con Relleno de Limón Duquesa 115 Gr,1717,1752,98.00228310502283
+La Anónima,2025,Galletitas dulces,Rellenas,con TACC,7790040133259,Galletitas Vainilla Rellenas Limón Maná 152 Gr,1700,1752,97.03196347031964
+La Anónima,2025,Galletitas dulces,Rellenas,sin TACC,Galletitas rellenas sin TACC Smams 105 g (3 variantes),Galletitas rellenas sin TACC Smams 105 g (3 variantes),1752,1752,100.0
+La Anónima,2025,Galletitas dulces,"Secas (vainilla, limón, chocolate)",con TACC,7792200000791,Galletitas Sconcitos 9 de Oro 200 Gr,1033,1033,100.0
+La Anónima,2025,Galletitas dulces,"Secas (vainilla, limón, chocolate)",con TACC,7622201808860,Galletitas Dulces Boca de Dama Terrabusi 170 Gr,1024,1033,99.12875121006776
+La Anónima,2025,Galletitas dulces,"Secas (vainilla, limón, chocolate)",con TACC,7622201808884,Galletitas Anillos Clásicos Terrabusi 170 Gr,947,1033,91.67473378509196
+La Anónima,2025,Galletitas dulces,"Secas (vainilla, limón, chocolate)",sin TACC,7798181510847,Galletitas Colegial Vainilla Samms 150 Gr,1033,1033,100.0
+La Anónima,2025,Galletitas saladas y crackers,Crackers,con TACC,7790045001133,Galletitas Crackers Naturalmente Granix 200 Gr,1896,1899,99.84202211690364
+La Anónima,2025,Galletitas saladas y crackers,Crackers,con TACC,7790040377707,Galletitas Original Crackers Criollitas 100 Gr,1883,1899,99.15745129015271
+La Anónima,2025,Galletitas saladas y crackers,Crackers,con TACC,7792180006462,Galletitas Mini Marineras Paseo 220 Gr,1230,1899,64.77093206951027
+La Anónima,2025,Galletitas saladas y crackers,Crackers,sin TACC,Crackers sin TACC Smams 150 g (3 variantes),Crackers sin TACC Smams 150 g (3 variantes),1899,1899,100.0
+La Anónima,2025,Galletitas saladas y crackers,Saborizadas / snack,con TACC,7790040003606,Galletitas Kesitas 75 Gr,1083,1085,99.81566820276498
+La Anónima,2025,Galletitas saladas y crackers,Saborizadas / snack,con TACC,7790040003569,Galletitas Saladas Tipo Snacks Rex 75 Gr,1072,1085,98.80184331797236
+La Anónima,2025,Galletitas saladas y crackers,Saborizadas / snack,sin TACC,Galletas de arroz saborizadas Crisppino 100 g (2 variantes),Galletas de arroz saborizadas Crisppino 100 g (2 variantes),1042,1085,96.036866359447
+La Anónima,2025,Galletitas saladas y crackers,Saborizadas / snack,sin TACC,Galletas de arroz saborizadas Crisppino Minis 50 g (3 variantes),Galletas de arroz saborizadas Crisppino Minis 50 g (3 variantes),1035,1085,95.39170506912443
+La Anónima,2026,Cereales rellenos (almohaditas),Almohaditas rellenas,con TACC,Almohaditas rellenas Lasfor 200 g (4 variantes),Almohaditas rellenas Lasfor 200 g (4 variantes),1103,1103,100.0
+La Anónima,2026,Cereales rellenos (almohaditas),Almohaditas rellenas,sin TACC,Almohaditas rellenas sin TACC Snuks 240 g (4 variantes),Almohaditas rellenas sin TACC Snuks 240 g (4 variantes),1103,1103,100.0
+La Anónima,2026,Fideos secos,Mostachol / penne,con TACC,Penne rigate Matarazzo 500 g,Penne rigate Matarazzo 500 g,1507,1507,100.0
+La Anónima,2026,Fideos secos,Mostachol / penne,sin TACC,Penne rigate sin TACC Matarazzo 500 g,Penne rigate sin TACC Matarazzo 500 g,1507,1507,100.0
+La Anónima,2026,Fideos secos,Spaghetti,con TACC,Spaghetti Matarazzo 500 g,Spaghetti Matarazzo 500 g,1624,1624,100.0
+La Anónima,2026,Fideos secos,Spaghetti,sin TACC,Spaghetti sin TACC Matarazzo 500 g,Spaghetti sin TACC Matarazzo 500 g,1624,1624,100.0
+La Anónima,2026,Fideos secos,Tirabuzón / fusilli,con TACC,Tirabuzones Lucchetti 500 g,Tirabuzones Lucchetti 500 g,1690,1690,100.0
+La Anónima,2026,Fideos secos,Tirabuzón / fusilli,con TACC,Tirabuzones Matarazzo 500 g,Tirabuzones Matarazzo 500 g,1690,1690,100.0
+La Anónima,2026,Fideos secos,Tirabuzón / fusilli,sin TACC,Tirabuzón sin TACC Matarazzo 500 g,Tirabuzón sin TACC Matarazzo 500 g,1690,1690,100.0
+La Anónima,2026,Fideos secos,Tirabuzón / fusilli,sin TACC,Fusilli sin TACC Wakas (4 variantes),Fusilli sin TACC Wakas (4 variantes),1496,1690,88.52071005917159
+La Anónima,2026,Galletitas dulces,Con chips,con TACC,Pepitos 119 g,Pepitos 119 g,1495,1495,100.0
+La Anónima,2026,Galletitas dulces,Con chips,sin TACC,7798181511004,Galletitas Con Chips de Chocolate Smams 150 Gr,1495,1495,100.0
+La Anónima,2026,Galletitas dulces,Pepas,con TACC,7791787100924,Galletitas Dulces Pepas Trío 320 Gr,1483,1483,100.0
+La Anónima,2026,Galletitas dulces,Pepas,sin TACC,7798181510786,Pepas de Membrillo sin TACC Smams 150 Gr,1483,1483,100.0
+La Anónima,2026,Galletitas dulces,Rellenas,con TACC,7790040133488,Galletitas Rellena Sabor Frambuesa Sonrisas 108 Gr,1164,1164,100.0
+La Anónima,2026,Galletitas dulces,Rellenas,con TACC,7790040133259,Galletitas Vainilla Rellenas Limón Maná 152 Gr,1123,1164,96.47766323024055
+La Anónima,2026,Galletitas dulces,Rellenas,con TACC,7622300742645,Galletitas Vainilla con Relleno de Limón Duquesa 115 Gr,1022,1164,87.80068728522336
+La Anónima,2026,Galletitas dulces,Rellenas,sin TACC,Galletitas rellenas sin TACC Smams 105 g (3 variantes),Galletitas rellenas sin TACC Smams 105 g (3 variantes),1164,1164,100.0
+La Anónima,2026,Galletitas saladas y crackers,Crackers,con TACC,7790045001133,Galletitas Crackers Naturalmente Granix 200 Gr,1580,1580,100.0
+La Anónima,2026,Galletitas saladas y crackers,Crackers,con TACC,7790040377707,Galletitas Original Crackers Criollitas 100 Gr,1549,1580,98.0379746835443
+La Anónima,2026,Galletitas saladas y crackers,Crackers,con TACC,7792180006462,Galletitas Mini Marineras Paseo 220 Gr,1013,1580,64.11392405063292
+La Anónima,2026,Galletitas saladas y crackers,Crackers,sin TACC,Crackers sin TACC Smams 150 g (3 variantes),Crackers sin TACC Smams 150 g (3 variantes),1580,1580,100.0
+Libertad,2022,Cereales rellenos (almohaditas),Almohaditas rellenas,con TACC,Almohaditas rellenas Lasfor 200 g (4 variantes),Almohaditas rellenas Lasfor 200 g (4 variantes),166,166,100.0
+Libertad,2022,Cereales rellenos (almohaditas),Almohaditas rellenas,sin TACC,Almohaditas rellenas sin TACC Snuks 240 g (4 variantes),Almohaditas rellenas sin TACC Snuks 240 g (4 variantes),166,166,100.0
+Libertad,2022,Fideos secos,Spaghetti,con TACC,Spaghetti Matarazzo 500 g,Spaghetti Matarazzo 500 g,153,153,100.0
+Libertad,2022,Fideos secos,Spaghetti,sin TACC,Spaghetti sin TACC Matarazzo 500 g,Spaghetti sin TACC Matarazzo 500 g,153,153,100.0
+Libertad,2022,Fideos secos,Tirabuzón / fusilli,con TACC,Tirabuzones Lucchetti 500 g,Tirabuzones Lucchetti 500 g,103,103,100.0
+Libertad,2022,Fideos secos,Tirabuzón / fusilli,con TACC,Tirabuzones Matarazzo 500 g,Tirabuzones Matarazzo 500 g,99,103,96.11650485436893
+Libertad,2022,Fideos secos,Tirabuzón / fusilli,sin TACC,Fusilli sin TACC Wakas (4 variantes),Fusilli sin TACC Wakas (4 variantes),103,103,100.0
+Libertad,2022,Fideos secos,Tirabuzón / fusilli,sin TACC,Tirabuzón sin TACC Matarazzo 500 g,Tirabuzón sin TACC Matarazzo 500 g,91,103,88.3495145631068
+Libertad,2022,Galletitas dulces,Con chips,con TACC,Pepitos 119 g,Pepitos 119 g,84,84,100.0
+Libertad,2022,Galletitas dulces,Con chips,sin TACC,7798181511004,Galletitas Con Chips de Chocolate Smams 150 Gr,84,84,100.0
+Libertad,2022,Galletitas dulces,Rellenas,con TACC,7790040133259,Galletitas Vainilla Rellenas Limón Maná 152 Gr,144,156,92.3076923076923
+Libertad,2022,Galletitas dulces,Rellenas,con TACC,7622300742645,Galletitas Vainilla con Relleno de Limón Duquesa 115 Gr,139,156,89.1025641025641
+Libertad,2022,Galletitas dulces,Rellenas,con TACC,7790040133488,Galletitas Rellena Sabor Frambuesa Sonrisas 108 Gr,135,156,86.53846153846153
+Libertad,2022,Galletitas dulces,Rellenas,sin TACC,Galletitas rellenas sin TACC Smams 105 g (3 variantes),Galletitas rellenas sin TACC Smams 105 g (3 variantes),156,156,100.0
+Libertad,2022,Galletitas dulces,"Secas (vainilla, limón, chocolate)",con TACC,7622201808860,Galletitas Dulces Boca de Dama Terrabusi 170 Gr,97,99,97.97979797979798
+Libertad,2022,Galletitas dulces,"Secas (vainilla, limón, chocolate)",con TACC,7622201808884,Galletitas Anillos Clásicos Terrabusi 170 Gr,94,99,94.94949494949495
+Libertad,2022,Galletitas dulces,"Secas (vainilla, limón, chocolate)",con TACC,7792200000791,Galletitas Sconcitos 9 de Oro 200 Gr,70,99,70.70707070707071
+Libertad,2022,Galletitas dulces,"Secas (vainilla, limón, chocolate)",sin TACC,7798181510847,Galletitas Colegial Vainilla Samms 150 Gr,99,99,100.0
+Libertad,2022,Galletitas saladas y crackers,Crackers,con TACC,7792180006462,Galletitas Mini Marineras Paseo 220 Gr,99,102,97.05882352941177
+Libertad,2022,Galletitas saladas y crackers,Crackers,con TACC,7790040377707,Galletitas Original Crackers Criollitas 100 Gr,79,102,77.45098039215686
+Libertad,2022,Galletitas saladas y crackers,Crackers,sin TACC,Crackers sin TACC Smams 150 g (3 variantes),Crackers sin TACC Smams 150 g (3 variantes),102,102,100.0
+Libertad,2022,Galletitas saladas y crackers,Saborizadas / snack,con TACC,Galletitas saborizadas Saladix 100 g (3 variantes),Galletitas saborizadas Saladix 100 g (3 variantes),60,68,88.23529411764706
+Libertad,2022,Galletitas saladas y crackers,Saborizadas / snack,con TACC,7790040003606,Galletitas Kesitas 75 Gr,56,68,82.3529411764706
+Libertad,2022,Galletitas saladas y crackers,Saborizadas / snack,con TACC,7790040719804,Galletitas Original Rex 125 Gr,54,68,79.41176470588235
+Libertad,2022,Galletitas saladas y crackers,Saborizadas / snack,con TACC,7790040003569,Galletitas Saladas Tipo Snacks Rex 75 Gr,39,68,57.35294117647059
+Libertad,2022,Galletitas saladas y crackers,Saborizadas / snack,sin TACC,7797330102971,Galletas de Arroz Pizza Grandiet 100 Gr,68,68,100.0
+Libertad,2022,Pan rallado y rebozador,Rebozador,con TACC,7792180004765,Rebozador Freir Fortificado Mamá Cocina Plus 500 Gr,87,92,94.56521739130434
+Libertad,2022,Pan rallado y rebozador,Rebozador,con TACC,7792180004796,Rebozador Horno Fortificado Mamá Cocina Plus 1 Kg,79,92,85.8695652173913
+Libertad,2022,Pan rallado y rebozador,Rebozador,sin TACC,7798193377285,Rebozador Naturalsur 500 Gr,92,92,100.0
+Libertad,2022,Pan rallado y rebozador,Rebozador,sin TACC,7798128410087,Rebozador Aglu 450 Gr,54,92,58.69565217391305
+Libertad,2023,Cereales rellenos (almohaditas),Almohaditas rellenas,con TACC,Almohaditas rellenas Lasfor 200 g (4 variantes),Almohaditas rellenas Lasfor 200 g (4 variantes),246,246,100.0
+Libertad,2023,Cereales rellenos (almohaditas),Almohaditas rellenas,sin TACC,Almohaditas rellenas sin TACC Snuks 240 g (4 variantes),Almohaditas rellenas sin TACC Snuks 240 g (4 variantes),246,246,100.0
+Libertad,2023,Fideos secos,Mostachol / penne,con TACC,Penne rigate Matarazzo 500 g,Penne rigate Matarazzo 500 g,14,14,100.0
+Libertad,2023,Fideos secos,Mostachol / penne,sin TACC,Penne rigate sin TACC Matarazzo 500 g,Penne rigate sin TACC Matarazzo 500 g,14,14,100.0
+Libertad,2023,Fideos secos,Spaghetti,con TACC,Spaghetti Matarazzo 500 g,Spaghetti Matarazzo 500 g,137,137,100.0
+Libertad,2023,Fideos secos,Spaghetti,sin TACC,Spaghetti sin TACC Matarazzo 500 g,Spaghetti sin TACC Matarazzo 500 g,137,137,100.0
+Libertad,2023,Fideos secos,Tirabuzón / fusilli,con TACC,Tirabuzones Lucchetti 500 g,Tirabuzones Lucchetti 500 g,159,161,98.75776397515529
+Libertad,2023,Fideos secos,Tirabuzón / fusilli,con TACC,Tirabuzones Matarazzo 500 g,Tirabuzones Matarazzo 500 g,104,161,64.59627329192547
+Libertad,2023,Fideos secos,Tirabuzón / fusilli,sin TACC,Fusilli sin TACC Wakas (4 variantes),Fusilli sin TACC Wakas (4 variantes),161,161,100.0
+Libertad,2023,Fideos secos,Tirabuzón / fusilli,sin TACC,Tirabuzón sin TACC Matarazzo 500 g,Tirabuzón sin TACC Matarazzo 500 g,48,161,29.81366459627329
+Libertad,2023,Galletitas dulces,Con chips,con TACC,Pepitos 119 g,Pepitos 119 g,150,150,100.0
+Libertad,2023,Galletitas dulces,Con chips,sin TACC,7798181511004,Galletitas Con Chips de Chocolate Smams 150 Gr,150,150,100.0
+Libertad,2023,Galletitas dulces,Pepas,con TACC,7791787100924,Galletitas Dulces Pepas Trío 320 Gr,42,42,100.0
+Libertad,2023,Galletitas dulces,Pepas,sin TACC,7798181510786,Pepas de Membrillo sin TACC Smams 150 Gr,42,42,100.0
+Libertad,2023,Galletitas dulces,Rellenas,con TACC,7790040133259,Galletitas Vainilla Rellenas Limón Maná 152 Gr,101,163,61.96319018404908
+Libertad,2023,Galletitas dulces,Rellenas,con TACC,7790040133488,Galletitas Rellena Sabor Frambuesa Sonrisas 108 Gr,101,163,61.96319018404908
+Libertad,2023,Galletitas dulces,Rellenas,con TACC,7622300742645,Galletitas Vainilla con Relleno de Limón Duquesa 115 Gr,84,163,51.53374233128834
+Libertad,2023,Galletitas dulces,Rellenas,sin TACC,Galletitas rellenas sin TACC Smams 105 g (3 variantes),Galletitas rellenas sin TACC Smams 105 g (3 variantes),163,163,100.0
+Libertad,2023,Galletitas dulces,"Secas (vainilla, limón, chocolate)",con TACC,7622201808884,Galletitas Anillos Clásicos Terrabusi 170 Gr,158,160,98.75
+Libertad,2023,Galletitas dulces,"Secas (vainilla, limón, chocolate)",con TACC,7792200000791,Galletitas Sconcitos 9 de Oro 200 Gr,130,160,81.25
+Libertad,2023,Galletitas dulces,"Secas (vainilla, limón, chocolate)",con TACC,7622201808860,Galletitas Dulces Boca de Dama Terrabusi 170 Gr,57,160,35.625
+Libertad,2023,Galletitas dulces,"Secas (vainilla, limón, chocolate)",con TACC,7791787000644,Galletitas Frolitas Trio 300 Gr,42,160,26.25
+Libertad,2023,Galletitas dulces,"Secas (vainilla, limón, chocolate)",sin TACC,7798181510847,Galletitas Colegial Vainilla Samms 150 Gr,160,160,100.0
+Libertad,2023,Galletitas saladas y crackers,Crackers,con TACC,7792180006462,Galletitas Mini Marineras Paseo 220 Gr,139,154,90.25974025974025
+Libertad,2023,Galletitas saladas y crackers,Crackers,con TACC,7790040377707,Galletitas Original Crackers Criollitas 100 Gr,89,154,57.79220779220779
+Libertad,2023,Galletitas saladas y crackers,Crackers,con TACC,7790045001133,Galletitas Crackers Naturalmente Granix 200 Gr,50,154,32.46753246753246
+Libertad,2023,Galletitas saladas y crackers,Crackers,sin TACC,Crackers sin TACC Smams 150 g (3 variantes),Crackers sin TACC Smams 150 g (3 variantes),154,154,100.0
+Libertad,2023,Galletitas saladas y crackers,Saborizadas / snack,con TACC,Galletitas saborizadas Saladix 100 g (3 variantes),Galletitas saborizadas Saladix 100 g (3 variantes),147,155,94.83870967741936
+Libertad,2023,Galletitas saladas y crackers,Saborizadas / snack,con TACC,7790040719804,Galletitas Original Rex 125 Gr,130,155,83.87096774193549
+Libertad,2023,Galletitas saladas y crackers,Saborizadas / snack,con TACC,7790040003569,Galletitas Saladas Tipo Snacks Rex 75 Gr,89,155,57.41935483870968
+Libertad,2023,Galletitas saladas y crackers,Saborizadas / snack,con TACC,7790040003606,Galletitas Kesitas 75 Gr,76,155,49.03225806451613
+Libertad,2023,Galletitas saladas y crackers,Saborizadas / snack,sin TACC,7797330102971,Galletas de Arroz Pizza Grandiet 100 Gr,155,155,100.0
+Libertad,2023,Pan rallado y rebozador,Rebozador,con TACC,7792180004765,Rebozador Freir Fortificado Mamá Cocina Plus 500 Gr,34,39,87.17948717948718
+Libertad,2023,Pan rallado y rebozador,Rebozador,con TACC,7792180004796,Rebozador Horno Fortificado Mamá Cocina Plus 1 Kg,23,39,58.97435897435897
+Libertad,2023,Pan rallado y rebozador,Rebozador,sin TACC,7798193377285,Rebozador Naturalsur 500 Gr,39,39,100.0
+Libertad,2024,Cereales rellenos (almohaditas),Almohaditas rellenas,con TACC,Almohaditas rellenas Lasfor 200 g (4 variantes),Almohaditas rellenas Lasfor 200 g (4 variantes),190,190,100.0
+Libertad,2024,Cereales rellenos (almohaditas),Almohaditas rellenas,sin TACC,Almohaditas rellenas sin TACC Snuks 240 g (4 variantes),Almohaditas rellenas sin TACC Snuks 240 g (4 variantes),190,190,100.0
+Libertad,2024,Fideos secos,Mostachol / penne,con TACC,Penne rigate Matarazzo 500 g,Penne rigate Matarazzo 500 g,147,147,100.0
+Libertad,2024,Fideos secos,Mostachol / penne,sin TACC,Penne rigate sin TACC Matarazzo 500 g,Penne rigate sin TACC Matarazzo 500 g,147,147,100.0
+Libertad,2024,Fideos secos,Spaghetti,con TACC,Spaghetti Matarazzo 500 g,Spaghetti Matarazzo 500 g,155,155,100.0
+Libertad,2024,Fideos secos,Spaghetti,sin TACC,Spaghetti sin TACC Matarazzo 500 g,Spaghetti sin TACC Matarazzo 500 g,155,155,100.0
+Libertad,2024,Fideos secos,Tirabuzón / fusilli,con TACC,Tirabuzones Lucchetti 500 g,Tirabuzones Lucchetti 500 g,153,155,98.70967741935483
+Libertad,2024,Fideos secos,Tirabuzón / fusilli,con TACC,Tirabuzones Matarazzo 500 g,Tirabuzones Matarazzo 500 g,151,155,97.41935483870968
+Libertad,2024,Fideos secos,Tirabuzón / fusilli,sin TACC,Tirabuzón sin TACC Matarazzo 500 g,Tirabuzón sin TACC Matarazzo 500 g,154,155,99.35483870967742
+Libertad,2024,Fideos secos,Tirabuzón / fusilli,sin TACC,Fusilli sin TACC Wakas (4 variantes),Fusilli sin TACC Wakas (4 variantes),27,155,17.41935483870968
+Libertad,2024,Galletitas dulces,Con chips,con TACC,Pepitos 119 g,Pepitos 119 g,160,160,100.0
+Libertad,2024,Galletitas dulces,Con chips,sin TACC,7798181511004,Galletitas Con Chips de Chocolate Smams 150 Gr,160,160,100.0
+Libertad,2024,Galletitas dulces,Pepas,con TACC,7791787100924,Galletitas Dulces Pepas Trío 320 Gr,161,161,100.0
+Libertad,2024,Galletitas dulces,Pepas,sin TACC,7798181510786,Pepas de Membrillo sin TACC Smams 150 Gr,161,161,100.0
+Libertad,2024,Galletitas dulces,Rellenas,con TACC,7790040133488,Galletitas Rellena Sabor Frambuesa Sonrisas 108 Gr,184,187,98.39572192513369
+Libertad,2024,Galletitas dulces,Rellenas,con TACC,7622300742645,Galletitas Vainilla con Relleno de Limón Duquesa 115 Gr,43,187,22.99465240641711
+Libertad,2024,Galletitas dulces,Rellenas,con TACC,7790040133259,Galletitas Vainilla Rellenas Limón Maná 152 Gr,19,187,10.16042780748663
+Libertad,2024,Galletitas dulces,Rellenas,sin TACC,Galletitas rellenas sin TACC Smams 105 g (3 variantes),Galletitas rellenas sin TACC Smams 105 g (3 variantes),187,187,100.0
+Libertad,2024,Galletitas dulces,"Secas (vainilla, limón, chocolate)",con TACC,7622201808884,Galletitas Anillos Clásicos Terrabusi 170 Gr,162,167,97.0059880239521
+Libertad,2024,Galletitas dulces,"Secas (vainilla, limón, chocolate)",con TACC,7791787000644,Galletitas Frolitas Trio 300 Gr,162,167,97.0059880239521
+Libertad,2024,Galletitas dulces,"Secas (vainilla, limón, chocolate)",con TACC,7622201808860,Galletitas Dulces Boca de Dama Terrabusi 170 Gr,149,167,89.22155688622755
+Libertad,2024,Galletitas dulces,"Secas (vainilla, limón, chocolate)",con TACC,7792200000791,Galletitas Sconcitos 9 de Oro 200 Gr,60,167,35.92814371257485
+Libertad,2024,Galletitas dulces,"Secas (vainilla, limón, chocolate)",sin TACC,7798181510847,Galletitas Colegial Vainilla Samms 150 Gr,167,167,100.0
+Libertad,2024,Galletitas saladas y crackers,Crackers,con TACC,7792180006462,Galletitas Mini Marineras Paseo 220 Gr,40,58,68.96551724137932
+Libertad,2024,Galletitas saladas y crackers,Crackers,con TACC,7790045001133,Galletitas Crackers Naturalmente Granix 200 Gr,17,58,29.31034482758621
+Libertad,2024,Galletitas saladas y crackers,Crackers,con TACC,7790040377707,Galletitas Original Crackers Criollitas 100 Gr,4,58,6.896551724137931
+Libertad,2024,Galletitas saladas y crackers,Crackers,sin TACC,Crackers sin TACC Smams 150 g (3 variantes),Crackers sin TACC Smams 150 g (3 variantes),58,58,100.0
+Libertad,2024,Galletitas saladas y crackers,Saborizadas / snack,con TACC,Galletitas saborizadas Saladix 100 g (3 variantes),Galletitas saborizadas Saladix 100 g (3 variantes),165,165,100.0
+Libertad,2024,Galletitas saladas y crackers,Saborizadas / snack,con TACC,7790040719804,Galletitas Original Rex 125 Gr,151,165,91.51515151515152
+Libertad,2024,Galletitas saladas y crackers,Saborizadas / snack,con TACC,7790040003606,Galletitas Kesitas 75 Gr,128,165,77.57575757575758
+Libertad,2024,Galletitas saladas y crackers,Saborizadas / snack,con TACC,7790040003569,Galletitas Saladas Tipo Snacks Rex 75 Gr,69,165,41.81818181818182
+Libertad,2024,Galletitas saladas y crackers,Saborizadas / snack,sin TACC,7797330102971,Galletas de Arroz Pizza Grandiet 100 Gr,165,165,100.0
+Libertad,2025,Cereales rellenos (almohaditas),Almohaditas rellenas,con TACC,Almohaditas rellenas Lasfor 200 g (4 variantes),Almohaditas rellenas Lasfor 200 g (4 variantes),163,163,100.0
+Libertad,2025,Cereales rellenos (almohaditas),Almohaditas rellenas,sin TACC,Almohaditas rellenas sin TACC Snuks 240 g (4 variantes),Almohaditas rellenas sin TACC Snuks 240 g (4 variantes),163,163,100.0
+Libertad,2025,Fideos secos,Mostachol / penne,con TACC,Penne rigate Matarazzo 500 g,Penne rigate Matarazzo 500 g,159,159,100.0
+Libertad,2025,Fideos secos,Mostachol / penne,sin TACC,Penne rigate sin TACC Matarazzo 500 g,Penne rigate sin TACC Matarazzo 500 g,159,159,100.0
+Libertad,2025,Fideos secos,Spaghetti,con TACC,Spaghetti Matarazzo 500 g,Spaghetti Matarazzo 500 g,162,162,100.0
+Libertad,2025,Fideos secos,Spaghetti,sin TACC,Spaghetti sin TACC Matarazzo 500 g,Spaghetti sin TACC Matarazzo 500 g,162,162,100.0
+Libertad,2025,Fideos secos,Tirabuzón / fusilli,con TACC,Tirabuzones Matarazzo 500 g,Tirabuzones Matarazzo 500 g,167,168,99.4047619047619
+Libertad,2025,Fideos secos,Tirabuzón / fusilli,con TACC,Tirabuzones Lucchetti 500 g,Tirabuzones Lucchetti 500 g,164,168,97.61904761904762
+Libertad,2025,Fideos secos,Tirabuzón / fusilli,sin TACC,Tirabuzón sin TACC Matarazzo 500 g,Tirabuzón sin TACC Matarazzo 500 g,165,168,98.21428571428571
+Libertad,2025,Fideos secos,Tirabuzón / fusilli,sin TACC,Fusilli sin TACC Wakas (4 variantes),Fusilli sin TACC Wakas (4 variantes),140,168,83.33333333333333
+Libertad,2025,Galletitas dulces,Con chips,con TACC,Pepitos 119 g,Pepitos 119 g,135,135,100.0
+Libertad,2025,Galletitas dulces,Con chips,sin TACC,7798181511004,Galletitas Con Chips de Chocolate Smams 150 Gr,135,135,100.0
+Libertad,2025,Galletitas dulces,Pepas,con TACC,7791787100924,Galletitas Dulces Pepas Trío 320 Gr,56,56,100.0
+Libertad,2025,Galletitas dulces,Pepas,sin TACC,7798181510786,Pepas de Membrillo sin TACC Smams 150 Gr,56,56,100.0
+Libertad,2025,Galletitas dulces,Rellenas,con TACC,7790040133488,Galletitas Rellena Sabor Frambuesa Sonrisas 108 Gr,168,168,100.0
+Libertad,2025,Galletitas dulces,Rellenas,con TACC,7622300742645,Galletitas Vainilla con Relleno de Limón Duquesa 115 Gr,167,168,99.4047619047619
+Libertad,2025,Galletitas dulces,Rellenas,con TACC,7790040133259,Galletitas Vainilla Rellenas Limón Maná 152 Gr,138,168,82.14285714285714
+Libertad,2025,Galletitas dulces,Rellenas,sin TACC,Galletitas rellenas sin TACC Smams 105 g (3 variantes),Galletitas rellenas sin TACC Smams 105 g (3 variantes),168,168,100.0
+Libertad,2025,Galletitas dulces,"Secas (vainilla, limón, chocolate)",con TACC,7622201808860,Galletitas Dulces Boca de Dama Terrabusi 170 Gr,164,164,100.0
+Libertad,2025,Galletitas dulces,"Secas (vainilla, limón, chocolate)",con TACC,7622201808884,Galletitas Anillos Clásicos Terrabusi 170 Gr,164,164,100.0
+Libertad,2025,Galletitas dulces,"Secas (vainilla, limón, chocolate)",con TACC,7792200000791,Galletitas Sconcitos 9 de Oro 200 Gr,159,164,96.95121951219512
+Libertad,2025,Galletitas dulces,"Secas (vainilla, limón, chocolate)",con TACC,7791787000644,Galletitas Frolitas Trio 300 Gr,137,164,83.53658536585365
+Libertad,2025,Galletitas dulces,"Secas (vainilla, limón, chocolate)",sin TACC,7798181510847,Galletitas Colegial Vainilla Samms 150 Gr,164,164,100.0
+Libertad,2025,Galletitas saladas y crackers,Crackers,con TACC,7792180006462,Galletitas Mini Marineras Paseo 220 Gr,94,141,66.66666666666667
+Libertad,2025,Galletitas saladas y crackers,Crackers,con TACC,7790040377707,Galletitas Original Crackers Criollitas 100 Gr,73,141,51.77304964539007
+Libertad,2025,Galletitas saladas y crackers,Crackers,sin TACC,Crackers sin TACC Smams 150 g (3 variantes),Crackers sin TACC Smams 150 g (3 variantes),141,141,100.0
+Libertad,2025,Galletitas saladas y crackers,Saborizadas / snack,con TACC,Galletitas saborizadas Saladix 100 g (3 variantes),Galletitas saborizadas Saladix 100 g (3 variantes),159,159,100.0
+Libertad,2025,Galletitas saladas y crackers,Saborizadas / snack,con TACC,7790040003606,Galletitas Kesitas 75 Gr,158,159,99.37106918238993
+Libertad,2025,Galletitas saladas y crackers,Saborizadas / snack,con TACC,7790040719804,Galletitas Original Rex 125 Gr,157,159,98.74213836477988
+Libertad,2025,Galletitas saladas y crackers,Saborizadas / snack,con TACC,7790040003569,Galletitas Saladas Tipo Snacks Rex 75 Gr,148,159,93.08176100628931
+Libertad,2025,Galletitas saladas y crackers,Saborizadas / snack,sin TACC,7797330102971,Galletas de Arroz Pizza Grandiet 100 Gr,159,159,100.0
+Libertad,2026,Cereales rellenos (almohaditas),Almohaditas rellenas,con TACC,Almohaditas rellenas Lasfor 200 g (4 variantes),Almohaditas rellenas Lasfor 200 g (4 variantes),69,69,100.0
+Libertad,2026,Cereales rellenos (almohaditas),Almohaditas rellenas,sin TACC,Almohaditas rellenas sin TACC Snuks 240 g (4 variantes),Almohaditas rellenas sin TACC Snuks 240 g (4 variantes),69,69,100.0
+Libertad,2026,Fideos secos,Mostachol / penne,con TACC,Penne rigate Matarazzo 500 g,Penne rigate Matarazzo 500 g,71,71,100.0
+Libertad,2026,Fideos secos,Mostachol / penne,sin TACC,Penne rigate sin TACC Matarazzo 500 g,Penne rigate sin TACC Matarazzo 500 g,71,71,100.0
+Libertad,2026,Fideos secos,Spaghetti,con TACC,Spaghetti Matarazzo 500 g,Spaghetti Matarazzo 500 g,72,72,100.0
+Libertad,2026,Fideos secos,Spaghetti,sin TACC,Spaghetti sin TACC Matarazzo 500 g,Spaghetti sin TACC Matarazzo 500 g,72,72,100.0
+Libertad,2026,Fideos secos,Tirabuzón / fusilli,con TACC,Tirabuzones Matarazzo 500 g,Tirabuzones Matarazzo 500 g,68,68,100.0
+Libertad,2026,Fideos secos,Tirabuzón / fusilli,con TACC,Tirabuzones Lucchetti 500 g,Tirabuzones Lucchetti 500 g,67,68,98.52941176470588
+Libertad,2026,Fideos secos,Tirabuzón / fusilli,sin TACC,Tirabuzón sin TACC Matarazzo 500 g,Tirabuzón sin TACC Matarazzo 500 g,59,68,86.76470588235294
+Libertad,2026,Fideos secos,Tirabuzón / fusilli,sin TACC,Fusilli sin TACC Wakas (4 variantes),Fusilli sin TACC Wakas (4 variantes),32,68,47.05882352941177
+Libertad,2026,Galletitas dulces,Con chips,con TACC,Pepitos 119 g,Pepitos 119 g,61,61,100.0
+Libertad,2026,Galletitas dulces,Con chips,sin TACC,7798181511004,Galletitas Con Chips de Chocolate Smams 150 Gr,61,61,100.0
+Libertad,2026,Galletitas dulces,Rellenas,con TACC,7622300742645,Galletitas Vainilla con Relleno de Limón Duquesa 115 Gr,74,74,100.0
+Libertad,2026,Galletitas dulces,Rellenas,con TACC,7790040133488,Galletitas Rellena Sabor Frambuesa Sonrisas 108 Gr,72,74,97.29729729729729
+Libertad,2026,Galletitas dulces,Rellenas,con TACC,7790040133259,Galletitas Vainilla Rellenas Limón Maná 152 Gr,71,74,95.94594594594595
+Libertad,2026,Galletitas dulces,Rellenas,sin TACC,Galletitas rellenas sin TACC Smams 105 g (3 variantes),Galletitas rellenas sin TACC Smams 105 g (3 variantes),74,74,100.0
+Libertad,2026,Galletitas dulces,"Secas (vainilla, limón, chocolate)",con TACC,7622201808860,Galletitas Dulces Boca de Dama Terrabusi 170 Gr,67,67,100.0
+Libertad,2026,Galletitas dulces,"Secas (vainilla, limón, chocolate)",con TACC,7792200000791,Galletitas Sconcitos 9 de Oro 200 Gr,67,67,100.0
+Libertad,2026,Galletitas dulces,"Secas (vainilla, limón, chocolate)",con TACC,7622201808884,Galletitas Anillos Clásicos Terrabusi 170 Gr,66,67,98.50746268656717
+Libertad,2026,Galletitas dulces,"Secas (vainilla, limón, chocolate)",con TACC,7791787000644,Galletitas Frolitas Trio 300 Gr,52,67,77.61194029850746
+Libertad,2026,Galletitas dulces,"Secas (vainilla, limón, chocolate)",sin TACC,7798181510847,Galletitas Colegial Vainilla Samms 150 Gr,67,67,100.0
+Libertad,2026,Galletitas saladas y crackers,Crackers,con TACC,7792180006462,Galletitas Mini Marineras Paseo 220 Gr,45,45,100.0
+Libertad,2026,Galletitas saladas y crackers,Crackers,sin TACC,Crackers sin TACC Smams 150 g (3 variantes),Crackers sin TACC Smams 150 g (3 variantes),45,45,100.0
+Libertad,2026,Galletitas saladas y crackers,Saborizadas / snack,con TACC,7790040719804,Galletitas Original Rex 125 Gr,67,67,100.0
+Libertad,2026,Galletitas saladas y crackers,Saborizadas / snack,con TACC,Galletitas saborizadas Saladix 100 g (3 variantes),Galletitas saborizadas Saladix 100 g (3 variantes),67,67,100.0
+Libertad,2026,Galletitas saladas y crackers,Saborizadas / snack,con TACC,7790040003606,Galletitas Kesitas 75 Gr,66,67,98.50746268656717
+Libertad,2026,Galletitas saladas y crackers,Saborizadas / snack,con TACC,7790040003569,Galletitas Saladas Tipo Snacks Rex 75 Gr,65,67,97.01492537313433
+Libertad,2026,Galletitas saladas y crackers,Saborizadas / snack,sin TACC,7797330102971,Galletas de Arroz Pizza Grandiet 100 Gr,67,67,100.0
+Mariano Max,2022,Fideos secos,Tirabuzón / fusilli,con TACC,Tirabuzones Lucchetti 500 g,Tirabuzones Lucchetti 500 g,48,48,100.0
+Mariano Max,2022,Fideos secos,Tirabuzón / fusilli,sin TACC,Tirabuzón sin TACC Matarazzo 500 g,Tirabuzón sin TACC Matarazzo 500 g,48,48,100.0
+Mariano Max,2022,Galletitas dulces,Con chips,con TACC,Pepitos 119 g,Pepitos 119 g,56,56,100.0
+Mariano Max,2022,Galletitas dulces,Con chips,sin TACC,7798181511004,Galletitas Con Chips de Chocolate Smams 150 Gr,56,56,100.0
+Mariano Max,2022,Galletitas dulces,Rellenas,con TACC,7622300742645,Galletitas Vainilla con Relleno de Limón Duquesa 115 Gr,96,96,100.0
+Mariano Max,2022,Galletitas dulces,Rellenas,con TACC,7790040133488,Galletitas Rellena Sabor Frambuesa Sonrisas 108 Gr,96,96,100.0
+Mariano Max,2022,Galletitas dulces,Rellenas,con TACC,7790040133259,Galletitas Vainilla Rellenas Limón Maná 152 Gr,70,96,72.91666666666667
+Mariano Max,2022,Galletitas dulces,Rellenas,sin TACC,Galletitas rellenas sin TACC Smams 105 g (3 variantes),Galletitas rellenas sin TACC Smams 105 g (3 variantes),96,96,100.0
+Mariano Max,2022,Galletitas dulces,"Secas (vainilla, limón, chocolate)",con TACC,7622201808884,Galletitas Anillos Clásicos Terrabusi 170 Gr,84,84,100.0
+Mariano Max,2022,Galletitas dulces,"Secas (vainilla, limón, chocolate)",con TACC,7792200000791,Galletitas Sconcitos 9 de Oro 200 Gr,84,84,100.0
+Mariano Max,2022,Galletitas dulces,"Secas (vainilla, limón, chocolate)",con TACC,7622201808860,Galletitas Dulces Boca de Dama Terrabusi 170 Gr,77,84,91.66666666666667
+Mariano Max,2022,Galletitas dulces,"Secas (vainilla, limón, chocolate)",sin TACC,7798181510847,Galletitas Colegial Vainilla Samms 150 Gr,84,84,100.0
+Mariano Max,2022,Galletitas saladas y crackers,Crackers,con TACC,7790045001133,Galletitas Crackers Naturalmente Granix 200 Gr,96,96,100.0
+Mariano Max,2022,Galletitas saladas y crackers,Crackers,con TACC,7792180006462,Galletitas Mini Marineras Paseo 220 Gr,96,96,100.0
+Mariano Max,2022,Galletitas saladas y crackers,Crackers,con TACC,7790040377707,Galletitas Original Crackers Criollitas 100 Gr,30,96,31.25
+Mariano Max,2022,Galletitas saladas y crackers,Crackers,sin TACC,Crackers sin TACC Smams 150 g (3 variantes),Crackers sin TACC Smams 150 g (3 variantes),96,96,100.0
+Mariano Max,2022,Galletitas saladas y crackers,Saborizadas / snack,con TACC,7790040003606,Galletitas Kesitas 75 Gr,72,72,100.0
+Mariano Max,2022,Galletitas saladas y crackers,Saborizadas / snack,con TACC,7790040719804,Galletitas Original Rex 125 Gr,72,72,100.0
+Mariano Max,2022,Galletitas saladas y crackers,Saborizadas / snack,con TACC,Galletitas saborizadas Saladix 100 g (3 variantes),Galletitas saborizadas Saladix 100 g (3 variantes),72,72,100.0
+Mariano Max,2022,Galletitas saladas y crackers,Saborizadas / snack,con TACC,7790040003569,Galletitas Saladas Tipo Snacks Rex 75 Gr,48,72,66.66666666666667
+Mariano Max,2022,Galletitas saladas y crackers,Saborizadas / snack,sin TACC,7797330102971,Galletas de Arroz Pizza Grandiet 100 Gr,72,72,100.0
+Mariano Max,2023,Fideos secos,Tirabuzón / fusilli,con TACC,Tirabuzones Lucchetti 500 g,Tirabuzones Lucchetti 500 g,54,54,100.0
+Mariano Max,2023,Fideos secos,Tirabuzón / fusilli,sin TACC,Tirabuzón sin TACC Matarazzo 500 g,Tirabuzón sin TACC Matarazzo 500 g,54,54,100.0
+Mariano Max,2023,Galletitas dulces,Rellenas,con TACC,7622300742645,Galletitas Vainilla con Relleno de Limón Duquesa 115 Gr,88,88,100.0
+Mariano Max,2023,Galletitas dulces,Rellenas,con TACC,7790040133488,Galletitas Rellena Sabor Frambuesa Sonrisas 108 Gr,88,88,100.0
+Mariano Max,2023,Galletitas dulces,Rellenas,sin TACC,Galletitas rellenas sin TACC Smams 105 g (3 variantes),Galletitas rellenas sin TACC Smams 105 g (3 variantes),88,88,100.0
+Mariano Max,2023,Galletitas dulces,"Secas (vainilla, limón, chocolate)",con TACC,7622201808860,Galletitas Dulces Boca de Dama Terrabusi 170 Gr,77,77,100.0
+Mariano Max,2023,Galletitas dulces,"Secas (vainilla, limón, chocolate)",con TACC,7622201808884,Galletitas Anillos Clásicos Terrabusi 170 Gr,77,77,100.0
+Mariano Max,2023,Galletitas dulces,"Secas (vainilla, limón, chocolate)",con TACC,7792200000791,Galletitas Sconcitos 9 de Oro 200 Gr,77,77,100.0
+Mariano Max,2023,Galletitas dulces,"Secas (vainilla, limón, chocolate)",sin TACC,7798181510847,Galletitas Colegial Vainilla Samms 150 Gr,77,77,100.0
+Mariano Max,2023,Galletitas saladas y crackers,Crackers,con TACC,7790045001133,Galletitas Crackers Naturalmente Granix 200 Gr,88,88,100.0
+Mariano Max,2023,Galletitas saladas y crackers,Crackers,con TACC,7792180006462,Galletitas Mini Marineras Paseo 220 Gr,88,88,100.0
+Mariano Max,2023,Galletitas saladas y crackers,Crackers,sin TACC,Crackers sin TACC Smams 150 g (3 variantes),Crackers sin TACC Smams 150 g (3 variantes),88,88,100.0
+Mariano Max,2023,Galletitas saladas y crackers,Saborizadas / snack,con TACC,7790040003606,Galletitas Kesitas 75 Gr,70,70,100.0
+Mariano Max,2023,Galletitas saladas y crackers,Saborizadas / snack,con TACC,7790040719804,Galletitas Original Rex 125 Gr,70,70,100.0
+Mariano Max,2023,Galletitas saladas y crackers,Saborizadas / snack,con TACC,Galletitas saborizadas Saladix 100 g (3 variantes),Galletitas saborizadas Saladix 100 g (3 variantes),70,70,100.0
+Mariano Max,2023,Galletitas saladas y crackers,Saborizadas / snack,con TACC,7790040003569,Galletitas Saladas Tipo Snacks Rex 75 Gr,68,70,97.14285714285714
+Mariano Max,2023,Galletitas saladas y crackers,Saborizadas / snack,sin TACC,7797330102971,Galletas de Arroz Pizza Grandiet 100 Gr,70,70,100.0
+Mariano Max,2024,Galletitas dulces,Rellenas,con TACC,7622300742645,Galletitas Vainilla con Relleno de Limón Duquesa 115 Gr,90,90,100.0
+Mariano Max,2024,Galletitas dulces,Rellenas,con TACC,7790040133488,Galletitas Rellena Sabor Frambuesa Sonrisas 108 Gr,90,90,100.0
+Mariano Max,2024,Galletitas dulces,Rellenas,sin TACC,Galletitas rellenas sin TACC Smams 105 g (3 variantes),Galletitas rellenas sin TACC Smams 105 g (3 variantes),90,90,100.0
+Mariano Max,2024,Galletitas dulces,"Secas (vainilla, limón, chocolate)",con TACC,7622201808860,Galletitas Dulces Boca de Dama Terrabusi 170 Gr,80,80,100.0
+Mariano Max,2024,Galletitas dulces,"Secas (vainilla, limón, chocolate)",con TACC,7622201808884,Galletitas Anillos Clásicos Terrabusi 170 Gr,80,80,100.0
+Mariano Max,2024,Galletitas dulces,"Secas (vainilla, limón, chocolate)",con TACC,7792200000791,Galletitas Sconcitos 9 de Oro 200 Gr,80,80,100.0
+Mariano Max,2024,Galletitas dulces,"Secas (vainilla, limón, chocolate)",sin TACC,7798181510847,Galletitas Colegial Vainilla Samms 150 Gr,80,80,100.0
+Mariano Max,2024,Galletitas saladas y crackers,Crackers,con TACC,7790045001133,Galletitas Crackers Naturalmente Granix 200 Gr,90,90,100.0
+Mariano Max,2024,Galletitas saladas y crackers,Crackers,con TACC,7792180006462,Galletitas Mini Marineras Paseo 220 Gr,90,90,100.0
+Mariano Max,2024,Galletitas saladas y crackers,Crackers,sin TACC,Crackers sin TACC Smams 150 g (3 variantes),Crackers sin TACC Smams 150 g (3 variantes),90,90,100.0
+Mariano Max,2024,Galletitas saladas y crackers,Saborizadas / snack,con TACC,7790040003606,Galletitas Kesitas 75 Gr,74,74,100.0
+Mariano Max,2024,Galletitas saladas y crackers,Saborizadas / snack,con TACC,7790040719804,Galletitas Original Rex 125 Gr,74,74,100.0
+Mariano Max,2024,Galletitas saladas y crackers,Saborizadas / snack,con TACC,Galletitas saborizadas Saladix 100 g (3 variantes),Galletitas saborizadas Saladix 100 g (3 variantes),74,74,100.0
+Mariano Max,2024,Galletitas saladas y crackers,Saborizadas / snack,con TACC,7790040003569,Galletitas Saladas Tipo Snacks Rex 75 Gr,72,74,97.29729729729729
+Mariano Max,2024,Galletitas saladas y crackers,Saborizadas / snack,sin TACC,7797330102971,Galletas de Arroz Pizza Grandiet 100 Gr,74,74,100.0
+Mariano Max,2025,Galletitas dulces,Rellenas,con TACC,7622300742645,Galletitas Vainilla con Relleno de Limón Duquesa 115 Gr,99,99,100.0
+Mariano Max,2025,Galletitas dulces,Rellenas,con TACC,7790040133488,Galletitas Rellena Sabor Frambuesa Sonrisas 108 Gr,99,99,100.0
+Mariano Max,2025,Galletitas dulces,Rellenas,sin TACC,Galletitas rellenas sin TACC Smams 105 g (3 variantes),Galletitas rellenas sin TACC Smams 105 g (3 variantes),99,99,100.0
+Mariano Max,2025,Galletitas dulces,"Secas (vainilla, limón, chocolate)",con TACC,7622201808860,Galletitas Dulces Boca de Dama Terrabusi 170 Gr,88,88,100.0
+Mariano Max,2025,Galletitas dulces,"Secas (vainilla, limón, chocolate)",con TACC,7622201808884,Galletitas Anillos Clásicos Terrabusi 170 Gr,88,88,100.0
+Mariano Max,2025,Galletitas dulces,"Secas (vainilla, limón, chocolate)",con TACC,7792200000791,Galletitas Sconcitos 9 de Oro 200 Gr,88,88,100.0
+Mariano Max,2025,Galletitas dulces,"Secas (vainilla, limón, chocolate)",sin TACC,7798181510847,Galletitas Colegial Vainilla Samms 150 Gr,88,88,100.0
+Mariano Max,2025,Galletitas saladas y crackers,Crackers,con TACC,7790045001133,Galletitas Crackers Naturalmente Granix 200 Gr,99,99,100.0
+Mariano Max,2025,Galletitas saladas y crackers,Crackers,con TACC,7792180006462,Galletitas Mini Marineras Paseo 220 Gr,99,99,100.0
+Mariano Max,2025,Galletitas saladas y crackers,Crackers,sin TACC,Crackers sin TACC Smams 150 g (3 variantes),Crackers sin TACC Smams 150 g (3 variantes),99,99,100.0
+Mariano Max,2025,Galletitas saladas y crackers,Saborizadas / snack,con TACC,7790040003606,Galletitas Kesitas 75 Gr,85,85,100.0
+Mariano Max,2025,Galletitas saladas y crackers,Saborizadas / snack,con TACC,7790040719804,Galletitas Original Rex 125 Gr,85,85,100.0
+Mariano Max,2025,Galletitas saladas y crackers,Saborizadas / snack,con TACC,Galletitas saborizadas Saladix 100 g (3 variantes),Galletitas saborizadas Saladix 100 g (3 variantes),85,85,100.0
+Mariano Max,2025,Galletitas saladas y crackers,Saborizadas / snack,con TACC,7790040003569,Galletitas Saladas Tipo Snacks Rex 75 Gr,81,85,95.29411764705883
+Mariano Max,2025,Galletitas saladas y crackers,Saborizadas / snack,sin TACC,7797330102971,Galletas de Arroz Pizza Grandiet 100 Gr,85,85,100.0
+Mariano Max,2026,Galletitas dulces,Rellenas,con TACC,7622300742645,Galletitas Vainilla con Relleno de Limón Duquesa 115 Gr,90,90,100.0
+Mariano Max,2026,Galletitas dulces,Rellenas,con TACC,7790040133488,Galletitas Rellena Sabor Frambuesa Sonrisas 108 Gr,90,90,100.0
+Mariano Max,2026,Galletitas dulces,Rellenas,con TACC,7790040133259,Galletitas Vainilla Rellenas Limón Maná 152 Gr,56,90,62.22222222222222
+Mariano Max,2026,Galletitas dulces,Rellenas,sin TACC,Galletitas rellenas sin TACC Smams 105 g (3 variantes),Galletitas rellenas sin TACC Smams 105 g (3 variantes),90,90,100.0
+Mariano Max,2026,Galletitas dulces,"Secas (vainilla, limón, chocolate)",con TACC,7622201808860,Galletitas Dulces Boca de Dama Terrabusi 170 Gr,80,80,100.0
+Mariano Max,2026,Galletitas dulces,"Secas (vainilla, limón, chocolate)",con TACC,7622201808884,Galletitas Anillos Clásicos Terrabusi 170 Gr,80,80,100.0
+Mariano Max,2026,Galletitas dulces,"Secas (vainilla, limón, chocolate)",con TACC,7792200000791,Galletitas Sconcitos 9 de Oro 200 Gr,80,80,100.0
+Mariano Max,2026,Galletitas dulces,"Secas (vainilla, limón, chocolate)",sin TACC,7798181510847,Galletitas Colegial Vainilla Samms 150 Gr,80,80,100.0
+Mariano Max,2026,Galletitas saladas y crackers,Crackers,con TACC,7790045001133,Galletitas Crackers Naturalmente Granix 200 Gr,90,90,100.0
+Mariano Max,2026,Galletitas saladas y crackers,Crackers,con TACC,7792180006462,Galletitas Mini Marineras Paseo 220 Gr,90,90,100.0
+Mariano Max,2026,Galletitas saladas y crackers,Crackers,sin TACC,Crackers sin TACC Smams 150 g (3 variantes),Crackers sin TACC Smams 150 g (3 variantes),90,90,100.0
+Mariano Max,2026,Galletitas saladas y crackers,Saborizadas / snack,con TACC,7790040003606,Galletitas Kesitas 75 Gr,74,74,100.0
+Mariano Max,2026,Galletitas saladas y crackers,Saborizadas / snack,con TACC,7790040719804,Galletitas Original Rex 125 Gr,74,74,100.0
+Mariano Max,2026,Galletitas saladas y crackers,Saborizadas / snack,con TACC,Galletitas saborizadas Saladix 100 g (3 variantes),Galletitas saborizadas Saladix 100 g (3 variantes),74,74,100.0
+Mariano Max,2026,Galletitas saladas y crackers,Saborizadas / snack,con TACC,7790040003569,Galletitas Saladas Tipo Snacks Rex 75 Gr,72,74,97.29729729729729
+Mariano Max,2026,Galletitas saladas y crackers,Saborizadas / snack,sin TACC,7797330102971,Galletas de Arroz Pizza Grandiet 100 Gr,74,74,100.0
+Toledo,2022,Fideos secos,Spaghetti,con TACC,Spaghetti Matarazzo 500 g,Spaghetti Matarazzo 500 g,333,333,100.0
+Toledo,2022,Fideos secos,Spaghetti,sin TACC,Spaghetti sin TACC Matarazzo 500 g,Spaghetti sin TACC Matarazzo 500 g,333,333,100.0
+Toledo,2022,Fideos secos,Tirabuzón / fusilli,con TACC,Tirabuzones Lucchetti 500 g,Tirabuzones Lucchetti 500 g,222,222,100.0
+Toledo,2022,Fideos secos,Tirabuzón / fusilli,con TACC,Tirabuzones Matarazzo 500 g,Tirabuzones Matarazzo 500 g,222,222,100.0
+Toledo,2022,Fideos secos,Tirabuzón / fusilli,sin TACC,Fusilli sin TACC Wakas (4 variantes),Fusilli sin TACC Wakas (4 variantes),173,222,77.92792792792793
+Toledo,2022,Fideos secos,Tirabuzón / fusilli,sin TACC,Tirabuzón sin TACC Matarazzo 500 g,Tirabuzón sin TACC Matarazzo 500 g,131,222,59.00900900900901
+Toledo,2023,Fideos secos,Mostachol / penne,con TACC,Penne rigate Matarazzo 500 g,Penne rigate Matarazzo 500 g,69,69,100.0
+Toledo,2023,Fideos secos,Mostachol / penne,sin TACC,Penne rigate sin TACC Matarazzo 500 g,Penne rigate sin TACC Matarazzo 500 g,69,69,100.0
+Toledo,2023,Fideos secos,Spaghetti,con TACC,Spaghetti Matarazzo 500 g,Spaghetti Matarazzo 500 g,257,257,100.0
+Toledo,2023,Fideos secos,Spaghetti,sin TACC,Spaghetti sin TACC Matarazzo 500 g,Spaghetti sin TACC Matarazzo 500 g,257,257,100.0
+Toledo,2023,Fideos secos,Tirabuzón / fusilli,con TACC,Tirabuzones Lucchetti 500 g,Tirabuzones Lucchetti 500 g,106,106,100.0
+Toledo,2023,Fideos secos,Tirabuzón / fusilli,con TACC,Tirabuzones Matarazzo 500 g,Tirabuzones Matarazzo 500 g,65,106,61.32075471698113
+Toledo,2023,Fideos secos,Tirabuzón / fusilli,sin TACC,Tirabuzón sin TACC Matarazzo 500 g,Tirabuzón sin TACC Matarazzo 500 g,106,106,100.0
+Toledo,2024,Fideos secos,Mostachol / penne,con TACC,Penne rigate Matarazzo 500 g,Penne rigate Matarazzo 500 g,133,133,100.0
+Toledo,2024,Fideos secos,Mostachol / penne,sin TACC,Penne rigate sin TACC Matarazzo 500 g,Penne rigate sin TACC Matarazzo 500 g,133,133,100.0
+Toledo,2024,Fideos secos,Spaghetti,con TACC,Spaghetti Matarazzo 500 g,Spaghetti Matarazzo 500 g,139,139,100.0
+Toledo,2024,Fideos secos,Spaghetti,sin TACC,Spaghetti sin TACC Matarazzo 500 g,Spaghetti sin TACC Matarazzo 500 g,139,139,100.0
+Toledo,2024,Fideos secos,Tirabuzón / fusilli,con TACC,Tirabuzones Matarazzo 500 g,Tirabuzones Matarazzo 500 g,140,140,100.0
+Toledo,2024,Fideos secos,Tirabuzón / fusilli,con TACC,Tirabuzones Lucchetti 500 g,Tirabuzones Lucchetti 500 g,139,140,99.28571428571429
+Toledo,2024,Fideos secos,Tirabuzón / fusilli,sin TACC,Tirabuzón sin TACC Matarazzo 500 g,Tirabuzón sin TACC Matarazzo 500 g,140,140,100.0
+Toledo,2024,Galletitas saladas y crackers,Crackers,con TACC,7790045001133,Galletitas Crackers Naturalmente Granix 200 Gr,109,109,100.0
+Toledo,2024,Galletitas saladas y crackers,Crackers,sin TACC,Crackers sin TACC Smams 150 g (3 variantes),Crackers sin TACC Smams 150 g (3 variantes),109,109,100.0
+Toledo,2025,Fideos secos,Mostachol / penne,con TACC,Penne rigate Matarazzo 500 g,Penne rigate Matarazzo 500 g,259,259,100.0
+Toledo,2025,Fideos secos,Mostachol / penne,sin TACC,Penne rigate sin TACC Matarazzo 500 g,Penne rigate sin TACC Matarazzo 500 g,259,259,100.0
+Toledo,2025,Fideos secos,Spaghetti,con TACC,Spaghetti Matarazzo 500 g,Spaghetti Matarazzo 500 g,287,287,100.0
+Toledo,2025,Fideos secos,Spaghetti,sin TACC,Spaghetti sin TACC Matarazzo 500 g,Spaghetti sin TACC Matarazzo 500 g,287,287,100.0
+Toledo,2025,Fideos secos,Tirabuzón / fusilli,con TACC,Tirabuzones Lucchetti 500 g,Tirabuzones Lucchetti 500 g,305,306,99.67320261437908
+Toledo,2025,Fideos secos,Tirabuzón / fusilli,con TACC,Tirabuzones Matarazzo 500 g,Tirabuzones Matarazzo 500 g,305,306,99.67320261437908
+Toledo,2025,Fideos secos,Tirabuzón / fusilli,sin TACC,Tirabuzón sin TACC Matarazzo 500 g,Tirabuzón sin TACC Matarazzo 500 g,306,306,100.0
+Toledo,2025,Galletitas saladas y crackers,Crackers,con TACC,7790045001133,Galletitas Crackers Naturalmente Granix 200 Gr,162,162,100.0
+Toledo,2025,Galletitas saladas y crackers,Crackers,sin TACC,Crackers sin TACC Smams 150 g (3 variantes),Crackers sin TACC Smams 150 g (3 variantes),162,162,100.0
+Toledo,2026,Fideos secos,Mostachol / penne,con TACC,Penne rigate Matarazzo 500 g,Penne rigate Matarazzo 500 g,260,260,100.0
+Toledo,2026,Fideos secos,Mostachol / penne,sin TACC,Penne rigate sin TACC Matarazzo 500 g,Penne rigate sin TACC Matarazzo 500 g,260,260,100.0
+Toledo,2026,Fideos secos,Spaghetti,con TACC,Spaghetti Matarazzo 500 g,Spaghetti Matarazzo 500 g,260,260,100.0
+Toledo,2026,Fideos secos,Spaghetti,sin TACC,Spaghetti sin TACC Matarazzo 500 g,Spaghetti sin TACC Matarazzo 500 g,260,260,100.0
+Toledo,2026,Fideos secos,Tirabuzón / fusilli,con TACC,Tirabuzones Lucchetti 500 g,Tirabuzones Lucchetti 500 g,255,256,99.609375
+Toledo,2026,Fideos secos,Tirabuzón / fusilli,con TACC,Tirabuzones Matarazzo 500 g,Tirabuzones Matarazzo 500 g,255,256,99.609375
+Toledo,2026,Fideos secos,Tirabuzón / fusilli,sin TACC,Tirabuzón sin TACC Matarazzo 500 g,Tirabuzón sin TACC Matarazzo 500 g,256,256,100.0
+Unicoop,2022,Fideos secos,Mostachol / penne,con TACC,Penne rigate Matarazzo 500 g,Penne rigate Matarazzo 500 g,36,36,100.0
+Unicoop,2022,Fideos secos,Mostachol / penne,sin TACC,Penne rigate sin TACC Matarazzo 500 g,Penne rigate sin TACC Matarazzo 500 g,36,36,100.0
+Unicoop,2022,Fideos secos,Spaghetti,con TACC,Spaghetti Matarazzo 500 g,Spaghetti Matarazzo 500 g,27,27,100.0
+Unicoop,2022,Fideos secos,Spaghetti,sin TACC,Spaghetti sin TACC Matarazzo 500 g,Spaghetti sin TACC Matarazzo 500 g,27,27,100.0
+Unicoop,2022,Fideos secos,Tirabuzón / fusilli,con TACC,Tirabuzones Lucchetti 500 g,Tirabuzones Lucchetti 500 g,30,30,100.0
+Unicoop,2022,Fideos secos,Tirabuzón / fusilli,con TACC,Tirabuzones Matarazzo 500 g,Tirabuzones Matarazzo 500 g,30,30,100.0
+Unicoop,2022,Fideos secos,Tirabuzón / fusilli,sin TACC,Fusilli sin TACC Wakas (4 variantes),Fusilli sin TACC Wakas (4 variantes),27,30,90.0
+Unicoop,2022,Fideos secos,Tirabuzón / fusilli,sin TACC,Tirabuzón sin TACC Matarazzo 500 g,Tirabuzón sin TACC Matarazzo 500 g,21,30,70.0
+Unicoop,2022,Galletitas dulces,Con chips,con TACC,Pepitos 119 g,Pepitos 119 g,33,33,100.0
+Unicoop,2022,Galletitas dulces,Con chips,sin TACC,7798181511004,Galletitas Con Chips de Chocolate Smams 150 Gr,33,33,100.0
+Unicoop,2022,Galletitas dulces,Obleas,con TACC,7790040008175,Galletitas Obleas Clásicas Opera 220 Gr,12,12,100.0
+Unicoop,2022,Galletitas dulces,Obleas,con TACC,77903518,Galletitas Obleas Rellena Opera 92 Gr,12,12,100.0
+Unicoop,2022,Galletitas dulces,Obleas,sin TACC,7798079230833,Obleas Limón Santa María 90 Gr,12,12,100.0
+Unicoop,2022,Galletitas dulces,Pepas,con TACC,7791787100924,Galletitas Dulces Pepas Trío 320 Gr,24,24,100.0
+Unicoop,2022,Galletitas dulces,Pepas,sin TACC,7798181510786,Pepas de Membrillo sin TACC Smams 150 Gr,24,24,100.0
+Unicoop,2022,Galletitas dulces,Rellenas,con TACC,7622300742645,Galletitas Vainilla con Relleno de Limón Duquesa 115 Gr,36,36,100.0
+Unicoop,2022,Galletitas dulces,Rellenas,con TACC,7790040133259,Galletitas Vainilla Rellenas Limón Maná 152 Gr,36,36,100.0
+Unicoop,2022,Galletitas dulces,Rellenas,con TACC,7790040133488,Galletitas Rellena Sabor Frambuesa Sonrisas 108 Gr,36,36,100.0
+Unicoop,2022,Galletitas dulces,Rellenas,sin TACC,Galletitas rellenas sin TACC Smams 105 g (3 variantes),Galletitas rellenas sin TACC Smams 105 g (3 variantes),36,36,100.0
+Unicoop,2022,Galletitas dulces,"Secas (vainilla, limón, chocolate)",con TACC,7791787000644,Galletitas Frolitas Trio 300 Gr,30,30,100.0
+Unicoop,2022,Galletitas dulces,"Secas (vainilla, limón, chocolate)",con TACC,7622201808860,Galletitas Dulces Boca de Dama Terrabusi 170 Gr,24,30,80.0
+Unicoop,2022,Galletitas dulces,"Secas (vainilla, limón, chocolate)",con TACC,7622201808884,Galletitas Anillos Clásicos Terrabusi 170 Gr,12,30,40.0
+Unicoop,2022,Galletitas dulces,"Secas (vainilla, limón, chocolate)",sin TACC,7798181510847,Galletitas Colegial Vainilla Samms 150 Gr,30,30,100.0
+Unicoop,2022,Galletitas dulces,"Secas (vainilla, limón, chocolate)",sin TACC,Galletitas sin TACC Santa María 200 g (2 variantes),Galletitas sin TACC Santa María 200 g (2 variantes),21,30,70.0
+Unicoop,2022,Galletitas saladas y crackers,Crackers,con TACC,7790040377707,Galletitas Original Crackers Criollitas 100 Gr,36,36,100.0
+Unicoop,2022,Galletitas saladas y crackers,Crackers,con TACC,7790045001133,Galletitas Crackers Naturalmente Granix 200 Gr,33,36,91.66666666666667
+Unicoop,2022,Galletitas saladas y crackers,Crackers,con TACC,7792180006462,Galletitas Mini Marineras Paseo 220 Gr,3,36,8.333333333333334
+Unicoop,2022,Galletitas saladas y crackers,Crackers,sin TACC,Crackers sin TACC Smams 150 g (3 variantes),Crackers sin TACC Smams 150 g (3 variantes),36,36,100.0
+Unicoop,2023,Fideos secos,Mostachol / penne,con TACC,Penne rigate Matarazzo 500 g,Penne rigate Matarazzo 500 g,6,6,100.0
+Unicoop,2023,Fideos secos,Mostachol / penne,sin TACC,Penne rigate sin TACC Matarazzo 500 g,Penne rigate sin TACC Matarazzo 500 g,6,6,100.0
+Unicoop,2023,Fideos secos,Tirabuzón / fusilli,con TACC,Tirabuzones Matarazzo 500 g,Tirabuzones Matarazzo 500 g,12,12,100.0
+Unicoop,2023,Fideos secos,Tirabuzón / fusilli,con TACC,Tirabuzones Lucchetti 500 g,Tirabuzones Lucchetti 500 g,9,12,75.0
+Unicoop,2023,Fideos secos,Tirabuzón / fusilli,sin TACC,Fusilli sin TACC Wakas (4 variantes),Fusilli sin TACC Wakas (4 variantes),12,12,100.0
+Unicoop,2023,Galletitas dulces,Con chips,con TACC,Pepitos 119 g,Pepitos 119 g,21,21,100.0
+Unicoop,2023,Galletitas dulces,Con chips,sin TACC,7798181511004,Galletitas Con Chips de Chocolate Smams 150 Gr,21,21,100.0
+Unicoop,2023,Galletitas dulces,Obleas,con TACC,7790040008175,Galletitas Obleas Clásicas Opera 220 Gr,9,12,75.0
+Unicoop,2023,Galletitas dulces,Obleas,con TACC,77903518,Galletitas Obleas Rellena Opera 92 Gr,9,12,75.0
+Unicoop,2023,Galletitas dulces,Obleas,sin TACC,7798079230833,Obleas Limón Santa María 90 Gr,12,12,100.0
+Unicoop,2023,Galletitas dulces,Pepas,con TACC,7791787100924,Galletitas Dulces Pepas Trío 320 Gr,21,21,100.0
+Unicoop,2023,Galletitas dulces,Pepas,sin TACC,7798181510786,Pepas de Membrillo sin TACC Smams 150 Gr,21,21,100.0
+Unicoop,2023,Galletitas dulces,Rellenas,con TACC,7790040133259,Galletitas Vainilla Rellenas Limón Maná 152 Gr,36,36,100.0
+Unicoop,2023,Galletitas dulces,Rellenas,con TACC,7790040133488,Galletitas Rellena Sabor Frambuesa Sonrisas 108 Gr,33,36,91.66666666666667
+Unicoop,2023,Galletitas dulces,Rellenas,con TACC,7622300742645,Galletitas Vainilla con Relleno de Limón Duquesa 115 Gr,30,36,83.33333333333333
+Unicoop,2023,Galletitas dulces,Rellenas,sin TACC,Galletitas rellenas sin TACC Smams 105 g (3 variantes),Galletitas rellenas sin TACC Smams 105 g (3 variantes),36,36,100.0
+Unicoop,2023,Galletitas dulces,"Secas (vainilla, limón, chocolate)",con TACC,7622201808860,Galletitas Dulces Boca de Dama Terrabusi 170 Gr,36,36,100.0
+Unicoop,2023,Galletitas dulces,"Secas (vainilla, limón, chocolate)",con TACC,7622201808884,Galletitas Anillos Clásicos Terrabusi 170 Gr,36,36,100.0
+Unicoop,2023,Galletitas dulces,"Secas (vainilla, limón, chocolate)",con TACC,7791787000644,Galletitas Frolitas Trio 300 Gr,36,36,100.0
+Unicoop,2023,Galletitas dulces,"Secas (vainilla, limón, chocolate)",con TACC,7792200000791,Galletitas Sconcitos 9 de Oro 200 Gr,21,36,58.33333333333334
+Unicoop,2023,Galletitas dulces,"Secas (vainilla, limón, chocolate)",sin TACC,7798181510847,Galletitas Colegial Vainilla Samms 150 Gr,33,36,91.66666666666667
+Unicoop,2023,Galletitas dulces,"Secas (vainilla, limón, chocolate)",sin TACC,Galletitas sin TACC Santa María 200 g (2 variantes),Galletitas sin TACC Santa María 200 g (2 variantes),27,36,75.0
+Unicoop,2023,Galletitas saladas y crackers,Crackers,con TACC,7790040377707,Galletitas Original Crackers Criollitas 100 Gr,33,33,100.0
+Unicoop,2023,Galletitas saladas y crackers,Crackers,con TACC,7790045001133,Galletitas Crackers Naturalmente Granix 200 Gr,33,33,100.0
+Unicoop,2023,Galletitas saladas y crackers,Crackers,con TACC,7792180006462,Galletitas Mini Marineras Paseo 220 Gr,9,33,27.27272727272727
+Unicoop,2023,Galletitas saladas y crackers,Crackers,sin TACC,Crackers sin TACC Smams 150 g (3 variantes),Crackers sin TACC Smams 150 g (3 variantes),33,33,100.0
+Unicoop,2024,Fideos secos,Mostachol / penne,con TACC,Penne rigate Matarazzo 500 g,Penne rigate Matarazzo 500 g,18,18,100.0
+Unicoop,2024,Fideos secos,Mostachol / penne,sin TACC,Penne rigate sin TACC Matarazzo 500 g,Penne rigate sin TACC Matarazzo 500 g,18,18,100.0
+Unicoop,2024,Fideos secos,Spaghetti,con TACC,Spaghetti Matarazzo 500 g,Spaghetti Matarazzo 500 g,24,24,100.0
+Unicoop,2024,Fideos secos,Spaghetti,sin TACC,Spaghetti sin TACC Matarazzo 500 g,Spaghetti sin TACC Matarazzo 500 g,24,24,100.0
+Unicoop,2024,Fideos secos,Tirabuzón / fusilli,con TACC,Tirabuzones Lucchetti 500 g,Tirabuzones Lucchetti 500 g,30,30,100.0
+Unicoop,2024,Fideos secos,Tirabuzón / fusilli,con TACC,Tirabuzones Matarazzo 500 g,Tirabuzones Matarazzo 500 g,30,30,100.0
+Unicoop,2024,Fideos secos,Tirabuzón / fusilli,sin TACC,Tirabuzón sin TACC Matarazzo 500 g,Tirabuzón sin TACC Matarazzo 500 g,30,30,100.0
+Unicoop,2024,Galletitas dulces,Con chips,con TACC,Pepitos 119 g,Pepitos 119 g,30,30,100.0
+Unicoop,2024,Galletitas dulces,Con chips,sin TACC,7798181511004,Galletitas Con Chips de Chocolate Smams 150 Gr,30,30,100.0
+Unicoop,2024,Galletitas dulces,Obleas,con TACC,77903518,Galletitas Obleas Rellena Opera 92 Gr,24,24,100.0
+Unicoop,2024,Galletitas dulces,Obleas,con TACC,7790040008175,Galletitas Obleas Clásicas Opera 220 Gr,21,24,87.5
+Unicoop,2024,Galletitas dulces,Obleas,sin TACC,7798079230833,Obleas Limón Santa María 90 Gr,24,24,100.0
+Unicoop,2024,Galletitas dulces,Pepas,con TACC,7791787100924,Galletitas Dulces Pepas Trío 320 Gr,21,21,100.0
+Unicoop,2024,Galletitas dulces,Pepas,sin TACC,7798181510786,Pepas de Membrillo sin TACC Smams 150 Gr,21,21,100.0
+Unicoop,2024,Galletitas dulces,Rellenas,con TACC,7622300742645,Galletitas Vainilla con Relleno de Limón Duquesa 115 Gr,21,21,100.0
+Unicoop,2024,Galletitas dulces,Rellenas,con TACC,7790040133259,Galletitas Vainilla Rellenas Limón Maná 152 Gr,21,21,100.0
+Unicoop,2024,Galletitas dulces,Rellenas,con TACC,7790040133488,Galletitas Rellena Sabor Frambuesa Sonrisas 108 Gr,21,21,100.0
+Unicoop,2024,Galletitas dulces,Rellenas,sin TACC,Galletitas rellenas sin TACC Smams 105 g (3 variantes),Galletitas rellenas sin TACC Smams 105 g (3 variantes),21,21,100.0
+Unicoop,2024,Galletitas dulces,"Secas (vainilla, limón, chocolate)",con TACC,7622201808860,Galletitas Dulces Boca de Dama Terrabusi 170 Gr,36,36,100.0
+Unicoop,2024,Galletitas dulces,"Secas (vainilla, limón, chocolate)",con TACC,7622201808884,Galletitas Anillos Clásicos Terrabusi 170 Gr,36,36,100.0
+Unicoop,2024,Galletitas dulces,"Secas (vainilla, limón, chocolate)",con TACC,7791787000644,Galletitas Frolitas Trio 300 Gr,21,36,58.33333333333334
+Unicoop,2024,Galletitas dulces,"Secas (vainilla, limón, chocolate)",con TACC,7792200000791,Galletitas Sconcitos 9 de Oro 200 Gr,15,36,41.66666666666666
+Unicoop,2024,Galletitas dulces,"Secas (vainilla, limón, chocolate)",sin TACC,7798181510847,Galletitas Colegial Vainilla Samms 150 Gr,36,36,100.0
+Unicoop,2024,Galletitas dulces,"Secas (vainilla, limón, chocolate)",sin TACC,Galletitas sin TACC Santa María 200 g (2 variantes),Galletitas sin TACC Santa María 200 g (2 variantes),18,36,50.0
+Unicoop,2024,Galletitas saladas y crackers,Crackers,con TACC,7790040377707,Galletitas Original Crackers Criollitas 100 Gr,33,33,100.0
+Unicoop,2024,Galletitas saladas y crackers,Crackers,con TACC,7790045001133,Galletitas Crackers Naturalmente Granix 200 Gr,33,33,100.0
+Unicoop,2024,Galletitas saladas y crackers,Crackers,con TACC,7792180006462,Galletitas Mini Marineras Paseo 220 Gr,3,33,9.090909090909092
+Unicoop,2024,Galletitas saladas y crackers,Crackers,sin TACC,Crackers sin TACC Smams 150 g (3 variantes),Crackers sin TACC Smams 150 g (3 variantes),33,33,100.0
+Unicoop,2025,Fideos secos,Mostachol / penne,con TACC,Penne rigate Matarazzo 500 g,Penne rigate Matarazzo 500 g,36,36,100.0
+Unicoop,2025,Fideos secos,Mostachol / penne,sin TACC,Penne rigate sin TACC Matarazzo 500 g,Penne rigate sin TACC Matarazzo 500 g,36,36,100.0
+Unicoop,2025,Fideos secos,Spaghetti,con TACC,Spaghetti Matarazzo 500 g,Spaghetti Matarazzo 500 g,33,33,100.0
+Unicoop,2025,Fideos secos,Spaghetti,sin TACC,Spaghetti sin TACC Matarazzo 500 g,Spaghetti sin TACC Matarazzo 500 g,33,33,100.0
+Unicoop,2025,Fideos secos,Tirabuzón / fusilli,con TACC,Tirabuzones Lucchetti 500 g,Tirabuzones Lucchetti 500 g,36,36,100.0
+Unicoop,2025,Fideos secos,Tirabuzón / fusilli,con TACC,Tirabuzones Matarazzo 500 g,Tirabuzones Matarazzo 500 g,36,36,100.0
+Unicoop,2025,Fideos secos,Tirabuzón / fusilli,sin TACC,Tirabuzón sin TACC Matarazzo 500 g,Tirabuzón sin TACC Matarazzo 500 g,36,36,100.0
+Unicoop,2025,Galletitas dulces,Obleas,con TACC,7790040008175,Galletitas Obleas Clásicas Opera 220 Gr,6,6,100.0
+Unicoop,2025,Galletitas dulces,Obleas,con TACC,77903518,Galletitas Obleas Rellena Opera 92 Gr,6,6,100.0
+Unicoop,2025,Galletitas dulces,Obleas,sin TACC,7798079230833,Obleas Limón Santa María 90 Gr,6,6,100.0
+Unicoop,2025,Galletitas dulces,"Secas (vainilla, limón, chocolate)",con TACC,7622201808860,Galletitas Dulces Boca de Dama Terrabusi 170 Gr,36,36,100.0
+Unicoop,2025,Galletitas dulces,"Secas (vainilla, limón, chocolate)",con TACC,7622201808884,Galletitas Anillos Clásicos Terrabusi 170 Gr,36,36,100.0
+Unicoop,2025,Galletitas dulces,"Secas (vainilla, limón, chocolate)",con TACC,7792200000791,Galletitas Sconcitos 9 de Oro 200 Gr,33,36,91.66666666666667
+Unicoop,2025,Galletitas dulces,"Secas (vainilla, limón, chocolate)",sin TACC,7798181510847,Galletitas Colegial Vainilla Samms 150 Gr,36,36,100.0
+Unicoop,2025,Galletitas dulces,"Secas (vainilla, limón, chocolate)",sin TACC,Galletitas sin TACC Santa María 200 g (2 variantes),Galletitas sin TACC Santa María 200 g (2 variantes),12,36,33.33333333333334
+Unicoop,2025,Galletitas saladas y crackers,Crackers,con TACC,7790040377707,Galletitas Original Crackers Criollitas 100 Gr,36,36,100.0
+Unicoop,2025,Galletitas saladas y crackers,Crackers,con TACC,7790045001133,Galletitas Crackers Naturalmente Granix 200 Gr,36,36,100.0
+Unicoop,2025,Galletitas saladas y crackers,Crackers,con TACC,7792180006462,Galletitas Mini Marineras Paseo 220 Gr,30,36,83.33333333333333
+Unicoop,2025,Galletitas saladas y crackers,Crackers,sin TACC,Crackers sin TACC Smams 150 g (3 variantes),Crackers sin TACC Smams 150 g (3 variantes),36,36,100.0
+Unicoop,2026,Fideos secos,Mostachol / penne,con TACC,Penne rigate Matarazzo 500 g,Penne rigate Matarazzo 500 g,30,30,100.0
+Unicoop,2026,Fideos secos,Mostachol / penne,sin TACC,Penne rigate sin TACC Matarazzo 500 g,Penne rigate sin TACC Matarazzo 500 g,30,30,100.0
+Unicoop,2026,Fideos secos,Spaghetti,con TACC,Spaghetti Matarazzo 500 g,Spaghetti Matarazzo 500 g,30,30,100.0
+Unicoop,2026,Fideos secos,Spaghetti,sin TACC,Spaghetti sin TACC Matarazzo 500 g,Spaghetti sin TACC Matarazzo 500 g,30,30,100.0
+Unicoop,2026,Fideos secos,Tirabuzón / fusilli,con TACC,Tirabuzones Lucchetti 500 g,Tirabuzones Lucchetti 500 g,30,30,100.0
+Unicoop,2026,Fideos secos,Tirabuzón / fusilli,con TACC,Tirabuzones Matarazzo 500 g,Tirabuzones Matarazzo 500 g,30,30,100.0
+Unicoop,2026,Fideos secos,Tirabuzón / fusilli,sin TACC,Tirabuzón sin TACC Matarazzo 500 g,Tirabuzón sin TACC Matarazzo 500 g,30,30,100.0
+Unicoop,2026,Galletitas dulces,"Secas (vainilla, limón, chocolate)",con TACC,7622201808860,Galletitas Dulces Boca de Dama Terrabusi 170 Gr,30,30,100.0
+Unicoop,2026,Galletitas dulces,"Secas (vainilla, limón, chocolate)",con TACC,7622201808884,Galletitas Anillos Clásicos Terrabusi 170 Gr,30,30,100.0
+Unicoop,2026,Galletitas dulces,"Secas (vainilla, limón, chocolate)",con TACC,7792200000791,Galletitas Sconcitos 9 de Oro 200 Gr,30,30,100.0
+Unicoop,2026,Galletitas dulces,"Secas (vainilla, limón, chocolate)",sin TACC,7798181510847,Galletitas Colegial Vainilla Samms 150 Gr,30,30,100.0
+Unicoop,2026,Galletitas saladas y crackers,Crackers,con TACC,7790040377707,Galletitas Original Crackers Criollitas 100 Gr,30,30,100.0
+Unicoop,2026,Galletitas saladas y crackers,Crackers,con TACC,7790045001133,Galletitas Crackers Naturalmente Granix 200 Gr,30,30,100.0
+Unicoop,2026,Galletitas saladas y crackers,Crackers,con TACC,7792180006462,Galletitas Mini Marineras Paseo 220 Gr,30,30,100.0
+Unicoop,2026,Galletitas saladas y crackers,Crackers,sin TACC,Crackers sin TACC Smams 150 g (3 variantes),Crackers sin TACC Smams 150 g (3 variantes),30,30,100.0

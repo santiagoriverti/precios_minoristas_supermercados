@@ -409,13 +409,13 @@ def filas(D, extra):
                          for r in D.itertuples(index=False)])
 
 OUT = filas(F, lambda r: {
-    'nota': 'sustituto: el subtipo no tiene un sin TACC equivalente' if r.sustituto else '', 'producto': r.descripcion,
+    'marca': r.marca_n, 'nota': 'sustituto: el subtipo no tiene un sin TACC equivalente' if r.sustituto else '', 'producto': r.descripcion,
     'linea': r.linea, 'fuente_gramos': r.fuente_gramos, 'sucursales_mes_mediana_ventana': round(r.suc_mes_mediana_v, 1),
     'provincias': int(r.provincias_v), 'comercios': int(r.comercios_super_v), 'cadenas_grandes': int(r.cadenas_grandes_v),
     'pct_cadena_principal': round(r.pct_cadena_principal_v, 1), 'precio_100g_ultimo_mes': round(r.p100_ultimo, 1),
     'ultimo_mes_con_precio': r.mes_ultimo, 'precio_sobre_mediana_con_tacc_subtipo': round(r.rel_tier, 3)})
 OUT.to_csv(F_OUT, index=False, encoding='utf-8')
-SENS = filas(U, lambda r: {'nota': '', 'producto': r.descripcion, 'linea_todos': r.linea, 'en_canasta': r.en_canasta,
+SENS = filas(U, lambda r: {'marca': r.marca_n, 'nota': '', 'producto': r.descripcion, 'linea_todos': r.linea, 'en_canasta': r.en_canasta,
                            'motivo': r.motivo, 'sustituto': r.sustituto,
                            'sucursales_mes_mediana_ventana': round(r.suc_mes_mediana_v, 1),
                            'precio_sobre_mediana_con_tacc_subtipo': round(r.rel_tier, 3)})

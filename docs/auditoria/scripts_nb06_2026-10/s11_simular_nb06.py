@@ -83,9 +83,10 @@ for k in ('datos_dia', 'bt_sm', 'bt_sub', 'brecha_subtipo', 'brecha_subtipo_anua
           'ponderaciones', 'cobertura_mensual', 'suc_geo', 'brecha_tipo_anual', 'serie_anual', 'serie_anual_bal',
           'brecha_tipo_anual_bal', 'brecha_region_anual', 'brecha_empresa_anual', 'brecha_cadena', 'cobertura_tipo',
           'imputaciones', 'concentracion', 'brecha_suc_mes', 'serie_tpd', 'brecha_tipo_tpd', 'tpd_productos',
-          'tpd_ajuste', 'tpd_anual', 'tpd_subtipos', 'precios_atipicos', 'sensibilidad', 'indices_lados',
+          'tpd_ajuste', 'tpd_anual', 'tpd_subtipos', 'precios_atipicos', 'precios_congelados', 'sensibilidad', 'indices_lados',
           'indices_lados_anual', 'disponibilidad', 'disponibilidad_mensual', 'ic_grupos', 'hedonica_grupos',
-          'concentracion_modelos', 'competencia_local', 'costo_cba', 'costo_cba_mensual'):
+          'hedonica_grupos_anual', 'concentracion_modelos', 'competencia_local', 'composicion_empresas',
+          'varianza_empresa', 'surtido_empresa', 'prima_misma_marca', 'costo_cba', 'costo_cba_mensual'):
     if k not in g:
         print(f'  (no existe {k})'); continue
     try:

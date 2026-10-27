@@ -1,0 +1,76 @@
+ean,tipo,lado,descripcion,producto,gramos,subtipo,vigente_desde,vigente_hasta,meses_con_precio,primer_mes,ultimo_mes,obs_sucursal_mes,excluido_plausibilidad
+7798169802674,Cereales rellenos (almohaditas),con TACC,Almohaditas Rellenas Crema de Frutilla Lasfor 200 Gr,Almohaditas rellenas Lasfor 200 g (4 variantes),200,Almohaditas rellenas,,,58,2022-01,2026-10,29627,False
+7798169802667,Cereales rellenos (almohaditas),con TACC,Almohaditas Rellenas Sabor Chocolate Suizo Lasfor 200 Gr,Almohaditas rellenas Lasfor 200 g (4 variantes),200,Almohaditas rellenas,,,58,2022-01,2026-10,23955,False
+7798169802681,Cereales rellenos (almohaditas),con TACC,Almohaditas Rellenas Sabor Mousse Limón Lasfor 200 Gr,Almohaditas rellenas Lasfor 200 g (4 variantes),200,Almohaditas rellenas,,,58,2022-01,2026-10,22846,False
+7798169802650,Cereales rellenos (almohaditas),con TACC,Almohaditas Rellenas con Crema Avellanas Lasfor 200 Gr,Almohaditas rellenas Lasfor 200 g (4 variantes),200,Almohaditas rellenas,,,58,2022-01,2026-10,24787,False
+7798169802629,Cereales rellenos (almohaditas),sin TACC,Almohaditas Rellenas Avellana Snuks 240 Gr,Almohaditas rellenas sin TACC Snuks 240 g (4 variantes),240,Almohaditas rellenas,,,58,2022-01,2026-10,19941,False
+7798169802636,Cereales rellenos (almohaditas),sin TACC,Almohaditas Rellenas Chocolate sin TACC Snuks 240 Gr,Almohaditas rellenas sin TACC Snuks 240 g (4 variantes),240,Almohaditas rellenas,,,58,2022-01,2026-10,23977,False
+7798169802711,Cereales rellenos (almohaditas),sin TACC,Almohaditas Rellenas Frutilla sin TACC Snuks 240 Gr,Almohaditas rellenas sin TACC Snuks 240 g (4 variantes),240,Almohaditas rellenas,,,58,2022-01,2026-10,24284,False
+7798169802728,Cereales rellenos (almohaditas),sin TACC,Almohaditas Rellenas Limón sin TACC Snuks 240 Gr,Almohaditas rellenas sin TACC Snuks 240 g (4 variantes),240,Almohaditas rellenas,,,58,2022-01,2026-10,21547,False
+7790070318633,Fideos secos,con TACC,Fideos Penne Rigate Matarazzo 500 Gr,Penne rigate Matarazzo 500 g,500,Mostachol / penne,,2023-09,21,2022-01,2023-09,41033,False
+7790070336200,Fideos secos,con TACC,Fideos Penne Rigati Matarazzo 500 Gr,Penne rigate Matarazzo 500 g,500,Mostachol / penne,2023-10,,37,2023-10,2026-10,46997,False
+7790070318640,Fideos secos,con TACC,Fideos Spaghetti Matarazzo 500 Gr,Spaghetti Matarazzo 500 g,500,Spaghetti,,2023-09,21,2022-01,2023-09,45635,False
+7790070336309,Fideos secos,con TACC,Fideos Spaghetti N3 Matarazzo 500 Gr,Spaghetti Matarazzo 500 g,500,Spaghetti,2023-10,,37,2023-10,2026-10,79190,False
+7790070318329,Fideos secos,con TACC,Fideos Tirabuzones Lucchetti 500 Gr,Tirabuzones Lucchetti 500 g,500,Tirabuzón / fusilli,,2023-09,21,2022-01,2023-09,43140,False
+7790070318602,Fideos secos,con TACC,Fideos Tirabuzones Matarazzo 500 Gr,Tirabuzones Matarazzo 500 g,500,Tirabuzón / fusilli,,2023-09,21,2022-01,2023-09,36117,False
+7790070336293,Fideos secos,con TACC,Fideos Tirabuzón N28 Matarazzo 500 Gr,Tirabuzones Matarazzo 500 g,500,Tirabuzón / fusilli,2023-10,,37,2023-10,2026-10,81795,False
+7790070336026,Fideos secos,con TACC,Fideos Tirabuzón N34 Lucchetti 500 Gr,Tirabuzones Lucchetti 500 g,500,Tirabuzón / fusilli,2023-10,,37,2023-10,2026-10,81656,False
+7798031470086,Fideos secos,sin TACC,Fideos Fusilli Multicereal Chía sin TACC Wakas 250 Gr,Fusilli sin TACC Wakas (4 variantes),250,Tirabuzón / fusilli,,2024-07,31,2022-01,2024-07,30860,False
+7798031470048,Fideos secos,sin TACC,Fideos Fusilli Multicereal con Amaranto sin TACC Wakas 250 Gr,Fusilli sin TACC Wakas (4 variantes),250,Tirabuzón / fusilli,,2024-07,31,2022-01,2024-07,14510,False
+7798031470031,Fideos secos,sin TACC,Fideos Fusilli Multicereal con Quinoa sin TACC Wakas 250 Gr,Fusilli sin TACC Wakas (4 variantes),250,Tirabuzón / fusilli,,2024-07,31,2022-01,2024-07,38878,False
+7798031470802,Fideos secos,sin TACC,Fideos Fusilli con Amaranto sin TACC Caja Wakas 300 Gr,Fusilli sin TACC Wakas (4 variantes),300,Tirabuzón / fusilli,2024-06,,29,2024-06,2026-10,13482,False
+7798031470819,Fideos secos,sin TACC,Fideos Fusilli con Chía sin TACC Caja Wakas 300 Gr,Fusilli sin TACC Wakas (4 variantes),300,Tirabuzón / fusilli,2024-06,,29,2024-06,2026-10,15623,False
+7798031470796,Fideos secos,sin TACC,Fideos Fusilli con Maíz sin TACC Caja Wakas 300 Gr,Fusilli sin TACC Wakas (4 variantes),300,Tirabuzón / fusilli,2024-06,,29,2024-06,2026-10,21248,False
+7798031470826,Fideos secos,sin TACC,Fideos Fusilli con Quinoa sin TACC Caja Wakas 300 Gr,Fusilli sin TACC Wakas (4 variantes),300,Tirabuzón / fusilli,2024-06,,29,2024-06,2026-10,16610,False
+7798031470024,Fideos secos,sin TACC,Fideos Fusilli de Maíz y Arroz sin TACC Wakas 250 Gr,Fusilli sin TACC Wakas (4 variantes),250,Tirabuzón / fusilli,,2024-07,31,2022-01,2024-07,17214,False
+7790070335999,Fideos secos,sin TACC,Fideos Penne Rigate Libre De Gluten Matarazzo 500 Gr,Penne rigate sin TACC Matarazzo 500 g,500,Mostachol / penne,2023-10,,37,2023-10,2026-10,40708,False
+7790070321794,Fideos secos,sin TACC,Fideos Penne Rigate sin Tacc Matarazzo 500 Gr,Penne rigate sin TACC Matarazzo 500 g,500,Mostachol / penne,,2023-09,21,2022-01,2023-09,8787,False
+7790070336002,Fideos secos,sin TACC,Fideos Spaghetti sin TACC Matarazzo 500 Gr,Spaghetti sin TACC Matarazzo 500 g,500,Spaghetti,2023-10,,37,2023-10,2026-10,44293,False
+7790070335982,Fideos secos,sin TACC,Fideos Tirabuzón sin Gluten Matarazzo 500 Gr,Tirabuzón sin TACC Matarazzo 500 g,500,Tirabuzón / fusilli,2023-10,,35,2023-12,2026-10,24394,False
+7790070321855,Fideos secos,sin TACC,Fideos Tirabuzón sin TACC Matarazzo 500 Gr,Tirabuzón sin TACC Matarazzo 500 g,500,Tirabuzón / fusilli,,2023-09,21,2022-01,2023-09,28257,False
+7790070321800,Fideos secos,sin TACC,Spaghetti sin TACC Matarazzo 500 Gr,Spaghetti sin TACC Matarazzo 500 g,500,Spaghetti,,2023-09,21,2022-01,2023-09,39828,False
+7622201808884,Galletitas dulces,con TACC,Galletitas Anillos Clásicos Terrabusi 170 Gr,Galletitas Anillos Clásicos Terrabusi 170 Gr,170,"Secas (vainilla, limón, chocolate)",,,58,2022-01,2026-10,69139,False
+7622201808860,Galletitas dulces,con TACC,Galletitas Dulces Boca de Dama Terrabusi 170 Gr,Galletitas Dulces Boca de Dama Terrabusi 170 Gr,170,"Secas (vainilla, limón, chocolate)",,,58,2022-01,2026-10,61995,False
+7791787100924,Galletitas dulces,con TACC,Galletitas Dulces Pepas Trío 320 Gr,Galletitas Dulces Pepas Trío 320 Gr,320,Pepas,,,58,2022-01,2026-10,25926,False
+7791787000644,Galletitas dulces,con TACC,Galletitas Frolitas Trio 300 Gr,Galletitas Frolitas Trio 300 Gr,300,"Secas (vainilla, limón, chocolate)",,,58,2022-01,2026-10,26310,False
+7790040008175,Galletitas dulces,con TACC,Galletitas Obleas Clásicas Opera 220 Gr,Galletitas Obleas Clásicas Opera 220 Gr,220,Obleas,,,58,2022-01,2026-10,118373,False
+77903518,Galletitas dulces,con TACC,Galletitas Obleas Rellena Opera 92 Gr,Galletitas Obleas Rellena Opera 92 Gr,92,Obleas,,,58,2022-01,2026-10,80220,False
+7790040133488,Galletitas dulces,con TACC,Galletitas Rellena Sabor Frambuesa Sonrisas 108 Gr,Galletitas Rellena Sabor Frambuesa Sonrisas 108 Gr,108,Rellenas,,,58,2022-01,2026-10,125626,False
+7792200000791,Galletitas dulces,con TACC,Galletitas Sconcitos 9 de Oro 200 Gr,Galletitas Sconcitos 9 de Oro 200 Gr,200,"Secas (vainilla, limón, chocolate)",,,58,2022-01,2026-10,42847,False
+7790040133259,Galletitas dulces,con TACC,Galletitas Vainilla Rellenas Limón Maná 152 Gr,Galletitas Vainilla Rellenas Limón Maná 152 Gr,152,Rellenas,,,58,2022-01,2026-10,78238,False
+7622300742645,Galletitas dulces,con TACC,Galletitas Vainilla con Relleno de Limón Duquesa 115 Gr,Galletitas Vainilla con Relleno de Limón Duquesa 115 Gr,115,Rellenas,,,58,2022-01,2026-10,109886,False
+7622201735906,Galletitas dulces,con TACC,Galletitas con Chips Chocolate Pepitos 119 Gr,Pepitos 119 g,119,Con chips,2023-02,,45,2023-02,2026-10,102630,False
+7622201808662,Galletitas dulces,con TACC,Galletitas con Chips Chocolate Pepitos 119 Gr,Pepitos 119 g,119,Con chips,,2023-01,13,2022-01,2023-01,7498,False
+7622201503260,Galletitas dulces,con TACC,Galletitas con Chips de Chocolate Pepitos 119 Gr,Pepitos 119 g,119,Con chips,,2023-02,12,2022-03,2023-02,20399,False
+7798181510847,Galletitas dulces,sin TACC,Galletitas Colegial Vainilla Samms 150 Gr,Galletitas Colegial Vainilla Samms 150 Gr,150,"Secas (vainilla, limón, chocolate)",,,58,2022-01,2026-10,38636,False
+7798181511004,Galletitas dulces,sin TACC,Galletitas Con Chips de Chocolate Smams 150 Gr,Galletitas Con Chips de Chocolate Smams 150 Gr,150,Con chips,,,58,2022-01,2026-10,43400,False
+7798079230628,Galletitas dulces,sin TACC,Galletitas Marmoladas sin TACC Santa María 200 Gr,Galletitas sin TACC Santa María 200 g (2 variantes),200,"Secas (vainilla, limón, chocolate)",,,58,2022-01,2026-10,14159,False
+7798181510014,Galletitas dulces,sin TACC,Galletitas Sabor Chocolate con Relleno de Vainilla Smams 105 Gr,Galletitas rellenas sin TACC Smams 105 g (3 variantes),105,Rellenas,,,58,2022-01,2026-10,66257,False
+7798128410070,Galletitas dulces,sin TACC,Galletitas Sabor Limón Aglu 150 Gr,Galletitas Sabor Limón Aglu 150 Gr,150,"Secas (vainilla, limón, chocolate)",,,58,2022-01,2026-10,21106,False
+7798079230147,Galletitas dulces,sin TACC,Galletitas Sabor Vainilla sin TACC Santa María 200 Gr,Galletitas sin TACC Santa María 200 g (2 variantes),200,"Secas (vainilla, limón, chocolate)",,,58,2022-01,2026-10,16776,False
+7798181510267,Galletitas dulces,sin TACC,Galletitas Vainilla Rellenas Sabor Frutilla Smams 105 Gr,Galletitas rellenas sin TACC Smams 105 g (3 variantes),105,Rellenas,,,58,2022-01,2026-10,40049,False
+7798181510021,Galletitas dulces,sin TACC,Galletitas Vainilla Rellenas Smams 105 Gr,Galletitas rellenas sin TACC Smams 105 g (3 variantes),105,Rellenas,,,58,2022-01,2026-10,66878,False
+7798079230833,Galletitas dulces,sin TACC,Obleas Limón Santa María 90 Gr,Obleas Limón Santa María 90 Gr,90,Obleas,,,58,2022-01,2026-10,10806,False
+7798181510786,Galletitas dulces,sin TACC,Pepas de Membrillo sin TACC Smams 150 Gr,Pepas de Membrillo sin TACC Smams 150 Gr,150,Pepas,,,58,2022-01,2026-10,66953,False
+7790580716806,Galletitas saladas y crackers,con TACC,Galletitas Calabresa Saladix 100 Gr,Galletitas saborizadas Saladix 100 g (3 variantes),100,Saborizadas / snack,,,58,2022-01,2026-10,26256,False
+7790045001133,Galletitas saladas y crackers,con TACC,Galletitas Crackers Naturalmente Granix 200 Gr,Galletitas Crackers Naturalmente Granix 200 Gr,200,Crackers,,,58,2022-01,2026-10,46605,False
+7790580716707,Galletitas saladas y crackers,con TACC,Galletitas Jamón Saladix 100 Gr,Galletitas saborizadas Saladix 100 g (3 variantes),100,Saborizadas / snack,,,58,2022-01,2026-10,63258,False
+7790040003606,Galletitas saladas y crackers,con TACC,Galletitas Kesitas 75 Gr,Galletitas Kesitas 75 Gr,75,Saborizadas / snack,,,58,2022-01,2026-10,60909,False
+7792180006462,Galletitas saladas y crackers,con TACC,Galletitas Mini Marineras Paseo 220 Gr,Galletitas Mini Marineras Paseo 220 Gr,220,Crackers,,,58,2022-01,2026-10,42750,False
+7790040377707,Galletitas saladas y crackers,con TACC,Galletitas Original Crackers Criollitas 100 Gr,Galletitas Original Crackers Criollitas 100 Gr,100,Crackers,,,58,2022-01,2026-10,86380,False
+7790040719804,Galletitas saladas y crackers,con TACC,Galletitas Original Rex 125 Gr,Galletitas Original Rex 125 Gr,125,Saborizadas / snack,,,58,2022-01,2026-10,77779,False
+7790580697303,Galletitas saladas y crackers,con TACC,Galletitas Pizza Saladix 100 Gr,Galletitas saborizadas Saladix 100 g (3 variantes),100,Saborizadas / snack,,,58,2022-01,2026-10,82332,False
+7790040003569,Galletitas saladas y crackers,con TACC,Galletitas Saladas Tipo Snacks Rex 75 Gr,Galletitas Saladas Tipo Snacks Rex 75 Gr,75,Saborizadas / snack,,,58,2022-01,2026-10,88978,False
+7798199770073,Galletitas saladas y crackers,sin TACC,Galletas de Arroz Mini Sabor Oliva Crisppino 50 Gr,Galletas de arroz saborizadas Crisppino Minis 50 g (3 variantes),50,Saborizadas / snack,,,58,2022-01,2026-10,23417,False
+7797330102971,Galletitas saladas y crackers,sin TACC,Galletas de Arroz Pizza Grandiet 100 Gr,Galletas de Arroz Pizza Grandiet 100 Gr,100,Saborizadas / snack,,,58,2022-01,2026-10,14277,False
+7798181510205,Galletitas saladas y crackers,sin TACC,Galletitas Crackers Light sin Sal Smams 150 Gr,Crackers sin TACC Smams 150 g (3 variantes),150,Crackers,,,58,2022-01,2026-10,28214,False
+7798181510229,Galletitas saladas y crackers,sin TACC,Galletitas Crackers Mix Semillas Smams 150 Gr,Crackers sin TACC Smams 150 g (3 variantes),150,Crackers,,,58,2022-01,2026-10,45446,False
+7798181510212,Galletitas saladas y crackers,sin TACC,Galletitas Crackers Smams 150 Gr,Crackers sin TACC Smams 150 g (3 variantes),150,Crackers,,,58,2022-01,2026-10,84752,False
+7798199770035,Galletitas saladas y crackers,sin TACC,Galletitas de Arroz Sabor Jamón sin TACC Crisppino Minis 50 Gr,Galletas de arroz saborizadas Crisppino Minis 50 g (3 variantes),50,Saborizadas / snack,,,58,2022-01,2026-10,19747,False
+7798199770042,Galletitas saladas y crackers,sin TACC,Galletitas de Arroz Sabor Queso sin TACC Crisppino Minis 50 Gr,Galletas de arroz saborizadas Crisppino Minis 50 g (3 variantes),50,Saborizadas / snack,,,58,2022-01,2026-10,19633,False
+7798199770134,Galletitas saladas y crackers,sin TACC,Galletitas de Arroz sin TACC Sabor Jamón Crisppino 100 Gr,Galletas de arroz saborizadas Crisppino 100 g (2 variantes),100,Saborizadas / snack,,,58,2022-01,2026-10,24462,False
+7798199770141,Galletitas saladas y crackers,sin TACC,Galletitas de Arroz sin TACC Sabor Queso Crisppino 100 Gr,Galletas de arroz saborizadas Crisppino 100 g (2 variantes),100,Saborizadas / snack,,,58,2022-01,2026-10,24932,False
+7792180004765,Pan rallado y rebozador,con TACC,Rebozador Freir Fortificado Mamá Cocina Plus 500 Gr,Rebozador Freir Fortificado Mamá Cocina Plus 500 Gr,500,Rebozador,,,58,2022-01,2026-10,32197,False
+7792180004796,Pan rallado y rebozador,con TACC,Rebozador Horno Fortificado Mamá Cocina Plus 1 Kg,Rebozador Horno Fortificado Mamá Cocina Plus 1 Kg,1000,Rebozador,,,58,2022-01,2026-10,53191,False
+7798128410087,Pan rallado y rebozador,sin TACC,Rebozador Aglu 450 Gr,Rebozador Aglu 450 Gr,450,Rebozador,,,58,2022-01,2026-10,32284,False
+7798193377285,Pan rallado y rebozador,sin TACC,Rebozador Naturalsur 500 Gr,Rebozador Naturalsur 500 Gr,500,Rebozador,,,58,2022-01,2026-10,15539,False

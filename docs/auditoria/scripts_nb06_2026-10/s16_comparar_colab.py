@@ -15,7 +15,9 @@ CLAVES = ['tipo', 'subtipo', 'lado', 'rol', 'ean', 'ean_norm', 'mes', 'anio', 'p
           'producto', 'universo',
           # hojas de la CELDA 8c y Resumen (2026-10-27): sin estas claves la unión era muchos a muchos
           'suc_key', 'nivel', 'escenario', 'agrupacion', 'grupo', 'medida', 'modelo', 'termino', 'variable', 'controles',
-          'item_cba', 'tema', 'indicador']
+          'item_cba', 'tema', 'indicador',
+          # Composicion_empresas, Prima_misma_marca (segunda revisión de expertos, 2026-10-27)
+          'periodo', 'marca']
 TEXTO = {c: str for c in CLAVES}
 def num(s):
     # columnas numéricas o booleanas (confiable, revisar, amba...) como float; el resto queda NaN

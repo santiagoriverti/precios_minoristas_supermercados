@@ -1,5 +1,7 @@
 # Canasta fija 2022-2026 de la brecha celíaca (nb06)
 
+**Para estimar la brecha con los datos de los notebooks: [`GUIA_INVESTIGADORES.md`](GUIA_INVESTIGADORES.md)** (qué se mide, archivos de `datos/`, cómo se calcula y reproduce, inferencia por cadena, composición, surtido, marca, calidad de datos y especificaciones sugeridas).
+
 `canasta_fija_2022_2026.csv` es la lista de productos con TACC y sin TACC que usa el nb06 desde el 2026-10-23: una fila
 por código (EAN). Desde el 2026-10-27 tiene **62 productos en 43 líneas (75 códigos)**: el panel de expertos sacó las galletas de arroz de crackers, donde hay crackers sin TACC equivalentes (regla "equivalentes primero"; BRECHA_CELIACA §14.17 y `docs/EVALUACION_EXPERTOS_2026-10-27_nb06.md`). Antes, desde el 2026-10-26, tenía 67 productos en 45 líneas (80 códigos). La auditoría de la selección
 corrigió cuatro errores de las reglas (BUG-49; `docs/AUDITORIA_SELECCION_2026-10-26_nb06.md`). Esa noche, Pepitos pasó
@@ -17,9 +19,11 @@ BUG-48 (afuera las tiendas online por el nombre; 35 hojas; las corridas de Colab
 corregidos dieron igual). `simulacion_2026-10-26b/` son los de la canasta corregida (BUG-49; la corrida de Colab de esa noche dio
 igual). `simulacion_2026-10-26c/` son los de la TPD del panel corregida, Pepitos y las dos Operas.
 `simulacion_2026-10-26d/` son los de los sabores de una línea como un producto y el penne contra el Matarazzo común
-(35 hojas). `simulacion_2026-10-27/` son los del notebook **vigente** (equivalentes primero, precios de una empresa
-fuera de escala, análisis complementarios de la CELDA 8c y hoja `Resumen`; 48 hojas): la corrida de Colab del
-2026-10-27 dio igual (48 de 48); contra esa carpeta se compara la próxima.
+(35 hojas). `simulacion_2026-10-27/` son los del notebook del panel de expertos (equivalentes primero, precios de una empresa
+fuera de escala, análisis complementarios de la CELDA 8c y hoja `Resumen`; 48 hojas): las corridas de Colab del
+2026-10-27 dieron igual (48 de 48). `simulacion_2026-10-27b/` son los del notebook **vigente** (segunda revisión de
+expertos: intervalos por empresa, precios congelados, composición, varianza y surtido por empresa, prima de la misma
+marca; 54 hojas, BRECHA_CELIACA §17): contra esa carpeta se compara la próxima.
 
 `productos_sensibilidad.csv` tiene **todos** los productos que cumplen las reglas de la selección en los subtipos de
 la canasta: los 75 códigos de la canasta y 25 más que quedan afuera por la composición espejada, el comparador fijo
@@ -43,6 +47,7 @@ EAN cambia la clave del caché del nb06 (relee el SEPA); cambiar gramos, vigenci
 | `gramos` | Presentación en gramos (para pasar a $/100 g) |
 | `subtipo` | Subtipo de comparabilidad (forma de los fideos; rellenas, secas, pepas... en galletitas dulces). La selección elige tantos productos con TACC como sin TACC en cada subtipo (en el cálculo cuenta cada línea una vez) |
 | `desde`, `hasta` | Vigencia del código (AAAA-MM; vacío = sin límite). Solo en los productos que cambiaron de código: fuera de su ventana, el código no se usa (los códigos viejos de Molinos siguen apareciendo con el precio congelado) |
+| `marca` | Marca normalizada (la del Maestro, con las correcciones de s10 y s18). La usan la hoja `Prima_misma_marca` (los pares de la misma marca en un subtipo; `MARCA_EQUIVALENTE` une Snuks, la línea sin TACC, con Lasfor) y `datos/productos.csv` |
 | `nota` | `empalme «producto»` si el producto tiene más de un código |
 | `producto` | Nombre del producto (el mismo en todos sus códigos) |
 | `linea` | Lo que entra una vez en la mediana de su lado: los productos de una misma marca y presentación en el subtipo y lado que cuestan lo mismo (sabores o variantes, a ±10% de la mediana de la línea) forman una línea, con el número de variantes en el nombre; un producto sin otras variantes es su propia línea. `gen_nb06.py` junta los códigos de cada línea en `PRODUCTO` (desde el 2026-10-26, noche) |
@@ -62,11 +67,12 @@ EAN cambia la clave del caché del nb06 (relee el SEPA); cambiar gramos, vigenci
 la canasta fija más pan envasado, harinas y premezclas, alfajores y tapas). La arma
 `docs/auditoria/scripts_nb06_2026-10/s18_canasta_amplia.py`; `gen_nb06.py` la embebe en la CELDA 1 del 06b, como la
 fija en el 06. `productos_sensibilidad_amplia.csv` es su versión de `productos_sensibilidad.csv` (los que cumplen las
-reglas y quedan afuera van a los escenarios de la hoja `Sensibilidad`). `simulacion_06b_2026-10-27/` son los
-resultados esperados del 06b (48 hojas): contra esa carpeta se compara su próxima corrida.
+reglas y quedan afuera van a los escenarios de la hoja `Sensibilidad`). `simulacion_06b_2026-10-27/` eran los
+resultados esperados del 06b del panel de expertos (48 hojas); `simulacion_06b_2026-10-27b/` son los vigentes (segunda
+revisión, 54 hojas): contra esa carpeta se compara su próxima corrida.
 
 Columnas: las mismas de la canasta fija para identificar cada código (`tipo`, `lado`, `ean`, `descripcion`, `gramos`,
-`subtipo`, `desde`, `hasta`, `nota`, `producto`, `linea`), y las métricas de la ventana:
+`subtipo`, `desde`, `hasta`, `marca`, `nota`, `producto`, `linea`), y las métricas de la ventana:
 
 | Columna | Qué es |
 |---|---|

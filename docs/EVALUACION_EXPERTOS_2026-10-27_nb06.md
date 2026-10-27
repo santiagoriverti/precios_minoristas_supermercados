@@ -11,6 +11,8 @@ reales del notebook vigente sobre los zips del Drive (ene-2022 → oct-2026; `si
 da lo mismo en los 3.244.531 precios sucursal × producto × mes y en todas las brechas. Esperados en
 `docs/brecha_celiaca/simulacion_2026-10-27/`. **La corrida de Colab del 2026-10-27 dio igual a la simulación** (§13).
 
+**Segunda revisión (2026-10-27, noche, §14)**: con la corrida de Colab verificada, el panel revisó los resultados para que investigadores puedan publicar la brecha. Las canastas quedan; se agregan intervalos por empresa, el filtro de precios congelados (BUG-51), las hojas de composición, varianza y surtido por empresa, la hedónica con el surtido y por año, la prima de la misma marca, el escenario por población y los datos para investigadores (`docs/brecha_celiaca/GUIA_INVESTIGADORES.md`). Esperados vigentes: `docs/brecha_celiaca/simulacion_2026-10-27b/` y `simulacion_06b_2026-10-27b/`.
+
 ## 1. Veredicto
 
 | Dimensión | Veredicto | Evidencia principal |
@@ -385,3 +387,64 @@ próxima corrida (con el caché, unos 15-20 min) los rehace:
 
 Falta la corrida de Colab del **06b** (lee 15 meses la primera vez): se compara con
 `docs/brecha_celiaca/simulacion_06b_2026-10-27/`.
+
+## 14. Segunda revisión: ¿alcanza para publicar? (2026-10-27, noche)
+
+El usuario pasó la segunda corrida de Colab (con los gráficos corregidos; igual a la simulación) y la carpeta `carga`, y
+pidió revisar, como el mejor equipo de estadística y economía, si las canastas y los productos están bien elegidos para
+estimar la brecha (cuánto más paga un celíaco por los equivalentes sin TACC y cómo se distribuye en el tiempo, el
+territorio, la concentración y las cadenas), teniendo en cuenta que cada cadena vende productos distintos y que cambian
+en el tiempo, y corregir lo necesario para que el Excel y los datos del nb06 sirvan a investigadores de primer nivel.
+Antes de empezar se definieron dos cosas con el usuario: el estimador principal sigue siendo la comparación por subtipo,
+con los pares de la misma marca como robustez, y quedan dos notebooks (06 = evolución con la canasta fija, 06b = nivel
+con la amplia).
+
+### 14.1 Veredicto
+
+**Las canastas están bien elegidas para lo que miden** y no cambian: la fija mide la prima de los envasados sin TACC y
+su evolución con los mismos productos desde 2022; la amplia, el nivel y el costo de la dieta con pan, harinas,
+premezclas, alfajores y tapas. Lo que faltaba para publicar era de **inferencia y de control de calidad**:
+
+1. **Las cadenas fijan el precio de todas sus sucursales** (en 8 de los 12 subtipos de la canasta fija la empresa explica
+   más de la mitad de la variación entre sucursales; el desvío dentro de cada empresa es de 0,02 a 0,08 en logaritmos).
+   Los intervalos por sucursal eran demasiado angostos para generalizar: con el bootstrap por empresa la brecha de la
+   canasta fija es +103,1% con IC +93,7% a +106,3% (por sucursal, +102,6% a +103,5%), y ninguna región difiere del país
+   (por sucursal, cuatro de seis).
+2. **La composición del universo cambia** (DIA, del 41% de las celdas en 2022 al 5% en 2025-2026): la serie clave es la
+   del panel balanceado, que no cambia de composición.
+3. **El surtido explica buena parte de las diferencias entre cadenas** (ChangoMas: +0,6% con los mismos productos que
+   Carrefour, +13% con su surtido).
+4. **La brecha no es un artefacto de marca**: donde la misma marca vende los dos lados, su prima sin gluten es del mismo
+   orden que la brecha de la canasta (spaghetti y penne Matarazzo +128% y +130%; en la canasta amplia, Oreo +63%, pan
+   rallado Mamá Cocina +267%, tapas La Salteña +43% y +68%).
+5. **Un error de los datos**: Deheza informó las galletas de arroz Crisppino al mismo precio 16 meses (abr-2023 →
+   jul-2024) mientras el índice de su tipo subía 304%: su brecha de snacks llegaba a −80% y sesgaba la TPD y el índice
+   sin TACC de todas las sucursales en 2023-2024 (BUG-51).
+
+### 14.2 Cambios (BRECHA_CELIACA §17)
+
+| Qué | Dónde |
+|---|---|
+| Bootstrap por empresa (país, regiones, provincias) y bootstrap rápido verificado contra el directo | CELDA 8c, hoja `IC_grupos` (`*_empresa`) |
+| Errores agrupados por empresa en la TPD, la hedónica y la concentración | CELDAS 8b y 8c; hojas `Serie_TPD`, `Brecha_tipo_TPD`, `Hedonica_grupos`, `Concentracion_modelos` |
+| Composición, varianza entre sucursales y surtido por empresa | hojas `Composicion_empresas`, `Varianza_empresa`, `Surtido_empresa` |
+| Hedónica con el surtido de cada grupo (parte del surtido) y por año | hojas `Hedonica_grupos`, `Hedonica_grupos_anual` |
+| Prima de la misma marca | hoja `Prima_misma_marca` (`MARCA` en los CSV de las canastas; `MARCA_EQUIVALENTE` = Snuks → Lasfor) |
+| Sucursales ponderadas por la población de su provincia | hoja `Sensibilidad` (+104,4%; amplia +144,8%) |
+| Precios congelados de una empresa (BUG-51) | CELDA 7, hoja `Precios_congelados` |
+| Datos para investigadores | `datos/`: `panel_producto_sucursal_mes_adicionales`, `productos.csv`, `diccionario_datos.csv`, `LEEME.md`; `docs/brecha_celiaca/GUIA_INVESTIGADORES.md` |
+| Gráficos | IC por sucursal y por empresa, TPD con las dos bandas, hedónica con el surtido, `prima_misma_marca`, `composicion_empresas` |
+
+### 14.3 Validación
+
+Test con 54 controles contra fuerza bruta (12 nuevos), la suite de 15 tests en verde, simulación de los dos notebooks con
+los zips del Drive (nb06 en 10,0 min; nb06b en 12,1 min, con el caché) y `s12` independiente con diferencia 0 (también en los precios
+congelados). Esperados: `docs/brecha_celiaca/simulacion_2026-10-27b/` y `simulacion_06b_2026-10-27b/`. **Falta la
+corrida de Colab** de los dos (no relee el SEPA: el filtro nuevo trabaja sobre los precios ya leídos).
+
+### 14.4 Lo que queda para los investigadores
+
+- Inferencia con pocas empresas (12): *wild cluster bootstrap* o correcciones de pocos grupos, y correlación entre meses.
+- La selección por disponibilidad (la brecha se mide donde están los dos lados; 68% de las sucursal-meses).
+- La exogeneidad de la concentración (las cadenas eligen dónde abrir).
+- Pesos de un hogar celíaco (la ENGHo pondera el gasto de todos los hogares) y canales fuera del SEPA (dietéticas).

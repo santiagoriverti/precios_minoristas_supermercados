@@ -10,7 +10,7 @@ F_XLS, D_OUT = Path(sys.argv[1]), Path(sys.argv[2])
 AFUERA = {'Leeme', 'Comparacion_productos', 'Detalle_producto'}
 CLAVES = ['tipo', 'subtipo', 'lado', 'rol', 'ean', 'ean_norm', 'mes', 'anio', 'provincia', 'region', 'empresa',
           'cadena', 'localidad', 'id_comercio', 'id_bandera', 'id_sucursal', 'departamento_id', 'serie', 'desde', 'hasta',
-          'producto', 'universo']
+          'producto', 'universo', 'periodo', 'marca']
 D_OUT.mkdir(parents=True, exist_ok=True)
 xls = pd.ExcelFile(F_XLS, engine='openpyxl')
 n = 0

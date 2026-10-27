@@ -52,6 +52,24 @@ el Maestro de Productos Interno (`data/`), las salidas del nb09 (`trazabilidad_p
 | 16 | `s16_comparar_colab.py <brecha_celiaca_AAAA-MM.xlsx> <carpeta de esperados>` | Compara hoja por hoja el Excel de una corrida (Colab) con los resultados esperados (filas de un solo lado y diferencia máxima de cada columna). La primera corrida de Colab (2026-10-23) dio 29 hojas iguales a `docs/brecha_celiaca/simulacion_2026-10-23/`; con el notebook vigente (BUG-47) la referencia es `simulacion_2026-10-23b/` (30 hojas). Desde el 2026-10-27 une también por las claves de las hojas de la CELDA 8c y del `Resumen` (`suc_key`, `nivel`, `escenario`, `grupo`, `termino`...): antes las unía muchos a muchos. |
 | 17 | `s17_esperados.py <Excel de la simulación> <carpeta de salida>` | Arma la carpeta de resultados esperados (un CSV por hoja, sin `Leeme`, `Comparacion_productos` ni `Detalle_producto`) |
 | 18 | `s18_canasta_amplia.py <continuidad.parquet> <caché de la lectura amplia> <pares_20261022.parquet> <sim_suc_geo.parquet> <salida.csv> <cat_20261022.parquet>` | Canasta AMPLIA de la oferta actual (2026-10-27, nb06b): las reglas de s9 + s10 sobre los últimos 15 meses (ago-2025 → oct-2026), con pan envasado, harinas y premezclas, alfajores y tapas además de los cinco tipos de la canasta fija (BRECHA_CELIACA §16). Gramos: el consenso de lo que publican las cadenas el 22/10 (`cat_20261022`), que resuelve las presentaciones por unidades y los Maestros desactualizados; ambiguos, afuera. Precios de una empresa fuera de escala afuera antes de medir la identidad. Alfajores sueltos y en caja por los gramos verificados. → el CSV de la canasta amplia, `productos_sensibilidad_amplia.csv`, `.reglas` (motivo de cada candidato) y `.verif` |
+| 19 | `s19_suite_tests.py <repo> <log de salida>` | Corre los 15 tests del repositorio (`notebooks/test_*.py`; `test_encadenado_frescos` con `encadenado` y `tpd`) y anota código de salida, tiempo y última línea de cada uno; sale con 1 si alguno falla. Antes de cada commit de código |
+| 20 | `s20_banco_celdas.py <repo> <carga> <ar.json> <salida> <georef.parquet> <jobs> [notebook]` | Banco de prueba persistente: corre las celdas reales hasta la 8b (con el caché de una simulación copiado en `<salida>/_cache/`) y después ejecuta cada `<jobs>/*.py` en el mismo espacio de nombres (salida en `.log`, el archivo pasa a `.hecho`). Para iterar la CELDA 8c sin releer el SEPA ni las celdas anteriores (~3 min una sola vez) |
+
+**Segunda revisión de expertos (2026-10-27, noche; `docs/BRECHA_CELIACA.md` §17)**. Cambios en los scripts:
+
+- `s10` y `s18` escriben la columna `marca` (la normalizada de la selección) en los CSV de las canastas y de sensibilidad;
+  `gen_nb06.py` arma con ella `MARCA` de la CELDA 1 (hoja `Prima_misma_marca`, `datos/productos.csv`).
+- `s11` guarda también `precios_congelados`, `composicion_empresas`, `varianza_empresa`, `surtido_empresa`,
+  `prima_misma_marca` y `hedonica_grupos_anual`. Pasarle rutas **absolutas** (cambia de carpeta al repositorio).
+- `s12` aplica por su cuenta la regla de precios congelados de la CELDA 7 (BUG-51) e imprime cuántos empresa-código-mes
+  saca contra el notebook.
+- `s16` y `s17` usan también `periodo` y `marca` como claves (hojas `Composicion_empresas` y `Prima_misma_marca`).
+
+| Script | Qué hace |
+|---|---|
+| `r33_cadenas_tiempo.py <carpeta datos de una simulación>` | Cuánto de la variación de la brecha entre sucursales es de la cadena (R² y desvío dentro de cada cadena), surtido por cadena y año, y composición de las sucursal-meses por cadena y año (exploratorio; la versión del notebook: hojas `Varianza_empresa`, `Surtido_empresa`, `Composicion_empresas`) |
+| `r34_panel_marca_poblacion.py <carpeta datos> <canasta.csv>` | Composición del panel balanceado por empresa, brecha por subtipo ponderada por población, bootstrap por empresa de tres subtipos y pares de la misma marca por la descripción (exploratorio) |
+| `r35_precios_congelados.py <carpeta datos> [subida] [meses]` | Rachas en que una empresa repite el mismo precio de un código mientras el índice de su tipo y lado sube: con 0,5 y 6 (la regla del notebook) da las 3 rachas y 871 observaciones de la hoja `Precios_congelados`; con 0,30 y 2, también los rezagos de un mes de dic-2023 |
 
 **Revisión de la primera corrida de Colab (2026-10-23, `docs/AUDITORIA_2026-10-23_nb06.md`)**, sobre el Excel de Colab
 y los objetos de la simulación (`sim_final/`, iguales a Colab):

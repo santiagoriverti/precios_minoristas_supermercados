@@ -6,13 +6,14 @@ Autor: Santiago Riverti — investigador independiente
 
 ---
 
-## 🟢 ESTADO ACTUAL / HANDOFF [2026-10-27] — leer esto primero
+## 🟢 ESTADO ACTUAL / HANDOFF [2026-10-27 noche] — leer esto primero
 
 - **Repo**: `main` = `origin/main` al cierre (ver `git log`). Commits del 2026-10-23: `678e9b9` (nb06: canasta fija
   2022-2026 + estimador por subtipo + BUG-46), `b02871c` (documentación para retomar) y el de la tarde (revisión de la
   primera corrida de Colab del nb06 + BUG-47) y el de la noche (`46e426b`, serie TPD del nb06); el 2026-10-26, la
-  revisión de la segunda corrida de Colab; el 2026-10-27, el panel de expertos del nb06. **15 tests en OK** (el del nb06
-  tiene 42 controles desde el 2026-10-27). En una PC nueva:
+  revisión de la segunda corrida de Colab; el 2026-10-27, el panel de expertos del nb06, el nb06b, la corrida de Colab
+  verificada y, a la noche, la segunda revisión de expertos. **15 tests en OK** (el del nb06 tiene 54 controles desde
+  el 2026-10-27, noche; la suite se corre con `docs/auditoria/scripts_nb06_2026-10/s19_suite_tests.py`). En una PC nueva:
   `git clone`, `pip install -r requirements.txt` y los tests de `CLAUDE.md`.
 - **Datos en la PC del INECO** (el usuario bajó el 23/10 todo el Drive; **desde la tarde del 23/10 están en
   `C:\Users\sriverti\Downloads\carga\`**): `2022A.zip` … `2026B.zip` (idénticos a `MyDrive/carga/`; el `2026B` trae
@@ -27,11 +28,39 @@ Autor: Santiago Riverti — investigador independiente
   `simulacion/sim_v9/` (= los esperados vigentes, caché `brecha_v3_5fc88a8c` con los 25 ADICIONALES; `datos/` con los
   paneles), `simulacion/sim_super_amplia/` (lectura amplia de 1.781 candidatos, ago-2025 → oct-2026, caché
   `brecha_v3_6659af73`) y `canasta_amplia_v1/` (primera canasta amplia, s18). El `IPC.xlsx` del Drive, extraído, en
-  `C:\Users\sriverti\proyectos\carga_extraido_20261026\` (s11 `--ipc`).
+  `C:\Users\sriverti\proyectos\carga_extraido_20261026\` (s11 `--ipc`). Desde la noche del 2026-10-27 (segunda
+  revisión): `simulacion/sim_v11/` (nb06) y `simulacion/sim_06b_v3/` (nb06b) = los esperados VIGENTES
+  (`simulacion_2026-10-27b/`, `simulacion_06b_2026-10-27b/`); `canasta_v14/` y `canasta_amplia_v4/` = los CSV con
+  `marca`; `colab_20261027/` y `colab_20261027b/` = las dos corridas de Colab del 27 (iguales a la simulación).
 
 **Líneas de trabajo, en orden de prioridad:**
 
-1. **Brecha celíaca (nb06) — lo último, 2026-10-27: panel de expertos** (`docs/EVALUACION_EXPERTOS_2026-10-27_nb06.md`;
+1. **Brecha celíaca (nb06 y nb06b) — lo último, 2026-10-27 noche: segunda revisión de expertos** (EVALUACION_EXPERTOS
+   §14, BRECHA_CELIACA §17, guía `docs/brecha_celiaca/GUIA_INVESTIGADORES.md`). El usuario pidió revisar, como el mejor
+   equipo de estadística y economía, si canastas y productos sirven para estimar la brecha y su distribución (tiempo,
+   territorio, concentración, cadenas; cada cadena vende productos distintos y cambian), corregir lo necesario para
+   que el Excel y `datos/` sirvan a investigadores, actualizar toda la documentación, commitear y pushear. Decidido con
+   el usuario: estimador por subtipo + pares de la misma marca como robustez; dos notebooks (06 evolución, 06b nivel).
+   - **Veredicto**: las canastas quedan. Faltaba inferencia por cadena (la empresa fija el precio de todas sus
+     sucursales: R² de la empresa > 0,5 en 8 de 12 subtipos), control de composición (DIA 41% → 5% de las celdas),
+     surtido y marca, y un error de datos (BUG-51).
+   - **Aplicado**: bootstrap por empresa (`IC_grupos` `*_empresa`; fija +103,1%, IC por empresa +93,7% a +106,3%; con
+     él ninguna región difiere del país); errores por empresa en TPD, hedónica y concentración (TPD del panel: IC de
+     1,6 pp por sucursal, 15,8 pp por empresa); BUG-51 precios congelados (CELDA 7; Deheza Crisppino $290 abr-2023 →
+     jul-2024; 3 rachas, 871 obs; 06b ninguna); hojas `Composicion_empresas`, `Varianza_empresa`, `Surtido_empresa`,
+     `Prima_misma_marca` (spaghetti, penne y almohaditas ya son una sola marca; tirabuzón +134% contra +179%; 06b, 12
+     pares), `Hedonica_grupos_anual`, `Precios_congelados`; hedónica con el surtido (prima base por subtipo;
+     ChangoMas +0,6% con los mismos productos, +13% con su surtido); escenario por población (+104,4%; 06b +144,8%);
+     bootstrap rápido verificado contra el directo; `datos/` con `productos.csv`, `diccionario_datos.csv`,
+     `LEEME.md` y el panel de ADICIONALES; columna `marca` en los CSV (s10, s18). 57 hojas.
+   - **Validación**: test 54 controles, suite 15/15; `sim_v11` y `sim_06b_v3`; s12 igual (también los congelados).
+   - **Siguiente**: correr los dos notebooks en Colab (no relee el SEPA; con el caché ~15 min el 06 y ~20 el 06b) y
+     comparar con `s16` contra `simulacion_2026-10-27b` y `simulacion_06b_2026-10-27b`; después, el subtipo vainillas.
+   - **Reglas nuevas**: reportar los dos IC (por sucursal y por empresa); si se cambia `_canasta`/`_agg_tipo`,
+     cambiar también el bootstrap rápido (la celda lo verifica contra el directo y se detiene si difieren); rutas
+     absolutas a s11/s20; para iterar la 8c, `s20_banco_celdas.py`.
+
+   Antes, **2026-10-27: panel de expertos** (`docs/EVALUACION_EXPERTOS_2026-10-27_nb06.md`;
    BRECHA_CELIACA §14.17 y §15). El usuario pidió evaluar, como un equipo de expertos en estadística y economía, si
    los productos y canastas sirven para la brecha y su distribución (tiempo, geografía, cadena, concentración) y
    dejar el notebook listo para correr desde GitHub con el Excel y los datos para el análisis propio.

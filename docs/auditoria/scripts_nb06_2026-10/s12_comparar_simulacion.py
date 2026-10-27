@@ -76,6 +76,36 @@ P = P[P['_at'].isna()].drop(columns='_at')
 _at_nb = SIM / 'sim_precios_atipicos.parquet'
 print(f'Precios de una empresa fuera de escala: independiente {len(at)} empresa-código-mes | nb06 '
       f'{len(pd.read_parquet(_at_nb)) if _at_nb.exists() else "?"}')
+# precios congelados de una empresa (misma regla de la CELDA 7): el mismo precio de un código MESES_CONGELADO meses
+# seguidos o más, con el índice de su tipo y lado (mediana entre empresa-códigos de la variación mensual de meses
+# seguidos, encadenada) arriba más de SUBA_CONGELADO desde que se fijó: afuera los meses con el índice arriba del umbral
+MC, SC = g.get('MESES_CONGELADO', 6), g.get('SUBA_CONGELADO', 0.5)
+pe = P.groupby(['empresa', 'ean', 'tipo', 'rol', 'mes'])['p100'].median().rename('pe').reset_index()
+meses_cg = sorted(pe['mes'].unique())
+pe['t'] = pe['mes'].map({m_: i_ for i_, m_ in enumerate(meses_cg)})
+series = {k_: x.sort_values('t') for k_, x in pe.groupby(['empresa', 'ean'])}
+var = []
+for x in series.values():
+    lpx, tx = np.log(x['pe'].to_numpy()), x['t'].to_numpy()
+    var += [(x['tipo'].iloc[0], x['rol'].iloc[0], tx[k_ + 1], lpx[k_ + 1] - lpx[k_]) for k_ in range(len(x) - 1)
+            if tx[k_ + 1] - tx[k_] == 1]
+IXc = (pd.DataFrame(var, columns=['tipo', 'rol', 't', 'dl']).groupby(['tipo', 'rol', 't'])['dl'].median()
+       .unstack(['tipo', 'rol']).reindex(range(len(meses_cg))).fillna(0).cumsum())
+cong = set()
+for (e_, a_), x in series.items():
+    lpx, tx, ref = np.log(x['pe'].to_numpy()), x['t'].to_numpy(), IXc[(x['tipo'].iloc[0], x['rol'].iloc[0])].to_numpy()
+    i_ = 0
+    while i_ < len(x):
+        j_ = i_
+        while j_ + 1 < len(x) and tx[j_ + 1] == tx[j_] + 1 and abs(lpx[j_ + 1] - lpx[i_]) < 0.005:
+            j_ += 1
+        if j_ - i_ + 1 >= MC:
+            cong |= {(e_, a_, meses_cg[tx[k_]]) for k_ in range(i_, j_ + 1) if np.expm1(ref[tx[k_]] - ref[tx[i_]]) > SC}
+        i_ = j_ + 1
+P = P[[(e_, a_, m_) not in cong for e_, a_, m_ in zip(P['empresa'], P['ean'], P['mes'])]]
+_cg_nb = SIM / 'sim_precios_congelados.parquet'
+print(f'Precios congelados: independiente {len(cong)} empresa-código-mes | nb06 '
+      f'{int(pd.read_parquet(_cg_nb)["meses_descartados"].sum()) if _cg_nb.exists() else "?"}')
 sg = pd.read_parquet(SIM / 'sim_suc_geo.parquet')[['id_comercio', 'id_bandera', 'id_sucursal']]
 P = P.merge(sg, on=['id_comercio', 'id_bandera', 'id_sucursal'])          # mismo universo de sucursales
 P['prod'] = P['ean'].map(PROD).fillna(P['ean'])          # producto con dos códigos: cuenta una vez

@@ -414,7 +414,7 @@ def _nota(r):
 
 
 OUT = filas_codigos(F, lambda r: {
-    'nota': _nota(r), 'producto': r.descripcion, 'linea': r.linea,
+    'marca': r.marca_n, 'nota': _nota(r), 'producto': r.descripcion, 'linea': r.linea,
     'sucursales_dia_mediana_2022_2026': round(r.suc_mes_mediana, 1), 'caidas': r.caidas,
     'cobertura_2022_sobre_2026': round(r.cob_2022_sobre_2026, 2), 'provincias': r.provincias,
     'comercios': r.comercios_super, 'cadenas_grandes': r.cadenas_grandes,
@@ -425,7 +425,7 @@ OUT = filas_codigos(F, lambda r: {
 OUT.to_csv(F_OUT, index=False, encoding='utf-8')
 print(f'\nGuardado: {F_OUT} ({len(OUT)} EANs, {F["item"].nunique()} productos, {F["linea"].nunique()} líneas)')
 SENS = filas_codigos(U, lambda r: {
-    'nota': _nota(r), 'producto': r.descripcion, 'linea_todos': r.linea, 'en_canasta': r.en_canasta,
+    'marca': r.marca_n, 'nota': _nota(r), 'producto': r.descripcion, 'linea_todos': r.linea, 'en_canasta': r.en_canasta,
     'motivo': r.motivo, 'sustituto': r.sustituto, 'sucursales_dia_mediana_2022_2026': round(r.suc_mes_mediana, 1),
     'precio_sobre_mediana_con_tacc_subtipo': round(r.rel_tier, 3)})
 F_SENS = F_OUT.with_name('productos_sensibilidad.csv')

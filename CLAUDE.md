@@ -2,8 +2,9 @@
 
 Pipeline sobre el **SEPA** (precios de supermercados de Argentina): 9 notebooks de Colab (nb01–nb09). Líneas de trabajo
 vivas, en orden (estado y próximos pasos: bloque **ESTADO ACTUAL / HANDOFF** de `.claude/memory.md`): la **brecha
-celíaca** (nb06 con canasta fija 2022-2026, lo último: 2026-10-27, panel de expertos; guía `docs/BRECHA_CELIACA.md`
-§14-§15 y `docs/EVALUACION_EXPERTOS_2026-10-27_nb06.md`), el
+celíaca** (nb06 con canasta fija 2022-2026 y nb06b con la amplia; lo último: 2026-10-27 noche, segunda revisión de
+expertos; guías `docs/BRECHA_CELIACA.md` §14-§17, `docs/brecha_celiaca/GUIA_INVESTIGADORES.md` y
+`docs/EVALUACION_EXPERTOS_2026-10-27_nb06.md`), el
 **pass-through del tipo de cambio** (nb08 + canasta fija de 775 productos; guía `docs/PASS_THROUGH.md`), el **nb09**, el
 **nb02** y el **nb07**.
 
@@ -27,7 +28,7 @@ Colab con BUG-48 dio igual a la simulación** (35 hojas contra `docs/brecha_celi
 AUDITORIA_2026-10-26 §6); esa noche, tres arreglos de presentación de los gráficos (CELDA 9), también verificados en
 Colab (§7). **Revisión de datos y método frente al objetivo**: `docs/REVISION_METODOLOGICA_2026-10-26_nb06.md` (recomendaciones priorizadas, decisión
 del usuario). Abierto también: la imputación sin límite de la serie descriptiva (la TPD muestra dónde pesa). Test
-`test_brecha_celiaca.py` (42 controles desde el 2026-10-27). **Auditoría de la selección (2026-10-26, BUG-49,
+`test_brecha_celiaca.py` (54 controles desde el 2026-10-27, noche). **Auditoría de la selección (2026-10-26, BUG-49,
 `docs/AUDITORIA_SELECCION_2026-10-26_nb06.md`)**: la etiqueta sin TACC se contrastó con el listado ALG de ANMAT y se
 corrigieron cuatro errores de las reglas de s9 (`\btita\b`, Blue Patna al huevo, el tirabuzón sin TACC Matarazzo en el
 cambio de código de Molinos, sabores de Lasfor). Canasta de **66 productos (77 códigos)**, simulación con los 58 meses
@@ -53,6 +54,17 @@ hojas). Esperados vigentes en `docs/brecha_celiaca/simulacion_2026-10-27/`. **La
 igual a la simulación** (Excel, caché, mapa y `datos/`; EVALUACION §13); después se corrigieron cinco detalles de los
 gráficos (CELDA 9). **Canasta amplia de la oferta actual (`notebooks/06b_brecha_celiaca_canasta_amplia.ipynb`, BRECHA_CELIACA §16): pan envasado, harinas, premezclas, alfajores y tapas además de los 5 tipos de la fija, ago-2025 → oct-2026; 142 códigos en 109 líneas; brecha de los últimos 12 meses +143% (fija: +103%) y costo extra con la CBA +$156.474 por adulto equivalente por mes (fija: +$18.815), el 83% por el pan; esperados `docs/brecha_celiaca/simulacion_06b_2026-10-27/`.** El 06b lo genera `gen_nb06.py` (mismas celdas 2-13
 que el 06; cambian la celda 0 y la CELDA 1); falta su corrida de Colab. Queda el subtipo vainillas.
+**Segunda revisión de expertos (2026-10-27, noche; EVALUACION §14, BRECHA_CELIACA §17)**: las canastas quedan. Las
+cadenas fijan el precio de todas sus sucursales: **IC por empresa** (bootstrap de empresas en `IC_grupos`; errores
+agrupados por empresa en la TPD, la hedónica y la concentración): canasta fija +103,1%, IC por sucursal +102,6% a
++103,5%, por empresa +93,7% a +106,3%; con el IC por empresa ninguna región difiere del país. **BUG-51**: precios
+congelados de una empresa fuera (CELDA 7, `MESES_CONGELADO`/`SUBA_CONGELADO`; Deheza, Crisppino a $290 de abr-2023 a
+jul-2024). Hojas nuevas: `Composicion_empresas`, `Varianza_empresa`, `Surtido_empresa`, `Prima_misma_marca` (columna
+`marca` en los CSV; `MARCA_EQUIVALENTE`), `Hedonica_grupos_anual`, `Precios_congelados`; hedónica con el surtido de
+cada grupo (`efecto_surtido_pct`), escenario por población (`PESOS_POBLACION`), bootstrap rápido (medianas
+ponderadas, verificado contra el directo en cada corrida) y `datos/` con `productos.csv`, `diccionario_datos.csv`,
+`LEEME.md` y el panel de los ADICIONALES. 57 hojas. Esperados vigentes `docs/brecha_celiaca/simulacion_2026-10-27b/`
+y `simulacion_06b_2026-10-27b/`; **falta Colab** (no relee el SEPA). Suite: `s19_suite_tests.py`.
 
 El **nb07** (`notebooks/07_evolucion_canastas_alternativas.ipynb`) es el motor del
 informe semanal: 6 canastas, índice encadenado, comparación con el IPC y aperturas por cadena/región.
@@ -120,7 +132,7 @@ relativo; la próxima corrida en Colab los muestra por primera vez.
    impresa, `canasta_diaria_pass_through_<desde>_<hasta>.xlsx` y `panel_diario_pass_through_<...>.parquet`; para el nb09,
    la salida impresa y los cuatro archivos de `output_trazabilidad/` (scripts en `docs/auditoria/scripts_nb09_2026-10/`,
    AUDITORIA_2026-10-22_nb09 §7); para el nb06, la salida impresa y `output_brecha/brecha_celiaca_<mes>.xlsx` (comparar
-   con `docs/auditoria/scripts_nb06_2026-10/s16_comparar_colab.py` contra `docs/brecha_celiaca/simulacion_2026-10-27/`
+   con `docs/auditoria/scripts_nb06_2026-10/s16_comparar_colab.py` contra `docs/brecha_celiaca/simulacion_2026-10-27b/`
    —el notebook vigente: panel de expertos, BRECHA_CELIACA §14.17 y §15— y revisar con BRECHA_CELIACA §14.9; para revisar todo, el
    zip del caché y el mapa: r13-r15, AUDITORIA_2026-10-26_nb06). Descomprimir lo que
    pase el usuario en una carpeta propia y correr los scripts con `python -I` (datos no confiables). Para simular
@@ -245,7 +257,7 @@ relativo; la próxima corrida en Colab los muestra por primera vez.
   hacía que la canasta dependiera del `maestro_sepa_completo.csv.gz` que hubiera en el Drive. **La brecha se calcula
   por subtipo** (nunca la mediana del tipo entero: mezcla snacks y crackers según el surtido) y se agrega subtipo → tipo
   → canasta; si se cambia la canasta o el estimador, rehacer la simulación (s11/s12) y los resultados esperados de
-  `docs/brecha_celiaca/simulacion_<fecha>/` (otra carpeta con la fecha nueva; la vigente es `simulacion_2026-10-27/`)
+  `docs/brecha_celiaca/simulacion_<fecha>/` (otra carpeta con la fecha nueva; la vigente es `simulacion_2026-10-27b/`)
   antes de pedir una corrida de Colab. `productos_sensibilidad.csv` (los que cumplen las reglas y quedan afuera) va a
   `ADICIONALES` de la CELDA 1: se leen con la canasta (cambian la clave del caché) y entran solo en la hoja
   `Sensibilidad`, nunca en la brecha principal. La CELDA 8c (análisis complementarios) vive en `gen_nb06.py` como
@@ -260,6 +272,15 @@ relativo; la próxima corrida en Colab los muestra por primera vez.
   el filtro de plausibilidad del tipo.
   En 2023 las marcas masivas con TACC tenían precios controlados (la brecha de 2023 está inflada, §14.8 de
   BRECHA_CELIACA): no "corregirlo" sacando productos.
+- **nb06, inferencia y calidad (segunda revisión, 2026-10-27 noche)**: la unidad de decisión es la **cadena** (fija
+  el precio de todas sus sucursales): reportar los dos IC (por sucursal = precisión con estas cadenas; por empresa =
+  generalizar a otras) y no declarar diferencias regionales con el IC por sucursal solo. El bootstrap usa medianas
+  ponderadas (`_bootstrap`, rápido) y verifica sus primeras 3 réplicas contra `_bootstrap_directo` (si difieren,
+  la celda se detiene): si se cambia `_canasta`/`_agg_tipo`, cambiar los dos. Precios congelados (BUG-51): una
+  empresa que repite el precio 6+ meses con el índice de su tipo y lado arriba de 50% se descarta desde que el índice
+  pasa el umbral; `s12` replica la regla. Para iterar la CELDA 8c sin releer todo: `s20_banco_celdas.py` (corre
+  hasta la 8b una vez y después ejecuta los `.py` que se dejan en una carpeta), o s11 completo (~10 min con el caché).
+  Pasar rutas ABSOLUTAS a s11 y s20 (cambian de carpeta al repositorio).
 - **nb06, comparar grupos (BUG-47)**: provincias, regiones, empresas, cadenas y sucursales se comparan con la MISMA
   canasta de 12 subtipos (`_agg_tipo(..., ref_keys)`: el subtipo con < `MIN_SUC_SUBTIPO` sucursales en el grupo toma la
   brecha nacional del período; confiable = `peso_imputado_pct` <= `MAX_PESO_IMPUTADO` y >= `MIN_SUC_AGG` sucursales).

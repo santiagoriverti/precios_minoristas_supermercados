@@ -1,0 +1,661 @@
+mes,tipo,subtipo,brecha_tpd,sucursales_con_pares,movido_con_los_demas,movido_con,universo
+2025-08,Fideos secos,Mostachol / penne,158.4650421700102,1160,False,,panel balanceado
+2025-09,Fideos secos,Mostachol / penne,160.9653211205091,1157,False,,panel balanceado
+2025-10,Fideos secos,Mostachol / penne,158.8723405958584,1152,False,,panel balanceado
+2025-11,Fideos secos,Mostachol / penne,161.9066612922096,1095,False,,panel balanceado
+2025-12,Fideos secos,Mostachol / penne,159.7720041239784,1134,False,,panel balanceado
+2026-01,Fideos secos,Mostachol / penne,158.532975493578,1099,False,,panel balanceado
+2026-02,Fideos secos,Mostachol / penne,159.3378058759555,1053,False,,panel balanceado
+2026-03,Fideos secos,Mostachol / penne,165.5240989651112,1129,False,,panel balanceado
+2026-04,Fideos secos,Mostachol / penne,177.2252406765001,1133,False,,panel balanceado
+2026-05,Fideos secos,Mostachol / penne,177.1308040098397,1127,False,,panel balanceado
+2026-06,Fideos secos,Mostachol / penne,175.2725437431095,1137,False,,panel balanceado
+2026-07,Fideos secos,Mostachol / penne,166.7777315147967,1144,False,,panel balanceado
+2026-08,Fideos secos,Mostachol / penne,163.7047663333858,1140,False,,panel balanceado
+2026-09,Fideos secos,Mostachol / penne,161.3389751163082,1138,False,,panel balanceado
+2026-10,Fideos secos,Mostachol / penne,159.3518903582508,1128,False,,panel balanceado
+2025-08,Fideos secos,Spaghetti,110.2160777596824,1059,False,,panel balanceado
+2025-09,Fideos secos,Spaghetti,124.7090643972735,1114,False,,panel balanceado
+2025-10,Fideos secos,Spaghetti,126.3797400465858,1107,False,,panel balanceado
+2025-11,Fideos secos,Spaghetti,120.3091115403475,1120,False,,panel balanceado
+2025-12,Fideos secos,Spaghetti,117.1132393382336,1120,False,,panel balanceado
+2026-01,Fideos secos,Spaghetti,116.1112546765758,1121,False,,panel balanceado
+2026-02,Fideos secos,Spaghetti,133.3088581453195,1121,False,,panel balanceado
+2026-03,Fideos secos,Spaghetti,129.886030850946,1121,False,,panel balanceado
+2026-04,Fideos secos,Spaghetti,139.2270573087694,1121,False,,panel balanceado
+2026-05,Fideos secos,Spaghetti,141.9239301762439,1119,False,,panel balanceado
+2026-06,Fideos secos,Spaghetti,138.1555147223168,1003,False,,panel balanceado
+2026-07,Fideos secos,Spaghetti,129.243328795744,997,False,,panel balanceado
+2026-08,Fideos secos,Spaghetti,129.9928356209661,988,False,,panel balanceado
+2026-09,Fideos secos,Spaghetti,125.8010467338573,993,False,,panel balanceado
+2026-10,Fideos secos,Spaghetti,123.8067320074834,988,False,,panel balanceado
+2025-08,Fideos secos,Tirabuzón / fusilli,206.2206183921207,1379,False,,panel balanceado
+2025-09,Fideos secos,Tirabuzón / fusilli,216.9183333579274,1378,False,,panel balanceado
+2025-10,Fideos secos,Tirabuzón / fusilli,219.3548851236174,1366,False,,panel balanceado
+2025-11,Fideos secos,Tirabuzón / fusilli,238.4772854741671,1377,False,,panel balanceado
+2025-12,Fideos secos,Tirabuzón / fusilli,232.9219008207978,1374,False,,panel balanceado
+2026-01,Fideos secos,Tirabuzón / fusilli,232.5461648562226,1374,False,,panel balanceado
+2026-02,Fideos secos,Tirabuzón / fusilli,257.5302374081989,1377,False,,panel balanceado
+2026-03,Fideos secos,Tirabuzón / fusilli,276.9262851602139,1378,False,,panel balanceado
+2026-04,Fideos secos,Tirabuzón / fusilli,285.8548701685904,1376,False,,panel balanceado
+2026-05,Fideos secos,Tirabuzón / fusilli,267.5453066338989,1376,False,,panel balanceado
+2026-06,Fideos secos,Tirabuzón / fusilli,258.755383389135,1364,False,,panel balanceado
+2026-07,Fideos secos,Tirabuzón / fusilli,251.3389970641209,1359,False,,panel balanceado
+2026-08,Fideos secos,Tirabuzón / fusilli,247.2036385875946,1355,False,,panel balanceado
+2026-09,Fideos secos,Tirabuzón / fusilli,254.209747313324,1354,False,,panel balanceado
+2026-10,Fideos secos,Tirabuzón / fusilli,242.8256041590937,1350,False,,panel balanceado
+2025-08,Galletitas dulces,Bizcochos,125.9123597441371,469,False,,panel balanceado
+2025-09,Galletitas dulces,Bizcochos,144.4333519580198,412,False,,panel balanceado
+2025-10,Galletitas dulces,Bizcochos,137.5370976792427,515,False,,panel balanceado
+2025-11,Galletitas dulces,Bizcochos,127.0313108469778,525,False,,panel balanceado
+2025-12,Galletitas dulces,Bizcochos,134.2673675604238,524,False,,panel balanceado
+2026-01,Galletitas dulces,Bizcochos,145.2214668580019,516,False,,panel balanceado
+2026-02,Galletitas dulces,Bizcochos,161.56189026594,522,False,,panel balanceado
+2026-03,Galletitas dulces,Bizcochos,168.8097279310012,519,False,,panel balanceado
+2026-04,Galletitas dulces,Bizcochos,146.6728331299609,371,False,,panel balanceado
+2026-05,Galletitas dulces,Bizcochos,145.3670451046638,456,False,,panel balanceado
+2026-06,Galletitas dulces,Bizcochos,137.9058884682424,463,False,,panel balanceado
+2026-07,Galletitas dulces,Bizcochos,152.0363340514381,462,False,,panel balanceado
+2026-08,Galletitas dulces,Bizcochos,135.0337777736737,512,False,,panel balanceado
+2026-09,Galletitas dulces,Bizcochos,132.0051112965971,511,False,,panel balanceado
+2026-10,Galletitas dulces,Bizcochos,131.0268216197292,510,False,,panel balanceado
+2025-08,Galletitas dulces,Con chips,16.44418308793463,2091,False,,panel balanceado
+2025-09,Galletitas dulces,Con chips,11.38606776533257,2105,False,,panel balanceado
+2025-10,Galletitas dulces,Con chips,14.72930802992047,2108,False,,panel balanceado
+2025-11,Galletitas dulces,Con chips,14.73616076746079,2091,False,,panel balanceado
+2025-12,Galletitas dulces,Con chips,14.47391226112588,2101,False,,panel balanceado
+2026-01,Galletitas dulces,Con chips,16.13261314419159,2009,False,,panel balanceado
+2026-02,Galletitas dulces,Con chips,26.34649188272079,1989,False,,panel balanceado
+2026-03,Galletitas dulces,Con chips,26.58735823160559,2007,False,,panel balanceado
+2026-04,Galletitas dulces,Con chips,23.14877579742438,2099,False,,panel balanceado
+2026-05,Galletitas dulces,Con chips,23.4688083915646,2098,False,,panel balanceado
+2026-06,Galletitas dulces,Con chips,32.14229502404976,2083,False,,panel balanceado
+2026-07,Galletitas dulces,Con chips,28.5530277217226,2070,False,,panel balanceado
+2026-08,Galletitas dulces,Con chips,26.18170407316953,2037,False,,panel balanceado
+2026-09,Galletitas dulces,Con chips,30.35708286337512,1991,False,,panel balanceado
+2026-10,Galletitas dulces,Con chips,23.05690727802789,1930,False,,panel balanceado
+2025-08,Galletitas dulces,Obleas,98.50989359479863,210,False,,panel balanceado
+2025-09,Galletitas dulces,Obleas,86.10763720977701,341,False,,panel balanceado
+2025-10,Galletitas dulces,Obleas,79.97927575713027,392,False,,panel balanceado
+2025-11,Galletitas dulces,Obleas,78.72336329582095,399,False,,panel balanceado
+2025-12,Galletitas dulces,Obleas,71.91157565701958,398,False,,panel balanceado
+2026-01,Galletitas dulces,Obleas,76.715301264077,396,False,,panel balanceado
+2026-02,Galletitas dulces,Obleas,85.04443939866178,382,False,,panel balanceado
+2026-03,Galletitas dulces,Obleas,106.3142345316004,379,False,,panel balanceado
+2026-04,Galletitas dulces,Obleas,108.8836924392406,374,False,,panel balanceado
+2026-05,Galletitas dulces,Obleas,97.48766053741802,371,False,,panel balanceado
+2026-06,Galletitas dulces,Obleas,98.65044946575632,397,False,,panel balanceado
+2026-07,Galletitas dulces,Obleas,107.7872843979371,310,False,,panel balanceado
+2026-08,Galletitas dulces,Obleas,102.2773979495891,310,False,,panel balanceado
+2026-09,Galletitas dulces,Obleas,113.1254116477153,307,False,,panel balanceado
+2026-10,Galletitas dulces,Obleas,108.4545022050196,301,False,,panel balanceado
+2025-08,Galletitas dulces,Rellenas,100.7826269155453,2186,False,,panel balanceado
+2025-09,Galletitas dulces,Rellenas,100.1054504491936,2188,False,,panel balanceado
+2025-10,Galletitas dulces,Rellenas,98.43358955694761,2186,False,,panel balanceado
+2025-11,Galletitas dulces,Rellenas,101.1262159483866,2179,False,,panel balanceado
+2025-12,Galletitas dulces,Rellenas,100.2224897653126,2187,False,,panel balanceado
+2026-01,Galletitas dulces,Rellenas,97.18247138138747,2189,False,,panel balanceado
+2026-02,Galletitas dulces,Rellenas,102.8373003920939,2187,False,,panel balanceado
+2026-03,Galletitas dulces,Rellenas,102.6656185345977,2186,False,,panel balanceado
+2026-04,Galletitas dulces,Rellenas,108.5770776464085,2187,False,,panel balanceado
+2026-05,Galletitas dulces,Rellenas,97.97826377420424,2187,False,,panel balanceado
+2026-06,Galletitas dulces,Rellenas,103.1070182930895,2168,False,,panel balanceado
+2026-07,Galletitas dulces,Rellenas,102.931482509605,2154,False,,panel balanceado
+2026-08,Galletitas dulces,Rellenas,96.61039031628596,2136,False,,panel balanceado
+2026-09,Galletitas dulces,Rellenas,72.74956968655546,2138,False,,panel balanceado
+2026-10,Galletitas dulces,Rellenas,92.10573950264651,2112,False,,panel balanceado
+2025-08,Galletitas dulces,"Secas (vainilla, limón, chocolate)",85.69324636067104,618,False,,panel balanceado
+2025-09,Galletitas dulces,"Secas (vainilla, limón, chocolate)",73.90456277419668,619,False,,panel balanceado
+2025-10,Galletitas dulces,"Secas (vainilla, limón, chocolate)",71.28209629390399,619,False,,panel balanceado
+2025-11,Galletitas dulces,"Secas (vainilla, limón, chocolate)",70.72199317609427,619,False,,panel balanceado
+2025-12,Galletitas dulces,"Secas (vainilla, limón, chocolate)",69.45127324767412,619,False,,panel balanceado
+2026-01,Galletitas dulces,"Secas (vainilla, limón, chocolate)",68.59282925773942,618,False,,panel balanceado
+2026-02,Galletitas dulces,"Secas (vainilla, limón, chocolate)",77.32835134211018,619,False,,panel balanceado
+2026-03,Galletitas dulces,"Secas (vainilla, limón, chocolate)",84.62950530185951,619,False,,panel balanceado
+2026-04,Galletitas dulces,"Secas (vainilla, limón, chocolate)",86.66146931477338,619,False,,panel balanceado
+2026-05,Galletitas dulces,"Secas (vainilla, limón, chocolate)",84.72362662814747,619,False,,panel balanceado
+2026-06,Galletitas dulces,"Secas (vainilla, limón, chocolate)",94.62438391691946,582,False,,panel balanceado
+2026-07,Galletitas dulces,"Secas (vainilla, limón, chocolate)",93.81661868693894,564,False,,panel balanceado
+2026-08,Galletitas dulces,"Secas (vainilla, limón, chocolate)",85.90966210945564,555,False,,panel balanceado
+2026-09,Galletitas dulces,"Secas (vainilla, limón, chocolate)",85.64688963717961,547,False,,panel balanceado
+2026-10,Galletitas dulces,"Secas (vainilla, limón, chocolate)",84.83962376437218,546,False,,panel balanceado
+2025-08,Galletitas saladas y crackers,Crackers,359.590835644741,2074,False,,panel balanceado
+2025-09,Galletitas saladas y crackers,Crackers,341.2697227037946,2077,False,,panel balanceado
+2025-10,Galletitas saladas y crackers,Crackers,330.4706279183539,2078,False,,panel balanceado
+2025-11,Galletitas saladas y crackers,Crackers,323.466075603292,2075,False,,panel balanceado
+2025-12,Galletitas saladas y crackers,Crackers,310.6560995813363,2078,False,,panel balanceado
+2026-01,Galletitas saladas y crackers,Crackers,305.0128899908516,2076,False,,panel balanceado
+2026-02,Galletitas saladas y crackers,Crackers,306.9871714760297,2078,False,,panel balanceado
+2026-03,Galletitas saladas y crackers,Crackers,313.8830418118027,2077,False,,panel balanceado
+2026-04,Galletitas saladas y crackers,Crackers,350.7939547317245,2077,False,,panel balanceado
+2026-05,Galletitas saladas y crackers,Crackers,315.8819398516123,2077,False,,panel balanceado
+2026-06,Galletitas saladas y crackers,Crackers,322.7442488777676,2061,False,,panel balanceado
+2026-07,Galletitas saladas y crackers,Crackers,312.2178685089327,2050,False,,panel balanceado
+2026-08,Galletitas saladas y crackers,Crackers,304.2349376230146,2037,False,,panel balanceado
+2026-09,Galletitas saladas y crackers,Crackers,304.0039887476692,2032,False,,panel balanceado
+2026-10,Galletitas saladas y crackers,Crackers,319.6556449315354,1074,False,,panel balanceado
+2025-08,Galletitas saladas y crackers,Saborizadas / snack,75.09683721833198,413,False,,panel balanceado
+2025-09,Galletitas saladas y crackers,Saborizadas / snack,69.81961669696793,413,False,,panel balanceado
+2025-10,Galletitas saladas y crackers,Saborizadas / snack,66.50919575928533,411,False,,panel balanceado
+2025-11,Galletitas saladas y crackers,Saborizadas / snack,71.26428083655414,410,False,,panel balanceado
+2025-12,Galletitas saladas y crackers,Saborizadas / snack,70.69848624935848,409,False,,panel balanceado
+2026-01,Galletitas saladas y crackers,Saborizadas / snack,75.13620615338851,412,False,,panel balanceado
+2026-02,Galletitas saladas y crackers,Saborizadas / snack,75.14186640215415,404,False,,panel balanceado
+2026-03,Galletitas saladas y crackers,Saborizadas / snack,75.84757765067953,415,False,,panel balanceado
+2026-04,Galletitas saladas y crackers,Saborizadas / snack,75.75755496407687,414,False,,panel balanceado
+2026-05,Galletitas saladas y crackers,Saborizadas / snack,68.8463210346412,414,False,,panel balanceado
+2026-06,Galletitas saladas y crackers,Saborizadas / snack,67.89463425890445,402,False,,panel balanceado
+2026-07,Galletitas saladas y crackers,Saborizadas / snack,67.45094131141909,402,False,,panel balanceado
+2026-08,Galletitas saladas y crackers,Saborizadas / snack,61.47658088302612,400,False,,panel balanceado
+2026-09,Galletitas saladas y crackers,Saborizadas / snack,56.4299044827337,385,False,,panel balanceado
+2026-10,Galletitas saladas y crackers,Saborizadas / snack,55.18033952824559,374,False,,panel balanceado
+2025-08,Pan rallado y rebozador,Pan rallado,227.7510981766598,1485,False,,panel balanceado
+2025-09,Pan rallado y rebozador,Pan rallado,244.1998752425263,1487,False,,panel balanceado
+2025-10,Pan rallado y rebozador,Pan rallado,249.9995911722217,1485,False,,panel balanceado
+2025-11,Pan rallado y rebozador,Pan rallado,240.7491886484927,1483,False,,panel balanceado
+2025-12,Pan rallado y rebozador,Pan rallado,231.6910321704901,1488,False,,panel balanceado
+2026-01,Pan rallado y rebozador,Pan rallado,231.9440898403525,1490,False,,panel balanceado
+2026-02,Pan rallado y rebozador,Pan rallado,274.7536058530954,1486,False,,panel balanceado
+2026-03,Pan rallado y rebozador,Pan rallado,233.9833994170993,1489,False,,panel balanceado
+2026-04,Pan rallado y rebozador,Pan rallado,268.7134646041988,1489,False,,panel balanceado
+2026-05,Pan rallado y rebozador,Pan rallado,238.0035816132555,1485,False,,panel balanceado
+2026-06,Pan rallado y rebozador,Pan rallado,276.847011368667,1479,False,,panel balanceado
+2026-07,Pan rallado y rebozador,Pan rallado,234.3004552332374,1476,False,,panel balanceado
+2026-08,Pan rallado y rebozador,Pan rallado,270.8379178709174,1466,False,,panel balanceado
+2026-09,Pan rallado y rebozador,Pan rallado,237.3333014928606,1474,False,,panel balanceado
+2026-10,Pan rallado y rebozador,Pan rallado,237.8396679100556,1447,False,,panel balanceado
+2025-08,Pan rallado y rebozador,Rebozador,242.2984544456885,255,False,,panel balanceado
+2025-09,Pan rallado y rebozador,Rebozador,242.3707277713221,253,False,,panel balanceado
+2025-10,Pan rallado y rebozador,Rebozador,242.7271372922148,261,False,,panel balanceado
+2025-11,Pan rallado y rebozador,Rebozador,241.471090358574,238,False,,panel balanceado
+2025-12,Pan rallado y rebozador,Rebozador,242.1080618777297,246,False,,panel balanceado
+2026-01,Pan rallado y rebozador,Rebozador,237.0739438673224,263,False,,panel balanceado
+2026-02,Pan rallado y rebozador,Rebozador,234.00712579726,263,False,,panel balanceado
+2026-03,Pan rallado y rebozador,Rebozador,228.4079801467066,264,False,,panel balanceado
+2026-04,Pan rallado y rebozador,Rebozador,227.2064046332335,263,False,,panel balanceado
+2026-05,Pan rallado y rebozador,Rebozador,227.5553274574805,264,False,,panel balanceado
+2026-06,Pan rallado y rebozador,Rebozador,226.0045544808625,255,False,,panel balanceado
+2026-07,Pan rallado y rebozador,Rebozador,211.5774586880437,254,False,,panel balanceado
+2026-08,Pan rallado y rebozador,Rebozador,210.7898215628862,252,False,,panel balanceado
+2026-09,Pan rallado y rebozador,Rebozador,215.2917334690661,251,False,,panel balanceado
+2026-10,Pan rallado y rebozador,Rebozador,225.4248581947201,251,False,,panel balanceado
+2025-08,Cereales rellenos (almohaditas),Almohaditas rellenas,30.84019447980977,509,False,,panel balanceado
+2025-09,Cereales rellenos (almohaditas),Almohaditas rellenas,27.22401675801702,513,False,,panel balanceado
+2025-10,Cereales rellenos (almohaditas),Almohaditas rellenas,27.12165145802993,514,False,,panel balanceado
+2025-11,Cereales rellenos (almohaditas),Almohaditas rellenas,30.5468571773263,541,False,,panel balanceado
+2025-12,Cereales rellenos (almohaditas),Almohaditas rellenas,30.55650047767305,537,False,,panel balanceado
+2026-01,Cereales rellenos (almohaditas),Almohaditas rellenas,31.58226996365124,543,False,,panel balanceado
+2026-02,Cereales rellenos (almohaditas),Almohaditas rellenas,20.43502730790328,543,False,,panel balanceado
+2026-03,Cereales rellenos (almohaditas),Almohaditas rellenas,27.13860110539564,545,False,,panel balanceado
+2026-04,Cereales rellenos (almohaditas),Almohaditas rellenas,26.61239571821088,543,False,,panel balanceado
+2026-05,Cereales rellenos (almohaditas),Almohaditas rellenas,28.19946950603289,544,False,,panel balanceado
+2026-06,Cereales rellenos (almohaditas),Almohaditas rellenas,28.32840304356469,525,False,,panel balanceado
+2026-07,Cereales rellenos (almohaditas),Almohaditas rellenas,28.14306947868956,517,False,,panel balanceado
+2026-08,Cereales rellenos (almohaditas),Almohaditas rellenas,29.21737185154191,514,False,,panel balanceado
+2026-09,Cereales rellenos (almohaditas),Almohaditas rellenas,29.77594679391011,511,False,,panel balanceado
+2026-10,Cereales rellenos (almohaditas),Almohaditas rellenas,30.25660070289132,511,False,,panel balanceado
+2025-08,Pan envasado,Pan de molde y de mesa,200.1969144640366,1811,False,,panel balanceado
+2025-09,Pan envasado,Pan de molde y de mesa,184.8558564611119,1805,False,,panel balanceado
+2025-10,Pan envasado,Pan de molde y de mesa,178.7874077977984,1798,False,,panel balanceado
+2025-11,Pan envasado,Pan de molde y de mesa,173.852274786873,1809,False,,panel balanceado
+2025-12,Pan envasado,Pan de molde y de mesa,179.2638513681236,1805,False,,panel balanceado
+2026-01,Pan envasado,Pan de molde y de mesa,187.5052128454501,1815,False,,panel balanceado
+2026-02,Pan envasado,Pan de molde y de mesa,189.526319708758,1806,False,,panel balanceado
+2026-03,Pan envasado,Pan de molde y de mesa,185.8799286630916,1817,False,,panel balanceado
+2026-04,Pan envasado,Pan de molde y de mesa,182.4980247856902,1816,False,,panel balanceado
+2026-05,Pan envasado,Pan de molde y de mesa,172.2508486813044,1815,False,,panel balanceado
+2026-06,Pan envasado,Pan de molde y de mesa,187.2605273520852,1808,False,,panel balanceado
+2026-07,Pan envasado,Pan de molde y de mesa,199.0781755712837,1801,False,,panel balanceado
+2026-08,Pan envasado,Pan de molde y de mesa,200.9311628697056,1787,False,,panel balanceado
+2026-09,Pan envasado,Pan de molde y de mesa,158.3088674607123,1803,False,,panel balanceado
+2026-10,Pan envasado,Pan de molde y de mesa,163.2549726409791,1769,False,,panel balanceado
+2025-08,Pan envasado,Pan para hamburguesas y panchos,228.3456105248883,340,False,,panel balanceado
+2025-09,Pan envasado,Pan para hamburguesas y panchos,211.7071585211536,325,False,,panel balanceado
+2025-10,Pan envasado,Pan para hamburguesas y panchos,194.5354160345373,313,False,,panel balanceado
+2025-11,Pan envasado,Pan para hamburguesas y panchos,195.5301376421625,319,False,,panel balanceado
+2025-12,Pan envasado,Pan para hamburguesas y panchos,210.3515401676059,332,False,,panel balanceado
+2026-01,Pan envasado,Pan para hamburguesas y panchos,221.3618309183854,339,False,,panel balanceado
+2026-02,Pan envasado,Pan para hamburguesas y panchos,224.1823349085049,315,False,,panel balanceado
+2026-03,Pan envasado,Pan para hamburguesas y panchos,211.34246930896,343,False,,panel balanceado
+2026-04,Pan envasado,Pan para hamburguesas y panchos,211.732420391379,349,False,,panel balanceado
+2026-05,Pan envasado,Pan para hamburguesas y panchos,195.459836234519,346,False,,panel balanceado
+2026-06,Pan envasado,Pan para hamburguesas y panchos,207.6045805723454,342,False,,panel balanceado
+2026-07,Pan envasado,Pan para hamburguesas y panchos,205.1094929280111,338,False,,panel balanceado
+2026-08,Pan envasado,Pan para hamburguesas y panchos,202.7124793661733,332,False,,panel balanceado
+2026-09,Pan envasado,Pan para hamburguesas y panchos,202.3604997726466,331,False,,panel balanceado
+2026-10,Pan envasado,Pan para hamburguesas y panchos,202.875040249051,324,False,,panel balanceado
+2025-08,Harinas,Harina o premezcla universal,377.5627786660693,453,False,,panel balanceado
+2025-09,Harinas,Harina o premezcla universal,354.0042907721261,478,False,,panel balanceado
+2025-10,Harinas,Harina o premezcla universal,341.5236848081629,476,False,,panel balanceado
+2025-11,Harinas,Harina o premezcla universal,348.0819801566074,438,False,,panel balanceado
+2025-12,Harinas,Harina o premezcla universal,345.9225855678587,489,False,,panel balanceado
+2026-01,Harinas,Harina o premezcla universal,338.1405774019897,443,False,,panel balanceado
+2026-02,Harinas,Harina o premezcla universal,390.9766433711495,354,False,,panel balanceado
+2026-03,Harinas,Harina o premezcla universal,419.0179312223988,359,False,,panel balanceado
+2026-04,Harinas,Harina o premezcla universal,429.0751699265024,356,False,,panel balanceado
+2026-05,Harinas,Harina o premezcla universal,412.847057287963,341,False,,panel balanceado
+2026-06,Harinas,Harina o premezcla universal,404.7810650856032,490,False,,panel balanceado
+2026-07,Harinas,Harina o premezcla universal,389.347006799634,493,False,,panel balanceado
+2026-08,Harinas,Harina o premezcla universal,390.6880938268879,489,False,,panel balanceado
+2026-09,Harinas,Harina o premezcla universal,393.2896663914737,476,False,,panel balanceado
+2026-10,Harinas,Harina o premezcla universal,374.6291840973348,472,False,,panel balanceado
+2025-08,Premezclas,Premezcla para bizcochuelo y tortas,73.66024374858031,2163,False,,panel balanceado
+2025-09,Premezclas,Premezcla para bizcochuelo y tortas,79.51726955280789,2165,False,,panel balanceado
+2025-10,Premezclas,Premezcla para bizcochuelo y tortas,74.21898146354636,2165,False,,panel balanceado
+2025-11,Premezclas,Premezcla para bizcochuelo y tortas,83.03467538554455,2160,False,,panel balanceado
+2025-12,Premezclas,Premezcla para bizcochuelo y tortas,83.00623801057674,2166,False,,panel balanceado
+2026-01,Premezclas,Premezcla para bizcochuelo y tortas,81.83749753211296,2163,False,,panel balanceado
+2026-02,Premezclas,Premezcla para bizcochuelo y tortas,81.99804302715037,2158,False,,panel balanceado
+2026-03,Premezclas,Premezcla para bizcochuelo y tortas,76.94649043360558,2151,False,,panel balanceado
+2026-04,Premezclas,Premezcla para bizcochuelo y tortas,86.21448189676961,2149,False,,panel balanceado
+2026-05,Premezclas,Premezcla para bizcochuelo y tortas,78.69335049176414,2155,False,,panel balanceado
+2026-06,Premezclas,Premezcla para bizcochuelo y tortas,84.92958457013297,2145,False,,panel balanceado
+2026-07,Premezclas,Premezcla para bizcochuelo y tortas,84.67242888477693,2137,False,,panel balanceado
+2026-08,Premezclas,Premezcla para bizcochuelo y tortas,75.20872043531817,2125,False,,panel balanceado
+2026-09,Premezclas,Premezcla para bizcochuelo y tortas,75.76062986949151,2136,False,,panel balanceado
+2026-10,Premezclas,Premezcla para bizcochuelo y tortas,75.8445915717529,2108,False,,panel balanceado
+2025-08,Premezclas,Premezcla para brownie,23.92188211141606,220,False,,panel balanceado
+2025-09,Premezclas,Premezcla para brownie,21.56337711176731,219,False,,panel balanceado
+2025-10,Premezclas,Premezcla para brownie,17.01135379037053,220,False,,panel balanceado
+2025-11,Premezclas,Premezcla para brownie,16.34555291748422,220,False,,panel balanceado
+2025-12,Premezclas,Premezcla para brownie,18.92742117035885,216,False,,panel balanceado
+2026-01,Premezclas,Premezcla para brownie,22.42324719780737,220,False,,panel balanceado
+2026-02,Premezclas,Premezcla para brownie,21.37164083011682,219,False,,panel balanceado
+2026-03,Premezclas,Premezcla para brownie,15.44616259542463,151,False,,panel balanceado
+2026-04,Premezclas,Premezcla para brownie,13.78196444083916,177,False,,panel balanceado
+2026-05,Premezclas,Premezcla para brownie,16.2751108063052,220,False,,panel balanceado
+2026-06,Premezclas,Premezcla para brownie,17.63191803167481,217,False,,panel balanceado
+2026-07,Premezclas,Premezcla para brownie,17.42811741158727,218,False,,panel balanceado
+2026-08,Premezclas,Premezcla para brownie,15.23296902313068,218,False,,panel balanceado
+2026-09,Premezclas,Premezcla para brownie,16.17031323291052,217,False,,panel balanceado
+2026-10,Premezclas,Premezcla para brownie,17.29814398375759,217,False,,panel balanceado
+2025-08,Alfajores,Alfajor individual,5.897976622590539,107,False,,panel balanceado
+2025-09,Alfajores,Alfajor individual,4.638905781464333,245,False,,panel balanceado
+2025-10,Alfajores,Alfajor individual,3.768509053370277,598,False,,panel balanceado
+2025-11,Alfajores,Alfajor individual,5.466296835307027,721,False,,panel balanceado
+2025-12,Alfajores,Alfajor individual,3.923530733382488,701,False,,panel balanceado
+2026-01,Alfajores,Alfajor individual,4.24525759001466,608,False,,panel balanceado
+2026-02,Alfajores,Alfajor individual,4.72505705211347,668,False,,panel balanceado
+2026-03,Alfajores,Alfajor individual,4.633146083819033,713,False,,panel balanceado
+2026-04,Alfajores,Alfajor individual,4.158324774331561,719,False,,panel balanceado
+2026-05,Alfajores,Alfajor individual,3.963799645277799,706,False,,panel balanceado
+2026-06,Alfajores,Alfajor individual,4.059201275638914,713,False,,panel balanceado
+2026-07,Alfajores,Alfajor individual,3.127179088806139,711,False,,panel balanceado
+2026-08,Alfajores,Alfajor individual,3.156623943804985,708,False,,panel balanceado
+2026-09,Alfajores,Alfajor individual,3.722353764843907,689,False,,panel balanceado
+2026-10,Alfajores,Alfajor individual,3.403277788008738,699,False,,panel balanceado
+2025-08,Alfajores,Alfajores en caja o paquete,19.71062315554816,489,False,,panel balanceado
+2025-09,Alfajores,Alfajores en caja o paquete,13.40990090825442,547,False,,panel balanceado
+2025-10,Alfajores,Alfajores en caja o paquete,12.83258996681433,546,False,,panel balanceado
+2025-11,Alfajores,Alfajores en caja o paquete,15.53281941656471,547,False,,panel balanceado
+2025-12,Alfajores,Alfajores en caja o paquete,15.65856258887009,544,False,,panel balanceado
+2026-01,Alfajores,Alfajores en caja o paquete,13.43625401300061,533,False,,panel balanceado
+2026-02,Alfajores,Alfajores en caja o paquete,13.98475452267353,520,False,,panel balanceado
+2026-03,Alfajores,Alfajores en caja o paquete,11.50364429660657,544,False,,panel balanceado
+2026-04,Alfajores,Alfajores en caja o paquete,8.535827546455959,548,False,,panel balanceado
+2026-05,Alfajores,Alfajores en caja o paquete,8.306682245911633,548,False,,panel balanceado
+2026-06,Alfajores,Alfajores en caja o paquete,8.232424852792454,532,False,,panel balanceado
+2026-07,Alfajores,Alfajores en caja o paquete,9.908240451911224,529,False,,panel balanceado
+2026-08,Alfajores,Alfajores en caja o paquete,7.845405533885217,524,False,,panel balanceado
+2026-09,Alfajores,Alfajores en caja o paquete,8.729288328780289,521,False,,panel balanceado
+2026-10,Alfajores,Alfajores en caja o paquete,8.733228439402652,515,False,,panel balanceado
+2025-08,Tapas,Tapas para empanadas,42.46464929787329,903,False,,panel balanceado
+2025-09,Tapas,Tapas para empanadas,40.19489981308874,882,False,,panel balanceado
+2025-10,Tapas,Tapas para empanadas,40.92029987483227,892,False,,panel balanceado
+2025-11,Tapas,Tapas para empanadas,41.28375043008589,891,False,,panel balanceado
+2025-12,Tapas,Tapas para empanadas,47.35932538007003,898,False,,panel balanceado
+2026-01,Tapas,Tapas para empanadas,45.44057596239449,901,False,,panel balanceado
+2026-02,Tapas,Tapas para empanadas,42.3799768146491,904,False,,panel balanceado
+2026-03,Tapas,Tapas para empanadas,41.4450103939478,903,False,,panel balanceado
+2026-04,Tapas,Tapas para empanadas,41.29853586065801,905,False,,panel balanceado
+2026-05,Tapas,Tapas para empanadas,42.31368802257578,907,False,,panel balanceado
+2026-06,Tapas,Tapas para empanadas,43.0987726242716,882,False,,panel balanceado
+2026-07,Tapas,Tapas para empanadas,44.02137057222637,891,False,,panel balanceado
+2026-08,Tapas,Tapas para empanadas,41.97747997656843,883,False,,panel balanceado
+2026-09,Tapas,Tapas para empanadas,42.71043705673907,889,False,,panel balanceado
+2026-10,Tapas,Tapas para empanadas,42.7824926637628,880,False,,panel balanceado
+2025-08,Tapas,Tapas para tartas,80.43381315481308,484,False,,panel balanceado
+2025-09,Tapas,Tapas para tartas,75.91834625505433,482,False,,panel balanceado
+2025-10,Tapas,Tapas para tartas,75.41466061222089,475,False,,panel balanceado
+2025-11,Tapas,Tapas para tartas,75.50507773727612,456,False,,panel balanceado
+2025-12,Tapas,Tapas para tartas,76.21339024941427,475,False,,panel balanceado
+2026-01,Tapas,Tapas para tartas,72.63643917261409,491,False,,panel balanceado
+2026-02,Tapas,Tapas para tartas,70.1814679834323,488,False,,panel balanceado
+2026-03,Tapas,Tapas para tartas,70.4471870512255,477,False,,panel balanceado
+2026-04,Tapas,Tapas para tartas,70.81009356104974,489,False,,panel balanceado
+2026-05,Tapas,Tapas para tartas,69.6388045665551,485,False,,panel balanceado
+2026-06,Tapas,Tapas para tartas,71.97747862844446,470,False,,panel balanceado
+2026-07,Tapas,Tapas para tartas,72.9161222197813,475,False,,panel balanceado
+2026-08,Tapas,Tapas para tartas,79.33024280950715,472,False,,panel balanceado
+2026-09,Tapas,Tapas para tartas,71.55040370059878,478,False,,panel balanceado
+2026-10,Tapas,Tapas para tartas,71.80050605015546,470,False,,panel balanceado
+2025-08,Fideos secos,Mostachol / penne,158.1248886137815,1236,False,,todas las sucursales
+2025-09,Fideos secos,Mostachol / penne,160.4805317670351,1229,False,,todas las sucursales
+2025-10,Fideos secos,Mostachol / penne,158.4275707226168,1219,False,,todas las sucursales
+2025-11,Fideos secos,Mostachol / penne,161.2380108122499,1140,False,,todas las sucursales
+2025-12,Fideos secos,Mostachol / penne,158.9779746832148,1160,False,,todas las sucursales
+2026-01,Fideos secos,Mostachol / penne,157.7075665950578,1115,False,,todas las sucursales
+2026-02,Fideos secos,Mostachol / penne,158.5871652353199,1062,False,,todas las sucursales
+2026-03,Fideos secos,Mostachol / penne,164.7019260827946,1142,False,,todas las sucursales
+2026-04,Fideos secos,Mostachol / penne,176.3415910058812,1145,False,,todas las sucursales
+2026-05,Fideos secos,Mostachol / penne,176.3664518499088,1137,False,,todas las sucursales
+2026-06,Fideos secos,Mostachol / penne,174.6331475911451,1155,False,,todas las sucursales
+2026-07,Fideos secos,Mostachol / penne,166.9026788471584,1182,False,,todas las sucursales
+2026-08,Fideos secos,Mostachol / penne,162.4587696202582,1178,False,,todas las sucursales
+2026-09,Fideos secos,Mostachol / penne,160.1213463961296,1177,False,,todas las sucursales
+2026-10,Fideos secos,Mostachol / penne,158.5396663075334,1166,False,,todas las sucursales
+2025-08,Fideos secos,Spaghetti,124.6428698274511,2089,False,,todas las sucursales
+2025-09,Fideos secos,Spaghetti,124.8284243217952,1134,False,,todas las sucursales
+2025-10,Fideos secos,Spaghetti,126.5011222772479,1131,False,,todas las sucursales
+2025-11,Fideos secos,Spaghetti,120.3996151890357,1140,False,,todas las sucursales
+2025-12,Fideos secos,Spaghetti,117.1236347102184,1135,False,,todas las sucursales
+2026-01,Fideos secos,Spaghetti,116.1542380213084,1131,False,,todas las sucursales
+2026-02,Fideos secos,Spaghetti,133.5783257394716,1247,False,,todas las sucursales
+2026-03,Fideos secos,Spaghetti,129.8890214740325,1250,False,,todas las sucursales
+2026-04,Fideos secos,Spaghetti,139.6692025234411,1251,False,,todas las sucursales
+2026-05,Fideos secos,Spaghetti,141.9687776298458,1247,False,,todas las sucursales
+2026-06,Fideos secos,Spaghetti,138.5713542145537,1122,False,,todas las sucursales
+2026-07,Fideos secos,Spaghetti,130.3755149733821,1116,False,,todas las sucursales
+2026-08,Fideos secos,Spaghetti,118.1161186300058,2071,False,,todas las sucursales
+2026-09,Fideos secos,Spaghetti,120.3959623604658,2090,False,,todas las sucursales
+2026-10,Fideos secos,Spaghetti,111.4759391311238,2061,False,,todas las sucursales
+2025-08,Fideos secos,Tirabuzón / fusilli,211.5181662491558,1404,False,,todas las sucursales
+2025-09,Fideos secos,Tirabuzón / fusilli,222.2950043919049,1401,False,,todas las sucursales
+2025-10,Fideos secos,Tirabuzón / fusilli,224.672573307709,1388,False,,todas las sucursales
+2025-11,Fideos secos,Tirabuzón / fusilli,243.996595559547,1391,False,,todas las sucursales
+2025-12,Fideos secos,Tirabuzón / fusilli,238.6016698529616,1382,False,,todas las sucursales
+2026-01,Fideos secos,Tirabuzón / fusilli,238.147181968349,1379,False,,todas las sucursales
+2026-02,Fideos secos,Tirabuzón / fusilli,263.5671613789914,1381,False,,todas las sucursales
+2026-03,Fideos secos,Tirabuzón / fusilli,283.3381054275397,1381,False,,todas las sucursales
+2026-04,Fideos secos,Tirabuzón / fusilli,292.3202420767792,1376,False,,todas las sucursales
+2026-05,Fideos secos,Tirabuzón / fusilli,273.6533554718589,1377,False,,todas las sucursales
+2026-06,Fideos secos,Tirabuzón / fusilli,264.6250701175626,1364,False,,todas las sucursales
+2026-07,Fideos secos,Tirabuzón / fusilli,256.5640353138734,2333,False,,todas las sucursales
+2026-08,Fideos secos,Tirabuzón / fusilli,252.2555223451731,2323,False,,todas las sucursales
+2026-09,Fideos secos,Tirabuzón / fusilli,259.0968626090236,2335,False,,todas las sucursales
+2026-10,Fideos secos,Tirabuzón / fusilli,242.9808122105061,2307,False,,todas las sucursales
+2025-08,Galletitas dulces,Bizcochos,126.0291795277791,508,False,,todas las sucursales
+2025-09,Galletitas dulces,Bizcochos,145.5200702821816,433,False,,todas las sucursales
+2025-10,Galletitas dulces,Bizcochos,137.6666530931241,549,False,,todas las sucursales
+2025-11,Galletitas dulces,Bizcochos,127.0022626287126,552,False,,todas las sucursales
+2025-12,Galletitas dulces,Bizcochos,134.8147788823267,555,False,,todas las sucursales
+2026-01,Galletitas dulces,Bizcochos,146.2991615046826,540,False,,todas las sucursales
+2026-02,Galletitas dulces,Bizcochos,162.0530372853842,543,False,,todas las sucursales
+2026-03,Galletitas dulces,Bizcochos,169.2683088142684,537,False,,todas las sucursales
+2026-04,Galletitas dulces,Bizcochos,147.2321925215254,379,False,,todas las sucursales
+2026-05,Galletitas dulces,Bizcochos,145.4871138058365,464,False,,todas las sucursales
+2026-06,Galletitas dulces,Bizcochos,137.7404732319363,467,False,,todas las sucursales
+2026-07,Galletitas dulces,Bizcochos,152.1326917202026,467,False,,todas las sucursales
+2026-08,Galletitas dulces,Bizcochos,135.9086266276197,533,False,,todas las sucursales
+2026-09,Galletitas dulces,Bizcochos,132.8604631273816,529,False,,todas las sucursales
+2026-10,Galletitas dulces,Bizcochos,131.8777146840503,531,False,,todas las sucursales
+2025-08,Galletitas dulces,Con chips,16.01776262120739,2153,False,,todas las sucursales
+2025-09,Galletitas dulces,Con chips,10.98762927786792,2161,False,,todas las sucursales
+2025-10,Galletitas dulces,Con chips,14.40158915259188,2159,False,,todas las sucursales
+2025-11,Galletitas dulces,Con chips,14.4215231075165,2134,False,,todas las sucursales
+2025-12,Galletitas dulces,Con chips,14.15907723129308,2138,False,,todas las sucursales
+2026-01,Galletitas dulces,Con chips,15.82088904096962,2042,False,,todas las sucursales
+2026-02,Galletitas dulces,Con chips,26.01634099197351,2020,False,,todas las sucursales
+2026-03,Galletitas dulces,Con chips,26.23020730180681,2035,False,,todas las sucursales
+2026-04,Galletitas dulces,Con chips,22.81642941923037,2125,False,,todas las sucursales
+2026-05,Galletitas dulces,Con chips,23.1483715824714,2110,False,,todas las sucursales
+2026-06,Galletitas dulces,Con chips,31.74602156254489,2095,False,,todas las sucursales
+2026-07,Galletitas dulces,Con chips,28.20652119319013,2082,False,,todas las sucursales
+2026-08,Galletitas dulces,Con chips,25.82344401161868,2044,False,,todas las sucursales
+2026-09,Galletitas dulces,Con chips,30.00843736566739,1999,False,,todas las sucursales
+2026-10,Galletitas dulces,Con chips,22.69901175921094,1937,False,,todas las sucursales
+2025-08,Galletitas dulces,Obleas,105.1482487110488,218,False,,todas las sucursales
+2025-09,Galletitas dulces,Obleas,94.41434379906826,352,False,,todas las sucursales
+2025-10,Galletitas dulces,Obleas,86.81051540606039,425,False,,todas las sucursales
+2025-11,Galletitas dulces,Obleas,85.07295242348974,438,False,,todas las sucursales
+2025-12,Galletitas dulces,Obleas,78.14526392441704,430,False,,todas las sucursales
+2026-01,Galletitas dulces,Obleas,84.59315692348339,416,False,,todas las sucursales
+2026-02,Galletitas dulces,Obleas,94.1651611388028,391,False,,todas las sucursales
+2026-03,Galletitas dulces,Obleas,116.7707394973106,384,False,,todas las sucursales
+2026-04,Galletitas dulces,Obleas,119.8391507425011,395,False,,todas las sucursales
+2026-05,Galletitas dulces,Obleas,109.8838827035421,425,False,,todas las sucursales
+2026-06,Galletitas dulces,Obleas,112.7247525253803,475,False,,todas las sucursales
+2026-07,Galletitas dulces,Obleas,124.8021861422019,396,False,,todas las sucursales
+2026-08,Galletitas dulces,Obleas,119.0485930564754,397,False,,todas las sucursales
+2026-09,Galletitas dulces,Obleas,128.675680759753,388,False,,todas las sucursales
+2026-10,Galletitas dulces,Obleas,123.1935881793825,369,False,,todas las sucursales
+2025-08,Galletitas dulces,Rellenas,100.6176110890235,2246,False,,todas las sucursales
+2025-09,Galletitas dulces,Rellenas,99.92173609262917,2239,False,,todas las sucursales
+2025-10,Galletitas dulces,Rellenas,98.2460211144653,2231,False,,todas las sucursales
+2025-11,Galletitas dulces,Rellenas,101.0680907273897,2220,False,,todas las sucursales
+2025-12,Galletitas dulces,Rellenas,100.1042447927499,2219,False,,todas las sucursales
+2026-01,Galletitas dulces,Rellenas,97.09756819687799,2222,False,,todas las sucursales
+2026-02,Galletitas dulces,Rellenas,102.7272486458388,2213,False,,todas las sucursales
+2026-03,Galletitas dulces,Rellenas,102.55929889381,2207,False,,todas las sucursales
+2026-04,Galletitas dulces,Rellenas,108.3987927394339,2205,False,,todas las sucursales
+2026-05,Galletitas dulces,Rellenas,97.8857843876052,2194,False,,todas las sucursales
+2026-06,Galletitas dulces,Rellenas,103.0122392809573,2173,False,,todas las sucursales
+2026-07,Galletitas dulces,Rellenas,102.8404367581945,2160,False,,todas las sucursales
+2026-08,Galletitas dulces,Rellenas,96.52544771558252,2143,False,,todas las sucursales
+2026-09,Galletitas dulces,Rellenas,72.69457709855864,2146,False,,todas las sucursales
+2026-10,Galletitas dulces,Rellenas,92.05237021098706,2117,False,,todas las sucursales
+2025-08,Galletitas dulces,"Secas (vainilla, limón, chocolate)",81.88541503846096,1000,False,,todas las sucursales
+2025-09,Galletitas dulces,"Secas (vainilla, limón, chocolate)",74.22097055757857,996,False,,todas las sucursales
+2025-10,Galletitas dulces,"Secas (vainilla, limón, chocolate)",70.3680658193268,881,False,,todas las sucursales
+2025-11,Galletitas dulces,"Secas (vainilla, limón, chocolate)",70.17776291446536,872,False,,todas las sucursales
+2025-12,Galletitas dulces,"Secas (vainilla, limón, chocolate)",70.86108843573315,843,False,,todas las sucursales
+2026-01,Galletitas dulces,"Secas (vainilla, limón, chocolate)",67.63285488004516,795,False,,todas las sucursales
+2026-02,Galletitas dulces,"Secas (vainilla, limón, chocolate)",75.64160826671427,754,False,,todas las sucursales
+2026-03,Galletitas dulces,"Secas (vainilla, limón, chocolate)",82.47456821265654,702,False,,todas las sucursales
+2026-04,Galletitas dulces,"Secas (vainilla, limón, chocolate)",85.32301387334546,655,False,,todas las sucursales
+2026-05,Galletitas dulces,"Secas (vainilla, limón, chocolate)",83.48378262451443,620,False,,todas las sucursales
+2026-06,Galletitas dulces,"Secas (vainilla, limón, chocolate)",93.31204733920211,583,False,,todas las sucursales
+2026-07,Galletitas dulces,"Secas (vainilla, limón, chocolate)",92.50744317557098,565,False,,todas las sucursales
+2026-08,Galletitas dulces,"Secas (vainilla, limón, chocolate)",84.65489902767006,556,False,,todas las sucursales
+2026-09,Galletitas dulces,"Secas (vainilla, limón, chocolate)",84.33183030048228,549,False,,todas las sucursales
+2026-10,Galletitas dulces,"Secas (vainilla, limón, chocolate)",83.59659684835823,548,False,,todas las sucursales
+2025-08,Galletitas saladas y crackers,Crackers,355.5695166155219,2132,False,,todas las sucursales
+2025-09,Galletitas saladas y crackers,Crackers,338.0230787556428,2128,False,,todas las sucursales
+2025-10,Galletitas saladas y crackers,Crackers,327.2065704266388,2119,False,,todas las sucursales
+2025-11,Galletitas saladas y crackers,Crackers,320.2152960538199,2108,False,,todas las sucursales
+2025-12,Galletitas saladas y crackers,Crackers,307.5056457618853,2107,False,,todas las sucursales
+2026-01,Galletitas saladas y crackers,Crackers,302.0199534019816,2100,False,,todas las sucursales
+2026-02,Galletitas saladas y crackers,Crackers,304.0073149221575,2099,False,,todas las sucursales
+2026-03,Galletitas saladas y crackers,Crackers,310.8156142219005,2096,False,,todas las sucursales
+2026-04,Galletitas saladas y crackers,Crackers,347.260356380658,2091,False,,todas las sucursales
+2026-05,Galletitas saladas y crackers,Crackers,312.8606096663683,2081,False,,todas las sucursales
+2026-06,Galletitas saladas y crackers,Crackers,319.626346373214,2066,False,,todas las sucursales
+2026-07,Galletitas saladas y crackers,Crackers,309.2098623294555,2057,False,,todas las sucursales
+2026-08,Galletitas saladas y crackers,Crackers,301.3082021845269,2044,False,,todas las sucursales
+2026-09,Galletitas saladas y crackers,Crackers,301.0542663279979,2038,False,,todas las sucursales
+2026-10,Galletitas saladas y crackers,Crackers,316.9651863169963,1074,False,,todas las sucursales
+2025-08,Galletitas saladas y crackers,Saborizadas / snack,75.11756595304675,424,False,,todas las sucursales
+2025-09,Galletitas saladas y crackers,Saborizadas / snack,69.84037559712277,421,False,,todas las sucursales
+2025-10,Galletitas saladas y crackers,Saborizadas / snack,66.55985164953151,418,False,,todas las sucursales
+2025-11,Galletitas saladas y crackers,Saborizadas / snack,71.32352067526794,413,False,,todas las sucursales
+2025-12,Galletitas saladas y crackers,Saborizadas / snack,70.77854714073861,413,False,,todas las sucursales
+2026-01,Galletitas saladas y crackers,Saborizadas / snack,75.1123824277531,415,False,,todas las sucursales
+2026-02,Galletitas saladas y crackers,Saborizadas / snack,75.17685388319626,409,False,,todas las sucursales
+2026-03,Galletitas saladas y crackers,Saborizadas / snack,75.91646455281808,419,False,,todas las sucursales
+2026-04,Galletitas saladas y crackers,Saborizadas / snack,75.70621053320892,420,False,,todas las sucursales
+2026-05,Galletitas saladas y crackers,Saborizadas / snack,68.81437411942758,418,False,,todas las sucursales
+2026-06,Galletitas saladas y crackers,Saborizadas / snack,67.83898953922953,404,False,,todas las sucursales
+2026-07,Galletitas saladas y crackers,Saborizadas / snack,67.39652067047184,404,False,,todas las sucursales
+2026-08,Galletitas saladas y crackers,Saborizadas / snack,61.42680333260999,400,False,,todas las sucursales
+2026-09,Galletitas saladas y crackers,Saborizadas / snack,56.42323194448124,387,False,,todas las sucursales
+2026-10,Galletitas saladas y crackers,Saborizadas / snack,55.16752894419561,375,False,,todas las sucursales
+2025-08,Pan rallado y rebozador,Pan rallado,226.3851697040134,1531,False,,todas las sucursales
+2025-09,Pan rallado y rebozador,Pan rallado,242.6581768743524,1525,False,,todas las sucursales
+2025-10,Pan rallado y rebozador,Pan rallado,248.4405793519947,1518,False,,todas las sucursales
+2025-11,Pan rallado y rebozador,Pan rallado,239.3159117300117,1514,False,,todas las sucursales
+2025-12,Pan rallado y rebozador,Pan rallado,230.3388820436766,1514,False,,todas las sucursales
+2026-01,Pan rallado y rebozador,Pan rallado,230.6338940797813,1516,False,,todas las sucursales
+2026-02,Pan rallado y rebozador,Pan rallado,273.2744178438899,1510,False,,todas las sucursales
+2026-03,Pan rallado y rebozador,Pan rallado,232.674974638888,1511,False,,todas las sucursales
+2026-04,Pan rallado y rebozador,Pan rallado,267.1965682189903,1509,False,,todas las sucursales
+2026-05,Pan rallado y rebozador,Pan rallado,236.6944638137209,1493,False,,todas las sucursales
+2026-06,Pan rallado y rebozador,Pan rallado,275.3372834547918,1487,False,,todas las sucursales
+2026-07,Pan rallado y rebozador,Pan rallado,233.118903017188,1488,False,,todas las sucursales
+2026-08,Pan rallado y rebozador,Pan rallado,269.4576420235767,1479,False,,todas las sucursales
+2026-09,Pan rallado y rebozador,Pan rallado,236.2179906964835,1487,False,,todas las sucursales
+2026-10,Pan rallado y rebozador,Pan rallado,236.7807744922785,1459,False,,todas las sucursales
+2025-08,Pan rallado y rebozador,Rebozador,242.2345805377047,261,False,,todas las sucursales
+2025-09,Pan rallado y rebozador,Rebozador,241.9849272157252,259,False,,todas las sucursales
+2025-10,Pan rallado y rebozador,Rebozador,242.6309355480791,266,False,,todas las sucursales
+2025-11,Pan rallado y rebozador,Rebozador,241.3425220550212,244,False,,todas las sucursales
+2025-12,Pan rallado y rebozador,Rebozador,241.9873216774095,251,False,,todas las sucursales
+2026-01,Pan rallado y rebozador,Rebozador,237.0743998215482,264,False,,todas las sucursales
+2026-02,Pan rallado y rebozador,Rebozador,233.8712947663418,268,False,,todas las sucursales
+2026-03,Pan rallado y rebozador,Rebozador,228.2304765435865,371,False,,todas las sucursales
+2026-04,Pan rallado y rebozador,Rebozador,227.0766238915896,370,False,,todas las sucursales
+2026-05,Pan rallado y rebozador,Rebozador,227.3046162224205,371,False,,todas las sucursales
+2026-06,Pan rallado y rebozador,Rebozador,223.2495344349033,461,False,,todas las sucursales
+2026-07,Pan rallado y rebozador,Rebozador,209.9069287568597,619,False,,todas las sucursales
+2026-08,Pan rallado y rebozador,Rebozador,209.4242620483939,618,False,,todas las sucursales
+2026-09,Pan rallado y rebozador,Rebozador,213.7097202875676,615,False,,todas las sucursales
+2026-10,Pan rallado y rebozador,Rebozador,224.3762247795689,613,False,,todas las sucursales
+2025-08,Cereales rellenos (almohaditas),Almohaditas rellenas,30.77676828746401,581,False,,todas las sucursales
+2025-09,Cereales rellenos (almohaditas),Almohaditas rellenas,27.1133973984161,605,False,,todas las sucursales
+2025-10,Cereales rellenos (almohaditas),Almohaditas rellenas,26.90075324626967,612,False,,todas las sucursales
+2025-11,Cereales rellenos (almohaditas),Almohaditas rellenas,30.04689852011737,634,False,,todas las sucursales
+2025-12,Cereales rellenos (almohaditas),Almohaditas rellenas,30.02821566269609,626,False,,todas las sucursales
+2026-01,Cereales rellenos (almohaditas),Almohaditas rellenas,30.87999463272297,632,False,,todas las sucursales
+2026-02,Cereales rellenos (almohaditas),Almohaditas rellenas,20.94758482328121,637,False,,todas las sucursales
+2026-03,Cereales rellenos (almohaditas),Almohaditas rellenas,26.84078428426781,635,False,,todas las sucursales
+2026-04,Cereales rellenos (almohaditas),Almohaditas rellenas,26.69638043370448,600,False,,todas las sucursales
+2026-05,Cereales rellenos (almohaditas),Almohaditas rellenas,28.78793957222485,562,False,,todas las sucursales
+2026-06,Cereales rellenos (almohaditas),Almohaditas rellenas,28.9762211635655,534,False,,todas las sucursales
+2026-07,Cereales rellenos (almohaditas),Almohaditas rellenas,28.86490942226196,526,False,,todas las sucursales
+2026-08,Cereales rellenos (almohaditas),Almohaditas rellenas,29.90913475720518,523,False,,todas las sucursales
+2026-09,Cereales rellenos (almohaditas),Almohaditas rellenas,30.4848287321097,520,False,,todas las sucursales
+2026-10,Cereales rellenos (almohaditas),Almohaditas rellenas,31.0027026058793,518,False,,todas las sucursales
+2025-08,Pan envasado,Pan de molde y de mesa,198.7119031789931,1867,False,,todas las sucursales
+2025-09,Pan envasado,Pan de molde y de mesa,183.4496934404435,1851,False,,todas las sucursales
+2025-10,Pan envasado,Pan de molde y de mesa,177.6051380087005,1827,False,,todas las sucursales
+2025-11,Pan envasado,Pan de molde y de mesa,172.7160535437121,1838,False,,todas las sucursales
+2025-12,Pan envasado,Pan de molde y de mesa,178.0986013783667,1831,False,,todas las sucursales
+2026-01,Pan envasado,Pan de molde y de mesa,186.2330703213075,1841,False,,todas las sucursales
+2026-02,Pan envasado,Pan de molde y de mesa,188.3560821944589,1828,False,,todas las sucursales
+2026-03,Pan envasado,Pan de molde y de mesa,184.5761983971555,1838,False,,todas las sucursales
+2026-04,Pan envasado,Pan de molde y de mesa,181.1625515143943,1832,False,,todas las sucursales
+2026-05,Pan envasado,Pan de molde y de mesa,170.9049272224882,1822,False,,todas las sucursales
+2026-06,Pan envasado,Pan de molde y de mesa,185.8362965949422,1813,False,,todas las sucursales
+2026-07,Pan envasado,Pan de molde y de mesa,197.2305755990891,1806,False,,todas las sucursales
+2026-08,Pan envasado,Pan de molde y de mesa,199.1124673918839,1797,False,,todas las sucursales
+2026-09,Pan envasado,Pan de molde y de mesa,156.63757391268,1815,False,,todas las sucursales
+2026-10,Pan envasado,Pan de molde y de mesa,161.2987071048556,1776,False,,todas las sucursales
+2025-08,Pan envasado,Pan para hamburguesas y panchos,226.4045402917924,372,False,,todas las sucursales
+2025-09,Pan envasado,Pan para hamburguesas y panchos,210.1868969645166,348,False,,todas las sucursales
+2025-10,Pan envasado,Pan para hamburguesas y panchos,193.343300405672,326,False,,todas las sucursales
+2025-11,Pan envasado,Pan para hamburguesas y panchos,194.1555834486307,332,False,,todas las sucursales
+2025-12,Pan envasado,Pan para hamburguesas y panchos,209.2410824318925,349,False,,todas las sucursales
+2026-01,Pan envasado,Pan para hamburguesas y panchos,220.0675072892711,358,False,,todas las sucursales
+2026-02,Pan envasado,Pan para hamburguesas y panchos,223.0990142147851,329,False,,todas las sucursales
+2026-03,Pan envasado,Pan para hamburguesas y panchos,216.9879406023809,701,False,,todas las sucursales
+2026-04,Pan envasado,Pan para hamburguesas y panchos,214.1489210774187,708,False,,todas las sucursales
+2026-05,Pan envasado,Pan para hamburguesas y panchos,197.5267591291109,705,False,,todas las sucursales
+2026-06,Pan envasado,Pan para hamburguesas y panchos,213.0494678909443,703,False,,todas las sucursales
+2026-07,Pan envasado,Pan para hamburguesas y panchos,204.8732288439695,696,False,,todas las sucursales
+2026-08,Pan envasado,Pan para hamburguesas y panchos,202.9664323391032,691,False,,todas las sucursales
+2026-09,Pan envasado,Pan para hamburguesas y panchos,202.8411751306966,694,False,,todas las sucursales
+2026-10,Pan envasado,Pan para hamburguesas y panchos,202.9671359433993,680,False,,todas las sucursales
+2025-08,Harinas,Harina o premezcla universal,378.2890089400897,704,False,,todas las sucursales
+2025-09,Harinas,Harina o premezcla universal,358.0019752675331,716,False,,todas las sucursales
+2025-10,Harinas,Harina o premezcla universal,343.0763503980708,697,False,,todas las sucursales
+2025-11,Harinas,Harina o premezcla universal,347.2359371551843,604,False,,todas las sucursales
+2025-12,Harinas,Harina o premezcla universal,343.8717449253359,569,False,,todas las sucursales
+2026-01,Harinas,Harina o premezcla universal,350.3947852642573,566,False,,todas las sucursales
+2026-02,Harinas,Harina o premezcla universal,398.4856016309319,454,False,,todas las sucursales
+2026-03,Harinas,Harina o premezcla universal,421.8226949902419,452,False,,todas las sucursales
+2026-04,Harinas,Harina o premezcla universal,428.7847225417902,368,False,,todas las sucursales
+2026-05,Harinas,Harina o premezcla universal,412.6342659692157,351,False,,todas las sucursales
+2026-06,Harinas,Harina o premezcla universal,406.9609863576648,707,False,,todas las sucursales
+2026-07,Harinas,Harina o premezcla universal,392.7676301053347,747,False,,todas las sucursales
+2026-08,Harinas,Harina o premezcla universal,393.5329433435003,738,False,,todas las sucursales
+2026-09,Harinas,Harina o premezcla universal,394.9050373663831,691,False,,todas las sucursales
+2026-10,Harinas,Harina o premezcla universal,376.3341329044773,689,False,,todas las sucursales
+2025-08,Premezclas,Premezcla para bizcochuelo y tortas,74.20589883524357,2322,False,,todas las sucursales
+2025-09,Premezclas,Premezcla para bizcochuelo y tortas,79.69392107799864,2245,False,,todas las sucursales
+2025-10,Premezclas,Premezcla para bizcochuelo y tortas,74.35600851188053,2215,False,,todas las sucursales
+2025-11,Premezclas,Premezcla para bizcochuelo y tortas,83.1487577444628,2200,False,,todas las sucursales
+2025-12,Premezclas,Premezcla para bizcochuelo y tortas,83.14024183851585,2198,False,,todas las sucursales
+2026-01,Premezclas,Premezcla para bizcochuelo y tortas,81.92767683406068,2188,False,,todas las sucursales
+2026-02,Premezclas,Premezcla para bizcochuelo y tortas,82.07986832074153,2179,False,,todas las sucursales
+2026-03,Premezclas,Premezcla para bizcochuelo y tortas,77.01402257743611,2168,False,,todas las sucursales
+2026-04,Premezclas,Premezcla para bizcochuelo y tortas,86.28399789089653,2161,False,,todas las sucursales
+2026-05,Premezclas,Premezcla para bizcochuelo y tortas,78.7897006982899,2158,False,,todas las sucursales
+2026-06,Premezclas,Premezcla para bizcochuelo y tortas,85.01776403562017,2151,False,,todas las sucursales
+2026-07,Premezclas,Premezcla para bizcochuelo y tortas,84.73497055109497,2149,False,,todas las sucursales
+2026-08,Premezclas,Premezcla para bizcochuelo y tortas,75.2398833729757,2137,False,,todas las sucursales
+2026-09,Premezclas,Premezcla para bizcochuelo y tortas,75.74724368679391,2161,False,,todas las sucursales
+2026-10,Premezclas,Premezcla para bizcochuelo y tortas,75.83106687109964,2130,False,,todas las sucursales
+2025-08,Premezclas,Premezcla para brownie,23.82217392725646,260,False,,todas las sucursales
+2025-09,Premezclas,Premezcla para brownie,22.19207723108294,260,False,,todas las sucursales
+2025-10,Premezclas,Premezcla para brownie,18.30611301923097,261,False,,todas las sucursales
+2025-11,Premezclas,Premezcla para brownie,17.65844700159589,259,False,,todas las sucursales
+2025-12,Premezclas,Premezcla para brownie,18.96810902499016,221,False,,todas las sucursales
+2026-01,Premezclas,Premezcla para brownie,22.45661682030618,222,False,,todas las sucursales
+2026-02,Premezclas,Premezcla para brownie,21.38914617379648,220,False,,todas las sucursales
+2026-03,Premezclas,Premezcla para brownie,15.47271605805816,152,False,,todas las sucursales
+2026-04,Premezclas,Premezcla para brownie,13.78196444083918,177,False,,todas las sucursales
+2026-05,Premezclas,Premezcla para brownie,16.27511080630511,220,False,,todas las sucursales
+2026-06,Premezclas,Premezcla para brownie,17.63191803167477,217,False,,todas las sucursales
+2026-07,Premezclas,Premezcla para brownie,17.42811741158717,218,False,,todas las sucursales
+2026-08,Premezclas,Premezcla para brownie,15.23296902313063,218,False,,todas las sucursales
+2026-09,Premezclas,Premezcla para brownie,16.17031323291048,217,False,,todas las sucursales
+2026-10,Premezclas,Premezcla para brownie,17.29814398375752,217,False,,todas las sucursales
+2025-08,Alfajores,Alfajor individual,-0.3264857710546542,240,False,,todas las sucursales
+2025-09,Alfajores,Alfajor individual,-0.05664767395924086,386,False,,todas las sucursales
+2025-10,Alfajores,Alfajor individual,1.358968873487591,624,False,,todas las sucursales
+2025-11,Alfajores,Alfajor individual,3.030189157643755,749,False,,todas las sucursales
+2025-12,Alfajores,Alfajor individual,1.561538298393742,725,False,,todas las sucursales
+2026-01,Alfajores,Alfajor individual,1.855564952306139,621,False,,todas las sucursales
+2026-02,Alfajores,Alfajor individual,2.328362406615198,682,False,,todas las sucursales
+2026-03,Alfajores,Alfajor individual,2.223779151265377,736,False,,todas las sucursales
+2026-04,Alfajores,Alfajor individual,1.783237575413566,746,False,,todas las sucursales
+2026-05,Alfajores,Alfajor individual,1.162981510865191,752,False,,todas las sucursales
+2026-06,Alfajores,Alfajor individual,1.328778229949217,778,False,,todas las sucursales
+2026-07,Alfajores,Alfajor individual,1.509417673301351,915,False,,todas las sucursales
+2026-08,Alfajores,Alfajor individual,1.004607827408206,907,False,,todas las sucursales
+2026-09,Alfajores,Alfajor individual,1.480300091148548,878,False,,todas las sucursales
+2026-10,Alfajores,Alfajor individual,1.050885151032761,882,False,,todas las sucursales
+2025-08,Alfajores,Alfajores en caja o paquete,22.9700103534459,800,False,,todas las sucursales
+2025-09,Alfajores,Alfajores en caja o paquete,17.56009835418731,862,False,,todas las sucursales
+2025-10,Alfajores,Alfajores en caja o paquete,15.78620708324395,859,False,,todas las sucursales
+2025-11,Alfajores,Alfajores en caja o paquete,16.9514528796564,833,False,,todas las sucursales
+2025-12,Alfajores,Alfajores en caja o paquete,17.91352354784699,789,False,,todas las sucursales
+2026-01,Alfajores,Alfajores en caja o paquete,16.6849329915721,686,False,,todas las sucursales
+2026-02,Alfajores,Alfajores en caja o paquete,18.01617520378052,613,False,,todas las sucursales
+2026-03,Alfajores,Alfajores en caja o paquete,15.63091911910715,576,False,,todas las sucursales
+2026-04,Alfajores,Alfajores en caja o paquete,12.66033828482468,558,False,,todas las sucursales
+2026-05,Alfajores,Alfajores en caja o paquete,12.51962682882734,552,False,,todas las sucursales
+2026-06,Alfajores,Alfajores en caja o paquete,12.48452960400825,534,False,,todas las sucursales
+2026-07,Alfajores,Alfajores en caja o paquete,14.25384252149481,531,False,,todas las sucursales
+2026-08,Alfajores,Alfajores en caja o paquete,12.03887777516134,525,False,,todas las sucursales
+2026-09,Alfajores,Alfajores en caja o paquete,12.94556079544681,522,False,,todas las sucursales
+2026-10,Alfajores,Alfajores en caja o paquete,12.94218220054508,515,False,,todas las sucursales
+2025-08,Tapas,Tapas para empanadas,42.47508973884139,944,False,,todas las sucursales
+2025-09,Tapas,Tapas para empanadas,40.13091894307058,919,False,,todas las sucursales
+2025-10,Tapas,Tapas para empanadas,40.84026437284194,932,False,,todas las sucursales
+2025-11,Tapas,Tapas para empanadas,41.2807181240758,923,False,,todas las sucursales
+2025-12,Tapas,Tapas para empanadas,47.3326402731714,916,False,,todas las sucursales
+2026-01,Tapas,Tapas para empanadas,45.39790815345356,916,False,,todas las sucursales
+2026-02,Tapas,Tapas para empanadas,42.35503738418956,921,False,,todas las sucursales
+2026-03,Tapas,Tapas para empanadas,41.42284756370061,917,False,,todas las sucursales
+2026-04,Tapas,Tapas para empanadas,41.28314439181777,922,False,,todas las sucursales
+2026-05,Tapas,Tapas para empanadas,42.34459870747423,920,False,,todas las sucursales
+2026-06,Tapas,Tapas para empanadas,43.03435802884515,905,False,,todas las sucursales
+2026-07,Tapas,Tapas para empanadas,44.1809970584553,929,False,,todas las sucursales
+2026-08,Tapas,Tapas para empanadas,41.88551759150164,922,False,,todas las sucursales
+2026-09,Tapas,Tapas para empanadas,42.55602418349297,911,False,,todas las sucursales
+2026-10,Tapas,Tapas para empanadas,42.82817337871077,895,False,,todas las sucursales
+2025-08,Tapas,Tapas para tartas,80.48887741278514,589,False,,todas las sucursales
+2025-09,Tapas,Tapas para tartas,75.96798409244887,546,False,,todas las sucursales
+2025-10,Tapas,Tapas para tartas,75.44288456165664,524,False,,todas las sucursales
+2025-11,Tapas,Tapas para tartas,75.44023339738521,478,False,,todas las sucursales
+2025-12,Tapas,Tapas para tartas,76.13866386609038,489,False,,todas las sucursales
+2026-01,Tapas,Tapas para tartas,72.64305371235946,502,False,,todas las sucursales
+2026-02,Tapas,Tapas para tartas,70.22617378258482,497,False,,todas las sucursales
+2026-03,Tapas,Tapas para tartas,70.47996070148675,486,False,,todas las sucursales
+2026-04,Tapas,Tapas para tartas,70.82174748727003,501,False,,todas las sucursales
+2026-05,Tapas,Tapas para tartas,69.72445091107866,496,False,,todas las sucursales
+2026-06,Tapas,Tapas para tartas,72.36057946987967,640,False,,todas las sucursales
+2026-07,Tapas,Tapas para tartas,71.43481961480234,861,False,,todas las sucursales
+2026-08,Tapas,Tapas para tartas,75.07263335614489,856,False,,todas las sucursales
+2026-09,Tapas,Tapas para tartas,70.91121142823944,679,False,,todas las sucursales
+2026-10,Tapas,Tapas para tartas,70.00701178285698,867,False,,todas las sucursales
