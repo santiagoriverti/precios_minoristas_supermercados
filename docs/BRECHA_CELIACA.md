@@ -697,13 +697,21 @@ el cambio de precios de **los mismos productos** y se puede comparar entre lugar
 7. **Lado con TACC en marcas de primera línea**: precio $/100 g entre 0,6 y 1,67 veces la mediana con TACC de su
    subtipo (afuera las marcas económicas: Spaghetti La Providencia a $192/100 g contra ~$360-440 de Lucchetti y
    Matarazzo). El sin TACC no tiene franja: sus diferencias de precio son parte de lo que se mide.
-8. **Composición espejada**: en cada subtipo, tantos productos con TACC como sin TACC (los de más cobertura); si el
-   lado con TACC tiene menos candidatos que el sin TACC, entran todos los de los dos lados (tirabuzón y crackers). Con
-   un solo sin TACC entra un solo con TACC, el de más cobertura (spaghetti, penne, con chips, obleas y pepas), salvo
+8. **Composición espejada**: en cada subtipo, tantos productos con TACC como sin TACC. Primero entran los de la marca
+   de algún sin TACC del subtipo y después los de más cobertura. La misma marca separa la prima sin TACC de la de
+   marca (desde el 2026-10-26, noche): en penne entra el Matarazzo común, como en spaghetti. Si el lado con TACC tiene
+   menos candidatos que el sin TACC, entran todos los de los dos lados (tirabuzón y crackers). Con un solo sin TACC
+   entra un solo con TACC: Matarazzo en spaghetti y penne, y el de más cobertura en con chips y pepas. La excepción es
    cuando el precio por 100 g depende del paquete: en obleas entran la Opera de 220 g y la de 92 g, del tamaño de la
    Santa María sin TACC (90 g). Con la de 92 g sola, en 2023 casi no había sucursales con los dos lados (desde el
    2026-10-26, noche). El subtipo que no tiene los dos lados queda afuera (fideos cortos y tallarín, bizcochos y pan rallado
    solo tenían con TACC).
+9. **Líneas** (desde el 2026-10-26, noche): los productos de una misma marca y presentación en el subtipo y lado que
+   cuestan lo mismo son una línea y entran una vez en la mediana de su lado (columna `linea` del CSV). Cada variante
+   tiene que estar a ±10% de la mediana de su línea. Si cada sabor contara, mandaría la marca con más sabores
+   (Crisppino tenía 5 de los 6 sin TACC de saborizadas y Wakas 4 de los 5 de tirabuzón). No cambia qué productos
+   entran: la composición espejada sigue contando productos. Los Anillos y la Boca de Dama de Terrabusi (170 g los dos)
+   no son una línea: difieren 36%.
 
 La prima sin TACC / con TACC de cada producto se calcula y se informa, pero **no** es una regla: la condición de sin
 TACC la dan la etiqueta y la marca, y sacar los sin TACC baratos sesgaría la brecha para arriba.
@@ -751,118 +759,118 @@ En el nb06 la vigencia se aplica en la CELDA 7, después de leer: cambiarla no r
 
 ### 14.5 La canasta
 
-**67 productos (80 códigos)**: 31 con TACC y 36 sin TACC en 12 subtipos de 5 tipos (corregida el 2026-10-26, §14.13 y §14.15). *Suc./día 2022-26* = mediana mensual de las sucursales con precio por día (nb09; en los empalmes, la suma de sus códigos vigentes); *Prov.*, *Com.* (comercios súper) y *Cad. grandes* en todo el período; *$/100 g oct-26* = mediana nacional (SEPA diario al 22/10); *Relativo* = $/100 g sobre la mediana con TACC de su subtipo (mediana 2022-2026): en el lado con TACC, su posición en la franja de primera línea; en el sin TACC, su prima. Vigencia: ≤ último mes del código viejo, ≥ primer mes del nuevo.
+**67 productos en 45 líneas (80 códigos)**: 31 con TACC (26 líneas) y 36 sin TACC (19 líneas) en 12 subtipos de 5 tipos (corregida el 2026-10-26, §14.13, §14.15 y §14.16). *Línea*: los sabores de una misma marca y presentación que entran una vez en la mediana de su lado (regla 9 de §14.3; vacía si el producto no comparte línea). *Suc./día 2022-26* = mediana mensual de las sucursales con precio por día (nb09; en los empalmes, la suma de sus códigos vigentes); *Prov.*, *Com.* (comercios súper) y *Cad. grandes* en todo el período; *$/100 g oct-26* = mediana nacional (SEPA diario al 22/10); *Relativo* = $/100 g sobre la mediana con TACC de su subtipo (mediana 2022-2026): en el lado con TACC, su posición en la franja de primera línea; en el sin TACC, su prima. Vigencia: ≤ último mes del código viejo, ≥ primer mes del nuevo.
 
-Quedaron afuera en la verificación con precios: Porteñitas y Maná rellenas 165 g (los gramos del Maestro no coinciden con los de las cadenas y no se sabe desde cuándo), Scons 9 de Oro (dos cambios de nivel persistentes de ×4 frente a sus pares, may-2023 y dic-2023). Fideos cortos y tallarín, bizcochos y pan rallado no tienen sin TACC continuo. **Corrección del 2026-10-26 (§14.13)**: entran el tirabuzón sin TACC Matarazzo, Maná Limón 152 g y dos sabores más de Lasfor; salen los tres fideos Blue Patna (al huevo) y, por la composición espejada (regla 8), el Spaghetti Lucchetti, el Penne rigate Matarazzo y Maná Chocolate. Esa noche (§14.15), Pepitos 119 g (empalme de sus tres códigos) reemplaza a Par Nor en con chips y la Opera rellena de 92 g se suma a la de 220 g en obleas.
+Quedaron afuera en la verificación con precios: Porteñitas y Maná rellenas 165 g (los gramos del Maestro no coinciden con los de las cadenas y no se sabe desde cuándo), Scons 9 de Oro (dos cambios de nivel persistentes de ×4 frente a sus pares, may-2023 y dic-2023). Fideos cortos y tallarín, bizcochos y pan rallado no tienen sin TACC continuo. **Corrección del 2026-10-26 (§14.13)**: entran el tirabuzón sin TACC Matarazzo, Maná Limón 152 g y dos sabores más de Lasfor; salen los tres fideos Blue Patna (al huevo) y, por la composición espejada (regla 8), el Spaghetti Lucchetti, el Penne rigate Matarazzo y Maná Chocolate. Esa noche (§14.15), Pepitos 119 g (empalme de sus tres códigos) reemplaza a Par Nor en con chips y la Opera rellena de 92 g se suma a la de 220 g en obleas. Más tarde (§14.16), el Penne rigate Matarazzo común reemplaza a los Mostacholes Lucchetti (misma marca que el sin TACC) y los sabores de una línea cuentan una vez.
 
-| Tipo | Productos con TACC | Productos sin TACC | Códigos (EAN) | Subtipos |
+| Tipo | Productos con TACC (líneas) | Productos sin TACC (líneas) | Códigos (EAN) | Subtipos |
 |---|---|---|---|---|
-| Fideos secos | 4 | 7 | 22 | Mostachol / penne, Spaghetti, Tirabuzón / fusilli |
-| Galletitas dulces | 11 | 10 | 23 | Con chips, Obleas, Pepas, Rellenas, Secas (vainilla, limón, chocolate) |
-| Galletitas saladas y crackers | 10 | 13 | 23 | Crackers y galletas de arroz, Saborizadas / snack |
-| Pan rallado y rebozador | 2 | 2 | 4 | Rebozador |
-| Cereales rellenos (almohaditas) | 4 | 4 | 8 | Almohaditas rellenas |
-| **Total** | 31 | 36 | 80 | |
+| Fideos secos | 4 (4) | 7 (4) | 22 | Mostachol / penne, Spaghetti, Tirabuzón / fusilli |
+| Galletitas dulces | 11 (11) | 10 (7) | 23 | Con chips, Obleas, Pepas, Rellenas, Secas (vainilla, limón, chocolate) |
+| Galletitas saladas y crackers | 10 (8) | 13 (5) | 23 | Crackers y galletas de arroz, Saborizadas / snack |
+| Pan rallado y rebozador | 2 (2) | 2 (2) | 4 | Rebozador |
+| Cereales rellenos (almohaditas) | 4 (1) | 4 (1) | 8 | Almohaditas rellenas |
+| **Total** | 31 (26) | 36 (19) | 80 | |
 
 **Fideos secos**
 
-| Subtipo | Lado | Producto | EAN (vigencia) | g | Suc./día 2022-26 | Prov. | Com. | Cad. grandes | $/100 g oct-26 | Relativo |
-|---|---|---|---|---|---|---|---|---|---|---|
-| Mostachol / penne | sin TACC | Penne rigate sin TACC Matarazzo 500 g | `7790070321794` (≤2023-09)<br>`7790070335999` (≥2023-10) | 500 | 551 | 24 | 12 | 6 | 989 | 2,29 |
-| Mostachol / penne | con TACC | Mostacholes Lucchetti 500 g | `7790070318336` (≤2023-09)<br>`7790070336149` (≥2023-10) | 500 | 2.208 | 24 | 25 | 8 | 350 | 0,91 |
-| Spaghetti | sin TACC | Spaghetti sin TACC Matarazzo 500 g | `7790070321800` (≤2023-09)<br>`7790070336002` (≥2023-10) | 500 | 1.188 | 24 | 17 | 8 | 860 | 2,36 |
-| Spaghetti | con TACC | Spaghetti Matarazzo 500 g | `7790070318640` (≤2023-09)<br>`7790070336309` (≥2023-10) | 500 | 2.118 | 24 | 25 | 8 | 420 | 1,17 |
-| Tirabuzón / fusilli | sin TACC | Tirabuzón sin TACC Matarazzo 500 g | `7790070321855` (≤2023-09)<br>`7790070335982` (≥2023-10) | 500 | 813 | 24 | 15 | 7 | 989 | 2,27 |
-| Tirabuzón / fusilli | sin TACC | Fusilli quinoa sin TACC Wakas | `7798031470031` (≤2024-07)<br>`7798031470826` (≥2024-06) | 250/300 | 586 | 24 | 18 | 7 | 1.257 | 3,38 |
-| Tirabuzón / fusilli | sin TACC | Fusilli maíz y arroz sin TACC Wakas | `7798031470024` (≤2024-07)<br>`7798031470796` (≥2024-06) | 250/300 | 537 | 24 | 18 | 7 | 1.257 | 3,67 |
-| Tirabuzón / fusilli | sin TACC | Fusilli chía sin TACC Wakas | `7798031470086` (≤2024-07)<br>`7798031470819` (≥2024-06) | 250/300 | 527 | 24 | 16 | 7 | 1.236 | 3,37 |
-| Tirabuzón / fusilli | sin TACC | Fusilli amaranto sin TACC Wakas | `7798031470048` (≤2024-07)<br>`7798031470802` (≥2024-06) | 250/300 | 443 | 24 | 16 | 6 | 1.343 | 3,52 |
-| Tirabuzón / fusilli | con TACC | Tirabuzones Lucchetti 500 g | `7790070318329` (≤2023-09)<br>`7790070336026` (≥2023-10) | 500 | 2.080 | 24 | 25 | 8 | 350 | 0,93 |
-| Tirabuzón / fusilli | con TACC | Tirabuzones Matarazzo 500 g | `7790070318602` (≤2023-09)<br>`7790070336293` (≥2023-10) | 500 | 2.014 | 24 | 25 | 8 | 420 | 1,07 |
+| Subtipo | Lado | Producto | Línea | EAN (vigencia) | g | Suc./día 2022-26 | Prov. | Com. | Cad. grandes | $/100 g oct-26 | Relativo |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| Mostachol / penne | sin TACC | Penne rigate sin TACC Matarazzo 500 g |  | `7790070321794` (≤2023-09)<br>`7790070335999` (≥2023-10) | 500 | 551 | 24 | 12 | 6 | 989 | 2,29 |
+| Mostachol / penne | con TACC | Penne rigate Matarazzo 500 g |  | `7790070318633` (≤2023-09)<br>`7790070336200` (≥2023-10) | 500 | 1.287 | 24 | 22 | 8 | 420 | 1,09 |
+| Spaghetti | sin TACC | Spaghetti sin TACC Matarazzo 500 g |  | `7790070321800` (≤2023-09)<br>`7790070336002` (≥2023-10) | 500 | 1.188 | 24 | 17 | 8 | 860 | 2,36 |
+| Spaghetti | con TACC | Spaghetti Matarazzo 500 g |  | `7790070318640` (≤2023-09)<br>`7790070336309` (≥2023-10) | 500 | 2.118 | 24 | 25 | 8 | 420 | 1,17 |
+| Tirabuzón / fusilli | sin TACC | Tirabuzón sin TACC Matarazzo 500 g |  | `7790070321855` (≤2023-09)<br>`7790070335982` (≥2023-10) | 500 | 813 | 24 | 15 | 7 | 989 | 2,27 |
+| Tirabuzón / fusilli | sin TACC | Fusilli quinoa sin TACC Wakas | Fusilli sin TACC Wakas (4 variantes) | `7798031470031` (≤2024-07)<br>`7798031470826` (≥2024-06) | 250/300 | 586 | 24 | 18 | 7 | 1.257 | 3,38 |
+| Tirabuzón / fusilli | sin TACC | Fusilli maíz y arroz sin TACC Wakas | Fusilli sin TACC Wakas (4 variantes) | `7798031470024` (≤2024-07)<br>`7798031470796` (≥2024-06) | 250/300 | 537 | 24 | 18 | 7 | 1.257 | 3,67 |
+| Tirabuzón / fusilli | sin TACC | Fusilli chía sin TACC Wakas | Fusilli sin TACC Wakas (4 variantes) | `7798031470086` (≤2024-07)<br>`7798031470819` (≥2024-06) | 250/300 | 527 | 24 | 16 | 7 | 1.236 | 3,37 |
+| Tirabuzón / fusilli | sin TACC | Fusilli amaranto sin TACC Wakas | Fusilli sin TACC Wakas (4 variantes) | `7798031470048` (≤2024-07)<br>`7798031470802` (≥2024-06) | 250/300 | 443 | 24 | 16 | 6 | 1.343 | 3,52 |
+| Tirabuzón / fusilli | con TACC | Tirabuzones Lucchetti 500 g |  | `7790070318329` (≤2023-09)<br>`7790070336026` (≥2023-10) | 500 | 2.080 | 24 | 25 | 8 | 350 | 0,93 |
+| Tirabuzón / fusilli | con TACC | Tirabuzones Matarazzo 500 g |  | `7790070318602` (≤2023-09)<br>`7790070336293` (≥2023-10) | 500 | 2.014 | 24 | 25 | 8 | 420 | 1,07 |
 
 **Galletitas dulces**
 
-| Subtipo | Lado | Producto | EAN (vigencia) | g | Suc./día 2022-26 | Prov. | Com. | Cad. grandes | $/100 g oct-26 | Relativo |
-|---|---|---|---|---|---|---|---|---|---|---|
-| Con chips | sin TACC | Galletitas Con Chips de Chocolate Smams 150 Gr | `7798181511004` | 150 | 511 | 24 | 13 | 5 | 2.527 | 1,56 |
-| Con chips | con TACC | Pepitos 119 g | `7622201808662` (≤2023-01)<br>`7622201503260` (≤2023-02)<br>`7622201735906` (≥2023-02) | 119 | 2.164 | 24 | 19 | 8 | 2.084 | 1,20 |
-| Obleas | sin TACC | Obleas Limón Santa María 90 Gr | `7798079230833` | 90 | 108 | 24 | 5 | 4 | 3.222 | 2,60 |
-| Obleas | con TACC | Galletitas Obleas Clásicas Opera 220 Gr | `7790040008175` | 220 | 1.760 | 24 | 24 | 8 | 1.349 | 0,86 |
-| Obleas | con TACC | Galletitas Obleas Rellena Opera 92 Gr | `77903518` | 92 | 1.358 | 24 | 22 | 8 | 1.542 | 0,94 |
-| Pepas | sin TACC | Pepas de Membrillo sin TACC Smams 150 Gr | `7798181510786` | 150 | 997 | 24 | 14 | 7 | 2.093 | 2,28 |
-| Pepas | con TACC | Galletitas Dulces Pepas Trío 320 Gr | `7791787100924` | 320 | 359 | 24 | 11 | 5 | 716 | 0,97 |
-| Rellenas | sin TACC | Galletitas Sabor Chocolate con Relleno de Vainilla Smams 105 Gr | `7798181510014` | 105 | 1.005 | 24 | 15 | 7 | 2.467 | 1,94 |
-| Rellenas | sin TACC | Galletitas Vainilla Rellenas Smams 105 Gr | `7798181510021` | 105 | 914 | 24 | 16 | 7 | 2.371 | 1,96 |
-| Rellenas | sin TACC | Galletitas Vainilla Rellenas Sabor Frutilla Smams 105 Gr | `7798181510267` | 105 | 512 | 24 | 16 | 7 | 2.467 | 1,96 |
-| Rellenas | con TACC | Galletitas Rellena Sabor Frambuesa Sonrisas 108 Gr | `7790040133488` | 108 | 2.087 | 24 | 20 | 8 | 1.629 | 1,11 |
-| Rellenas | con TACC | Galletitas Vainilla con Relleno de Limón Duquesa 115 Gr | `7622300742645` | 115 | 1.932 | 24 | 23 | 8 | 1.460 | 0,99 |
-| Rellenas | con TACC | Galletitas Vainilla Rellenas Limón Maná 152 Gr | `7790040133259` | 152 | 1.302 | 24 | 20 | 8 | 1.178 | 0,98 |
-| Secas (vainilla, limón, chocolate) | sin TACC | Galletitas Colegial Vainilla Samms 150 Gr | `7798181510847` | 150 | 554 | 24 | 14 | 7 | 1.733 | 1,75 |
-| Secas (vainilla, limón, chocolate) | sin TACC | Galletitas Sabor Limón Aglu 150 Gr | `7798128410070` | 150 | 252 | 24 | 4 | 4 | 1.600 | 1,70 |
-| Secas (vainilla, limón, chocolate) | sin TACC | Galletitas Sabor Vainilla sin TACC Santa María 200 Gr | `7798079230147` | 200 | 207 | 24 | 4 | 3 | 1.450 | 1,69 |
-| Secas (vainilla, limón, chocolate) | sin TACC | Galletitas Marmoladas sin TACC Santa María 200 Gr | `7798079230628` | 200 | 171 | 23 | 5 | 4 | 1.450 | 1,63 |
-| Secas (vainilla, limón, chocolate) | con TACC | Galletitas Anillos Clásicos Terrabusi 170 Gr | `7622201808884` | 170 | 1.214 | 24 | 20 | 8 | 1.205 | 1,22 |
-| Secas (vainilla, limón, chocolate) | con TACC | Galletitas Dulces Boca de Dama Terrabusi 170 Gr | `7622201808860` | 170 | 894 | 24 | 20 | 8 | 935 | 0,93 |
-| Secas (vainilla, limón, chocolate) | con TACC | Galletitas Sconcitos 9 de Oro 200 Gr | `7792200000791` | 200 | 706 | 24 | 20 | 7 | 750 | 0,85 |
-| Secas (vainilla, limón, chocolate) | con TACC | Galletitas Frolitas Trio 300 Gr | `7791787000644` | 300 | 369 | 24 | 16 | 6 | 767 | 0,90 |
+| Subtipo | Lado | Producto | Línea | EAN (vigencia) | g | Suc./día 2022-26 | Prov. | Com. | Cad. grandes | $/100 g oct-26 | Relativo |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| Con chips | sin TACC | Galletitas Con Chips de Chocolate Smams 150 Gr |  | `7798181511004` | 150 | 511 | 24 | 13 | 5 | 2.527 | 1,56 |
+| Con chips | con TACC | Pepitos 119 g |  | `7622201808662` (≤2023-01)<br>`7622201503260` (≤2023-02)<br>`7622201735906` (≥2023-02) | 119 | 2.164 | 24 | 19 | 8 | 2.084 | 1,20 |
+| Obleas | sin TACC | Obleas Limón Santa María 90 Gr |  | `7798079230833` | 90 | 108 | 24 | 5 | 4 | 3.222 | 2,60 |
+| Obleas | con TACC | Galletitas Obleas Clásicas Opera 220 Gr |  | `7790040008175` | 220 | 1.760 | 24 | 24 | 8 | 1.349 | 0,86 |
+| Obleas | con TACC | Galletitas Obleas Rellena Opera 92 Gr |  | `77903518` | 92 | 1.358 | 24 | 22 | 8 | 1.542 | 0,94 |
+| Pepas | sin TACC | Pepas de Membrillo sin TACC Smams 150 Gr |  | `7798181510786` | 150 | 997 | 24 | 14 | 7 | 2.093 | 2,28 |
+| Pepas | con TACC | Galletitas Dulces Pepas Trío 320 Gr |  | `7791787100924` | 320 | 359 | 24 | 11 | 5 | 716 | 0,97 |
+| Rellenas | sin TACC | Galletitas Sabor Chocolate con Relleno de Vainilla Smams 105 Gr | Galletitas rellenas sin TACC Smams 105 g (3 variantes) | `7798181510014` | 105 | 1.005 | 24 | 15 | 7 | 2.467 | 1,94 |
+| Rellenas | sin TACC | Galletitas Vainilla Rellenas Smams 105 Gr | Galletitas rellenas sin TACC Smams 105 g (3 variantes) | `7798181510021` | 105 | 914 | 24 | 16 | 7 | 2.371 | 1,96 |
+| Rellenas | sin TACC | Galletitas Vainilla Rellenas Sabor Frutilla Smams 105 Gr | Galletitas rellenas sin TACC Smams 105 g (3 variantes) | `7798181510267` | 105 | 512 | 24 | 16 | 7 | 2.467 | 1,96 |
+| Rellenas | con TACC | Galletitas Rellena Sabor Frambuesa Sonrisas 108 Gr |  | `7790040133488` | 108 | 2.087 | 24 | 20 | 8 | 1.629 | 1,11 |
+| Rellenas | con TACC | Galletitas Vainilla con Relleno de Limón Duquesa 115 Gr |  | `7622300742645` | 115 | 1.932 | 24 | 23 | 8 | 1.460 | 0,99 |
+| Rellenas | con TACC | Galletitas Vainilla Rellenas Limón Maná 152 Gr |  | `7790040133259` | 152 | 1.302 | 24 | 20 | 8 | 1.178 | 0,98 |
+| Secas (vainilla, limón, chocolate) | sin TACC | Galletitas Colegial Vainilla Samms 150 Gr |  | `7798181510847` | 150 | 554 | 24 | 14 | 7 | 1.733 | 1,75 |
+| Secas (vainilla, limón, chocolate) | sin TACC | Galletitas Sabor Limón Aglu 150 Gr |  | `7798128410070` | 150 | 252 | 24 | 4 | 4 | 1.600 | 1,70 |
+| Secas (vainilla, limón, chocolate) | sin TACC | Galletitas Sabor Vainilla sin TACC Santa María 200 Gr | Galletitas sin TACC Santa María 200 g (2 variantes) | `7798079230147` | 200 | 207 | 24 | 4 | 3 | 1.450 | 1,69 |
+| Secas (vainilla, limón, chocolate) | sin TACC | Galletitas Marmoladas sin TACC Santa María 200 Gr | Galletitas sin TACC Santa María 200 g (2 variantes) | `7798079230628` | 200 | 171 | 23 | 5 | 4 | 1.450 | 1,63 |
+| Secas (vainilla, limón, chocolate) | con TACC | Galletitas Anillos Clásicos Terrabusi 170 Gr |  | `7622201808884` | 170 | 1.214 | 24 | 20 | 8 | 1.205 | 1,22 |
+| Secas (vainilla, limón, chocolate) | con TACC | Galletitas Dulces Boca de Dama Terrabusi 170 Gr |  | `7622201808860` | 170 | 894 | 24 | 20 | 8 | 935 | 0,93 |
+| Secas (vainilla, limón, chocolate) | con TACC | Galletitas Sconcitos 9 de Oro 200 Gr |  | `7792200000791` | 200 | 706 | 24 | 20 | 7 | 750 | 0,85 |
+| Secas (vainilla, limón, chocolate) | con TACC | Galletitas Frolitas Trio 300 Gr |  | `7791787000644` | 300 | 369 | 24 | 16 | 6 | 767 | 0,90 |
 
 **Galletitas saladas y crackers**
 
-| Subtipo | Lado | Producto | EAN (vigencia) | g | Suc./día 2022-26 | Prov. | Com. | Cad. grandes | $/100 g oct-26 | Relativo |
-|---|---|---|---|---|---|---|---|---|---|---|
-| Crackers y galletas de arroz | sin TACC | Galletitas Crackers Smams 150 Gr | `7798181510212` | 150 | 1.064 | 24 | 17 | 8 | 2.513 | 2,78 |
-| Crackers y galletas de arroz | sin TACC | Galletas de Arroz sin TACC sin Sal Multicereal Grandiet 100 Gr | `7797330102377` | 100 | 733 | 24 | 13 | 5 | 1.850 | 2,12 |
-| Crackers y galletas de arroz | sin TACC | Galletitas Crackers Mix Semillas Smams 150 Gr | `7798181510229` | 150 | 640 | 24 | 16 | 8 | 2.513 | 2,84 |
-| Crackers y galletas de arroz | sin TACC | Galletas de Arroz con Sal Grandiet 100 Gr | `7797330100649` | 100 | 382 | 24 | 12 | 4 | 1.590 | 2,05 |
-| Crackers y galletas de arroz | sin TACC | Galletas de Arroz sin Sal Grandiet 100 Gr | `7797330100656` | 100 | 366 | 24 | 12 | 4 | 1.690 | 2,05 |
-| Crackers y galletas de arroz | sin TACC | Galletitas Crackers Light sin Sal Smams 150 Gr | `7798181510205` | 150 | 301 | 24 | 14 | 7 | 2.500 | 2,71 |
-| Crackers y galletas de arroz | sin TACC | Galletas de Arroz sin TACC Multicereal Grandiet 100 Gr | `7797330102322` | 100 | 206 | 24 | 13 | 5 | 1.828 | 2,06 |
-| Crackers y galletas de arroz | con TACC | Galletitas Original Crackers Criollitas 100 Gr | `7790040377707` | 100 | 1.434 | 24 | 22 | 8 | 810 | 0,93 |
-| Crackers y galletas de arroz | con TACC | Galletitas Crackers Naturalmente Granix 200 Gr | `7790045001133` | 200 | 708 | 24 | 18 | 6 | 925 | 1,08 |
-| Crackers y galletas de arroz | con TACC | Galletitas Mini Marineras Paseo 220 Gr | `7792180006462` | 220 | 470 | 24 | 19 | 8 | 840 | 1,06 |
-| Crackers y galletas de arroz | con TACC | Mini Crackers con Semillas de Sésamo Paseo 300 Gr | `7792180007285` | 300 | 362 | 24 | 20 | 8 | 758 | 0,94 |
-| Saborizadas / snack | sin TACC | Galletita Arroz sin TACC Sabor Queso Crisppino 100 Gr | `7798199770134` | 100 | 434 | 24 | 4 | 4 | 2.590 | 1,29 |
-| Saborizadas / snack | sin TACC | Galletitas Arroz sin TACC Sabor Jamón Crisppino 100 Gr | `7798199770141` | 100 | 430 | 24 | 4 | 4 | 2.590 | 1,29 |
-| Saborizadas / snack | sin TACC | Galletas de Arroz Mini Sabor Oliva Crisppino 50 Gr | `7798199770073` | 50 | 334 | 24 | 7 | 4 | 2.958 | 1,47 |
-| Saborizadas / snack | sin TACC | Galletitas de Arroz Sabor Jamón sin TACC Crisppino Minis 50 Gr | `7798199770035` | 50 | 284 | 24 | 7 | 3 | 2.958 | 1,43 |
-| Saborizadas / snack | sin TACC | Galletitas de Arroz Sabor Queso sin TACC Crisppino Minis 50 Gr | `7798199770042` | 50 | 272 | 24 | 7 | 3 | 2.958 | 1,44 |
-| Saborizadas / snack | sin TACC | Galletas de Arroz Pizza Grandiet 100 Gr | `7797330102971` | 100 | 206 | 24 | 10 | 3 | 1.700 | 0,85 |
-| Saborizadas / snack | con TACC | Galletitas Pizza Saladix 100 Gr | `7790580697303` | 100 | 1.501 | 24 | 22 | 8 | 1.901 | 0,97 |
-| Saborizadas / snack | con TACC | Galletitas Saladas Tipo Snacks Rex 75 Gr | `7790040003569` | 75 | 1.336 | 24 | 20 | 8 | 2.493 | 1,15 |
-| Saborizadas / snack | con TACC | Galletitas Original Rex 125 Gr | `7790040719804` | 125 | 995 | 24 | 22 | 8 | 1.998 | 1,00 |
-| Saborizadas / snack | con TACC | Galletitas Jamón Saladix 100 Gr | `7790580716707` | 100 | 850 | 24 | 26 | 8 | 1.901 | 0,95 |
-| Saborizadas / snack | con TACC | Galletitas Kesitas 75 Gr | `7790040003606` | 75 | 740 | 24 | 21 | 8 | 2.495 | 1,14 |
-| Saborizadas / snack | con TACC | Galletitas Calabresa Saladix 100 Gr | `7790580716806` | 100 | 508 | 24 | 23 | 6 | 1.899 | 0,95 |
+| Subtipo | Lado | Producto | Línea | EAN (vigencia) | g | Suc./día 2022-26 | Prov. | Com. | Cad. grandes | $/100 g oct-26 | Relativo |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| Crackers y galletas de arroz | sin TACC | Galletitas Crackers Smams 150 Gr | Crackers sin TACC Smams 150 g (3 variantes) | `7798181510212` | 150 | 1.064 | 24 | 17 | 8 | 2.513 | 2,78 |
+| Crackers y galletas de arroz | sin TACC | Galletitas Crackers Mix Semillas Smams 150 Gr | Crackers sin TACC Smams 150 g (3 variantes) | `7798181510229` | 150 | 640 | 24 | 16 | 8 | 2.513 | 2,84 |
+| Crackers y galletas de arroz | sin TACC | Galletitas Crackers Light sin Sal Smams 150 Gr | Crackers sin TACC Smams 150 g (3 variantes) | `7798181510205` | 150 | 301 | 24 | 14 | 7 | 2.500 | 2,71 |
+| Crackers y galletas de arroz | sin TACC | Galletas de Arroz sin TACC sin Sal Multicereal Grandiet 100 Gr | Galletas de arroz Grandiet 100 g (4 variantes) | `7797330102377` | 100 | 733 | 24 | 13 | 5 | 1.850 | 2,12 |
+| Crackers y galletas de arroz | sin TACC | Galletas de Arroz con Sal Grandiet 100 Gr | Galletas de arroz Grandiet 100 g (4 variantes) | `7797330100649` | 100 | 382 | 24 | 12 | 4 | 1.590 | 2,05 |
+| Crackers y galletas de arroz | sin TACC | Galletas de Arroz sin Sal Grandiet 100 Gr | Galletas de arroz Grandiet 100 g (4 variantes) | `7797330100656` | 100 | 366 | 24 | 12 | 4 | 1.690 | 2,05 |
+| Crackers y galletas de arroz | sin TACC | Galletas de Arroz sin TACC Multicereal Grandiet 100 Gr | Galletas de arroz Grandiet 100 g (4 variantes) | `7797330102322` | 100 | 206 | 24 | 13 | 5 | 1.828 | 2,06 |
+| Crackers y galletas de arroz | con TACC | Galletitas Original Crackers Criollitas 100 Gr |  | `7790040377707` | 100 | 1.434 | 24 | 22 | 8 | 810 | 0,93 |
+| Crackers y galletas de arroz | con TACC | Galletitas Crackers Naturalmente Granix 200 Gr |  | `7790045001133` | 200 | 708 | 24 | 18 | 6 | 925 | 1,08 |
+| Crackers y galletas de arroz | con TACC | Galletitas Mini Marineras Paseo 220 Gr |  | `7792180006462` | 220 | 470 | 24 | 19 | 8 | 840 | 1,06 |
+| Crackers y galletas de arroz | con TACC | Mini Crackers con Semillas de Sésamo Paseo 300 Gr |  | `7792180007285` | 300 | 362 | 24 | 20 | 8 | 758 | 0,94 |
+| Saborizadas / snack | sin TACC | Galletita Arroz sin TACC Sabor Queso Crisppino 100 Gr | Galletas de arroz saborizadas Crisppino 100 g (2 variantes) | `7798199770134` | 100 | 434 | 24 | 4 | 4 | 2.590 | 1,29 |
+| Saborizadas / snack | sin TACC | Galletitas Arroz sin TACC Sabor Jamón Crisppino 100 Gr | Galletas de arroz saborizadas Crisppino 100 g (2 variantes) | `7798199770141` | 100 | 430 | 24 | 4 | 4 | 2.590 | 1,29 |
+| Saborizadas / snack | sin TACC | Galletas de Arroz Mini Sabor Oliva Crisppino 50 Gr | Galletas de arroz saborizadas Crisppino Minis 50 g (3 variantes) | `7798199770073` | 50 | 334 | 24 | 7 | 4 | 2.958 | 1,47 |
+| Saborizadas / snack | sin TACC | Galletitas de Arroz Sabor Jamón sin TACC Crisppino Minis 50 Gr | Galletas de arroz saborizadas Crisppino Minis 50 g (3 variantes) | `7798199770035` | 50 | 284 | 24 | 7 | 3 | 2.958 | 1,43 |
+| Saborizadas / snack | sin TACC | Galletitas de Arroz Sabor Queso sin TACC Crisppino Minis 50 Gr | Galletas de arroz saborizadas Crisppino Minis 50 g (3 variantes) | `7798199770042` | 50 | 272 | 24 | 7 | 3 | 2.958 | 1,44 |
+| Saborizadas / snack | sin TACC | Galletas de Arroz Pizza Grandiet 100 Gr |  | `7797330102971` | 100 | 206 | 24 | 10 | 3 | 1.700 | 0,85 |
+| Saborizadas / snack | con TACC | Galletitas Pizza Saladix 100 Gr | Galletitas saborizadas Saladix 100 g (3 variantes) | `7790580697303` | 100 | 1.501 | 24 | 22 | 8 | 1.901 | 0,97 |
+| Saborizadas / snack | con TACC | Galletitas Jamón Saladix 100 Gr | Galletitas saborizadas Saladix 100 g (3 variantes) | `7790580716707` | 100 | 850 | 24 | 26 | 8 | 1.901 | 0,95 |
+| Saborizadas / snack | con TACC | Galletitas Calabresa Saladix 100 Gr | Galletitas saborizadas Saladix 100 g (3 variantes) | `7790580716806` | 100 | 508 | 24 | 23 | 6 | 1.899 | 0,95 |
+| Saborizadas / snack | con TACC | Galletitas Saladas Tipo Snacks Rex 75 Gr |  | `7790040003569` | 75 | 1.336 | 24 | 20 | 8 | 2.493 | 1,15 |
+| Saborizadas / snack | con TACC | Galletitas Original Rex 125 Gr |  | `7790040719804` | 125 | 995 | 24 | 22 | 8 | 1.998 | 1,00 |
+| Saborizadas / snack | con TACC | Galletitas Kesitas 75 Gr |  | `7790040003606` | 75 | 740 | 24 | 21 | 8 | 2.495 | 1,14 |
 
 **Pan rallado y rebozador**
 
-| Subtipo | Lado | Producto | EAN (vigencia) | g | Suc./día 2022-26 | Prov. | Com. | Cad. grandes | $/100 g oct-26 | Relativo |
-|---|---|---|---|---|---|---|---|---|---|---|
-| Rebozador | sin TACC | Rebozador Aglu 450 Gr | `7798128410087` | 450 | 494 | 24 | 6 | 5 | 856 | 2,05 |
-| Rebozador | sin TACC | Rebozador Naturalsur 500 Gr | `7798193377285` | 500 | 211 | 23 | 6 | 5 | 750 | 2,23 |
-| Rebozador | con TACC | Rebozador Horno Fortificado Mamá Cocina Plus 1 Kg | `7792180004796` | 1.000 | 821 | 24 | 12 | 6 | 363 | 1,14 |
-| Rebozador | con TACC | Rebozador Freir Fortificado Mamá Cocina Plus 500 Gr | `7792180004765` | 500 | 461 | 24 | 16 | 6 | 319 | 1,00 |
+| Subtipo | Lado | Producto | Línea | EAN (vigencia) | g | Suc./día 2022-26 | Prov. | Com. | Cad. grandes | $/100 g oct-26 | Relativo |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| Rebozador | sin TACC | Rebozador Aglu 450 Gr |  | `7798128410087` | 450 | 494 | 24 | 6 | 5 | 856 | 2,05 |
+| Rebozador | sin TACC | Rebozador Naturalsur 500 Gr |  | `7798193377285` | 500 | 211 | 23 | 6 | 5 | 750 | 2,23 |
+| Rebozador | con TACC | Rebozador Horno Fortificado Mamá Cocina Plus 1 Kg |  | `7792180004796` | 1.000 | 821 | 24 | 12 | 6 | 363 | 1,14 |
+| Rebozador | con TACC | Rebozador Freir Fortificado Mamá Cocina Plus 500 Gr |  | `7792180004765` | 500 | 461 | 24 | 16 | 6 | 319 | 1,00 |
 
 **Cereales rellenos (almohaditas)**
 
-| Subtipo | Lado | Producto | EAN (vigencia) | g | Suc./día 2022-26 | Prov. | Com. | Cad. grandes | $/100 g oct-26 | Relativo |
-|---|---|---|---|---|---|---|---|---|---|---|
-| Almohaditas rellenas | sin TACC | Almohaditas Rellenas Chocolate sin TACC Snuks 240 Gr | `7798169802636` | 240 | 273 | 24 | 7 | 6 | 2.141 | 1,25 |
-| Almohaditas rellenas | sin TACC | Almohaditas Rellenas Avellana Snuks 240 Gr | `7798169802629` | 240 | 257 | 24 | 7 | 6 | 2.104 | 1,25 |
-| Almohaditas rellenas | sin TACC | Almohaditas Rellenas Limón sin TACC Snuks 240 Gr | `7798169802728` | 240 | 253 | 24 | 7 | 6 | 2.162 | 1,26 |
-| Almohaditas rellenas | sin TACC | Almohaditas Rellenas Frutilla sin TACC Snuks 240 Gr | `7798169802711` | 240 | 253 | 24 | 8 | 6 | 2.125 | 1,26 |
-| Almohaditas rellenas | con TACC | Almohaditas Rellenas Crema de Frutilla Lasfor 200 Gr | `7798169802674` | 200 | 356 | 24 | 7 | 5 | 1.668 | 1,00 |
-| Almohaditas rellenas | con TACC | Almohaditas Rellenas Sabor Mousse Limón Lasfor 200 Gr | `7798169802681` | 200 | 338 | 24 | 8 | 6 | 1.620 | 1,00 |
-| Almohaditas rellenas | con TACC | Almohaditas Rellenas con Crema Avellanas Lasfor 200 Gr | `7798169802650` | 200 | 330 | 24 | 8 | 6 | 1.650 | 1,00 |
-| Almohaditas rellenas | con TACC | Almohaditas Rellenas Sabor Chocolate Suizo Lasfor 200 Gr | `7798169802667` | 200 | 328 | 23 | 7 | 5 | 1.675 | 1,00 |
+| Subtipo | Lado | Producto | Línea | EAN (vigencia) | g | Suc./día 2022-26 | Prov. | Com. | Cad. grandes | $/100 g oct-26 | Relativo |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| Almohaditas rellenas | sin TACC | Almohaditas Rellenas Chocolate sin TACC Snuks 240 Gr | Almohaditas rellenas sin TACC Snuks 240 g (4 variantes) | `7798169802636` | 240 | 273 | 24 | 7 | 6 | 2.141 | 1,25 |
+| Almohaditas rellenas | sin TACC | Almohaditas Rellenas Avellana Snuks 240 Gr | Almohaditas rellenas sin TACC Snuks 240 g (4 variantes) | `7798169802629` | 240 | 257 | 24 | 7 | 6 | 2.104 | 1,25 |
+| Almohaditas rellenas | sin TACC | Almohaditas Rellenas Limón sin TACC Snuks 240 Gr | Almohaditas rellenas sin TACC Snuks 240 g (4 variantes) | `7798169802728` | 240 | 253 | 24 | 7 | 6 | 2.162 | 1,26 |
+| Almohaditas rellenas | sin TACC | Almohaditas Rellenas Frutilla sin TACC Snuks 240 Gr | Almohaditas rellenas sin TACC Snuks 240 g (4 variantes) | `7798169802711` | 240 | 253 | 24 | 8 | 6 | 2.125 | 1,26 |
+| Almohaditas rellenas | con TACC | Almohaditas Rellenas Crema de Frutilla Lasfor 200 Gr | Almohaditas rellenas Lasfor 200 g (4 variantes) | `7798169802674` | 200 | 356 | 24 | 7 | 5 | 1.668 | 1,00 |
+| Almohaditas rellenas | con TACC | Almohaditas Rellenas Sabor Mousse Limón Lasfor 200 Gr | Almohaditas rellenas Lasfor 200 g (4 variantes) | `7798169802681` | 200 | 338 | 24 | 8 | 6 | 1.620 | 1,00 |
+| Almohaditas rellenas | con TACC | Almohaditas Rellenas con Crema Avellanas Lasfor 200 Gr | Almohaditas rellenas Lasfor 200 g (4 variantes) | `7798169802650` | 200 | 330 | 24 | 8 | 6 | 1.650 | 1,00 |
+| Almohaditas rellenas | con TACC | Almohaditas Rellenas Sabor Chocolate Suizo Lasfor 200 Gr | Almohaditas rellenas Lasfor 200 g (4 variantes) | `7798169802667` | 200 | 328 | 23 | 7 | 5 | 1.675 | 1,00 |
 
 ### 14.6 Estimador y ponderación (ENGHo 2017/18)
 
 **Estimador (2026-10-23)**, como un índice de precios por niveles:
 
 1. **Subtipo en una sucursal y mes**: precio de cada lado = mediana $/100 g de los productos presentes (un producto con
-   dos códigos entra una vez); brecha = sin TACC / con TACC − 1 si están los dos lados. Compara productos
-   equivalentes dentro del mismo super.
+   dos códigos entra una vez, y una línea con varios sabores también, desde el 2026-10-26, noche: regla 9 de §14.3);
+   brecha = sin TACC / con TACC − 1 si están los dos lados. Compara productos equivalentes dentro del mismo super.
 2. **Subtipo en un grupo** (país, mes, año, provincia, región, empresa, cadena): mediana de esas brechas entre
    sucursales (sucursal-mes).
 3. **Tipo en un grupo**: promedio geométrico, con pesos iguales, de sus subtipos presentes en el grupo con al menos
@@ -936,9 +944,10 @@ solo con las provincias confiables), 11 (hoja `Imputaciones`; columnas nuevas en
   más cobertura: ~1.200, ~550 y ~800 sucursales por día); las almohaditas, de Snuks (que fabrica Lasfor, el mismo de las
   almohaditas con TACC: es el par más limpio). El lado con TACC de fideos es todo de Molinos (Lucchetti y Matarazzo: no
   hay otra marca de primera línea continua 2022-2026). La brecha por tipo refleja en buena medida la política de
-  precios de esas pocas marcas. El spaghetti Matarazzo sin TACC contra el Matarazzo común es un par de la misma marca
-  (el sin TACC cuesta ~2 veces el común en las mismas sucursales); el penne sin TACC se compara con los Mostacholes
-  Lucchetti, la marca más barata de Molinos, y el tirabuzón con las dos (desde el 2026-10-26, §14.13).
+  precios de esas pocas marcas. El spaghetti y el penne Matarazzo sin TACC se comparan con el Matarazzo común: son
+  pares de la misma marca (el sin TACC cuesta ~2 veces el común en las mismas sucursales; el penne desde el
+  2026-10-26, noche, §14.16; antes iba contra los Mostacholes Lucchetti, la marca más barata de Molinos). El tirabuzón
+  se compara con las dos marcas.
 - **Comparaciones de sustitución**: crackers y galletas de arroz contra crackers de trigo; rebozador de arroz contra
   rebozador de trigo. Es la sustitución real del consumidor celíaco, no el mismo producto sin gluten.
 - **Hueco de Molinos (dic-2023 → mar-2024)**: en esos meses hay pocas sucursales con fideos con TACC (y con el penne sin
@@ -963,12 +972,13 @@ hojas iguales a `simulacion_2026-10-23/` y la segunda (2026-10-26, con BUG-47 y 
 `simulacion_2026-10-23b/`.** Con BUG-48 la referencia fue `simulacion_2026-10-26/` (las corridas de Colab de esa tarde
 y esa noche dieron igual); con la canasta corregida (BUG-49, §14.13) fue `simulacion_2026-10-26b/` (35 hojas; **la
 corrida de Colab de esa noche dio 35 hojas iguales**, y el Excel, el mapa, el caché y la salida impresa iguales a la
-simulación; AUDITORIA_2026-10-26 §8). Con la TPD del panel corregida, Pepitos y las dos Operas (§14.15) es
-`simulacion_2026-10-26c/` (35 hojas).
+simulación; AUDITORIA_2026-10-26 §8). Con la TPD del panel corregida, Pepitos y las dos Operas (§14.15) fue
+`simulacion_2026-10-26c/`; con las líneas y el penne de la misma marca (§14.16) es `simulacion_2026-10-26d/` (35
+hojas).
 Comparación automática, hoja por hoja:
 
 ```bash
-python -I -X utf8 docs/auditoria/scripts_nb06_2026-10/s16_comparar_colab.py <brecha_celiaca_2026-10.xlsx de Colab> docs/brecha_celiaca/simulacion_2026-10-26c
+python -I -X utf8 docs/auditoria/scripts_nb06_2026-10/s16_comparar_colab.py <brecha_celiaca_2026-10.xlsx de Colab> docs/brecha_celiaca/simulacion_2026-10-26d
 ```
 
 (esperado: 35 hojas iguales; para revisar también las hojas grandes, el mapa y el caché, `r13`-`r15`). Después, la lectura de cada punto:
@@ -977,7 +987,7 @@ python -I -X utf8 docs/auditoria/scripts_nb06_2026-10/s16_comparar_colab.py <bre
    centavos: ninguno", los EANs sin ningún precio (esperado: ninguno).
 2. **Vigencia**: cuántas observaciones quedan fuera de la ventana de su código (los códigos viejos de Molinos desde
    oct-2023, la bolsa Wakas desde ago-2024 y los códigos viejos de Pepitos desde feb-2023; con la canasta vigente,
-   56.427 observaciones de 16 códigos).
+   55.739 observaciones de 16 códigos).
 3. **Plausibilidad** (esperado: ninguno) y **Control_EAN** (revisar cada marcado: los saltos de oct-2023 y ene-2024
    son la salida de los precios controlados, 14.8).
 4. **Cobertura_mensual**: sucursales con los dos lados por tipo y mes; el hueco de dic-2023 → mar-2024 en fideos.
@@ -989,15 +999,15 @@ python -I -X utf8 docs/auditoria/scripts_nb06_2026-10/s16_comparar_colab.py <bre
 9. **Concentración** (desde BUG-47): "Departamento (Georef): N de M sucursales" en la CELDA 7 (con la caché del nb09,
    todas) y el Spearman de la CELDA 8.
 10. **Serie TPD** (desde el 2026-10-23, noche; §14.12): en la CELDA 8b, `rango_completo` True en los 11 subtipos del
-    panel y los 12 de todas. Subtipo-mes movidos: en el panel, mostachol 6, rebozador 6 y spaghetti 1, todos con el
-    mismo subtipo en todas las sucursales ("6t", "1t"); en todas, obleas 8, con los demás subtipos ("8d"). Último
-    mes (panel): TPD +107,2% (IC 95% +106,6% a +107,8%) contra +108,1% de la descriptiva (con la canasta vigente;
-    con la del 2026-10-26b, +115,3% contra +116,3%).
+    panel y los 12 de todas. Subtipo-mes movidos: en el panel, mostachol 1, rebozador 6 y spaghetti 1, todos con el
+    mismo subtipo en todas las sucursales ("1t", "6t"); en todas, obleas 8, con los demás subtipos ("8d"). Último
+    mes (panel): TPD +98,4% (IC 95% +98,0% a +98,9%) contra +98,7% de la descriptiva (con la canasta vigente; con la
+    del 2026-10-26c, +107,2% contra +108,1%).
 11. **Sucursales que no son locales** (desde BUG-48): la CELDA 7 dice "afuera: 9 de tipo web o virtual y 6 por el
     nombre" (DIA "eCommerce", la "Dark Store Mendoza" de Libertad y cuatro sin precios de la canasta).
-12. **Canasta vigente** (2026-10-26, noche, §14.15): "EANs con datos: 80/80" en la CELDA 5. La primera corrida
-    relee los 58 meses (clave del caché `brecha_v3_840d22c6`); los cachés viejos (`brecha_v3_38349f0a`,
-    `brecha_v3_492a002c`) se pueden borrar.
+12. **Canasta vigente** (2026-10-26, noche, §14.16): "EANs con datos: 80/80" en la CELDA 5. La primera corrida
+    relee los 58 meses (clave del caché `brecha_v3_d5183015`); los cachés viejos (`brecha_v3_38349f0a`,
+    `brecha_v3_492a002c`, `brecha_v3_840d22c6`) se pueden borrar.
 
 ### 14.10 Simulación con los zips del Drive (ene-2022 → oct-2026)
 
@@ -1409,3 +1419,72 @@ Lectura:
    Cencosud. La concentración sigue sin relación clara (terciles de HHI +112%, +116%, +115%).
 5. **Lo que queda**: las galletas de arroz dentro de crackers y las vainillas (decisión del usuario; Toddy y las
    vainillas ya están leídos en el superconjunto `sim_super_v10`), y la hedónica por cadena y HHI (§14.14).
+
+### 14.16 Líneas y penne de la misma marca (2026-10-26, noche)
+
+El usuario preguntó si los productos y las canastas están bien elegidos. La respuesta, con lo que se puede mejorar,
+está en `docs/AUDITORIA_SELECCION_2026-10-26_nb06.md` §9. Pidió aplicar las dos primeras mejoras (entrada 🟣 del
+2026-10-26 en `docs/BUGS_Y_MEJORAS.md`):
+
+1. **Los sabores de una línea cuentan como un producto** (regla 9 de §14.3, en s10). Los productos de una misma marca
+   y presentación en el subtipo y lado que cuestan lo mismo forman una línea. La línea entra una vez en la mediana de
+   su lado (columna `linea` del CSV; `gen_nb06.py` junta sus códigos en `PRODUCTO`).
+   - Hay 10 líneas de 2 a 4 variantes, con 32 de los 67 productos: Snuks, Lasfor, Wakas y Grandiet (4 cada una), Smams
+     crackers, Smams rellenas, Crisppino Minis 50 g y Saladix (3 cada una), y Crisppino 100 g y Santa María (2).
+   - Las variantes de cada línea cuestan lo mismo: la mediana de cada una queda entre 0,97 y 1,04 veces la de su línea
+     (s10, `.lineas`).
+   - Los Anillos y la Boca de Dama de Terrabusi (170 g los dos) no son una línea: cuestan 1,15 y 0,85 veces su mediana.
+     Siguen como dos productos.
+   - No cambia qué productos entran ni sus códigos.
+2. **El penne se compara con la misma marca** (regla 8, en s10). En la composición espejada va primero el con TACC
+   de la marca de un sin TACC del subtipo. En penne entra el Penne rigate Matarazzo común en lugar de los Mostacholes
+   Lucchetti, como en spaghetti; es el único subtipo que cambia.
+   - El Matarazzo común pasa todas las reglas: 1.287 sucursales por día, 22 comercios súper, 8 cadenas grandes y
+     relativo 1,09.
+   - Cambian los dos códigos del empalme de Molinos: **Colab relee los 58 meses**.
+   - `MARCA_FIJA` corrige la marca del Maestro de tres fideos Lucchetti: el tirabuzón decía Matarazzo, y los
+     mostacholes y el tallarín, "Luchetti".
+
+**Canasta**: 67 productos en 45 líneas (80 códigos). Simulación con el caché del superconjunto filtrado (`sim_v8`);
+`s12` da lo mismo en precios, días y brechas. Esperados en `simulacion_2026-10-26d/` (cambian 33 de 35 hojas). Los 15
+tests dan OK.
+
+| | Canasta del 2026-10-26c | Vigente |
+|---|---|---|
+| Fideos, 2022-2026 | +160,6% | +132,1% |
+| Penne / tirabuzón, 2022-2026 | +148,3% / +256,2% | +110,7% / +196,8% |
+| Saladas, 2022-2026 (saborizadas) | +84,4% (+28,3%) | +77,9% (+18,6%) |
+| Galletitas dulces, 2022-2026 | +86,8% | +87,1% |
+| Canasta por año, todas las sucursales (2022 a 2026) | 114,2 / 111,1 / 106,7 / 91,3 / 113,0 | 104,8 / 100,8 / 102,0 / 85,0 / 102,2 |
+| Canasta por año, panel balanceado | 101,9 / 97,7 / 94,1 / 87,5 / 106,1 | 92,7 / 92,4 / 86,1 / 79,7 / 96,2 |
+| Últimos 12 meses, nacional con la misma canasta | +111,0% | +100,1% |
+| TPD oct-2026, panel / todas | +107,2% / +108,2% | +98,4% / +100,1% |
+| Regiones confiables | Patagonia +99,4% a AMBA +114,1% | Patagonia +89,0% a AMBA +102,4% |
+| Empresas confiables | Cencosud +109,3%, Carrefour +113,8% | Carrefour +100,9%, Cencosud +101,4% |
+| Concentración: Spearman por sucursal | +0,14 | +0,12 |
+| Imputaciones de la descriptiva (rachas; de más de 3 meses; la más larga) | 25; 14; penne de todas, 16 meses | 27; 14; obleas de todas, 8 meses |
+| Meses del panel con algún subtipo sin dato propio: TPD / descriptiva | 10 / 20 | 7 / 19 |
+
+Lectura:
+
+1. **Un celíaco paga el doble** por estos envasados de primera marca: +100% en los últimos 12 meses (TPD de oct-2026,
+   +98% a +100%). La canasta baja 5 a 11 pp según el año. Casi todo viene de los fideos (−28,5 pp en 2022-2026); las
+   saladas bajan 6,5 pp.
+2. **Penne y spaghetti, los dos Matarazzo contra Matarazzo, dan parecido**: el penne +101% a +130% según el año y el
+   spaghetti +67% a +129%. Antes el penne daba +135% a +176% contra Lucchetti. El sin TACC Matarazzo cuesta ~2 veces el
+   común; la diferencia de precio entre la marca más cara y la más barata de Molinos ya no entra en la brecha.
+   - A cambio, el penne tiene menos sucursales con los dos lados en 2024-2025 (757 y 1.108; antes 1.791 y 2.191): el
+     Matarazzo común está en menos sucursales que los Mostacholes Lucchetti.
+   - La imputación más larga del penne de todas las sucursales baja de 16 meses (2022-12 → 2024-03) a 4 (2024-01 →
+     2024-04). En el panel, la TPD mueve 1 mes del penne en lugar de 6.
+3. **Tirabuzón.** Wakas tenía 4 de los 5 votos del lado sin TACC; como una línea, pesa lo mismo que el tirabuzón sin
+   TACC Matarazzo. Baja de +256% a +197% (en 2023, de +300% a +196%).
+4. **Saborizadas, +19%** (2025: +4,5%). Con las líneas, la galleta de arroz Grandiet pizza (0,85 veces los con TACC)
+   pesa lo mismo que cada línea de Crisppino (1,3 y 1,45). Es la decisión pendiente de las galletas de arroz
+   (AUDITORIA_SELECCION §9, punto 3): en saborizadas, todo el lado sin TACC son galletas de arroz.
+5. **Grupos.** Las diferencias se achican. Carrefour y Cencosud quedan a 0,5 pp (antes 4,5 pp): la diferencia venía de
+   los sabores y del penne. Las regiones van de +89% (Patagonia) a +102% (AMBA). La concentración sigue sin relación
+   clara (terciles de HHI +100%, +106%, +106%). El desvío de la variación mensual de la TPD del panel baja de 8,1 a
+   7,9 pp.
+6. **Lo que queda** (AUDITORIA_SELECCION §9): las galletas de arroz, las vainillas, los pesos de los subtipos (como
+   sensibilidad), una canasta de oferta actual con pan, premezclas y alfajores, y la hedónica por cadena y HHI.

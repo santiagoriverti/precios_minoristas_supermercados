@@ -215,3 +215,67 @@ El usuario pidió las tres primeras de §7.3. Detalle y resultados: `docs/BRECHA
 
 Canasta: 67 productos (80 códigos). Esperados en `docs/brecha_celiaca/simulacion_2026-10-26c/`. La canasta de los
 últimos 12 meses da +111% (antes +118%). Quedan para decidir las galletas de arroz y las vainillas (§4).
+
+## 9. ¿Están bien elegidos los productos y las canastas? (2026-10-26, noche)
+
+El usuario preguntó si los productos y las canastas están bien elegidos o se pueden mejorar, suponiendo que Colab da lo
+mismo que la simulación vigente. **Lo que más pesa está bien**:
+
+- todos los sin TACC están verificados, en el listado ALG de ANMAT o por ser de marcas que solo hacen sin gluten;
+- ningún con TACC está mal etiquetado;
+- la continuidad y la identidad de cada código (gramos, empalmes, vigencias) están comprobadas con precios.
+
+Lo que queda son decisiones de diseño que mueven el resultado algunos puntos. Efectos con `r27` (estimador
+simplificado), últimos 12 meses, sobre una canasta de +110,2%:
+
+1. **Cada sabor contaba como un producto.** En la mediana de cada lado mandaba la marca con más sabores:
+   - Crisppino tenía 5 de los 6 sin TACC de saborizadas y Wakas 4 de los 5 de tirabuzón;
+   - del lado con TACC, Saladix tenía 3 y Rex 2.
+
+   Contando una vez cada línea (misma marca y presentación), la canasta baja a +104,0%, saborizadas de +42,6% a +18,6%,
+   saladas de +95,2% a +78,1% y tirabuzón de +209,7% a +193,3%. No relee el SEPA.
+2. **El penne se comparaba con otra marca.** En spaghetti es Matarazzo sin TACC contra Matarazzo común; en penne, el
+   Matarazzo sin TACC iba contra los Mostacholes Lucchetti, porque la composición espejada elige el con TACC de más
+   cobertura. Así se mezcla la prima de marca con la del sin gluten. El penne Matarazzo común pasa todas las reglas
+   (estaba en la canasta hasta BUG-49) y el 22/10 estaba junto al sin TACC en 1.125 de 1.226 sucursales (Lucchetti, en
+   1.212). Con él, penne +180,6% → +134,2%, fideos +169,7% → +154,0% y canasta −4,7 pp. Cambia 4 códigos: relee.
+3. **Galletas de arroz.** Son 4 de los 7 sin TACC de crackers (Grandiet) y los 6 de saborizadas (Crisppino y Grandiet):
+   las saladas sin TACC son casi todas galletas de arroz, un producto que también compra quien no es celíaco. Crackers
+   contra crackers sube la canasta 3,6 pp; en saborizadas no hay crackers sin TACC con continuidad. Pendiente (§4).
+4. **Pepas y secas: no hay mejores comparadores.** Los líderes no cumplen la continuidad:
+   - Chocolinas, Manón y Lincoln cambiaron de código en 2023-2024 o casi no estaban en 2022 (Lincoln chocolate tenía
+     en 2022 el 8% de su cobertura de 2026);
+   - Maná vainilla tiene 48 de los 55 meses;
+   - las pepas 9 de Oro empiezan en ago-2023.
+5. **Pesos de los subtipos.** Dentro de cada tipo pesan igual: obleas (626 sucursales con pares) cuenta lo mismo que
+   rellenas (2.371). Con pesos por sucursales con pares, en todo el período, dulces pasa de +86,8% a +73,7% y saladas de
+   +84,4% a +119,9%. No hay consumo por subtipo: va como sensibilidad, no como cambio.
+6. **Lo que una canasta fija no puede medir.** La canasta pesa el 5% del gasto en alimentos de la ENGHo y le faltan
+   los productos que más le cuestan a un celíaco:
+   - pan envasado: el sin TACC de Bio y el de Campero están en ~1.000 sucursales por día, pero 79% en una cadena y con
+     un cuarto de su cobertura de 2026 en 2022;
+   - premezclas: la de bizcochuelo sin TACC de Arcor tenía en 2022 ocho veces la cobertura de 2026;
+   - alfajores: Yuka (150 sucursales o menos) y Carrefour (una sola cadena).
+
+   La salida es una segunda canasta de oferta actual (12 a 15 meses), con estos productos y las líneas sin TACC nuevas
+   de las marcas masivas.
+
+El usuario pidió aplicar los puntos 1 y 2 (§10).
+
+## 10. Líneas y penne de la misma marca (2026-10-26, noche)
+
+Detalle y resultados: `docs/BRECHA_CELIACA.md` §14.16 (entrada 🟣 del 2026-10-26 en `docs/BUGS_Y_MEJORAS.md`).
+
+- **Líneas** (s10): 10 líneas de 2 a 4 variantes, con 32 de los 67 productos. Las variantes de cada línea cuestan lo
+  mismo (0,97 a 1,04 veces su mediana). Los Anillos y la Boca de Dama de Terrabusi no son una línea: difieren 36%.
+- **Penne**: el Matarazzo común en lugar de los Mostacholes Lucchetti (en la composición espejada va primero el con
+  TACC de la marca del sin TACC). Cambian dos códigos: Colab relee.
+
+Canasta: 67 productos en 45 líneas (80 códigos). Esperados en `docs/brecha_celiaca/simulacion_2026-10-26d/`.
+
+- Fideos, 2022-2026: +160,6% → +132,1% (penne +148% → +111%, tirabuzón +256% → +197%).
+- Saborizadas: +28% → +19%; con las líneas, la Grandiet pizza (0,85 veces los con TACC) pesa lo mismo que cada línea
+  de Crisppino, lo que agrega razones para decidir las galletas de arroz (§9, punto 3).
+- Canasta de los últimos 12 meses: +111% → +100%. Carrefour y Cencosud quedan a 0,5 pp (antes 4,5).
+
+El estimador simplificado de §9 (`r27`) daba la misma canasta de los últimos 12 meses (+99,4%).

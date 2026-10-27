@@ -62,7 +62,9 @@ def _bloque_canasta():
             for r in fs:
                 if r['lado'] != lado:
                     continue
-                nota = f"  # {r['subtipo']}" + (f" · {r['nota']}" if r.get('nota') else '')
+                _lin = r.get('linea') or r['producto']
+                nota = (f"  # {r['subtipo']}" + (f" · {r['nota']}" if r.get('nota') else '')
+                        + (f" · línea «{_lin}»" if _lin != r['producto'] else ''))
                 out.append(f"            {r['ean']!r}: {r['descripcion']!r},{nota}")
             out.append('        },')
         out.append('    },')
@@ -89,21 +91,23 @@ def _bloque_canasta():
                 out.append(f"    {r['ean']!r}: ({d}, {h}),   # {r['descripcion']}")
     out.append('}')
     out.append('')
-    out.append('# Productos con más de un código (empalmes): en cada sucursal y mes el precio del producto es la mediana de sus')
-    out.append('# códigos vigentes, así cuenta UNA vez en la mediana de su lado aunque la sucursal tenga los dos códigos.')
+    out.append('# Productos con más de un código: los empalmes (el fabricante cambió el EAN) y las líneas (sabores o variantes de')
+    out.append('# una misma marca y presentación en el subtipo, al mismo precio; desde el 2026-10-26). En cada sucursal y mes el')
+    out.append('# precio del producto es la mediana de sus códigos vigentes, así cuenta UNA vez en la mediana de su lado aunque')
+    out.append('# la sucursal tenga varios de sus códigos.')
     out.append('PRODUCTO = {')
     _prod = {}
     for t in ORDEN_TIPOS:
         for r in filas:
-            if r['tipo'] == t and r.get('producto'):
-                _prod.setdefault(r['producto'], []).append(r['ean'])
+            if r['tipo'] == t and (r.get('linea') or r.get('producto')):
+                _prod.setdefault(r.get('linea') or r['producto'], []).append(r['ean'])
     for p, es in _prod.items():
         if len(es) > 1:
             out.append(f'    {p!r}: {es!r},')
     out.append('}')
     out.append('')
-    out.append('# Subtipo de cada producto (comparabilidad: en cada subtipo hay tantos productos con TACC como sin TACC). Se usa')
-    out.append('# en la hoja Comparacion_productos y en el mapa por sucursal; la brecha se calcula por tipo.')
+    out.append('# Subtipo de cada producto (comparabilidad: la selección elige tantos productos con TACC como sin TACC en cada')
+    out.append('# subtipo). La brecha se calcula por subtipo y se agrega por tipo (CELDAS 7 y 8).')
     out.append('SUBTIPO = {')
     _sub = {}
     for t in ORDEN_TIPOS:
@@ -137,8 +141,8 @@ cadenas**, sobre las salidas del nb09. Reglas, listas y métricas: `docs/BRECHA_
 **Medición:**
 - Precio de cada producto en cada sucursal y mes = **mediana de sus precios diarios**, en **$/100 g**.
 - En cada sucursal y mes, por **subtipo** (spaghetti, crackers, rellenas…): precio de cada lado = **mediana** de los
-  productos presentes; **brecha del subtipo = sin TACC / con TACC − 1**, dentro del mismo super (controla el nivel de
-  precios de cada lugar y compara productos equivalentes).
+  productos presentes (los sabores de una misma línea cuentan como uno); **brecha del subtipo = sin TACC / con TACC
+  − 1**, dentro del mismo super (controla el nivel de precios de cada lugar y compara productos equivalentes).
 - Como un índice de precios: **subtipo** (mediana entre sucursales) → **tipo** (promedio geométrico de sus subtipos)
   → **canasta** (promedio de los tipos ponderado por el **gasto de los hogares, ENGHo 2017/18**). Serie mensual con
   todas las sucursales y con **panel balanceado**; un subtipo-mes con muy pocas sucursales se imputa con el mes anterior
@@ -162,7 +166,8 @@ _CONFIG_PRE = r"""# ===========================================================
 #                 'tacc': {EAN: descripción}, 'sin_tacc': {EAN: descripción}}.
 #   Algunos productos tienen DOS códigos porque el fabricante cambió el EAN (Molinos en sep-oct 2023, Wakas en jun-2024):
 #   van los dos, cada uno con su VIGENCIA (abajo), y PRODUCTO los junta: en cada sucursal y mes el producto entra una
-#   vez, con la mediana de sus códigos vigentes.
+#   vez, con la mediana de sus códigos vigentes. PRODUCTO junta también los sabores de una LÍNEA (misma marca y
+#   presentación en el subtipo, al mismo precio): la línea entra una vez, así no manda la marca con más sabores.
 #   Cambiar un EAN cambia la clave del caché: relee todo el SEPA. Cambiar GRAMOS, VIGENCIA, PRODUCTO, SUBTIPO, pesos o
 #   descripciones NO relee.
 """
@@ -826,9 +831,10 @@ if len(control_ean):
 # Precio de cada SUBTIPO por (sucursal, mes, lado): MEDIANA $/100 g de los productos presentes (estimador PRIMARIO,
 # §3.3 y §14). La comparación es por subtipo (crackers con crackers, snacks con snacks, spaghetti con spaghetti): la
 # mediana del tipo entero mezclaba subtipos de niveles muy distintos según qué tuviera cada sucursal (en las saladas,
-# snacks con TACC de $2.000/100 g contra crackers sin TACC). Un producto con dos códigos (PRODUCTO, CELDA 1) entra con
-# la mediana de sus códigos: cuenta una vez. El "más barato" (ilustrativo) es el mínimo de los productos a menos de x4
-# de la mediana del grupo (siempre hay al menos uno), vectorizado: una función de Python por grupo tardaba minutos.
+# snacks con TACC de $2.000/100 g contra crackers sin TACC). Un producto con dos códigos o una línea con varios sabores
+# (PRODUCTO, CELDA 1) entra con la mediana de sus códigos: cuenta una vez. El "más barato" (ilustrativo) es el mínimo
+# de los productos a menos de x4 de la mediana del grupo (siempre hay al menos uno), vectorizado: una función de Python
+# por grupo tardaba minutos.
 _sk = ['id_comercio','id_bandera','id_sucursal']
 _PROD = {_norm_ean(_e): _p for _p, _es in globals().get('PRODUCTO', {}).items() for _e in _es if _norm_ean(_e)}
 datos_dia['producto'] = datos_dia['ean_norm'].map(_PROD).fillna(datos_dia['ean_norm'])
@@ -1409,7 +1415,8 @@ cells.append(cell_code(r"""# ===================================================
 # CELDA 8b — Serie TPD (hedónica) de la brecha: robustez frente a la imputación de subtipos
 # ============================================================
 # BRECHA_CELIACA §3.9 y §14.12. Una regresión por SUBTIPO con todas sus observaciones producto × sucursal × mes ($/100 g;
-# un producto con dos códigos entra una vez, con la mediana de sus códigos, como en la CELDA 7):
+# un producto con dos códigos o una línea con varios sabores entra una vez, con la mediana de sus códigos, como en la
+# CELDA 7):
 #     ln p(producto, sucursal, mes) = α(sucursal, mes) + γ(producto) + β(mes) · sinTACC + ε
 # α es la celda de la descriptiva (el subtipo en esa sucursal y mes): cada sin TACC se compara con los con TACC de su
 # subtipo en el mismo super y mes. Con α por sucursal-mes del TIPO entero, la prima de un subtipo se medía contra todos
@@ -2077,10 +2084,12 @@ leeme = pd.DataFrame({'hoja_o_columna': [
     'Brecha_sucursal', 'Concentracion', 'Control_EAN', 'Plausibilidad', 'Fuente'],
     'definicion': [
     'Brecha de un subtipo en una sucursal y mes = mediana $/100 g de los productos sin TACC presentes / mediana $/100 g de '
-    'los con TACC presentes - 1 (los dos lados en el mismo super). Brecha del tipo = promedio geométrico de las de sus '
+    'los con TACC presentes - 1 (los dos lados en el mismo super; los sabores de una misma línea, misma marca y '
+    'presentación al mismo precio, cuentan como un producto). Brecha del tipo = promedio geométrico de las de sus '
     'subtipos con los dos lados (pesos iguales). Precio de un producto en el mes = mediana de sus precios diarios.',
     'Productos de la canasta fija (CELDA 1), con los meses en que tuvieron precio. Un producto que cambió de código '
-    'ocupa una fila por código (misma columna producto; vigente_desde / vigente_hasta: meses en que se usa cada código). '
+    'ocupa una fila por código (misma columna producto; vigente_desde / vigente_hasta: meses en que se usa cada código), '
+    'y los sabores de una línea, una fila por sabor (la línea en la columna producto). '
     'Lista con métricas: docs/brecha_celiaca/canasta_fija_2022_2026.csv; reglas: docs/BRECHA_CELIACA.md §14.',
     'Peso de cada tipo: % del gasto de los hogares en alimentos y bebidas no alcohólicas que va a sus artículos (ENGHo '
     '2017/18), renormalizado entre los tipos de la canasta; cantidades de la canasta por sucursal (peso / precio con '

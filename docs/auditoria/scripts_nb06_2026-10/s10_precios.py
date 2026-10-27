@@ -1,5 +1,6 @@
 # Verificación con precios (precio mensual por sucursal x EAN de s8, ene-2022 -> oct-2026, zips semestrales del Drive)
-# de los candidatos de s9_seleccion.py y armado de la canasta final con composición espejada por subtipo. Uso:
+# de los candidatos de s9_seleccion.py y armado de la canasta final con composición espejada por subtipo (con TACC de
+# la misma marca que un sin TACC primero) y las líneas (variantes de una misma marca y presentación). Uso:
 #   python -I -X utf8 s10_precios.py <seleccion.parquet de s9> <carpeta precios_mes> <carpeta precios_mes_2>
 #                                    <catálogo 22/10 (.parquet de s3)> <salida.csv>
 import json, re, sys
@@ -45,6 +46,30 @@ DESC_FIJA = {'7798199770134': 'Galletitas de Arroz sin TACC Sabor Jamón Crisppi
              '7798031470802': 'Fideos Fusilli con Amaranto sin TACC Caja Wakas 300 Gr',
              '7798031470819': 'Fideos Fusilli con Chía sin TACC Caja Wakas 300 Gr',
              '7798031470833': 'Fideos Fusilli con Kale sin TACC Caja Wakas 300 Gr'}
+# Marca corregida (para el comparador de la misma marca y las líneas): el Maestro dice "Matarazzo" para el tirabuzón
+# Lucchetti y "Luchetti" para los mostacholes y el tallarín
+MARCA_FIJA = {'EMP:Tirabuzones Lucchetti 500 g': 'LUCCHETTI', 'EMP:Mostacholes Lucchetti 500 g': 'LUCCHETTI',
+              'EMP:Tallarín Lucchetti 500 g': 'LUCCHETTI'}
+# Líneas (decisión del usuario, 2026-10-26, noche): los productos de una misma marca y presentación en el subtipo y
+# lado que cuestan lo mismo (sabores o variantes) son UNA línea y entran una vez en la mediana de su lado (columna
+# linea; gen_nb06 junta sus códigos en PRODUCTO). Si cada sabor contara, mandaría la marca con más sabores: Crisppino
+# tenía 5 de los 6 sin TACC de saborizadas y Wakas 4 de los 5 de tirabuzón. Mismo precio: el $/100 g de cada variante
+# a ±10% de la mediana de su línea (mediana de los meses en que conviven); si no, es otro producto y cuenta solo (los
+# Anillos y la Boca de Dama de Terrabusi, 170 g los dos, difieren 36%). La selección (composición espejada) sigue
+# contando productos. Nombre de cada línea, sin el número de variantes (se agrega); una línea que no esté acá toma un
+# nombre automático.
+LINEA_PRECIO = (0.9, 1 / 0.9)
+NOMBRE_LINEA = {
+    ('Almohaditas rellenas', 'sin_tacc', 'SNUKS', '240 Gr'): 'Almohaditas rellenas sin TACC Snuks 240 g',
+    ('Almohaditas rellenas', 'tacc', 'LASFOR', '200 Gr'): 'Almohaditas rellenas Lasfor 200 g',
+    ('Tirabuzón / fusilli', 'sin_tacc', 'WAKAS', '250 Gr'): 'Fusilli sin TACC Wakas',
+    ('Rellenas', 'sin_tacc', 'SMAMS', '105 Gr'): 'Galletitas rellenas sin TACC Smams 105 g',
+    ('Secas (vainilla, limón, chocolate)', 'sin_tacc', 'SANTA MARIA', '200 Gr'): 'Galletitas sin TACC Santa María 200 g',
+    ('Crackers y galletas de arroz', 'sin_tacc', 'SMAMS', '150 Gr'): 'Crackers sin TACC Smams 150 g',
+    ('Crackers y galletas de arroz', 'sin_tacc', 'GRANDIET', '100 Gr'): 'Galletas de arroz Grandiet 100 g',
+    ('Saborizadas / snack', 'sin_tacc', 'CRISPPINO', '100 Gr'): 'Galletas de arroz saborizadas Crisppino 100 g',
+    ('Saborizadas / snack', 'sin_tacc', 'CRISPPINO', '50 Gr'): 'Galletas de arroz saborizadas Crisppino Minis 50 g',
+    ('Saborizadas / snack', 'tacc', 'SALADIX', '100 Gr'): 'Galletitas saborizadas Saladix 100 g'}
 
 sel = pd.read_parquet(F_SEL)
 MIEM = pd.read_parquet(F_SEL.with_name(F_SEL.stem + '_miembros.parquet')).drop_duplicates('id').set_index('id')
@@ -236,8 +261,9 @@ Q['ok_prima'] = np.where((Q['lado'] == 'sin_tacc') & Q['prima_mediana'].notna(),
 mal = set(EMP.loc[~EMP['ok'], 'item']) if len(EMP) else set()
 Q['ok_empalme'] = ~Q['item'].isin(mal)
 Q = Q.merge(sel[['id', 'subtipo', 'descripcion', 'suc_mes_mediana', 'caidas', 'cob_2022_sobre_2026', 'provincias',
-                 'comercios_super', 'cadenas_grandes', 'pct_cadena_principal', 'codigos', 'grupo']]
-            .rename(columns={'id': 'item'}), on='item', how='left')
+                 'comercios_super', 'cadenas_grandes', 'pct_cadena_principal', 'codigos', 'grupo', 'marca_n',
+                 'presentacion']].rename(columns={'id': 'item'}), on='item', how='left')
+Q['marca_n'] = Q['item'].map(MARCA_FIJA).fillna(Q['marca_n'])
 # cobertura al final: sucursales por día en oct-2026 (nb09, SEPA diario al 22/10) >= 25% de su mediana mensual (si no,
 # el producto casi desapareció). El catálogo del 22/10 (s1-s3) no tiene todos los productos (filtra por palabras).
 SER = pd.read_parquet(F_SEL.with_name(F_SEL.stem + '_serie.parquet'))
@@ -270,7 +296,11 @@ ok = Q[Q['ok_todo']].copy()
 fin = []
 for (t, st), g in ok.groupby(['tipo', 'subtipo']):
     s_ = g[g['lado'] == 'sin_tacc'].sort_values('suc_mes_mediana', ascending=False)
-    c_ = g[g['lado'] == 'tacc'].sort_values('suc_mes_mediana', ascending=False)
+    # con TACC: primero los de la marca de algún sin TACC del subtipo, después por cobertura. El par de la misma marca
+    # separa la prima sin TACC de la de marca (decisión del usuario, 2026-10-26, noche): en penne entra el Matarazzo
+    # común en lugar de los Mostacholes Lucchetti, como en spaghetti
+    c_ = (g[g['lado'] == 'tacc'].assign(_misma_marca=lambda d: d['marca_n'].isin(set(s_['marca_n'])))
+          .sort_values(['_misma_marca', 'suc_mes_mediana'], ascending=False).drop(columns='_misma_marca'))
     if (t, st) in COMPARADOR_FIJO:
         c_ = c_[c_['item'].isin(COMPARADOR_FIJO[(t, st)])]
     if s_.empty or c_.empty:
@@ -279,8 +309,42 @@ for (t, st), g in ok.groupby(['tipo', 'subtipo']):
     fin.append(s_)
     fin.append(c_ if (t, st) in COMPARADOR_FIJO else c_.head(len(s_)))
 F = pd.concat(fin, ignore_index=True)
-print('\n=== Canasta final (productos) ===')
-print(F.groupby(['tipo', 'subtipo', 'lado']).size().unstack('lado').to_string())
+
+# ── Líneas: misma marca y presentación en el subtipo y lado, y mismo precio (NOMBRE_LINEA, LINEA_PRECIO) ─────────────
+F['_lin'] = list(zip(F['subtipo'], F['lado'], F['marca_n'], F['presentacion']))
+# precio de cada variante contra la mediana de su línea ($/100 g nacional, meses con dos o más variantes)
+_li = I.merge(F.loc[F.groupby('_lin')['item'].transform('size') >= 2, ['item', '_lin']], on='item')
+_li = _li[_li.groupby(['_lin', 'mes'])['item'].transform('size') >= 2].copy()
+_li['rel'] = _li['p100'] / _li.groupby(['_lin', 'mes'])['p100'].transform('median')
+LIN = (_li.groupby(['_lin', 'item'])['rel']
+       .agg(meses='size', mediana='median', p10=lambda s: s.quantile(.1), p90=lambda s: s.quantile(.9)).reset_index())
+LIN['en_linea'] = LIN['mediana'].between(*LINEA_PRECIO)
+print('\n=== Líneas: $/100 g de cada variante / mediana de su línea (nacional, meses con dos o más variantes) ===')
+print(LIN.assign(_lin=LIN['_lin'].map(lambda k: f'{k[2]} {k[3]} · {k[0]} · {k[1]}')).round(3).to_string(index=False))
+_fuera = set(LIN.loc[~LIN['en_linea'], 'item'])
+if _fuera:
+    print(f'Cuestan distinto que su línea (cuentan solos): {sorted(_fuera)}')
+F['_lin'] = [k + (it,) if it in _fuera else k for k, it in zip(F['_lin'], F['item'])]
+F['_n_lin'] = F.groupby(['tipo', '_lin'])['item'].transform('size')
+def nombre_linea(k, n, producto):
+    if n < 2:
+        return producto
+    base = NOMBRE_LINEA.get(k)
+    if base is None:
+        base = f"{k[0]}{' sin TACC' if k[1] == 'sin_tacc' else ''} {k[2].title()} {k[3]}"
+        print(f'AVISO: línea sin nombre en NOMBRE_LINEA: {k} -> «{base}»')
+    return f'{base} ({n} variantes)'
+F['linea'] = [nombre_linea(k, n, p) for k, n, p in zip(F['_lin'], F['_n_lin'], F['descripcion'])]
+_dup = F.drop_duplicates(['linea', 'tipo', '_lin']).groupby('linea').size()
+if (_dup > 1).any():
+    raise ValueError(f'Nombres de línea o de producto repetidos: {list(_dup[_dup > 1].index)}')
+# variantes de una línea juntas (la línea por la cobertura de su variante principal)
+F['_cob_lin'] = F.groupby(['tipo', 'linea'])['suc_mes_mediana'].transform('max')
+F = F.sort_values(['tipo', 'subtipo', 'lado', '_cob_lin', 'linea', 'suc_mes_mediana'],
+                  ascending=[True, True, True, False, True, False]).reset_index(drop=True)
+print('\n=== Canasta final (productos y líneas) ===')
+print(F.groupby(['tipo', 'subtipo', 'lado']).agg(productos=('item', 'size'), lineas=('linea', 'nunique'))
+      .unstack('lado').to_string())
 out = []
 for r in F.itertuples(index=False):
     for e in str(r.codigos).split(','):
@@ -288,7 +352,7 @@ for r in F.itertuples(index=False):
         out.append({'tipo': r.tipo, 'lado': r.lado, 'ean': e, 'descripcion': er['descripcion'],
                     'gramos': er['gramos'], 'subtipo': r.subtipo, 'desde': er['desde'], 'hasta': er['hasta'],
                     'nota': (f'empalme «{r.grupo}»' if r.grupo else ''), 'producto': r.descripcion,
-                    'sucursales_dia_mediana_2022_2026': round(r.suc_mes_mediana, 1), 'caidas': r.caidas,
+                    'linea': r.linea, 'sucursales_dia_mediana_2022_2026': round(r.suc_mes_mediana, 1), 'caidas': r.caidas,
                     'cobertura_2022_sobre_2026': round(r.cob_2022_sobre_2026, 2), 'provincias': r.provincias,
                     'comercios': r.comercios_super, 'cadenas_grandes': r.cadenas_grandes,
                     'pct_cadena_principal': round(r.pct_cadena_principal, 1),
@@ -298,8 +362,10 @@ for r in F.itertuples(index=False):
                     'precio_sobre_mediana_con_tacc_subtipo': round(r.rel_tier, 3)})
 OUT = pd.DataFrame(out)
 OUT.to_csv(F_OUT, index=False, encoding='utf-8')
-print(f'\nGuardado: {F_OUT} ({len(OUT)} EANs, {F["item"].nunique()} productos)')
+print(f'\nGuardado: {F_OUT} ({len(OUT)} EANs, {F["item"].nunique()} productos, {F["linea"].nunique()} líneas)')
 Q.to_parquet(F_OUT.with_suffix('.verif.parquet'), index=False)
+LIN.assign(_lin=LIN['_lin'].map(' | '.join)).rename(columns={'_lin': 'linea_clave'}).to_parquet(
+    F_OUT.with_suffix('.lineas.parquet'), index=False)
 I.to_parquet(F_OUT.with_suffix('.serie.parquet'), index=False)      # $/100 g nacional por producto y mes
 if len(CORTE):
     CORTE.to_parquet(F_OUT.with_suffix('.cortes.parquet'), index=False)

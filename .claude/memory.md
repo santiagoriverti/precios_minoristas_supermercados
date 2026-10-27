@@ -55,8 +55,20 @@ Autor: Santiago Riverti — investigador independiente
      - Canasta de 67 productos (80 códigos), esperados VIGENTES `simulacion_2026-10-26c/` (sim_v7 = Excel;
        caché `brecha_v3_840d22c6`).
      - Resultados: con chips +29% (antes +111% contra Par Nor); canasta de los últimos 12 meses +111%.
+   - **Más tarde** (revisión de productos y canastas, AUDITORIA_SELECCION §9; BRECHA_CELIACA §14.16):
+     - **Líneas** (s10, columna `linea` del CSV; `gen_nb06.py` junta sus códigos en `PRODUCTO`): misma marca y
+       presentación en el subtipo y lado, al mismo precio (±10% de la mediana de la línea), entran una vez. Son 10
+       líneas con 32 de 67 productos; Terrabusi Anillos y Boca de Dama difieren 36% y siguen separados.
+     - **Penne contra la misma marca**: en la composición espejada va primero el con TACC de la marca de un sin TACC
+       (Matarazzo común en lugar de los Mostacholes Lucchetti). `MARCA_FIJA` corrige tres marcas Lucchetti del Maestro.
+     - Canasta de 67 productos en 45 líneas (80 códigos). Esperados VIGENTES `simulacion_2026-10-26d/` (sim_v8, caché
+       del superconjunto filtrado; `s12` igual; caché `brecha_v3_d5183015`).
+     - Resultados: fideos +161% → +132% (penne +111%, tirabuzón +197%); saborizadas +19%; canasta de los últimos 12
+       meses +100% (antes +111%); Carrefour y Cencosud a 0,5 pp.
+     - Pendientes que se vieron (§9): galletas de arroz (en saborizadas son todo el lado sin TACC), pesos de los
+       subtipos como sensibilidad, canasta de oferta actual con pan, premezclas y alfajores.
    - **Siguiente**:
-     - (a) Corrida de Colab (relee los 58 meses) → `s16` contra `simulacion_2026-10-26c`.
+     - (a) Corrida de Colab (relee los 58 meses) → `s16` contra `simulacion_2026-10-26d`.
      - (b) El usuario decide las galletas de arroz y las vainillas. Toddy y las vainillas ya están leídos en
        `sim_super_v10`.
      - (c) La hedónica por cadena y HHI.

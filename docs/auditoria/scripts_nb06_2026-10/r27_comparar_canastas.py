@@ -19,7 +19,10 @@ COLS = ['tipo', 'lado', 'ean', 'producto', 'subtipo', 'gramos', 'desde', 'hasta'
 
 
 def leer(path):
-    b = pd.read_csv(path, dtype={'ean': str, 'desde': str, 'hasta': str})[COLS].copy()
+    b = pd.read_csv(path, dtype={'ean': str, 'desde': str, 'hasta': str})
+    if 'linea' in b.columns:   # las variantes de una línea son un producto (s10, desde el 2026-10-26)
+        b['producto'] = b['linea'].fillna(b['producto'])
+    b = b[COLS].copy()
     b['lado'] = b['lado'].map({'tacc': 'tacc', 'sin_tacc': 'sin'})
     return b
 
