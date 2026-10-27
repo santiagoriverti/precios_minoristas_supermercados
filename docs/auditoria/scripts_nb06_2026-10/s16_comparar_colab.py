@@ -12,7 +12,10 @@ F_XLS, D_ESP = Path(sys.argv[1]), Path(sys.argv[2])
 TOL = 1e-6
 CLAVES = ['tipo', 'subtipo', 'lado', 'rol', 'ean', 'ean_norm', 'mes', 'anio', 'provincia', 'region', 'empresa',
           'cadena', 'localidad', 'id_comercio', 'id_bandera', 'id_sucursal', 'departamento_id', 'serie', 'desde',
-          'producto', 'universo']
+          'producto', 'universo',
+          # hojas de la CELDA 8c y Resumen (2026-10-27): sin estas claves la unión era muchos a muchos
+          'suc_key', 'nivel', 'escenario', 'agrupacion', 'grupo', 'medida', 'modelo', 'termino', 'variable', 'controles',
+          'item_cba', 'tema', 'indicador']
 TEXTO = {c: str for c in CLAVES}
 def num(s):
     # columnas numéricas o booleanas (confiable, revisar, amba...) como float; el resto queda NaN

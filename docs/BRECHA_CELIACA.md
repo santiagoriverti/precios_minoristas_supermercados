@@ -4,7 +4,7 @@ Documento técnico del **Notebook 06**. Mide la **brecha** de precios entre prod
 equivalentes **sin TACC**, dentro de cada supermercado, y cómo se distribuye **en el tiempo** (mensual desde
 enero de 2022), **geográficamente** (provincia, región, AMBA) y **entre cadenas**.
 
-Última actualización: 2026-10-27 — **panel de expertos** (`docs/EVALUACION_EXPERTOS_2026-10-27_nb06.md`): la canasta fija mide bien la prima de precio de los envasados sin TACC (+103% en los últimos 12 meses, IC 95% +102,6% a +103,5%) pero no el costo de la dieta (41% del gasto en artículos con gluten; falta el pan). Cambios: **equivalentes primero** (las galletas de arroz salen de crackers; 62 productos en 43 líneas, 75 códigos; §14.17), **precios de una empresa fuera de escala** (CELDA 7), **análisis complementarios** (CELDA 8c: sensibilidad, índices de cada lado con el IPC, disponibilidad, IC por bootstrap, competencia local, hedónica de región y empresa, costo con la CBA y datos para el análisis propio; §15) y la hoja **`Resumen`**. Esperados vigentes en `docs/brecha_celiaca/simulacion_2026-10-27/`; falta la corrida de Colab (relee los 58 meses: cambian los códigos). Antes, 2026-10-26 (noche) — después de la corrida de Colab con la canasta corregida, **TPD del panel corregida** (el subtipo sin pares se mueve con el mismo subtipo en todas las sucursales), **Pepitos como comparador de con chips** (empalme de sus tres códigos) y **la Opera de 92 g junto a la de 220 g en obleas** (§14.15): 67 productos (80 códigos), esperados vigentes en `docs/brecha_celiaca/simulacion_2026-10-26c/`; falta la corrida de Colab. Antes, 2026-10-26 (auditoría de la selección) — **canasta corregida (BUG-49)**: la selección se contrastó con el listado ALG de ANMAT y se corrigieron cuatro errores de las reglas (§14.3, §14.13; `docs/AUDITORIA_SELECCION_2026-10-26_nb06.md`): 66 productos (77 códigos), simulación con los 58 meses releídos y esperados vigentes en `docs/brecha_celiaca/simulacion_2026-10-26b/`; falta la corrida de Colab. Antes, 2026-10-26 (cierre) — **revisión de datos y método frente al objetivo** (`docs/REVISION_METODOLOGICA_2026-10-26_nb06.md`): qué responde bien el nb06 y qué falta para cada pregunta (cuánto más paga un celíaco, evolución, geografía, concentración, cadenas), con recomendaciones priorizadas; la cuarta corrida de Colab (gráficos) dio igual a la simulación. Antes, 2026-10-26 — la **segunda corrida de Colab** (BUG-47 y la serie TPD) dio igual a la simulación
+Última actualización: 2026-10-27 (más tarde) — **canasta amplia de la oferta actual (nb06b, §16)**: pan envasado, harinas, premezclas, alfajores y tapas además de los 5 tipos de la fija, ago-2025 → oct-2026 (142 códigos en 109 líneas): brecha de los últimos 12 meses +143% y costo extra con la CBA +$156.474 por adulto equivalente por mes, el 83% por el pan; esperados `docs/brecha_celiaca/simulacion_06b_2026-10-27/`. Antes, 2026-10-27 — **panel de expertos** (`docs/EVALUACION_EXPERTOS_2026-10-27_nb06.md`): la canasta fija mide bien la prima de precio de los envasados sin TACC (+103% en los últimos 12 meses, IC 95% +102,6% a +103,5%) pero no el costo de la dieta (41% del gasto en artículos con gluten; falta el pan). Cambios: **equivalentes primero** (las galletas de arroz salen de crackers; 62 productos en 43 líneas, 75 códigos; §14.17), **precios de una empresa fuera de escala** (CELDA 7), **análisis complementarios** (CELDA 8c: sensibilidad, índices de cada lado con el IPC, disponibilidad, IC por bootstrap, competencia local, hedónica de región y empresa, costo con la CBA y datos para el análisis propio; §15) y la hoja **`Resumen`**. Esperados vigentes en `docs/brecha_celiaca/simulacion_2026-10-27/`; falta la corrida de Colab (relee los 58 meses: cambian los códigos). Antes, 2026-10-26 (noche) — después de la corrida de Colab con la canasta corregida, **TPD del panel corregida** (el subtipo sin pares se mueve con el mismo subtipo en todas las sucursales), **Pepitos como comparador de con chips** (empalme de sus tres códigos) y **la Opera de 92 g junto a la de 220 g en obleas** (§14.15): 67 productos (80 códigos), esperados vigentes en `docs/brecha_celiaca/simulacion_2026-10-26c/`; falta la corrida de Colab. Antes, 2026-10-26 (auditoría de la selección) — **canasta corregida (BUG-49)**: la selección se contrastó con el listado ALG de ANMAT y se corrigieron cuatro errores de las reglas (§14.3, §14.13; `docs/AUDITORIA_SELECCION_2026-10-26_nb06.md`): 66 productos (77 códigos), simulación con los 58 meses releídos y esperados vigentes en `docs/brecha_celiaca/simulacion_2026-10-26b/`; falta la corrida de Colab. Antes, 2026-10-26 (cierre) — **revisión de datos y método frente al objetivo** (`docs/REVISION_METODOLOGICA_2026-10-26_nb06.md`): qué responde bien el nb06 y qué falta para cada pregunta (cuánto más paga un celíaco, evolución, geografía, concentración, cadenas), con recomendaciones priorizadas; la cuarta corrida de Colab (gráficos) dio igual a la simulación. Antes, 2026-10-26 — la **segunda corrida de Colab** (BUG-47 y la serie TPD) dio igual a la simulación
 (`docs/AUDITORIA_2026-10-26_nb06.md`) y **BUG-48**: las tiendas online que el maestro carga como Supermercado o
 Autoservicio salen por el nombre (`SUCURSALES_NO_FISICAS`; el panel no cambia); esperados vigentes en
 `docs/brecha_celiaca/simulacion_2026-10-26/`, que la corrida de Colab con BUG-48 reprodujo (AUDITORIA §6); esa noche,
@@ -1652,23 +1652,203 @@ Con los datos reales, la simulación `sim_v9` (s11) y el cálculo independiente 
 
 ---
 
-## 16. Canasta amplia de la oferta actual (nb06b; en preparación, 2026-10-27)
+## 16. Canasta amplia de la oferta actual (nb06b, 2026-10-27)
 
 Es la recomendación principal del panel de expertos (`docs/EVALUACION_EXPERTOS_2026-10-27_nb06.md` §10.2). La canasta
-fija pesa el 41% del gasto en artículos con gluten de la ENGHo. La canasta amplia aplica las mismas reglas (s9 + s10)
-sobre los últimos 15 meses (ago-2025 → oct-2026) y suma los tipos que no tienen continuidad desde 2022:
+fija pesa el 41% del gasto en los artículos con gluten de la ENGHo y no tiene pan, harinas, alfajores ni tapas: sus
+sin TACC no tienen continuidad desde 2022. La canasta amplia aplica las mismas reglas sobre los últimos 15 meses
+(ago-2025 → oct-2026) y suma esos tipos. Mide el **nivel** de la brecha y su distribución por región, cadena y
+concentración; la **evolución 2022-2026** sigue siendo la de la canasta fija (nb06).
 
-| Tipo nuevo | % del gasto en alimentos (ENGHo 2017/18) | Artículos |
+- Notebook: `notebooks/06b_brecha_celiaca_canasta_amplia.ipynb`. Lo genera `gen_nb06.py` con las mismas celdas 2 a 13
+  que el nb06: cambian la celda 0 y la CELDA 1.
+- Canasta: `docs/brecha_celiaca/canasta_amplia_2025_2026.csv` (y `productos_sensibilidad_amplia.csv`), de
+  `docs/auditoria/scripts_nb06_2026-10/s18_canasta_amplia.py`.
+- Salida en `MyDrive/carga/output_brecha_amplia/` (otro caché): `brecha_celiaca_amplia_AAAA-MM.xlsx`, gráficos, mapas y
+  `datos/`.
+
+### 16.1 Tipos y pesos
+
+| Tipo | % del gasto en alimentos (ENGHo 2017/18) | Artículos |
 |---|---|---|
+| Fideos secos, galletitas dulces, galletitas saladas y crackers, pan rallado y rebozador, cereales rellenos | 5,002 | Los de la canasta fija (§14.6) |
 | Pan envasado | 0,792 | A0111109, A0111110, A0111113, A0111118 |
-| Harinas y premezclas | 0,726 | A0111210 (harina de trigo), A0111211 (mezclas para pizza y ñoquis), A0119205 (polvo para bizcochuelo) |
+| Harinas | 0,593 | A0111210 Harina de trigo (sin TACC: la premezcla universal que la reemplaza) |
+| Premezclas | 0,133 | A0111211 Mezclas para pizza y ñoquis, A0119205 Polvo para bizcochuelo |
 | Alfajores | 0,549 | A0118401 |
-| Tapas de empanadas y tartas | 0,520 | A0111311, A0111312 |
+| Tapas | 0,520 | A0111311, A0111312 (tapas de empanadas y tartas) |
 
-Con los cinco tipos de la canasta fija cubre el 62% del gasto en artículos con gluten; el pan francés fresco (4,7%) no
-está en el SEPA. Mide el **nivel** de la brecha y su distribución entre regiones, cadenas y mercados con más productos
-y sucursales; la **evolución** 2022-2026 sigue siendo la de la canasta fija.
+Los 10 tipos pesan el 7,59% del gasto en alimentos: el 62% de los artículos con gluten. El pan francés fresco (4,72%)
+no está en el SEPA con código de barras.
 
-**Estado**: `s18_canasta_amplia.py` arma la selección sobre la lectura amplia del SEPA (1.781 candidatos, caché
-`brecha_v3_6659af73`). Falta resolver los gramos de las presentaciones por unidades con el catálogo de las cadenas,
-separar alfajores individuales de cajas y generar el notebook 06b con el mismo generador.
+### 16.2 Reglas (s18): las de la canasta fija, con estos cambios
+
+1. **Ventana**: precio todos los meses de ago-2025 a oct-2026 (caché de la lectura amplia y el nb09 en oct-2026) y a lo
+   sumo una caída de cobertura.
+2. **Cobertura** en la ventana, con los mismos mínimos que s9. El tope de la cadena principal del lado sin TACC sube de
+   80% a 85%: los panes sin TACC de Bio y Campero, los de más sucursales (~1.240 por mes), tienen 81-82% en DIA; con
+   80%, el pan sin TACC sería de una sola marca (Schar).
+3. **Subtipos nuevos**:
+   - pan de molde y de mesa; pan para hamburguesas y panchos;
+   - harina o premezcla universal;
+   - premezcla para bizcochuelo y tortas, para brownie, para pizza y ñoquis;
+   - alfajor individual y alfajores en caja o paquete, por los gramos verificados (más de 90 g: caja). El $/100 g baja
+     con el envase, así que no se mezclan;
+   - tapas para empanadas, tapas para tartas.
+
+   Afuera: integrales, salvado, hojaldre, light, mini, sin azúcar y lo que no tiene equivalente.
+4. **Harinas y premezclas, dos tipos**. Juntas, la harina común (un cuarto del precio de las premezclas) caía en el
+   filtro de plausibilidad del tipo (CELDA 7: ×4 contra la mediana del tipo y lado) y pesaba un tercio del tipo, cuando
+   la harina es el 82% del gasto de los dos.
+5. **Gramos**: el consenso de lo que publican las cadenas el 22/10 (catálogo `cat_20261022`: al menos 2 cadenas a ±5%).
+   - Resuelve las presentaciones por unidades: tapas ×12 = 330 g, alfajores ×6 = 300 g.
+   - Resuelve los Maestros desactualizados: el pan con semillas Smams es de 200 g (el Maestro dice 500); el alfajor sin
+     gluten Terrabusi, de 55 g (dice 42); el "Terrabusi 6 Un 228 Gr" es el alfajor glaseado suelto de 38 g.
+   - Si alguna cadena coincide con el Maestro y el consenso no, es ambiguo y queda afuera (pan francés Schar: dos
+     cadenas dicen 100 g, una y el Maestro 200 g).
+   - Si un producto cambió de tamaño dentro de la ventana, los meses anteriores quedan con el $/100 g del tamaño
+     actual: el caché no guarda la descripción de cada mes.
+6. **Precios de una empresa fuera de escala** (como la CELDA 7) afuera antes de medir la identidad: las chips Smams de
+   DIA de sep-2026 ya no mueven su estabilidad.
+7. **Composición**: equivalentes primero (las galletas, tostadas y alfajores de arroz y la harina de arroz quedan
+   afuera donde hay un sin TACC equivalente) y la misma marca primero, con tope (§14.17).
+
+### 16.3 La canasta
+
+142 códigos en 109 líneas (75 sin TACC, 67 con TACC). `productos_sensibilidad_amplia.csv` suma 124 que cumplen las reglas
+y quedan afuera: 109 por la composición espejada y 15 sustitutos (galletas, tostadas y alfajores de arroz, harina de
+arroz) donde hay un sin TACC equivalente.
+
+| Tipo | Subtipos (sin TACC / con TACC, en productos) | Ejemplos |
+|---|---|---|
+| Fideos secos | penne 2/2, spaghetti 1/1, tirabuzón 6/5 | Matarazzo sin TACC contra Matarazzo común; Wakas (una línea) |
+| Galletitas dulces | bizcochos 1/1, con chips 4/4, obleas 3/3, rellenas 7/7, secas 5/5 | Oreo sin TACC contra Oreo; Smams, Kapac, Yüka, Santa María, Schar |
+| Galletitas saladas y crackers | crackers 8/8, saborizadas 2/2 | Smams, Shiva y Schar contra Paseo, Criollitas, Granix; Chalitas sin TACC contra Rex y Kesitas |
+| Pan rallado y rebozador | pan rallado 2/2, rebozador 1/1 | Smams y Mamá Cocina sin TACC contra Mamá Cocina y Preferido |
+| Cereales rellenos | almohaditas 6/2 | Snuks contra Lasfor |
+| Pan envasado | de molde y de mesa 6/3, hamburguesas y panchos 2/2 | Bio, Campero, Schar y Smams contra Lactal y Fargo |
+| Harinas | harina o premezcla universal 1/1 | Premezcla sin TACC Santa María 1 kg contra harina 0000 Favorita 1 kg |
+| Premezclas | bizcochuelo 7/7, brownie 1/1 | Arcor, Exquisita, Maizena y Mamá Cocina sin TACC contra Exquisita, Morixe y Mamá Cocina |
+| Alfajores | individual 2/2, en caja o paquete 6/6 | Terrabusi sin gluten contra Terrabusi y Milka; Happy Food y Yuka contra Terrabusi, Jorgito, Tofi, Cofler y Cachafaz |
+| Tapas | empanadas 1/1, tartas 1/1 | La Salteña sin TACC contra La Salteña |
+
+Quedan afuera, por no tener los dos lados: pepas (no hay con TACC con cobertura), tallarín y cortos (no hay sin TACC) y
+premezcla para pizza (no hay sin TACC).
+
+### 16.4 Resultados (simulación con los zips del Drive, ago-2025 → oct-2026)
+
+Simulación `sim_06b_v1` con las celdas reales del 06b (s11 `--notebook`). El cálculo independiente (s12 `--cache`, con
+los precios del caché) da lo mismo en los 2.295.377 precios y en todas las brechas por sucursal, subtipo, tipo y mes.
+Esperados en `docs/brecha_celiaca/simulacion_06b_2026-10-27/` (48 hojas). 18,9 min con el caché; pico de RAM 4,9 GB.
+
+**Nivel**: la canasta amplia da **+143,3%** en los últimos 12 meses (IC 95% +143,1% a +143,9%), contra +103,1% de la
+canasta fija.
+
+- Por año: 2025 +138%, 2026 +145% (todas las sucursales); la TPD da +142% y +149%.
+- En oct-2026 (panel): TPD +141,7% (IC +141,2% a +142,1%), descriptiva +135,4%.
+
+| Tipo (ventana completa) | Con TACC $/100 g | Sin TACC $/100 g | Brecha | Sucursales con los dos |
+|---|---|---|---|---|
+| Harinas (premezcla universal contra harina 0000) | 150 | 760 | **+382,6%** | 912 |
+| Pan rallado y rebozador | 347 | 1.158 | +235,9% | 1.833 |
+| Pan envasado | 1.191 | 3.628 | **+198,5%** | 1.884 |
+| Fideos secos | 346 | 927 | +170,9% | 2.421 |
+| Galletitas saladas y crackers | 1.018 | 2.543 | +140,0% | 2.198 |
+| Galletitas dulces | 1.107 | 2.113 | +87,4% | 2.269 |
+| Tapas | 639 | 1.011 | +56,3% | 1.030 |
+| Premezclas | 841 | 1.246 | +46,4% | 2.329 |
+| Cereales rellenos | 1.526 | 1.938 | +27,9% | 660 |
+| Alfajores | 2.920 | 3.345 | +14,9% | 1.346 |
+
+- Los fideos y las saladas dan más que en la canasta fija (+132% y +87% en 2022-2026): entran más sin TACC, como los
+  crackers Shiva y Schar (4,7 a 5,4 y 7,2 veces la mediana de los con TACC del subtipo) y el tirabuzón de Wakas.
+- Los alfajores sin TACC cuestan casi lo mismo que los con TACC (el Yuka suelto y en caja, más barato que los con TACC).
+
+**Costo con la Canasta Básica Alimentaria** (hoja `Costo_CBA`, mediana nacional de ago → oct 2026, por adulto
+equivalente por mes):
+
+| Ítem de la CBA | Gramos | Con TACC | Sin TACC | Extra | Prima |
+|---|---|---|---|---|---|
+| Pan (de molde y de mesa envasado) | 6.750 | $77.400 | $207.035 | **+$129.635** | +167% |
+| Fideos | 1.740 | $6.592 | $16.991 | +$10.398 | +158% |
+| Harina de trigo | 1.080 | $1.835 | $9.121 | +$7.286 | +397% |
+| Galletitas de agua (crackers) | 420 | $2.842 | $9.604 | +$6.762 | +238% |
+| Galletitas dulces | 210 | $2.653 | $5.046 | +$2.393 | +90% |
+| **Total** | 10.200 | $91.322 | $247.796 | **+$156.474** | **+171%** |
+
+Un hogar tipo (3,09 adultos equivalentes) paga **+$483.504 por mes**. El pan explica el 83% del costo extra.
+
+- Es una cota inferior, porque el pan de la CBA es sobre todo pan francés fresco, más barato que el envasado con TACC
+  contra el que se compara el sin TACC.
+- La canasta fija daba +$18.815 por adulto equivalente, solo con fideos, galletitas de agua y dulces.
+
+**Geografía** (últimos 12 meses, IC por bootstrap): Patagonia +130,3% (−13,0 pp contra el país), Pampeana +141,8%, AMBA
++143,9%, Noreste +151,3%, Noroeste +154,2%, Cuyo +154,6%. Con los mismos productos (hedónica), Patagonia da −1,7% contra
+el AMBA y el Noreste +0,7%; las demás no difieren: como en la canasta fija, las diferencias entre regiones son sobre
+todo surtido. Provincias confiables: 8 de 17, de Chubut (+132%) a Mendoza (+153%).
+
+**Cadenas**. Con la canasta propia hay tres confiables: Carrefour +143,5%, Cencosud +149,5% y Coto +149,9%. Con los
+mismos productos (hedónica, contra Carrefour): Cencosud −0,7%, Coto −1,0%, ChangoMas +2,4% y Otras +6,3%. DIA (6
+subtipos), La Anónima (9), Toledo y Cooperativa Obrera tienen poco dato.
+
+**Concentración**. Por sucursal, con la canasta propia:
+
+- el HHI del departamento da −0,26% por +0,1 de HHI con empresa y región (p < 0,01), y el HHI local −0,26% (p < 0,01);
+- las empresas rivales a ≤ 3 km no dan nada (p = 0,86).
+
+Con los mismos productos (hedónica), el HHI da −0,07% (p = 0,19) y las rivales +0,02% (p = 0,55). La asociación es chica
+(menos de un punto de brecha por +0,1 de HHI), de signo contrario a la de poder de mercado, y desaparece con los mismos
+productos: es surtido, no precio.
+
+**Disponibilidad** (sucursal-meses que venden el tipo con TACC y también el sin TACC): 74,1% en el país.
+
+- Por tipo: harinas 25,2% (la premezcla universal sin TACC está en una de cada cuatro), tapas 40,3%, alfajores 43,2%,
+  fideos 71,9%, pan envasado 87,9%.
+- Por empresa: Carrefour 95,7%, ChangoMas 93,5%, Cencosud 91,5%, Coto 78,5%, La Anónima 73,4%, DIA 62,4%, Toledo 44,7%,
+  Cooperativa Obrera 21,0%.
+- Por región: Patagonia 61,6%, la más baja.
+
+**Sensibilidad** (últimos 12 meses):
+
+| Escenario | Brecha | Diferencia |
+|---|---|---|
+| Principal | +143,3% | — |
+| Con sustitutos | +138,0% | −5,3 pp |
+| Cada sabor como un producto | +142,3% | −0,9 pp |
+| Cociente de las medianas nacionales | +148,9% | +5,7 pp |
+| Todos los productos que cumplen las reglas | +149,2% | +6,0 pp |
+| Pesos de los subtipos por disponibilidad | +153,0% | +9,8 pp |
+| Lo más barato de cada lado | +159,1% | +15,8 pp |
+
+**Precios**: entre ago-2025 y oct-2026 los dos lados subieron menos que el IPC de alimentos (2026: con TACC 119,1, sin
+TACC 118,1, IPC alimentos 127,5; base ago-2025 = 100); sin / con 99,1.
+
+### 16.5 Lectura
+
+1. **El costo de la dieta es mucho mayor que la prima de los envasados de la canasta fija.** Con pan, harina y
+   premezclas, tapas y alfajores, la brecha sube de +103% a +143%. El costo extra pasa de +$18.815 a +$156.474 por
+   adulto equivalente por mes, casi todo por el pan.
+2. **Lo más caro para un celíaco es reemplazar la harina y el pan**: la premezcla universal cuesta 5 veces la harina
+   0000 y el pan sin TACC, 3 veces el envasado con TACC. Los alfajores y las premezclas de bizcochuelo, en cambio, casi no
+   tienen prima.
+3. **Encontrar el producto también cuesta**: la premezcla universal sin TACC está en el 25% de las sucursal-meses que
+   venden harina; las tapas y los alfajores, en menos de la mitad.
+4. **Geografía, cadenas y concentración** dicen lo mismo que la canasta fija:
+   - las diferencias de nivel entre regiones y cadenas son sobre todo de surtido; con los mismos productos quedan en
+     ±3% (Patagonia −1,7%);
+   - la concentración local no sube la prima.
+5. **Advertencias**:
+   - la ventana es corta (15 meses): la evolución es la del nb06;
+   - los panes sin TACC de Bio y Campero, los de más sucursales, están 81-82% en DIA;
+   - la harina es un solo producto por lado;
+   - un producto que cambió de tamaño dentro de la ventana queda con el $/100 g del tamaño actual (§16.2, punto 5).
+
+### 16.6 Cómo correrlo
+
+1. Botón de Colab del README: `notebooks/06b_brecha_celiaca_canasta_amplia.ipynb`.
+2. En el Drive: lo mismo que el nb06.
+3. Correr todo. La primera vez lee 15 meses (los zips 2025B, 2026A y 2026B); escribe en `MyDrive/carga/output_brecha_amplia/`.
+4. Para comparar una corrida con la simulación:
+   `python -I -X utf8 docs/auditoria/scripts_nb06_2026-10/s16_comparar_colab.py <Excel> docs/brecha_celiaca/simulacion_06b_2026-10-27`.
+5. Para rehacer la canasta: s18 (con la lectura amplia del SEPA de s11 `--config` y el catálogo del 22/10), copiar los
+   dos CSV a `docs/brecha_celiaca/`, `python notebooks/gen_nb06.py`, el test, y simular con s15 y s11 `--notebook`.

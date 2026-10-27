@@ -2,15 +2,25 @@
 # s8_precios_zips.py (mediana exacta mensual por sucursal x EAN) y comparación con la simulación de las celdas reales
 # del nb06 (s11_simular_nb06.py). Uso:
 #   python -I -X utf8 s12_comparar_simulacion.py <repo> <carpeta precios_mes> <carpeta precios_mes_2> <salida de s11>
+#                                                [--notebook 06b_brecha_celiaca_canasta_amplia.ipynb] [--cache carpeta]
+#   --cache: los precios mensuales salen del caché del nb06 (`_cache/brecha_v3_<clave>/`, la misma mediana exacta de
+#   s8) en lugar de precios_mes (pasar dos carpetas cualquiera): verifica las CELDAS 7 y 8 con la canasta amplia, cuyos
+#   códigos no están en la extracción de s8. El caché no tiene el mes en curso: se compara sin él.
 import json, re, sys
 from pathlib import Path
 import numpy as np
 import pandas as pd
 
-REPO, D1, D2, SIM = (Path(a) for a in sys.argv[1:5])
+args = sys.argv[1:]
+NB, CACHE = '06_evolucion_brecha_celiaca.ipynb', None
+if '--notebook' in args:
+    i = args.index('--notebook'); NB = args[i + 1]; del args[i:i + 2]
+if '--cache' in args:
+    i = args.index('--cache'); CACHE = Path(args[i + 1]); del args[i:i + 2]
+REPO, D1, D2, SIM = (Path(a) for a in args[:4])
 pd.set_option('display.width', 250)
-cells = [''.join(c['source']) for c in json.load(open(REPO / 'notebooks' / '06_evolucion_brecha_celiaca.ipynb',
-                                                       encoding='utf-8'))['cells'] if c['cell_type'] == 'code']
+cells = [''.join(c['source']) for c in json.load(open(REPO / 'notebooks' / NB, encoding='utf-8'))['cells']
+         if c['cell_type'] == 'code']
 g = {}
 exec(cells[0], g)             # la CELDA 1 (config) tal cual
 TIPOS, GRAMOS, VIG, FILT = g['TIPOS'], g['GRAMOS'], g['VIGENCIA'], g['CADENAS_FILTRAR']
@@ -23,8 +33,13 @@ PROD = {n(e): p for p, es in g.get('PRODUCTO', {}).items() for e in es}
 SUB = {n(e): s for s, es in g.get('SUBTIPO', {}).items() for e in es}
 assert set(ROL) <= set(SUB), 'todos los EANs de la canasta tienen que tener SUBTIPO'
 
-fs = sorted(D1.glob('*.parquet')) + sorted(D2.glob('*.parquet'))
-P = pd.concat([pd.read_parquet(f, filters=[('ean', 'in', sorted(ROL))]) for f in fs], ignore_index=True)
+if CACHE is None:
+    fs = sorted(D1.glob('*.parquet')) + sorted(D2.glob('*.parquet'))
+    P = pd.concat([pd.read_parquet(f, filters=[('ean', 'in', sorted(ROL))]) for f in fs], ignore_index=True)
+else:
+    P = pd.concat([pd.read_parquet(f, filters=[('ean_norm', 'in', sorted(ROL))]) for f in sorted(CACHE.glob('????-??.parquet'))],
+                  ignore_index=True).rename(columns={'ean_norm': 'ean', 'precio': 'precio_mediana'})
+    P = P[P['mes'] >= g['MES_INICIO_HISTORICO']]
 P = P[~P['id_comercio'].isin(FILT)].drop_duplicates(['id_comercio', 'id_bandera', 'id_sucursal', 'ean', 'mes'])
 P = P[[(VIG.get(e, (None, None))[0] is None or m >= VIG[e][0]) and (VIG.get(e, (None, None))[1] is None or m <= VIG[e][1])
        for e, m in zip(P['ean'], P['mes'])]]
@@ -75,6 +90,14 @@ S, SS = S.reset_index(), SS.reset_index()
 
 sim = pd.read_parquet(SIM / 'sim_bt_sm.parquet')
 sims = pd.read_parquet(SIM / 'sim_bt_sub.parquet')
+HAB = None
+if CACHE is not None:                    # sin el mes en curso, que el caché no guarda
+    _mc = set(P['mes'])
+    # las sucursales habituales de cada subtipo (FRAC_SUBTIPO_MES) son la mediana de TODOS los meses: se toman las del
+    # nb06 con el mes en curso (en los meses del caché, el conteo es el mismo: lo compara el punto 2)
+    HAB = (sims.assign(_s=sims['id_comercio'] + '|' + sims['id_bandera'] + '|' + sims['id_sucursal'])
+           .groupby(['mes', 'tipo', 'subtipo'])['_s'].nunique().groupby(level=['tipo', 'subtipo']).median())
+    sim, sims = sim[sim['mes'].isin(_mc)], sims[sims['mes'].isin(_mc)]
 dd = pd.read_parquet(SIM / 'sim_datos_dia.parquet', columns=['id_comercio', 'id_bandera', 'id_sucursal', 'ean_norm', 'mes',
                                                             'precio', 'dias'])
 print(f'Plausibilidad: independiente {sorted(bad)} | nb06 {sorted(pd.read_parquet(SIM / "sim_plausibilidad.parquet").get("ean_norm", pd.Series(dtype=str)))}')
@@ -102,14 +125,17 @@ def tipo_desde_subtipos(df, keys):
     q = df.groupby(keys + ['tipo', 'subtipo']).agg(m=('brecha', 'median'), n=('_suc', 'nunique')).reset_index()
     ok = q['n'] >= g.get('MIN_SUC_SUBTIPO', 1)
     if keys == ['mes']:
-        ok &= q['n'] >= g.get('FRAC_SUBTIPO_MES', 0) * q.groupby(['tipo', 'subtipo'])['n'].transform('median')
+        _hab = (q.groupby(['tipo', 'subtipo'])['n'].transform('median') if HAB is None
+                else pd.Series(pd.MultiIndex.from_frame(q[['tipo', 'subtipo']]).map(HAB), index=q.index))
+        ok &= q['n'] >= g.get('FRAC_SUBTIPO_MES', 0) * _hab
         w = q[ok].pivot_table(index='mes', columns=['tipo', 'subtipo'], values='m').reindex(sorted(df['mes'].unique()))
         lm = np.log1p(w / 100).ffill().stack(['tipo', 'subtipo'])
     else:
         lm = np.log1p(q[ok].set_index(keys + ['tipo', 'subtipo'])['m'] / 100)
     return np.expm1(lm.groupby(level=keys + ['tipo']).mean()) * 100
 ind = tipo_desde_subtipos(SS, ['mes']).rename('independiente')
-nb = pd.read_parquet(SIM / 'sim_brecha_tipo_mensual.parquet').set_index(['mes', 'tipo'])['brecha_mediana'].rename('nb06')
+nb = pd.read_parquet(SIM / 'sim_brecha_tipo_mensual.parquet')
+nb = nb[nb['mes'].isin(set(SS['mes']))].set_index(['mes', 'tipo'])['brecha_mediana'].rename('nb06')
 c3 = pd.concat([ind, nb], axis=1)
 print(f'Brecha por tipo y mes: {len(c3)} celdas, max |dif| = {np.nanmax(np.abs(c3["independiente"] - c3["nb06"])):.2e} pp')
 print('\nBrecha por tipo y año (subtipos primero, independiente):')

@@ -50,8 +50,8 @@ marca con tope, **precios de una empresa fuera de escala** (CELDA 7, `FACTOR_EMP
 índices de cada lado contra el IPC, disponibilidad, IC por bootstrap, competencia local, concentración, hedónica de
 región y empresa con `confiable`, costo con la CBA y paneles en `OUTPUT_DIR/datos/`) y la hoja **`Resumen`** (51
 hojas). Esperados vigentes en `docs/brecha_celiaca/simulacion_2026-10-27/`. **Falta la corrida de Colab** (relee los
-58 meses). Siguiente: la canasta amplia de la oferta actual (pan envasado, harinas y premezclas, alfajores, tapas;
-BRECHA_CELIACA §16) y el subtipo vainillas.
+58 meses). **Canasta amplia de la oferta actual: la canasta amplia de la oferta actual (**nb06b**, `notebooks/06b_brecha_celiaca_canasta_amplia.ipynb`; BRECHA_CELIACA §16): pan envasado, harinas, premezclas, alfajores y tapas además de los 5 tipos de la fija, ago-2025 → oct-2026; 142 códigos en 109 líneas; brecha de los últimos 12 meses +143% (fija: +103%) y costo extra con la CBA +$156.474 por adulto equivalente por mes (fija: +$18.815), el 83% por el pan; esperados `docs/brecha_celiaca/simulacion_06b_2026-10-27/`.** El 06b lo genera `gen_nb06.py` (mismas celdas 2-13
+que el 06; cambian la celda 0 y la CELDA 1); falta su corrida de Colab. Queda el subtipo vainillas.
 
 El **nb07** (`notebooks/07_evolucion_canastas_alternativas.ipynb`) es el motor del
 informe semanal: 6 canastas, índice encadenado, comparación con el IPC y aperturas por cadena/región.
@@ -250,6 +250,13 @@ relativo; la próxima corrida en Colab los muestra por primera vez.
   `Sensibilidad`, nunca en la brecha principal. La CELDA 8c (análisis complementarios) vive en `gen_nb06.py` como
   las demás; su test está en `test_brecha_celiaca.py` (fuerza bruta de cada análisis). s11 acepta `--ipc` con el
   `IPC.xlsx` del Drive (si no, la hoja `Indices_lados` sale sin IPC y los esperados no coinciden en esas columnas).
+- **nb06b, canasta amplia**: `gen_nb06.py` escribe los dos notebooks; el 06b toma `canasta_amplia_2025_2026.csv` y
+  `productos_sensibilidad_amplia.csv` (de `s18_canasta_amplia.py`), los pesos ENGHo de sus 10 tipos y su propia
+  CELDA 1 (`MES_INICIO_HISTORICO = '2025-08'`, `output_brecha_amplia`, `PREFIJO_EXCEL`); las celdas 2-13 son las del
+  06, así que un cambio en ellas cambia los dos (el test lo controla). Simular con s15/s11 `--notebook
+  06b_brecha_celiaca_canasta_amplia.ipynb` y verificar con s12 `--notebook ... --cache <su caché>` (los códigos de la
+  canasta amplia no están en `precios_mes`). Harinas y premezclas van en dos tipos: juntas, la harina común caía en
+  el filtro de plausibilidad del tipo.
   En 2023 las marcas masivas con TACC tenían precios controlados (la brecha de 2023 está inflada, §14.8 de
   BRECHA_CELIACA): no "corregirlo" sacando productos.
 - **nb06, comparar grupos (BUG-47)**: provincias, regiones, empresas, cadenas y sucursales se comparan con la MISMA

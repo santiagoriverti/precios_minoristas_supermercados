@@ -742,6 +742,23 @@ chk('hoja Resumen = los números de cada hoja (país con IC, último mes del pan
     and fila('Calidad de datos', 'fuera de escala')['valor'].iloc[0] == len(g['precios_atipicos'])
     and len(rs[rs['tema'] == 'Por tipo (todo el período)']) == len(g['brecha_tipo']))
 
+# nb06b (canasta amplia): las celdas 2 a 13 son las del nb06 y la CELDA 1 arma la canasta de 10 tipos con sus pesos,
+# los gramos y el subtipo de cada código, otra ventana, otra carpeta y otro nombre de Excel
+c6 = json.load(open(NB, encoding='utf-8'))['cells']
+c6b = json.load(open(REPO / 'notebooks' / '06b_brecha_celiaca_canasta_amplia.ipynb', encoding='utf-8'))['cells']
+g6b = {}
+exec(''.join(c6b[1]['source']), g6b)
+e6b = {e for t_ in g6b['TIPOS'].values() for l_ in ('tacc', 'sin_tacc') for e in t_[l_]}
+chk('nb06b: celdas 2-13 = las del nb06; CELDA 1 con 10 tipos, pesos ENGHo, gramos y subtipo de cada código',
+    len(c6b) == len(c6) and all(a_['source'] == b_['source'] for a_, b_ in zip(c6[2:], c6b[2:]))
+    and len(g6b['TIPOS']) == 10 and all(t_['peso'] > 0 for t_ in g6b['TIPOS'].values())
+    and all(len(t_['tacc']) and len(t_['sin_tacc']) for t_ in g6b['TIPOS'].values())
+    and e6b <= set(g6b['GRAMOS']) and all(g6b['GRAMOS'][e] > 0 for e in e6b)
+    and e6b <= {e for es in g6b['SUBTIPO'].values() for e in es}
+    and not (e6b & set(g6b['ADICIONALES'])) and g6b['MES_INICIO_HISTORICO'] == '2025-08'
+    and g6b['OUTPUT_DIR'].endswith('output_brecha_amplia') and g6b['PREFIJO_EXCEL'] == 'brecha_celiaca_amplia'
+    and g6b['CBA_ITEMS'][3][2] == 'Pan de molde y de mesa')
+
 print()
 if errores:
     print(f'FALLARON {len(errores)}: {errores}')

@@ -9,7 +9,10 @@ continuidad temporal 2022-2026, cobertura geográfica y por cadenas sobre las sa
 docs/brecha_celiaca/canasta_fija_2022_2026.csv (con las métricas de cada producto) y este generador la embebe en la
 CELDA 1. Reglas y fundamentos: docs/BRECHA_CELIACA.md §14.
 
-Regenerar:  python notebooks/gen_nb06.py   (commitear generador + .ipynb + CSV juntos)
+Desde el 2026-10-27 escribe también 06b_brecha_celiaca_canasta_amplia.ipynb: las mismas celdas con la canasta AMPLIA de
+la oferta actual (docs/brecha_celiaca/canasta_amplia_2025_2026.csv, ago-2025 -> hoy; BRECHA_CELIACA §16), al final.
+
+Regenerar:  python notebooks/gen_nb06.py   (escribe los dos; commitear generador + .ipynb + CSV juntos)
 """
 import csv, json, os, hashlib
 
@@ -263,12 +266,14 @@ CBA_ITEMS = [('Fideos', 'Fideos secos', None, 1740),
              ('Galletitas de agua', 'Galletitas saladas y crackers', 'Crackers', 420),
              ('Galletitas dulces', 'Galletitas dulces', None, 210),
              ('Pan', 'Pan envasado', None, 6750),
-             ('Harina de trigo', 'Harinas y premezclas', None, 1080)]
+             ('Harina de trigo', 'Harinas', None, 1080)]
 CBA_AE_HOGAR = 3.09        # adultos equivalentes del hogar tipo 2 del INDEC (pareja de 35 y 31 años con hijos de 6 y 8)
 MESES_CBA = 3              # el costo usa la mediana nacional de los últimos MESES_CBA meses
 EXPORTAR_DATOS = True      # paneles para el análisis propio en OUTPUT_DIR/datos (parquet y csv.gz)
 IPC_XLSX = 'IPC.xlsx'      # IPC del INDEC (columna de fechas, "Nivel general" y "Alimentos y bebidas no alcohólicas") para
                            # la hoja Indices_lados: el nombre dentro de SEPA_DIR o una ruta completa; si falta, sin IPC
+NOMBRE_CANASTA = 'canasta fija 2022-2026'   # en los títulos de los gráficos
+PREFIJO_EXCEL = 'brecha_celiaca'            # el Excel se llama <PREFIJO_EXCEL>_<AAAA-MM>.xlsx
 
 # Canasta FLEXIBLE (corridas de agosto de 2026): True agrega como candidatos sin TACC todos los productos del maestro
 # cuya descripción diga "sin TACC" y matcheen las palabras del tipo (SIN_TACC_REGLA). Rompe la continuidad y hace que
@@ -2492,7 +2497,7 @@ if len(serie_mensual):
     ax.plot([], [], ls='none', marker='o', ms=6, mfc='white', mec='#555',
             label='mes con algún subtipo imputado (último mes válido)')
     ax.set_ylabel('Brecha de la canasta (%)')
-    ax.set_title('Brecha celíaca de la canasta (ponderada ENGHo) — canasta fija 2022-2026')
+    ax.set_title(f"Brecha celíaca de la canasta (ponderada ENGHo) — {globals().get('NOMBRE_CANASTA', 'canasta fija 2022-2026')}")
     _pct(ax); ax.grid(True, alpha=0.3)
     _a2 = ax.twinx()
     _a2.bar(_sm['f'], _sm['n_min'], width=20, color='#cccccc', alpha=0.35, label='sucursales del tipo con menos (der.)')
@@ -2909,7 +2914,8 @@ leeme = pd.DataFrame({'hoja_o_columna': [
     'los con TACC presentes - 1 (los dos lados en el mismo super; los sabores de una misma línea, misma marca y '
     'presentación al mismo precio, cuentan como un producto). Brecha del tipo = promedio geométrico de las de sus '
     'subtipos con los dos lados (pesos iguales). Precio de un producto en el mes = mediana de sus precios diarios.',
-    'Productos de la canasta fija (CELDA 1), con los meses en que tuvieron precio. Un producto que cambió de código '
+    f"Productos de la {globals().get('NOMBRE_CANASTA', 'canasta fija 2022-2026')} (CELDA 1), con los meses en que "
+    'tuvieron precio. Un producto que cambió de código '
     'ocupa una fila por código (misma columna producto; vigente_desde / vigente_hasta: meses en que se usa cada código), '
     'y los sabores de una línea, una fila por sabor (la línea en la columna producto). '
     'Lista con métricas: docs/brecha_celiaca/canasta_fija_2022_2026.csv; reglas: docs/BRECHA_CELIACA.md §14.',
@@ -3087,7 +3093,7 @@ _res_fila('Calidad de datos', 'EANs para revisar (control de identidad; no se ex
    int(control_ean['revisar'].sum()) if 'revisar' in control_ean.columns else 0, _u='EANs', _hoja='Control_EAN')
 resumen = pd.DataFrame(_res, columns=['tema','indicador','valor','ic95_inf','ic95_sup','unidad','hoja'])
 
-out_xls = OUTPUT_DIR / f'brecha_celiaca_{ULTIMO_MES}.xlsx'
+out_xls = OUTPUT_DIR / f"{globals().get('PREFIJO_EXCEL', 'brecha_celiaca')}_{ULTIMO_MES}.xlsx"
 _hojas = [
     ('Leeme', leeme), ('Resumen', resumen), ('Canasta', canasta), ('Ponderaciones', ponderaciones), ('Cobertura', cobertura_tipo),
     ('Cobertura_mensual', cobertura_mensual), ('Brecha_subtipo', brecha_subtipo),
@@ -3310,3 +3316,87 @@ with open(out_path, 'w', encoding='utf-8') as f:
     json.dump(nb, f, ensure_ascii=False, indent=1)
 print(f'Written: {out_path}')
 print(f'Cells: {len(cells)}')
+
+
+# ══ nb06b: la misma brecha con la CANASTA AMPLIA de la oferta actual (BRECHA_CELIACA §16) ══════════════════════════════
+# Las celdas 2 a 13 son las del nb06; cambian la celda 0 (texto) y la CELDA 1: la canasta (CSV de s18 con 10 tipos),
+# sus pesos ENGHo, la ventana (ago-2025 → hoy), la carpeta de salida, el nombre del Excel, el pan y la harina de la CBA y
+# los escenarios de sensibilidad (la canasta amplia no tiene sustitutos adentro).
+CANASTA_CSV = os.path.join(HERE, '..', 'docs', 'brecha_celiaca', 'canasta_amplia_2025_2026.csv')
+SENS_CSV = os.path.join(HERE, '..', 'docs', 'brecha_celiaca', 'productos_sensibilidad_amplia.csv')
+PESOS_ENGHO = {**PESOS_ENGHO,
+               'Pan envasado': (0.792, 'A0111109 + A0111110 + A0111113 + A0111118 (pan envasado)'),
+               'Harinas': (0.593, 'A0111210 Harina de trigo (sin TACC: la premezcla universal que la reemplaza)'),
+               'Premezclas': (0.133, 'A0111211 Mezclas para pizza y ñoquis + A0119205 Polvo para bizcochuelo'),
+               'Alfajores': (0.549, 'A0118401 Alfajores'),
+               'Tapas': (0.520, 'A0111311 + A0111312 (tapas de empanadas y tartas)')}
+ORDEN_TIPOS = list(PESOS_ENGHO)
+
+def _reemplazar(_txt, _pares):
+    for _o, _n in _pares:
+        assert _txt.count(_o) == 1, f'nb06b: no está (o está más de una vez) {_o[:70]!r}'
+        _txt = _txt.replace(_o, _n)
+    return _txt
+
+_MD0_B = """# SEPA — Brecha Celíaca (TACC vs sin-TACC), canasta amplia de la oferta actual (nb06b)
+
+**Objetivo:** el **nivel** de la brecha de precios entre productos **con TACC** y sus equivalentes **sin TACC** con una
+canasta que cubre más de la dieta celíaca, y cómo se distribuye **geográficamente**, **entre cadenas** y según la
+**concentración de puntos de venta**, en los últimos 15 meses (desde agosto de 2025). La **evolución 2022-2026** es la
+del nb06 (canasta fija): muchos sin TACC de esta canasta no existían o casi no estaban en 2022.
+
+**Canasta amplia:** las mismas reglas que la canasta fija (lado sin TACC verificado, continuidad, cobertura geográfica y
+por cadenas, subtipos comparables, equivalentes primero, la misma marca primero, composición espejada y líneas) sobre la
+ventana ago-2025 → oct-2026, con **10 tipos**: los 5 de la canasta fija más **pan envasado, harinas, premezclas,
+alfajores y tapas** de empanadas y tartas (62% del gasto en los artículos con gluten de la ENGHo, contra 41% de la
+canasta fija; el pan francés fresco no está en el SEPA). Reglas y resultados: `docs/BRECHA_CELIACA.md` §16; lista con
+métricas: `docs/brecha_celiaca/canasta_amplia_2025_2026.csv` (la arma `s18_canasta_amplia.py`).
+
+**Medición:** la misma del nb06 (brecha dentro de cada súper por subtipo, $/100 g → tipo → canasta con pesos ENGHo;
+grupos con la misma canasta de subtipos; TPD; análisis complementarios de la CELDA 8c, con el costo extra del pan y la
+harina de la Canasta Básica Alimentaria del INDEC).
+
+**Qué sale** (en `OUTPUT_DIR`, otra carpeta que la del nb06): `brecha_celiaca_amplia_AAAA-MM.xlsx` (hojas `Leeme` y
+`Resumen` primero), los gráficos `*.png`, los mapas y la carpeta `datos/`.
+
+**Config en la CELDA 1.** Las celdas 2 a 13 son las del nb06 (las genera el mismo `notebooks/gen_nb06.py`)."""
+
+_PRE_B = _reemplazar(_CONFIG_PRE, [(
+    '# CANASTA FIJA 2022-2026 (docs/BRECHA_CELIACA.md §14; lista con métricas: docs/brecha_celiaca/canasta_fija_2022_2026.csv)',
+    '# CANASTA AMPLIA de la oferta actual, ago-2025 -> hoy (docs/BRECHA_CELIACA.md §16; lista con métricas:\n'
+    '# docs/brecha_celiaca/canasta_amplia_2025_2026.csv, de s18_canasta_amplia.py)')])
+_POST_B = _reemplazar(_CONFIG_POST, [
+    ("ESCENARIOS_SENSIBILIDAD = {\n"
+     "    'Principal (la canasta de la CELDA 1)': {},\n"
+     "    'Galletas de arroz también en crackers (sustitución)': {'agregar': 'sustitutos'},\n"
+     "    'Solo productos equivalentes (sin las galletas de arroz de saborizadas)': {'quitar_sustitutos': True},\n",
+     "ESCENARIOS_SENSIBILIDAD = {\n"
+     "    'Principal (la canasta de la CELDA 1)': {},\n"
+     "    'Sustitutos también (galletas y alfajores de arroz, harina de arroz)': {'agregar': 'sustitutos'},\n"),
+    ("CBA_ITEMS = [('Fideos', 'Fideos secos', None, 1740),\n"
+     "             ('Galletitas de agua', 'Galletitas saladas y crackers', 'Crackers', 420),\n"
+     "             ('Galletitas dulces', 'Galletitas dulces', None, 210),\n"
+     "             ('Pan', 'Pan envasado', None, 6750),\n"
+     "             ('Harina de trigo', 'Harinas', None, 1080)]",
+     "# El pan de la CBA es sobre todo pan francés fresco, que no está en el SEPA: se costea con el pan de molde y de mesa\n"
+     "# envasado de los dos lados (el con TACC envasado es más caro que el francés: el costo extra es una cota inferior).\n"
+     "CBA_ITEMS = [('Fideos', 'Fideos secos', None, 1740),\n"
+     "             ('Galletitas de agua', 'Galletitas saladas y crackers', 'Crackers', 420),\n"
+     "             ('Galletitas dulces', 'Galletitas dulces', None, 210),\n"
+     "             ('Pan', 'Pan envasado', 'Pan de molde y de mesa', 6750),\n"
+     "             ('Harina de trigo', 'Harinas', None, 1080)]"),
+    ("NOMBRE_CANASTA = 'canasta fija 2022-2026'   # en los títulos de los gráficos\n"
+     "PREFIJO_EXCEL = 'brecha_celiaca'            # el Excel se llama <PREFIJO_EXCEL>_<AAAA-MM>.xlsx\n",
+     "NOMBRE_CANASTA = 'canasta amplia ago-2025 → hoy'   # en los títulos de los gráficos\n"
+     "PREFIJO_EXCEL = 'brecha_celiaca_amplia'            # el Excel se llama <PREFIJO_EXCEL>_<AAAA-MM>.xlsx\n"),
+    ("OUTPUT_DIR  = '/content/drive/MyDrive/carga/output_brecha'",
+     "OUTPUT_DIR  = '/content/drive/MyDrive/carga/output_brecha_amplia'   # otra carpeta que la del nb06 (y otro caché)"),
+    ("MES_INICIO_HISTORICO = '2022-01'   # la canasta fija se eligió con continuidad desde enero de 2022",
+     "MES_INICIO_HISTORICO = '2025-08'   # la canasta amplia se eligió con continuidad desde agosto de 2025"),
+])
+cells_b = [cell_md(_MD0_B), cell_code(_PRE_B + _bloque_canasta() + _POST_B)] + cells[2:]
+out_b = os.path.join(HERE, '06b_brecha_celiaca_canasta_amplia.ipynb')
+with open(out_b, 'w', encoding='utf-8') as f:
+    json.dump({**nb, 'cells': cells_b}, f, ensure_ascii=False, indent=1)
+print(f'Written: {out_b}')
+print(f'Cells: {len(cells_b)}')

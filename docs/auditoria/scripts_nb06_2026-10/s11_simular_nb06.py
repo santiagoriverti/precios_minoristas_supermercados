@@ -5,6 +5,7 @@
 #                                           [--ipc IPC.xlsx]
 #   --georef: georef_sucursales.parquet del nb09 (departamento de cada sucursal; concentración de la CELDA 8)
 #   --ipc: IPC.xlsx del INDEC (hoja Indices_lados), si no está en la carpeta de los zips
+#   --notebook: otro notebook generado por gen_nb06.py (06b_brecha_celiaca_canasta_amplia.ipynb)
 #   --config: TIPOS/GRAMOS/VIGENCIA/PRODUCTO/SUBTIPO de un JSON en lugar de los de la CELDA 1 (p. ej. un superconjunto
 #             de candidatos para armar el caché una sola vez)
 #   --hasta-celda: corre hasta esa celda de código inclusive (5 = lectura) y no guarda objetos
@@ -27,13 +28,16 @@ if '--hasta-celda' in args:
 if '--georef' in args:       # georef_sucursales.parquet del nb09 (departamento de cada sucursal, para la concentración)
     i = args.index('--georef'); GEOREF = Path(args[i + 1]); del args[i:i + 2]
 IPC = None
+NB = '06_evolucion_brecha_celiaca.ipynb'
+if '--notebook' in args:     # el nb06b (canasta amplia) u otro generado por gen_nb06.py
+    i = args.index('--notebook'); NB = args[i + 1]; del args[i:i + 2]
 if '--ipc' in args:          # IPC.xlsx del INDEC fuera de la carpeta de los zips
     i = args.index('--ipc'); IPC = Path(args[i + 1]); del args[i:i + 2]
 REPO, CARGA, AR, OUT = (Path(a) for a in args[:4])
 DESDE = args[4] if len(args) > 4 else '2022-01'
 OUT.mkdir(parents=True, exist_ok=True)
-cells = [''.join(c['source']) for c in json.load(open(REPO / 'notebooks' / '06_evolucion_brecha_celiaca.ipynb',
-                                                       encoding='utf-8'))['cells'] if c['cell_type'] == 'code']
+cells = [''.join(c['source']) for c in json.load(open(REPO / 'notebooks' / NB, encoding='utf-8'))['cells']
+         if c['cell_type'] == 'code']
 os.chdir(REPO)
 
 # pico de RAM del proceso (muestreo cada 0,5 s)

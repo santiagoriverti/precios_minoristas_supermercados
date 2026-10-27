@@ -3,13 +3,18 @@
 # que leer el SEPA con esa canasta (el factor centavos/pesos sale de EANs de referencia, no de la canasta). La clave
 # incluye los ADICIONALES de la CELDA 1 (productos de la sensibilidad), como en la CELDA 6.
 # Uso: python -I -X utf8 s15_filtrar_cache.py <repo> <carpeta _cache/brecha_v3_<clave> del superconjunto> <salida de s11>
+#                                             [--notebook 06b_brecha_celiaca_canasta_amplia.ipynb]
 import hashlib, json, re, sys
 from pathlib import Path
 import pandas as pd
 
-REPO, SUPER, OUT = (Path(a) for a in sys.argv[1:4])
-cells = [''.join(c['source']) for c in json.load(open(REPO / 'notebooks' / '06_evolucion_brecha_celiaca.ipynb',
-                                                       encoding='utf-8'))['cells'] if c['cell_type'] == 'code']
+args = sys.argv[1:]
+NB = '06_evolucion_brecha_celiaca.ipynb'
+if '--notebook' in args:     # el nb06b (canasta amplia) u otro generado por gen_nb06.py
+    i = args.index('--notebook'); NB = args[i + 1]; del args[i:i + 2]
+REPO, SUPER, OUT = (Path(a) for a in args[:3])
+cells = [''.join(c['source']) for c in json.load(open(REPO / 'notebooks' / NB, encoding='utf-8'))['cells']
+         if c['cell_type'] == 'code']
 g = {}
 exec(cells[0], g)
 

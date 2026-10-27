@@ -16,7 +16,7 @@ da lo mismo en los 3.244.531 precios sucursal × producto × mes y en todas las 
 | Dimensión | Veredicto | Evidencia principal |
 |---|---|---|
 | **Qué productos** | **Adecuados para lo que miden**: envasados de primera marca con versión sin TACC equivalente, comparados dentro del mismo súper. Todos los sin TACC están verificados (listado ALG de ANMAT o marca solo sin gluten) | Sensibilidad: +100% a +109% con siete decisiones distintas; solo "sin sustitutos" se va a +134% (§3) |
-| **Cobertura de la dieta** | **Insuficiente para el costo de la dieta**: la canasta pesa el 5,0% del gasto en alimentos, el 41% de los artículos con gluten de la ENGHo. Falta el pan, que es lo que más pesa | Pan francés 4,7% (no está en el SEPA), pan envasado 0,8%, harinas y premezclas 0,7%, alfajores 0,5%, tapas 0,5% (§3.3) |
+| **Cobertura de la dieta** | **Insuficiente para el costo de la dieta**: la canasta pesa el 5,0% del gasto en alimentos, el 41% de los artículos con gluten de la ENGHo. Falta el pan, que es lo que más pesa. **Resuelto con la canasta amplia (nb06b): 62%** | Pan francés 4,7% (no está en el SEPA), pan envasado 0,8%, harinas y premezclas 0,7%, alfajores 0,5%, tapas 0,5% (§3.3, §10.2) |
 | **Tiempo** | **Adecuado**: continuidad desde ene-2022, panel balanceado, serie TPD como robustez e índices de cada lado | TPD y descriptiva a 2,3 pp en los meses sin imputar; sin / con = 99,1 en oct-2026 con base ene-2022 (§4) |
 | **Geografía** | **Adecuada por región**; por provincia, 8 de 17 confiables | Patagonia +89% (IC +88% a +92%) contra +102% a +107% en las demás. Con los mismos productos, Patagonia da solo −2,9% (§5) |
 | **Cadenas** | **Limitada con la canasta propia** (solo Carrefour y Cencosud tienen ≤ 25% del peso imputado). **Resuelta con la hedónica**: mismos productos, 6 empresas confiables | Diferencias de −3,6% a +0,7% entre las grandes; DIA, Toledo y Cooperativa Obrera con poco dato (§6) |
@@ -27,8 +27,9 @@ da lo mismo en los 3.244.531 precios sucursal × producto × mes y en todas las 
 
 **En una frase**: la canasta fija mide bien la **prima de precio** de los sin TACC envasados (un celíaco paga el
 doble: +103% en los últimos 12 meses, IC 95% +102,6% a +103,5%) y cómo cambia en el tiempo, por región y por cadena. No
-mide el **costo de la dieta**, porque no tiene pan ni harinas. Para eso, el panel recomienda una segunda canasta de la
-oferta actual (§10.2).
+mide el **costo de la dieta**, porque no tiene pan ni harinas. Para eso, el panel recomendó una segunda canasta de la
+oferta actual, que quedó hecha (nb06b, §10.2): con pan, harinas, premezclas, alfajores y tapas, la brecha es +143% y el
+costo extra con la Canasta Básica Alimentaria, +$156.474 por adulto equivalente por mes.
 
 ## 2. Qué se examinó
 
@@ -273,11 +274,32 @@ TACC, % que vende también el sin TACC (pesos ENGHo), últimos 12 meses:
 
    Los 15 tests del repo dan OK.
 
-### 10.2 Canasta amplia de la oferta actual (nb06b)
+### 10.2 Canasta amplia de la oferta actual (nb06b, hecha)
 
-Recomendación principal del panel para el costo de la dieta: las mismas reglas sobre los últimos 15 meses
-(ago-2025 → oct-2026), con pan envasado, harinas y premezclas, alfajores y tapas (62% de los artículos con gluten de
-la ENGHo). Estado y resultados en BRECHA_CELIACA §16.
+Es la recomendación principal del panel para medir el costo de la dieta: las mismas reglas sobre los últimos 15 meses
+(ago-2025 → oct-2026), con pan envasado, harinas, premezclas, alfajores y tapas. Cubre el 62% de los artículos con
+gluten de la ENGHo. Notebook `notebooks/06b_brecha_celiaca_canasta_amplia.ipynb` (mismo generador y mismas celdas que
+el 06); canasta de 142 códigos en 109 líneas; detalle en BRECHA_CELIACA §16. Simulación = cálculo independiente.
+
+| | Canasta fija (nb06) | Canasta amplia (nb06b) |
+|---|---|---|
+| Brecha de los últimos 12 meses (IC 95%) | +103,1% (+102,6% a +103,5%) | **+143,3%** (+143,1% a +143,9%) |
+| Costo extra por adulto equivalente por mes (CBA) | +$18.815 (sin pan ni harina) | **+$156.474** (+171%; el pan, el 83%) |
+| Costo extra de un hogar tipo por mes | +$58.138 | **+$483.504** |
+| Regiones | Patagonia +89% a Cuyo +107% | Patagonia +130% a Cuyo +155% |
+| Empresas confiables con la canasta propia | 2 | 3 (Carrefour, Cencosud, Coto) |
+| Disponibilidad del sin TACC (sucursal-meses) | 67,9% | 74,1% (harinas 25%, tapas 40%, alfajores 43%) |
+| Concentración (con empresa y región) | sin efecto | −0,26% por +0,1 de HHI; nada con los mismos productos |
+
+Los tipos nuevos ordenan la prima de otra manera:
+
+- la premezcla universal cuesta 5 veces la harina 0000 (+383%) y el pan sin TACC 3 veces el envasado con TACC (+199%);
+- el pan rallado y el rebozador sin TACC, +236%;
+- las tapas, +56%; las premezclas de bizcochuelo y brownie, +46%;
+- los alfajores, +15%.
+
+Las conclusiones de geografía, cadenas y concentración no cambian: las diferencias de nivel son sobre todo de surtido
+y la concentración local no sube la prima.
 
 ### 10.3 Lo que no se hizo, y por qué
 
@@ -310,16 +332,22 @@ la ENGHo). Estado y resultados en BRECHA_CELIACA §16.
    - `datos/` con los paneles.
 5. Para comparar una corrida con la simulación:
    `python -I -X utf8 docs/auditoria/scripts_nb06_2026-10/s16_comparar_colab.py <Excel> docs/brecha_celiaca/simulacion_2026-10-27`.
+6. **Canasta amplia**: lo mismo con `notebooks/06b_brecha_celiaca_canasta_amplia.ipynb` (su botón de Colab está en el
+   README). La primera vez lee 15 meses; escribe en `MyDrive/carga/output_brecha_amplia/`
+   (`brecha_celiaca_amplia_AAAA-MM.xlsx`, gráficos, mapas y `datos/`). Esperados:
+   `docs/brecha_celiaca/simulacion_06b_2026-10-27/`.
 
 ## 12. Scripts de esta evaluación
 
 En `docs/auditoria/scripts_nb06_2026-10/`:
 
 - `s10_precios.py`: equivalentes primero y misma marca con tope;
-- `s11_simular_nb06.py`: `--ipc`, y guarda los objetos nuevos;
-- `s12_comparar_simulacion.py`: con el filtro de empresas;
-- `s15_filtrar_cache.py`: clave con los ADICIONALES;
-- `s18_canasta_amplia.py`: canasta amplia.
+- `s11_simular_nb06.py`: `--ipc` y `--notebook` (el 06b), y guarda los objetos nuevos;
+- `s12_comparar_simulacion.py`: con el filtro de empresas; `--notebook` y `--cache` (verifica el 06b con los precios del
+  caché);
+- `s15_filtrar_cache.py`: clave con los ADICIONALES; `--notebook`;
+- `s18_canasta_amplia.py`: canasta amplia (gramos con el consenso de las cadenas, alfajores sueltos y en caja, harinas y
+  premezclas separadas).
 
 Los análisis exploratorios de esta sesión (distribución del factor por empresa, descomposición del efecto de DIA) están
 descritos en §6 y §9; sus números se reproducen con los paneles de `datos/`.

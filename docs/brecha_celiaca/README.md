@@ -54,3 +54,25 @@ EAN cambia la clave del caché del nb06 (relee el SEPA); cambiar gramos, vigenci
 | `sucursales_dia_oct2026` | Sucursales con precio por día en oct-2026 (nb09, SEPA diario al 22/10; en los empalmes, sus códigos vigentes) |
 | `precio_100g_ultimo_mes` / `ultimo_mes_con_precio` | Mediana nacional de $/100 g en el último mes con precio (zips semestrales del Drive, ene-2022 → oct-2026) |
 | `precio_sobre_mediana_con_tacc_subtipo` | Precio $/100 g / mediana de los con TACC del mismo subtipo y mes (mediana 2022-2026). Con TACC: posición dentro de la franja de primera línea (0,6-1,67); sin TACC: su prima |
+
+## Canasta amplia de la oferta actual (nb06b, desde el 2026-10-27)
+
+`canasta_amplia_2025_2026.csv` es la canasta del notebook `06b_brecha_celiaca_canasta_amplia.ipynb`
+(BRECHA_CELIACA §16): las mismas reglas que la canasta fija sobre la ventana ago-2025 → oct-2026, con 9 tipos (los 5 de
+la canasta fija más pan envasado, harinas y premezclas, alfajores y tapas). La arma
+`docs/auditoria/scripts_nb06_2026-10/s18_canasta_amplia.py`; `gen_nb06.py` la embebe en la CELDA 1 del 06b, como la
+fija en el 06. `productos_sensibilidad_amplia.csv` es su versión de `productos_sensibilidad.csv` (los que cumplen las
+reglas y quedan afuera van a los escenarios de la hoja `Sensibilidad`). `simulacion_06b_2026-10-27/` son los
+resultados esperados del 06b (48 hojas): contra esa carpeta se compara su próxima corrida.
+
+Columnas: las mismas de la canasta fija para identificar cada código (`tipo`, `lado`, `ean`, `descripcion`, `gramos`,
+`subtipo`, `desde`, `hasta`, `nota`, `producto`, `linea`), y las métricas de la ventana:
+
+| Columna | Qué es |
+|---|---|
+| `fuente_gramos` | De dónde salen los gramos: `Maestro = cadenas` (coinciden a ±5%), `cadenas (...)` (el consenso de lo que publican las cadenas el 22/10, cuando el Maestro no tiene gramos o está desactualizado), `corrección verificada (s10)` o `Maestro (sin consenso de las cadenas)` |
+| `sucursales_mes_mediana_ventana` | Mediana mensual de las sucursales del universo del nb06 con precio, ago-2025 → sep-2026 |
+| `provincias`, `comercios`, `cadenas_grandes` | Provincias, comercios supermercado y cadenas grandes (de 8) con el producto en la ventana |
+| `pct_cadena_principal` | % de sus sucursal-meses que aporta la cadena con más presencia (tope: 85% sin TACC, 60% con TACC) |
+| `precio_100g_ultimo_mes` / `ultimo_mes_con_precio` | Mediana nacional de $/100 g en el último mes con precio |
+| `precio_sobre_mediana_con_tacc_subtipo` | Precio $/100 g / mediana de los con TACC del mismo subtipo y mes (mediana de la ventana) |
