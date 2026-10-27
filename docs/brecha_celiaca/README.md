@@ -18,8 +18,8 @@ corregidos dieron igual). `simulacion_2026-10-26b/` son los de la canasta correg
 igual). `simulacion_2026-10-26c/` son los de la TPD del panel corregida, Pepitos y las dos Operas.
 `simulacion_2026-10-26d/` son los de los sabores de una línea como un producto y el penne contra el Matarazzo común
 (35 hojas). `simulacion_2026-10-27/` son los del notebook **vigente** (equivalentes primero, precios de una empresa
-fuera de escala, análisis complementarios de la CELDA 8c y hoja `Resumen`; 48 hojas): contra esa carpeta se compara
-la próxima corrida.
+fuera de escala, análisis complementarios de la CELDA 8c y hoja `Resumen`; 48 hojas): la corrida de Colab del
+2026-10-27 dio igual (48 de 48); contra esa carpeta se compara la próxima.
 
 `productos_sensibilidad.csv` tiene **todos** los productos que cumplen las reglas de la selección en los subtipos de
 la canasta: los 75 códigos de la canasta y 25 más que quedan afuera por la composición espejada, el comparador fijo

@@ -9,7 +9,7 @@ propio.
 Este documento tiene el veredicto, la evidencia y los cambios hechos. Los números salen de la simulación con las celdas
 reales del notebook vigente sobre los zips del Drive (ene-2022 → oct-2026; `sim_v9`). El cálculo independiente (`s12`)
 da lo mismo en los 3.244.531 precios sucursal × producto × mes y en todas las brechas. Esperados en
-`docs/brecha_celiaca/simulacion_2026-10-27/`.
+`docs/brecha_celiaca/simulacion_2026-10-27/`. **La corrida de Colab del 2026-10-27 dio igual a la simulación** (§13).
 
 ## 1. Veredicto
 
@@ -351,3 +351,37 @@ En `docs/auditoria/scripts_nb06_2026-10/`:
 
 Los análisis exploratorios de esta sesión (distribución del factor por empresa, descomposición del efecto de DIA) están
 descritos en §6 y §9; sus números se reproducen con los paneles de `datos/`.
+
+## 13. La corrida de Colab del nb06 (2026-10-27, tarde)
+
+El usuario corrió el nb06 en Colab y pasó la salida impresa y el zip de `output_brecha/`
+(`colab_20261027/` en la carpeta de trabajo). Colab leyó los 57 meses cerrados en 41:45 min, más el mes en curso, y
+armó el caché `brecha_v3_5fc88a8c`. **Dio igual a la simulación en todo**:
+
+| Qué | Contra qué | Resultado |
+|---|---|---|
+| Excel, las 48 hojas de los esperados | `docs/brecha_celiaca/simulacion_2026-10-27/` (s16) | 48 de 48 iguales |
+| Excel completo (51 hojas, también `Leeme`, `Comparacion_productos` de 20.856 filas y `Detalle_producto` de 59.892) | el Excel de la simulación (r13) | 51 de 51 iguales |
+| Caché del Drive | el caché local (r14) | los 57 meses con los mismos datos (otros bytes) |
+| Mapa por sucursal | el de la simulación (r15) | igual, salvo los identificadores aleatorios de Folium |
+| `datos/`: los dos paneles en parquet y csv.gz | los de la simulación | iguales (3.244.531 y 542.159 filas) |
+| `datos/sucursales.csv` | el de la simulación | iguales; 183 filas difieren en el último dígito de un decimal de 17 cifras (redondeo) |
+| Salida impresa | la de la simulación | los mismos números en todas las tablas y avisos |
+
+Diferencias esperables que no cambian nada:
+
+- en Colab el maestro de productos suma el `maestro_sepa_completo` del Drive (204.374 códigos contra 176.607 en la
+  simulación): la canasta tiene sus gramos y descripciones en la CELDA 1;
+- el IPC sale del `IPC.xlsx` del Drive, hasta sep-2026.
+
+**Gráficos**: al mirarlos aparecieron cinco detalles de presentación, corregidos en la CELDA 9. El Excel no cambia; la
+próxima corrida (con el caché, unos 15-20 min) los rehace:
+
+- en la hedónica, la leyenda del eje se cortaba a la derecha (ahora va en dos renglones);
+- en los índices de cada lado, el subtítulo decía "encadenado" (son efectos fijos);
+- en los IC por grupo, la leyenda del país tapaba el último grupo (la franja va explicada en el título);
+- en la disponibilidad, los nombres de los tipos iban rotados 90° (ahora horizontales, en dos renglones);
+- en la sensibilidad, la etiqueta de la barra más larga quedaba pegada al borde (más margen).
+
+Falta la corrida de Colab del **06b** (lee 15 meses la primera vez): se compara con
+`docs/brecha_celiaca/simulacion_06b_2026-10-27/`.

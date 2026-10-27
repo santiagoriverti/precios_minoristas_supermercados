@@ -2650,7 +2650,8 @@ if len(_il):
         axs[0].plot(_f, _il['ipc_alimentos'], color='#555', lw=1.6, ls='--', label='IPC alimentos y bebidas (INDEC)')
     axs[0].set_yscale('log'); axs[0].set_ylabel(f'Índice ({_il["mes"].iloc[0]} = 100, escala log)')
     axs[0].yaxis.set_major_formatter(mticker.FuncFormatter(lambda x, _: f'{x:,.0f}'))
-    axs[0].set_title('Precio de cada lado de la canasta (pesos ENGHo), encadenado', fontsize=11, loc='left')
+    axs[0].set_title('Precio de cada lado de la canasta (pesos ENGHo): efectos fijos de producto en la sucursal y de mes',
+                     fontsize=11, loc='left')
     axs[0].legend(loc='upper left', fontsize=9); axs[0].grid(True, alpha=0.3, which='both')
     axs[1].plot(_f, _il['sin_sobre_con'], color='#8c564b', lw=2.2, label='Sin TACC / con TACC (índices de cada lado)')
     if len(serie_tpd):
@@ -2670,9 +2671,13 @@ if len(_dr9):
     _cols9 = [f'disponibilidad_{_c}_pct' for _c in TIPOS_ORD] + ['disponibilidad_ponderada_pct']
     _hm = _dr9.set_index('grupo')[_cols9].sort_values('disponibilidad_ponderada_pct')
     _hm.columns = [_c.replace('disponibilidad_', '').replace('_pct', '') for _c in _cols9]
-    fig, ax = plt.subplots(figsize=(13, max(3.5, 0.55 * len(_hm) + 2)))
+    fig, ax = plt.subplots(figsize=(max(13, 1.35 * len(_hm.columns) + 3), max(3.5, 0.55 * len(_hm) + 2)))
     sns.heatmap(_hm, annot=True, fmt='.0f', cmap='RdYlGn', vmin=40, vmax=100, cbar_kws={'label': '%'}, ax=ax)
     ax.set_xlabel(''); ax.set_ylabel('')
+    # nombres de los tipos en dos o tres renglones, horizontales (rotados 90° ocupaban media figura)
+    import textwrap as _tw
+    ax.set_xticklabels([_tw.fill(_c, 16) for _c in _hm.columns], rotation=0, fontsize=9)
+    ax.set_yticklabels(ax.get_yticklabels(), rotation=0)
     ax.set_title(f'Disponibilidad: de las sucursal-meses que venden el tipo con TACC, % que vende también el sin TACC '
                  f'({VENTANA_TXT})', fontsize=11)
     _guardar('disponibilidad_region')
@@ -2689,13 +2694,15 @@ if len(_ic9):
                 fmt='none', ecolor='#888', capsize=3, lw=1.2)
     ax.scatter(_ic9['brecha_canasta'], _yy, c=_cl9, s=40, zorder=3)
     _p9 = ic_grupos.iloc[0]
-    ax.axvspan(_p9['ic95_inf'], _p9['ic95_sup'], color='#999', alpha=0.2, lw=0, label=f'País, IC 95% ({_p9["brecha_canasta"]:+.1f}%)')
+    ax.axvspan(_p9['ic95_inf'], _p9['ic95_sup'], color='#999', alpha=0.2, lw=0)
     ax.axvline(_p9['brecha_canasta'], color='#555', lw=1)
     ax.set_yticks(_yy); ax.set_yticklabels([f'{_a}: {_g}' for _a, _g in zip(_ic9['agrupacion'], _ic9['grupo'])], fontsize=9)
     ax.set_xlabel('Brecha de la canasta (%), misma canasta en todos los grupos')
+    # sin leyenda (tapaba el último grupo): la franja del país va en el título
     ax.set_title(f'Brecha por región y empresa con IC 95% (bootstrap por sucursal, {int(BOOT_B)} réplicas) — {VENTANA_TXT}\n'
-                 'rojo: la diferencia con el país es significativa', fontsize=11)
-    ax.legend(loc='lower right', fontsize=9); _barras_horizontales(ax)
+                 f'franja gris: el país, {_p9["brecha_canasta"]:+.1f}% e IC 95%; en rojo, los grupos que difieren del país',
+                 fontsize=11)
+    _barras_horizontales(ax)
     _guardar('ic_grupos')
 
 # 14) Sensibilidad de la brecha a las decisiones de diseño (CELDA 8c)
@@ -2709,6 +2716,8 @@ if len(sensibilidad):
                     textcoords='offset points', va='center', fontsize=8, bbox=_FONDO_ETIQUETA)
     ax.set_xlabel(f'Brecha nacional de la canasta (%), {VENTANA_TXT}')
     ax.set_title('Sensibilidad de la brecha a cada decisión de diseño (una por vez)', fontsize=11)
+    _lo9, _hi9 = min(0.0, float(_sv['brecha_canasta'].min())), max(0.0, float(_sv['brecha_canasta'].max()))
+    ax.set_xlim(1.1 * _lo9, 1.25 * _hi9)   # lugar para la etiqueta de la barra más larga
     _barras_horizontales(ax)
     _guardar('sensibilidad')
 
@@ -2729,8 +2738,8 @@ if len(_hg):
     ax.set_yticks(_yy); ax.set_yticklabels([f'{_g}: {_t} (vs {_b})' + ('' if _o else ' — poco dato')
                                             for _g, _t, _b, _o in zip(_hg['grupo'], _hg['termino'], _hg['base'], _okg)],
                                            fontsize=9)
-    ax.set_xlabel('Efecto sobre 1 + brecha (%), mismos productos, IC 95% (errores agrupados por departamento); '
-                  'en gris, grupos con poco dato')
+    ax.set_xlabel('Efecto sobre 1 + brecha (%), mismos productos, IC 95% (errores agrupados por departamento)\n'
+                  'en gris, los grupos con poco dato (celdas en menos de la mitad de los subtipos)')
     ax.set_title(f'Hedónica de grupos — {VENTANA_TXT}: región y empresa, cada una controlada por la otra', fontsize=11)
     _barras_horizontales(ax)
     _guardar('hedonica_grupos')"""))

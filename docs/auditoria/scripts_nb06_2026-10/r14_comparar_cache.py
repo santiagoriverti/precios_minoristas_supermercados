@@ -2,6 +2,8 @@
 # una simulación: mismos meses y, mes a mes, mismos bytes o al menos los mismos datos (pandas, ordenando las filas).
 # El zip es un dato bajado: no se extrae si trae rutas absolutas o "..".
 # Uso: python -I -X utf8 r14_comparar_cache.py <zip del Drive> <carpeta vacía donde extraerlo> <caché local brecha_v3_xxx>
+#      o, con el zip ya extraído: r14_comparar_cache.py <carpeta brecha_v3_xxx del Drive> - <caché local brecha_v3_xxx>
+#      (el zip de output_brecha trae varios cachés con los mismos nombres de mes: pasar la carpeta de la clave)
 import hashlib
 import sys
 import zipfile
@@ -10,13 +12,16 @@ from pathlib import Path
 import pandas as pd
 
 ZIP, DEST, LOCAL = Path(sys.argv[1]), Path(sys.argv[2]), Path(sys.argv[3])
-with zipfile.ZipFile(ZIP) as z:
-    nombres = [i.filename.replace('\\', '/') for i in z.infolist()]
-    mal = [n for n in nombres if n.startswith('/') or ':' in n or '..' in n.split('/')]
-    if mal:
-        sys.exit(f'el zip trae rutas peligrosas, no se extrae: {mal[:5]}')
-    DEST.mkdir(parents=True, exist_ok=True)
-    z.extractall(DEST)
+if ZIP.is_dir():                      # el caché ya extraído (la carpeta de una clave)
+    DEST = ZIP
+else:
+    with zipfile.ZipFile(ZIP) as z:
+        nombres = [i.filename.replace('\\', '/') for i in z.infolist()]
+        mal = [n for n in nombres if n.startswith('/') or ':' in n or '..' in n.split('/')]
+        if mal:
+            sys.exit(f'el zip trae rutas peligrosas, no se extrae: {mal[:5]}')
+        DEST.mkdir(parents=True, exist_ok=True)
+        z.extractall(DEST)
 remoto = {p.name: p for p in DEST.rglob('*.parquet')}
 local = {p.name: p for p in LOCAL.glob('*.parquet')}
 print(f'Drive: {len(remoto)} meses | local: {len(local)} | solo en el Drive: {sorted(set(remoto) - set(local))} | '

@@ -48,7 +48,9 @@ Autor: Santiago Riverti — investigador independiente
      contra el IPC, disponibilidad, IC por bootstrap, competencia local, concentración, hedónica de región y empresa
      con `confiable`, costo con la CBA, paneles en `datos/`); hoja `Resumen`; `IPC_XLSX`; test de 42 controles.
    - **Validación**: `sim_v9` = `s12` en los 3.244.531 precios y todas las brechas; esperados VIGENTES
-     `docs/brecha_celiaca/simulacion_2026-10-27/`. **Falta Colab** (relee los 58 meses, caché `brecha_v3_5fc88a8c`).
+     `docs/brecha_celiaca/simulacion_2026-10-27/`. **Colab (2026-10-27, tarde): igual a la simulación** (s16 48 de 48,
+     r13 51 de 51, r14 caché, r15 mapa, `datos/`; EVALUACION §13; salida en `colab_20261027/`). Después, cinco
+     detalles de los gráficos corregidos (CELDA 9; el Excel no cambia).
    - **Canasta amplia (nb06b, más tarde; BRECHA_CELIACA §16)**: `notebooks/06b_brecha_celiaca_canasta_amplia.ipynb`,
      generado por `gen_nb06.py` con las mismas celdas 2-13 que el 06. 10 tipos (los 5 + pan envasado, harinas,
      premezclas, alfajores, tapas), ago-2025 → oct-2026, 142 códigos en 109 líneas (`s18_canasta_amplia.py`; gramos
@@ -57,8 +59,8 @@ Autor: Santiago Riverti — investigador independiente
      mes (el pan, 83%); harinas +383%, pan +199%, alfajores +15%; disponibilidad 74% (harinas 25%). Simulación
      `simulacion/sim_06b_v1/` (caché `brecha_v3_9f78d0f7`) = s12 `--cache`; esperados
      `docs/brecha_celiaca/simulacion_06b_2026-10-27/`.
-   - **Siguiente**: (a) corridas de Colab del 06 y del 06b → `s16` contra `simulacion_2026-10-27` y
-     `simulacion_06b_2026-10-27`; (b) el subtipo vainillas.
+   - **Siguiente**: (a) corrida de Colab del 06b → `s16` contra `simulacion_06b_2026-10-27` (y del 06 si se quieren
+     los gráficos corregidos); (b) el subtipo vainillas.
    - **Reglas nuevas**: un análisis nuevo del nb06 va en la CELDA 8c de `gen_nb06.py` y tiene su fuerza bruta en
      `test_brecha_celiaca.py`; la simulación necesita `--ipc` para que `Indices_lados` coincida con Colab; el
      hedónico de un grupo con pocas celdas no se interpreta (columna `confiable`).

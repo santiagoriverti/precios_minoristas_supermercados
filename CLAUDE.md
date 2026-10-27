@@ -49,8 +49,9 @@ sensibilidad) pero no el costo de la dieta (41% del gasto en artículos con glut
 marca con tope, **precios de una empresa fuera de escala** (CELDA 7, `FACTOR_EMPRESA`), la **CELDA 8c** (sensibilidad,
 índices de cada lado contra el IPC, disponibilidad, IC por bootstrap, competencia local, concentración, hedónica de
 región y empresa con `confiable`, costo con la CBA y paneles en `OUTPUT_DIR/datos/`) y la hoja **`Resumen`** (51
-hojas). Esperados vigentes en `docs/brecha_celiaca/simulacion_2026-10-27/`. **Falta la corrida de Colab** (relee los
-58 meses). **Canasta amplia de la oferta actual: la canasta amplia de la oferta actual (**nb06b**, `notebooks/06b_brecha_celiaca_canasta_amplia.ipynb`; BRECHA_CELIACA §16): pan envasado, harinas, premezclas, alfajores y tapas además de los 5 tipos de la fija, ago-2025 → oct-2026; 142 códigos en 109 líneas; brecha de los últimos 12 meses +143% (fija: +103%) y costo extra con la CBA +$156.474 por adulto equivalente por mes (fija: +$18.815), el 83% por el pan; esperados `docs/brecha_celiaca/simulacion_06b_2026-10-27/`.** El 06b lo genera `gen_nb06.py` (mismas celdas 2-13
+hojas). Esperados vigentes en `docs/brecha_celiaca/simulacion_2026-10-27/`. **La corrida de Colab del 2026-10-27 dio
+igual a la simulación** (Excel, caché, mapa y `datos/`; EVALUACION §13); después se corrigieron cinco detalles de los
+gráficos (CELDA 9). **Canasta amplia de la oferta actual (`notebooks/06b_brecha_celiaca_canasta_amplia.ipynb`, BRECHA_CELIACA §16): pan envasado, harinas, premezclas, alfajores y tapas además de los 5 tipos de la fija, ago-2025 → oct-2026; 142 códigos en 109 líneas; brecha de los últimos 12 meses +143% (fija: +103%) y costo extra con la CBA +$156.474 por adulto equivalente por mes (fija: +$18.815), el 83% por el pan; esperados `docs/brecha_celiaca/simulacion_06b_2026-10-27/`.** El 06b lo genera `gen_nb06.py` (mismas celdas 2-13
 que el 06; cambian la celda 0 y la CELDA 1); falta su corrida de Colab. Queda el subtipo vainillas.
 
 El **nb07** (`notebooks/07_evolucion_canastas_alternativas.ipynb`) es el motor del

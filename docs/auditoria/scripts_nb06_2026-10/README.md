@@ -76,7 +76,7 @@ y los objetos de la simulación (`sim_final/`, iguales a Colab):
 | Script | Qué hace |
 |---|---|
 | `r13_comparar_excels.py <Excel A> <Excel B> [tol]` | Las 38 hojas celda por celda (también `Leeme`, `Comparacion_productos` y `Detalle_producto`, que `s16` deja afuera); si solo cambia el orden de filas casi empatadas, lo dice |
-| `r14_comparar_cache.py <zip del Drive> <carpeta vacía> <caché local brecha_v3_xxx>` | El caché de `output_brecha/_cache/` que baja el Drive contra el de la simulación: mismos meses y mismos datos (no extrae si el zip trae rutas peligrosas) |
+| `r14_comparar_cache.py <zip del Drive> <carpeta vacía> <caché local brecha_v3_xxx>` (o `<carpeta brecha_v3_xxx ya extraída> - <caché local>`) | El caché de `output_brecha/_cache/` que baja el Drive contra el de la simulación: mismos meses y mismos datos (no extrae si el zip trae rutas peligrosas). Desde el 2026-10-27 acepta la carpeta de una clave ya extraída: el zip de `output_brecha/` trae varios cachés con los mismos nombres de mes |
 | `r15_comparar_mapas.py <mapa A> <mapa B>` | El mapa por sucursal sin los identificadores aleatorios de Folium, y el JSON de los popups (sucursales y mes de cada una) |
 
 **Revisión de datos y método frente al objetivo (2026-10-26, `docs/REVISION_METODOLOGICA_2026-10-26_nb06.md`)**, sobre
