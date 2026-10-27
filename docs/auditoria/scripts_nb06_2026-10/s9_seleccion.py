@@ -133,6 +133,12 @@ EMPALMES = {
     'Fusilli chía sin TACC Wakas': {'7798031470086': (None, '2024-07'), '7798031470819': ('2024-06', None)},
     'Fusilli amaranto sin TACC Wakas': {'7798031470048': (None, '2024-07'), '7798031470802': ('2024-06', None)},
     'Fusilli kale sin TACC Wakas': {'7798031470093': (None, '2024-07'), '7798031470833': ('2024-06', None)},
+    # Pepitos 119 g (Mondelez) cambió dos veces de código: ...808662 (principal hasta mar-2022), ...503260 (abr-2022 a
+    # feb-2023) y ...735906 (desde feb-2023). Los dos primeros conviven en 2022 (cadenas distintas). Como en Molinos, el
+    # código viejo vale hasta el mes del cambio: después queda en ~90 sucursales (2023-2025). Es el comparador con TACC
+    # de las con chips: está donde están las chips Smams (802 de sus 813 sucursales el 22/10).
+    'Pepitos 119 g': {'7622201808662': (None, '2023-01'), '7622201503260': (None, '2023-02'),
+                      '7622201735906': ('2023-02', None)},
 }
 VIGENCIA = {e: v for d in EMPALMES.values() for e, v in d.items()}
 

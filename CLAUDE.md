@@ -26,14 +26,19 @@ Colab con BUG-48 dio igual a la simulación** (35 hojas contra `docs/brecha_celi
 AUDITORIA_2026-10-26 §6); esa noche, tres arreglos de presentación de los gráficos (CELDA 9), también verificados en
 Colab (§7). **Revisión de datos y método frente al objetivo**: `docs/REVISION_METODOLOGICA_2026-10-26_nb06.md` (recomendaciones priorizadas, decisión
 del usuario). Abierto también: la imputación sin límite de la serie descriptiva (la TPD muestra dónde pesa). Test
-`test_brecha_celiaca.py` (30 controles). **Auditoría de la selección (2026-10-26, BUG-49,
+`test_brecha_celiaca.py` (31 controles desde el 2026-10-26, noche). **Auditoría de la selección (2026-10-26, BUG-49,
 `docs/AUDITORIA_SELECCION_2026-10-26_nb06.md`)**: la etiqueta sin TACC se contrastó con el listado ALG de ANMAT y se
 corrigieron cuatro errores de las reglas de s9 (`\btita\b`, Blue Patna al huevo, el tirabuzón sin TACC Matarazzo en el
 cambio de código de Molinos, sabores de Lasfor). Canasta de **66 productos (77 códigos)**, simulación con los 58 meses
 releídos y esperados vigentes en `docs/brecha_celiaca/simulacion_2026-10-26b/`; **la corrida de Colab de esa noche dio
 igual a la simulación** (AUDITORIA_2026-10-26 §8). En la revisión de sus resultados (AUDITORIA_SELECCION §7) apareció
-un artefacto de la TPD del panel en oct-2023. Quedan para el usuario la corrección de esa TPD (no relee) y las
-propuestas de productos: Pepitos, obleas 92 g, galletas de arroz y vainillas.
+un artefacto de la TPD del panel en oct-2023.
+**Esa noche** (BRECHA_CELIACA §14.15), a pedido del usuario: la TPD del panel mueve el subtipo sin pares con el
+mismo subtipo en todas las sucursales; Pepitos (empalme de tres códigos) es el comparador de con chips; y en obleas
+entran la Opera de 92 g y la de 220 g. Canasta de **67 productos (80 códigos)**, esperados vigentes en
+`docs/brecha_celiaca/simulacion_2026-10-26c/` (con chips +29% contra Pepitos; canasta de los últimos 12 meses
++111%). **Falta la corrida de Colab** (relee los 58 meses). Quedan para el usuario las galletas de arroz y las
+vainillas (AUDITORIA_SELECCION §4) y la hedónica por cadena y HHI.
 
 El **nb07** (`notebooks/07_evolucion_canastas_alternativas.ipynb`) es el motor del
 informe semanal: 6 canastas, índice encadenado, comparación con el IPC y aperturas por cadena/región.
@@ -101,8 +106,8 @@ relativo; la próxima corrida en Colab los muestra por primera vez.
    impresa, `canasta_diaria_pass_through_<desde>_<hasta>.xlsx` y `panel_diario_pass_through_<...>.parquet`; para el nb09,
    la salida impresa y los cuatro archivos de `output_trazabilidad/` (scripts en `docs/auditoria/scripts_nb09_2026-10/`,
    AUDITORIA_2026-10-22_nb09 §7); para el nb06, la salida impresa y `output_brecha/brecha_celiaca_<mes>.xlsx` (comparar
-   con `docs/auditoria/scripts_nb06_2026-10/s16_comparar_colab.py` contra `docs/brecha_celiaca/simulacion_2026-10-26b/`
-   —el notebook vigente, con la canasta corregida de BUG-49— y revisar con BRECHA_CELIACA §14.9; para revisar todo, el
+   con `docs/auditoria/scripts_nb06_2026-10/s16_comparar_colab.py` contra `docs/brecha_celiaca/simulacion_2026-10-26c/`
+   —el notebook vigente: canasta corregida, TPD del panel corregida, Pepitos y las dos Operas— y revisar con BRECHA_CELIACA §14.9; para revisar todo, el
    zip del caché y el mapa: r13-r15, AUDITORIA_2026-10-26_nb06). Descomprimir lo que
    pase el usuario en una carpeta propia y correr los scripts con `python -I` (datos no confiables). Para simular
    celdas con datos reales en una PC hacen falta, además: `ar.json` (bajarlo del Drive, `MyDrive/carga/ar.json`; en
@@ -226,7 +231,7 @@ relativo; la próxima corrida en Colab los muestra por primera vez.
   hacía que la canasta dependiera del `maestro_sepa_completo.csv.gz` que hubiera en el Drive. **La brecha se calcula
   por subtipo** (nunca la mediana del tipo entero: mezcla snacks y crackers según el surtido) y se agrega subtipo → tipo
   → canasta; si se cambia la canasta o el estimador, rehacer la simulación (s11/s12) y los resultados esperados de
-  `docs/brecha_celiaca/simulacion_<fecha>/` (otra carpeta con la fecha nueva; la vigente es `simulacion_2026-10-26b/`)
+  `docs/brecha_celiaca/simulacion_<fecha>/` (otra carpeta con la fecha nueva; la vigente es `simulacion_2026-10-26c/`)
   antes de pedir una corrida de Colab.
   En 2023 las marcas masivas con TACC tenían precios controlados (la brecha de 2023 está inflada, §14.8 de
   BRECHA_CELIACA): no "corregirlo" sacando productos.

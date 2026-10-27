@@ -200,3 +200,18 @@ o se pueden mejorar.
 6. **Lectura**: promedios anuales o trimestrales; 2023 con la TPD de todas las sucursales.
 
 Scripts nuevos: `r29_cobertura_subtipos.py`, `r30_tpd_panel_alternativa.py` y `r31_panel_con_todas.py`.
+
+## 8. Recomendaciones aplicadas (2026-10-26, noche)
+
+El usuario pidió las tres primeras de §7.3. Detalle y resultados: `docs/BRECHA_CELIACA.md` §14.15.
+
+- **TPD del panel.** El subtipo sin pares se mueve con el mismo subtipo en todas las sucursales. En oct-2023 el
+  spaghetti pasa de −38% a +93%.
+- **Pepitos 119 g** en con chips, en lugar de Par Nor: empalme de tres códigos, verificado con precios. La brecha de con
+  chips pasa de +111% a +29% y las sucursales con los dos lados se triplican.
+- **Obleas: la Opera de 92 g junto a la de 220 g.** Con la de 92 g sola, en 2023 casi no había sucursales con los dos
+  lados (0 a 16) y la serie arrastraba +390% durante 17 meses. Con las dos, la cobertura es la de antes y, donde
+  conviven, se corrige el tamaño.
+
+Canasta: 67 productos (80 códigos). Esperados en `docs/brecha_celiaca/simulacion_2026-10-26c/`. La canasta de los
+últimos 12 meses da +111% (antes +118%). Quedan para decidir las galletas de arroz y las vainillas (§4).

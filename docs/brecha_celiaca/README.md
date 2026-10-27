@@ -1,8 +1,9 @@
 # Canasta fija 2022-2026 de la brecha celíaca (nb06)
 
 `canasta_fija_2022_2026.csv` es la lista de productos con TACC y sin TACC que usa el nb06 desde el 2026-10-23: una fila
-por código (EAN). Desde el 2026-10-26 tiene **66 productos (77 códigos)**: la auditoría de la selección corrigió cuatro
-errores de las reglas (BUG-49; `docs/AUDITORIA_SELECCION_2026-10-26_nb06.md`). `notebooks/gen_nb06.py` la lee y arma
+por código (EAN). Desde el 2026-10-26 tiene **67 productos (80 códigos)**. La auditoría de la selección corrigió
+cuatro errores de las reglas (BUG-49; `docs/AUDITORIA_SELECCION_2026-10-26_nb06.md`). Esa noche, Pepitos pasó a ser
+el comparador de con chips y la Opera de 92 g se sumó a la de 220 g en obleas (BRECHA_CELIACA §14.15). `notebooks/gen_nb06.py` la lee y arma
 `TIPOS`, `GRAMOS`, `VIGENCIA`, `PRODUCTO` y `SUBTIPO` de la CELDA 1. Reglas, fuentes y advertencias:
 `docs/BRECHA_CELIACA.md` §14. Scripts que la arman: `docs/auditoria/scripts_nb06_2026-10/` (s7 → s10).
 
@@ -11,8 +12,9 @@ CSV por hoja del Excel, y cómo compararlos con una corrida de Colab: `s16_compa
 Colab dio igual en las 29 hojas. `simulacion_2026-10-23b/` son los esperados del notebook `46e426b` (BUG-47 y serie
 TPD; la corrida de Colab del 2026-10-26 dio igual en las 35 hojas). `simulacion_2026-10-26/` son los del notebook con
 BUG-48 (afuera las tiendas online por el nombre; 35 hojas; las corridas de Colab con BUG-48 y con los gráficos
-corregidos dieron igual). `simulacion_2026-10-26b/` son los del notebook **vigente**, con la canasta corregida (BUG-49;
-35 hojas): contra esa carpeta se compara la próxima corrida.
+corregidos dieron igual). `simulacion_2026-10-26b/` son los de la canasta corregida (BUG-49; la corrida de Colab de esa noche dio
+igual). `simulacion_2026-10-26c/` son los del notebook **vigente** (además, TPD del panel corregida, Pepitos y las dos
+Operas; 35 hojas): contra esa carpeta se compara la próxima corrida.
 
 Para cambiar la canasta: editar el CSV (o rehacerlo con s9 y s10), correr `python notebooks/gen_nb06.py` y
 `python notebooks/test_brecha_celiaca.py`, y commitear el CSV, el generador y el `.ipynb` juntos. Agregar o sacar un

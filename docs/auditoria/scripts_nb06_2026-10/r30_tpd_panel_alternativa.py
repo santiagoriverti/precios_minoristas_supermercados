@@ -43,6 +43,8 @@ for col in P.columns:
             nuevo = 100 * ((1 + A.loc[prev, col] / 100) * (1 + T.loc[m, col] / 100) / (1 + T.loc[prev, col] / 100) - 1)
             cambios.append((m, col[1], round(P.loc[m, col], 1), round(nuevo, 1)))
             A.loc[m, col] = nuevo
+        else:   # sigue movido con los demás subtipos, pero desde el mes anterior ya corregido (encadenado)
+            A.loc[m, col] = 100 * ((1 + A.loc[prev, col] / 100) * (1 + P.loc[m, col] / 100) / (1 + P.loc[prev, col] / 100) - 1)
 c1, g1 = canasta(A)
 print('\nSubtipo-mes movidos del panel: hoy (con los demás de su tipo) -> con el mismo subtipo en todas las sucursales')
 for x in cambios:

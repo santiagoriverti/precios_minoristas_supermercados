@@ -17,6 +17,14 @@ BANDA_TIER = (0.6, 1 / 0.6)     # lado CON TACC: precio $/100 g relativo a la me
 ESTAB = (0.4, 2.5)              # precio real (contra la evolución de su tipo): últimos 6 meses / primeros 6
 SALTO = 2.5                     # salto propio mes a mes (contra la variación típica de su tipo)
 EMPALME_OK = (0.8, 1.25)        # precio de cada código / mediana de los códigos del producto, en los meses en que conviven
+# Comparador con TACC fijado por tamaño: cuando el de más cobertura es de otra presentación que el sin TACC y el precio
+# por 100 g depende del paquete. En obleas, la Santa María sin TACC es de 90 g y la Opera de más cobertura, de 220 g
+# (decisión del usuario, 2026-10-26: sumar la Opera rellena de 92 g). Con la de 92 g SOLA, en 2023 casi no hay sucursales
+# con los dos lados (0 a 16: la 92 g no estaba en las cadenas de la Santa María) y la serie arrastra +390% durante 17
+# meses. Con las DOS la cobertura es la de antes (626 sucursales) y, donde conviven, el lado con TACC es el promedio de
+# las dos presentaciones (obleas 2024-2026: +132%, +98%, +132% contra +173%, +112%, +137% con la de 220 g sola). Entran
+# todas las listadas aunque el subtipo tenga un solo sin TACC.
+COMPARADOR_FIJO = {('Galletitas dulces', 'Obleas'): ['7790040008175', '77903518']}
 N_MIN_SUC = 30                  # sucursales mínimas para usar el precio nacional de un EAN en un mes
 # Gramos verificados a mano con evidencia fechada (mandan sobre el Maestro y el SEPA). Wakas: la bolsa vieja es de
 # 250 g (Maestro, GS1: un código nuevo por cambio de contenido) y la caja nueva de 300 g (4 cadenas en oct-2026; en
@@ -263,11 +271,13 @@ fin = []
 for (t, st), g in ok.groupby(['tipo', 'subtipo']):
     s_ = g[g['lado'] == 'sin_tacc'].sort_values('suc_mes_mediana', ascending=False)
     c_ = g[g['lado'] == 'tacc'].sort_values('suc_mes_mediana', ascending=False)
+    if (t, st) in COMPARADOR_FIJO:
+        c_ = c_[c_['item'].isin(COMPARADOR_FIJO[(t, st)])]
     if s_.empty or c_.empty:
         print(f'  subtipo sin los dos lados (afuera): {t} / {st} (sin TACC {len(s_)}, con TACC {len(c_)})')
         continue
     fin.append(s_)
-    fin.append(c_.head(len(s_)))
+    fin.append(c_ if (t, st) in COMPARADOR_FIJO else c_.head(len(s_)))
 F = pd.concat(fin, ignore_index=True)
 print('\n=== Canasta final (productos) ===')
 print(F.groupby(['tipo', 'subtipo', 'lado']).size().unstack('lado').to_string())

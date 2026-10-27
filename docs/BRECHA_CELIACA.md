@@ -4,7 +4,7 @@ Documento técnico del **Notebook 06**. Mide la **brecha** de precios entre prod
 equivalentes **sin TACC**, dentro de cada supermercado, y cómo se distribuye **en el tiempo** (mensual desde
 enero de 2022), **geográficamente** (provincia, región, AMBA) y **entre cadenas**.
 
-Última actualización: 2026-10-26 (auditoría de la selección) — **canasta corregida (BUG-49)**: la selección se contrastó con el listado ALG de ANMAT y se corrigieron cuatro errores de las reglas (§14.3, §14.13; `docs/AUDITORIA_SELECCION_2026-10-26_nb06.md`): 66 productos (77 códigos), simulación con los 58 meses releídos y esperados vigentes en `docs/brecha_celiaca/simulacion_2026-10-26b/`; falta la corrida de Colab. Antes, 2026-10-26 (cierre) — **revisión de datos y método frente al objetivo** (`docs/REVISION_METODOLOGICA_2026-10-26_nb06.md`): qué responde bien el nb06 y qué falta para cada pregunta (cuánto más paga un celíaco, evolución, geografía, concentración, cadenas), con recomendaciones priorizadas; la cuarta corrida de Colab (gráficos) dio igual a la simulación. Antes, 2026-10-26 — la **segunda corrida de Colab** (BUG-47 y la serie TPD) dio igual a la simulación
+Última actualización: 2026-10-26 (noche) — después de la corrida de Colab con la canasta corregida, **TPD del panel corregida** (el subtipo sin pares se mueve con el mismo subtipo en todas las sucursales), **Pepitos como comparador de con chips** (empalme de sus tres códigos) y **la Opera de 92 g junto a la de 220 g en obleas** (§14.15): 67 productos (80 códigos), esperados vigentes en `docs/brecha_celiaca/simulacion_2026-10-26c/`; falta la corrida de Colab. Antes, 2026-10-26 (auditoría de la selección) — **canasta corregida (BUG-49)**: la selección se contrastó con el listado ALG de ANMAT y se corrigieron cuatro errores de las reglas (§14.3, §14.13; `docs/AUDITORIA_SELECCION_2026-10-26_nb06.md`): 66 productos (77 códigos), simulación con los 58 meses releídos y esperados vigentes en `docs/brecha_celiaca/simulacion_2026-10-26b/`; falta la corrida de Colab. Antes, 2026-10-26 (cierre) — **revisión de datos y método frente al objetivo** (`docs/REVISION_METODOLOGICA_2026-10-26_nb06.md`): qué responde bien el nb06 y qué falta para cada pregunta (cuánto más paga un celíaco, evolución, geografía, concentración, cadenas), con recomendaciones priorizadas; la cuarta corrida de Colab (gráficos) dio igual a la simulación. Antes, 2026-10-26 — la **segunda corrida de Colab** (BUG-47 y la serie TPD) dio igual a la simulación
 (`docs/AUDITORIA_2026-10-26_nb06.md`) y **BUG-48**: las tiendas online que el maestro carga como Supermercado o
 Autoservicio salen por el nombre (`SUCURSALES_NO_FISICAS`; el panel no cambia); esperados vigentes en
 `docs/brecha_celiaca/simulacion_2026-10-26/`, que la corrida de Colab con BUG-48 reprodujo (AUDITORIA §6); esa noche,
@@ -429,7 +429,7 @@ coroplético; 11 Excel; 12 mapa.
 
 ## 9. Validación
 
-- **Test** `notebooks/test_brecha_celiaca.py` (30 controles): corre las celdas reales sobre un SEPA sintético con cada
+- **Test** `notebooks/test_brecha_celiaca.py` (31 controles desde el 2026-10-26, noche): corre las celdas reales sobre un SEPA sintético con cada
   trampa (archivo parcial duplicado, centavos, fila repetida, código viejo congelado, producto con dos códigos, EAN x10,
   salto x2,5, estación de servicio, sucursal web (por el tipo y, desde BUG-48, una tienda online por el nombre), provincia mal declarada, subtipos con un lado faltante, subtipo-mes
   faltante, caché en dos corridas) y compara cada número con fuerza bruta; desde BUG-47, también grupos, sucursales y
@@ -699,7 +699,10 @@ el cambio de precios de **los mismos productos** y se puede comparar entre lugar
    Matarazzo). El sin TACC no tiene franja: sus diferencias de precio son parte de lo que se mide.
 8. **Composición espejada**: en cada subtipo, tantos productos con TACC como sin TACC (los de más cobertura); si el
    lado con TACC tiene menos candidatos que el sin TACC, entran todos los de los dos lados (tirabuzón y crackers). Con
-   un solo sin TACC entra un solo con TACC, el de más cobertura (spaghetti, penne, con chips, obleas y pepas). El subtipo que no tiene los dos lados queda afuera (fideos cortos y tallarín, bizcochos y pan rallado
+   un solo sin TACC entra un solo con TACC, el de más cobertura (spaghetti, penne, con chips, obleas y pepas), salvo
+   cuando el precio por 100 g depende del paquete: en obleas entran la Opera de 220 g y la de 92 g, del tamaño de la
+   Santa María sin TACC (90 g). Con la de 92 g sola, en 2023 casi no había sucursales con los dos lados (desde el
+   2026-10-26, noche). El subtipo que no tiene los dos lados queda afuera (fideos cortos y tallarín, bizcochos y pan rallado
    solo tenían con TACC).
 
 La prima sin TACC / con TACC de cada producto se calcula y se informa, pero **no** es una regla: la condición de sin
@@ -733,6 +736,11 @@ TACC la dan la etiqueta y la marca, y sacar los sin TACC baratos sesgaría la br
   ~100 sucursales: con solo los precios de 2024-2026 parecían fideos comunes (y el filtro de plausibilidad de agosto de
   2026 los sacó). Se empalman como los demás de Molinos. El tirabuzón entra desde el 2026-10-26 (regla 3: su código
   nuevo aparece en dic-2023 y oct-nov 2023 quedan sin precio).
+- **Pepitos 119 g (Mondelez), 2022-2023: tres códigos** (empalmado el 2026-10-26, noche, §14.15). `7622201808662`
+  (principal hasta mar-2022), `7622201503260` (abr-2022 a feb-2023; los dos conviven en 2022 en cadenas distintas)
+  y `7622201735906` (desde feb-2023). En las mismas sucursales los dos viejos cuestan lo mismo (0,78 a 1,02) y el
+  segundo igual que el nuevo en el cambio (1,00). Después, el segundo sigue en ~90 sucursales con el precio
+  congelado (0,53 a 0,63 veces el nuevo desde 2025): vigencias ≤ 2023-01, ≤ 2023-02 y ≥ 2023-02.
 - **El Maestro interno puede estar desactualizado**: `7790070336002` es el Spaghetti sin TACC Matarazzo 500 g en todas
   las cadenas (SEPA diario) y el Maestro dice "Fideos Mostachol 5 Cereales"; los Crisppino de 100 g `7798199770134` y
   `7798199770141` tienen los sabores cruzados (Carrefour y Cencosud: el primero es jamón y el segundo queso). Las
@@ -743,18 +751,18 @@ En el nb06 la vigencia se aplica en la CELDA 7, después de leer: cambiarla no r
 
 ### 14.5 La canasta
 
-**66 productos (77 códigos)**: 30 con TACC y 36 sin TACC en 12 subtipos de 5 tipos (corregida el 2026-10-26, §14.13). *Suc./día 2022-26* = mediana mensual de las sucursales con precio por día (nb09; en los empalmes, la suma de sus códigos vigentes); *Prov.*, *Com.* (comercios súper) y *Cad. grandes* en todo el período; *$/100 g oct-26* = mediana nacional (SEPA diario al 22/10); *Relativo* = $/100 g sobre la mediana con TACC de su subtipo (mediana 2022-2026): en el lado con TACC, su posición en la franja de primera línea; en el sin TACC, su prima. Vigencia: ≤ último mes del código viejo, ≥ primer mes del nuevo.
+**67 productos (80 códigos)**: 31 con TACC y 36 sin TACC en 12 subtipos de 5 tipos (corregida el 2026-10-26, §14.13 y §14.15). *Suc./día 2022-26* = mediana mensual de las sucursales con precio por día (nb09; en los empalmes, la suma de sus códigos vigentes); *Prov.*, *Com.* (comercios súper) y *Cad. grandes* en todo el período; *$/100 g oct-26* = mediana nacional (SEPA diario al 22/10); *Relativo* = $/100 g sobre la mediana con TACC de su subtipo (mediana 2022-2026): en el lado con TACC, su posición en la franja de primera línea; en el sin TACC, su prima. Vigencia: ≤ último mes del código viejo, ≥ primer mes del nuevo.
 
-Quedaron afuera en la verificación con precios: Porteñitas y Maná rellenas 165 g (los gramos del Maestro no coinciden con los de las cadenas y no se sabe desde cuándo), Scons 9 de Oro (dos cambios de nivel persistentes de ×4 frente a sus pares, may-2023 y dic-2023). Fideos cortos y tallarín, bizcochos y pan rallado no tienen sin TACC continuo. **Corrección del 2026-10-26 (§14.13)**: entran el tirabuzón sin TACC Matarazzo, Maná Limón 152 g y dos sabores más de Lasfor; salen los tres fideos Blue Patna (al huevo) y, por la composición espejada (regla 8), el Spaghetti Lucchetti, el Penne rigate Matarazzo y Maná Chocolate.
+Quedaron afuera en la verificación con precios: Porteñitas y Maná rellenas 165 g (los gramos del Maestro no coinciden con los de las cadenas y no se sabe desde cuándo), Scons 9 de Oro (dos cambios de nivel persistentes de ×4 frente a sus pares, may-2023 y dic-2023). Fideos cortos y tallarín, bizcochos y pan rallado no tienen sin TACC continuo. **Corrección del 2026-10-26 (§14.13)**: entran el tirabuzón sin TACC Matarazzo, Maná Limón 152 g y dos sabores más de Lasfor; salen los tres fideos Blue Patna (al huevo) y, por la composición espejada (regla 8), el Spaghetti Lucchetti, el Penne rigate Matarazzo y Maná Chocolate. Esa noche (§14.15), Pepitos 119 g (empalme de sus tres códigos) reemplaza a Par Nor en con chips y la Opera rellena de 92 g se suma a la de 220 g en obleas.
 
 | Tipo | Productos con TACC | Productos sin TACC | Códigos (EAN) | Subtipos |
 |---|---|---|---|---|
 | Fideos secos | 4 | 7 | 22 | Mostachol / penne, Spaghetti, Tirabuzón / fusilli |
-| Galletitas dulces | 10 | 10 | 20 | Con chips, Obleas, Pepas, Rellenas, Secas (vainilla, limón, chocolate) |
+| Galletitas dulces | 11 | 10 | 23 | Con chips, Obleas, Pepas, Rellenas, Secas (vainilla, limón, chocolate) |
 | Galletitas saladas y crackers | 10 | 13 | 23 | Crackers y galletas de arroz, Saborizadas / snack |
 | Pan rallado y rebozador | 2 | 2 | 4 | Rebozador |
 | Cereales rellenos (almohaditas) | 4 | 4 | 8 | Almohaditas rellenas |
-| **Total** | 30 | 36 | 77 | |
+| **Total** | 31 | 36 | 80 | |
 
 **Fideos secos**
 
@@ -776,10 +784,11 @@ Quedaron afuera en la verificación con precios: Porteñitas y Maná rellenas 16
 
 | Subtipo | Lado | Producto | EAN (vigencia) | g | Suc./día 2022-26 | Prov. | Com. | Cad. grandes | $/100 g oct-26 | Relativo |
 |---|---|---|---|---|---|---|---|---|---|---|
-| Con chips | sin TACC | Galletitas Con Chips de Chocolate Smams 150 Gr | `7798181511004` | 150 | 511 | 24 | 13 | 5 | 2.527 | 1,96 |
-| Con chips | con TACC | Galletitas con Chips Suavecitas Par Nor 140 Gr | `7791324156926` | 140 | 333 | 24 | 11 | 5 | 1.214 | 1,00 |
+| Con chips | sin TACC | Galletitas Con Chips de Chocolate Smams 150 Gr | `7798181511004` | 150 | 511 | 24 | 13 | 5 | 2.527 | 1,56 |
+| Con chips | con TACC | Pepitos 119 g | `7622201808662` (≤2023-01)<br>`7622201503260` (≤2023-02)<br>`7622201735906` (≥2023-02) | 119 | 2.164 | 24 | 19 | 8 | 2.084 | 1,20 |
 | Obleas | sin TACC | Obleas Limón Santa María 90 Gr | `7798079230833` | 90 | 108 | 24 | 5 | 4 | 3.222 | 2,60 |
 | Obleas | con TACC | Galletitas Obleas Clásicas Opera 220 Gr | `7790040008175` | 220 | 1.760 | 24 | 24 | 8 | 1.349 | 0,86 |
+| Obleas | con TACC | Galletitas Obleas Rellena Opera 92 Gr | `77903518` | 92 | 1.358 | 24 | 22 | 8 | 1.542 | 0,94 |
 | Pepas | sin TACC | Pepas de Membrillo sin TACC Smams 150 Gr | `7798181510786` | 150 | 997 | 24 | 14 | 7 | 2.093 | 2,28 |
 | Pepas | con TACC | Galletitas Dulces Pepas Trío 320 Gr | `7791787100924` | 320 | 359 | 24 | 11 | 5 | 716 | 0,97 |
 | Rellenas | sin TACC | Galletitas Sabor Chocolate con Relleno de Vainilla Smams 105 Gr | `7798181510014` | 105 | 1.005 | 24 | 15 | 7 | 2.467 | 1,94 |
@@ -952,13 +961,14 @@ La simulación de 14.10 corrió las celdas reales con **los mismos zips del Driv
 los mismos números (salvo el último mes si el `2026B.zip` del Drive cambió). **La primera corrida (2026-10-23) dio 29
 hojas iguales a `simulacion_2026-10-23/` y la segunda (2026-10-26, con BUG-47 y la TPD), 35 iguales a
 `simulacion_2026-10-23b/`.** Con BUG-48 la referencia fue `simulacion_2026-10-26/` (las corridas de Colab de esa tarde
-y esa noche dieron igual); con la canasta corregida (BUG-49, §14.13) es `simulacion_2026-10-26b/` (35 hojas). **La
-corrida de Colab con la canasta corregida (2026-10-26, noche) dio 35 hojas iguales** (y el Excel, el mapa, el caché y
-la salida impresa iguales a la simulación; AUDITORIA_2026-10-26 §8).
+y esa noche dieron igual); con la canasta corregida (BUG-49, §14.13) fue `simulacion_2026-10-26b/` (35 hojas; **la
+corrida de Colab de esa noche dio 35 hojas iguales**, y el Excel, el mapa, el caché y la salida impresa iguales a la
+simulación; AUDITORIA_2026-10-26 §8). Con la TPD del panel corregida, Pepitos y las dos Operas (§14.15) es
+`simulacion_2026-10-26c/` (35 hojas).
 Comparación automática, hoja por hoja:
 
 ```bash
-python -I -X utf8 docs/auditoria/scripts_nb06_2026-10/s16_comparar_colab.py <brecha_celiaca_2026-10.xlsx de Colab> docs/brecha_celiaca/simulacion_2026-10-26b
+python -I -X utf8 docs/auditoria/scripts_nb06_2026-10/s16_comparar_colab.py <brecha_celiaca_2026-10.xlsx de Colab> docs/brecha_celiaca/simulacion_2026-10-26c
 ```
 
 (esperado: 35 hojas iguales; para revisar también las hojas grandes, el mapa y el caché, `r13`-`r15`). Después, la lectura de cada punto:
@@ -966,7 +976,8 @@ python -I -X utf8 docs/auditoria/scripts_nb06_2026-10/s16_comparar_colab.py <bre
 1. **Lectura**: 58 meses (ene-2022 → oct-2026), el AVISO de ago-2024 parte 1 (se usa `COMPLETOb`), "meses en
    centavos: ninguno", los EANs sin ningún precio (esperado: ninguno).
 2. **Vigencia**: cuántas observaciones quedan fuera de la ventana de su código (los códigos viejos de Molinos desde
-   oct-2023 y la bolsa Wakas desde ago-2024; con la canasta corregida, 53.278 observaciones de 14 códigos).
+   oct-2023, la bolsa Wakas desde ago-2024 y los códigos viejos de Pepitos desde feb-2023; con la canasta vigente,
+   56.427 observaciones de 16 códigos).
 3. **Plausibilidad** (esperado: ninguno) y **Control_EAN** (revisar cada marcado: los saltos de oct-2023 y ene-2024
    son la salida de los precios controlados, 14.8).
 4. **Cobertura_mensual**: sucursales con los dos lados por tipo y mes; el hueco de dic-2023 → mar-2024 en fideos.
@@ -978,13 +989,15 @@ python -I -X utf8 docs/auditoria/scripts_nb06_2026-10/s16_comparar_colab.py <bre
 9. **Concentración** (desde BUG-47): "Departamento (Georef): N de M sucursales" en la CELDA 7 (con la caché del nb09,
    todas) y el Spearman de la CELDA 8.
 10. **Serie TPD** (desde el 2026-10-23, noche; §14.12): en la CELDA 8b, `rango_completo` True en los 11 subtipos del
-    panel y los 12 de todas; subtipo-mes movidos: panel con chips 14, mostachol 6, rebozador 6, spaghetti 1; todas con
-    chips 4, obleas 8; último mes (panel) TPD +115,3% (IC 95% +114,7% a +115,9%) contra +116,3% (con la canasta
-    corregida; antes, +119,0% contra +123,6%).
+    panel y los 12 de todas. Subtipo-mes movidos: en el panel, mostachol 6, rebozador 6 y spaghetti 1, todos con el
+    mismo subtipo en todas las sucursales ("6t", "1t"); en todas, obleas 8, con los demás subtipos ("8d"). Último
+    mes (panel): TPD +107,2% (IC 95% +106,6% a +107,8%) contra +108,1% de la descriptiva (con la canasta vigente;
+    con la del 2026-10-26b, +115,3% contra +116,3%).
 11. **Sucursales que no son locales** (desde BUG-48): la CELDA 7 dice "afuera: 9 de tipo web o virtual y 6 por el
     nombre" (DIA "eCommerce", la "Dark Store Mendoza" de Libertad y cuatro sin precios de la canasta).
-12. **Canasta corregida** (desde el 2026-10-26, §14.13): "EANs con datos: 77/77" en la CELDA 5. La primera corrida
-    relee los 58 meses (clave del caché `brecha_v3_492a002c`); el caché viejo (`brecha_v3_38349f0a`) se puede borrar.
+12. **Canasta vigente** (2026-10-26, noche, §14.15): "EANs con datos: 80/80" en la CELDA 5. La primera corrida
+    relee los 58 meses (clave del caché `brecha_v3_840d22c6`); los cachés viejos (`brecha_v3_38349f0a`,
+    `brecha_v3_492a002c`) se pueden borrar.
 
 ### 14.10 Simulación con los zips del Drive (ene-2022 → oct-2026)
 
@@ -1123,7 +1136,11 @@ ln p(i,s,t) = α(s,t) + γ(i) + β(t)·SINTACC(i) + ε
   Σ w (1 + brecha del tipo) − 1 con los pesos ENGHo, como en la descriptiva.
 - **Subtipo-mes sin dato propio**: con menos de `MIN_SUC_SUBTIPO` (10) sucursales con los dos lados, el subtipo se mueve
   con el promedio de los demás subtipos de su tipo que tienen dato propio en los dos meses (hacia adelante y después
-  hacia atrás); el rebozador, único subtipo de su tipo, queda con el valor del mes vecino. Con tan pocas sucursales el
+  hacia atrás); el rebozador, único subtipo de su tipo, queda con el valor del mes vecino. **Desde el 2026-10-26
+  (noche), en el panel se mueve primero con la variación del MISMO subtipo en todas las sucursales**, si ahí tiene dato
+  propio en los dos meses (mismos productos, más sucursales); los demás subtipos quedan para cuando tampoco hay ahí
+  (columna `movido_con` de `TPD_subtipos`; §14.15). Moverlo con los demás subtipos fallaba en un quiebre que afecta a
+  unos y no a otros: en oct-2023 el spaghetti del panel, sin pares, daba −38%. Con tan pocas sucursales el
   error agrupado no mide la incertidumbre: con una sola, `β(t)` absorbe esa celda y el error sale ~0. Son 25 subtipo-mes
   en el panel (con chips 14, rebozador 6, tirabuzón 3, spaghetti 1, mostachol 1) y 12 en todas las sucursales (obleas
   8, con chips 4), contra 57 y 70 que arrastra la descriptiva. `peso_movido_pct` es la parte del peso de la canasta
@@ -1148,7 +1165,7 @@ ln p(i,s,t) = α(s,t) + γ(i) + β(t)·SINTACC(i) + ε
 - **Sin mínimo de sucursales** (todo subtipo-mes con al menos una sucursal con los dos lados): 30 subtipo-mes salían de
   1 a 9 sucursales (el spaghetti del panel en oct-2023, de una sola) con un IC que no medía nada.
 
-**Validación**: test con 30 controles, 4 de la TPD. La TPD recupera exacto la prima sin ruido aunque falten productos y
+**Validación**: test con 30 controles, 4 de la TPD (31 y 5 desde el 2026-10-26, noche: el panel movido con el mismo subtipo de todas las sucursales, §14.15). La TPD recupera exacto la prima sin ruido aunque falten productos y
 subtipo-mes (también con un mínimo de sucursales, moviendo el subtipo), coincide con mínimos cuadrados densos con todas
 las indicadoras y la covarianza agrupada escrita a mano (brecha por tipo, error estándar, canasta e IC) y no inventa el
 nivel de productos que nunca conviven. Con los datos reales, otro algoritmo (`r10_tpd_independiente.py`: LSQR sobre el
@@ -1328,3 +1345,67 @@ Recomendaciones, por prioridad:
 4. Decidir las galletas de arroz.
 5. Hedónica por cadena y HHI.
 6. Leer promedios anuales o trimestrales, y 2023 con la TPD de todas las sucursales.
+
+**Esa noche se aplicaron las tres primeras** (decisión del usuario; en obleas, la Opera de 92 g junto a la de 220 g):
+§14.15.
+
+### 14.15 TPD del panel corregida, Pepitos y las dos Operas (2026-10-26, noche)
+
+A pedido del usuario, las tres primeras recomendaciones de §14.14. Las dos de productos van con una sola relectura:
+123 códigos, la canasta y Pepitos, Toddy y las vainillas, que quedan leídos para evaluarlos después.
+
+1. **TPD del panel** (CELDA 8b). El subtipo-mes sin pares (menos de 10 sucursales con los dos lados) se mueve con la
+   variación del mismo subtipo en todas las sucursales, si ahí tiene dato propio en los dos meses. Si no, se mueve con
+   los demás subtipos de su tipo, como antes.
+   - En oct-2023 el spaghetti del panel pasa de −38% a +93% y la canasta del panel de +114% a +122%.
+   - Columna nueva `movido_con` en `TPD_subtipos`.
+   - Control nuevo en el test, que da 31 en OK: con primas distintas por subtipo, el panel recupera exacto la prima
+     moviéndose con todas las sucursales; con los demás subtipos no.
+   - Con la canasta del 2026-10-26b, el nb06 da lo mismo que el cálculo independiente (`r30`, 8,5e-14 pp) y solo
+     cambia la TPD del panel en 2024-2026, menos de 1 pp.
+2. **Pepitos 119 g** como comparador de con chips, en lugar de Par Nor.
+   - Empalme de sus tres códigos en s9, con vigencias (§14.4).
+   - Precios de los dos viejos tomados del caché de la relectura (`r32`).
+   - s10 lo verifica: cada código cuesta 0,98 a 1,00 veces la mediana del producto en los meses en que conviven; no hay
+     salto en el corte; está en la franja de primera línea (1,20).
+   - Las sucursales con los dos lados pasan de 204-567 a 627-1.736 por año.
+3. **Obleas**: la Opera rellena de 92 g, del tamaño de la Santa María sin TACC (90 g), **junto a** la de 220 g
+   (`COMPARADOR_FIJO` en s10).
+   - Con la de 92 g sola, en 2023 casi no había sucursales con los dos lados (0 a 16: no estaba en las cadenas de la
+     Santa María) y la serie arrastraba +390% durante 17 meses. Con las dos, la cobertura es la de antes (626
+     sucursales).
+   - Donde conviven, el lado con TACC es el promedio de las dos presentaciones. Obleas 2024-2026: +132%, +98% y +132%,
+     contra +173%, +112% y +137% con la de 220 g sola.
+
+**Canasta**: 67 productos (80 códigos). Simulación con los 58 meses (`sim_v7`); `s12` igual en precios, días y brechas.
+Esperados en `simulacion_2026-10-26c/` (cambian 33 de 35 hojas).
+
+| | Canasta del 2026-10-26b | Vigente |
+|---|---|---|
+| Con chips, 2022-2026 | +110,8% (Par Nor) | +29,4% (Pepitos) |
+| Obleas, 2022-2026 | +146,7% | +135,4% |
+| Galletitas dulces, 2022-2026 | +107,9% | +86,8% |
+| Canasta por año, todas las sucursales (2022 a 2026) | 118,9 / 114,3 / 115,7 / 99,7 / 120,1 | 114,2 / 111,1 / 106,7 / 91,3 / 113,0 |
+| Canasta por año, panel balanceado | 111,0 / 106,2 / 105,4 / 96,8 / 113,7 | 101,9 / 97,7 / 94,1 / 87,5 / 106,1 |
+| Últimos 12 meses, nacional con la misma canasta | +118,0% | +111,0% |
+| TPD oct-2026, panel / todas | +115,3% / +116,4% | +107,2% / +108,2% |
+| Regiones confiables | Patagonia +104,2% a AMBA +121,1% | Patagonia +99,4% a AMBA +114,1% |
+| Empresas confiables | Cencosud +116,2%, Carrefour +121,0% | Cencosud +109,3%, Carrefour +113,8% |
+| Concentración: Spearman por sucursal | +0,12 | +0,14 |
+| Imputaciones de la descriptiva (rachas; de más de 3 meses) | 29; 17 | 25; 14 |
+| Meses del panel con algún subtipo sin dato propio: TPD / descriptiva | 19 / 29 | 10 / 20 |
+
+Lectura:
+
+1. **Las con chips medían el comparador.** Contra Par Nor, una marca regional barata ($1.214/100 g en oct-2026), daban
+   +111%. Contra Pepitos, el líder ($2.084/100 g, donde están las chips Smams), dan +25% a +57% según el año. Las
+   galletitas dulces bajan 21 pp y la canasta 3 a 9 pp según el año. Es el cambio más grande; los demás subtipos no cambian.
+2. **Cuánto más paga un celíaco** por estos envasados de primera marca, en los últimos 12 meses: ~+111% (TPD de
+   oct-2026: +107% a +108%). Por tipo: fideos +161%, galletitas dulces +87%, saladas +84%, rebozador +84% y almohaditas
+   +26%.
+3. **El panel tiene menos ruido.** Con Pepitos, las con chips tienen pares todos los meses. Los meses del panel con algo
+   movido en la TPD bajan de 19 a 10 y el desvío de la variación mensual de la TPD del panel, de 8,6 a 8,1 pp.
+4. **Grupos.** Las diferencias se mantienen: AMBA arriba (+114%), Patagonia abajo (+99%), Carrefour 4,5 pp sobre
+   Cencosud. La concentración sigue sin relación clara (terciles de HHI +112%, +116%, +115%).
+5. **Lo que queda**: las galletas de arroz dentro de crackers y las vainillas (decisión del usuario; Toddy y las
+   vainillas ya están leídos en el superconjunto `sim_super_v10`), y la hedónica por cadena y HHI (§14.14).

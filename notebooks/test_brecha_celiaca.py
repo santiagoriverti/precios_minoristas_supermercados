@@ -400,6 +400,42 @@ def _ok_tpd_exacto(_min_suc, _movidos):
 chk('TPD: recupera exacto la prima de cada mes aunque falten productos y el subtipo B no tenga pares en 2 meses '
     '(con mínimo de 2 sucursales, tampoco en los 2 de una sola)', _ok_tpd_exacto(1, (3, 4)) and _ok_tpd_exacto(2, (2, 3, 4, 5)))
 
+# (a2) el panel mueve el subtipo-mes sin pares con el MISMO subtipo de todas las sucursales (si ahí tiene dato propio),
+#      no con los demás subtipos: con primas distintas por subtipo, moverlo con los demás erraría y con el mismo es
+#      exacto. En el "panel" (sucursales 0-14) B no tiene sin TACC en los meses 3 y 4; en todas (0-29) sí.
+rng2 = np.random.default_rng(11)
+BETA2 = {'A': [0, .05, .12, .2, .15, .3, .35, .25, .4, .5], 'B': [0, .3, -.1, .5, .6, .2, .1, .4, .0, .2]}
+TR2 = {'A': (['a1', 'a2'], ['a3', 'a4']), 'B': (['b1', 'b2'], ['b3', 'b4'])}
+_rows2 = []
+for s in range(30):
+    for t, mes in enumerate(MS):
+        alfa = rng2.normal(0, .2)
+        for sub, (con, sin) in TR2.items():
+            alfa_sub = alfa + rng2.normal(0, .1)
+            for p in con + sin:
+                if sub == 'B' and p in sin and s < 15 and t in (3, 4):
+                    continue
+                if rng2.random() > 0.7 and not (s in (0, 15) and p in sin):
+                    continue
+                _rows2.append({'suc_key': f's{s}', 'mes': mes, 'tipo': 'T1', 'subtipo': sub,
+                               'rol': 'sin' if p in sin else 'tacc', 'producto': p,
+                               'precio_100': float(np.exp(alfa_sub + GAM[p] + BETA2[sub][t] * (p in sin)))})
+_df2 = pd.DataFrame(_rows2)
+_r_todas = g['_tpd_serie'](_df2, ['T1'], {'T1': 1.0}, 1)
+_pan = _df2[_df2['suc_key'].str.slice(1).astype(int) < 15]
+_r_pan = g['_tpd_serie'](_pan, ['T1'], {'T1': 1.0}, 1, _r_todas['niveles'])
+_r_pan0 = g['_tpd_serie'](_pan, ['T1'], {'T1': 1.0}, 1)               # sin referencia: con los demás subtipos
+def _serie_b(_r):
+    return np.log1p(_r['subtipos'].set_index(['subtipo', 'mes']).loc['B', 'brecha_tpd'].to_numpy() / 100)
+_lb, _lb0 = _serie_b(_r_pan), _serie_b(_r_pan0)
+_esp = _lb[0] + np.array(BETA2['B']) - BETA2['B'][0]                 # nivel propio del panel + prima de cada mes
+_mc = _r_pan['subtipos'].set_index(['subtipo', 'mes'])['movido_con']
+chk('TPD: en el panel, el subtipo-mes sin pares se mueve con el mismo subtipo de todas las sucursales (exacto con primas '
+    'distintas por subtipo; con los demás subtipos no lo sería)',
+    np.allclose(_lb, _esp, atol=1e-9) and not np.allclose(_lb0, _esp, atol=1e-3)
+    and list(_mc.loc['B']) == ['mismo subtipo en todas las sucursales' if t in (3, 4) else '' for t in range(10)]
+    and not _r_todas['subtipos']['movido_con_los_demas'].any())
+
 # (b) sobre el SEPA sintético: la CELDA 8b contra mínimos cuadrados densos con todas las variables indicadoras (efecto
 #     de cada celda sucursal-mes, de cada producto y sin TACC × mes, una regresión por subtipo) y la covarianza agrupada
 #     por sucursal escrita a mano, sumando los puntajes de los subtipos (tipo) y de los tipos (canasta)

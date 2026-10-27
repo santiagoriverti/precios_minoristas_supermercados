@@ -1421,9 +1421,13 @@ cells.append(cell_code(r"""# ===================================================
 # promedio geométrico de sus subtipos y canasta = suma ENGHo, como la descriptiva. NO arrastra: el subtipo-mes con menos
 # de la mitad de sus sucursales, que la descriptiva arrastra (hoja Imputaciones), sale de las sucursales que hay, con su
 # IC; solo con menos de MIN_SUC_SUBTIPO sucursales con los dos lados (con tan pocas, el error agrupado por sucursal
-# subestima la incertidumbre) se mueve con el promedio de los demás subtipos de su tipo (el único subtipo de su tipo,
-# el rebozador, queda con el valor del mes vecino). Dos universos: las celdas del panel balanceado (comparable con la
-# serie clave) y todas las sucursales. Errores estándar agrupados por sucursal (CR1) e IC 95% por el método delta, con
+# subestima la incertidumbre) no tiene dato propio y se mueve: en el panel, con la variación del MISMO subtipo en todas
+# las sucursales si ahí tiene dato en los dos meses (mismos productos, más sucursales); si no (y siempre en todas las
+# sucursales), con el promedio de los demás subtipos de su tipo (el único subtipo de su tipo, el rebozador, queda con el
+# valor del mes vecino). Moverlo con los demás subtipos falla en un quiebre que afecta a unos y no a otros: en oct-2023
+# el spaghetti del panel no tenía pares y, movido con el penne y el tirabuzón (que caían por el salto de precio de los
+# códigos nuevos de Molinos), daba −38%. Dos universos: las celdas del panel balanceado (comparable con la serie clave)
+# y todas las sucursales. Errores estándar agrupados por sucursal (CR1) e IC 95% por el método delta, con
 # la covarianza entre subtipos y tipos. Ajuste exacto (ecuaciones normales con los efectos de celda descontados,
 # matrices dispersas): no itera.
 from scipy import sparse as _sp
@@ -1472,11 +1476,13 @@ def _tpd_comb(*_partes):
             _o[_key] = _o.get(_key, 0) + _cf * _v
     return _o
 
-def _tpd_serie(_pt, _tipos, _w_tipo, _min_suc=1):
+def _tpd_serie(_pt, _tipos, _w_tipo, _min_suc=1, _ref_niv=None):
     # _pt: suc_key, mes, tipo, subtipo, rol ('tacc' / 'sin'), producto, precio_100 (una fila por producto, sucursal y
     # mes). Una regresión por subtipo con efecto de celda (sucursal-mes del subtipo); tipo = promedio de sus subtipos;
-    # canasta con los pesos ENGHo. El subtipo-mes con menos de _min_suc sucursales con los dos lados no tiene dato propio
-    # (se mueve con los demás subtipos del tipo). Devuelve tipos, canasta, subtipos, productos y diagnóstico del ajuste.
+    # canasta con los pesos ENGHo. El subtipo-mes con menos de _min_suc sucursales con los dos lados no tiene dato propio:
+    # se mueve con la variación del mismo subtipo en _ref_niv (los 'niveles' de otro universo, el de todas las sucursales) si
+    # ahí tiene dato propio en los dos meses; si no, con los demás subtipos del tipo. Devuelve tipos, canasta, subtipos,
+    # productos, diagnóstico del ajuste y los niveles de cada subtipo (para usarlos como _ref_niv).
     _pt = _pt[_pt['precio_100'] > 0].copy()
     _pt['w'] = 1.0 / _pt.groupby(['suc_key','mes','tipo','subtipo','rol'])['producto'].transform('size')
     _pt['y'] = np.log(_pt['precio_100'].astype(float))
@@ -1527,7 +1533,7 @@ def _tpd_serie(_pt, _tipos, _w_tipo, _min_suc=1):
             _a = _aL.copy()
             _a[_np + _t] += 1.0
             if _r['proy'] is not None and np.abs(_r['proy'] @ _a[_keep] - _a[_keep]).max() > 1e-7:
-                _no_est += 1                       # nivel no identificado: se mueve con los demás subtipos
+                _no_est += 1                       # nivel no identificado: se mueve como un subtipo-mes sin dato propio
                 continue
             _lv[_t] = float(_a @ np.nan_to_num(_th))
             _grad[(_tp, _sub, _t)] = {_key: _a[_keep]}
@@ -1541,8 +1547,17 @@ def _tpd_serie(_pt, _tipos, _w_tipo, _min_suc=1):
         _diag.append({'tipo': _tp, 'subtipo': _sub, 'obs': len(_d), 'celdas': _r['grupos'], 'productos': _np,
                       'meses_con_pares': int((_pares > 0).sum()), 'meses_con_dato_propio': int((~np.isnan(_lv)).sum()),
                       'meses_no_estimables': _no_est, 'rango_completo': _r['rango_completo']})
-    # subtipo-mes sin dato propio: su valor del mes vecino movido con el promedio de los demás subtipos del tipo que tienen
-    # dato propio en los dos meses (imputación por la variación del resto del agregado; adelante y después hacia atrás)
+    # subtipo-mes sin dato propio: su valor del mes vecino movido con la variación del mismo subtipo en _ref_niv (dato propio
+    # en los dos meses) o, si no, con el promedio de los demás subtipos del tipo que tienen dato propio en los dos meses
+    # (imputación por la variación del resto del agregado); adelante y después hacia atrás. Con _ref_niv, el IC del mes movido
+    # es el del mes de partida (no suma la incertidumbre de la variación de referencia, que sale de más sucursales).
+    _niveles = {_k: (_meses, _lev[_k].copy(), _id[_k].copy()) for _k in _lev}
+    _rf = {}
+    if _ref_niv:
+        for _k, (_mr, _lr, _ir) in _ref_niv.items():
+            _ix_r = {_m: _i for _i, _m in enumerate(_mr)}
+            _rf[_k] = np.array([_lr[_ix_r[_m]] if _m in _ix_r and _ir[_ix_r[_m]] else np.nan for _m in _meses])
+    _con = {_k: [''] * _nt for _k in _lev}
     _filas_s = []
     for _tp in _tipos:
         _subs = [_k for _k in _lev if _k[0] == _tp]
@@ -1553,18 +1568,25 @@ def _tpd_serie(_pt, _tipos, _w_tipo, _min_suc=1):
                 for _k in _subs:
                     if not np.isnan(_lev[_k][_t]) or np.isnan(_lev[_k][_u]):
                         continue
+                    if _k in _rf and not np.isnan(_rf[_k][_t]) and not np.isnan(_rf[_k][_u]):
+                        _lev[_k][_t] = _lev[_k][_u] + _rf[_k][_t] - _rf[_k][_u]
+                        _grad[(_tp, _k[1], _t)] = _grad[(_tp, _k[1], _u)]
+                        _con[_k][_t] = 'mismo subtipo en todas las sucursales'
+                        continue
                     _otros = [_o for _o in _subs if _o != _k and _id[_o][_t] and _id[_o][_u]]
                     _mov = float(np.mean([_lev[_o][_t] - _lev[_o][_u] for _o in _otros])) if _otros else 0.0
                     _lev[_k][_t] = _lev[_k][_u] + _mov
                     _grad[(_tp, _k[1], _t)] = _tpd_comb((1.0, _grad[(_tp, _k[1], _u)]),
                                                         *[(1.0 / len(_otros), _grad[(_tp, _o[1], _t)]) for _o in _otros],
                                                         *[(-1.0 / len(_otros), _grad[(_tp, _o[1], _u)]) for _o in _otros])
+                    _con[_k][_t] = 'demás subtipos del tipo' if _otros else 'mes vecino'
         for _k in _subs:
             for _t in range(_nt):
                 if not np.isnan(_lev[_k][_t]):
                     _filas_s.append({'mes': _meses[_t], 'tipo': _tp, 'subtipo': _k[1],
                                      'brecha_tpd': np.expm1(_lev[_k][_t]) * 100,
-                                     'sucursales_con_pares': int(_npar[_k][_t]), 'movido_con_los_demas': not _id[_k][_t]})
+                                     'sucursales_con_pares': int(_npar[_k][_t]), 'movido_con_los_demas': not _id[_k][_t],
+                                     'movido_con': _con[_k][_t]})
 
     def _se(_gd):
         # error estándar de una combinación lineal de los parámetros de varios subtipos (covarianza agrupada por sucursal)
@@ -1605,7 +1627,7 @@ def _tpd_serie(_pt, _tipos, _w_tipo, _min_suc=1):
                          'peso_movido_pct': 100 * sum(_wk * _fmov[(_tp, _t)] for _tp, _wk in _ws.items()) / _sw,
                          'tipos_tpd': len(_ws)})
     return {'tipos': pd.DataFrame(_filas), 'canasta': pd.DataFrame(_filas_c), 'subtipos': pd.DataFrame(_filas_s),
-            'productos': pd.DataFrame(_prods), 'ajuste': pd.DataFrame(_diag)}
+            'productos': pd.DataFrame(_prods), 'ajuste': pd.DataFrame(_diag), 'niveles': _niveles}
 
 # ── Datos: producto × sucursal × mes, con las sucursales del universo (CELDA 7); dos universos: las celdas del panel
 # balanceado (sucursal × subtipo de la CELDA 8, comparable con la serie clave) y todas las sucursales ──
@@ -1618,7 +1640,10 @@ _UNI_TPD = {'panel balanceado': _pt.merge(bt_bal[['suc_key','tipo','subtipo']].d
             'todas las sucursales': _pt}
 _DESC = {'panel balanceado': (brecha_tipo_mensual_bal, serie_mensual_bal),
          'todas las sucursales': (brecha_tipo_mensual, serie_mensual)}
-_tpd = {_u: _tpd_serie(_d, TIPOS_ORD, W_TIPO, MIN_SUC_SUBTIPO) for _u, _d in _UNI_TPD.items()}
+# primero todas las sucursales: el panel mueve sus subtipo-mes sin pares con el mismo subtipo de todas las sucursales
+_tpd = {'todas las sucursales': _tpd_serie(_UNI_TPD['todas las sucursales'], TIPOS_ORD, W_TIPO, MIN_SUC_SUBTIPO)}
+_tpd = {'panel balanceado': _tpd_serie(_UNI_TPD['panel balanceado'], TIPOS_ORD, W_TIPO, MIN_SUC_SUBTIPO,
+                                       _tpd['todas las sucursales']['niveles']), **_tpd}
 del _pt, _UNI_TPD
 tpd_ajuste = pd.concat([_r['ajuste'].assign(universo=_u) for _u, _r in _tpd.items()], ignore_index=True)
 tpd_subtipos = pd.concat([_r['subtipos'].assign(universo=_u) for _u, _r in _tpd.items()], ignore_index=True)
@@ -1667,10 +1692,13 @@ if len(tpd_ajuste):
                   f'[{_r.universo}] {_r.subtipo} ({_r.meses_no_estimables} meses sin nivel estimable)'
                   for _r in _ri.itertuples(index=False)))
     _mv = tpd_subtipos[tpd_subtipos['movido_con_los_demas']]
+    _ABR_MOV = {'mismo subtipo en todas las sucursales': 't', 'demás subtipos del tipo': 'd', 'mes vecino': 'v'}
     if len(_mv):
-        print(f'  Subtipo-mes con menos de {MIN_SUC_SUBTIPO} sucursales con los dos lados (movidos con los demás subtipos '
-              'del tipo, o con el mes vecino si es el único de su tipo): ' +
-              ', '.join(f'[{_u}] {_s} {len(_g)}' for (_u, _s), _g in _mv.groupby(['universo','subtipo'])))
+        print(f'  Subtipo-mes con menos de {MIN_SUC_SUBTIPO} sucursales con los dos lados (movidos con el mismo subtipo '
+              'en todas las sucursales [t], con los demás subtipos del tipo [d] o con el mes vecino [v]): ' +
+              ', '.join(f'[{_u}] {_s} {len(_g)} (' + ' '.join(
+                  f'{_n}{_ABR_MOV.get(_c, "?")}' for _c, _n in _g['movido_con'].value_counts().sort_index().items()) + ')'
+                  for (_u, _s), _g in _mv.groupby(['universo','subtipo'])))
 if len(serie_tpd) and 'brecha_canasta_tpd_panel' in serie_tpd.columns:
     print('\nCanasta por año (promedio de los meses): TPD y descriptiva, panel balanceado y todas las sucursales')
     print(tpd_anual[['anio'] + [_c for _c in tpd_anual.columns if _c.startswith('brecha_canasta_')]].round(1)
@@ -1683,7 +1711,7 @@ if len(serie_tpd) and 'brecha_canasta_tpd_panel' in serie_tpd.columns:
           f'{serie_tpd["brecha_canasta_tpd_panel"].diff().std():.1f} pp, descriptiva '
           f'{serie_tpd["brecha_canasta_descriptiva_panel"].diff().std():.1f} pp')
     print(f'Meses con algún subtipo sin dato propio (panel): TPD {int((serie_tpd["peso_movido_pct_panel"] > 0).sum())} '
-          f'(movido con los demás), descriptiva {int(_imp.sum())} (arrastrado)')
+          f'(movido), descriptiva {int(_imp.sum())} (arrastrado)')
     _ult = serie_tpd.dropna(subset=['brecha_canasta_tpd_panel']).iloc[-1]
     print(f'Último mes ({_ult["mes"]}), panel: TPD {_ult["brecha_canasta_tpd_panel"]:+.1f}% (IC 95% '
           f'{_ult["brecha_canasta_tpd_ic95_inf_panel"]:+.1f}% a {_ult["brecha_canasta_tpd_ic95_sup_panel"]:+.1f}%) · '
@@ -1842,7 +1870,7 @@ if len(serie_tpd) and 'brecha_canasta_tpd_panel' in serie_tpd.columns:
         _mv = _st[f'peso_movido_pct_{_suf}'] > 0
         _ax.plot(_st.loc[_mv, 'f'], _st.loc[_mv, f'brecha_canasta_tpd_{_suf}'], ls='none', marker='o', ms=6,
                  mfc='white', mec=_C_TPD, color=_C_TPD,
-                 label=f'TPD: mes con algún subtipo movido con los demás (< {MIN_SUC_SUBTIPO} sucursales)')
+                 label=f'TPD: mes con algún subtipo sin dato propio (< {MIN_SUC_SUBTIPO} sucursales; movido)')
         _ax.plot(_st['f'], _st[f'brecha_canasta_descriptiva_{_suf}'], color=_col, lw=1.6, marker='D', ms=3,
                  label='Descriptiva')
         _im = _st[f'peso_imputado_pct_{_suf}'] > 0
@@ -2082,13 +2110,15 @@ leeme = pd.DataFrame({'hoja_o_columna': [
     'TACC - promedio de los con TACC (cada producto pesado por su disponibilidad en todo el período); tipo = promedio '
     'geométrico de sus subtipos; canasta con los pesos ENGHo. Canasta fija de productos; usa los subtipo-mes que la '
     'descriptiva imputa (menos de la mitad de sus sucursales) y solo con menos de '
-    f'{MIN_SUC_SUBTIPO} sucursales con los dos lados mueve el subtipo con los demás de su tipo (subtipos_movidos; el '
-    'único subtipo de su tipo queda con el mes vecino; peso_movido_pct = parte del peso de la canasta en subtipos '
-    'movidos, como peso_imputado_pct en la descriptiva). Dos universos: las celdas del panel balanceado y todas las '
+    f'{MIN_SUC_SUBTIPO} sucursales con los dos lados mueve el subtipo (subtipos_movidos): en el panel, con la variación '
+    'del mismo subtipo en todas las sucursales si ahí tiene dato; si no, con los demás subtipos de su tipo (el único '
+    'subtipo de su tipo queda con el mes vecino); peso_movido_pct = parte del peso de la canasta en subtipos movidos, '
+    'como peso_imputado_pct en la descriptiva. Dos universos: las celdas del panel balanceado y todas las '
     'sucursales, cada uno al lado de su descriptiva (y de cuánto se imputó en ella). IC 95% con errores agrupados por '
     'sucursal y la covarianza entre subtipos y tipos (en un mes movido, sin la incertidumbre de la imputación).',
-    'Brecha TPD de cada subtipo por mes y universo, sucursales con los dos lados y si se movió con los demás subtipos '
-    f'(menos de {MIN_SUC_SUBTIPO} sucursales).',
+    'Brecha TPD de cada subtipo por mes y universo, sucursales con los dos lados, si se movió (menos de '
+    f'{MIN_SUC_SUBTIPO} sucursales) y con qué (movido_con: el mismo subtipo en todas las sucursales, los demás subtipos '
+    'del tipo o el mes vecino).',
     'Promedio de los meses de cada año de la serie TPD y de la descriptiva: canasta (los dos universos) y tipos (panel).',
     'Por universo y subtipo: efecto estimado de cada producto (gamma, log), su peso en el nivel (disponibilidad) y su nivel '
     'contra el promedio ponderado de los con TACC del subtipo; en los sin TACC es la prima del producto en el mes base. '

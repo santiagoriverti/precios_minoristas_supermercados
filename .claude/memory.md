@@ -11,7 +11,7 @@ Autor: Santiago Riverti — investigador independiente
 - **Repo**: `main` = `origin/main` al cierre (ver `git log`). Commits del 2026-10-23: `678e9b9` (nb06: canasta fija
   2022-2026 + estimador por subtipo + BUG-46), `b02871c` (documentación para retomar) y el de la tarde (revisión de la
   primera corrida de Colab del nb06 + BUG-47) y el de la noche (`46e426b`, serie TPD del nb06); el 2026-10-26, la
-  revisión de la segunda corrida de Colab. **15 tests en OK** (el del nb06 tiene 30 controles). En una PC nueva:
+  revisión de la segunda corrida de Colab. **15 tests en OK** (el del nb06 tiene 31 controles desde el 2026-10-26, noche). En una PC nueva:
   `git clone`, `pip install -r requirements.txt` y los tests de `CLAUDE.md`.
 - **Datos en la PC del INECO** (el usuario bajó el 23/10 todo el Drive; **desde la tarde del 23/10 están en
   `C:\Users\sriverti\Downloads\carga\`**): `2022A.zip` … `2026B.zip` (idénticos a `MyDrive/carga/`; el `2026B` trae
@@ -46,11 +46,20 @@ Autor: Santiago Riverti — investigador independiente
      - Con chips frágil (Pepitos sí está donde están las chips Smams).
      - Saladas: TPD 4 a 24 pp debajo de la descriptiva (galletas de arroz mezcladas con crackers).
      - Solo dos empresas confiables: hace falta la hedónica por cadena y HHI.
-   - **Siguiente**: el usuario decide.
-     - Corrección de la TPD del panel (no relee; cambia la CELDA 8b).
-     - Pepitos, para lo que hay que extraer sus códigos viejos y releer.
-     - Obleas 92 g, galletas de arroz y vainillas.
-     - La hedónica por cadena y HHI.
+   - **Cierre de la noche** (BRECHA_CELIACA §14.15):
+     - TPD del panel: el subtipo sin pares se mueve con el mismo subtipo en todas las sucursales (`movido_con`;
+       test con 31 controles).
+     - Pepitos 119 g (empalme de 3 códigos, vigencias ≤2023-01, ≤2023-02, ≥2023-02; precios de los viejos desde el
+       caché con `r32`) en con chips.
+     - Obleas: Opera 92 g JUNTO a la de 220 g (`COMPARADOR_FIJO` en s10); la de 92 g sola dejaba 2023 sin pares.
+     - Canasta de 67 productos (80 códigos), esperados VIGENTES `simulacion_2026-10-26c/` (sim_v7 = Excel;
+       caché `brecha_v3_840d22c6`).
+     - Resultados: con chips +29% (antes +111% contra Par Nor); canasta de los últimos 12 meses +111%.
+   - **Siguiente**:
+     - (a) Corrida de Colab (relee los 58 meses) → `s16` contra `simulacion_2026-10-26c`.
+     - (b) El usuario decide las galletas de arroz y las vainillas. Toddy y las vainillas ya están leídos en
+       `sim_super_v10`.
+     - (c) La hedónica por cadena y HHI.
 
    Antes (2026-10-26): la **segunda corrida de Colab** (notebook `46e426b`: canasta
    fija, BUG-47 y serie TPD) es **idéntica a la simulación** en todo: 35 hojas contra los esperados (`s16`), las 38 hojas

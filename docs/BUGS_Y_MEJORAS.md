@@ -1,6 +1,6 @@
 # Bugs Pendientes y Mejoras
 
-Última actualización: 2026-10-26 (noche) — **nb06**: **la corrida de Colab con la canasta corregida dio igual a la simulación** (BUG-49 verificado). En la revisión de sus resultados (`docs/AUDITORIA_SELECCION_2026-10-26_nb06.md` §7) apareció un artefacto de la TPD del panel en oct-2023 (entrada abierta abajo) y más evidencia para las propuestas de productos. Antes, 2026-10-26 (auditoría de la selección) — **nb06**: **BUG-49** resuelto. Se corrigieron cuatro errores de las reglas de la selección de productos (entrada 🔴 abajo; `docs/AUDITORIA_SELECCION_2026-10-26_nb06.md`). La canasta queda en 66 productos (77 códigos). Esperados nuevos en `docs/brecha_celiaca/simulacion_2026-10-26b/`. Falta la corrida de Colab (relee los 58 meses). Hay cuatro propuestas de diseño abiertas. Antes, 2026-10-26 (cierre) — **nb06**: la corrida de Colab con los arreglos de los gráficos dio igual a la simulación; **revisión metodológica** frente al objetivo (`docs/REVISION_METODOLOGICA_2026-10-26_nb06.md`), con recomendaciones abiertas (abajo, "Defectos abiertos"). Antes, 2026-10-26 (noche) — **nb06**: corregidos los tres detalles de presentación de los gráficos de la CELDA 9 (entrada 🟣 abajo); el Excel y los esperados no cambian; falta re-correr en Colab para tener los PNG nuevos. Antes, 2026-10-26 (tarde) — **nb06**: **BUG-48** resuelto (las tiendas online que el maestro carga como Supermercado o Autoservicio salen por el nombre; formato de las diferencias de la TPD; entrada 🔴 abajo); esperados nuevos en `docs/brecha_celiaca/simulacion_2026-10-26/`; **la corrida de Colab con BUG-48 dio igual a la simulación** (Excel, mapa, salida impresa y caché; `docs/AUDITORIA_2026-10-26_nb06.md` §6). Quedaban tres detalles de presentación de los gráficos (corregidos esa noche). Antes ese día — **nb06**: la segunda corrida de Colab (con BUG-47 y la serie TPD) es **idéntica a la simulación** en el Excel (38 hojas), el mapa, la salida impresa y el caché (`docs/AUDITORIA_2026-10-26_nb06.md`): BUG-47 y la TPD quedan verificados en Colab. Hallazgo menor: dos tiendas online pasaban el filtro de sucursales web (BUG-48). Antes, 2026-10-23 (noche) — **nb06**: **serie TPD (hedónica)** de la brecha como robustez frente a la imputación de subtipos (CELDA 8b, entrada 🟣 abajo; `docs/BRECHA_CELIACA.md` §14.12). Con dato propio coincide con la descriptiva; en 2023 muestra cuánto pesa la imputación. Antes, 2026-10-23 (tarde) — **nb06**: la primera corrida de Colab con la canasta fija dio **igual a la
+Última actualización: 2026-10-26 (cierre de la noche) — **nb06**: **BUG-50** resuelto (la TPD del panel movía el subtipo sin pares con los demás subtipos: −38% en oct-2023) y comparadores nuevos: Pepitos en con chips y la Opera de 92 g junto a la de 220 g en obleas (entrada 🔴 abajo). Esperados `docs/brecha_celiaca/simulacion_2026-10-26c/`; falta Colab. Antes, 2026-10-26 (noche) — **nb06**: **la corrida de Colab con la canasta corregida dio igual a la simulación** (BUG-49 verificado). En la revisión de sus resultados (`docs/AUDITORIA_SELECCION_2026-10-26_nb06.md` §7) apareció un artefacto de la TPD del panel en oct-2023 (entrada abierta abajo) y más evidencia para las propuestas de productos. Antes, 2026-10-26 (auditoría de la selección) — **nb06**: **BUG-49** resuelto. Se corrigieron cuatro errores de las reglas de la selección de productos (entrada 🔴 abajo; `docs/AUDITORIA_SELECCION_2026-10-26_nb06.md`). La canasta queda en 66 productos (77 códigos). Esperados nuevos en `docs/brecha_celiaca/simulacion_2026-10-26b/`. Falta la corrida de Colab (relee los 58 meses). Hay cuatro propuestas de diseño abiertas. Antes, 2026-10-26 (cierre) — **nb06**: la corrida de Colab con los arreglos de los gráficos dio igual a la simulación; **revisión metodológica** frente al objetivo (`docs/REVISION_METODOLOGICA_2026-10-26_nb06.md`), con recomendaciones abiertas (abajo, "Defectos abiertos"). Antes, 2026-10-26 (noche) — **nb06**: corregidos los tres detalles de presentación de los gráficos de la CELDA 9 (entrada 🟣 abajo); el Excel y los esperados no cambian; falta re-correr en Colab para tener los PNG nuevos. Antes, 2026-10-26 (tarde) — **nb06**: **BUG-48** resuelto (las tiendas online que el maestro carga como Supermercado o Autoservicio salen por el nombre; formato de las diferencias de la TPD; entrada 🔴 abajo); esperados nuevos en `docs/brecha_celiaca/simulacion_2026-10-26/`; **la corrida de Colab con BUG-48 dio igual a la simulación** (Excel, mapa, salida impresa y caché; `docs/AUDITORIA_2026-10-26_nb06.md` §6). Quedaban tres detalles de presentación de los gráficos (corregidos esa noche). Antes ese día — **nb06**: la segunda corrida de Colab (con BUG-47 y la serie TPD) es **idéntica a la simulación** en el Excel (38 hojas), el mapa, la salida impresa y el caché (`docs/AUDITORIA_2026-10-26_nb06.md`): BUG-47 y la TPD quedan verificados en Colab. Hallazgo menor: dos tiendas online pasaban el filtro de sucursales web (BUG-48). Antes, 2026-10-23 (noche) — **nb06**: **serie TPD (hedónica)** de la brecha como robustez frente a la imputación de subtipos (CELDA 8b, entrada 🟣 abajo; `docs/BRECHA_CELIACA.md` §14.12). Con dato propio coincide con la descriptiva; en 2023 muestra cuánto pesa la imputación. Antes, 2026-10-23 (tarde) — **nb06**: la primera corrida de Colab con la canasta fija dio **igual a la
 simulación** (29 hojas; `docs/AUDITORIA_2026-10-23_nb06.md`). Al revisarla, **BUG-47** resuelto: las comparaciones
 entre provincias, empresas, cadenas y sucursales (mapa) mezclaban composición de subtipos y la "concentración" agrupaba
 por un campo de localidad que DIA carga con el nombre de la provincia; ahora misma canasta de 12 subtipos en todos los
@@ -57,7 +57,7 @@ Los defectos abiertos que resuelve quedan marcados abajo (se verifican con la co
   todos los subtipo-mes, el pico de oct-dic 2023 es menor (+137% a +148% contra +161% a +170%: la descriptiva arrastra
   tirabuzón a +396% y mostachol a +152%); en el panel, los fideos de jun-2023 → feb-2024 tienen tan pocas sucursales que
   ninguna de las dos series los mide bien. La regla de la descriptiva sigue como está.
-- **nb06 — TPD del panel en oct-2023: artefacto** (2026-10-26, noche; `docs/AUDITORIA_SELECCION_2026-10-26_nb06.md`
+- ~~**nb06 — TPD del panel en oct-2023: artefacto**~~ **Resuelto esa noche (BUG-50).** (2026-10-26, noche; `docs/AUDITORIA_SELECCION_2026-10-26_nb06.md`
   §7.2). El spaghetti del panel no tiene pares ese mes. La CELDA 8b lo mueve con el penne y el tirabuzón, que caen
   por el salto de precio de Molinos, y queda en −38%: fideos +38% y canasta del panel +114%.
   - **Propuesta** (`r30`): mover el subtipo sin pares con el MISMO subtipo en todas las sucursales, si ahí tiene
@@ -66,13 +66,11 @@ Los defectos abiertos que resuelve quedan marcados abajo (se verifican con la co
   - No relee el SEPA. **Decisión del usuario.**
 - **nb06 — propuestas de la auditoría de la selección** (2026-10-26, `docs/AUDITORIA_SELECCION_2026-10-26_nb06.md` §4
   y §7.3, con la evidencia de la corrida de Colab; **decisión del usuario**, no aplicadas):
-  - **Obleas**: Opera 92 g en lugar de (o junto a) la de 220 g, del tamaño de la Santa María sin TACC de 90 g. Las
-    obleas pasan de +126% a +107%.
+  - ~~**Obleas**: Opera 92 g~~ **Aplicado (BUG-50): junto a la de 220 g.** La de 92 g sola dejaba 2023 casi sin pares.
   - **Crackers**: sin las galletas de arroz Grandiet, o con un subtipo propio. Los crackers pasan de +168% a +205% y la
     canasta sube 3,6 pp.
-  - **Líderes con TACC**: empalmar los códigos de los que los cambiaron, como Pepitos, que podría reemplazar a Par Nor en
-    con chips. Hay que extraer los códigos viejos de los zips. Con chips es frágil: 100 a 220 sucursales con pares por
-    mes y 9 meses imputados en 2025-2026. Pepitos está en 802 de las 813 sucursales con chips Smams; Par Nor, en 538.
+  - ~~**Líderes con TACC**: Pepitos en con chips~~ **Aplicado (BUG-50).** Toddy, el otro líder, quedó leído en
+    `sim_super_v10` por si se quiere sumar.
   - **Subtipo vainillas**: Pozo contra Santa María; hay que fechar el cambio de 85 a 80 g.
   - **Spaghetti y penne con las dos marcas con TACC**: simulado (`sim_v5b`). Cambia el nivel de esos dos subtipos, pero
     no los fideos ni la canasta (menos de 1 pp). No hace falta.
@@ -302,6 +300,37 @@ de la Tecnológica** hasta que haya al menos dos cadenas con cobertura de durabl
 ---
 
 ## 🟢 Cambios y fixes 2026-10
+
+### 🔴 BUG-50 — nb06: la TPD del panel movía el subtipo sin pares con los demás subtipos; comparadores de con chips y obleas (2026-10-26, noche) ✅ Resuelto (falta Colab: relee los 58 meses)
+
+Encontrados al revisar la corrida de Colab con la canasta corregida (`docs/AUDITORIA_SELECCION_2026-10-26_nb06.md`
+§7). El usuario pidió las tres correcciones (BRECHA_CELIACA §14.15).
+
+1. **TPD del panel (CELDA 8b).** En oct-2023 el spaghetti del panel no tenía pares. Se movía con el penne y el
+   tirabuzón, que caían por el salto de precio de Molinos, y daba −38%: fideos +38% y canasta +114%.
+   - **Ahora**, el subtipo sin pares se mueve con la variación del mismo subtipo en todas las sucursales, si ahí tiene
+     dato propio en los dos meses; si no, como antes. Da +93% y canasta +122%.
+   - Columna `movido_con` en `TPD_subtipos`. Control nuevo en el test, que da 31 en OK.
+   - Verificado contra el cálculo independiente `r30` (8,5e-14 pp).
+2. **Con chips.** El comparador era Par Nor, regional y barato, con pocas sucursales junto a las chips Smams: daba
+   +111% y 9 meses imputados en 2025-2026.
+   - **Ahora** es Pepitos 119 g, empalme de tres códigos en s9 con vigencias. Los precios de los dos viejos salen del
+     caché de la relectura (`r32`), y s10 verifica el empalme, el corte y la franja.
+   - Con chips da +29% y las sucursales con los dos lados pasan de 204-567 a 627-1.736 por año.
+3. **Obleas.** La Opera de 92 g (del tamaño de la Santa María sin TACC) se suma a la de 220 g (`COMPARADOR_FIJO` en
+   s10). Con la de 92 g sola, 2023 quedaba casi sin pares y la serie arrastraba +390% durante 17 meses.
+
+Relectura con 123 códigos (`sim_super_v10`; incluye Toddy y las vainillas para evaluarlos después). Canasta de 67
+productos (80 códigos). Simulación `sim_v7` (`s12` igual en precios, días y brechas). Esperados
+`simulacion_2026-10-26c/` (cambian 33 de 35 hojas).
+
+- Galletitas dulces: +108% → +87%.
+- Canasta de los últimos 12 meses: +118% → +111%.
+- Por año, todas las sucursales: 2022 +114%, 2025 +91%, 2026 +113%.
+- TPD de oct-2026: +107% a +108%.
+- Meses del panel con algo movido en la TPD: 19 → 10.
+
+Los 15 tests en OK. **Colab relee los 58 meses** (caché `brecha_v3_840d22c6`).
 
 ### 🔴 BUG-49 — nb06: cuatro errores de las reglas de la selección de productos (2026-10-26) ✅ Resuelto y verificado en Colab (2026-10-26, noche)
 

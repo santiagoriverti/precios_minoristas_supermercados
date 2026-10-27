@@ -1,0 +1,26 @@
+serie,tipo,subtipo,desde,hasta,meses,sucursales_min,sucursales_max,brecha_arrastrada
+todas las sucursales,Fideos secos,Mostachol / penne,2022-12,2024-03,16,66,404,139.7590361445783
+todas las sucursales,Fideos secos,Spaghetti,2023-12,2024-04,5,159,564,102.5304829043147
+todas las sucursales,Fideos secos,Tirabuzón / fusilli,2023-10,2023-11,2,266,393,396.3625769935076
+todas las sucursales,Galletitas dulces,Con chips,2024-12,2024-12,1,359,359,37.00236711857113
+todas las sucursales,Galletitas dulces,Obleas,2023-03,2023-04,2,9,27,229.4440161055427
+todas las sucursales,Galletitas dulces,Obleas,2023-12,2024-07,8,0,53,335.7487922705314
+todas las sucursales,Galletitas dulces,Pepas,2022-04,2022-09,6,43,142,88.19047619047622
+todas las sucursales,Galletitas dulces,Pepas,2023-11,2024-01,3,147,161,60.98269777891741
+todas las sucursales,Pan rallado y rebozador,Rebozador,2022-04,2022-09,6,38,104,82.59435906494733
+todas las sucursales,Pan rallado y rebozador,Rebozador,2023-07,2023-11,5,34,90,87.75809419084273
+todas las sucursales,Pan rallado y rebozador,Rebozador,2024-01,2024-07,7,37,111,30.98445595854922
+panel balanceado,Fideos secos,Mostachol / penne,2023-03,2023-09,7,0,144,136.9565217391305
+panel balanceado,Fideos secos,Mostachol / penne,2024-01,2024-04,4,148,191,102.9423184779326
+panel balanceado,Fideos secos,Spaghetti,2023-06,2023-10,5,0,303,68.85245901639342
+panel balanceado,Fideos secos,Spaghetti,2023-12,2024-03,4,48,311,112.9735935706085
+panel balanceado,Fideos secos,Tirabuzón / fusilli,2023-06,2023-10,5,187,287,273.1944518254769
+panel balanceado,Fideos secos,Tirabuzón / fusilli,2023-12,2023-12,1,210,210,115.4530131665731
+panel balanceado,Fideos secos,Tirabuzón / fusilli,2024-02,2024-02,1,223,223,220.8852005532503
+panel balanceado,Galletitas dulces,Pepas,2024-04,2024-04,1,28,28,120.9827357237716
+panel balanceado,Galletitas dulces,"Secas (vainilla, limón, chocolate)",2022-06,2022-06,1,250,250,81.08243408610525
+panel balanceado,Pan rallado y rebozador,Rebozador,2022-06,2022-06,1,28,28,66.1728395061728
+panel balanceado,Pan rallado y rebozador,Rebozador,2022-08,2022-09,2,34,39,54.59175084175081
+panel balanceado,Pan rallado y rebozador,Rebozador,2023-05,2023-08,4,0,30,95.36019536019538
+panel balanceado,Pan rallado y rebozador,Rebozador,2023-12,2024-02,3,0,37,220.320143219588
+panel balanceado,Pan rallado y rebozador,Rebozador,2024-07,2024-10,4,4,32,126.8623340321454
