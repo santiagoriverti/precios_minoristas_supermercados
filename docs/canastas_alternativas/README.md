@@ -540,8 +540,8 @@ grupos para desagregar el efecto. **Guía de trabajo (estado, cómo correr el nb
   Agrega los productos que faltan en Selección copiando su fila de "Productos unicos" (sin las cantidades del nb07),
   guarda el `cantidad_01` anterior en `cantidad_01_original` y no toca el resto. La salida no se llama
   `canasta_representativa_*` a propósito (el nb02 y el nb07 la tomarían). Baja la canasta del CSV de GitHub o la toma
-  del Excel de la selección si se sube junto. Con el lector del nb08 v2 (2026-10-22): ~1 min por mes en una PC, ~22 M de
-  observaciones y 0,4-0,5 GB de RAM (el lector anterior, ~5 GB por mes): la primera corrida completa, ~1,5-2 h en Colab.
+  del Excel de la selección si se sube junto. Con el lector del nb08 v3 (2026-10-29, con provincias): ~70 s por mes en una PC,
+  ~22 M de observaciones y 0,4-0,5 GB de RAM (el lector viejo, ~5 GB por mes): la primera corrida completa, ~2-3 h en Colab.
   Probado con el Excel real de oct-26 (simulando `google.colab`): 761 ya estaban + 14 agregados, valor $1.000.000,
   otras hojas intactas, segunda corrida sobre su salida igual, y el nb08 lee 775 productos.
 

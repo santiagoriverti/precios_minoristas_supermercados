@@ -1,6 +1,6 @@
 # Pass-through del tipo de cambio a precios — guía de trabajo
 
-Última actualización: 2026-10-22 (cierre de sesión).
+Última actualización: 2026-10-29 (nb08 v3: nivel general vs provincias y vs grandes rubros).
 
 **Objetivo**: estimar cuánto y qué tan rápido pasa el tipo de cambio a los precios de supermercado, con frecuencia
 **diaria** del **01/01/2022 al 20/10/2026**, con la **misma canasta todos los días** y pudiendo desagregar el efecto por
@@ -19,7 +19,7 @@ Este documento junta todo lo de esa línea de trabajo. Detalle de la selección:
 |---|---|---|
 | Canasta fija (775 productos) | **Lista** (commit `fa1144d`) | `docs/canastas_alternativas/canasta_pass_through.py` → `canasta_pass_through_20220101_20261020.csv` |
 | Excel que lee el nb08 | **En el Drive del usuario** (lo armó con el script de Colab) | `MyDrive/carga/output_canasta/canasta_pass_through_2026-10.xlsx` (canasta en `cantidad_01`) |
-| Variable de precio diaria | **nb08 v2 lista** (commit `a1f4522`), por defecto con esa canasta. **Falta correrla en Colab** | `notebooks/gen_nb08.py` → `notebooks/08_canasta_diaria.ipynb` |
+| Variable de precio diaria | **nb08 v3 lista** (commits `a1f4522` y `35c247a`), por defecto con esa canasta, con nivel general vs provincias y vs grandes rubros. **Falta correrla en Colab** | `notebooks/gen_nb08.py` → `notebooks/08_canasta_diaria.ipynb` |
 | Tipo de cambio diario | No empezado | — |
 | Regresiones | No empezadas | — |
 
@@ -155,7 +155,7 @@ nb07 la tomarían como la del mes). Si se cambia el nombre del Excel, cambiar `C
 
 ---
 
-## 4. La variable de precio (nb08 v2)
+## 4. La variable de precio (nb08)
 
 Para cada producto y día el nb08 calcula dos precios:
 
@@ -177,6 +177,14 @@ con todos los productos). `valor_directo` = Σ q × mediana, solo con los produc
 grupo, tipo...), `precio_mediano`, `precio_promedio` (media recortada), `n_obs`, `n_pares`, `relativo_apareado`,
 `indice_apareado`, `precio_apareado`, `cobertura_incompleta`. Para las regresiones: Δlog de `indice_apareado` por
 producto, o de `valor_canasta_apareado` y los índices de `Indices_por_grupo`.
+
+**Desagregaciones (v3, 2026-10-29)**: la misma canasta valorizada en cada provincia (índice apareado por producto y
+provincia; sin pares en la provincia, el eslabón nacional, `peso_imputado_%`) y partida por grandes rubros (`tipo`, con
+pesos e incidencias). Hojas `Provincias_*` y `Rubros_*` del Excel y `series_desagregadas_pass_through_<...>.parquet`
+(día × grupo: `valor_canasta_apareado`, `indice_base100`, `variacion_diaria_%`, `peso_imputado_%`,
+`cobertura_incompleta`): sirven para estimar el pass-through por provincia o por rubro. Ojo con las provincias con
+mucha imputación (Formosa, La Rioja, Misiones): su variación es en parte la del país. Método: `docs/METODOLOGIA.md` §12.
+Prueba real (jul-sep 2024): `docs/auditoria/scripts_nb08_2026-10/correr_real_desagregado.py`.
 
 **Validación** (2026-10-22): test `notebooks/test_canasta_diaria.py` (SEPA sintético contra fuerza bruta: medianas,
 relativos con imputación, índice = tendencia verdadera aunque la mediana salte en un hueco, archivo y filas repetidas,
@@ -220,6 +228,7 @@ en la PC (el lector anterior, ~5 GB); estado 3,2-3,6 MB por mes. En el trimestre
    (después de las PASO), del 13/12/2023 y la salida del cepo con banda de flotación desde el 14/04/2025.
 3. **Regresiones**: Δlog del índice apareado (por producto y por grupo) contra rezagos de Δlog del tipo de cambio
    (rezagos distribuidos o proyecciones locales), pass-through acumulado a 1, 7, 30, 60 y 90 días, heterogeneidad por
-   grupo del IPC, tipo, perecedero y origen; días con `cobertura_incompleta` como dummy o fuera.
+   grupo del IPC, tipo, perecedero, origen, provincia y gran rubro (`series_desagregadas_*`); días con
+   `cobertura_incompleta` como dummy o fuera.
 4. Decidir los pesos (IPC vs iguales por grupo) y probar sensibilidad.
 5. Cuando salga el semestral oficial 2026B, reemplazar ago-oct 2026 (§5).

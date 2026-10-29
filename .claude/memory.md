@@ -6,13 +6,14 @@ Autor: Santiago Riverti — investigador independiente
 
 ---
 
-## 🟢 ESTADO ACTUAL / HANDOFF [2026-10-27 noche] — leer esto primero
+## 🟢 ESTADO ACTUAL / HANDOFF [2026-10-29] — leer esto primero
 
 - **Repo**: `main` = `origin/main` al cierre (ver `git log`). Commits del 2026-10-23: `678e9b9` (nb06: canasta fija
   2022-2026 + estimador por subtipo + BUG-46), `b02871c` (documentación para retomar) y el de la tarde (revisión de la
   primera corrida de Colab del nb06 + BUG-47) y el de la noche (`46e426b`, serie TPD del nb06); el 2026-10-26, la
   revisión de la segunda corrida de Colab; el 2026-10-27, el panel de expertos del nb06, el nb06b, la corrida de Colab
-  verificada y, a la noche, la segunda revisión de expertos. **15 tests en OK** (el del nb06 tiene 54 controles desde
+  verificada y, a la noche, la segunda revisión de expertos; el 2026-10-29, `35c247a` (nb08 v3: nivel general vs
+  provincias y vs grandes rubros) y el de la documentación de ese día. **15 tests en OK** (el del nb06 tiene 54 controles desde
   el 2026-10-27, noche; la suite se corre con `docs/auditoria/scripts_nb06_2026-10/s19_suite_tests.py`). En una PC nueva:
   `git clone`, `pip install -r requirements.txt` y los tests de `CLAUDE.md`.
 - **Datos en la PC del INECO** (el usuario bajó el 23/10 todo el Drive; **desde la tarde del 23/10 están en
@@ -169,7 +170,7 @@ Autor: Santiago Riverti — investigador independiente
    impresa, `canasta_diaria_pass_through_20220101_20261020.xlsx` y `panel_diario_pass_through_<...>.parquet`: revisar con
    la lista de `docs/PASS_THROUGH.md` §2 (775 productos, AVISO de ago-2024 parte 1, `productos_con_dato` = 775,
    `cobertura_incompleta` en 16-28/07/2023, medianas vs apareado, eslabones > ±15%). Después: tipo de cambio diario
-   (A3500, MEP/CCL) y regresiones (`docs/PASS_THROUGH.md` §6). Detalle: bloques "nb08 v2" y "Canasta para el
+   (A3500, MEP/CCL) y regresiones (`docs/PASS_THROUGH.md` §6). Detalle: bloques "nb08 v3", "nb08 v2" y "Canasta para el
    pass-through" de abajo.
 3. **nb09**: corrida v2 revisada (AUDITORIA_2026-10-22_nb09). `mes_baja_comercios` y el precio simbólico relativo
    (`a3acfce`) no se corrieron en Colab todavía: la próxima corrida tarda ~10 min si `output_trazabilidad/_cache_nb09/`
@@ -212,7 +213,17 @@ Claude.
   todo igual a la fuerza bruta. Real jul-sep 2024 (775 productos, zips de SEPA_Bases_Originales): nivel general igual a
   la validación anterior (+8,97%), ~70 s y 0,4 GB por mes, 24 provincias, 0 observaciones sin provincia; imputación
   alta en provincias chicas (Formosa 25%, La Rioja 15%, Misiones 11%). Rubros suman el nivel general (dif. 0,000%).
-- Sin commitear al cierre de la sesión salvo que el usuario lo pida.
+- Commit `35c247a` (código, test y docs) y el de la documentación para retomar (CONTEXTO, CLAUDE.md, BUGS,
+  SEPA_TECNICO, PASS_THROUGH, canastas_alternativas/README). Prueba real repetible en otra PC con
+  `docs/auditoria/scripts_nb08_2026-10/correr_real_desagregado.py` (zips 2024A → 2026B de
+  `C:\Users\sriverti\Desktop\INECO\SEPA\SEPA_Bases_Originales\carga\` y el Excel de la selección
+  `C:\Users\sriverti\proyectos\canasta_pass_through_20220101_20261020.xlsx`, columna `cantidad_08`). Excel de muestra
+  (fuera del repo): `C:\Users\sriverti\proyectos\MUESTRA_canasta_diaria_pass_through_20240701_20240930.xlsx`.
+- Decisiones: grandes rubros = `tipo` de la canasta (si el usuario prefiere los rubros del SEPA —Almacén, Bebidas,
+  Frescos...— es cambiar `DIM_RUBRO` en la CELDA 5 y que la CELDA 3 traiga la columna `rubro`); provincias por el
+  código ISO del archivo (no por polígonos, como el nb02/nb06): Buenos Aires = provincia entera, sin separar el AMBA.
+- **Siguiente**: el usuario corre el nb08 en Colab; revisar con `docs/PASS_THROUGH.md` §2 (también provincias y
+  rubros). Si sirve: regiones (sumar relativos de las provincias) o AMBA por coordenadas.
 
 ## 🟢 nb06 — revisión de datos y método frente al objetivo [2026-10-26 cierre]
 
