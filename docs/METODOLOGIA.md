@@ -1492,6 +1492,23 @@ cantidades fijas el índice es tipo Lowe: el peso efectivo de cada producto en u
 `Indices_por_grupo`: el mismo encadenado con los precios apareados de los productos de cada tipo y grupo del IPC (base 100
 el primer día).
 
+**Nivel general vs provincias (2026-10-29).** La misma canasta en cada provincia, con sucursales apareadas. La provincia
+de una sucursal es el código ISO de `sucursales_provincia` (nombres pasados al código como en el nb09; vacía = solo nivel
+general). Para cada producto y provincia se lleva un índice propio: relativo de una sucursal = precio de hoy / su precio
+anterior movido con el índice **de la provincia** (la misma imputación que el nacional); eslabón = media geométrica de los
+relativos de la provincia; si la provincia no tiene pares de ese producto ese día, el eslabón nacional (como en el nb06:
+lo que un grupo no tiene, con el valor del país). `peso_imputado_%` = parte del valor de la canasta en la provincia con
+eslabón nacional ese día. El índice se lleva a pesos con la mediana de la provincia del último día con dato (un producto
+que la provincia nunca tuvo vale como en el país) y el valor de la canasta se encadena como el nacional y se lleva a pesos
+en el día ancla: `relativo_nivel_general_%` compara el costo de la misma canasta en la provincia y en el país.
+
+**Nivel general vs grandes rubros (2026-10-29).** La canasta se parte por `tipo` (si no está, `categoria`). El valor de
+cada rubro es su parte de la canasta encadenada como el nivel general y en pesos del día ancla, así que los rubros suman
+el nivel general en el día ancla y, con la canasta completa todos los días, en todos los días (el resto, lo que separa
+encadenar cada rubro por separado; la CELDA 5 imprime la diferencia máxima). Peso de un rubro = su valor / valor de la
+canasta ese día (Lowe: cambia con los precios relativos). Incidencia mensual (pp) = (V_r,t − V_r,t−1) / V_NG,t−1 × 100,
+con los promedios de los días de cada mes; las incidencias suman la variación mensual del nivel general.
+
 **Cobertura.** `cobertura_incompleta` = días en que las observaciones de la canasta quedan por debajo del 75%
 (`MIN_COBERTURA_DIA`) de la mediana de las observaciones diarias de su mes. Se marcan, no se borran. Los días calendario
 sin dato del SEPA (31/10/2023, 10/05/2026) no se completan.

@@ -163,8 +163,9 @@ Autor: Santiago Riverti — investigador independiente
    hedónica con HHI, región, cadena), prima neta de envase, robustez desde 2024. Detalle: bloques "nb06 — segunda
    corrida", "nb06 — serie TPD", "nb06 — corrida de Colab" y "nb06 — canasta fija" de abajo.
 2. **Pass-through del tipo de cambio (nb08 v2 + canasta de 775 productos).** Todo listo y pusheado; el
-   usuario ya subió `MyDrive/carga/output_canasta/canasta_pass_through_2026-10.xlsx`. **Falta que corra el nb08 en
-   Colab** (badge, Ejecutar todo, sin tocar la CELDA 1; ~1,5-2 h la primera vez, 58 meses). Cuando pase la salida
+   usuario ya subió `MyDrive/carga/output_canasta/canasta_pass_through_2026-10.xlsx`. Desde el 2026-10-29 el nb08
+   desagrega **nivel general vs provincias y vs grandes rubros** (bloque "nb08 v3" de abajo). **Falta que corra el nb08 en
+   Colab** (badge, Ejecutar todo, sin tocar la CELDA 1; ~2-3 h la primera vez, 58 meses). Cuando pase la salida
    impresa, `canasta_diaria_pass_through_20220101_20261020.xlsx` y `panel_diario_pass_through_<...>.parquet`: revisar con
    la lista de `docs/PASS_THROUGH.md` §2 (775 productos, AVISO de ago-2024 parte 1, `productos_con_dato` = 775,
    `cobertura_incompleta` en 16-28/07/2023, medianas vs apareado, eslabones > ±15%). Después: tipo de cambio diario
@@ -197,6 +198,21 @@ pass-through en `C:\Users\sriverti\proyectos\canasta_pass_through_20220101_20261
 **Reglas**: las de `CLAUDE.md` ("Reglas que muerden"): los `.ipynb` se regeneran con `gen_nbXX.py` (commit de los dos);
 scripts de edición escritos con Write (la shell se come las barras); commits solo con Santiago Riverti, sin atribución a
 Claude.
+
+## 🟢 nb08 v3: nivel general vs provincias y vs grandes rubros [2026-10-29]
+
+- Pedido: que el Excel del nb08 venga desagregado por nivel general vs provincias y nivel general vs grandes rubros.
+- Hecho (`gen_nb08.py`, caché `diaria_v3_*`): el lector guarda la provincia ISO de cada sucursal y lleva un índice
+  apareado por producto x provincia (imputación con el índice de la provincia; sin pares en la provincia, eslabón
+  nacional = `peso_imputado_%`); nivel en pesos con la mediana provincial del último día. Rubros = `tipo` (6), con peso
+  e incidencias. Hojas nuevas: Provincias_resumen/_mensual/_diario, Rubros_resumen/_mensual/_incidencia/_diario;
+  `series_desagregadas_*.parquet`; segundo gráfico en la CELDA 6. Producto x provincia x día se acumula en matrices
+  (SLR_P, NPAR_P; ~400 MB con 58 meses), no en un DataFrame largo.
+- Test ampliado (3 provincias, una escrita con el nombre, sucursal sin provincia, producto que una provincia no tiene):
+  todo igual a la fuerza bruta. Real jul-sep 2024 (775 productos, zips de SEPA_Bases_Originales): nivel general igual a
+  la validación anterior (+8,97%), ~70 s y 0,4 GB por mes, 24 provincias, 0 observaciones sin provincia; imputación
+  alta en provincias chicas (Formosa 25%, La Rioja 15%, Misiones 11%). Rubros suman el nivel general (dif. 0,000%).
+- Sin commitear al cierre de la sesión salvo que el usuario lo pida.
 
 ## 🟢 nb06 — revisión de datos y método frente al objetivo [2026-10-26 cierre]
 

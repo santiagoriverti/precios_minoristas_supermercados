@@ -7,9 +7,12 @@ El SEPA sintético (ene-mar 2026, 10 sucursales de 3 comercios, 4 productos de l
   - marzo en centavos;
   - un hueco de cobertura: las 4 sucursales del comercio 15 (las baratas) no informan del 12 al 18/02;
   - una sucursal que falta 40 días (más que MAX_DIAS_SIN_PRECIO) y faltantes sueltos al azar;
-  - un precio x10 un día en una sucursal (relativo fuera de [1/4, 4]).
+  - un precio x10 un día en una sucursal (relativo fuera de [1/4, 4]);
+  - tres provincias (comercio 9 en AR-C, 12 en 'Buenos Aires' escrita con el nombre, 15 en AR-S), una sucursal sin
+    provincia, y un producto que el comercio 15 (Santa Fe) no vende: esa provincia lo imputa con el país.
 Todas las sucursales siguen la misma tendencia de cada producto (con un nivel propio): el índice apareado tiene que dar
-EXACTAMENTE esa tendencia, aunque la mediana salte en el hueco.
+EXACTAMENTE esa tendencia, aunque la mediana salte en el hueco; y en cada provincia, la canasta tiene que valer
+Σ cantidad x (mediana de la provincia del último día / tendencia de ese día) x tendencia de hoy.
 
     python notebooks/test_canasta_diaria.py
 """
@@ -39,6 +42,13 @@ F_FIN = pd.Timestamp('2026-03-20')
 HUECO = (pd.Timestamp('2026-02-12'), pd.Timestamp('2026-02-18'))
 AUSENTE = ('9', '1', '100'), (pd.Timestamp('2026-01-10'), pd.Timestamp('2026-02-18'))
 OUTLIER = ('12', '1', '201'), '7790895000232', pd.Timestamp('2026-01-20')
+PROV_COM = {'9': 'AR-C', '12': 'Buenos Aires', '15': 'AR-S'}
+SIN_PROV = ('9', '1', '102')                          # sucursal con la provincia vacía
+NO_VENDE = ('15', '7790742340108')                    # Santa Fe no tiene este producto
+ISO = {'AR-C': 'AR-C', 'Buenos Aires': 'AR-B', 'AR-S': 'AR-S'}
+
+def prov_suc(c, b, s):
+    return '' if (c, b, s) == SIN_PROV else ISO[PROV_COM[c]]
 
 def tendencia(e, d):
     v = np.exp(G[e] * (d - DIAS[0]).days)
@@ -52,6 +62,8 @@ for s in SUCS:
             if s[0] == '15' and HUECO[0] <= d <= HUECO[1]:
                 continue
             if s == AUSENTE[0] and AUSENTE[1][0] <= d <= AUSENTE[1][1]:
+                continue
+            if (s[0], e) == NO_VENDE:
                 continue
             if rng.random() < 0.05:
                 continue
@@ -68,7 +80,8 @@ def tabla(mes, dd, centavos=False):
     w = w.reindex(idx).reindex(columns=dd) * (100 if centavos else 1)
     w.columns = [f'precio_{d:%Y%m%d}' for d in dd]
     w = w.reset_index().rename(columns={'c': 'id_comercio', 'b': 'id_bandera', 's': 'id_sucursal', 'e': 'id_producto'})
-    w.insert(3, 'sucursales_provincia', 'AR-C')
+    w.insert(3, 'sucursales_provincia', [('' if (c, b, s) == SIN_PROV else PROV_COM[c])
+                                         for c, b, s in zip(w['id_comercio'], w['id_bandera'], w['id_sucursal'])])
     return w
 
 def con_repetidas(w):
@@ -183,6 +196,68 @@ IDX = g['IDX']
 for e in CANASTA:
     t = np.array([tendencia(e, d) for d in IDX.index])
     chk(f'índice apareado de {e} = tendencia', np.allclose(IDX[e].values / IDX[e].iloc[0], t / t[0], rtol=1e-9))
+
+# Provincias: los mismos relativos con el índice de cada provincia; sin pares en la provincia, el eslabón nacional
+U['prov'] = [prov_suc(*s.split('|')) for s in U['suc']]
+L['prov'] = [prov_suc(c, b, s) for c, b, s in zip(L['id_comercio'], L['id_bandera'], L['id_sucursal'])]
+FECHAS = sorted(pd.to_datetime(U['fecha'].unique()))
+slrp_esp, nparp_esp = {}, {}
+for (e, pv), ue in U[U['prov'] != ''].groupby(['id_producto', 'prov']):
+    I, ultimo, por_dia = 1.0, {}, dict(list(ue.groupby('fecha')))
+    for f in FECHAS:
+        uf = por_dia.get(f, ue.iloc[:0])
+        logs = [np.log(p / ultimo[s][0] * ultimo[s][2] / I) for s, p in zip(uf['suc'], uf['p'])
+                if s in ultimo and (f - ultimo[s][1]).days <= 31]
+        logs = [x for x in logs if np.log(0.25) <= x <= np.log(4)]
+        n_nac = npar_esp.get((f, e), 0)
+        I *= np.exp(np.mean(logs)) if logs else (np.exp(slr_esp[(f, e)] / n_nac) if n_nac else 1.0)
+        for s, p in zip(uf['suc'], uf['p']):
+            ultimo[s] = (p, f, I)
+        if logs:
+            slrp_esp[(f, e, pv)], nparp_esp[(f, e, pv)] = sum(logs), len(logs)
+_PL = list(g['PROV_LIST'])
+_EL = list(g['EAN_LIST'])
+_t = g['_CAL'].get_indexer(pd.DatetimeIndex([k[0] for k in slrp_esp]))
+_ie = [_EL.index(k[1]) for k in slrp_esp]
+_ip = [_PL.index(k[2]) for k in slrp_esp]
+chk('relativos por provincia (suma de logaritmos)', np.allclose(g['SLR_P'][_t, _ie, _ip], list(slrp_esp.values()), atol=1e-12)
+    and np.isclose(np.abs(g['SLR_P']).sum(), sum(abs(x) for x in slrp_esp.values()), atol=1e-10))
+chk('pares por producto, provincia y día', (g['NPAR_P'][_t, _ie, _ip] == list(nparp_esp.values())).all()
+    and g['NPAR_P'].sum() == sum(nparp_esp.values()))
+chk('la sucursal sin provincia cuenta para el nivel general y no para las provincias',
+    int(g['precios_dia']['n_obs'].sum()) - int(g['OBS_P'].sum()) == int((L['prov'] == '').sum()) > 0)
+
+# Valor de la canasta en cada provincia = Σ q x nivel de la provincia x tendencia (todas las sucursales siguen la
+# tendencia); el nivel = mediana de la provincia del último día con dato / tendencia de ese día (si nunca lo tuvo, el país)
+PV = g['prov_val']
+_nac_ult = L.groupby('id_producto').apply(lambda x: x.loc[x['fecha'] == x['fecha'].max(), 'p'].median() / tendencia(x.name, x['fecha'].max()))
+for pv, nom in (('AR-C', 'CABA'), ('AR-B', 'Buenos Aires'), ('AR-S', 'Santa Fe')):
+    Lp = L[L['prov'] == pv]
+    niv = {}
+    for e in CANASTA:
+        x = Lp[Lp['id_producto'] == e]
+        niv[e] = (x.loc[x['fecha'] == x['fecha'].max(), 'p'].median() / tendencia(e, x['fecha'].max()) if len(x)
+                  else _nac_ult[e])
+    esp_v = pd.Series([sum(q * niv[e] * tendencia(e, d) for e, q in CANASTA.items()) for d in PV.index], index=PV.index)
+    chk(f'valor de la canasta en {nom} = Σ q x nivel x tendencia', np.allclose(PV[nom], esp_v, rtol=1e-9))
+imp_s = pd.DataFrame(g['imp_prov'])
+_q_nv = CANASTA[NO_VENDE[1]] * _nac_ult[NO_VENDE[1]] * np.array([tendencia(NO_VENDE[1], d) for d in PV.index])
+chk('Santa Fe imputa el producto que no vende todos los días', (imp_s['Santa Fe'].values >= _q_nv / PV['Santa Fe'].values * 100 - 1e-9).all())
+chk('Santa Fe imputa todo en el hueco', np.allclose(imp_s.loc[pd.date_range(*HUECO), 'Santa Fe'], 100))
+chk('provincias del resumen', g['prov_resumen']['provincia'].tolist() == ['Nivel general', 'Buenos Aires', 'CABA', 'Santa Fe']
+    and g['prov_resumen'].set_index('provincia').at['Nivel general', 'relativo_nivel_general_%'] == 100)
+
+# Rubros: suman el nivel general (canasta completa todos los días) y las incidencias, su variación
+RV = g['rub_val']
+chk('rubros = tipo y suman el nivel general', g['DIM_RUBRO'] == 'tipo' and
+    np.allclose(RV.drop(columns='Nivel general').sum(axis=1), RV['Nivel general'], rtol=1e-12))
+ri = g['rub_incidencia'].iloc[1:]
+chk('incidencias de los rubros = variación del nivel general', np.allclose(ri['Suma de rubros'], ri['Nivel general (variación %)'], atol=1e-9)
+    and np.allclose(ri['Nivel general (variación %)'], g['resumen']['variacion_mensual_apareada_%'].iloc[1:], atol=1e-9))
+rr = g['rub_resumen'].set_index('rubro')
+chk('pesos e incidencias del período de los rubros', np.isclose(rr['peso_ultimo_dia_%'].drop('Nivel general').sum(), 100)
+    and np.isclose(rr['incidencia_periodo_pp'].sum(), rr.at['Nivel general', 'variacion_periodo_%']))
+
 S = g['serie'].set_index('fecha')
 d0, d1 = HUECO[0] - pd.Timedelta(days=1), HUECO[0]
 _tend = sum(q * BASE[e] * tendencia(e, d1) for e, q in CANASTA.items()) / sum(q * BASE[e] * tendencia(e, d0) for e, q in CANASTA.items())
@@ -198,22 +273,31 @@ chk('nombre automático Pass-through', g['NOMBRE_CANASTA'] == 'Pass-through' and
 chk('enero usa el archivo completo de la parte 1', any('COMPLETOb' in n for _z, n in g['_mapa_mes']['2026-01']) and
     len(g['_mapa_mes']['2026-01']) == 2)
 x = pd.ExcelFile(out / 'canasta_diaria_pass_through_20260101_20260320.xlsx')
-chk(f'hojas del Excel {x.sheet_names}', x.sheet_names == ['Serie_diaria', 'Resumen_mensual', 'Composicion',
-                                                          'Indices_por_grupo', 'Precios_diarios', 'Precios_apareados', 'Notas'])
+chk(f'hojas del Excel {x.sheet_names}', x.sheet_names == [
+    'Serie_diaria', 'Resumen_mensual', 'Provincias_resumen', 'Provincias_mensual', 'Provincias_diario', 'Rubros_resumen',
+    'Rubros_mensual', 'Rubros_incidencia', 'Rubros_diario', 'Composicion', 'Indices_por_grupo', 'Precios_diarios',
+    'Precios_apareados', 'Notas'])
+pm = pd.read_excel(x, 'Provincias_mensual')
+chk('Provincias_mensual: nivel general = variación mensual apareada', pm.columns.tolist()[:2] == ['mes', 'Nivel general']
+    and np.allclose(pm['Nivel general'].iloc[1:], g['resumen']['variacion_mensual_apareada_%'].iloc[1:]))
+sd = pd.read_parquet(out / 'series_desagregadas_pass_through_20260101_20260320.parquet')
+chk('series desagregadas: nivel general, 3 provincias y 3 rubros por día',
+    len(sd) == len(S) * 7 and sd.groupby('desagregacion')['nombre'].nunique().to_dict() == {'Nivel general': 1, 'provincia': 3, 'rubro': 3})
 ig = pd.read_excel(x, 'Indices_por_grupo')
 chk('índices por tipo y grupo', {'tipo | Alimentos', 'grupo | 01.1.1 Pan'} <= set(ig.columns))
 pan = pd.read_parquet(out / 'panel_diario_pass_through_20260101_20260320.parquet')
 chk('panel: una fila por producto y día con dato', len(pan) == len(pdia) and pan['precio_apareado'].notna().all())
 
 # ── Caché: misma salida desde el caché, con un mes borrado y con un estado borrado (se relee el mes anterior) ──
-base = g['serie'].copy(); base_p = g['precios_dia'].copy()
+base = g['serie'].copy(); base_p = g['precios_dia'].copy(); base_pv = g['prov_val'].copy(); base_rv = g['rub_val'].copy()
 
 def igual(nombre, g2, leidos):
     ok = (g2['serie'].equals(base) and g2['precios_dia'].sort_values(['fecha', 'ean_norm']).reset_index(drop=True)
-          .equals(base_p.sort_values(['fecha', 'ean_norm']).reset_index(drop=True)))
+          .equals(base_p.sort_values(['fecha', 'ean_norm']).reset_index(drop=True))
+          and g2['prov_val'].equals(base_pv) and g2['rub_val'].equals(base_rv))
     chk(f'{nombre}: igual (leídos {sorted(g2["A_LEER"])})', ok and sorted(g2['A_LEER']) == leidos)
 
-cache = next((out / '_cache').glob('diaria_v2_*'))
+cache = next((out / '_cache').glob('diaria_v3_*'))
 igual('segunda corrida desde el caché', correr(), ['2026-03'])
 (cache / '2026-02.parquet').unlink()
 igual('sin febrero en el caché', correr(), ['2026-02', '2026-03'])
@@ -225,4 +309,5 @@ shutil.rmtree(tmp, ignore_errors=True)
 if errores:
     print('FALLAS:'); [print('  ' + x) for x in errores]
     sys.exit(1)
-print(f'OK: {len(pdia)} producto-días, {len(S)} días; medianas, relativos apareados, índices, hueco, caché: todo igual a la fuerza bruta')
+print(f'OK: {len(pdia)} producto-días, {len(S)} días; medianas, relativos apareados, índices, hueco, provincias, rubros, '
+      f'caché: todo igual a la fuerza bruta')

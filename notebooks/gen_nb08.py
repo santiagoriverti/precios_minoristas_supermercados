@@ -36,17 +36,27 @@ días del 01/01/2022 al 20/10/2026, en `cantidad_01` de `output_canasta/canasta_
 todos los productos): `valor_canasta` (medianas) y `valor_canasta_apareado` (sucursales apareadas). Los días con
 cobertura incompleta del SEPA se marcan (`cobertura_incompleta`), no se borran.
 
-**Caché:** cada mes cerrado queda en `output_canasta/_cache/diaria_v2_<clave>/`: `AAAA-MM.parquet` y
-`estado_AAAA-MM.parquet` (el último precio de cada sucursal y producto, para empalmar con el mes siguiente). La clave son
-los EANs de la canasta: cambiar cantidades no relee. La primera corrida con los 775 productos lee 58 meses (~1 min por
-mes en una PC, ~1,5-2 h en el Colab gratuito, menos de 1 GB de RAM); las siguientes, solo el último mes. Si Colab se
-corta, se vuelve a ejecutar y sigue donde quedó.
+**Desagregaciones** (sucursales apareadas, la misma canasta en todas):
+- **Nivel general vs provincias**: el índice apareado de cada producto se calcula también con las sucursales de cada
+  provincia (código ISO de `sucursales_provincia`, como el nb09) y se lleva a pesos con la mediana de la provincia. Si una
+  provincia no tiene pares de un producto un día, ese día el producto se mueve como en el país (`peso_imputado_%`).
+- **Nivel general vs grandes rubros**: la canasta por `tipo` (Alimentos, Bebidas sin alcohol, Limpieza del hogar...), con
+  su peso en el valor de la canasta y su incidencia en la variación del nivel general.
+
+**Caché:** cada mes cerrado queda en `output_canasta/_cache/diaria_v3_<clave>/`: `AAAA-MM.parquet`, `prov_AAAA-MM.parquet`
+(producto × provincia × día) y `estado_AAAA-MM.parquet` (el último precio de cada sucursal y producto, para empalmar con
+el mes siguiente). La clave son los EANs de la canasta: cambiar cantidades no relee. La primera corrida con los 775
+productos lee 58 meses (~1,5 min por mes en una PC, ~2-3 h en el Colab gratuito, ~1,5 GB de RAM); las siguientes, solo
+el último mes. Si Colab se corta, se vuelve a ejecutar y sigue donde quedó.
 
 **Salidas** (en `output_canasta/`): `canasta_diaria_<canasta>_<desde>_<hasta>.xlsx` (Serie_diaria, Resumen_mensual,
-Composicion, Indices_por_grupo, Precios_diarios, Precios_apareados, Notas) y `panel_diario_<canasta>_<desde>_<hasta>`
-(`.parquet` y `.csv.gz`: producto × día con los dos precios, para las regresiones).
+Provincias_resumen, Provincias_mensual, Provincias_diario, Rubros_resumen, Rubros_mensual, Rubros_incidencia,
+Rubros_diario, Composicion, Indices_por_grupo, Precios_diarios, Precios_apareados, Notas),
+`panel_diario_<canasta>_<desde>_<hasta>` (`.parquet` y `.csv.gz`: producto × día con los dos precios, para las
+regresiones) y `series_desagregadas_<canasta>_<desde>_<hasta>.parquet` (nivel general, provincias y rubros × día).
 
-**Estructura:** Config → Setup → Canasta desde Excel → Lectura de ZIPs (con caché) → Series diarias → Gráfico → Exportación"""))
+**Estructura:** Config → Setup → Canasta desde Excel → Lectura de ZIPs (con caché) → Series diarias y desagregaciones →
+Gráficos → Exportación"""))
 
 # ── CELL 1 — CONFIG ────────────────────────────────────────────────────────────
 cells.append(cell_code(r"""# ===========================================================
@@ -206,7 +216,32 @@ _PAT_FECHA = re.compile(r'^precio_(\d{8})$')
 F_INI = pd.Timestamp(FECHA_INICIO)
 F_FIN = pd.Timestamp(FECHA_FIN) if FECHA_FIN else pd.Timestamp('2100-01-01')
 _D0 = pd.Timestamp('2000-01-01')
-_ID = {'id_comercio', 'id_bandera', 'id_sucursal', 'id_producto'}
+_ID = {'id_comercio', 'id_bandera', 'id_sucursal', 'id_producto', 'sucursales_provincia'}
+
+# Provincias: código ISO 3166-2:AR de sucursales_provincia, como el nb09 (las escritas con el nombre se pasan al código;
+# las vacías o no reconocidas cuentan para el nivel general, no para las provincias)
+ISO_PROV = {'AR-C': 'CABA', 'AR-B': 'Buenos Aires', 'AR-K': 'Catamarca', 'AR-H': 'Chaco', 'AR-U': 'Chubut',
+            'AR-X': 'Córdoba', 'AR-W': 'Corrientes', 'AR-E': 'Entre Ríos', 'AR-P': 'Formosa', 'AR-Y': 'Jujuy',
+            'AR-L': 'La Pampa', 'AR-F': 'La Rioja', 'AR-M': 'Mendoza', 'AR-N': 'Misiones', 'AR-Q': 'Neuquén',
+            'AR-R': 'Río Negro', 'AR-A': 'Salta', 'AR-J': 'San Juan', 'AR-D': 'San Luis', 'AR-Z': 'Santa Cruz',
+            'AR-S': 'Santa Fe', 'AR-G': 'Santiago del Estero', 'AR-V': 'Tierra del Fuego', 'AR-T': 'Tucumán'}
+NOMBRE_ISO = {'caba': 'AR-C', 'ciudad autonoma de buenos aires': 'AR-C', 'capital federal': 'AR-C',
+              'buenos aires': 'AR-B', 'catamarca': 'AR-K', 'chaco': 'AR-H', 'chubut': 'AR-U', 'cordoba': 'AR-X',
+              'corrientes': 'AR-W', 'entre rios': 'AR-E', 'formosa': 'AR-P', 'jujuy': 'AR-Y', 'la pampa': 'AR-L',
+              'la rioja': 'AR-F', 'mendoza': 'AR-M', 'misiones': 'AR-N', 'neuquen': 'AR-Q', 'rio negro': 'AR-R',
+              'salta': 'AR-A', 'san juan': 'AR-J', 'san luis': 'AR-D', 'santa cruz': 'AR-Z', 'santa fe': 'AR-S',
+              'santiago del estero': 'AR-G', 'tierra del fuego': 'AR-V', 'tucuman': 'AR-T'}
+PROV_LIST = np.array(sorted(ISO_PROV), dtype=object)   # código de cada provincia en las matrices del lector
+NP = len(PROV_LIST)
+_COD_PROV = {c: i for i, c in enumerate(PROV_LIST)}
+
+def iso_provincia(v):
+    v = str(v).strip()
+    if v.upper() in ISO_PROV:
+        return v.upper()
+    k = _ud.normalize('NFKD', v).encode('ascii', 'ignore').decode().lower()
+    k = re.sub(r'\s+', ' ', re.sub(r',.*$', '', k)).strip()
+    return NOMBRE_ISO.get(re.sub(r'^provincia (de |del )?', '', k), '')
 
 def detectar_semestres():
     result = []
@@ -267,11 +302,13 @@ def _leer_archivo(z, nombre):
     _t = {c: df[c].fillna('').str.strip() for c in ('id_comercio', 'id_bandera', 'id_sucursal')}
     suc = (_t['id_comercio'] + '|' + _t['id_bandera'] + '|'
            + _t['id_sucursal'].str.lstrip('0').replace('', '0')).to_numpy(object)
+    _pv = df['sucursales_provincia'].fillna('') if 'sucursales_provincia' in df else pd.Series('', index=df.index)
+    prov = _pv.map({v: _COD_PROV.get(iso_provincia(v), -1) for v in _pv.unique()}).to_numpy(np.int64)
     P = np.column_stack([pd.to_numeric(df[c], errors='coerce').to_numpy(float) for c in cols_p])
     del df
     P[~(P > 0)] = np.nan
     ok = e >= 0
-    return {'e': e[ok].astype(np.int64), 'suc': suc[ok], 'P': P[ok],
+    return {'e': e[ok].astype(np.int64), 'suc': suc[ok], 'prov': prov[ok], 'P': P[ok],
             'fechas': pd.to_datetime([c[-8:] for c in cols_p], format='%Y%m%d')}
 
 def _agregar_dia(e, x):
@@ -285,19 +322,21 @@ def _agregar_dia(e, x):
 
 def _estado_vacio():
     return {'pares': pd.DataFrame({'precio': pd.Series(dtype=float), 'dia': pd.Series(dtype=np.int64),
-                                   'idx': pd.Series(dtype=float)}),
-            'indice': np.ones(NE)}
+                                   'idx': pd.Series(dtype=float), 'idx_p': pd.Series(dtype=float)}),
+            'indice': np.ones(NE), 'indice_prov': np.ones((NE, NP))}
 
 def leer_mes(archivos, estado):
-    # Un mes -> [fecha, ean_norm, precio_mediano, n_obs, precio_promedio, suma_log_rel, n_pares] y el estado al cerrar
-    # el mes: el índice apareado de cada producto y, por sucursal x producto, el último precio de los últimos
-    # MAX_DIAS_SIN_PRECIO días con su día y el índice del producto ese día.
+    # Un mes -> [fecha, ean_norm, precio_mediano, n_obs, precio_promedio, suma_log_rel, n_pares], lo mismo por
+    # provincia [fecha, e, prov, precio_mediano, n_obs, suma_log_rel, n_pares] (e y prov: posición en EAN_LIST y
+    # PROV_LIST) y el estado al cerrar el mes: el índice apareado de cada producto (nacional y por provincia) y, por
+    # sucursal x producto, el último precio de los últimos MAX_DIAS_SIN_PRECIO días con su día y los dos índices ese día.
     # Relativo de una sucursal = precio de hoy / su último precio movido con el índice del producto desde entonces
     # (imputación del IPC para los precios que faltan): una sucursal que faltó unos días aporta solo lo que se apartó
-    # del resto, sin volver a contar la variación que ya entró por las otras sucursales esos días.
+    # del resto, sin volver a contar la variación que ya entró por las otras sucursales esos días. En cada provincia,
+    # con el índice de la provincia; si la provincia no tiene pares de un producto ese día, se mueve como el nacional.
     partes = [r for r in (_leer_archivo(z, n) for z, n in archivos) if r is not None]
     if not partes:
-        return None, estado
+        return None, None, estado
     partes.sort(key=lambda r: r['fechas'][0])
     # Pesos o centavos: misma regla que la CELDA 9 del nb02 (mediana de todas las observaciones del mes > 10.000)
     _v = np.concatenate([r['P'][np.isfinite(r['P'])] for r in partes])
@@ -305,25 +344,28 @@ def leer_mes(archivos, estado):
     del _v
     if estado is None:
         estado = _estado_vacio()
-    pares, I = estado['pares'], estado['indice'].copy()
-    filas = []
+    pares, I, IP = estado['pares'], estado['indice'].copy(), estado['indice_prov'].copy()
+    filas, filas_p = [], []
     while partes:
         r = partes.pop(0)
-        P, e = r['P'] / fac, r['e']
+        P, e, pr = r['P'] / fac, r['e'], r['prov']
         dia = np.asarray((r['fechas'] - _D0).days, dtype=np.int64)
         # sucursal x producto: si el SEPA repite la fila, para los relativos cuenta el promedio de las repetidas
         clave = pd.Series(r['suc']) + '#' + pd.Series(EAN_LIST[e])
         cod, uni = pd.factorize(clave)
         if len(uni) < len(clave):
             Pu = pd.DataFrame(P).groupby(cod).mean().to_numpy()
-            eu = e[np.unique(cod, return_index=True)[1]]
+            _pri = np.unique(cod, return_index=True)[1]
+            eu, pu = e[_pri], pr[_pri]
         else:
-            Pu, eu = P, e
+            Pu, eu, pu = P, e, pr
+        kp = eu * NP + np.maximum(pu, 0)          # producto x provincia (solo vale donde pu >= 0)
         pos = pares.index.get_indexer(uni) if len(pares) else np.full(len(uni), -1)
         ult_p = np.where(pos >= 0, pares['precio'].to_numpy()[pos], np.nan) if len(pares) else np.full(len(uni), np.nan)
         ult_d = (np.where(pos >= 0, pares['dia'].to_numpy()[pos], -10**9) if len(pares)
                  else np.full(len(uni), -10**9, dtype=np.int64))
         ult_i = np.where(pos >= 0, pares['idx'].to_numpy()[pos], np.nan) if len(pares) else np.full(len(uni), np.nan)
+        ult_ip = np.where(pos >= 0, pares['idx_p'].to_numpy()[pos], np.nan) if len(pares) else np.full(len(uni), np.nan)
         for j, f in enumerate(r['fechas']):
             x = P[:, j]
             v = np.isfinite(x)
@@ -339,30 +381,52 @@ def leer_mes(archivos, estado):
             npar = np.bincount(eu[par][k], minlength=NE)
             _con = npar > 0
             I[_con] *= np.exp(slr[_con] / npar[_con])
+            # provincias: los mismos pares, con el índice de cada provincia
+            _ln_nac = np.where(_con, slr / np.maximum(npar, 1), 0.0)
+            parp = par & (pu >= 0)
+            relp = xu[parp] / ult_p[parp] * ult_ip[parp] / IP.ravel()[kp[parp]]
+            kk = (relp >= 1 / RELATIVO_MAX) & (relp <= RELATIVO_MAX)
+            slrp = np.bincount(kp[parp][kk], weights=np.log(relp[kk]), minlength=NE * NP)
+            nparp = np.bincount(kp[parp][kk], minlength=NE * NP)
+            IP *= np.exp(np.where(nparp > 0, slrp / np.maximum(nparp, 1), np.repeat(_ln_nac, NP))).reshape(NE, NP)
             ult_p[vu] = xu[vu]
             ult_d[vu] = dia[j]
             ult_i[vu] = I[eu[vu]]
+            ult_ip[vu] = np.where(pu[vu] >= 0, IP.ravel()[kp[vu]], np.nan)
             filas.append(pd.DataFrame({'fecha': f, 'ean_norm': EAN_LIST[ee], 'precio_mediano': med, 'n_obs': nobs,
                                        'precio_promedio': prom, 'suma_log_rel': slr[ee], 'n_pares': npar[ee]}))
-        nuevo = pd.DataFrame({'precio': ult_p, 'dia': ult_d, 'idx': ult_i}, index=uni)
+            vp = v & (pr >= 0)
+            ap = pd.DataFrame({'k': e[vp] * NP + pr[vp], 'p': x[vp]}).groupby('k')['p'].agg(['median', 'size'])
+            ka = ap.index.to_numpy()
+            filas_p.append(pd.DataFrame({'fecha': f, 'e': (ka // NP).astype(np.int16), 'prov': (ka % NP).astype(np.int8),
+                                         'precio_mediano': ap['median'].to_numpy(), 'n_obs': ap['size'].to_numpy(np.int32),
+                                         'suma_log_rel': slrp[ka], 'n_pares': nparp[ka].astype(np.int32)}))
+        nuevo = pd.DataFrame({'precio': ult_p, 'dia': ult_d, 'idx': ult_i, 'idx_p': ult_ip}, index=uni)
         nuevo = nuevo[np.isfinite(nuevo['precio'])]
         if len(pares):
             nuevo = pd.concat([pares[~pares.index.isin(uni)], nuevo])
         pares = nuevo[nuevo['dia'] >= dia[-1] - MAX_DIAS_SIN_PRECIO]
-        del r, P, Pu, clave, cod, uni, ult_p, ult_d, ult_i
+        del r, P, Pu, clave, cod, uni, ult_p, ult_d, ult_i, ult_ip
     gc.collect()
-    return (pd.concat(filas, ignore_index=True) if filas else None), {'pares': pares, 'indice': I}
+    if not filas:
+        return None, None, {'pares': pares, 'indice': I, 'indice_prov': IP}
+    return (pd.concat(filas, ignore_index=True), pd.concat(filas_p, ignore_index=True),
+            {'pares': pares, 'indice': I, 'indice_prov': IP})
 
 def guardar_estado(est, ruta):
-    # pares sucursal x producto y, en los metadatos del parquet, el índice apareado de cada producto
+    # pares sucursal x producto y, en los metadatos del parquet, el índice apareado de cada producto (nacional y por
+    # provincia)
     import pyarrow as pa, pyarrow.parquet as pq, json
     p = est['pares']
     k = p.index.to_series().str.rsplit('#', n=1, expand=True)
     t = pa.Table.from_pandas(pd.DataFrame({'suc': k[0].to_numpy(), 'ean': k[1].to_numpy(), 'precio': p['precio'].to_numpy(),
-                                           'dia': p['dia'].to_numpy(np.int32), 'idx': p['idx'].to_numpy()}),
+                                           'dia': p['dia'].to_numpy(np.int32), 'idx': p['idx'].to_numpy(),
+                                           'idx_p': p['idx_p'].to_numpy()}),
                              preserve_index=False)
     meta = dict(t.schema.metadata or {})
     meta[b'nb08_indice'] = json.dumps(dict(zip(EAN_LIST.tolist(), est['indice'].tolist()))).encode()
+    meta[b'nb08_indice_prov'] = json.dumps({'provincias': PROV_LIST.tolist(),
+                                            'indice': dict(zip(EAN_LIST.tolist(), est['indice_prov'].tolist()))}).encode()
     pq.write_table(t.replace_schema_metadata(meta), ruta)
 
 def cargar_estado(ruta):
@@ -370,9 +434,13 @@ def cargar_estado(ruta):
     t = pq.read_table(ruta)
     d = t.to_pandas()
     ind = json.loads(t.schema.metadata[b'nb08_indice'])
+    ipr = json.loads(t.schema.metadata[b'nb08_indice_prov'])
+    assert ipr['provincias'] == PROV_LIST.tolist()
     return {'pares': pd.DataFrame({'precio': d['precio'].to_numpy(float), 'dia': d['dia'].to_numpy(np.int64),
-                                   'idx': d['idx'].to_numpy(float)}, index=(d['suc'] + '#' + d['ean']).to_numpy(object)),
-            'indice': np.array([ind.get(e, 1.0) for e in EAN_LIST], dtype=float)}
+                                   'idx': d['idx'].to_numpy(float), 'idx_p': d['idx_p'].to_numpy(float)},
+                                  index=(d['suc'] + '#' + d['ean']).to_numpy(object)),
+            'indice': np.array([ind.get(e, 1.0) for e in EAN_LIST], dtype=float),
+            'indice_prov': np.array([ipr['indice'].get(e, [1.0] * NP) for e in EAN_LIST], dtype=float)}
 
 # Meses disponibles -> archivos
 _mapa_mes = archivos_por_mes()
@@ -386,19 +454,42 @@ if _falta:
 
 # Caché por mes (solo meses cerrados: el último se relee siempre, puede estar en curso)
 _clave = hashlib.md5('|'.join(sorted(EANS)).encode()).hexdigest()[:8]
-_cache_mes = CACHE_DIR / f'diaria_v2_{_clave}'
+_cache_mes = CACHE_DIR / f'diaria_v3_{_clave}'
 if USE_CACHE:
     _cache_mes.mkdir(parents=True, exist_ok=True)
 
 def _p_mes(m):
     return _cache_mes / f'{m}.parquet'
 
+def _p_prov(m):
+    return _cache_mes / f'prov_{m}.parquet'
+
 def _p_est(m):
     return _cache_mes / f'estado_{m}.parquet'
 
+# Producto x provincia x día: se acumula mes a mes en matrices (días calendario x productos x provincias) para no
+# juntar ~30 M de filas. De las medianas de cada provincia alcanza la del último día con dato (lleva el índice a pesos).
+_CAL = pd.date_range(F_INI, min(F_FIN, pd.Period(MESES[-1]).end_time.normalize()))
+SLR_P = np.zeros((len(_CAL), NE, NP))
+NPAR_P = np.zeros((len(_CAL), NE, NP), dtype=np.int32)
+OBS_P = np.zeros((len(_CAL), NP), dtype=np.int64)
+MED_P_ULT = np.full((NE, NP), np.nan)
+DIA_P_ULT = np.full((NE, NP), -1, dtype=np.int64)
+
+def acumular_prov(d):
+    d = d[(d['fecha'] >= F_INI) & (d['fecha'] <= F_FIN)]
+    t = _CAL.get_indexer(d['fecha'])
+    e, p = d['e'].to_numpy(np.int64), d['prov'].to_numpy(np.int64)
+    SLR_P[t, e, p] = d['suma_log_rel'].to_numpy()
+    NPAR_P[t, e, p] = d['n_pares'].to_numpy()
+    np.add.at(OBS_P, (t, p), d['n_obs'].to_numpy())
+    u = d.assign(t=t).sort_values('t', kind='stable').drop_duplicates(['e', 'prov'], keep='last')
+    MED_P_ULT[u['e'].to_numpy(np.int64), u['prov'].to_numpy(np.int64)] = u['precio_mediano'].to_numpy()
+    DIA_P_ULT[u['e'].to_numpy(np.int64), u['prov'].to_numpy(np.int64)] = u['t'].to_numpy()
+
 # Meses a leer del SEPA: los que no están en caché y el último. Cada uno necesita el estado del mes anterior (último
 # precio de cada sucursal): si no está guardado, se relee ese mes también.
-A_LEER = {m for m in MESES if not (USE_CACHE and m != MESES[-1] and _p_mes(m).exists())}
+A_LEER = {m for m in MESES if not (USE_CACHE and m != MESES[-1] and _p_mes(m).exists() and _p_prov(m).exists())}
 _cambio = True
 while _cambio:
     _cambio = False
@@ -413,20 +504,24 @@ _lista, estado = [], None
 for _k, _m in enumerate(MESES):
     if _m not in A_LEER:
         _lista.append(pd.read_parquet(_p_mes(_m)))
+        acumular_prov(pd.read_parquet(_p_prov(_m)))
         estado = None
         continue
     if estado is None and _k > 0 and _p_est(MESES[_k - 1]).exists():
         estado = cargar_estado(_p_est(MESES[_k - 1]))
     _t = time.time()
-    _agg, estado = leer_mes(_mapa_mes[_m], estado)
+    _agg, _aggp, estado = leer_mes(_mapa_mes[_m], estado)
     if _agg is None:
         print(f'  {_m}: sin datos de la canasta')
         continue
     _cerrado = _m != MESES[-1]
     if USE_CACHE and _cerrado:
         _agg.to_parquet(_p_mes(_m), index=False)
+        _aggp.to_parquet(_p_prov(_m), index=False)
         guardar_estado(estado, _p_est(_m))
     _lista.append(_agg)
+    acumular_prov(_aggp)
+    del _aggp
     print(f'  {_m}: {_agg["fecha"].nunique()} días, {_agg["ean_norm"].nunique()}/{NE} productos, '
           f'{int(_agg["n_obs"].sum()):,} observaciones ({time.time() - _t:.0f} s'
           f'{", guardado en caché" if USE_CACHE and _cerrado else ""}) | {ram()}', flush=True)
@@ -435,7 +530,10 @@ precios_dia = pd.concat(_lista, ignore_index=True)
 precios_dia = precios_dia[(precios_dia['fecha'] >= F_INI) & (precios_dia['fecha'] <= F_FIN)].reset_index(drop=True)
 del _lista; gc.collect()
 print(f'\nLectura: {time.time() - _t0:.0f} s | {precios_dia["fecha"].nunique():,} días | '
-      f'{precios_dia["fecha"].min():%Y-%m-%d} -> {precios_dia["fecha"].max():%Y-%m-%d} | {ram()}')"""))
+      f'{precios_dia["fecha"].min():%Y-%m-%d} -> {precios_dia["fecha"].max():%Y-%m-%d} | {ram()}')
+_obs_tot = int(precios_dia['n_obs'].sum())
+print(f'Provincias con datos: {int((OBS_P.sum(axis=0) > 0).sum())}/{NP} | observaciones sin provincia reconocida: '
+      f'{_obs_tot - int(OBS_P.sum()):,} de {_obs_tot:,} (cuentan para el nivel general, no para las provincias)')"""))
 
 # ── CELL 5 — SERIE ─────────────────────────────────────────────────────────────
 cells.append(cell_code(r"""# ============================================================
@@ -568,6 +666,128 @@ for _d in _dims:
             _i = serie_valor(P_AP[_cs])[3]
             indices_grupo[f'{_d} | {_g}'[:60]] = (_i / _i.iloc[0] * 100).values
 
+# ── Nivel general vs provincias (sucursales apareadas, la misma canasta en todas) ──
+# Eslabón de un producto en una provincia = media geométrica de los relativos de sus sucursales; sin pares en la
+# provincia ese día, el eslabón nacional (lo que se imputa: peso_imputado_%). Se lleva a pesos con la mediana de la
+# provincia del último día con dato; un producto que la provincia nunca tuvo vale como en el país. Valor de la canasta
+# encadenado como el nacional y llevado a pesos en el día ancla: comparable en nivel con el nivel general.
+NG = 'Nivel general'
+REGION_PROV = {'CABA': 'GBA', 'Buenos Aires': 'GBA y Pampeana', 'Córdoba': 'Pampeana', 'Santa Fe': 'Pampeana',
+               'Entre Ríos': 'Pampeana', 'La Pampa': 'Pampeana', 'Jujuy': 'Noroeste', 'Salta': 'Noroeste',
+               'Tucumán': 'Noroeste', 'Catamarca': 'Noroeste', 'Santiago del Estero': 'Noroeste', 'La Rioja': 'Noroeste',
+               'Corrientes': 'Noreste', 'Chaco': 'Noreste', 'Formosa': 'Noreste', 'Misiones': 'Noreste',
+               'Mendoza': 'Cuyo', 'San Juan': 'Cuyo', 'San Luis': 'Cuyo', 'Neuquén': 'Patagonia',
+               'Río Negro': 'Patagonia', 'Chubut': 'Patagonia', 'Santa Cruz': 'Patagonia', 'Tierra del Fuego': 'Patagonia'}
+_t_dias = _CAL.get_indexer(MED.index)
+_ie = pd.Index(EAN_LIST).get_indexer(MED.columns)
+_ln_nac = np.log(LINK.where(LINK.notna(), 1.0)).to_numpy()
+_activo = MED.notna().cummax()
+val_prov, imp_prov, obs_prov, prod_prov = {}, {}, {}, {}
+for _p in sorted(range(NP), key=lambda i: _ud.normalize('NFKD', ISO_PROV[PROV_LIST[i]]).encode('ascii', 'ignore')):
+    if not OBS_P[:, _p].any():
+        continue
+    _nom = ISO_PROV[PROV_LIST[_p]]
+    _npp = NPAR_P[_t_dias[:, None], _ie[None, :], _p]
+    _lp = np.where(_npp > 0, SLR_P[_t_dias[:, None], _ie[None, :], _p] / np.maximum(_npp, 1), _ln_nac)
+    _IDXp = pd.DataFrame(np.exp(_lp), index=MED.index, columns=MED.columns).where(_activo).cumprod()
+    _du, _niv = DIA_P_ULT[_ie, _p], _nivel.reindex(MED.columns).to_numpy().copy()
+    _con = np.flatnonzero(_du >= 0)
+    _niv[_con] = MED_P_ULT[_ie[_con], _p] / _IDXp.to_numpy()[MED.index.get_indexer(_CAL[_du[_con]]), _con]
+    _Pp = (_IDXp * _niv).where(MED.notna())
+    _dir, _, _, _ix, _ = serie_valor(_Pp)
+    val_prov[_nom] = _ix / _ix[ANCLA] * _dir[ANCLA]
+    _vq = _Pp.mul(_q, axis=1)
+    imp_prov[_nom] = _vq.where(_npp == 0).sum(axis=1) / _vq.sum(axis=1) * 100
+    obs_prov[_nom] = pd.Series(OBS_P[_t_dias, _p], index=MED.index)
+    prod_prov[_nom] = len(_con)
+prov_val = pd.DataFrame({NG: val_ap, **val_prov})
+
+# ── Nivel general vs grandes rubros (tipo de la canasta; si no lo trae, la categoría) ──
+# Valor de cada rubro = su parte de la canasta, encadenada como el nivel general y en pesos del día ancla: los rubros
+# suman el nivel general en el día ancla (en el resto, salvo lo que separa encadenarlos por separado).
+DIM_RUBRO = next((c for c in ('tipo', 'categoria') if c in _comp and _comp[c].notna().any()), None)
+val_rub = {}
+if DIM_RUBRO:
+    for _g, _ix in sorted(_comp.groupby(DIM_RUBRO).groups.items()):
+        _cs = [e for e in _ix if e in P_AP.columns]
+        if _cs:
+            _dir, _, _, _i, _ = serie_valor(P_AP[_cs])
+            val_rub[_g] = _i / _i[ANCLA] * _dir[ANCLA]
+rub_val = pd.DataFrame({NG: val_ap, **val_rub})
+n_rub = _comp.groupby(DIM_RUBRO).size() if DIM_RUBRO else pd.Series(dtype=int)
+
+def _mensual(V):
+    # promedio de los días de cada mes (como variacion_mensual_% de Resumen_mensual)
+    M = V.groupby(V.index.to_period('M')).mean()
+    M.index = M.index.astype(str)
+    M.index.name = 'mes'
+    return M
+
+def _antes(M, k):
+    # fila de k meses antes del último (NaN si ese mes no está)
+    p = pd.PeriodIndex(M.index, freq='M')
+    return M.iloc[p.get_loc(p[-1] - k)] if (p[-1] - k) in p else M.iloc[-1] * np.nan
+
+def _var(M, k):
+    return (M.iloc[-1] / _antes(M, k) - 1) * 100
+
+def resumen_vs_ng(V, nombre):
+    # una fila por grupo (la primera, el nivel general): valor, variaciones y diferencia con el nivel general
+    M = _mensual(V)
+    u, p0 = V.iloc[-1], V.iloc[0]
+    r = pd.DataFrame({'valor_primer_dia': p0, 'valor_ultimo_dia': u,
+                      'variacion_periodo_%': (u / p0 - 1) * 100,
+                      'variacion_12_meses_%': _var(M, 12),
+                      'variacion_ultimo_mes_%': _var(M, 1)})
+    for c in ('variacion_periodo_%', 'variacion_12_meses_%', 'variacion_ultimo_mes_%'):
+        r[f'dif_{c[:-2]}_vs_NG_pp'] = r[c] - r.at[NG, c]
+    return r.rename_axis(nombre).reset_index()
+
+prov_mensual = _mensual(prov_val)
+prov_var_mensual = (prov_mensual.pct_change() * 100).reset_index()
+prov_diario = (prov_val / prov_val.iloc[0] * 100).reset_index()
+prov_resumen = resumen_vs_ng(prov_val, 'provincia')
+prov_resumen.insert(1, 'region', prov_resumen['provincia'].map(REGION_PROV).fillna('País'))
+prov_resumen.insert(4, 'relativo_nivel_general_%', prov_resumen['valor_ultimo_dia'] / prov_val[NG].iloc[-1] * 100)
+_imp = pd.DataFrame(imp_prov).iloc[1:]           # el primer día no tiene eslabón
+prov_resumen['peso_imputado_prom_%'] = prov_resumen['provincia'].map(_imp.mean())
+prov_resumen['peso_imputado_max_%'] = prov_resumen['provincia'].map(_imp.max())
+prov_resumen['productos_con_dato'] = prov_resumen['provincia'].map(prod_prov).fillna(len(MED.columns)).astype(int)
+prov_resumen['observaciones_prom_dia'] = prov_resumen['provincia'].map(pd.DataFrame(obs_prov).mean()).fillna(obs_dia.mean())
+
+rub_mensual = _mensual(rub_val)
+rub_var_mensual = (rub_mensual.pct_change() * 100).reset_index()
+rub_diario = (rub_val / rub_val.iloc[0] * 100).reset_index()
+# incidencia de cada rubro en la variación mensual del nivel general (pp): cambio del valor del rubro / nivel general
+# del mes anterior. Suman la variación del nivel general salvo lo que separa encadenar los rubros por separado.
+_ru = [c for c in rub_mensual.columns if c != NG]
+rub_incidencia = rub_mensual[_ru].diff().div(rub_mensual[NG].shift(), axis=0) * 100
+rub_incidencia['Suma de rubros'] = rub_incidencia[_ru].sum(axis=1, min_count=1)
+rub_incidencia[f'{NG} (variación %)'] = rub_mensual[NG].pct_change() * 100
+rub_incidencia = rub_incidencia.reset_index()
+rub_resumen = resumen_vs_ng(rub_val, 'rubro')
+rub_resumen.insert(1, 'productos', rub_resumen['rubro'].map(n_rub).fillna(len(MED.columns)).astype(int))
+rub_resumen.insert(2, 'peso_primer_dia_%', rub_resumen['valor_primer_dia'] / rub_val[NG].iloc[0] * 100)
+rub_resumen.insert(3, 'peso_ultimo_dia_%', rub_resumen['valor_ultimo_dia'] / rub_val[NG].iloc[-1] * 100)
+rub_resumen['incidencia_periodo_pp'] = (rub_resumen['valor_ultimo_dia'] - rub_resumen['valor_primer_dia']) / rub_val[NG].iloc[0] * 100
+_a12 = _antes(rub_mensual, 12)
+rub_resumen['incidencia_12_meses_pp'] = rub_resumen['rubro'].map((rub_mensual.iloc[-1] - _a12) / _a12[NG] * 100)
+rub_resumen.loc[rub_resumen['rubro'] == NG, ['incidencia_periodo_pp', 'incidencia_12_meses_pp']] = np.nan
+
+# Series desagregadas en formato largo (para las regresiones)
+def _largo_dim(V, dim, imp=None):
+    L = (V / V.iloc[0] * 100).rename_axis('fecha').reset_index().melt(id_vars='fecha', var_name='nombre',
+                                                                       value_name='indice_base100')
+    L['valor_canasta_apareado'] = V.rename_axis('fecha').reset_index().melt(id_vars='fecha')['value'].to_numpy()
+    L['variacion_diaria_%'] = (V / V.shift() - 1).mul(100).rename_axis('fecha').reset_index().melt(id_vars='fecha')['value'].to_numpy()
+    L.insert(1, 'desagregacion', np.where(L['nombre'] == NG, NG, dim))
+    if imp is not None:
+        L['peso_imputado_%'] = pd.DataFrame(imp).reindex(index=V.index, columns=V.columns).melt()['value'].to_numpy()
+    return L
+series_desagregadas = pd.concat([_largo_dim(prov_val, 'provincia', imp_prov),
+                                 _largo_dim(rub_val[[c for c in rub_val if c != NG]], 'rubro')], ignore_index=True)
+series_desagregadas['cobertura_incompleta'] = series_desagregadas['fecha'].map(cob_inc)
+
 # Precios diarios por producto (mediana y apareado), una columna por producto
 _nombre = composicion.set_index('ean_norm')['descripcion']
 precios_wide = MED.copy()
@@ -619,7 +839,19 @@ print(f'Primer día {_p["fecha"]:%d/%m/%Y}: ${_p["valor_canasta"]:,.2f} (mediana
 print(f'Variación del período: medianas {(_u["valor_canasta"] / _p["valor_canasta"] - 1) * 100:+,.1f}% | '
       f'apareado {(_u["valor_canasta_apareado"] / _p["valor_canasta_apareado"] - 1) * 100:+,.1f}%')
 print(resumen[['mes', 'dias_con_dato', 'dias_cobertura_incompleta', 'variacion_mensual_%', 'variacion_mensual_apareada_%',
-               'productos_con_dato_min']].tail(12).to_string(index=False))"""))
+               'productos_con_dato_min']].tail(12).to_string(index=False))
+_cols = ['valor_ultimo_dia', 'variacion_periodo_%', 'variacion_12_meses_%', 'variacion_ultimo_mes_%']
+print(f'\nNivel general vs provincias ({len(val_prov)} provincias):')
+print(prov_resumen.set_index('provincia')[['relativo_nivel_general_%'] + _cols + ['peso_imputado_prom_%',
+                                                                                 'productos_con_dato']].round(2).to_string())
+print(f'\nNivel general vs grandes rubros ({DIM_RUBRO}):')
+print(rub_resumen.set_index('rubro')[['productos', 'peso_ultimo_dia_%'] + _cols + ['incidencia_periodo_pp']].round(2).to_string())
+_suma = rub_val.drop(columns=NG).sum(axis=1)
+print(f'Control: la suma de los rubros se aparta del nivel general a lo sumo {((_suma / rub_val[NG] - 1).abs().max() * 100):.3f}% '
+      f'(cero en el día ancla; encadenar cada rubro por separado)')
+if len(_imp) and _imp.mean().max() > 5:
+    print(f'  AVISO: provincias con más de 5% del valor imputado en promedio: '
+          f'{_imp.mean()[_imp.mean() > 5].round(1).to_dict()}')"""))
 
 # ── CELL 6 — GRÁFICO ───────────────────────────────────────────────────────────
 cells.append(cell_code(r"""# ============================================================
@@ -636,6 +868,27 @@ ax1.set_title(f'Canasta {NOMBRE_CANASTA} — valor diario (escala logarítmica)'
 ax1.legend()
 ax2.plot(serie['fecha'], serie['observaciones'], color='gray', lw=0.8)
 ax2.set_ylabel('observaciones')
+plt.tight_layout()
+plt.show()
+
+# Nivel general vs provincias y vs grandes rubros (sucursales apareadas, base 100 el primer día)
+fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(15, 5.5), sharey=True)
+for _c in prov_diario.columns[2:]:
+    ax1.plot(prov_diario['fecha'], prov_diario[_c], color='#A6A6A6', lw=0.6)
+_hi = prov_resumen[prov_resumen['provincia'] != NG].sort_values('variacion_periodo_%')['provincia']
+for _c, _col in ((_hi.iloc[0], '#2E75B6'), (_hi.iloc[-1], '#C00000')) if len(_hi) else ():
+    ax1.plot(prov_diario['fecha'], prov_diario[_c], color=_col, lw=1.1, label=f'{_c} (extremo)')
+ax1.plot(prov_diario['fecha'], prov_diario[NG], color='black', lw=1.6, label=NG)
+ax1.set_title('Nivel general vs provincias (gris: cada provincia)')
+ax1.legend(fontsize=8)
+for _c, _col in zip(rub_diario.columns[2:], plt.cm.tab10.colors):
+    ax2.plot(rub_diario['fecha'], rub_diario[_c], color=_col, lw=1.0, label=_c)
+ax2.plot(rub_diario['fecha'], rub_diario[NG], color='black', lw=1.6, label=NG)
+ax2.set_title(f'Nivel general vs grandes rubros ({DIM_RUBRO})')
+ax2.legend(fontsize=8)
+for _a in (ax1, ax2):
+    _a.set_yscale('log')
+    _a.yaxis.set_major_formatter(mticker.FuncFormatter(lambda v, _: f'{v:,.0f}'))
 plt.tight_layout()
 plt.show()"""))
 
@@ -673,16 +926,40 @@ notas = pd.DataFrame({'nota': [
     'día de cada mes. El último mes puede estar incompleto (ver dias_con_dato).',
     'Indices_por_grupo: índice con sucursales apareadas de cada tipo y grupo del IPC (o categoría), base 100 el primer día, '
     'con las cantidades de la canasta.',
+    'Nivel general = valor_canasta_apareado (la canasta en todo el país). Las desagregaciones usan sucursales apareadas y '
+    'la misma canasta (productos y cantidades) en todos los grupos.',
+    'Provincias_*: la provincia de cada sucursal es el código ISO de sucursales_provincia (como el nb09; las escritas con '
+    'el nombre se pasan al código; las vacías cuentan para el nivel general y no para ninguna provincia). Eslabón de un '
+    'producto en la provincia = media geométrica de los relativos de sus sucursales (con el índice de la provincia para '
+    'las que faltaron unos días); si la provincia no tiene pares de ese producto ese día, se mueve como en el país '
+    '(peso_imputado_% = parte del valor de la canasta con eslabón nacional ese día; el primer día es 100%). Se lleva a '
+    'pesos con la mediana de la provincia del último día con dato; un producto que la provincia nunca tuvo vale como en '
+    'el país. El valor se encadena como el nivel general y se lleva a pesos en el día ancla: relativo_nivel_general_% '
+    'compara el costo de la canasta en la provincia con el del país (precios de lista).',
+    f'Rubros_*: la canasta partida por {DIM_RUBRO} (grandes rubros de consumo). Valor de cada rubro = su parte de la '
+    'canasta, encadenada como el nivel general y en pesos del día ancla. peso_%: parte del valor de la canasta ese día. '
+    'Incidencia (pp) = cambio del valor del rubro / valor del nivel general del período anterior x 100: las incidencias '
+    'suman la variación del nivel general (salvo lo que separa encadenar cada rubro por separado; ver Suma de rubros).',
+    '*_mensual: variación del promedio de los días de cada mes contra el mes anterior (igual que Resumen_mensual). '
+    '*_resumen: variacion_periodo_% = último día / primer día; variacion_12_meses_% y variacion_ultimo_mes_%, con los '
+    'promedios mensuales (el último mes puede estar incompleto); dif_*_vs_NG_pp = diferencia con el nivel general en '
+    'puntos porcentuales. *_diario: índice base 100 el primer día.',
     'Pesos o centavos: un mes se pasa a pesos si su mediana supera 10.000 (regla del nb02); además se corrige un mes '
     'entero de las medianas si el eslabón de su primer día da más de 30 o menos de 1/30 contra el mes anterior.',
     f'panel_diario_{_base}.parquet / .csv.gz: una fila por producto y día con dato (precio_mediano, precio_promedio, '
     'n_obs, n_pares, relativo_apareado, indice_apareado, precio_apareado, cobertura_incompleta y la composición).',
+    f'series_desagregadas_{_base}.parquet: una fila por día y grupo (nivel general, provincias y rubros) con '
+    'valor_canasta_apareado, indice_base100, variacion_diaria_%, peso_imputado_% (provincias) y cobertura_incompleta.',
     f'Días calendario sin dato: {", ".join(d.strftime("%d/%m/%Y") for d in DIAS_SIN_DATO[:60])}'
     + (' ...' if len(DIAS_SIN_DATO) > 60 else ''),
 ]})
 
 out_xls = OUTPUT_DIR / f'canasta_diaria_{_base}.xlsx'
-_hojas = [('Serie_diaria', serie), ('Resumen_mensual', resumen), ('Composicion', composicion.drop(columns='ean_norm')),
+_hojas = [('Serie_diaria', serie), ('Resumen_mensual', resumen),
+          ('Provincias_resumen', prov_resumen), ('Provincias_mensual', prov_var_mensual), ('Provincias_diario', prov_diario),
+          ('Rubros_resumen', rub_resumen), ('Rubros_mensual', rub_var_mensual), ('Rubros_incidencia', rub_incidencia),
+          ('Rubros_diario', rub_diario),
+          ('Composicion', composicion.drop(columns='ean_norm')),
           ('Indices_por_grupo', indices_grupo), ('Precios_diarios', precios_wide), ('Precios_apareados', precios_ap_wide),
           ('Notas', notas)]
 with pd.ExcelWriter(out_xls, engine='xlsxwriter', datetime_format='dd/mm/yyyy', date_format='dd/mm/yyyy') as _xw:
@@ -691,28 +968,38 @@ with pd.ExcelWriter(out_xls, engine='xlsxwriter', datetime_format='dd/mm/yyyy', 
                              'valign': 'vcenter', 'align': 'center', 'font_size': 10})
     _f_pes = _wb.add_format({'num_format': '#,##0.00'})
     _f_var = _wb.add_format({'num_format': '+0.00"%";-0.00"%"'})
+    _f_pp = _wb.add_format({'num_format': '+0.00;-0.00'})
     _f_ind = _wb.add_format({'num_format': '0.00'})
     _f_nota = _wb.add_format({'text_wrap': True, 'valign': 'top'})
+    # hojas con un mismo formato en todas las columnas de datos (la primera es la fecha o el mes)
+    _fmt_hoja = {'Indices_por_grupo': _f_ind, 'Provincias_diario': _f_ind, 'Rubros_diario': _f_ind,
+                 'Provincias_mensual': _f_var, 'Rubros_mensual': _f_var, 'Rubros_incidencia': _f_pp}
     for _sh, _df in _hojas:
         _df.to_excel(_xw, sheet_name=_sh, index=False)
         _ws = _xw.sheets[_sh]
-        _ws.set_row(0, 30)
+        _ws.set_row(0, 45 if _sh.endswith('_resumen') else 30)
         _ws.freeze_panes(1, 1)
         for _j, _c in enumerate(_df.columns):
             _h = str(_c).lower()
             _fmt = (_f_nota if _sh == 'Notas' else
-                    _f_ind if _sh == 'Indices_por_grupo' and _j > 0 or 'indice' in _h or 'cobertura_ponderada' in _h else
+                    (_f_var if _sh == 'Rubros_incidencia' and '(variación %)' in _h else _fmt_hoja[_sh]) if _sh in _fmt_hoja and _j > 0 else
+                    _f_pp if _h.endswith('_pp') else
+                    _f_ind if 'indice' in _h or 'cobertura_ponderada' in _h or 'relativo_' in _h or 'peso_' in _h else
                     _f_var if '%' in _h else
                     _f_pes if any(x in _h for x in ('valor', 'precio', '|')) else None)
-            _ancho = 160 if _sh == 'Notas' else 12 if _j == 0 else 42 if ('desc' in _h or '|' in _h) else 15
+            _ancho = (160 if _sh == 'Notas' else 22 if _j == 0 and _sh.endswith('_resumen') else 12 if _j == 0 else
+                      42 if ('desc' in _h or '|' in _h) else 15)
             _ws.set_column(_j, _j, _ancho, _fmt)
             _ws.write(0, _j, _c, _f_hdr)
 print(f'Excel: {out_xls}')
-print(f'  Serie_diaria {len(serie):,} filas | Resumen_mensual {len(resumen)} | Composicion {len(composicion)} | '
-      f'Indices_por_grupo {indices_grupo.shape[1] - 1} series | Precios_diarios y Precios_apareados {precios_wide.shape[1] - 1} productos')
+print(f'  Serie_diaria {len(serie):,} filas | Resumen_mensual {len(resumen)} | Provincias {len(val_prov)} | '
+      f'Rubros {len(val_rub)} | Composicion {len(composicion)} | Indices_por_grupo {indices_grupo.shape[1] - 1} series | '
+      f'Precios_diarios y Precios_apareados {precios_wide.shape[1] - 1} productos')
 panel.to_parquet(OUTPUT_DIR / f'panel_diario_{_base}.parquet', index=False)
 panel.to_csv(OUTPUT_DIR / f'panel_diario_{_base}.csv.gz', index=False, compression='gzip')
-print(f'Panel: panel_diario_{_base}.parquet y .csv.gz ({len(panel):,} filas producto x día) | {ram()}')"""))
+print(f'Panel: panel_diario_{_base}.parquet y .csv.gz ({len(panel):,} filas producto x día) | {ram()}')
+series_desagregadas.to_parquet(OUTPUT_DIR / f'series_desagregadas_{_base}.parquet', index=False)
+print(f'Series desagregadas: series_desagregadas_{_base}.parquet ({len(series_desagregadas):,} filas día x grupo)')"""))
 
 # ── Write notebook ──────────────────────────────────────────────────────────────
 nb = {

@@ -87,8 +87,11 @@ la próxima corrida relee 12 meses en la 19c y los 33 de la econometría, una ve
 `output_canasta/canasta_pass_through_2026-10.xlsx`, 01/01/2022 → 20/10/2026) y, además de la mediana diaria, calcula un
 **índice con sucursales apareadas** (relativos de la misma sucursal, con imputación del IPC para los días que falta), los
 días con cobertura incompleta, índices por grupo del IPC y un panel producto × día. Un archivo por quincena (corrige el
-doble conteo del 1-5/08/2024). Test `test_canasta_diaria.py`; validado con datos reales contra el lector anterior.
-**Falta la primera corrida en Colab** (~1,5-2 h); qué revisar: `docs/PASS_THROUGH.md` §2. La canasta sale de
+doble conteo del 1-5/08/2024). Desde el 2026-10-29 (caché `diaria_v3_*`) el Excel trae además **nivel general vs
+provincias** (índice apareado por producto y provincia; sin pares en la provincia, el eslabón nacional) y **vs grandes
+rubros** (`tipo`, con pesos e incidencias): hojas `Provincias_*` y `Rubros_*` y `series_desagregadas_*.parquet`
+(README, sección nb08; `docs/METODOLOGIA.md` §12). Test `test_canasta_diaria.py`; validado con datos reales contra el
+lector anterior. **Falta la primera corrida en Colab** (~2-3 h); qué revisar: `docs/PASS_THROUGH.md` §2. La canasta sale de
 `docs/canastas_alternativas/canasta_pass_through.py` (sobre las salidas del nb09) y el Excel que lee el nb08, del script
 de Colab `marcar_canasta_pass_through_colab.py`.
 

@@ -37,13 +37,18 @@ Este documento junta todo lo de esa línea de trabajo. Detalle de la selección:
    `FECHA_INICIO = '2022-01-01'`, `FECHA_FIN = '2026-10-20'`, `MAX_DIAS_SIN_PRECIO = 31`, `RELATIVO_MAX = 4.0`,
    `MIN_COBERTURA_DIA = 0.75`, `ALERTA_ESLABON = 0.15`. Si Colab muestra una versión vieja del notebook, borrar la copia
    de `Mi unidad/Colab Notebooks/` y volver a abrir el badge.
-3. La primera vez lee los 58 meses (~1,5-2 h en el Colab gratuito, menos de 1 GB de RAM) y guarda cada mes cerrado en
-   `MyDrive/carga/output_canasta/_cache/diaria_v2_<clave>/` (`AAAA-MM.parquet` + `estado_AAAA-MM.parquet`). Si Colab se
+3. La primera vez lee los 58 meses (~2-3 h en el Colab gratuito) y guarda cada mes cerrado en
+   `MyDrive/carga/output_canasta/_cache/diaria_v3_<clave>/` (`AAAA-MM.parquet`, `prov_AAAA-MM.parquet` y
+   `estado_AAAA-MM.parquet`). Si Colab se
    corta, volver a ejecutar: sigue desde el caché. Las corridas siguientes leen solo el último mes.
 4. Salidas en `MyDrive/carga/output_canasta/`:
    - `canasta_diaria_pass_through_<primer día>_<último día>.xlsx` (con los defaults, `..._20220101_20261020.xlsx`):
-     `Serie_diaria`, `Resumen_mensual`, `Composicion`, `Indices_por_grupo`, `Precios_diarios`, `Precios_apareados`, `Notas`;
-   - `panel_diario_pass_through_<...>.parquet` y `.csv.gz`: una fila por producto y día (insumo de las regresiones).
+     `Serie_diaria`, `Resumen_mensual`, `Provincias_resumen`, `Provincias_mensual`, `Provincias_diario`,
+     `Rubros_resumen`, `Rubros_mensual`, `Rubros_incidencia`, `Rubros_diario`, `Composicion`, `Indices_por_grupo`,
+     `Precios_diarios`, `Precios_apareados`, `Notas` (nivel general vs provincias y vs grandes rubros: README, sección
+     `08_canasta_diaria`, y `docs/METODOLOGIA.md` §12);
+   - `panel_diario_pass_through_<...>.parquet` y `.csv.gz`: una fila por producto y día (insumo de las regresiones);
+   - `series_desagregadas_pass_through_<...>.parquet`: una fila por día y grupo (nivel general, provincias, rubros).
 
 **Qué revisar en la salida** (pasarle a Claude la salida impresa, el Excel y el panel `.parquet`):
 - La CELDA 3 dice 775 productos y el nombre "Pass-through".
@@ -56,6 +61,11 @@ Este documento junta todo lo de esa línea de trabajo. Detalle de la selección:
   y 19/07 y el 03/09/2024. Se marcan, no se borran: decidir en las regresiones (dummy o excluirlos).
 - Diferencia entre `valor_canasta` (medianas) y `valor_canasta_apareado`: chica en general; donde se separan es por
   cambios de las sucursales que informan (jul-2023, 01/08/2026, Libertad desde el 03/09/2026).
+- Provincias: las 24 con datos y ninguna observación sin provincia reconocida. `peso_imputado_prom_%` (la CELDA 5 avisa
+  si pasa del 5%): en la prueba con jul-sep 2024 fue ~0-2% en las provincias grandes y más alto en las chicas (Formosa
+  25%, La Rioja 15%, Misiones 11%, Jujuy, Catamarca, Tierra del Fuego y Santa Cruz ~9%): ahí la variación de la
+  provincia es en parte la del país; tenerlo en cuenta al compararlas.
+- Rubros: la suma de los rubros igual al nivel general (la CELDA 5 imprime la diferencia máxima, ~0).
 - Avisos de eslabones de más de ±15% en un día (`ALERTA_ESLABON`) y de cambios de unidad ("parece en otras unidades que
   el mes anterior": se divide por 100, o se multiplica, desde ese mes). No debería haber ninguno de unidades.
 
