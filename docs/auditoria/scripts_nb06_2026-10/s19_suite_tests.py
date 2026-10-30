@@ -1,4 +1,4 @@
-# Corre los 15 tests del repositorio (notebooks/test_*.py; test_encadenado_frescos con 'encadenado' y 'tpd') y anota
+# Corre los 16 tests del repositorio (notebooks/test_*.py; test_encadenado_frescos con 'encadenado' y 'tpd') y anota
 # código de salida, tiempo y la última línea de cada uno. Uso: python -I -X utf8 s19_suite_tests.py <repo> <log de salida>
 import subprocess, sys, time
 from pathlib import Path
@@ -8,7 +8,8 @@ TESTS = [('test_brecha_celiaca.py',), ('test_celdas_graficos_y_mapa.py',), ('tes
          ('test_encadenado_frescos.py', 'tpd'), ('test_frescos_v513.py',), ('test_quiebre_serie.py',),
          ('test_cache_por_mes.py',), ('test_costo_sucursal.py',), ('test_candidatos_reemplazo.py',),
          ('test_desagregacion_variacion.py',), ('test_analisis_detallado.py',), ('test_valores_documento.py',),
-         ('test_reclasificacion_provincia.py',), ('test_trazabilidad_productos.py',), ('test_canasta_diaria.py',)]
+         ('test_reclasificacion_provincia.py',), ('test_trazabilidad_productos.py',), ('test_canasta_diaria.py',),
+         ('test_canasta_reponderada.py',)]
 lineas, fallas = [], 0
 for t in TESTS:
     t0 = time.time()

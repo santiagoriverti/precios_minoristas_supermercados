@@ -32,6 +32,7 @@ Además: el **Notebook 07** es el motor del informe semanal (6 canastas alternat
 | `07_evolucion_canastas_alternativas` | **Motor del informe semanal.** Costo de **6 canastas** (**Popular / Media / Ejecutiva / Tecnológica / Representativa / Femenina**) con **semana que cierra el jueves**, comparado con el **IPC**, desagregado por **rubro**, **provincia**, **región** y **cadena**. **Índice encadenado de muestra apareada** (sin saltos por altas/bajas), **nacional ponderado por población** y **provincia controlando por cadena**. Composición: **267 empaquetados** por EAN (`cantidad_01..06`) + **59 tipos de frescos** por nombre (índice multilateral **TPD** por EAN). Exporta `Presencia_items`, `Alertas_reemplazo`, `Alertas_quiebre`, `Candidatos_trazabilidad` y `Frescos_metodos`. **v5.15** (2026-10-02: composición por rubro con faltantes imputados, Lavarropas BGH en la Tecnológica; v5.14: corre en el **Colab gratuito**, pico de RAM ÷3 con el mismo resultado) sobre la **v5.13** (frescos por TPD con nivel fijo, cobertura mínima de empaquetados, filtro estacional y ronda 2 de reemplazos). Ver [sección detallada](#canastas-alternativas--07_evolucion_canastas_alternativas). | [![Abrir en Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/santiagoriverti/precios_minoristas_supermercados/blob/main/notebooks/07_evolucion_canastas_alternativas.ipynb) |
 | `08_canasta_diaria` | **Valor diario de una canasta desde 2022.** Por defecto, la canasta fija de **pass-through** (775 productos, `cantidad_01` de `canasta_pass_through_2026-10.xlsx`, 01/01/2022 → 20/10/2026). Dos precios por producto y día: mediana nacional e índice con **sucursales apareadas** (no salta cuando cambian las sucursales que informan); valor de la canasta con los dos, índices por grupo del IPC, **nivel general vs provincias y vs grandes rubros** (misma canasta, sucursales apareadas), días con cobertura incompleta marcados y panel producto × día para regresiones. Caché por mes. Ver [sección detallada](#valor-diario-de-una-canasta--08_canasta_diaria). | [![Abrir en Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/santiagoriverti/precios_minoristas_supermercados/blob/main/notebooks/08_canasta_diaria.ipynb) |
 | `09_trazabilidad_productos` | **Representatividad de TODOS los productos del SEPA desde 2022.** Lee todos los archivos de los ZIPs semestrales (con caché por archivo) y arma un ranking: % de días con precio, cuota diaria de sucursales, comercios/banderas, provincias, regiones, departamentos (Georef), continuidad y precio. Ver [sección detallada](#trazabilidad-de-productos--09_trazabilidad_productos). | [![Abrir en Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/santiagoriverti/precios_minoristas_supermercados/blob/main/notebooks/09_trazabilidad_productos.ipynb) |
+| `10_canasta_reponderada_ipc` | **Canasta diaria reponderada contra el IPC y predicción del IPC del mes** (desde 2026-10-30). Pide subir el Excel `canasta_diaria_*.xlsx` del nb08, toma el IPC de `MyDrive/carga/IPC.xlsx`, busca los pesos de los 16 grupos del IPC de la canasta que mejor siguen la **variación mensual del IPC Nivel general** (elegidos **fuera de muestra**; entre los candidatos está no reponderar) y devuelve **el mismo Excel con la canasta reponderada** más las hojas `Prediccion_IPC` (IPC del mes siguiente al último publicado: cinco modelos, central e intervalo del 80%), `Reponderacion`, `Reponderacion_seleccion`, `Backtest_IPC`, `Comparacion_IPC` y `Prediccion_divisiones`. Antes de reponderar recalcula el Excel con las cantidades originales y frena si no da igual al del nb08. Ver [sección detallada](#canasta-reponderada-contra-el-ipc--10_canasta_reponderada_ipc). | [![Abrir en Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/santiagoriverti/precios_minoristas_supermercados/blob/main/notebooks/10_canasta_reponderada_ipc.ipynb) |
 
 > **¿Ves una versión vieja en Colab?** El badge siempre apunta a la última versión en GitHub, pero Colab puede mostrar una copia cacheada de tu Drive. Para forzar la actualización: eliminá el notebook de `Mi unidad/Colab Notebooks/` en Google Drive y volvé a hacer clic en el badge.
 
@@ -830,6 +831,76 @@ mes); estado ~3,4 MB por mes. Apareado vs medianas: +8,97% vs +9,07% en el trime
 
 ---
 
+## Canasta reponderada contra el IPC — `10_canasta_reponderada_ipc`
+
+Toma el Excel del **nb08** (`canasta_diaria_*.xlsx`) y el **IPC del INDEC** (`MyDrive/carga/IPC.xlsx`: columna de fechas,
+`Nivel general` y las 12 divisiones, base dic-2016 = 100, el mismo que usan el nb02, el nb06 y el nb07), repondera la
+canasta para que su **variación mensual** siga lo más posible a la del IPC Nivel general y **predice el IPC del mes en
+curso**, que el INDEC publica ~15 días después de cerrado el mes.
+
+### Cada mes
+
+1. Correr el **nb08** hasta el último día del SEPA (`FECHA_FIN`); su Excel sale en `output_canasta/`.
+2. Agregar al `IPC.xlsx` de `MyDrive/carga/` la fila del último mes publicado por el INDEC (fecha en la primera columna;
+   sirven fechas de Excel, `2026-10` u `oct-2026`, y comas decimales).
+3. Abrir el nb10 con el badge, **Entorno de ejecución → Ejecutar todas** y **subir el Excel del nb08** cuando lo pida.
+4. Se descarga `<nombre del Excel>_reponderada_ipc.xlsx` (también queda en `output_canasta/`). Tarda ~2-3 min.
+
+El mes que predice es **el siguiente al último IPC del `IPC.xlsx`**, con los días que haya de ese mes en el Excel del nb08
+(hasta el último día cerrado). Si el IPC de ese mes ya está publicado, no predice nada y solo repondera.
+
+### Config (CELDA 1)
+
+| Variable | Default | Para qué |
+|---|---|---|
+| `CANASTA_EXCEL` | `None` | `None` = pide subir el Excel; o la ruta en el Drive |
+| `DIM_REPONDERACION` | `'grupo'` | qué se repondera: los 16 grupos del IPC (`'tipo'` = 6 rubros, `'categoria'`) |
+| `VENTANAS` | `['2022-02', '2024-04']` | primer mes de la ventana de estimación (candidatos) |
+| `LAMBDAS` | `[None, 100, 30, 10, 3, 1, 0.3, 0]` | penalización por alejarse de los pesos originales (`None` = no reponderar) |
+| `BACKTEST_DESDE` / `MESES_CRITERIO` | `'2024-07'` / `12` | backtest fuera de muestra y meses con los que se elige |
+| `INICIO_REGIMEN` | `'2024-04'` | ventana de la regresión canasta + rezago (después de la desinflación) |
+| `PUENTE_DIVISIONES` | `['01', '02']` | divisiones del IPC que se mueven con su parte de la canasta |
+| `SUPUESTOS` | `{}` | variación ya conocida de una división en el mes (tarifas, colectivos, nafta, prepagas): `{'Transporte': 3.5}` |
+
+### Método
+
+- **Reponderación**: las cantidades de los productos de cada grupo se multiplican por un mismo factor (dentro del grupo
+  no cambian las proporciones) y el valor de la canasta en el día ancla queda igual. Las participaciones de los grupos
+  (≥ 0, suman 100%) minimizan el error cuadrático medio entre la variación mensual de la canasta (promedio de los días
+  del mes, sucursales apareadas, como mide el IPC) y la del IPC Nivel general, más `λ` × la distancia a los pesos
+  originales. Solo meses completos.
+- **Elección fuera de muestra**: para cada mes desde `BACKTEST_DESDE` se estiman los pesos con los meses anteriores y se
+  mide el error del mes, para cada ventana y cada `λ`; gana el menor error medio de los últimos `MESES_CRITERIO` meses.
+  Con la combinación elegida, los pesos finales usan todos los meses con IPC.
+- **Excel**: se recalculan con las cantidades nuevas `Serie_diaria`, `Resumen_mensual`, `Rubros_*`, `Indices_por_grupo` y
+  `Composicion` (con `cantidad_original` y `factor_reponderacion`). **`Provincias_*` quedan con la canasta original** (el
+  Excel no trae los precios por provincia) y las columnas con el promedio de sucursales quedan vacías (no trae los
+  precios promedio por producto). Antes de reponderar, el notebook **recalcula todo con las cantidades originales y
+  frena si no da igual al Excel del nb08** (con el de oct-2026, diferencia relativa máxima 2e-13).
+- **Predicción** (`Prediccion_IPC`): RW (la variación del mes anterior), la variación de la canasta, RW + b × aceleración
+  de la canasta, MCO canasta + rezago y un **puente por divisiones** (las 12 divisiones con las ponderaciones nacionales
+  del INDEC actualizadas por precios relativos; alimentos y bebidas alcohólicas con su parte de la canasta, el resto como
+  el mes anterior o con los `SUPUESTOS`). **Central** = promedio de los tres últimos, con un intervalo del 80% sacado de
+  sus errores en el backtest. Todo, con la canasta reponderada y con la original.
+
+### Resultado con el Excel del 29/10/2026 (IPC hasta sep-2026)
+
+- Elegido: ventana desde abr-2024, `λ` = 30. Error medio de la variación mensual de la canasta contra el IPC en los
+  últimos 12 meses: 0,431 pp (sin reponderar, 0,440). Los cambios más grandes: Café, té, yerba y cacao 2,3% → 0%; Aceites
+  2,1% → 4,3%; Lácteos 11,6% → 13,9%; Pan y cereales 15,1% → 13,1%.
+- Predicción de oct-2026: **central 2,05%** (intervalo del 80%: 1,37% a 2,49%), nivel 12.770,6, 33,0% interanual.
+- **Advertencia**: la canasta son productos de supermercado (menos de un tercio del IPC; sin servicios, precios regulados,
+  frescos a granel, ropa ni restaurantes). En el backtest, la canasta sola erra ~0,55 pp por mes y **ninguna reponderación
+  ni modelo le gana con claridad a repetir la variación del mes anterior** (0,42 pp; central 0,39). Lo que más puede
+  mejorar la predicción son los `SUPUESTOS` de precios regulados. Desde 2024 la canasta va ~1 mes atrás del IPC.
+
+Test: `notebooks/test_canasta_reponderada.py` (Excel del nb08 sintético con un producto que aparece tarde, días sin
+precio y EANs con ceros; IPC construido con participaciones verdaderas que el notebook recupera; recálculo contra fuerza
+bruta; el backtest no mira el futuro; mes sin predicción; Excel tocado; IPC con fechas en castellano). Corrida con datos
+reales repetible: `python -X utf8 docs/auditoria/scripts_nb10_2026-10/correr_real.py <Excel del nb08> <carpeta con IPC.xlsx> [salida]`.
+
+---
+
 ## Trazabilidad de productos — `09_trazabilidad_productos`
 
 Para cada producto (`id_producto`) que alguna vez reportó precio en el SEPA desde `FECHA_INICIO` (2022-01-01): qué tan
@@ -964,6 +1035,7 @@ precios_minoristas_supermercados/
 │   ├── 07_evolucion_canastas_alternativas.ipynb # Notebook 7 — canastas Popular/Media/Ejecutiva semanales + frescos, vs IPC
 │   ├── 08_canasta_diaria.ipynb                  # Notebook 8 — valor diario de una canasta desde 2022
 │   ├── 09_trazabilidad_productos.ipynb          # Notebook 9 — representatividad de todos los productos del SEPA
+│   ├── 10_canasta_reponderada_ipc.ipynb         # Notebook 10 — canasta del nb08 reponderada contra el IPC + predicción del IPC
 │   ├── gen_nb02.py                               # Script fuente que genera el Notebook 2
 │   ├── gen_nb04.py                               # Script fuente que genera el Notebook 4
 │   ├── gen_nb05.py                               # Script fuente que genera el Notebook 5
@@ -971,8 +1043,10 @@ precios_minoristas_supermercados/
 │   ├── gen_nb07.py                               # Script fuente que genera el Notebook 7
 │   ├── gen_nb08.py                               # Script fuente que genera el Notebook 8
 │   ├── gen_nb09.py                               # Script fuente que genera el Notebook 9
+│   ├── gen_nb10.py                               # Script fuente que genera el Notebook 10
 │   ├── test_trazabilidad_productos.py            # Test: nb09 sobre un SEPA sintético contra fuerza bruta
 │   ├── test_canasta_diaria.py                    # Test: nb08 (medianas y sucursales apareadas) contra fuerza bruta
+│   ├── test_canasta_reponderada.py               # Test: nb10 (reponderación contra el IPC y predicción) contra fuerza bruta
 │   ├── test_brecha_celiaca.py                    # Test: nb06 (canasta fija, subtipos, vigencias, geografía, ENGHo, caché) contra fuerza bruta
 │   ├── auditar_salida_nb07.py                    # Audita una salida del nb07 (réplica del índice, quiebres, trazabilidad, IPC, aperturas, INDEC)
 │   ├── test_celdas_graficos_y_mapa.py            # Tests: gráficos (CELDA 12) y mapa (CELDA 17) de nb05/nb02
@@ -1059,9 +1133,10 @@ y se commitean juntos el generador y el `.ipynb`.
 | `notebooks/test_reclasificacion_provincia.py` | nb02 CELDA 7: provincia por polígonos de `ar.json` con tolerancia `RECLASIF_TOL_KM` (bordes como Neuquén capital se quedan, errores groseros se reclasifican) (BUG-44) |
 | `notebooks/test_trazabilidad_productos.py` | nb09 sobre un SEPA sintético contra fuerza bruta: filas repetidas, provincias vacías o con nombre, dos archivos para la misma parte, códigos no EAN, código con texto mal codificado, comercio que deja de publicar, precio simbólico, hoja `Dias`; bloques, grupos y cachés distintos dan lo mismo (~6 min) |
 | `notebooks/test_canasta_diaria.py` | nb08 sobre un SEPA sintético contra fuerza bruta: medianas, `n_obs`, promedios y relativos apareados con imputación; el índice apareado = la tendencia verdadera aunque la mediana salte en un hueco; archivo y filas repetidas, mes en centavos, cobertura incompleta, día ancla, caché con meses y estados borrados; provincias (relativos, valor de la canasta, imputación, sucursal sin provincia) y rubros (suman el nivel general, incidencias) |
+| `notebooks/test_canasta_reponderada.py` | nb10 sobre un Excel del nb08 sintético contra fuerza bruta: recálculo con las cantidades originales = el Excel (y frena si se toca un valor), participaciones verdaderas recuperadas y elegidas fuera de muestra, `Serie_diaria`, `Resumen_mensual`, `Rubros_*`, `Indices_por_grupo` y `Composicion` reponderados, provincias y precios sin cambios, valor del día ancla igual, predicción del mes siguiente al último IPC (central, intervalo, puente con un supuesto), backtest sin mirar el futuro, mes sin predicción, IPC con fechas en castellano y comas decimales |
 | `notebooks/test_brecha_celiaca.py` | nb06 (canasta fija) sobre un SEPA sintético contra fuerza bruta: mediana mensual exacta, archivo parcial duplicado, centavos, fila repetida, código viejo con precio congelado fuera de su `VIGENCIA`, producto con dos códigos que conviven (cuenta una vez), plausibilidad, control de identidad, estación de servicio y sucursal web afuera, provincia por polígonos, AMBA y región, brecha por sucursal × mes × subtipo y tipo (promedio geométrico de sus subtipos, sucursales a las que les falta un lado de un subtipo), agregación subtipo → tipo → canasta ENGHo, imputación de un subtipo-mes faltante y sus rachas (hoja `Imputaciones`), grupos con la misma canasta de subtipos (los que faltan, con la brecha nacional), canasta comparable por sucursal, HHI de empresas por departamento (Georef), serie TPD (recupera exacto la prima sin ruido aunque falten productos y subtipos, también con un mínimo de sucursales por subtipo-mes; brecha por tipo, errores agrupados e IC de la canasta = mínimos cuadrados densos; no inventa el nivel de productos que nunca conviven), caché por mes en dos corridas, hojas del Excel y mapa |
 
-Los 14 dieron OK el 2026-10-22 (Python 3.14, versiones de `requirements.txt`).
+Los 16 dieron OK el 2026-10-30 (Python 3.14, versiones de `requirements.txt`; suite completa: `python -I -X utf8 docs/auditoria/scripts_nb06_2026-10/s19_suite_tests.py <repo> <log>`).
 
 ### Auditar una salida del nb07
 

@@ -1,6 +1,6 @@
 # Pass-through del tipo de cambio a precios — guía de trabajo
 
-Última actualización: 2026-10-29 (nb08 v3: nivel general vs provincias y vs grandes rubros).
+Última actualización: 2026-10-30 (nb10: canasta reponderada contra el IPC y predicción del IPC del mes, §7).
 
 **Objetivo**: estimar cuánto y qué tan rápido pasa el tipo de cambio a los precios de supermercado, con frecuencia
 **diaria** del **01/01/2022 al 20/10/2026**, con la **misma canasta todos los días** y pudiendo desagregar el efecto por
@@ -20,6 +20,7 @@ Este documento junta todo lo de esa línea de trabajo. Detalle de la selección:
 | Canasta fija (775 productos) | **Lista** (commit `fa1144d`) | `docs/canastas_alternativas/canasta_pass_through.py` → `canasta_pass_through_20220101_20261020.csv` |
 | Excel que lee el nb08 | **En el Drive del usuario** (lo armó con el script de Colab) | `MyDrive/carga/output_canasta/canasta_pass_through_2026-10.xlsx` (canasta en `cantidad_01`) |
 | Variable de precio diaria | **nb08 v3 lista** (commits `a1f4522` y `35c247a`), por defecto con esa canasta, con nivel general vs provincias y vs grandes rubros. **Falta correrla en Colab** | `notebooks/gen_nb08.py` → `notebooks/08_canasta_diaria.ipynb` |
+| Canasta reponderada contra el IPC y predicción del IPC del mes | **nb10 listo** (2026-10-30), corrido con el Excel del nb08 del 29/10/2026 | `notebooks/gen_nb10.py` → `notebooks/10_canasta_reponderada_ipc.ipynb` (§7) |
 | Tipo de cambio diario | No empezado | — |
 | Regresiones | No empezadas | — |
 
@@ -232,3 +233,38 @@ en la PC (el lector anterior, ~5 GB); estado 3,2-3,6 MB por mes. En el trimestre
    `cobertura_incompleta` como dummy o fuera.
 4. Decidir los pesos (IPC vs iguales por grupo) y probar sensibilidad.
 5. Cuando salga el semestral oficial 2026B, reemplazar ago-oct 2026 (§5).
+
+---
+
+## 7. Reponderar la canasta contra el IPC y predecir el IPC del mes (nb10)
+
+**Para qué**: el IPC de un mes sale ~15 días después de cerrado; el Excel del nb08 está el mismo día. El nb10 repondera
+la canasta para que su variación mensual siga la del IPC Nivel general y predice el IPC del mes en curso.
+
+**Cada mes** (detalle en el README, sección nb10):
+1. Correr el nb08 hasta el último día del SEPA.
+2. Agregar al `IPC.xlsx` de `MyDrive/carga/` el último mes publicado (fecha + `Nivel general` + las 12 divisiones).
+3. Correr el nb10 (Ejecutar todas) y subir el Excel del nb08; se descarga `<Excel>_reponderada_ipc.xlsx`.
+4. Si ya se saben aumentos regulados del mes (tarifas, colectivos, nafta, prepagas, colegios), cargarlos en `SUPUESTOS`
+   (CELDA 1) y volver a correr: es lo que más puede mejorar la predicción.
+
+**Qué revisar en la salida**:
+- La CELDA 4 tiene que decir *OK: el notebook reproduce el Excel del nb08* (si no, frena: el Excel no es del nb08 v3 o
+  se editó).
+- `Reponderacion_seleccion`: el error de cada combinación. Si gana *sin reponderar*, la canasta queda como está.
+- `Prediccion_IPC`: la central y su intervalo; comparar con `MAE_backtest_pp` de cada modelo y con el RW.
+- La CELDA 7 dice cuántos días tiene el mes a predecir (es el mes en curso: puede estar incompleto).
+
+**Resultado del 2026-10-30** (Excel del 29/10/2026, IPC hasta sep-2026): ventana desde abr-2024 y λ = 30; error de la
+variación de la canasta contra el IPC en los últimos 12 meses 0,431 pp (sin reponderar 0,440; con λ = 0, 0,585).
+Oct-2026: central **2,05%** (80%: 1,37% a 2,49%), nivel 12.770,6. Backtest jul-2024 → sep-2026 (error absoluto medio):
+RW 0,420, canasta 0,557, aceleración 0,412, regresión 0,458, puente 0,416, central 0,391. **Ningún modelo le gana con
+claridad a repetir el IPC del mes anterior**: la canasta es menos de un tercio del IPC y, desde 2024, va ~1 mes atrás.
+
+**Advertencias**: `Provincias_*` del Excel reponderado son las de la canasta original; las columnas con el promedio de
+sucursales quedan vacías. La reponderación cambia el índice de pass-through: para las regresiones de §6 conviene la
+canasta original (pesos fijos ex ante) y usar la reponderada como robustez.
+
+Validación: `notebooks/test_canasta_reponderada.py` (fuerza bruta) y la corrida real con
+`docs/auditoria/scripts_nb10_2026-10/correr_real.py`. Método: `docs/METODOLOGIA.md` §15.
+

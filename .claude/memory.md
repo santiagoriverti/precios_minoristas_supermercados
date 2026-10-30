@@ -6,14 +6,15 @@ Autor: Santiago Riverti — investigador independiente
 
 ---
 
-## 🟢 ESTADO ACTUAL / HANDOFF [2026-10-29] — leer esto primero
+## 🟢 ESTADO ACTUAL / HANDOFF [2026-10-30] — leer esto primero
 
 - **Repo**: `main` = `origin/main` al cierre (ver `git log`). Commits del 2026-10-23: `678e9b9` (nb06: canasta fija
   2022-2026 + estimador por subtipo + BUG-46), `b02871c` (documentación para retomar) y el de la tarde (revisión de la
   primera corrida de Colab del nb06 + BUG-47) y el de la noche (`46e426b`, serie TPD del nb06); el 2026-10-26, la
   revisión de la segunda corrida de Colab; el 2026-10-27, el panel de expertos del nb06, el nb06b, la corrida de Colab
   verificada y, a la noche, la segunda revisión de expertos; el 2026-10-29, `35c247a` (nb08 v3: nivel general vs
-  provincias y vs grandes rubros) y el de la documentación de ese día. **15 tests en OK** (el del nb06 tiene 54 controles desde
+  provincias y vs grandes rubros) y el de la documentación de ese día; el 2026-10-30, el **nb10** (canasta reponderada
+  contra el IPC + predicción del IPC del mes; bloque "nb10" de abajo). **16 tests en OK** (el del nb06 tiene 54 controles desde
   el 2026-10-27, noche; la suite se corre con `docs/auditoria/scripts_nb06_2026-10/s19_suite_tests.py`). En una PC nueva:
   `git clone`, `pip install -r requirements.txt` y los tests de `CLAUDE.md`.
 - **Datos en la PC del INECO** (el usuario bajó el 23/10 todo el Drive; **desde la tarde del 23/10 están en
@@ -163,8 +164,11 @@ Autor: Santiago Riverti — investigador independiente
    usuario; la TPD muestra que pesa en 2023); (c) agenda del paper: determinantes de la prima (interacciones de la
    hedónica con HHI, región, cadena), prima neta de envase, robustez desde 2024. Detalle: bloques "nb06 — segunda
    corrida", "nb06 — serie TPD", "nb06 — corrida de Colab" y "nb06 — canasta fija" de abajo.
-2. **Pass-through del tipo de cambio (nb08 v2 + canasta de 775 productos).** Todo listo y pusheado; el
-   usuario ya subió `MyDrive/carga/output_canasta/canasta_pass_through_2026-10.xlsx`. Desde el 2026-10-29 el nb08
+2. **Pass-through del tipo de cambio (nb08 v2 + canasta de 775 productos) y nb10.** El usuario **ya corrió el nb08**
+   (pasó `canasta_diaria_20220101_20261029.xlsx`, 14 hojas, 1.761 días, 775 productos; el nb10 lo reproduce exacto;
+   la revisión formal de `docs/PASS_THROUGH.md` §2 no se hizo). **nb10 (2026-10-30)**: canasta reponderada contra el
+   IPC + predicción del IPC del mes (bloque "nb10" de abajo); oct-2026 central 2,05%. Lo de abajo es de antes:
+   el usuario ya subió `MyDrive/carga/output_canasta/canasta_pass_through_2026-10.xlsx`. Desde el 2026-10-29 el nb08
    desagrega **nivel general vs provincias y vs grandes rubros** (bloque "nb08 v3" de abajo). **Falta que corra el nb08 en
    Colab** (badge, Ejecutar todo, sin tocar la CELDA 1; ~2-3 h la primera vez, 58 meses). Cuando pase la salida
    impresa, `canasta_diaria_pass_through_20220101_20261020.xlsx` y `panel_diario_pass_through_<...>.parquet`: revisar con
@@ -199,6 +203,38 @@ pass-through en `C:\Users\sriverti\proyectos\canasta_pass_through_20220101_20261
 **Reglas**: las de `CLAUDE.md` ("Reglas que muerden"): los `.ipynb` se regeneran con `gen_nbXX.py` (commit de los dos);
 scripts de edición escritos con Write (la shell se come las barras); commits solo con Santiago Riverti, sin atribución a
 Claude.
+
+## 🟢 nb10: canasta reponderada contra el IPC + predicción del IPC del mes [2026-10-30]
+
+- Pedido: el usuario tiene el Excel del nb08 el día que cierra el mes y el IPC sale ~15 días después. Quiere un
+  notebook de Colab (con badge en el README) que pida subir el Excel del nb08, tome el IPC de `MyDrive/carga/IPC.xlsx`,
+  repondere la canasta para que sea la que mejor ajusta al IPC y devuelva el mismo Excel con la nueva ponderación; que
+  el mes que viene se pueda correr sin tocar nada.
+- Decisiones del usuario (preguntadas antes de escribir): ajustar a la **variación mensual** del IPC Nivel general
+  (no al nivel acumulado), pesos elegidos **fuera de muestra**; reponderar los **16 grupos del IPC**; `Provincias_*`
+  quedan **como vienen + aviso en Notas** (el Excel no trae precios por provincia); **agregar la hoja de predicción**.
+- Hecho: `notebooks/gen_nb10.py` → `10_canasta_reponderada_ipc.ipynb` (10 celdas). CELDA 4 recalcula el Excel con las
+  cantidades originales (Serie_diaria, Resumen_mensual, Rubros_*, Indices_por_grupo) y frena si no da igual (con el
+  real: 2e-13). CELDA 5: participaciones por grupo (≥ 0, suman 1, valor del día ancla igual) que minimizan el ECM de la
+  variación mensual contra el IPC + λ Σ (s - s0)²; grilla VENTANAS × LAMBDAS (None = no reponderar), elegida por MAE de
+  los últimos 12 meses del backtest desde jul-2024. CELDA 7: predicción del mes siguiente al último IPC (RW, canasta,
+  RW + b × aceleración, MCO canasta + rezago desde abr-2024, puente por divisiones con ponderaciones nacionales del INDEC
+  —26,9 / 3,5 / 9,9 / 9,4 / 6,4 / 8,0 / 11,0 / 2,8 / 7,3 / 2,3 / 9,0 / 3,5; reproducen el NG con 0,017 pp— y
+  `SUPUESTOS`); central = promedio de aceleración, MCO y puente; intervalo 80% de sus errores fuera de muestra. Hojas
+  nuevas: Prediccion_IPC, Reponderacion (primeras), Reponderacion_seleccion, Backtest_IPC, Comparacion_IPC,
+  Prediccion_divisiones; Composicion con cantidad_original y factor_reponderacion; columnas de promedios vacías.
+- Resultado real (Excel `canasta_diaria_20220101_20261029.xlsx`, IPC hasta sep-2026; corrido en la PC con
+  `docs/auditoria/scripts_nb10_2026-10/correr_real.py`, ~2 min): λ = 30 desde abr-2024 (MAE 12m 0,431 vs 0,440 sin
+  reponderar; λ = 0: 0,585); oct-2026 central **2,05%** (1,37-2,49), nivel 12.770,58. Backtest MAE: RW 0,420, canasta
+  0,557, aceleración 0,412, MCO 0,458, puente 0,416, central 0,391. Desde 2024 la canasta va ~1 mes atrás del IPC
+  (corr 0,64 con t+1 vs 0,40 con t) y acierta la dirección 50%: **nada le gana con claridad al RW; decirlo siempre**.
+- Test `notebooks/test_canasta_reponderada.py` (Excel sintético; recupera participaciones verdaderas; fuerza bruta de
+  todas las hojas recalculadas; backtest sin mirar el futuro; mes sin predicción; Excel tocado frena; IPC con 'sept-2024'
+  y comas). Suite 16/16. El `nowcast_ipc.py` + `data/ipc_indec_divisiones.csv` del turno anterior se borraron sin
+  commitear (los reemplaza el nb10 y el CSV a mano quedaba viejo).
+- **Siguiente**: el usuario corre el nb10 en Colab (sube el Excel del nb08). Cada mes: nb08 hasta el último día, fila
+  nueva en `IPC.xlsx`, nb10. Cuando salga el IPC de oct-2026 (~mediados de nov), comparar con 2,05%. Mejoras posibles:
+  `SUPUESTOS` de regulados cargados por el usuario; IPC CABA (sale antes) como predictor.
 
 ## 🟢 nb08 v3: nivel general vs provincias y vs grandes rubros [2026-10-29]
 

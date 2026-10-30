@@ -1595,3 +1595,35 @@ Decisiones de método:
 - **Variable de precio recomendada**: el índice con sucursales apareadas del nb08 (§12), no la mediana nacional.
 - `origen_gs1` (país del prefijo del código) es un indicio débil de importado: dice dónde registró el código el dueño
   de la marca.
+
+## 15. Notebook 10 — Canasta reponderada contra el IPC (2026-10-30)
+
+**Objetivo.** Usar la canasta diaria del nb08 (que se tiene el mismo día que cierra el mes) para seguir y anticipar el
+IPC Nivel general del INDEC (que se publica ~15 días después). Guía práctica: `docs/PASS_THROUGH.md` §7.
+
+**Reponderación.** Sea V_g(t) el valor de la parte de la canasta del grupo g (sucursales apareadas, cantidades
+originales, encadenado y en pesos del día ancla A) y s0_g = V_g(A) / Σ V(A). Con participaciones s (s_g ≥ 0, Σ s = 1) la
+canasta es Σ_g (s_g / s0_g) V_g(t): las cantidades del grupo se multiplican por f_g = s_g / s0_g y el valor en A no cambia.
+Con M_g(m) el promedio de los días del mes m, la variación mensual es r_m(s) = Σ f_g M_g(m) / Σ f_g M_g(m-1) - 1, y
+
+    s* = argmin  (1/T) Σ_m [100 r_m(s) - π_m]² + λ Σ_g (s_g - s0_g)²
+
+sobre los meses completos de la ventana (π = variación del IPC Nivel general, en %). Se resuelve con SLSQP desde s0; si
+no mejora el objetivo, queda s0. La ventana y λ (incluido no reponderar) se eligen por el error absoluto medio fuera de
+muestra (pesos de cada mes estimados con los meses anteriores) en los últimos 12 meses del backtest. Sin faltantes,
+Σ f_g V_g es exactamente la canasta encadenada con las cantidades nuevas; con productos que entran tarde o días sin
+precio difiere un poco (el notebook imprime la diferencia; en oct-2026, 0,0000 pp).
+
+**Predicción.** Para el mes m (el siguiente al último IPC), con la canasta del mes (puede estar incompleto):
+RW: π̂ = π_{m-1}; canasta: π̂ = r_m; aceleración: π̂ = π_{m-1} + b (r_m - r_{m-1}), b por MCO sin constante de Δπ sobre
+Δr; regresión: π̂ = a + c r_m + d π_{m-1} desde abr-2024; puente: π̂ = Σ_d w_d(m-1) π̂_d con w_d(m-1) = w0_d I_d(m-1) /
+Σ w0 I(m-1) (ponderaciones nacionales del INDEC, que reproducen la variación del nivel general con 0,017 pp de error
+medio), π̂_d de alimentos y bebidas alcohólicas por aceleración de su parte de la canasta, el resto = π_d(m-1) o un
+supuesto. Central = promedio de aceleración, regresión y puente; intervalo del 80% = percentiles 10 y 90 de sus errores
+fuera de muestra.
+
+**Límites.** La canasta cubre productos de supermercado (menos de un tercio del IPC); desde 2024 su variación va ~1 mes
+atrás de la del IPC (correlación 0,64 con el mes siguiente contra 0,40 con el mismo) y acierta si el IPC acelera o
+desacelera la mitad de las veces. Reponderar sin penalización sobreajusta (con λ = 0, 0,79 pp de error fuera de muestra
+contra 0,55 sin reponderar).
+

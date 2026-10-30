@@ -1,6 +1,6 @@
 # CLAUDE.md — precios_minoristas_supermercados
 
-Pipeline sobre el **SEPA** (precios de supermercados de Argentina): 9 notebooks de Colab (nb01–nb09). Líneas de trabajo
+Pipeline sobre el **SEPA** (precios de supermercados de Argentina): 10 notebooks de Colab (nb01–nb10). Líneas de trabajo
 vivas, en orden (estado y próximos pasos: bloque **ESTADO ACTUAL / HANDOFF** de `.claude/memory.md`): la **brecha
 celíaca** (nb06 con canasta fija 2022-2026 y nb06b con la amplia; lo último: 2026-10-27 noche, segunda revisión de
 expertos; guías `docs/BRECHA_CELIACA.md` §14-§17, `docs/brecha_celiaca/GUIA_INVESTIGADORES.md` y
@@ -96,6 +96,17 @@ lector anterior. **Falta la primera corrida en Colab** (~2-3 h); qué revisar: `
 `docs/canastas_alternativas/canasta_pass_through.py` (sobre las salidas del nb09) y el Excel que lee el nb08, del script
 de Colab `marcar_canasta_pass_through_colab.py`.
 
+**nb10** (`notebooks/10_canasta_reponderada_ipc.ipynb`, fuente `gen_nb10.py`, desde el 2026-10-30): pide subir el Excel
+`canasta_diaria_*.xlsx` del nb08, toma `MyDrive/carga/IPC.xlsx` y repondera los 16 grupos del IPC de la canasta para que
+su variación mensual siga la del IPC Nivel general (participaciones con penalización λ hacia las originales; ventana y λ
+elegidos fuera de muestra, entre ellos no reponderar). Devuelve el mismo Excel con la canasta reponderada (Provincias_*
+quedan con la original; columnas de promedios vacías) y la predicción del IPC del mes siguiente al último publicado
+(RW, canasta, RW + b × aceleración, MCO con rezago, puente por divisiones con `SUPUESTOS`; central e intervalo del 80%).
+Antes recalcula el Excel con las cantidades originales y frena si no da igual. Corrido con el Excel del 29/10/2026: λ = 30
+desde abr-2024 (0,431 vs 0,440 pp sin reponderar), oct-2026 central 2,05% (1,37-2,49). Ninguna variante le gana con
+claridad a repetir el IPC del mes anterior: hay que decirlo así. Test `test_canasta_reponderada.py`; corrida real con
+`docs/auditoria/scripts_nb10_2026-10/correr_real.py`; guía `docs/PASS_THROUGH.md` §7 y README, sección nb10.
+
 **nb09** (`notebooks/09_trazabilidad_productos.ipynb`, fuente `gen_nb09.py`): ranking de representatividad de todos
 los productos del SEPA desde 2022. La **versión 2** (corrige los 6 errores de la primera corrida, BUG-45) corrió en
 Colab y se revisó el 2026-10-22 (`docs/AUDITORIA_2026-10-22_nb09.md`): números correctos (panel = SEPA crudo exacto en 4
@@ -110,7 +121,7 @@ relativo; la próxima corrida en Colab los muestra por primera vez.
    cada línea de trabajo, prioridades, dónde están los datos) y, según lo que pida el usuario, el bloque de ese
    notebook debajo (nb06, nb08 v3 y v2, canasta de pass-through, nb09, nb02, nb07). Ahí está en qué quedó el trabajo, qué hay que
    hacer apenas el usuario pase resultados y los números vigentes.
-2. Correr los tests (`pip install -r requirements.txt` si es una PC nueva; los 15 dieron OK el 2026-10-29 —toda la suite:
+2. Correr los tests (`pip install -r requirements.txt` si es una PC nueva; los 16 dieron OK el 2026-10-30 —toda la suite:
    `python -I -X utf8 docs/auditoria/scripts_nb06_2026-10/s19_suite_tests.py <repo> <log>`—; el del nb09
    tarda ~6 min):
    ```bash
@@ -128,6 +139,7 @@ relativo; la próxima corrida en Colab los muestra por primera vez.
    python notebooks/test_reclasificacion_provincia.py # nb02 CELDA 7 (provincia por polígonos, BUG-44)
    python notebooks/test_trazabilidad_productos.py    # nb09 (SEPA sintético contra fuerza bruta)
    python notebooks/test_canasta_diaria.py            # nb08 (medianas, sucursales apareadas, provincias y rubros)
+   python notebooks/test_canasta_reponderada.py       # nb10 (reponderación contra el IPC y predicción del IPC)
    python notebooks/test_brecha_celiaca.py            # nb06 (canasta fija, subtipos, vigencias, geografía, ENGHo, caché)
    ```
 3. Los datos (ZIPs del SEPA, caché, Excel de salida) **no están en el repo**: viven en el Drive del
