@@ -3506,6 +3506,27 @@ cells.append(cell_code("""\
 # ============================================================
 # CELDA 10 — Mapa coroplético de la brecha de la canasta por provincia (últimos meses)
 # ============================================================
+# Estilo de los mapas (también el de la CELDA 12): verdes de los Excel de los otros notebooks y tipografía Lato (Google
+# Fonts, licencia OFL), que se baja una vez a OUTPUT_DIR/_fuentes; si no se puede, la primera instalada de la lista.
+VERDE_OSCURO, VERDE_CLARO, TEXTO_MAPA = '#375623', '#92D050', '#2B3A23'
+def _fuente_mapa():
+    from matplotlib import font_manager as _fm
+    try:
+        import urllib.request
+        _dir = OUTPUT_DIR / '_fuentes'
+        _dir.mkdir(exist_ok=True)
+        for _v in ('Regular', 'Bold'):
+            _f = _dir / f'Lato-{_v}.ttf'
+            if not _f.exists():
+                _b = urllib.request.urlopen(f'https://github.com/google/fonts/raw/main/ofl/lato/Lato-{_v}.ttf', timeout=15).read()
+                _f.write_bytes(_b)
+            _fm.fontManager.addfont(str(_f))
+    except Exception as _e:
+        print(f'  (aviso: no se pudo bajar la tipografía Lato: {_e})')
+    _hay = {_x.name for _x in _fm.fontManager.ttflist}
+    return next((_n for _n in ('Lato', 'Calibri', 'Segoe UI', 'Liberation Sans') if _n in _hay), 'DejaVu Sans')
+FUENTE_MAPA = _fuente_mapa()
+
 if not GEOJSON_PATH.exists():
     print(f'GeoJSON no encontrado en {GEOJSON_PATH} — saltear mapa')
 else:
@@ -3538,12 +3559,13 @@ else:
     _con_datos = set(brecha_prov['provincia']) if len(brecha_prov) else set()
     _vals = list(_prov_val.values())
     if _vals:
+      with plt.rc_context({'font.family': FUENTE_MAPA, 'text.color': TEXTO_MAPA}):
         norm_c = Normalize(vmin=min(_vals), vmax=max(_vals) if max(_vals) > min(_vals) else min(_vals) + 1)
-        fig, ax = plt.subplots(figsize=(12, 16)); caba_c = None
+        fig, ax = plt.subplots(figsize=(12, 16), facecolor='#FBFCF8'); caba_c = None
         for feat in geo['features']:
             nom = NORM_GEO.get(feat['properties']['name'], feat['properties']['name'])
             val = _prov_val.get(nom)
-            col = cmap_m(norm_c(val)) if val is not None else '#dddddd'
+            col = cmap_m(norm_c(val)) if val is not None else '#E4E6DF'
             gt, co = feat['geometry']['type'], feat['geometry']['coordinates']
             draw(ax, [co] if gt=='Polygon' else co, col)
             cx, cy = centroide([co] if gt=='Polygon' else co)
@@ -3551,21 +3573,34 @@ else:
             dx,dy = AJUST.get(nom,(0,0))
             if val is not None or nom in _con_datos:
                 _tx = f'{nom}\\n{val:+.1f}%' if val is not None else f'{nom}\\n(pocos datos)'
-                ax.text(cx+dx, cy+dy, _tx, ha='center', va='center', fontsize=7.5,
-                        fontweight='bold' if val is not None else 'normal', color='black' if val is not None else '#666',
-                        bbox=dict(boxstyle='round,pad=0.25', facecolor='white', alpha=0.75, edgecolor='none'))
+                ax.text(cx+dx, cy+dy, _tx, ha='center', va='center', fontsize=8, linespacing=1.15,
+                        fontweight='bold' if val is not None else 'normal', color=TEXTO_MAPA if val is not None else '#7A8070',
+                        bbox=dict(boxstyle='square,pad=0.3', facecolor='#FBFCF8', alpha=0.85, edgecolor='#C9D9B8',
+                                  linewidth=0.5))
         if caba_c and 'CABA' in _prov_val:
             vc = _prov_val['CABA']; cc = cmap_m(norm_c(vc)); lx,ly = caba_c[0]+2.2, caba_c[1]+0.8
-            ax.annotate('', xy=caba_c, xytext=(lx,ly), arrowprops=dict(arrowstyle='-', color='black', linewidth=1.0))
+            ax.annotate('', xy=caba_c, xytext=(lx,ly), arrowprops=dict(arrowstyle='-', color=VERDE_OSCURO, linewidth=1.0))
             ax.text(lx, ly, f'CABA\\n{vc:+.1f}%', ha='center', va='center', fontsize=9, fontweight='bold',
-                    bbox=dict(boxstyle='round,pad=0.5', facecolor=cc, alpha=0.95, edgecolor='black', linewidth=1.0))
-            ax.plot(*caba_c, marker='o', markersize=10, markerfacecolor=cc, markeredgecolor='black', markeredgewidth=1.2, zorder=5)
-        ax.set_title(f'Brecha celíaca de la canasta por provincia — {VENTANA_TXT}\\n(misma canasta en todas; gris: < {MIN_SUC_AGG} '
-                     f'sucursales o > {MAX_PESO_IMPUTADO}% del peso sin datos propios)', fontsize=13, fontweight='bold', pad=6)
+                    bbox=dict(boxstyle='square,pad=0.45', facecolor=cc, alpha=0.95, edgecolor=VERDE_OSCURO, linewidth=1.0))
+            ax.plot(*caba_c, marker='o', markersize=9, markerfacecolor=cc, markeredgecolor=VERDE_OSCURO, markeredgewidth=1.2,
+                    zorder=5)
+        # escala de colores abajo a la derecha (sobre el mar, sin tapar Tierra del Fuego)
+        _cax = ax.inset_axes([0.64, 0.14, 0.32, 0.012])
+        _cb = fig.colorbar(plt.cm.ScalarMappable(norm=norm_c, cmap=cmap_m), cax=_cax, orientation='horizontal')
+        _cb.outline.set_edgecolor('#C9D9B8'); _cb.ax.tick_params(labelsize=8, colors=TEXTO_MAPA, length=2)
+        _dec = 0 if norm_c.vmax - norm_c.vmin >= 5 else 1
+        _cb.ax.xaxis.set_major_formatter(mticker.FuncFormatter(lambda _v, _: f'{_v:+.{_dec}f}%'))
+        _cb.set_label('Brecha de la canasta (sin TACC vs con TACC)', fontsize=8.5, color=TEXTO_MAPA, labelpad=3)
+        ax.set_title(f'Brecha celíaca de la canasta por provincia', loc='left', fontsize=17, fontweight='bold',
+                     color=VERDE_OSCURO, pad=26)
+        ax.text(0, 1.012, f'{VENTANA_TXT} · misma canasta en todas las provincias · gris: menos de {MIN_SUC_AGG} sucursales '
+                f'o más del {MAX_PESO_IMPUTADO}% del peso sin datos propios', transform=ax.transAxes, fontsize=9.5,
+                color='#5F6B55', va='bottom')
+        ax.plot([0, 0.35], [1.005, 1.005], transform=ax.transAxes, color=VERDE_CLARO, lw=3, clip_on=False)
         ax.set_aspect('equal'); ax.axis('off'); plt.tight_layout()
         _o = OUTPUT_DIR / f'mapa_brecha_{MES}.png'
-        plt.savefig(_o, dpi=300, bbox_inches='tight', facecolor='white'); plt.show()
-        print(f'Guardado: {_o.name}')"""))
+        plt.savefig(_o, dpi=300, bbox_inches='tight', facecolor='#FBFCF8'); plt.show()
+        print(f'Guardado: {_o.name} (tipografía {FUENTE_MAPA})')"""))
 
 # ── CELL 11 — EXCEL ────────────────────────────────────────────────────────────
 cells.append(cell_code(r"""# ============================================================
@@ -3986,6 +4021,10 @@ from folium.plugins import Fullscreen
 from branca.colormap import LinearColormap
 import json as _json
 
+# Estilo: verdes de los otros notebooks y tipografía Lato (Google Fonts; sin red, la del sistema)
+_VO, _VC, _TX, _TX2 = '#375623', '#92D050', '#2B3A23', '#5F6B55'
+_FUENTE = "Lato,'Segoe UI',Tahoma,sans-serif"
+
 # Snapshot = ÚLTIMA brecha disponible POR SUCURSAL dentro de una ventana de meses (cadenas que no informaron el
 # último mes aparecen con su dato más reciente; el popup indica de qué mes es).
 _sk3m = ['id_comercio','id_bandera','id_sucursal']
@@ -4057,8 +4096,8 @@ try:
         with open(GEOJSON_PATH, 'r', encoding='utf-8') as _gf:
             _geo_base = _json.load(_gf)
         folium.GeoJson(_geo_base, name='Límites provinciales', control=False,
-                       style_function=lambda _f: {'color': '#8a8f98', 'weight': 1.0,
-                                                  'fillColor': '#eef0f2', 'fillOpacity': 0.20}
+                       style_function=lambda _f: {'color': '#7D8A70', 'weight': 0.9,
+                                                  'fillColor': '#F1F4EC', 'fillOpacity': 0.25}
                        ).add_to(m)
 except Exception as _e:
     print(f'  (aviso: no se pudieron dibujar los límites provinciales: {_e})')
@@ -4075,10 +4114,10 @@ for _r in _bk.itertuples(index=False):
     _key = f'{_r.id_comercio}_{_r.id_bandera}_{_r.id_sucursal}'
     _b = float(_r.brecha_comparable); _col = _cm(max(_vmin, min(_vmax, _b)))
     _ph = (f'<div class="lz-pop" data-key="{_key}" style="min-width:320px">'
-           f'<span style="color:#aaa;font-family:Arial;font-size:12px">Cargando detalle…</span></div>')
+           f'<span style="color:#8C9682;font-size:12px">Cargando detalle…</span></div>')
     folium.CircleMarker(
         location=[_r.sucursales_latitud, _r.sucursales_longitud],
-        radius=6, color='#333', weight=0.6, fill=True, fillColor=_col, fillOpacity=0.9,
+        radius=6, color=_TX, weight=0.6, fill=True, fillColor=_col, fillOpacity=0.9,
         tooltip=(f'<b>{_r.cadena}</b><br>{_r.PROVINCIA_NORM}<br>Brecha <b>{_b:+.0f}%</b> '
                  f'({_r.peso_propio_pct:.0f}% de la canasta medida acá)'),
         popup=folium.Popup(_ph, max_width=500)
@@ -4088,45 +4127,55 @@ for _c in sorted(_fgs): _fgs[_c].add_to(m)
 folium.LayerControl(collapsed=True, position='topright').add_to(m)
 
 _med_nac = _bk['brecha_comparable'].median()
-_info = (f'<div style="position:fixed;top:10px;left:50px;width:335px;background:white;border:2px solid #0055A4;'
-         f'border-radius:8px;padding:12px 15px;font-family:Arial;z-index:9999;box-shadow:0 2px 8px rgba(0,0,0,.15)">'
-         f'<div style="color:#0055A4;font-size:15px;font-weight:bold;margin-bottom:4px">Brecha celíaca por sucursal</div>'
-         f'<div style="font-size:11px;color:#555;line-height:1.5">Última brecha disponible por sucursal '
+_info = (f'<div style="position:fixed;top:12px;left:52px;width:340px;background:#FBFCF8;border:1px solid {_VO};'
+         f'border-left:6px solid {_VO};border-radius:2px;padding:11px 14px 12px;font-family:{_FUENTE};z-index:9999;'
+         f'box-shadow:0 1px 4px rgba(0,0,0,.12)">'
+         f'<div style="color:{_VO};font-size:17px;font-weight:700;letter-spacing:.2px;margin-bottom:2px">'
+         f'Brecha celíaca por sucursal</div>'
+         f'<div style="height:3px;width:70px;background:{_VC};margin:4px 0 7px"></div>'
+         f'<div style="font-size:12px;color:{_TX2};line-height:1.55">Última brecha disponible por sucursal '
          f'(últimos {VENTANA_MAPA_MESES} meses) · <b>{len(_bk):,}</b> sucursales · <b>{len(_fgs)}</b> cadenas<br>'
          f'Brecha mediana: <b>{_med_nac:+.0f}%</b> · el popup indica de qué mes es cada dato<br>'
          f'Misma canasta en todas: lo que una sucursal no vende, con la brecha nacional del mes<br>'
          f'<span style="color:#1a9850">■</span> menor &nbsp; <span style="color:#d73027">■</span> mayor brecha &nbsp;·&nbsp; '
          f'filtrá cadenas con el control de capas (arriba der.)</div></div>')
+m.get_root().header.add_child(folium.Element(
+    '<link rel="preconnect" href="https://fonts.googleapis.com">'
+    '<link href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700&display=swap" rel="stylesheet">'
+    f'<style>.leaflet-container,.leaflet-tooltip,.leaflet-popup-content,.leaflet-control-layers,.legend,.legend text'
+    f'{{font-family:{_FUENTE} !important;color:{_TX}}}'
+    f'.leaflet-popup-content-wrapper{{border-radius:3px;border-top:4px solid {_VO}}}'
+    f'.leaflet-tooltip{{border:1px solid #C9D9B8;border-radius:2px}}</style>'))
 m.get_root().html.add_child(folium.Element(_info))
 m.get_root().html.add_child(folium.Element(f'<script type="application/json" id="_pd_json">{_json_str}</script>'))
 
 _MV = m.get_name()
 _JS = '''<script>
-var _MV="__MAPVAR__", _MES="__MES__", _PD=null;
+var _MV="__MAPVAR__", _MES="__MES__", _PD=null, _VO="__VO__", _VC="__VC__";
 function _gpd(){ if(!_PD){ var el=document.getElementById("_pd_json"); if(el) _PD=JSON.parse(el.textContent); } return _PD; }
 function _fmt(x){ return "$"+Number(x).toLocaleString("es-AR"); }
 function _sg(x){ return (x>=0?"+":"")+x; }
-function _plist(a){ if(!a||!a.length) return '<span style="color:#bbb">—</span>'; var s=""; for(var i=0;i<a.length;i++){ var g=a[i][1]?a[i][1]+" g":"s/pres"; var p=(a[i][2]!=null)?_fmt(a[i][2])+"/100g":"s/precio"; s+='<div style="margin:1px 0">• '+a[i][0]+' <span style="color:#777">('+g+", "+p+')</span></div>'; } return s; }
+function _plist(a){ if(!a||!a.length) return '<span style="color:#bbb">—</span>'; var s=""; for(var i=0;i<a.length;i++){ var g=a[i][1]?a[i][1]+" g":"s/pres"; var p=(a[i][2]!=null)?_fmt(a[i][2])+"/100g":"s/precio"; s+='<div style="margin:1px 0">· '+a[i][0]+' <span style="color:#6B7563">('+g+", "+p+')</span></div>'; } return s; }
 function _bpop(k){ var pd=_gpd(); if(!pd||!pd[k]) return "<div>Sin datos.</div>"; var d=pd[k];
-  var h='<div style="font-family:Arial;font-size:12px;min-width:360px;max-width:480px;max-height:520px;overflow-y:auto">';
-  h+='<div style="font-size:14px;font-weight:bold">'+d.n+'</div>';
-  h+='<div style="color:#555;margin-bottom:5px">'+d.c+" · "+d.l+", "+d.p+'</div>';
-  h+='<div style="padding:6px;background:#f5f5f5;border-radius:4px;margin-bottom:4px">Brecha de la canasta celíaca: <b style="font-size:15px">'+_sg(d.b)+'%</b><br><span style="color:#888;font-size:11px">Misma canasta en todas las sucursales: '+d.pp+'% medida acá; lo que no vende, con la brecha nacional del mes</span><br>Solo con sus '+d.nt+' tipo(s): '+_sg(d.bt)+'% · canasta con TACC <b>'+_fmt(d.bs)+'</b> · sin TACC <b>'+_fmt(d.cl)+'</b> <span style="color:#888">($/100g ponderado)</span><br><span style="color:#888;font-size:11px">dato de '+d.m+'</span></div>';
+  var h='<div style="font-size:12px;color:#2B3A23;min-width:360px;max-width:480px;max-height:520px;overflow-y:auto">';
+  h+='<div style="font-size:15px;font-weight:700;color:'+_VO+'">'+d.n+'</div>';
+  h+='<div style="color:#5F6B55;margin-bottom:6px">'+d.c+" · "+d.l+", "+d.p+'</div>';
+  h+='<div style="padding:7px 8px;background:#EEF4E6;border-left:3px solid '+_VC+';margin-bottom:4px">Brecha de la canasta celíaca: <b style="font-size:15px">'+_sg(d.b)+'%</b><br><span style="color:#6B7563;font-size:11px">Misma canasta en todas las sucursales: '+d.pp+'% medida acá; lo que no vende, con la brecha nacional del mes</span><br>Solo con sus '+d.nt+' tipo(s): '+_sg(d.bt)+'% · canasta con TACC <b>'+_fmt(d.bs)+'</b> · sin TACC <b>'+_fmt(d.cl)+'</b> <span style="color:#6B7563">($/100g ponderado)</span><br><span style="color:#6B7563;font-size:11px">dato de '+d.m+'</span></div>';
   for(var i=0;i<d.T.length;i++){ var t=d.T[i];
-    h+='<div style="margin-top:7px;font-weight:bold;color:#1F4E79">'+t.t+" · brecha del tipo "+_sg(t.g)+'% <span style="color:#888;font-weight:normal">(mediana con TACC '+_fmt(t.ta)+" vs sin "+_fmt(t.si)+'/100g)</span></div>';
-    h+='<table style="border-collapse:collapse;width:100%;font-size:11px"><tr style="background:#1F4E79;color:#fff"><th style="padding:2px">Equivalente</th><th style="padding:2px">Con TACC</th><th style="padding:2px">Sin TACC</th></tr>';
+    h+='<div style="margin-top:8px;font-weight:700;color:'+_VO+'">'+t.t+" · brecha del tipo "+_sg(t.g)+'% <span style="color:#6B7563;font-weight:normal">(mediana con TACC '+_fmt(t.ta)+" vs sin "+_fmt(t.si)+'/100g)</span></div>';
+    h+='<table style="border-collapse:collapse;width:100%;font-size:11px"><tr style="background:'+_VO+';color:#fff"><th style="padding:2px">Equivalente</th><th style="padding:2px">Con TACC</th><th style="padding:2px">Sin TACC</th></tr>';
     for(var j=0;j<t.S.length;j++){ var s=t.S[j];
-      h+='<tr><td style="border:1px solid #ddd;padding:3px;vertical-align:top;font-weight:600">'+s.s+'</td><td style="border:1px solid #ddd;padding:3px;vertical-align:top">'+_plist(s.A)+'</td><td style="border:1px solid #ddd;padding:3px;vertical-align:top">'+_plist(s.B)+'</td></tr>';
+      h+='<tr><td style="border:1px solid #D5DEC9;padding:3px;vertical-align:top;font-weight:600">'+s.s+'</td><td style="border:1px solid #D5DEC9;padding:3px;vertical-align:top">'+_plist(s.A)+'</td><td style="border:1px solid #D5DEC9;padding:3px;vertical-align:top">'+_plist(s.B)+'</td></tr>';
     }
     h+="</table>";
   }
-  h+='<div style="color:#999;font-size:10px;margin-top:5px">Filas = productos equivalentes. La brecha autoritativa es la del tipo (§3); acá se listan los productos comparados de cada lado.</div></div>';
+  h+='<div style="color:#8C9682;font-size:10px;margin-top:6px">Filas = productos equivalentes. La brecha autoritativa es la del tipo (§3); acá se listan los productos comparados de cada lado.</div></div>';
   return h;
 }
 function _init(){ var mp=window[_MV]; if(!mp){ setTimeout(_init,300); return; } mp.on("popupopen",function(e){ var el=e.popup.getElement().querySelector(".lz-pop"); if(el&&el.getAttribute("data-b")!=="1"){ el.innerHTML=_bpop(el.getAttribute("data-key")); el.setAttribute("data-b","1"); e.popup.update(); } }); }
 setTimeout(_init,500);
 </script>'''
-_JS = _JS.replace('__MAPVAR__', _MV).replace('__MES__', NOMBRE_MES_TITLE)
+_JS = _JS.replace('__MAPVAR__', _MV).replace('__MES__', NOMBRE_MES_TITLE).replace('__VO__', _VO).replace('__VC__', _VC)
 m.get_root().html.add_child(folium.Element(_JS))
 
 _out_map = OUTPUT_DIR / f'mapa_sucursales_brecha_{MES}.html'
