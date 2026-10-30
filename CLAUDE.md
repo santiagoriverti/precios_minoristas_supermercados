@@ -6,7 +6,8 @@ celíaca** (nb06 con canasta fija 2022-2026 y nb06b con la amplia; lo último: 2
 expertos; guías `docs/BRECHA_CELIACA.md` §14-§17, `docs/brecha_celiaca/GUIA_INVESTIGADORES.md` y
 `docs/EVALUACION_EXPERTOS_2026-10-27_nb06.md`), el
 **pass-through del tipo de cambio** (nb08 + canasta fija de 775 productos; desde el 2026-10-29 el Excel compara el
-nivel general con las provincias y con los grandes rubros; guía `docs/PASS_THROUGH.md`), el **nb09**, el
+nivel general con las provincias y con los grandes rubros; guía `docs/PASS_THROUGH.md`; desde el 2026-10-30 el **nb10**
+repondera esa canasta contra el IPC y predice el IPC del mes, `docs/PASS_THROUGH.md` §7), el **nb09**, el
 **nb02** y el **nb07**.
 
 **nb06** (`notebooks/06_evolucion_brecha_celiaca.ipynb`, fuente `gen_nb06.py`): brecha de precios con TACC / sin TACC
@@ -119,7 +120,7 @@ relativo; la próxima corrida en Colab los muestra por primera vez.
 
 1. **Leer el bloque `ESTADO ACTUAL / HANDOFF` al principio de `.claude/memory.md`** (estado de
    cada línea de trabajo, prioridades, dónde están los datos) y, según lo que pida el usuario, el bloque de ese
-   notebook debajo (nb06, nb08 v3 y v2, canasta de pass-through, nb09, nb02, nb07). Ahí está en qué quedó el trabajo, qué hay que
+   notebook debajo (nb10, nb06, nb08 v3 y v2, canasta de pass-through, nb09, nb02, nb07). Ahí está en qué quedó el trabajo, qué hay que
    hacer apenas el usuario pase resultados y los números vigentes.
 2. Correr los tests (`pip install -r requirements.txt` si es una PC nueva; los 16 dieron OK el 2026-10-30 —toda la suite:
    `python -I -X utf8 docs/auditoria/scripts_nb06_2026-10/s19_suite_tests.py <repo> <log>`—; el del nb09
@@ -165,6 +166,10 @@ relativo; la próxima corrida en Colab los muestra por primera vez.
    ≤ 1,95 GB, notebook ≤ 1,3 GB), el nb08 v3 en la PC (0,4-0,5 GB y ~70 s por mes) y el nb06 en la PC con los 58 meses (2,5 GB).
 
 ## Reglas que muerden
+
+- **nb10 replica las fórmulas del nb08** (CELDA 4 de `gen_nb10.py` = CELDA 5 de `gen_nb08.py`: eslabones, día ancla,
+  Resumen_mensual, Rubros_*, Indices_por_grupo) y frena si el recálculo no da igual al Excel: si se cambia el nb08,
+  cambiar igual el nb10 y correr `test_canasta_reponderada.py` y `correr_real.py` con un Excel nuevo del nb08.
 
 - **Los `.ipynb` NO se editan a mano.** La fuente es `notebooks/gen_nbXX.py`; regenerar con
   `python notebooks/gen_nb07.py` y commitear generador + `.ipynb` juntos.

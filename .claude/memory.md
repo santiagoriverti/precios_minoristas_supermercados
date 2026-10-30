@@ -14,7 +14,8 @@ Autor: Santiago Riverti — investigador independiente
   revisión de la segunda corrida de Colab; el 2026-10-27, el panel de expertos del nb06, el nb06b, la corrida de Colab
   verificada y, a la noche, la segunda revisión de expertos; el 2026-10-29, `35c247a` (nb08 v3: nivel general vs
   provincias y vs grandes rubros) y el de la documentación de ese día; el 2026-10-30, el **nb10** (canasta reponderada
-  contra el IPC + predicción del IPC del mes; bloque "nb10" de abajo). **16 tests en OK** (el del nb06 tiene 54 controles desde
+  contra el IPC + predicción del IPC del mes, commit `042b34e`; bloque "nb10" de abajo) y el de la documentación para
+  retomar. **16 tests en OK** (el del nb06 tiene 54 controles desde
   el 2026-10-27, noche; la suite se corre con `docs/auditoria/scripts_nb06_2026-10/s19_suite_tests.py`). En una PC nueva:
   `git clone`, `pip install -r requirements.txt` y los tests de `CLAUDE.md`.
 - **Datos en la PC del INECO** (el usuario bajó el 23/10 todo el Drive; **desde la tarde del 23/10 están en
@@ -30,7 +31,10 @@ Autor: Santiago Riverti — investigador independiente
   `simulacion/sim_v9/` (= los esperados vigentes, caché `brecha_v3_5fc88a8c` con los 25 ADICIONALES; `datos/` con los
   paneles), `simulacion/sim_super_amplia/` (lectura amplia de 1.781 candidatos, ago-2025 → oct-2026, caché
   `brecha_v3_6659af73`) y `canasta_amplia_v1/` (primera canasta amplia, s18). El `IPC.xlsx` del Drive, extraído, en
-  `C:\Users\sriverti\proyectos\carga_extraido_20261026\` (s11 `--ipc`). Desde la noche del 2026-10-27 (segunda
+  `C:\Users\sriverti\proyectos\carga_extraido_20261026\` (s11 `--ipc`). Desde el 2026-10-30 (nb10): el Excel del nb08 que pasó el usuario en
+  `C:\Users\sriverti\Downloads\canasta_diaria_20220101_20261029.xlsx` (26 MB, 14 hojas, 01/01/2022 → 29/10/2026) y
+  `C:\Users\sriverti\proyectos\nb10_reponderacion_ipc_20261030\` (README adentro: salida del nb10 de muestra, la prueba con el IPC hasta ago-2026, copia del IPC y
+  los scripts de la exploración). Desde la noche del 2026-10-27 (segunda
   revisión): `simulacion/sim_v11/` (nb06) y `simulacion/sim_06b_v3/` (nb06b) = los esperados VIGENTES
   (`simulacion_2026-10-27b/`, `simulacion_06b_2026-10-27b/`); `canasta_v14/` y `canasta_amplia_v4/` = los CSV con
   `marca`; `colab_20261027/` y `colab_20261027b/` = las dos corridas de Colab del 27 (iguales a la simulación).
@@ -232,6 +236,14 @@ Claude.
   todas las hojas recalculadas; backtest sin mirar el futuro; mes sin predicción; Excel tocado frena; IPC con 'sept-2024'
   y comas). Suite 16/16. El `nowcast_ipc.py` + `data/ipc_indec_divisiones.csv` del turno anterior se borraron sin
   commitear (los reemplaza el nb10 y el CSV a mano quedaba viejo).
+- Commit `042b34e` (notebook, generador, test, `correr_real.py`, suite a 16, README, CLAUDE.md, CONTEXTO, METODOLOGIA
+  §15, PASS_THROUGH §7, memoria) y el de la documentación para retomar (BUGS_Y_MEJORAS, cabeceras, memoria global).
+  Salidas de muestra y exploración: `C:\Users\sriverti\proyectos\nb10_reponderacion_ipc_20261030\` (README adentro). Prueba "el mes siguiente" (IPC cortado en
+  ago-2026): predijo sep-2026 1,71% (80%: 1,03-2,15); el INDEC dio 1,93%.
+- **Reglas**: el control de la CELDA 4 replica las fórmulas de la CELDA 5 del nb08 (eslabones, día ancla, Resumen,
+  Rubros, Indices_por_grupo): **si se cambia cómo calcula el nb08, cambiar igual `gen_nb10.py`** o el nb10 frena con
+  los Excel nuevos. Las ponderaciones del INDEC (`DIVISIONES`, CELDA 3) son las nacionales base dic-2016: si el INDEC
+  cambia la base, actualizarlas. La predicción es del mes siguiente al último del `IPC.xlsx`.
 - **Siguiente**: el usuario corre el nb10 en Colab (sube el Excel del nb08). Cada mes: nb08 hasta el último día, fila
   nueva en `IPC.xlsx`, nb10. Cuando salga el IPC de oct-2026 (~mediados de nov), comparar con 2,05%. Mejoras posibles:
   `SUPUESTOS` de regulados cargados por el usuario; IPC CABA (sale antes) como predictor.
