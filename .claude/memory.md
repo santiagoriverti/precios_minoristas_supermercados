@@ -6,7 +6,7 @@ Autor: Santiago Riverti — investigador independiente
 
 ---
 
-## 🟢 ESTADO ACTUAL / HANDOFF [2026-10-30] — leer esto primero
+## 🟢 ESTADO ACTUAL / HANDOFF [2026-11-17] — leer esto primero
 
 - **Repo**: `main` = `origin/main` al cierre (ver `git log`). Commits del 2026-10-23: `678e9b9` (nb06: canasta fija
   2022-2026 + estimador por subtipo + BUG-46), `b02871c` (documentación para retomar) y el de la tarde (revisión de la
@@ -40,6 +40,34 @@ Autor: Santiago Riverti — investigador independiente
   `marca`; `colab_20261027/` y `colab_20261027b/` = las dos corridas de Colab del 27 (iguales a la simulación).
 
 **Líneas de trabajo, en orden de prioridad:**
+
+0. **Brecha celíaca — lo último, 2026-11-17: CELDA 13, pares y regresión descriptiva** (BRECHA_CELIACA §18, GUIA §0).
+   El usuario pidió terminar los nb06/06b con un producto para estudiar con otros investigadores: **¿cuánto más paga un
+   celíaco por el mismo producto en la misma sucursal, y de qué depende?** Decidido con el usuario: cadena = **bandera**;
+   geografía en tres niveles (región, provincia, departamento); exportar en Excel y parquet; el resto "a mi criterio"
+   con la mayor cobertura temporal posible.
+   - **Aplicado**: CELDA 13 nueva al final de los dos notebooks (`_CELDA_13` en `gen_nb06.py`): pares sin TACC × con
+     TACC del mismo subtipo, sucursal y mes en $/kg desde `MES_INICIO_PARES` = 2024-01; el 06b lee además ene-2024 →
+     jul-2025 (CELDA 5 `_MES_LECTURA`; CELDA 7 separa `datos_lectura` y `datos_propias`; `_depurar_pares` replica los
+     filtros de la CELDA 7): la brecha principal no cambia. Celda = promedio de los pares (`log_brecha`); regresión
+     M1-M11 con efectos fijos ralos (LSMR), CR1 por bandera y empresa, WCR exacto (Webb); Shapley entre celdas y entre
+     sucursales; traducción al gasto (22,7% alimentos en el gasto, ENGHo). **Marcas propias** sin TACC (`s21`,
+     `docs/brecha_celiaca/marcas_propias_sin_tacc.csv`, `MARCAS_PROPIAS` en la CELDA 1: Carrefour 23, Libertad/Taeq 12,
+     La Anónima 2; **DIA ninguna**) → nueva clave del caché: la primera corrida de Colab relee el SEPA (nb06 58 meses,
+     06b 34). Salida `OUTPUT_DIR/pares/`; el Excel de detalle (un par por fila) apagado en el 06b (~3,5 M de pares, 450 MB).
+     `s15` (clave con las marcas propias), `s16` (claves de las hojas de pares), `s17` (sin `Celdas` ni `Diccionario`).
+   - **Validación**: test 64 controles (10 nuevos: pares por fuerza bruta, LSMR vs denso, WCR vs reestimar todo, Shapley
+     a mano, ventana del 06b); suite 16/16; simulación con los zips del 17/11 (`C:\Users\sriverti\Downloads\brecha_celiaca\`:
+     los 10 zips + las salidas de Colab del 17/11; trabajo en `C:\Users\sriverti\proyectos\nb06_brecha_celiaca_20261023\`
+     `simulacion/sim_v12` (nb06), `sim_06b_v4` (06b) y `colab_20261117/`); Excel principal = Colab del 17/11 salvo el IPC
+     (51/54 hojas). CELDA 13: 7 min (06) y ~10-21 min (06b); RAM 6,0 / 7,5 GB.
+   - **Resultados**: fija +102% (mediana de celdas y de sucursales; p10-p90 de sucursales +88% a +106%), bandera 66% de la
+     variación entre sucursales, categoría 76% entre celdas, regiones ±2% con la misma bandera (La Anónima −10%); amplia
+     +105% / +116%, 72%, 82%; marca propia −8% / −3% (p WCR 0,05-0,35); densidad y HHI < 0,1%; gasto +5,2% / +11,0% de
+     alimentos. Los números que citaba el usuario (+92 a +129%, NOA/Cuyo +115/120 vs Patagonia +101) no coinciden con
+     las hojas: usar los de §18.8.
+   - **Siguiente**: el usuario corre los dos notebooks en Colab (botones del README) y se compara con `s16` contra
+     `docs/brecha_celiaca/simulacion_2026-11-17` (y `/pares`) y `simulacion_06b_2026-11-17`.
 
 1. **Brecha celíaca (nb06 y nb06b) — lo último, 2026-10-27 noche: segunda revisión de expertos** (EVALUACION_EXPERTOS
    §14, BRECHA_CELIACA §17, guía `docs/brecha_celiaca/GUIA_INVESTIGADORES.md`). El usuario pidió revisar, como el mejor

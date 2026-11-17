@@ -1,7 +1,7 @@
 # Arma el caché del nb06 para la canasta de la CELDA 1 filtrando el caché leído con un superconjunto de EANs (s11
 # --config): cada mes guardado tiene una fila por sucursal x EAN, así que quedarse con los EANs de la canasta da lo mismo
 # que leer el SEPA con esa canasta (el factor centavos/pesos sale de EANs de referencia, no de la canasta). La clave
-# incluye los ADICIONALES de la CELDA 1 (productos de la sensibilidad), como en la CELDA 6.
+# incluye los ADICIONALES de la CELDA 1 (productos de la sensibilidad) y las MARCAS_PROPIAS (CELDA 13), como en la CELDA 6.
 # Uso: python -I -X utf8 s15_filtrar_cache.py <repo> <carpeta _cache/brecha_v3_<clave> del superconjunto> <salida de s11>
 #                                             [--notebook 06b_brecha_celiaca_canasta_amplia.ipynb]
 import hashlib, json, re, sys
@@ -25,6 +25,7 @@ def _norm_ean(_e):                       # igual que la CELDA 4
 assert not g.get('USAR_REGLA_NOMBRE'), 'con USAR_REGLA_NOMBRE la canasta depende del maestro: no se puede filtrar'
 E = {_norm_ean(e) for t in g['TIPOS'].values() for lado in ('tacc', 'sin_tacc') for e in t.get(lado, {})}
 E |= {_norm_ean(e) for e in g.get('ADICIONALES', {})}     # productos de la sensibilidad (CELDA 8c): se leen igual
+E |= {_norm_ean(e) for e in g.get('MARCAS_PROPIAS', {})}  # marcas propias sin TACC (CELDA 13, desde el 2026-11-17)
 E.discard(None)
 clave = hashlib.md5('|'.join(sorted(E)).encode()).hexdigest()[:8]
 dst = OUT / '_cache' / f'brecha_v3_{clave}'

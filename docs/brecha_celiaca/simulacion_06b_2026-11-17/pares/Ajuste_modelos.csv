@@ -1,0 +1,12 @@
+modelo,descripcion,efectos_fijos,variables,ponderacion,nivel,observaciones,sucursales,r2,r2_within
+M1,Categoría y mes,"subtipo, mes",,cada celda pesa 1,celda,690029,2477,0.8551868407248682,
+M2,+ cadena (bandera),"subtipo, mes, cadena",,cada celda pesa 1,celda,690029,2477,0.8628436912326096,
+M3,+ región,"subtipo, mes, cadena, region",,cada celda pesa 1,celda,690029,2477,0.8629023196816263,
+M4,"Categoría, mes, cadena y provincia","subtipo, mes, cadena, provincia",,cada celda pesa 1,celda,690029,2477,0.8629369113831153,
+M5,"Categoría, mes, cadena y departamento","subtipo, mes, cadena, departamento_id",,cada celda pesa 1,celda,690029,2477,0.8630861188359376,
+M6,"PRINCIPAL: categoría, mes, cadena, región y entorno","subtipo, mes, cadena, region","marca_propia_subtipo, marca_propia_otro_subtipo, ln_sucursales_3km, hhi_departamento",cada celda pesa 1,celda,690029,2477,0.8631246572103941,0.001621745373454608
+M7,"Sin efecto fijo de cadena: categoría, mes, región, entorno y marca propia de la bandera","subtipo, mes, region","marca_propia_subtipo, marca_propia_otro_subtipo, ln_sucursales_3km, hhi_departamento, bandera_marca_propia_tipo",cada celda pesa 1,celda,690029,2477,0.8588838982741703,0.009839319885631248
+M8,Como M6 con provincia,"subtipo, mes, cadena, provincia","marca_propia_subtipo, marca_propia_otro_subtipo, ln_sucursales_3km, hhi_departamento",cada celda pesa 1,celda,690029,2477,0.8631569609269525,0.00160546173340792
+M9,Como M6 con departamento,"subtipo, mes, cadena, departamento_id","marca_propia_subtipo, marca_propia_otro_subtipo, ln_sucursales_3km, hhi_departamento",cada celda pesa 1,celda,690029,2477,0.8633020010002126,0.001576773388056618
+M10,Como M6 ponderado por el gasto (ENGHo),"subtipo, mes, cadena, region","marca_propia_subtipo, marca_propia_otro_subtipo, ln_sucursales_3km, hhi_departamento",ENGHo (peso_engho),celda,690029,2477,0.8766037121518506,0.01666024706657943
+M11,Como M6 con los mismos pares (efecto fijo del par de productos),"par, mes, cadena, region","marca_propia_subtipo, marca_propia_otro_subtipo, ln_sucursales_3km, hhi_departamento",cada celda pesa 1 (peso_par),par,3125746,2477,0.919542860687737,0.001435862625064233

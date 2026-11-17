@@ -7,7 +7,7 @@ from pathlib import Path
 import pandas as pd
 
 F_XLS, D_OUT = Path(sys.argv[1]), Path(sys.argv[2])
-AFUERA = {'Leeme', 'Comparacion_productos', 'Detalle_producto'}
+AFUERA = {'Leeme', 'Comparacion_productos', 'Detalle_producto', 'Celdas', 'Diccionario'}   # Celdas y Diccionario: Excel de pares (CELDA 13)
 CLAVES = ['tipo', 'subtipo', 'lado', 'rol', 'ean', 'ean_norm', 'mes', 'anio', 'provincia', 'region', 'empresa',
           'cadena', 'localidad', 'id_comercio', 'id_bandera', 'id_sucursal', 'departamento_id', 'serie', 'desde', 'hasta',
           'producto', 'universo', 'periodo', 'marca']

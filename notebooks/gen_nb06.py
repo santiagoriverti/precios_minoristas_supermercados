@@ -12,6 +12,10 @@ CELDA 1. Reglas y fundamentos: docs/BRECHA_CELIACA.md §14.
 Desde el 2026-10-27 escribe también 06b_brecha_celiaca_canasta_amplia.ipynb: las mismas celdas con la canasta AMPLIA de
 la oferta actual (docs/brecha_celiaca/canasta_amplia_2025_2026.csv, ago-2025 -> hoy; BRECHA_CELIACA §16), al final.
 
+Desde el 2026-11-17, la CELDA 13 (pares con TACC / sin TACC por kilo, brecha en logaritmos, regresión descriptiva con
+efectos fijos, marca propia y densidad, descomposición de Shapley; BRECHA_CELIACA §18) y MARCAS_PROPIAS en la CELDA 1
+(docs/brecha_celiaca/marcas_propias_sin_tacc.csv, de s21_marcas_propias.py).
+
 Regenerar:  python notebooks/gen_nb06.py   (escribe los dos; commitear generador + .ipynb + CSV juntos)
 """
 import csv, json, os, hashlib
@@ -184,6 +188,37 @@ def _bloque_canasta():
     return '\n'.join(out)
 
 
+# Marcas propias sin TACC de las cadenas (s21_marcas_propias.py), para la CELDA 13 (pares y regresión, §18)
+PROPIAS_CSV = os.path.join(HERE, '..', 'docs', 'brecha_celiaca', 'marcas_propias_sin_tacc.csv')
+
+
+def _bloque_propias():
+    # MARCAS_PROPIAS de la CELDA 1: los productos de marca propia sin TACC de los tipos de ESTA canasta (el subtipo, solo
+    # si la canasta lo tiene; si no, None: cuentan para la variable a nivel tipo)
+    with open(CANASTA_CSV, encoding='utf-8') as f:
+        filas = list(csv.DictReader(f))
+    tipos = {r['tipo'] for r in filas}
+    subtipos = {(r['tipo'], r['subtipo']) for r in filas}
+    with open(PROPIAS_CSV, encoding='utf-8') as f:
+        props = [r for r in csv.DictReader(f) if r['tipo'] in tipos]
+    out = ['', '',
+           '# Marcas PROPIAS sin TACC de las cadenas (CELDA 13: variable "la cadena tiene línea propia sin TACC" y pares de',
+           '# robustez con su sin TACC). Salen de docs/brecha_celiaca/marcas_propias_sin_tacc.csv (s21_marcas_propias.py: sin TACC',
+           '# por la descripción y marca de la cadena o de su grupo, en la trazabilidad del nb09). Se leen con la canasta (cambian',
+           '# la clave del caché) y NUNCA entran en la brecha principal. subtipo None = la canasta no tiene ese subtipo (cuenta',
+           '# para la variable a nivel tipo); gramos None = presentación por unidades (cuenta para la variable, no para los pares).',
+           'MARCAS_PROPIAS = {']
+    for r in props:
+        st = r['subtipo'] if (r['tipo'], r['subtipo']) in subtipos else None
+        g = float(r['gramos']) if r.get('gramos') else None
+        out.append(f"    {r['ean']!r}: {{'tipo': {r['tipo']!r}, 'subtipo': {st!r}, 'gramos': {g!r}, "
+                   f"'empresa': {r['empresa_duena']!r},")
+        out.append(f"        'marca': {r['marca']!r}, 'equivalencia': {r['equivalencia']!r}, "
+                   f"'descripcion': {r['descripcion']!r}}},")
+    out.append('}')
+    return '\n'.join(out)
+
+
 cells = []
 
 # ── CELL 0 ─────────────────────────────────────────────────────────────────────
@@ -227,9 +262,18 @@ cadenas**, sobre las salidas del nb09. Reglas, listas y métricas: `docs/BRECHA_
 gráficos `*.png`, el mapa por provincia y el mapa por sucursal (`.html`) y la carpeta `datos/` (paneles en parquet y
 csv.gz para Python, R o Stata, productos, sucursales, diccionario de datos y `LEEME.md`).
 
+**Pares y regresión descriptiva (CELDA 13, desde 2026-11-17; `docs/BRECHA_CELIACA.md` §18).** Pregunta: ¿cuánto más paga
+un celíaco por el mismo producto en la misma sucursal, y de qué depende esa diferencia? Cada producto sin TACC contra cada
+con TACC del mismo subtipo en la misma sucursal y mes, con el precio **por kilo**, desde 2024-01; **brecha en
+logaritmos** por par y por celda (sucursal × mes × subtipo, la medida principal); regresión con efectos fijos de
+categoría, cadena (bandera), geografía (región, provincia o departamento) y mes, la **marca propia sin TACC** de la
+cadena y la densidad de sucursales (errores por bandera y por empresa, bootstrap salvaje por grupos); descomposición de
+Shapley de la dispersión entre celdas y entre sucursales; traducción al gasto del hogar. Sale en `OUTPUT_DIR/pares/`
+(Excel con los resultados y el panel de celdas, Excel con un par por fila, parquet y csv.gz, diccionario y `LEEME.md`).
+
 **Config en la CELDA 1.** Estructura: Config → Setup → Maestros → Canasta → ZIPs → Lectura (caché por mes) → Brecha por
 sucursal × mes × tipo → Agregaciones → Serie TPD → Análisis complementarios → Gráficos → Mapa → Excel → Mapa por
-sucursal"""))
+sucursal → Pares y regresión"""))
 
 # ── CELL 1 — CONFIG ────────────────────────────────────────────────────────────
 _CONFIG_PRE = r"""# ===========================================================
@@ -366,7 +410,27 @@ SUCURSALES_NO_FISICAS = r'e-?commerce|dark ?store|\bweb\b|\bmeli\b|\bonline\b'
 RECLASIF_TOL_KM = 100   # provincia: se cambia solo si la sucursal cae a más de esto de su provincia declarada (BUG-44)
 AMBA_RADIO_KM = 90      # AMBA = CABA + Buenos Aires a <= AMBA_RADIO_KM del Obelisco (BUG-42)"""
 
-cells.append(cell_code(_CONFIG_PRE + _bloque_canasta() + _CONFIG_POST))
+_CONFIG_PARES = r"""
+
+# ── Pares con TACC / sin TACC, brecha en logaritmos y regresión descriptiva (CELDA 13; docs/BRECHA_CELIACA.md §18) ──
+# Un PAR = un producto sin TACC y un producto con TACC del mismo subtipo, en la misma sucursal y el mismo mes, con el
+# precio por kilo (normaliza las presentaciones: 250 g contra 500 g). Brecha del par = ln(precio por kg sin TACC) -
+# ln(precio por kg con TACC). La regresión explica esa brecha con efectos fijos de categoría (subtipo), cadena (bandera),
+# geografía (región, provincia o departamento) y mes, la marca propia sin TACC de la cadena y la densidad de sucursales.
+MES_INICIO_PARES = '2024-01'   # primer mes de los pares (sin los precios controlados de 2023). Si es anterior a
+                               # MES_INICIO_HISTORICO se leen también esos meses (el nb06b: su canasta se eligió desde
+                               # ago-2025, pero sus productos ya se vendían antes), solo para los pares
+EXPORTAR_PARES = True          # OUTPUT_DIR/pares: Excel con los resultados y el panel de celdas, Excel con el detalle de
+                               # los pares, parquet y csv.gz de cada panel, diccionario y LEEME.md
+EXCEL_PARES_DETALLE = True     # el Excel con un par por fila (en hojas de hasta EXCEL_MAX_FILAS filas; puede pesar >100 MB)
+EXCEL_MAX_FILAS = 1_000_000    # filas por hoja de Excel (el límite de Excel es 1.048.576)
+RADIOS_DENSIDAD_KM = (1, 3, 10)   # densidad: sucursales y empresas del universo a <= estos radios de cada sucursal
+PCT_ALIMENTOS_EN_GASTO = 22.7  # % del gasto de consumo de los hogares en alimentos y bebidas no alcohólicas (ENGHo
+                               # 2017/18, total del país): traduce el sobrecosto del gasto en alimentos al gasto total
+WCB_B = 999                    # réplicas del bootstrap salvaje por grupos (pesos de Webb) de los p-valores con pocas cadenas
+WCB_SEED = 20261117            # semilla fija: dos corridas dan los mismos p-valores"""
+
+cells.append(cell_code(_CONFIG_PRE + _bloque_canasta() + _CONFIG_POST + _CONFIG_PARES + _bloque_propias()))
 
 # ── CELL 2 — SETUP ─────────────────────────────────────────────────────────────
 cells.append(cell_code(r"""# ============================================================
@@ -381,7 +445,7 @@ except ImportError:
     print('Entorno local')
 
 import subprocess, sys
-subprocess.run([sys.executable, '-m', 'pip', 'install', 'openpyxl', 'tqdm', 'pyarrow', '-q'], check=False)
+subprocess.run([sys.executable, '-m', 'pip', 'install', 'openpyxl', 'xlsxwriter', 'tqdm', 'pyarrow', '-q'], check=False)
 
 import zipfile, gzip, io, re, shutil, warnings, gc, hashlib, tempfile, calendar as _cal
 import json as _json
@@ -656,7 +720,11 @@ EANS_CONFIG = set(EAN_TIPO)
 # en la brecha principal
 ADIC_INFO = {_norm_ean(k): v for k, v in globals().get('ADICIONALES', {}).items() if _norm_ean(k)}
 EANS_ADIC = set(ADIC_INFO) - EANS_CONFIG
-EANS_LEER = EANS_CONFIG | EANS_ADIC
+# Marcas PROPIAS sin TACC de las cadenas (CELDA 1): se leen con la canasta para la CELDA 13 (pares y regresión); no entran
+# en la brecha principal
+PROPIAS_INFO = {_norm_ean(k): v for k, v in globals().get('MARCAS_PROPIAS', {}).items() if _norm_ean(k)}
+EANS_PROPIAS = set(PROPIAS_INFO) - EANS_CONFIG - EANS_ADIC
+EANS_LEER = EANS_CONFIG | EANS_ADIC | EANS_PROPIAS
 
 # Descripción: la de TIPOS (o la del maestro). Gramos: GRAMOS (verificados) o, si falta, el maestro (con aviso).
 _GR_CFG = {_norm_ean(k): float(v) for k, v in globals().get('GRAMOS', {}).items() if _norm_ean(k)}
@@ -705,7 +773,7 @@ _SUBT_CFG = {_norm_ean(_e): _s for _s, _es in globals().get('SUBTIPO', {}).items
 EAN_SUBTIPO = {_e: _SUBT_CFG.get(_e) or _subtipo(EAN_DESC.get(_e, ''), EAN_TIPO[_e]) for _e in EANS_CONFIG}
 
 print(f'Tipos: {len(TIPO_TACC)} | EANs de la canasta: {len(EANS_CONFIG)} | con gramos: {len(EAN_GRAMS)} | '
-      f'adicionales (sensibilidad, CELDA 8c): {len(EANS_ADIC)}')
+      f'adicionales (sensibilidad, CELDA 8c): {len(EANS_ADIC)} | marcas propias sin TACC (CELDA 13): {len(EANS_PROPIAS)}')
 for _t in TIPO_TACC:
     print(f'  [{_t}] {TIPO_PESO[_t]:.3f}% del gasto en alimentos (ENGHo) | con TACC: {len(TIPO_TACC[_t])} · '
           f'sin TACC: {len(TIPO_SIN[_t])}')"""))
@@ -717,6 +785,9 @@ cells.append(cell_code(r"""# ===================================================
 _PAT_SEM  = re.compile(r'^(\d{4})(A|B)$', re.IGNORECASE)
 _PAT_ARC  = re.compile(r'^(\d{2})(\d{4})_pais_parte(\d+).*COMPLETO.*\.csv\.gz$', re.IGNORECASE)
 PAT_FECHA = re.compile(r'^precio_(\d{8})$')
+# Meses a leer: desde MES_INICIO_HISTORICO o, si MES_INICIO_PARES es anterior, desde ahí (CELDA 13: el nb06b compara
+# pares desde 2024 aunque su canasta se eligió desde ago-2025). Esos meses anteriores solo los usan los pares.
+_MES_LECTURA = min(MES_INICIO_HISTORICO, globals().get('MES_INICIO_PARES') or MES_INICIO_HISTORICO)
 
 def detectar_semestres():
     result = []
@@ -743,7 +814,7 @@ def archivos_por_mes():
                 m = _PAT_ARC.match(Path(info.filename).name)
                 if m:
                     mes = f'{m.group(2)}-{m.group(1)}'
-                    if mes >= MES_INICIO_HISTORICO:
+                    if mes >= _MES_LECTURA:
                         cand.setdefault((mes, int(m.group(3))), []).append((z, info.filename, info.file_size))
     meses = {}
     for (mes, parte), c in sorted(cand.items()):
@@ -760,7 +831,7 @@ def archivos_por_mes():
 _mapa_mes = archivos_por_mes()
 _meses_disp = sorted(_mapa_mes)
 if not _meses_disp:
-    raise RuntimeError(f'No hay meses disponibles >= {MES_INICIO_HISTORICO} en {SEPA_DIR}')
+    raise RuntimeError(f'No hay meses disponibles >= {_MES_LECTURA} en {SEPA_DIR}')
 _mes_actual = _meses_disp[-1]   # mes en curso -> NUNCA se cachea
 print(f'Meses disponibles: {len(_meses_disp)}  ({_meses_disp[0]} → {_meses_disp[-1]})')
 _huecos = [str(p) for p in pd.period_range(_meses_disp[0], _meses_disp[-1], freq='M') if str(p) not in _mapa_mes]
@@ -876,7 +947,8 @@ NOMBRE_MES_TITLE = f"{_NOM[_mes_actual[5:7]]} {_mes_actual[:4]}".title()
 _fx = datos_dia.groupby('mes')['factor'].first()
 _e_dd = set(datos_dia['ean_norm'])
 print(f'Observaciones (sucursal×EAN×mes): {len(datos_dia):,} | EANs con datos: {len(_e_dd & EANS_CONFIG)}/{len(EANS_CONFIG)}'
-      + (f' | adicionales: {len(_e_dd & EANS_ADIC)}/{len(EANS_ADIC)}' if EANS_ADIC else ''))
+      + (f' | adicionales: {len(_e_dd & EANS_ADIC)}/{len(EANS_ADIC)}' if EANS_ADIC else '')
+      + (f' | marcas propias: {len(_e_dd & EANS_PROPIAS)}/{len(EANS_PROPIAS)}' if globals().get('EANS_PROPIAS') else ''))
 print(f'Meses: {datos_dia["mes"].min()} → {datos_dia["mes"].max()} ({datos_dia["mes"].nunique()}) | Sucursales: '
       f'{datos_dia.groupby(["id_comercio","id_bandera","id_sucursal"]).ngroups:,} | meses en centavos: '
       f'{list(_fx[_fx == 100].index) or "ninguno"}')
@@ -894,6 +966,16 @@ cells.append(cell_code(r"""# ===================================================
 # (sesgado al alza porque el lado con TACC tiene más productos por sucursal; BRECHA_CELIACA §3.7).
 # Los productos ADICIONALES (sensibilidad, CELDA 8c) se separan acá: siguen las mismas reglas (abajo) pero no entran en
 # la brecha principal.
+# Los meses anteriores a MES_INICIO_HISTORICO (se leen solo si MES_INICIO_PARES es anterior: el nb06b) y las marcas
+# propias sin TACC quedan aparte para la CELDA 13 (pares y regresión): la brecha principal usa la ventana de la canasta,
+# igual que si no se hubieran leído.
+datos_propias = datos_dia[datos_dia['ean_norm'].isin(globals().get('EANS_PROPIAS', set()))].copy()
+datos_lectura = None
+if (datos_dia['mes'] < MES_INICIO_HISTORICO).any():
+    datos_lectura = datos_dia
+    datos_dia = datos_dia[datos_dia['mes'] >= MES_INICIO_HISTORICO].reset_index(drop=True)
+    print(f'  Meses {datos_lectura["mes"].min()} → {MES_INICIO_HISTORICO} (anteriores a la ventana de la canasta): solo para '
+          f'los pares de la CELDA 13 ({(datos_lectura["mes"] < MES_INICIO_HISTORICO).sum():,} obs)')
 datos_adic = datos_dia[datos_dia['ean_norm'].isin(EANS_ADIC)].copy()
 datos_dia['tipo'] = datos_dia['ean_norm'].map(EAN_TIPO)
 datos_dia['rol']  = datos_dia['ean_norm'].map(EAN_ROL)
@@ -4186,6 +4268,824 @@ print(f'  {len(_bk):,} sucursales · {len(_fgs)} cadenas (últimos {VENTANA_MAPA
 _mmix = _bk['mes'].value_counts().to_dict()
 print(f'  Meses del snapshot (sucursal→mes más reciente): ' + ', '.join(f'{_m}:{_n}' for _m,_n in sorted(_mmix.items(), reverse=True)))"""))
 
+# ── CELL 13 — PARES, BRECHA EN LOGARITMOS Y REGRESIÓN DESCRIPTIVA ────────────────
+_CELDA_13 = r"""# ============================================================
+# CELDA 13 — Pares con TACC / sin TACC, brecha en logaritmos y regresión descriptiva (docs/BRECHA_CELIACA.md §18)
+# ============================================================
+# Pregunta: ¿cuánto más paga un celíaco por el mismo producto en la misma sucursal, y de qué depende esa diferencia?
+# 1. PARES: cada producto sin TACC contra cada producto con TACC del MISMO SUBTIPO, en la MISMA SUCURSAL y el MISMO MES
+#    (desde MES_INICIO_PARES), con el precio por kilo (precio del mes / gramos x 1000: resuelve las presentaciones de 250 g
+#    contra 500 g). Brecha del par = ln(precio por kg sin TACC) - ln(precio por kg con TACC). Precios y filtros de calidad,
+#    los de la CELDA 7 (vigencias, plausibilidad, precios de una empresa fuera de escala y congelados). Los sin TACC de
+#    MARCA PROPIA de la cadena (MARCAS_PROPIAS) forman pares aparte (es_marca_propia = True), fuera de la medida principal.
+# 2. CELDA = sucursal x mes x subtipo: brecha en logaritmos = promedio de sus pares = promedio de los logaritmos de los sin
+#    TACC - promedio de los logaritmos de los con TACC (cada celda pesa 1, tenga 1 par o 30). Es la variable de la
+#    regresión; exp(brecha) - 1 = cuánto más cuesta el sin TACC (0,70 -> +101%).
+# 3. REGRESIÓN DESCRIPTIVA de la brecha de la celda: efectos fijos de categoría (subtipo), cadena (bandera), geografía
+#    (región; en otras versiones, provincia o departamento) y mes, y el entorno de la sucursal: si la góndola tiene un sin
+#    TACC de marca propia de la cadena (del mismo subtipo o de otro subtipo del tipo), la densidad de sucursales (log de las
+#    sucursales a <= 3 km) y el HHI de empresas del departamento. Mínimos cuadrados con los efectos fijos en una matriz
+#    rala (LSMR), errores agrupados por bandera y por empresa y p-valores del bootstrap salvaje por grupos restringido
+#    (pesos de Webb), que corrige los pocos grupos. Es DESCRIPTIVA: dice de qué depende la brecha, no por qué.
+# 4. DESCOMPOSICIÓN: qué parte de la variación de la brecha explica cada bloque: valor de Shapley del R² (lo que agrega el
+#    bloque, promediado sobre todos los órdenes en que se pueden sumar los bloques; los valores suman el R² del modelo
+#    completo). Entre celdas y entre sucursales (la brecha propia de cada sucursal, limpia de subtipo y mes).
+# 5. TRADUCCIÓN AL GASTO: comprar sin TACC los mismos productos cuesta X% más del gasto en alimentos (pesos ENGHo de los
+#    tipos) y X% más del gasto total del hogar (PCT_ALIMENTOS_EN_GASTO). La medida central es la brecha por par.
+# Salida en OUTPUT_DIR/pares: <PREFIJO_EXCEL>_pares_AAAA-MM.xlsx (resultados + panel de celdas), ..._pares_detalle_ (un
+# par por fila), parquet y csv.gz de cada panel, diccionario_pares.csv y LEEME.md; gráficos pares_*.png.
+import time as _time13
+from scipy import sparse as _sps
+from scipy.sparse.linalg import lsmr as _lsmr
+_t13 = _time13.time()
+_MP = globals().get('MES_INICIO_PARES') or MES_INICIO_HISTORICO
+_sk = ['id_comercio','id_bandera','id_sucursal']
+_kc = ['suc_key','mes','tipo','subtipo']
+_PI = globals().get('PROPIAS_INFO', {})
+
+# ── 1. Precios de la ventana de los pares, con las reglas de la CELDA 7 ─────────────────────────────────────────────
+_ex13 = set(globals().get('EANS_EXCLUIR', set()))
+_VIG13 = {_norm_ean(k): v for k, v in globals().get('VIGENCIA', {}).items() if _norm_ean(k)}
+_PROD13 = {_norm_ean(_e): _p for _p, _es in globals().get('PRODUCTO', {}).items() for _e in _es if _norm_ean(_e)}
+
+def _depurar_pares(_d):
+    # Los filtros de la CELDA 7, en el mismo orden, sobre otra ventana de meses (el nb06b compara pares desde
+    # MES_INICIO_PARES aunque su canasta empieza en MES_INICIO_HISTORICO). Sobre la ventana de la canasta da lo mismo que
+    # la CELDA 7 (lo verifica el test).
+    _d = _d.copy()
+    _d['tipo'] = _d['ean_norm'].map(EAN_TIPO)
+    _d['rol'] = _d['ean_norm'].map(EAN_ROL)
+    _d = _d[_d['tipo'].notna() & ~_d['id_comercio'].isin(CADENAS_FILTRAR)].copy()
+    if _VIG13:
+        _vd = _d['ean_norm'].map({_e: _v[0] for _e, _v in _VIG13.items()})
+        _vh = _d['ean_norm'].map({_e: _v[1] for _e, _v in _VIG13.items()})
+        _f = ((_vd.notna() & (_d['mes'] < _vd.fillna(''))) | (_vh.notna() & (_d['mes'] > _vh.fillna('9999-99'))))
+        _d = _d[~_f].copy()
+    if _ex13:
+        _d = _d[~_d['ean_norm'].isin(_ex13)].copy()
+    _d['grams'] = _d['ean_norm'].map(EAN_GRAMS)
+    _d = _d[_d['grams'].notna() & (_d['grams'] > 0)].copy()
+    _d['precio_100'] = _d['precio'] / _d['grams'] * 100
+    _fp13 = globals().get('FACTOR_PLAUS', 4)
+    _em = _d.groupby(['tipo','rol','mes','ean_norm'])['precio_100'].median().reset_index(name='_p')
+    _em['_ref'] = _em.groupby(['tipo','rol','mes'])['_p'].transform('median')
+    _er = (_em['_p'] / _em['_ref']).groupby(_em['ean_norm']).median()
+    _d = _d[~_d['ean_norm'].isin(set(_er[(_er < 1 / _fp13) | (_er > _fp13)].index))].copy()
+    _d, _ = _sin_atipicos(_d, _atipicos_empresa(_d))
+    _d, _ = _sin_congelados(_d, _congelados_empresa(_d)[1])
+    _d['producto'] = _d['ean_norm'].map(_PROD13).fillna(_d['ean_norm'])
+    _d['subtipo'] = _d['ean_norm'].map(EAN_SUBTIPO)
+    return _d
+
+_base13 = datos_dia if datos_lectura is None else _depurar_pares(datos_lectura)
+_U13 = suc_geo[_sk + ['suc_key']].drop_duplicates('suc_key')
+_base13 = _base13[_base13['mes'] >= _MP].merge(_U13, on=_sk, how='inner')
+_MN13 = {_norm_ean(_e): str(_m).strip().upper() for _e, _m in globals().get('MARCA', {}).items() if _norm_ean(_e) and _m}
+_MEQ13 = {str(_k).strip().upper(): str(_v).strip().upper() for _k, _v in globals().get('MARCA_EQUIVALENTE', {}).items()}
+_mar_prod = (_base13[['producto','ean_norm']].drop_duplicates().assign(_m=lambda _x: _x['ean_norm'].map(_MN13))
+             .dropna(subset=['_m']).groupby('producto')['_m'].first())
+_desc_prod = (_base13[['producto','ean_norm']].drop_duplicates('producto').set_index('producto')['ean_norm']
+              .map(lambda _e: EAN_DESC.get(_e, _e)))
+_desc_prod = pd.Series({_p: (_p if _p not in EAN_DESC and not str(_p).isdigit() else _d) for _p, _d in _desc_prod.items()},
+                       dtype=object)
+# precio de cada producto en la celda (mediana de sus códigos, como la CELDA 7) y por kilo
+_pp13 = (_base13.groupby(_kc + ['rol','producto'], as_index=False)
+         .agg(precio_100=('precio_100','median'), gramos=('grams','median')))
+_pp13['precio_kg'] = _pp13['precio_100'] * 10
+_pp13['_n'] = _pp13.groupby(_kc + ['rol'])['producto'].transform('size')
+
+# marcas propias sin TACC: presencia (todas, con o sin gramos) y precios para los pares de robustez
+_pr13 = datos_propias[(datos_propias['mes'] >= _MP) & ~datos_propias['id_comercio'].isin(CADENAS_FILTRAR)].merge(
+    _U13, on=_sk, how='inner') if len(datos_propias) else pd.DataFrame(columns=_sk + ['suc_key','mes','ean_norm','precio'])
+_pinfo = lambda _k: _pr13['ean_norm'].map({_e: _v.get(_k) for _e, _v in _PI.items()})
+_pr13 = _pr13.assign(tipo=_pinfo('tipo'), subtipo=_pinfo('subtipo'), grams=pd.to_numeric(_pinfo('gramos'), errors='coerce'))
+_pr13 = _pr13[_pr13['tipo'].isin(set(TIPO_TACC))].copy()
+_prp = _pr13[_pr13['subtipo'].notna() & (_pr13['grams'] > 0)].copy()
+_prp['precio_100'] = _prp['precio'] / _prp['grams'] * 100
+_bad_pr = set()
+if len(_prp):
+    # plausibilidad de la CELDA 7 contra los sin TACC de la canasta del mismo tipo y mes (como los ADICIONALES)
+    _rs = (_base13[_base13['rol'] == 'sin'].groupby(['tipo','mes','ean_norm'])['precio_100'].median()
+           .groupby(['tipo','mes']).median().rename('_ref'))
+    _e1 = _prp.groupby(['tipo','mes','ean_norm'])['precio_100'].median().rename('_p').reset_index().join(_rs, on=['tipo','mes'])
+    _r1 = (_e1['_p'] / _e1['_ref']).groupby(_e1['ean_norm']).median()
+    _fp = globals().get('FACTOR_PLAUS', 4)
+    _bad_pr = set(_r1[(_r1 < 1 / _fp) | (_r1 > _fp)].index)
+    _prp = _prp[~_prp['ean_norm'].isin(_bad_pr)]
+_ppl = (_prp.groupby(_kc + ['ean_norm'], as_index=False).agg(precio_100=('precio_100','median'), gramos=('grams','first'))
+        .rename(columns={'ean_norm': 'producto'}))
+_ppl['precio_kg'] = _ppl['precio_100'] * 10
+_ppl['_n'] = _ppl.groupby(_kc)['producto'].transform('size')
+
+# ── 2. Pares ────────────────────────────────────────────────────────────────────────────────────────────────────────
+_cp = ['producto','precio_kg','gramos','_n']
+_c13 = _pp13[_pp13['rol'] == 'tacc'][_kc + _cp]
+pares_brecha = pd.concat([
+    _pp13[_pp13['rol'] == 'sin'][_kc + _cp].merge(_c13, on=_kc, suffixes=('_sin','_con')).assign(es_marca_propia=False),
+    _ppl[_kc + _cp].merge(_c13, on=_kc, suffixes=('_sin','_con')).assign(es_marca_propia=True)], ignore_index=True)
+pares_brecha = pares_brecha.rename(columns={'_n_sin': 'n_sin', '_n_con': 'n_con'})
+pares_brecha['log_brecha'] = np.log(pares_brecha['precio_kg_sin']) - np.log(pares_brecha['precio_kg_con'])
+pares_brecha['brecha_pct'] = 100 * np.expm1(pares_brecha['log_brecha'])
+pares_brecha['peso_par'] = 1 / (pares_brecha['n_sin'] * pares_brecha['n_con'])
+_dpl = {_e: _v.get('descripcion') for _e, _v in _PI.items()}
+pares_brecha['descripcion_sin'] = np.where(pares_brecha['es_marca_propia'], pares_brecha['producto_sin'].map(_dpl),
+                                           pares_brecha['producto_sin'].map(_desc_prod))
+pares_brecha['descripcion_con'] = pares_brecha['producto_con'].map(_desc_prod)
+pares_brecha['marca_sin'] = np.where(pares_brecha['es_marca_propia'],
+                                     pares_brecha['producto_sin'].map({_e: str(_v.get('marca')).upper() for _e, _v in _PI.items()}),
+                                     pares_brecha['producto_sin'].map(_mar_prod))
+pares_brecha['marca_con'] = pares_brecha['producto_con'].map(_mar_prod)
+_mq = lambda _s: _s.map(lambda _m: _MEQ13.get(_m, _m) if isinstance(_m, str) else None)
+pares_brecha['misma_marca'] = (_mq(pares_brecha['marca_sin']) == _mq(pares_brecha['marca_con'])) & pares_brecha['marca_sin'].notna()
+pares_brecha['par'] = pares_brecha['producto_sin'].astype(str) + ' | ' + pares_brecha['producto_con'].astype(str)
+pares_brecha = pares_brecha[_kc + ['par','producto_sin','descripcion_sin','marca_sin','producto_con','descripcion_con',
+                                   'marca_con','misma_marca','es_marca_propia','gramos_sin','gramos_con','precio_kg_sin',
+                                   'precio_kg_con','log_brecha','brecha_pct','n_sin','n_con','peso_par']]
+pares_brecha = pares_brecha.sort_values(_kc + ['es_marca_propia','producto_sin','producto_con']).reset_index(drop=True)
+_pb = pares_brecha[~pares_brecha['es_marca_propia']]
+print(f'Pares ({_MP} → {ULTIMO_MES}): {len(_pb):,} de la canasta en {_pb.groupby(_kc).ngroups:,} celdas '
+      f'(sucursal × mes × subtipo) de {_pb["suc_key"].nunique():,} sucursales; {int(pares_brecha["es_marca_propia"].sum()):,} '
+      f'con un sin TACC de marca propia' + (f' (fuera por plausibilidad: {sorted(_bad_pr)})' if _bad_pr else ''))
+
+# ── 3. Celdas: brecha en logaritmos por sucursal × mes × subtipo, con la sucursal y su entorno ──────────────────────
+celdas_brecha = (_pb.groupby(_kc).agg(log_brecha=('log_brecha','mean'), n_pares=('log_brecha','size'),
+                                      n_sin=('n_sin','first'), n_con=('n_con','first'),
+                                      hay_par_misma_marca=('misma_marca','any')).reset_index())
+_lado = _pp13.assign(_l=np.log(_pp13['precio_kg'])).groupby(_kc + ['rol']).agg(_med=('precio_kg','median'), _geo=('_l','mean'))
+_lado = _lado.unstack('rol')
+_lado.columns = [f'{_a}_{_b}' for _a, _b in _lado.columns]
+celdas_brecha = celdas_brecha.join(_lado, on=_kc)
+celdas_brecha['precio_kg_sin_geo'] = np.exp(celdas_brecha.pop('_geo_sin'))
+celdas_brecha['precio_kg_con_geo'] = np.exp(celdas_brecha.pop('_geo_tacc'))
+celdas_brecha['precio_kg_sin_mediana'] = celdas_brecha.pop('_med_sin')
+celdas_brecha['precio_kg_con_mediana'] = celdas_brecha.pop('_med_tacc')
+celdas_brecha['log_brecha_medianas'] = np.log(celdas_brecha['precio_kg_sin_mediana'] / celdas_brecha['precio_kg_con_mediana'])
+celdas_brecha['brecha_pct'] = 100 * np.expm1(celdas_brecha['log_brecha'])
+celdas_brecha['anio'] = celdas_brecha['mes'].str[:4]
+# control: en los meses de la canasta, log_brecha_medianas es la brecha de la CELDA 7 (bt_sub) de la misma celda
+_chk = celdas_brecha.merge(bt_sub.assign(_lb=np.log(bt_sub['sin'] / bt_sub['tacc']))[_kc + ['_lb']], on=_kc, how='inner')
+CONTROL_PARES_CELDA7 = float((_chk['log_brecha_medianas'] - _chk['_lb']).abs().max()) if len(_chk) else float('nan')
+print(f'  Control: en {len(_chk):,} celdas de la ventana de la canasta, la brecha de las medianas = la de la CELDA 7 '
+      f'(diferencia máxima {CONTROL_PARES_CELDA7:.1e})')
+
+# densidad: sucursales y empresas del universo a <= cada radio (haversine), como la competencia local de la CELDA 8c
+_RAD13 = tuple(sorted(set(globals().get('RADIOS_DENSIDAD_KM', (1, 3, 10)))))
+_RD = 3 if 3 in _RAD13 else _RAD13[len(_RAD13) // 2]
+_cg13 = (suc_geo[~suc_geo['id_comercio'].isin(CADENAS_FILTRAR)].dropna(subset=['sucursales_latitud','sucursales_longitud'])
+         .drop_duplicates('suc_key').reset_index(drop=True))
+_la13 = np.radians(_cg13['sucursales_latitud'].to_numpy(float)); _lo13 = np.radians(_cg13['sucursales_longitud'].to_numpy(float))
+_ec13, _eu13 = pd.factorize(_cg13['empresa'].fillna('Otra'))
+_oh13 = np.zeros((len(_cg13), len(_eu13))); _oh13[np.arange(len(_cg13)), _ec13] = 1
+_dens = {f'sucursales_{_r}km': np.zeros(len(_cg13)) for _r in _RAD13}
+_dens.update({f'empresas_{_r}km': np.zeros(len(_cg13)) for _r in _RAD13})
+for _i0 in range(0, len(_cg13), 400):
+    _sl = slice(_i0, _i0 + 400)
+    _a = (np.sin((_la13[_sl, None] - _la13[None, :]) / 2) ** 2
+          + np.cos(_la13[_sl, None]) * np.cos(_la13[None, :]) * np.sin((_lo13[_sl, None] - _lo13[None, :]) / 2) ** 2)
+    _km = 2 * 6371 * np.arcsin(np.sqrt(np.clip(_a, 0, 1)))
+    for _r in _RAD13:
+        _cnt = (_km <= _r).astype(float) @ _oh13
+        _dens[f'sucursales_{_r}km'][_sl] = _cnt.sum(axis=1)
+        _dens[f'empresas_{_r}km'][_sl] = (_cnt > 0).sum(axis=1)
+_dens = pd.DataFrame({'suc_key': _cg13['suc_key'], **{_k: _v.astype(int) for _k, _v in _dens.items()}})
+for _r in _RAD13:
+    _dens[f'ln_sucursales_{_r}km'] = np.log(_dens[f'sucursales_{_r}km'])
+_cs13 = ['suc_key','id_comercio','id_bandera','id_sucursal','cadena','empresa','region','amba','PROVINCIA_NORM',
+         'departamento_id','departamento','sucursales_nombre','sucursales_localidad','sucursales_latitud',
+         'sucursales_longitud'] + (['sucursales_tipo'] if 'sucursales_tipo' in suc_geo.columns else [])
+_suc13 = (suc_geo[_cs13].drop_duplicates('suc_key').rename(columns={'PROVINCIA_NORM': 'provincia'})
+          .merge(_dens, on='suc_key', how='left')
+          .merge(competencia_local[['suc_key','hhi_local','hhi_departamento']], on='suc_key', how='left'))
+celdas_brecha = celdas_brecha.merge(_suc13, on='suc_key', how='left')
+# marca propia sin TACC: en la góndola de la celda (mismo subtipo), en el tipo (otro subtipo) y en la bandera ese mes
+_ps1 = _pr13.dropna(subset=['subtipo'])[_kc].drop_duplicates().assign(marca_propia_subtipo=True)
+_ps2 = _pr13[['suc_key','mes','tipo']].drop_duplicates().assign(marca_propia_tipo=True)
+_ps3 = (_pr13.merge(_suc13[['suc_key','cadena']], on='suc_key')[['cadena','mes','tipo']].drop_duplicates()
+        .assign(bandera_marca_propia_tipo=True))
+celdas_brecha = (celdas_brecha.merge(_ps1, on=_kc, how='left').merge(_ps2, on=['suc_key','mes','tipo'], how='left')
+                 .merge(_ps3, on=['cadena','mes','tipo'], how='left'))
+for _c in ('marca_propia_subtipo','marca_propia_tipo','bandera_marca_propia_tipo'):
+    celdas_brecha[_c] = celdas_brecha[_c].eq(True)
+celdas_brecha['marca_propia_otro_subtipo'] = celdas_brecha['marca_propia_tipo'] & ~celdas_brecha['marca_propia_subtipo']
+celdas_brecha = celdas_brecha.merge(bt_bal[['suc_key','tipo','subtipo']].drop_duplicates().assign(en_panel_balanceado=True),
+                                    on=['suc_key','tipo','subtipo'], how='left')
+celdas_brecha['en_panel_balanceado'] = celdas_brecha['en_panel_balanceado'].eq(True)
+# peso ENGHo: cada tipo pesa su gasto (W_TIPO), repartido en partes iguales entre sus subtipos y, en cada mes, entre las
+# celdas del subtipo; normalizado a promedio 1 (la versión ponderada de la regresión)
+_nsub13 = celdas_brecha.groupby('tipo')['subtipo'].transform('nunique')
+_wraw = celdas_brecha['tipo'].map(W_TIPO) / _nsub13 / celdas_brecha.groupby(['subtipo','mes'])['subtipo'].transform('size')
+celdas_brecha['peso_engho'] = _wraw * len(_wraw) / _wraw.sum() if len(_wraw) else _wraw
+_orden13 = (['suc_key','mes','anio','tipo','subtipo','log_brecha','brecha_pct','log_brecha_medianas','n_pares','n_sin','n_con',
+             'hay_par_misma_marca','precio_kg_sin_geo','precio_kg_con_geo','precio_kg_sin_mediana','precio_kg_con_mediana',
+             'marca_propia_subtipo','marca_propia_otro_subtipo','marca_propia_tipo','bandera_marca_propia_tipo']
+            + [_c for _c in _suc13.columns if _c != 'suc_key'] + ['en_panel_balanceado','peso_engho'])
+celdas_brecha = celdas_brecha[_orden13]
+
+# ── 4. Herramientas: mínimos cuadrados con efectos fijos ralos (LSMR), errores agrupados y bootstrap salvaje ──────────
+def _diseno(_df, _fes, _xs=()):
+    # constante + TODAS las indicadoras de cada bloque de efectos fijos (LSMR resuelve la colinealidad entre bloques) + _xs
+    _mats, _info, _pos = [_sps.csr_matrix(np.ones((len(_df), 1)))], [], 1
+    for _b in _fes:
+        _c, _u = pd.factorize(_df[_b].astype(str), sort=True)
+        _mats.append(_sps.csr_matrix((np.ones(len(_c)), (np.arange(len(_c)), _c)), shape=(len(_c), len(_u))))
+        _info.append((_b, list(_u), _c, _pos)); _pos += len(_u)
+    for _x in _xs:
+        _mats.append(_sps.csr_matrix(_df[_x].astype(float).to_numpy()[:, None]))
+    return _sps.hstack(_mats, format='csr'), _info
+
+_LSMR_AVISOS = []
+def _ls(_A, _v, _sw):
+    # mínimos cuadrados ponderados min || sw (v - A b) || por LSMR con las columnas escaladas (las indicadoras de
+    # frecuencias muy distintas convergen mucho más rápido); devuelve b y A b
+    _Aw = _sps.diags(_sw) @ _A
+    _nc = np.sqrt(np.asarray(_Aw.multiply(_Aw).sum(axis=0))).ravel()
+    _nc[_nc == 0] = 1.0
+    _r = _lsmr(_Aw @ _sps.diags(1 / _nc), _sw * _v, atol=1e-10, btol=1e-10, maxiter=20000)
+    if _r[1] not in (0, 1, 2, 4, 5):
+        _LSMR_AVISOS.append(int(_r[1]))
+    _b = _r[0] / _nc
+    return _b, _A @ _b
+
+def _res(_A, _v, _sw):
+    return _v - _ls(_A, _v, _sw)[1]
+
+def _clusters(_g):
+    _gid, _gu = pd.factorize(pd.Series(_g).astype(str))
+    return _gid, len(_gu)
+
+def _se_cl(_Xt, _e, _w, _bread, _g):
+    # CR1 (G / (G - 1)) agrupado por _g
+    _gid, _G = _clusters(_g)
+    _C = _sps.csr_matrix((np.ones(len(_gid)), (_gid, np.arange(len(_gid)))), shape=(_G, len(_gid)))
+    _S = _C @ (_Xt * (_w * _e)[:, None])
+    _V = _G / max(_G - 1, 1) * _bread @ (_S.T @ _S) @ _bread
+    return np.sqrt(np.clip(np.diag(_V), 0, None)), _G
+
+def _modelo(_df, _fes, _xs=(), _w=None, _y='log_brecha', _cls=('cadena','empresa')):
+    # y = constante + efectos fijos (_fes) + X b (_xs) + e. b por Frisch-Waugh-Lovell (X e y sin los efectos fijos) con
+    # errores agrupados por cada columna de _cls; los efectos fijos, con y - X b.
+    _yv = _df[_y].to_numpy(float)
+    _wv = np.ones(len(_yv)) if _w is None else np.asarray(_w, float)
+    _sw = np.sqrt(_wv)
+    _D, _info = _diseno(_df, _fes)
+    _m = {'n': len(_yv), 'info': _info, 'D': _D, 'w': _wv, 'sw': _sw, 'xs': list(_xs), 'y': _yv}
+    if _xs:
+        _X = _df[list(_xs)].astype(float).to_numpy()
+        _Xt = np.column_stack([_res(_D, _X[:, _j], _sw) for _j in range(_X.shape[1])])
+        _yt = _res(_D, _yv, _sw)
+        _bread = np.linalg.pinv(_Xt.T @ (_Xt * _wv[:, None]))
+        _beta = _bread @ ((_Xt * _wv[:, None]).T @ _yt)
+        _e = _yt - _Xt @ _beta
+        _fe, _ffe = _ls(_D, _yv - _X @ _beta, _sw)
+        _m.update(beta=_beta, Xt=_Xt, yt=_yt, e=_e, bread=_bread, fe=_fe, fit=_ffe + _X @ _beta,
+                  r2_within=1 - float((_wv * _e ** 2).sum()) / float((_wv * _yt ** 2).sum()),
+                  se={_c: _se_cl(_Xt, _e, _wv, _bread, _df[_c].to_numpy()) for _c in _cls})
+    else:
+        _fe, _fit = _ls(_D, _yv, _sw)
+        _m.update(fe=_fe, fit=_fit)
+    _m['ybar'] = float((_wv * _yv).sum() / _wv.sum())
+    _m['r2'] = 1 - float((_wv * (_yv - _m['fit']) ** 2).sum()) / float((_wv * (_yv - _m['ybar']) ** 2).sum())
+    return _m
+
+def _efectos(_m, _df, _bloque, _nombre=None):
+    # efectos de un bloque, centrados (promedio ponderado por observaciones = 0): efecto_pct = cuánto más alta es
+    # (1 + brecha) en el grupo que en el promedio, con todo lo demás del modelo igual
+    for _b, _u, _c, _pos in _m['info']:
+        if _b != _bloque:
+            continue
+        _coef = _m['fe'][_pos:_pos + len(_u)]
+        _wc = np.bincount(_c, weights=_m['w'], minlength=len(_u))
+        _cen = _coef - float((_coef * _wc).sum() / _wc.sum())
+        _yb = np.bincount(_c, weights=_m['w'] * _m['y'], minlength=len(_u)) / _wc
+        _t = pd.DataFrame({_nombre or _bloque: _u, 'celdas': np.bincount(_c, minlength=len(_u)),
+                           'sucursales': pd.Series(_df['suc_key'].to_numpy()).groupby(_c).nunique().reindex(range(len(_u))).to_numpy(),
+                           'brecha_bruta_pct': 100 * np.expm1(_yb), 'efecto_log': _cen, 'efecto_pct': 100 * np.expm1(_cen),
+                           'brecha_ajustada_pct': 100 * np.expm1(_m['ybar'] + _cen)})
+        return _t.sort_values('efecto_log', ascending=False).reset_index(drop=True)
+    return pd.DataFrame()
+
+_WEBB = np.array([-np.sqrt(1.5), -1.0, -np.sqrt(0.5), np.sqrt(0.5), 1.0, np.sqrt(1.5)])
+def _wcr(_m, _g, _j, _B, _seed):
+    # p-valor de H0: b_j = 0 por bootstrap salvaje por grupos RESTRINGIDO (WCR) con pesos de Webb y t agrupada (CR1). Los
+    # residuos restringidos se reparten por grupo y cada parte se proyecta fuera de los efectos fijos UNA vez (lineal en
+    # los pesos del bootstrap): cada réplica es exacta sin volver a estimar los efectos fijos.
+    _Xt, _yt, _w, _sw, _D, _bread = _m['Xt'], _m['yt'], _m['w'], _m['sw'], _m['D'], _m['bread']
+    _gid, _G = _clusters(_g)
+    if _G < 2:
+        return float('nan')
+    _k = _Xt.shape[1]
+    _XW = _Xt * _w[:, None]
+    _se_o = _se_cl(_Xt, _m['e'], _w, _bread, _g)[0][_j]
+    _t_o = _m['beta'][_j] / _se_o if _se_o > 0 else float('nan')
+    _kp = [_i for _i in range(_k) if _i != _j]
+    if _kp:
+        _Xr = _Xt[:, _kp]
+        _br = np.linalg.pinv(_Xr.T @ (_Xr * _w[:, None])) @ ((_Xr * _w[:, None]).T @ _yt)
+        _er = _yt - _Xr @ _br
+    else:
+        _er = _yt.copy()
+    _C = _sps.csr_matrix((np.ones(len(_gid)), (_gid, np.arange(len(_gid)))), shape=(_G, len(_gid)))
+    _A = np.zeros((_G, _G, _k))
+    for _h in range(_G):
+        _u = _res(_D, np.where(_gid == _h, _er, 0.0), _sw)
+        _A[_h] = _C @ (_XW * _u[:, None])
+    _bg = _A.sum(axis=1)
+    _H = np.stack([_Xt[_gid == _c].T @ _XW[_gid == _c] for _c in range(_G)])
+    _V = np.random.default_rng(_seed).choice(_WEBB, size=(_B, _G))
+    _Dl = (_V @ _bg) @ _bread.T
+    _S = np.einsum('rg,gck->rck', _V, _A) - np.einsum('ckl,rl->rck', _H, _Dl)
+    _q = _S @ _bread[_j]
+    _se_b = np.sqrt(_G / (_G - 1) * (_q ** 2).sum(axis=1))
+    _t_b = _Dl[:, _j] / np.where(_se_b > 0, _se_b, np.nan)
+    return float(np.nanmean(np.abs(_t_b) >= abs(_t_o)))
+
+def _r2(_df, _fes, _xs, _w=None, _y='log_brecha'):
+    if not _fes and not _xs:
+        return 0.0
+    _yv = _df[_y].to_numpy(float)
+    _wv = np.ones(len(_yv)) if _w is None else np.asarray(_w, float)
+    _D, _ = _diseno(_df, _fes, _xs)
+    _fit = _ls(_D, _yv, np.sqrt(_wv))[1]
+    _yb = (_wv * _yv).sum() / _wv.sum()
+    return 1 - float((_wv * (_yv - _fit) ** 2).sum()) / float((_wv * (_yv - _yb) ** 2).sum())
+
+def _shapley(_df, _bloques, _w=None, _y='log_brecha'):
+    # valor de Shapley del R² de cada bloque {nombre: (efectos fijos, variables)}: suman el R² del modelo completo
+    from itertools import combinations
+    from math import factorial
+    _nom = list(_bloques)
+    _K = len(_nom)
+    _memo = {}
+    def _v(_S):
+        _S = frozenset(_S)
+        if _S not in _memo:
+            _memo[_S] = _r2(_df, [_f for _b in _S for _f in _bloques[_b][0]], [_x for _b in _S for _x in _bloques[_b][1]],
+                            _w, _y)
+        return _memo[_S]
+    _phi = {}
+    for _b in _nom:
+        _otros = [_o for _o in _nom if _o != _b]
+        _phi[_b] = sum(factorial(len(_S)) * factorial(_K - len(_S) - 1) / factorial(_K) * (_v(set(_S) | {_b}) - _v(_S))
+                       for _r in range(_K) for _S in combinations(_otros, _r))
+    return _phi, _v(_nom), {_b: _v({_b}) for _b in _nom}
+
+def _p_norm(_z):
+    from math import erf
+    return float(2 * (1 - 0.5 * (1 + erf(abs(_z) / np.sqrt(2))))) if _z == _z else float('nan')
+
+# ── 5. Regresión descriptiva ────────────────────────────────────────────────────────────────────────────────────────
+_XS = ['marca_propia_subtipo', 'marca_propia_otro_subtipo', f'ln_sucursales_{_RD}km', 'hhi_departamento']
+_reg = celdas_brecha[(celdas_brecha['region'] != 'Sin región') & celdas_brecha['departamento_id'].notna()
+                     & celdas_brecha['hhi_departamento'].notna() & celdas_brecha[f'ln_sucursales_{_RD}km'].notna()].reset_index(drop=True)
+_XS = [_x for _x in _XS if len(_reg) and _reg[_x].astype(float).std() > 0]   # sin variación (sin marcas propias): afuera
+_CAMBIO = {'marca_propia_subtipo': (1.0, 'de 0 a 1'), 'marca_propia_otro_subtipo': (1.0, 'de 0 a 1'),
+           'bandera_marca_propia_tipo': (1.0, 'de 0 a 1'), f'ln_sucursales_{_RD}km': (np.log(2), 'el doble de sucursales'),
+           'hhi_departamento': (0.1, '+0,1 de HHI')}
+_DESC_X = {'marca_propia_subtipo': 'la góndola tiene un sin TACC de marca propia de la cadena del mismo subtipo',
+           'marca_propia_otro_subtipo': 'la sucursal tiene un sin TACC de marca propia de otro subtipo del mismo tipo',
+           'bandera_marca_propia_tipo': 'la bandera vende ese mes un sin TACC de marca propia del tipo (en alguna sucursal)',
+           f'ln_sucursales_{_RD}km': f'log de las sucursales del universo a <= {_RD} km (densidad)',
+           'hhi_departamento': 'HHI de empresas del departamento (0-1)'}
+_GEO = {'región': 'region', 'provincia': 'provincia', 'departamento': 'departamento_id'}
+_MODS = [
+    ('M1', 'Categoría y mes', ['subtipo','mes'], [], None, False),
+    ('M2', '+ cadena (bandera)', ['subtipo','mes','cadena'], [], None, False),
+    ('M3', '+ región', ['subtipo','mes','cadena','region'], [], None, False),
+    ('M4', 'Categoría, mes, cadena y provincia', ['subtipo','mes','cadena','provincia'], [], None, False),
+    ('M5', 'Categoría, mes, cadena y departamento', ['subtipo','mes','cadena','departamento_id'], [], None, False),
+    ('M6', 'PRINCIPAL: categoría, mes, cadena, región y entorno', ['subtipo','mes','cadena','region'], _XS, None, True),
+    ('M7', 'Sin efecto fijo de cadena: categoría, mes, región, entorno y marca propia de la bandera',
+     ['subtipo','mes','region'], _XS + ['bandera_marca_propia_tipo'], None, True),
+    ('M8', 'Como M6 con provincia', ['subtipo','mes','cadena','provincia'], _XS, None, False),
+    ('M9', 'Como M6 con departamento', ['subtipo','mes','cadena','departamento_id'], _XS, None, False),
+    ('M10', 'Como M6 ponderado por el gasto (ENGHo)', ['subtipo','mes','cadena','region'], _XS, 'peso_engho', False),
+]
+_m7x = _MODS[6][3]
+if len(_reg) and _reg['bandera_marca_propia_tipo'].astype(float).std() == 0:
+    _MODS[6] = _MODS[6][:3] + ([_x for _x in _m7x if _x != 'bandera_marca_propia_tipo'],) + _MODS[6][4:]
+_filas_m, _filas_a, MODELOS13 = [], [], {}
+print(f'\n=== Regresión descriptiva de la brecha de la celda ({len(_reg):,} celdas con todas las variables; '
+      f'{_reg["suc_key"].nunique():,} sucursales, {_reg["cadena"].nunique()} banderas, {_reg["empresa"].nunique()} empresas) ===')
+for _cod, _des, _fes, _xs, _wcol, _boot in _MODS:
+    if len(_reg) < 20:
+        break
+    _m = _modelo(_reg, _fes, _xs, None if _wcol is None else _reg[_wcol].to_numpy(float))
+    MODELOS13[_cod] = _m
+    _filas_a.append({'modelo': _cod, 'descripcion': _des, 'efectos_fijos': ', '.join(_fes), 'variables': ', '.join(_xs),
+                     'ponderacion': 'ENGHo (peso_engho)' if _wcol else 'cada celda pesa 1', 'nivel': 'celda',
+                     'observaciones': _m['n'], 'sucursales': _reg['suc_key'].nunique(), 'r2': _m['r2'],
+                     'r2_within': _m.get('r2_within', float('nan'))})
+    for _j, _x in enumerate(_xs):
+        _b = float(_m['beta'][_j]); _f, _ct = _CAMBIO.get(_x, (1.0, '+1'))
+        _row = {'modelo': _cod, 'variable': _x, 'descripcion_variable': _DESC_X.get(_x, _x), 'coef_log': _b,
+                'efecto_pct': 100 * np.expm1(_b), 'cambio': _ct, 'efecto_pct_cambio': 100 * np.expm1(_b * _f)}
+        for _c, _lab in (('cadena', 'bandera'), ('empresa', 'empresa')):
+            _se, _G = _m['se'][_c]
+            _s = float(_se[_j])
+            _row.update({f'se_{_lab}': _s, f'ic95_inf_pct_cambio_{_lab}': 100 * np.expm1((_b - 1.96 * _s) * _f),
+                         f'ic95_sup_pct_cambio_{_lab}': 100 * np.expm1((_b + 1.96 * _s) * _f),
+                         f'p_valor_{_lab}': _p_norm(_b / _s) if _s > 0 else float('nan'), f'grupos_{_lab}': _G})
+            _row[f'p_valor_wcr_{_lab}'] = (_wcr(_m, _reg[_c].to_numpy(), _j, int(WCB_B), int(WCB_SEED) + _j)
+                                          if _boot else float('nan'))
+        _filas_m.append(_row)
+    print(f'  {_cod} {_des}: R² {_m["r2"]:.3f}' + (f', R² dentro {_m["r2_within"]:.3f}' if _xs else ''))
+# M11: los MISMOS PARES de productos (efecto fijo del par) a nivel par, cada celda pesa 1
+_pr11 = _pb.merge(_reg[_kc + ['cadena','empresa','region'] + _XS], on=_kc, how='inner')
+if len(_pr11) >= 20 and _XS:
+    _m = _modelo(_pr11, ['par','mes','cadena','region'], _XS, _pr11['peso_par'].to_numpy(float))
+    MODELOS13['M11'] = _m
+    _filas_a.append({'modelo': 'M11', 'descripcion': 'Como M6 con los mismos pares (efecto fijo del par de productos)',
+                     'efectos_fijos': 'par, mes, cadena, region', 'variables': ', '.join(_XS),
+                     'ponderacion': 'cada celda pesa 1 (peso_par)', 'nivel': 'par', 'observaciones': _m['n'],
+                     'sucursales': _pr11['suc_key'].nunique(), 'r2': _m['r2'], 'r2_within': _m['r2_within']})
+    for _j, _x in enumerate(_XS):
+        _b = float(_m['beta'][_j]); _f, _ct = _CAMBIO.get(_x, (1.0, '+1'))
+        _row = {'modelo': 'M11', 'variable': _x, 'descripcion_variable': _DESC_X.get(_x, _x), 'coef_log': _b,
+                'efecto_pct': 100 * np.expm1(_b), 'cambio': _ct, 'efecto_pct_cambio': 100 * np.expm1(_b * _f)}
+        for _c, _lab in (('cadena', 'bandera'), ('empresa', 'empresa')):
+            _se, _G = _m['se'][_c]; _s = float(_se[_j])
+            _row.update({f'se_{_lab}': _s, f'ic95_inf_pct_cambio_{_lab}': 100 * np.expm1((_b - 1.96 * _s) * _f),
+                         f'ic95_sup_pct_cambio_{_lab}': 100 * np.expm1((_b + 1.96 * _s) * _f),
+                         f'p_valor_{_lab}': _p_norm(_b / _s) if _s > 0 else float('nan'), f'grupos_{_lab}': _G,
+                         f'p_valor_wcr_{_lab}': float('nan')})
+        _filas_m.append(_row)
+    print(f'  M11 mismos pares: R² {_m["r2"]:.3f}, R² dentro {_m["r2_within"]:.3f}')
+modelos_pares = pd.DataFrame(_filas_m)
+ajuste_pares = pd.DataFrame(_filas_a)
+if len(modelos_pares):
+    print(modelos_pares[modelos_pares['modelo'].isin(['M6','M7'])][['modelo','variable','cambio','efecto_pct_cambio',
+          'p_valor_bandera','p_valor_wcr_bandera','p_valor_wcr_empresa']].round(4).to_string(index=False))
+
+# efectos fijos: cadena, región y categoría del principal; provincia (M8), departamento (M9); mes (M6)
+efectos_pares = {}
+if 'M6' in MODELOS13:
+    efectos_pares['Efectos_cadena'] = _efectos(MODELOS13['M6'], _reg, 'cadena', 'cadena').merge(
+        _reg.drop_duplicates('cadena')[['cadena','empresa']], on='cadena', how='left')
+    efectos_pares['Efectos_region'] = _efectos(MODELOS13['M6'], _reg, 'region', 'region')
+    efectos_pares['Efectos_subtipo'] = _efectos(MODELOS13['M6'], _reg, 'subtipo', 'subtipo').merge(
+        _reg.drop_duplicates('subtipo')[['subtipo','tipo']], on='subtipo', how='left')
+    efectos_pares['Efectos_mes'] = _efectos(MODELOS13['M6'], _reg, 'mes', 'mes').sort_values('mes').reset_index(drop=True)
+if 'M8' in MODELOS13:
+    efectos_pares['Efectos_provincia'] = _efectos(MODELOS13['M8'], _reg, 'provincia', 'provincia').merge(
+        _reg.drop_duplicates('provincia')[['provincia','region']], on='provincia', how='left')
+if 'M9' in MODELOS13:
+    efectos_pares['Efectos_departamento'] = _efectos(MODELOS13['M9'], _reg, 'departamento_id', 'departamento_id').merge(
+        _reg.drop_duplicates('departamento_id')[['departamento_id','departamento','provincia','region']],
+        on='departamento_id', how='left')
+
+# ── 6. Descomposición de la variación (Shapley del R²) ─────────────────────────────────────────────────────────────
+_filas_d = []
+if len(_reg) >= 20:
+    for _gn, _gc in _GEO.items():
+        _bl = {'Categoría de producto (subtipo)': (['subtipo'], []), 'Cadena (bandera)': (['cadena'], []),
+               f'Geografía ({_gn})': ([_gc], []), 'Mes': (['mes'], [])}
+        if _XS:
+            _bl['Entorno (marca propia y densidad)'] = ([], _XS)
+        _phi, _rt, _solo = _shapley(_reg, _bl)
+        for _b, _v in _phi.items():
+            _filas_d.append({'nivel': 'celdas (sucursal × mes × subtipo)', 'geografia': _gn, 'bloque': _b,
+                             'shapley_r2': _v, 'pct_de_la_variacion': 100 * _v, 'pct_de_lo_explicado': 100 * _v / _rt,
+                             'r2_solo': _solo[_b], 'r2_modelo_completo': _rt, 'observaciones': len(_reg)})
+descomposicion_pares = pd.DataFrame(_filas_d)
+
+# entre sucursales: brecha propia de cada sucursal = su efecto fijo en un modelo con subtipo, mes y sucursal (limpia de
+# qué subtipos tiene y en qué meses); qué parte de su variación explica la cadena, la geografía y el entorno
+_filas_s = []
+sucursales_pares = pd.DataFrame()
+if len(_reg) >= 20:
+    _msu = _modelo(_reg, ['subtipo','mes','suc_key'])
+    _r2_sm = MODELOS13['M1']['r2'] if 'M1' in MODELOS13 else _r2(_reg, ['subtipo','mes'], [])
+    _es = _efectos(_msu, _reg, 'suc_key', 'suc_key').drop(columns='sucursales')
+    _ag = _reg.groupby('suc_key').agg(pct_celdas_marca_propia=('marca_propia_subtipo','mean'),
+                                       meses=('mes','nunique'), subtipos=('subtipo','nunique'))
+    sucursales_pares = (_es.rename(columns={'efecto_log': 'efecto_sucursal_log', 'efecto_pct': 'efecto_sucursal_pct',
+                                            'brecha_ajustada_pct': 'brecha_propia_pct'})
+                        .join(_ag, on='suc_key').merge(_suc13, on='suc_key', how='left'))
+    _ss = sucursales_pares.assign(pct_celdas_marca_propia=sucursales_pares['pct_celdas_marca_propia'].astype(float))
+    _xsu = [_x for _x in ('pct_celdas_marca_propia', f'ln_sucursales_{_RD}km', 'hhi_departamento') if _ss[_x].std() > 0]
+    for _gn, _gc in _GEO.items():
+        _bl = {'Cadena (bandera)': (['cadena'], []), f'Geografía ({_gn})': ([_gc], [])}
+        if _xsu:
+            _bl['Entorno (marca propia y densidad)'] = ([], _xsu)
+        _phi, _rt, _solo = _shapley(_ss, _bl, _ss['celdas'].to_numpy(float), 'efecto_sucursal_log')
+        for _b, _v in _phi.items():
+            _filas_s.append({'nivel': 'sucursales (brecha propia, limpia de subtipo y mes)', 'geografia': _gn, 'bloque': _b,
+                             'shapley_r2': _v, 'pct_de_la_variacion': 100 * _v, 'pct_de_lo_explicado': 100 * _v / _rt,
+                             'r2_solo': _solo[_b], 'r2_modelo_completo': _rt, 'sucursales': len(_ss),
+                             'pct_variacion_celdas_entre_sucursales': 100 * (_msu['r2'] - _r2_sm)})
+descomposicion_sucursales = pd.DataFrame(_filas_s)
+if len(descomposicion_pares):
+    print('\n=== Descomposición de la variación de la brecha (Shapley del R², % de la variación entre celdas) ===')
+    print(descomposicion_pares.pivot_table(index='bloque', columns='geografia', values='pct_de_la_variacion').round(1).to_string())
+if len(descomposicion_sucursales):
+    _q = sucursales_pares['brecha_propia_pct'].quantile([0.1, 0.25, 0.5, 0.75, 0.9])
+    print(f'\nBrecha propia de cada sucursal (limpia de subtipo y mes; {len(sucursales_pares):,} sucursales): p10 '
+          f'{_q[0.1]:+.0f}%, p25 {_q[0.25]:+.0f}%, mediana {_q[0.5]:+.0f}%, p75 {_q[0.75]:+.0f}%, p90 {_q[0.9]:+.0f}%')
+    print(descomposicion_sucursales.pivot_table(index='bloque', columns='geografia', values='pct_de_la_variacion').round(1).to_string())
+
+# ── 7. Descriptivas y traducción al gasto ──────────────────────────────────────────────────────────────────────────
+_cb = celdas_brecha
+serie_pares = pd.DataFrame()
+if len(_cb):
+    serie_pares = (_cb.groupby('mes').agg(celdas=('log_brecha','size'), sucursales=('suc_key','nunique'),
+                                          pares=('n_pares','sum'), log_brecha_media=('log_brecha','mean'),
+                                          _med=('log_brecha','median'), _mp=('marca_propia_subtipo','mean')).reset_index())
+    _wm13 = ((_cb['log_brecha'] * _cb['peso_engho']).groupby(_cb['mes']).sum()
+             / _cb['peso_engho'].groupby(_cb['mes']).sum())
+    serie_pares['brecha_media_pct'] = 100 * np.expm1(serie_pares['log_brecha_media'])
+    serie_pares['brecha_mediana_pct'] = 100 * np.expm1(serie_pares.pop('_med'))
+    serie_pares['brecha_engho_pct'] = 100 * np.expm1(serie_pares['mes'].map(_wm13))
+    serie_pares['pct_celdas_marca_propia'] = 100 * serie_pares.pop('_mp')
+_ult12 = sorted(_cb['mes'].unique())[-12:] if len(_cb) else []
+def _por_subtipo(_x):
+    return (_x.groupby(['tipo','subtipo']).agg(celdas=('log_brecha','size'), sucursales=('suc_key','nunique'),
+                                              log_brecha_media=('log_brecha','mean'), _med=('log_brecha','median'),
+                                              precio_kg_con_mediana=('precio_kg_con_mediana','median'),
+                                              precio_kg_sin_mediana=('precio_kg_sin_mediana','median'))
+            .assign(brecha_media_pct=lambda _d: 100 * np.expm1(_d['log_brecha_media']),
+                    brecha_mediana_pct=lambda _d: 100 * np.expm1(_d.pop('_med'))).reset_index())
+brecha_subtipo_pares = pd.concat([_por_subtipo(_cb).assign(periodo=f'{_MP} → {ULTIMO_MES}'),
+                                  _por_subtipo(_cb[_cb['mes'].isin(_ult12)]).assign(
+                                      periodo=f'últimos 12 meses ({_ult12[0]} → {_ult12[-1]})' if _ult12 else '')],
+                                 ignore_index=True) if len(_cb) else pd.DataFrame()
+brecha_par = (pares_brecha.groupby(['tipo','subtipo','es_marca_propia','producto_sin','descripcion_sin','marca_sin',
+                                    'producto_con','descripcion_con','marca_con','misma_marca'], dropna=False)
+              .agg(celdas=('log_brecha','size'), sucursales=('suc_key','nunique'), meses=('mes','nunique'),
+                   log_brecha_media=('log_brecha','mean'), _med=('log_brecha','median'),
+                   precio_kg_sin_mediana=('precio_kg_sin','median'), precio_kg_con_mediana=('precio_kg_con','median'))
+              .assign(brecha_media_pct=lambda _d: 100 * np.expm1(_d['log_brecha_media']),
+                      brecha_mediana_pct=lambda _d: 100 * np.expm1(_d.pop('_med'))).reset_index()
+              .sort_values(['tipo','subtipo','es_marca_propia','celdas'], ascending=[True, True, True, False])
+              .reset_index(drop=True))
+
+def _traduccion(_x, _per):
+    # sobrecosto de comprar sin TACC las mismas cantidades: por tipo, peso ENGHo (% del gasto en alimentos) x brecha del
+    # tipo (promedio geométrico de sus subtipos; cada subtipo, el promedio de la brecha en logaritmos de sus celdas)
+    if not len(_x):
+        return pd.DataFrame()
+    _lt = _x.groupby(['tipo','subtipo'])['log_brecha'].mean().groupby('tipo').mean()
+    _f = []
+    for _t in [_t for _t in W_TIPO if _t in _lt.index]:
+        _p, _b = float(TIPO_PESO[_t]), float(np.expm1(_lt[_t]))
+        _f.append({'periodo': _per, 'tipo': _t, 'pct_gasto_alimentos_engho': _p, 'brecha_pct': 100 * _b,
+                   'sobrecosto_pct_gasto_alimentos': _p * _b,
+                   'sobrecosto_pct_gasto_total': _p * _b * PCT_ALIMENTOS_EN_GASTO / 100})
+    _d = pd.DataFrame(_f)
+    _tot = {'periodo': _per, 'tipo': 'Canasta (tipos con dicotomía)', 'pct_gasto_alimentos_engho': _d['pct_gasto_alimentos_engho'].sum(),
+            'brecha_pct': 100 * _d['sobrecosto_pct_gasto_alimentos'].sum() / _d['pct_gasto_alimentos_engho'].sum(),
+            'sobrecosto_pct_gasto_alimentos': _d['sobrecosto_pct_gasto_alimentos'].sum(),
+            'sobrecosto_pct_gasto_total': _d['sobrecosto_pct_gasto_total'].sum()}
+    return pd.concat([_d, pd.DataFrame([_tot])], ignore_index=True)
+traduccion_gasto = pd.concat([_traduccion(_cb, f'{_MP} → {ULTIMO_MES}'),
+                              _traduccion(_cb[_cb['mes'].isin(_ult12)], f'últimos 12 meses ({_ult12[0]} → {_ult12[-1]})'
+                                          if _ult12 else '')], ignore_index=True)
+if len(traduccion_gasto):
+    _tt = traduccion_gasto[traduccion_gasto['tipo'].str.startswith('Canasta')].iloc[-1]
+    print(f'\nTraducción al gasto (últimos 12 meses): comprar sin TACC los mismos productos cuesta {_tt["brecha_pct"]:+.0f}% en '
+          f'esos productos ({_tt["pct_gasto_alimentos_engho"]:.2f}% del gasto en alimentos) = +{_tt["sobrecosto_pct_gasto_alimentos"]:.1f}% '
+          f'del gasto en alimentos y +{_tt["sobrecosto_pct_gasto_total"]:.2f}% del gasto total del hogar')
+
+# marcas propias: qué se encontró y dónde
+_mpu = []
+for _e, _v in _PI.items():
+    _x = _pr13[_pr13['ean_norm'] == _e]
+    _mpu.append({'ean': _e, 'descripcion': _v.get('descripcion'), 'marca': _v.get('marca'), 'empresa': _v.get('empresa'),
+                 'tipo': _v.get('tipo'), 'subtipo': _v.get('subtipo'), 'gramos': _v.get('gramos'),
+                 'equivalencia': _v.get('equivalencia'), 'sucursal_meses': len(_x), 'sucursales': _x['suc_key'].nunique(),
+                 'meses': _x['mes'].nunique(), 'primer_mes': _x['mes'].min() if len(_x) else None,
+                 'ultimo_mes': _x['mes'].max() if len(_x) else None,
+                 'banderas': ', '.join(sorted(_suc13.set_index('suc_key').reindex(_x['suc_key'].unique())['cadena'].dropna().unique())),
+                 'pares': int((pares_brecha['es_marca_propia'] & (pares_brecha['producto_sin'] == _e)).sum()),
+                 'excluido_plausibilidad': _e in _bad_pr})
+marcas_propias_uso = pd.DataFrame(_mpu)
+
+# ── 8. Resumen ──────────────────────────────────────────────────────────────────────────────────────────────────────
+_rs = []
+def _r(_tema, _ind, _v, _u='%', _hoja=''):
+    _rs.append({'tema': _tema, 'indicador': _ind, 'valor': _v, 'unidad': _u, 'hoja': _hoja})
+_r('Datos', f'Pares de la canasta ({_MP} → {ULTIMO_MES})', len(_pb), 'pares', 'Celdas / pares_detalle')
+_r('Datos', 'Celdas (sucursal × mes × subtipo)', len(_cb), 'celdas', 'Celdas')
+_r('Datos', 'Sucursales', _cb['suc_key'].nunique(), 'sucursales', 'Sucursales')
+_r('Datos', 'Celdas con todas las variables (muestra de la regresión)', len(_reg), 'celdas', 'Ajuste_modelos')
+if len(_cb):
+    _r('Brecha', 'Brecha media de las celdas, exp(promedio de la brecha en logaritmos) - 1', 100 * np.expm1(_cb['log_brecha'].mean()),
+       '%', 'Serie_mensual')
+    _r('Brecha', 'Brecha mediana de las celdas', 100 * np.expm1(_cb['log_brecha'].median()), '%', 'Serie_mensual')
+    _cu = _cb[_cb['mes'].isin(_ult12)]
+    _r('Brecha', 'Brecha media de las celdas, últimos 12 meses', 100 * np.expm1(_cu['log_brecha'].mean()), '%', 'Serie_mensual')
+    _r('Brecha', 'Brecha media ponderada por el gasto (ENGHo), últimos 12 meses',
+       100 * np.expm1(np.average(_cu['log_brecha'], weights=_cu['peso_engho'])), '%', 'Serie_mensual')
+    _r('Brecha', 'Pares de la misma marca: brecha media', 100 * np.expm1(_pb.loc[_pb['misma_marca'], 'log_brecha'].mean())
+       if _pb['misma_marca'].any() else float('nan'), '%', 'Brecha_par')
+    _plm = pares_brecha[pares_brecha['es_marca_propia']]
+    _r('Brecha', 'Pares con un sin TACC de marca propia: brecha media (no entra en la medida principal)',
+       100 * np.expm1(_plm['log_brecha'].mean()) if len(_plm) else float('nan'), '%', 'Brecha_par')
+if len(sucursales_pares):
+    for _p in (0.1, 0.5, 0.9):
+        _r('Sucursales', f'Brecha propia de las sucursales (limpia de subtipo y mes), percentil {int(_p * 100)}',
+           float(sucursales_pares['brecha_propia_pct'].quantile(_p)), '%', 'Sucursales')
+for _a in _filas_a:
+    _r('Ajuste', f'{_a["modelo"]} {_a["descripcion"]}: R²', _a['r2'], 'R²', 'Ajuste_modelos')
+for _d in (descomposicion_pares, descomposicion_sucursales):
+    for _x in _d.itertuples(index=False):
+        if _x.geografia == 'región':
+            _r(f'Descomposición ({_x.nivel})', f'{_x.bloque}: % de la variación (Shapley)', _x.pct_de_la_variacion, '%',
+               'Descomposicion' if _x.nivel.startswith('celdas') else 'Descomposicion_sucursales')
+if len(modelos_pares):
+    for _x in modelos_pares[modelos_pares['modelo'] == 'M6'].itertuples(index=False):
+        _r('Entorno (M6)', f'{_x.descripcion_variable} ({_x.cambio}): efecto sobre 1 + brecha (p-valor WCR por bandera '
+           f'{_x.p_valor_wcr_bandera:.3f}, por empresa {_x.p_valor_wcr_empresa:.3f})', _x.efecto_pct_cambio, '%', 'Modelos')
+for _x in traduccion_gasto[traduccion_gasto['tipo'].str.startswith('Canasta')].itertuples(index=False) if len(traduccion_gasto) else []:
+    _r('Gasto del hogar', f'Sobrecosto en % del gasto en alimentos, {_x.periodo}', _x.sobrecosto_pct_gasto_alimentos, '%',
+       'Traduccion_gasto')
+    _r('Gasto del hogar', f'Sobrecosto en % del gasto total del hogar, {_x.periodo}', _x.sobrecosto_pct_gasto_total, '%',
+       'Traduccion_gasto')
+resumen_pares = pd.DataFrame(_rs)
+
+# ── 9. Gráficos ─────────────────────────────────────────────────────────────────────────────────────────────────────
+if len(descomposicion_pares):
+    fig, axs = plt.subplots(1, 2, figsize=(14, 5.5))
+    for _ax, _d, _tt in ((axs[0], descomposicion_pares, 'Entre celdas (sucursal × mes × subtipo)'),
+                         (axs[1], descomposicion_sucursales, 'Entre sucursales (brecha propia)')):
+        if not len(_d):
+            _ax.axis('off'); continue
+        _pv = _d.pivot_table(index='geografia', columns='bloque', values='pct_de_la_variacion').reindex(list(_GEO))
+        _izq = np.zeros(len(_pv))
+        for _i, _b in enumerate(_pv.columns):
+            _ax.barh(_pv.index, _pv[_b].fillna(0), left=_izq, label=_b, color=plt.cm.tab10(_i))
+            _izq += _pv[_b].fillna(0).to_numpy()
+        _ax.set_xlim(0, 100); _ax.set_xlabel('% de la variación de la brecha (Shapley del R²)')
+        _ax.set_ylabel('geografía del modelo'); _ax.set_title(_tt)
+        _ax.legend(fontsize=8, loc='lower right')
+    fig.suptitle(f'Qué explica la brecha celíaca por par ({globals().get("NOMBRE_CANASTA", "")}, {_MP} → {ULTIMO_MES})')
+    _guardar('pares_descomposicion')
+if 'Efectos_provincia' in efectos_pares and len(efectos_pares['Efectos_provincia']):
+    _ep = efectos_pares['Efectos_provincia'].sort_values('brecha_ajustada_pct')
+    fig, ax = plt.subplots(figsize=(10, max(4, 0.32 * len(_ep))))
+    ax.scatter(_ep['brecha_bruta_pct'], _ep['provincia'], color='#999999', label='Brecha bruta (promedio de sus celdas)')
+    ax.scatter(_ep['brecha_ajustada_pct'], _ep['provincia'], color='#375623',
+               label='Ajustada (misma categoría, cadena y mes: efecto fijo de M8)')
+    ax.set_xlabel('Brecha (%)'); ax.grid(True, alpha=0.3, axis='x'); ax.legend(fontsize=8, loc='lower right')
+    ax.set_title('Brecha por provincia: bruta y con la misma categoría, cadena y mes')
+    _guardar('pares_efectos_provincia')
+
+# ── 10. Exportación ─────────────────────────────────────────────────────────────────────────────────────────────────
+_DIC13 = {**globals().get('_DIC', {}),
+    'suc_key': 'Clave de la sucursal: id_comercio|id_bandera|id_sucursal. Une celdas, pares y sucursales.',
+    'mes': 'Mes (AAAA-MM). Precio del mes = mediana de los precios diarios.',
+    'tipo': 'Tipo de producto (categoría amplia: fideos secos, galletitas dulces...). Peso ENGHo en la hoja Traduccion_gasto.',
+    'subtipo': 'Subtipo (categoría de producto de la regresión): se comparan productos del mismo subtipo.',
+    'par': 'Par de productos: producto sin TACC | producto con TACC (efecto fijo del par en M11).',
+    'producto_sin': 'Producto sin TACC (los códigos de un mismo producto y los sabores de una línea comparten el nombre; si no, el código EAN). En los pares de marca propia, el código.',
+    'producto_con': 'Producto con TACC (como producto_sin).',
+    'descripcion_sin': 'Descripción del producto sin TACC.', 'descripcion_con': 'Descripción del producto con TACC.',
+    'marca_sin': 'Marca del producto sin TACC.', 'marca_con': 'Marca del producto con TACC.',
+    'misma_marca': 'True si los dos productos del par son de la misma marca (MARCA_EQUIVALENTE une las líneas sin TACC con otro nombre).',
+    'es_marca_propia': 'True si el sin TACC es de marca propia de la cadena (MARCAS_PROPIAS): pares de robustez, fuera de la medida principal y de las celdas.',
+    'gramos_sin': 'Gramos del producto sin TACC.', 'gramos_con': 'Gramos del producto con TACC.',
+    'precio_kg_sin': 'Precio por kilo del producto sin TACC en la sucursal y mes ($/kg; mediana de sus códigos).',
+    'precio_kg_con': 'Precio por kilo del producto con TACC ($/kg).',
+    'log_brecha': 'Brecha en logaritmos: en un par, ln(precio_kg_sin) - ln(precio_kg_con); en una celda, el promedio de sus pares (= promedio de los ln de los sin TACC - promedio de los ln de los con TACC). MEDIDA PRINCIPAL.',
+    'brecha_pct': 'exp(log_brecha) - 1, en %: cuánto más cuesta el sin TACC.',
+    'n_sin': 'Productos sin TACC del subtipo en la sucursal y mes.', 'n_con': 'Productos con TACC del subtipo en la sucursal y mes.',
+    'peso_par': '1 / (n_sin × n_con): con este peso cada celda suma 1.',
+    'anio': 'Año (AAAA).', 'n_pares': 'Pares de la celda (n_sin × n_con).',
+    'log_brecha_medianas': 'ln(mediana de los sin TACC / mediana de los con TACC): la brecha de la CELDA 7 (Excel principal) en logaritmos.',
+    'hay_par_misma_marca': 'True si la celda tiene un par de la misma marca.',
+    'precio_kg_sin_geo': 'Promedio geométrico del precio por kilo de los sin TACC de la celda.',
+    'precio_kg_con_geo': 'Promedio geométrico del precio por kilo de los con TACC de la celda.',
+    'precio_kg_sin_mediana': 'Mediana del precio por kilo de los sin TACC de la celda.',
+    'precio_kg_con_mediana': 'Mediana del precio por kilo de los con TACC de la celda.',
+    'marca_propia_subtipo': 'True si la sucursal tiene ese mes un sin TACC de marca propia de su cadena del mismo subtipo.',
+    'marca_propia_otro_subtipo': 'True si la sucursal tiene ese mes un sin TACC de marca propia de otro subtipo del mismo tipo (y no del subtipo).',
+    'marca_propia_tipo': 'True si la sucursal tiene ese mes un sin TACC de marca propia del tipo (cualquier subtipo).',
+    'bandera_marca_propia_tipo': 'True si la bandera vende ese mes, en alguna sucursal, un sin TACC de marca propia del tipo.',
+    'provincia': 'Provincia de la sucursal (la declarada, salvo coordenadas lejos de su polígono).',
+    'departamento_id': 'Código del departamento (Georef de datos.gob.ar, por coordenadas).',
+    'hhi_departamento': 'HHI de empresas del departamento (0-1; cuota = sucursales del universo).',
+    'hhi_local': f'HHI de empresas entre las sucursales a <= {RADIO_COMPETENCIA_KM} km.',
+    'en_panel_balanceado': 'True si la sucursal × subtipo está en el panel balanceado de la CELDA 8 (ventana de la canasta).',
+    'peso_engho': 'Peso ENGHo de la celda: el gasto del tipo repartido entre sus subtipos y, en cada mes, entre las celdas del subtipo (promedio 1).',
+    'celdas': 'Celdas (sucursal × mes × subtipo).', 'sucursales': 'Sucursales.', 'meses': 'Meses.',
+    'efecto_log': 'Efecto fijo centrado (promedio ponderado = 0), en logaritmos.',
+    'efecto_pct': 'exp(efecto_log) - 1: cuánto más alta es 1 + brecha que en el promedio, con lo demás del modelo igual.',
+    'brecha_bruta_pct': 'Brecha media de las celdas del grupo, sin ajustar.',
+    'brecha_ajustada_pct': 'exp(promedio general + efecto) - 1: la brecha del grupo con la misma categoría, cadena, geografía y mes que el promedio.',
+    'efecto_sucursal_log': 'Brecha propia de la sucursal: efecto fijo de la sucursal con subtipo y mes (centrado).',
+    'efecto_sucursal_pct': 'exp(efecto_sucursal_log) - 1.',
+    'brecha_propia_pct': 'exp(promedio general + efecto de la sucursal) - 1: la brecha de la sucursal limpia de subtipo y mes.',
+    'pct_celdas_marca_propia': 'Fracción de las celdas de la sucursal con un sin TACC de marca propia del subtipo.',
+    'subtipos': 'Subtipos con pares en la sucursal.',
+}
+for _r_ in _RAD13:
+    _DIC13[f'sucursales_{_r_}km'] = f'Sucursales del universo a <= {_r_} km (incluida ella): densidad.'
+    _DIC13[f'empresas_{_r_}km'] = f'Empresas con sucursales a <= {_r_} km (incluida la suya).'
+    _DIC13[f'ln_sucursales_{_r_}km'] = f'ln(sucursales_{_r_}km).'
+if globals().get('EXPORTAR_PARES', True) and len(_cb):
+    _dir13 = OUTPUT_DIR / 'pares'
+    _dir13.mkdir(parents=True, exist_ok=True)
+    _pref = globals().get('PREFIJO_EXCEL', 'brecha_celiaca')
+    _arch13 = {'pares_producto_sucursal_mes': pares_brecha, 'celdas_subtipo_sucursal_mes': celdas_brecha,
+               'sucursales_brecha_propia': sucursales_pares}
+    for _n, _d in _arch13.items():
+        _d.to_parquet(_dir13 / f'{_n}.parquet', index=False)
+        _d.to_csv(_dir13 / f'{_n}.csv.gz', index=False, compression='gzip')
+    _dic13 = pd.DataFrame([{'archivo': _a, 'columna': _c, 'descripcion': _DIC13.get(_c, '')}
+                           for _a, _d in _arch13.items() for _c in _d.columns])
+    _dic13.to_csv(_dir13 / 'diccionario_pares.csv', index=False)
+    _sd = sorted(set(_dic13.loc[_dic13['descripcion'] == '', 'columna']))
+    if _sd:
+        print(f'  ⚠️ columnas sin descripción en diccionario_pares.csv: {_sd}')
+    _leeme13 = [
+        ('Pregunta', '¿Cuánto más paga un celíaco por el mismo producto en la misma sucursal, y de qué depende esa diferencia?'),
+        ('Datos', f'Precios del SEPA, {_MP} a {ULTIMO_MES}, de la {globals().get("NOMBRE_CANASTA", "canasta")}: el precio de un '
+                  'código en el mes es la mediana de sus precios diarios; el de un producto, la mediana de sus códigos (cambios de '
+                  'EAN y sabores de una línea). Filtros de calidad de la CELDA 7 (vigencias, plausibilidad, precios de una '
+                  'empresa fuera de escala y congelados). Sucursales físicas del universo (sin estaciones de servicio, farmacias '
+                  'ni tiendas online).'),
+        ('Par', 'Un producto sin TACC y uno con TACC del MISMO SUBTIPO en la MISMA SUCURSAL y el MISMO MES, con el precio por '
+                'kilo (resuelve las presentaciones distintas: 250 g contra 500 g). Brecha del par = ln(precio por kg sin TACC) - '
+                'ln(precio por kg con TACC). Los sin TACC de marca propia de la cadena forman pares aparte (es_marca_propia).'),
+        ('Celda (medida principal)', 'Sucursal × mes × subtipo: log_brecha = promedio de sus pares (cada celda pesa 1). '
+                'exp(log_brecha) - 1 = cuánto más cuesta el sin TACC. log_brecha_medianas es la brecha de la CELDA 7 (medianas de '
+                'cada lado) en logaritmos.'),
+        ('Regresión', 'log_brecha de la celda = efectos fijos de categoría (subtipo) + cadena (bandera) + geografía + mes + '
+                'entorno (marca propia sin TACC y densidad). Mínimos cuadrados con efectos fijos (LSMR); errores agrupados por '
+                'bandera y por empresa; p_valor_wcr_* = bootstrap salvaje por grupos restringido con pesos de Webb (WCB_B '
+                'réplicas), el que hay que mirar con tan pocas cadenas. Es descriptiva: dice de qué depende la brecha, no por qué.'),
+        ('Modelos', 'M1-M5: solo efectos fijos (M3 región, M4 provincia, M5 departamento). M6 PRINCIPAL: subtipo, mes, '
+                'bandera, región y entorno. M7: sin efecto fijo de bandera, con la marca propia de la bandera (una variable '
+                'que no cambia dentro de la bandera queda absorbida por su efecto fijo). M8/M9: M6 con provincia/departamento. '
+                'M10: M6 ponderado por el gasto (ENGHo). M11: M6 con los mismos pares de productos (efecto fijo del par).'),
+        ('Marca propia', 'marca_propia_subtipo = la góndola tiene un sin TACC de marca propia de su cadena del mismo subtipo '
+                '(varía entre sucursales, subtipos y meses de una misma cadena). En el SEPA hay marcas propias sin TACC de '
+                'Carrefour (tostadas, polvorones, pan, pan rallado, rebozador, premezclas, bizcochuelo, tapas, mini alfajores), '
+                'La Anónima (bizcochuelo, desde sep-2025) y Libertad (Taeq, hasta 2024); DIA no tiene sin TACC propios en estos '
+                'tipos. Hoja Marcas_propias.'),
+        ('Densidad', f'Sucursales del universo a <= {", ".join(str(_x) for _x in _RAD13)} km (haversine); en la regresión, '
+                f'ln(sucursales a <= {_RD} km) y el HHI de empresas del departamento.'),
+        ('Descomposición', 'Valor de Shapley del R²: lo que agrega cada bloque al R², promediado sobre todos los órdenes en que '
+                'se pueden sumar los bloques; los valores suman el R² del modelo completo. Hoja Descomposicion: entre celdas; '
+                'Descomposicion_sucursales: entre sucursales (la brecha propia de cada sucursal, su efecto fijo con subtipo y '
+                'mes), para las tres geografías.'),
+        ('Traducción al gasto', f'Comprar sin TACC las mismas cantidades: peso ENGHo de cada tipo (% del gasto en alimentos) × '
+                f'su brecha; × {PCT_ALIMENTOS_EN_GASTO}% (alimentos en el gasto total de los hogares, ENGHo 2017/18) da el % del '
+                'gasto total. Es una traducción de la brecha por par, no la medida central: supone las cantidades del hogar '
+                'promedio y que todo se reemplaza por su equivalente sin TACC.'),
+        ('Archivos', 'pares/: este Excel (resultados y el panel de celdas), *_pares_detalle_* (un par por fila), '
+                'pares_producto_sucursal_mes, celdas_subtipo_sucursal_mes y sucursales_brecha_propia en parquet y csv.gz, '
+                'diccionario_pares.csv y LEEME.md. Se unen por suc_key, mes y subtipo.'),
+        ('Reproducir', 'notebooks/gen_nb06.py (CELDA 13) del repositorio precios_minoristas_supermercados; docs/BRECHA_CELIACA.md §18.'),
+    ]
+    _hojas = {'Leeme': pd.DataFrame(_leeme13, columns=['tema', 'texto']), 'Resumen': resumen_pares,
+              'Ajuste_modelos': ajuste_pares, 'Modelos': modelos_pares, 'Descomposicion': descomposicion_pares,
+              'Descomposicion_sucursales': descomposicion_sucursales, **efectos_pares, 'Sucursales': sucursales_pares,
+              'Serie_mensual': serie_pares, 'Brecha_subtipo': brecha_subtipo_pares, 'Brecha_par': brecha_par,
+              'Traduccion_gasto': traduccion_gasto, 'Marcas_propias': marcas_propias_uso,
+              'Diccionario': _dic13, 'Celdas': celdas_brecha}
+
+    def _excel13(_ruta, _hj):
+        # xlsxwriter en modo de memoria constante, fila por fila (los paneles tienen cientos de miles de filas); las tablas
+        # de más de EXCEL_MAX_FILAS filas siguen en otra hoja (<hoja>_2, <hoja>_3...)
+        import xlsxwriter
+        _wb = xlsxwriter.Workbook(str(_ruta), {'constant_memory': True, 'nan_inf_to_errors': True})
+        _hd = _wb.add_format({'bold': True, 'font_color': 'white', 'bg_color': '#375623'})
+        _mx = int(globals().get('EXCEL_MAX_FILAS', 1_000_000))
+        for _n, _d in _hj.items():
+            _d = _d if len(_d.columns) else pd.DataFrame({'(sin datos)': []})
+            _partes = [(_n if _i == 0 else f'{_n}_{_i + 1}', _a) for _i, _a in enumerate(range(0, max(len(_d), 1), _mx))]
+            for _sn, _a in _partes:
+                _ws = _wb.add_worksheet(_sn[:31])
+                _ws.write_row(0, 0, [str(_c) for _c in _d.columns], _hd)
+                _ws.set_column(0, len(_d.columns) - 1, 70 if _n == 'Leeme' else 16)
+                _ws.freeze_panes(1, 0)
+                _fin = min(_a + _mx, len(_d))
+                for _b0 in range(_a, _fin, 100_000):
+                    _ch = _d.iloc[_b0:min(_b0 + 100_000, _fin)]
+                    for _i, _row in enumerate(_ch.astype(object).where(_ch.notna(), None).values.tolist()):
+                        _ws.write_row(1 + _b0 - _a + _i, 0, _row)
+        _wb.close()
+
+    _x1 = _dir13 / f'{_pref}_pares_{ULTIMO_MES}.xlsx'
+    _excel13(_x1, _hojas)
+    print(f'\nPares y regresión en {_dir13}: {_x1.name} ({len(_hojas)} tablas), parquet y csv.gz de '
+          f'{", ".join(_arch13)}, diccionario_pares.csv y LEEME.md')
+    if globals().get('EXCEL_PARES_DETALLE', True):
+        _x2 = _dir13 / f'{_pref}_pares_detalle_{ULTIMO_MES}.xlsx'
+        _excel13(_x2, {'Pares': pares_brecha})
+        print(f'  {_x2.name}: {len(pares_brecha):,} pares en {-(-len(pares_brecha) // int(EXCEL_MAX_FILAS))} hoja(s)')
+    _md = ['# Pares con TACC / sin TACC y regresión descriptiva de la brecha celíaca', '',
+           f'Generado por la CELDA 13 del notebook ({globals().get("NOMBRE_CANASTA", "")}) con el último mes {ULTIMO_MES}.', '']
+    for _t, _x in _leeme13:
+        _md += [f'## {_t}', '', _x, '']
+    _md += ['## Resumen', '', '| tema | indicador | valor | unidad |', '|---|---|---|---|']
+    _md += [f'| {_x.tema} | {_x.indicador} | {_x.valor:,.3f} | {_x.unidad} |' for _x in resumen_pares.itertuples(index=False)]
+    (_dir13 / 'LEEME.md').write_text('\n'.join(_md) + '\n', encoding='utf-8')
+if _LSMR_AVISOS:
+    print(f'  ⚠️ LSMR no convergió del todo en {len(_LSMR_AVISOS)} ajustes (códigos {sorted(set(_LSMR_AVISOS))})')
+print(f'CELDA 13 en {_time13.time() - _t13:.0f} s')"""
+cells.append(cell_code(_CELDA_13))
+
 # ── Write notebook ──────────────────────────────────────────────────────────────
 nb = {
     'cells': cells,
@@ -4246,6 +5146,11 @@ harina de la Canasta Básica Alimentaria del INDEC).
 **Qué sale** (en `OUTPUT_DIR`, otra carpeta que la del nb06): `brecha_celiaca_amplia_AAAA-MM.xlsx` (hojas `Leeme` y
 `Resumen` primero), los gráficos `*.png`, los mapas y la carpeta `datos/`.
 
+**Pares y regresión descriptiva (CELDA 13, desde 2026-11-17; `docs/BRECHA_CELIACA.md` §18):** la misma del nb06 con esta
+canasta, **desde 2024-01**: el notebook lee también ene-2024 → jul-2025 solo para los pares (la brecha principal sigue
+desde ago-2025 y no cambia). Sale en `OUTPUT_DIR/pares/` (el detalle con un par por fila, ~3,5 millones, en parquet y
+csv.gz).
+
 **Config en la CELDA 1.** Las celdas 2 a 13 son las del nb06 (las genera el mismo `notebooks/gen_nb06.py`)."""
 
 _PRE_B = _reemplazar(_CONFIG_PRE, [(
@@ -4281,7 +5186,14 @@ _POST_B = _reemplazar(_CONFIG_POST, [
     ("MES_INICIO_HISTORICO = '2022-01'   # la canasta fija se eligió con continuidad desde enero de 2022",
      "MES_INICIO_HISTORICO = '2025-08'   # la canasta amplia se eligió con continuidad desde agosto de 2025"),
 ])
-cells_b = [cell_md(_MD0_B), cell_code(_PRE_B + _bloque_canasta() + _POST_B)] + cells[2:]
+# En el nb06b los pares son ~3,5 millones (2024-01 -> hoy): el Excel con un par por fila pesaría ~450 MB en 4 hojas y
+# tardaría ~10 min en escribirse. Por defecto va solo en parquet y csv.gz (el Excel de resultados trae las celdas y la
+# tabla por par de productos); EXCEL_PARES_DETALLE = True lo escribe igual.
+_PARES_B = _reemplazar(_CONFIG_PARES, [(
+    "EXCEL_PARES_DETALLE = True     # el Excel con un par por fila (en hojas de hasta EXCEL_MAX_FILAS filas; puede pesar >100 MB)",
+    "EXCEL_PARES_DETALLE = False    # el Excel con un par por fila: en el nb06b serían ~3,5 millones de pares (~450 MB en 4\n"
+    "                               # hojas); van en parquet y csv.gz. True lo escribe igual (hojas de EXCEL_MAX_FILAS filas)")])
+cells_b = [cell_md(_MD0_B), cell_code(_PRE_B + _bloque_canasta() + _POST_B + _PARES_B + _bloque_propias())] + cells[2:]
 out_b = os.path.join(HERE, '06b_brecha_celiaca_canasta_amplia.ipynb')
 with open(out_b, 'w', encoding='utf-8') as f:
     json.dump({**nb, 'cells': cells_b}, f, ensure_ascii=False, indent=1)

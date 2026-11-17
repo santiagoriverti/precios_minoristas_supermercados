@@ -1,0 +1,41 @@
+tema,indicador,valor,unidad,hoja
+Datos,Pares de la canasta (2024-01 → 2026-11),757047.0,pares,Celdas / pares_detalle
+Datos,Celdas (sucursal × mes × subtipo),322214.0,celdas,Celdas
+Datos,Sucursales,2479.0,sucursales,Sucursales
+Datos,Celdas con todas las variables (muestra de la regresión),322214.0,celdas,Ajuste_modelos
+Brecha,"Brecha media de las celdas, exp(promedio de la brecha en logaritmos) - 1",95.53434450321741,%,Serie_mensual
+Brecha,Brecha mediana de las celdas,102.0689655172415,%,Serie_mensual
+Brecha,"Brecha media de las celdas, últimos 12 meses",100.9990807345683,%,Serie_mensual
+Brecha,"Brecha media ponderada por el gasto (ENGHo), últimos 12 meses",101.6143163187337,%,Serie_mensual
+Brecha,Pares de la misma marca: brecha media,97.65384988856466,%,Brecha_par
+Brecha,Pares con un sin TACC de marca propia: brecha media (no entra en la medida principal),222.7504633437251,%,Brecha_par
+Sucursales,"Brecha propia de las sucursales (limpia de subtipo y mes), percentil 10",88.19319857999804,%,Sucursales
+Sucursales,"Brecha propia de las sucursales (limpia de subtipo y mes), percentil 50",102.3404812610105,%,Sucursales
+Sucursales,"Brecha propia de las sucursales (limpia de subtipo y mes), percentil 90",105.9825616702225,%,Sucursales
+Ajuste,M1 Categoría y mes: R²,0.8353444896154008,R²,Ajuste_modelos
+Ajuste,M2 + cadena (bandera): R²,0.8533359181181241,R²,Ajuste_modelos
+Ajuste,M3 + región: R²,0.8535730448528869,R²,Ajuste_modelos
+Ajuste,"M4 Categoría, mes, cadena y provincia: R²",0.8536668865997407,R²,Ajuste_modelos
+Ajuste,"M5 Categoría, mes, cadena y departamento: R²",0.8540180670019522,R²,Ajuste_modelos
+Ajuste,"M6 PRINCIPAL: categoría, mes, cadena, región y entorno: R²",0.85669470040993,R²,Ajuste_modelos
+Ajuste,"M7 Sin efecto fijo de cadena: categoría, mes, región, entorno y marca propia de la bandera: R²",0.844614473619747,R²,Ajuste_modelos
+Ajuste,M8 Como M6 con provincia: R²,0.8567807547629632,R²,Ajuste_modelos
+Ajuste,M9 Como M6 con departamento: R²,0.8571258905048544,R²,Ajuste_modelos
+Ajuste,M10 Como M6 ponderado por el gasto (ENGHo): R²,0.8677649031963326,R²,Ajuste_modelos
+Ajuste,M11 Como M6 con los mismos pares (efecto fijo del par de productos): R²,0.8707291985271233,R²,Ajuste_modelos
+Descomposición (celdas (sucursal × mes × subtipo)),Categoría de producto (subtipo): % de la variación (Shapley),76.24974963982392,%,Descomposicion
+Descomposición (celdas (sucursal × mes × subtipo)),Cadena (bandera): % de la variación (Shapley),2.860948655543108,%,Descomposicion
+Descomposición (celdas (sucursal × mes × subtipo)),Geografía (región): % de la variación (Shapley),0.4654900419167459,%,Descomposicion
+Descomposición (celdas (sucursal × mes × subtipo)),Mes: % de la variación (Shapley),3.53279057085877,%,Descomposicion
+Descomposición (celdas (sucursal × mes × subtipo)),Entorno (marca propia y densidad): % de la variación (Shapley),2.560491132850465,%,Descomposicion
+"Descomposición (sucursales (brecha propia, limpia de subtipo y mes))",Cadena (bandera): % de la variación (Shapley),65.93464250355872,%,Descomposicion_sucursales
+"Descomposición (sucursales (brecha propia, limpia de subtipo y mes))",Geografía (región): % de la variación (Shapley),18.50247393412818,%,Descomposicion_sucursales
+"Descomposición (sucursales (brecha propia, limpia de subtipo y mes))",Entorno (marca propia y densidad): % de la variación (Shapley),5.576269079956521,%,Descomposicion_sucursales
+Entorno (M6),"la góndola tiene un sin TACC de marca propia de la cadena del mismo subtipo (de 0 a 1): efecto sobre 1 + brecha (p-valor WCR por bandera 0.091, por empresa 0.348)",-8.409917488989857,%,Modelos
+Entorno (M6),"la sucursal tiene un sin TACC de marca propia de otro subtipo del mismo tipo (de 0 a 1): efecto sobre 1 + brecha (p-valor WCR por bandera 0.403, por empresa 0.548)",-3.317884261358806,%,Modelos
+Entorno (M6),"log de las sucursales del universo a <= 3 km (densidad) (el doble de sucursales): efecto sobre 1 + brecha (p-valor WCR por bandera 0.064, por empresa 0.003)",-0.06181818075093672,%,Modelos
+Entorno (M6),"HHI de empresas del departamento (0-1) (+0,1 de HHI): efecto sobre 1 + brecha (p-valor WCR por bandera 0.083, por empresa 0.026)",-0.05809999693921071,%,Modelos
+Gasto del hogar,"Sobrecosto en % del gasto en alimentos, 2024-01 → 2026-11",4.872446964263961,%,Traduccion_gasto
+Gasto del hogar,"Sobrecosto en % del gasto total del hogar, 2024-01 → 2026-11",1.106045460887919,%,Traduccion_gasto
+Gasto del hogar,"Sobrecosto en % del gasto en alimentos, últimos 12 meses (2025-12 → 2026-11)",5.180385527504778,%,Traduccion_gasto
+Gasto del hogar,"Sobrecosto en % del gasto total del hogar, últimos 12 meses (2025-12 → 2026-11)",1.175947514743584,%,Traduccion_gasto

@@ -1,0 +1,15 @@
+ean,descripcion,marca,empresa,tipo,subtipo,gramos,equivalencia,sucursal_meses,sucursales,meses,primer_mes,ultimo_mes,banderas,pares,excluido_plausibilidad
+7791720017401,Polvorones con Chips sin TACC Carrefour Classic 150 Gr,Carrefour Classic,Carrefour,Galletitas dulces,Con chips,150,equivalente,12829,567,25,2024-11,2026-11,"Carrefour, Carrefour Express, Carrefour Market",12826,False
+7791720017395,Polvorones sin TACC Carrefour Classic 150 Gr,Carrefour Classic,Carrefour,Galletitas dulces,"Secas (vainilla, limón, chocolate)",150,equivalente,12660,567,25,2024-11,2026-11,"Carrefour, Carrefour Express, Carrefour Market",28163,False
+7791720019054,Tostadas sin TACC Clásicas Carrefour 130 Gr,Carrefour,Carrefour,Galletitas saladas y crackers,Crackers,130,sustituto (tostadas contra crackers),13110,567,35,2024-01,2026-11,"Carrefour, Carrefour Express, Carrefour Market",16260,False
+7791720019078,Tostadas sin TACC Dulces Carrefour 130 Gr,Carrefour,Carrefour,Galletitas saladas y crackers,Crackers,130,sustituto (tostadas contra crackers),6119,477,31,2024-01,2026-11,"Carrefour, Carrefour Express, Carrefour Market",8235,False
+7791720019061,Tostadas sin TACC con Semillas Carrefour 130 Gr,Carrefour,Carrefour,Galletitas saladas y crackers,Crackers,130,sustituto (tostadas contra crackers),6977,351,35,2024-01,2026-11,"Carrefour, Carrefour Express, Carrefour Market",9899,False
+7791720018453,Pan Rallado sin TACC Carrefour 350 Gr,Carrefour,Carrefour,Pan rallado y rebozador,,350,equivalente,4035,168,33,2024-03,2026-11,"Carrefour, Carrefour Market",0,False
+7791720018460,Pan Rallado sin TACC Provenzal Carrefour 350 Gr,Carrefour,Carrefour,Pan rallado y rebozador,,350,equivalente,2591,102,29,2024-07,2026-11,"Carrefour, Carrefour Market",0,False
+7791720003411,Rebozador sin TACC Carrefour 350 Gr,Carrefour,Carrefour,Pan rallado y rebozador,Rebozador,350,equivalente,15022,572,35,2024-01,2026-11,"Carrefour, Carrefour Express, Carrefour Market",8456,False
+7791720018477,Rebozador sin TACC Carrefour 350 Gr,Carrefour,Carrefour,Pan rallado y rebozador,Rebozador,350,equivalente,0,0,0,,,,0,False
+7791109623674,Pasta Seca Garbanzos sin TACC Taeq 284 Gr,Taeq,Libertad,Fideos secos,,284,sustituto (pasta de legumbres),2,2,1,2024-01,2024-01,"Hipermercado Libertad, Mini Libertad",0,False
+7791109623698,Pasta Seca High Pro sin TACC Taeq 284 Gr,Taeq,Libertad,Fideos secos,,284,sustituto (pasta de legumbres),0,0,0,,,,0,False
+7791109623797,Pasta Seca Poroto Negro sin TACC Taeq 284 Gr,Taeq,Libertad,Fideos secos,,284,sustituto (pasta de legumbres),0,0,0,,,,0,False
+7791109623780,Pasta Seca de Porotos Rojos sin TACC Taeq 284 Gr,Taeq,Libertad,Fideos secos,,284,sustituto (pasta de legumbres),0,0,0,,,,0,False
+7791109623476,Tostadas sin TACC Taeq 130 Gr,Taeq,Libertad,Galletitas saladas y crackers,Crackers,130,sustituto (tostadas contra crackers),6,5,2,2024-01,2024-02,Hipermercado Libertad,1,False

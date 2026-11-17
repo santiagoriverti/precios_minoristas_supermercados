@@ -1,0 +1,84 @@
+tipo,subtipo,lado,producto,obs,peso_en_el_nivel,gamma,mes_base,nivel_vs_con_tacc_subtipo_pct,referencia,universo,descripcion
+Cereales rellenos (almohaditas),Almohaditas rellenas,sin TACC,Almohaditas rellenas sin TACC Snuks 240 g (4 variantes),10873,1.0,0.1898703711204869,2022-01,20.90928541463178,False,panel balanceado,Almohaditas rellenas sin TACC Snuks 240 g (4 variantes)
+Cereales rellenos (almohaditas),Almohaditas rellenas,con TACC,Almohaditas rellenas Lasfor 200 g (4 variantes),10942,1.0,0.0,2022-01,0.0,True,panel balanceado,Almohaditas rellenas Lasfor 200 g (4 variantes)
+Fideos secos,Mostachol / penne,sin TACC,Penne rigate sin TACC Matarazzo 500 g,20802,1.0,0.6598173377267251,2022-01,93.44389531116123,False,panel balanceado,Penne rigate sin TACC Matarazzo 500 g
+Fideos secos,Mostachol / penne,con TACC,Penne rigate Matarazzo 500 g,22866,1.0,0.0,2022-01,0.0,True,panel balanceado,Penne rigate Matarazzo 500 g
+Fideos secos,Spaghetti,sin TACC,Spaghetti sin TACC Matarazzo 500 g,34872,1.0,0.6155462911830747,2022-01,85.06673267009086,False,panel balanceado,Spaghetti sin TACC Matarazzo 500 g
+Fideos secos,Spaghetti,con TACC,Spaghetti Matarazzo 500 g,37161,1.0,0.0,2022-01,0.0,True,panel balanceado,Spaghetti Matarazzo 500 g
+Fideos secos,Tirabuzón / fusilli,sin TACC,Fusilli sin TACC Wakas (4 variantes),24913,0.5059093493623589,1.742886652147567,2022-01,431.4175790523507,False,panel balanceado,Fusilli sin TACC Wakas (4 variantes)
+Fideos secos,Tirabuzón / fusilli,sin TACC,Tirabuzón sin TACC Matarazzo 500 g,24331,0.4940906506376411,1.352286170403201,2022-01,259.5839366949486,False,panel balanceado,Tirabuzón sin TACC Matarazzo 500 g
+Fideos secos,Tirabuzón / fusilli,con TACC,Tirabuzones Lucchetti 500 g,31623,0.5386122087477858,0.0,2022-01,-6.994236786439859,True,panel balanceado,Tirabuzones Lucchetti 500 g
+Fideos secos,Tirabuzón / fusilli,con TACC,Tirabuzones Matarazzo 500 g,27089,0.4613877912522142,0.157153540018534,2022-01,8.833043972182224,False,panel balanceado,Tirabuzones Matarazzo 500 g
+Galletitas dulces,Con chips,sin TACC,7798181511004,16294,1.0,0.2716223200287242,2022-01,31.20913570934947,False,panel balanceado,Galletitas Con Chips de Chocolate Smams 150 Gr
+Galletitas dulces,Con chips,con TACC,Pepitos 119 g,17341,1.0,0.0,2022-01,0.0,True,panel balanceado,Pepitos 119 g
+Galletitas dulces,Pepas,sin TACC,7798181510786,7731,1.0,0.6073396140377625,2022-01,83.55416481198638,False,panel balanceado,Pepas de Membrillo sin TACC Smams 150 Gr
+Galletitas dulces,Pepas,con TACC,7791787100924,8260,1.0,0.0,2022-01,0.0,True,panel balanceado,Galletitas Dulces Pepas Trío 320 Gr
+Galletitas dulces,Rellenas,sin TACC,Galletitas rellenas sin TACC Smams 105 g (3 variantes),42493,1.0,0.5573883928109159,2022-01,88.35887740799744,False,panel balanceado,Galletitas rellenas sin TACC Smams 105 g (3 variantes)
+Galletitas dulces,Rellenas,con TACC,7622300742645,32820,0.3572050500653026,-0.1476669231428273,2022-01,-6.935411734291336,False,panel balanceado,Galletitas Vainilla con Relleno de Limón Duquesa 115 Gr
+Galletitas dulces,Rellenas,con TACC,7790040133259,19315,0.2102198519808446,-0.1096143672712312,2022-01,-3.325824831404318,False,panel balanceado,Galletitas Vainilla Rellenas Limón Maná 152 Gr
+Galletitas dulces,Rellenas,con TACC,7790040133488,39745,0.4325750979538528,0.0,2022-01,7.873654086698166,True,panel balanceado,Galletitas Rellena Sabor Frambuesa Sonrisas 108 Gr
+Galletitas dulces,"Secas (vainilla, limón, chocolate)",sin TACC,7798128410070,16896,0.298769274296223,0.7571979205105106,2022-01,96.04035608094405,False,panel balanceado,Galletitas Sabor Limón Aglu 150 Gr
+Galletitas dulces,"Secas (vainilla, limón, chocolate)",sin TACC,7798181510847,23711,0.4192778327910596,0.7560318424339347,2022-01,95.81189094957213,False,panel balanceado,Galletitas Colegial Vainilla Samms 150 Gr
+Galletitas dulces,"Secas (vainilla, limón, chocolate)",sin TACC,Galletitas sin TACC Santa María 200 g (2 variantes),15945,0.2819528929127175,0.7797756979232906,2022-01,100.5168561569866,False,panel balanceado,Galletitas sin TACC Santa María 200 g (2 variantes)
+Galletitas dulces,"Secas (vainilla, limón, chocolate)",con TACC,7622201808860,29895,0.294410194796242,0.0,2022-01,-8.061248029227167,True,panel balanceado,Galletitas Dulces Boca de Dama Terrabusi 170 Gr
+Galletitas dulces,"Secas (vainilla, limón, chocolate)",con TACC,7622201808884,29164,0.2872112032459475,0.3096149359259346,2022-01,25.30334429184601,False,panel balanceado,Galletitas Anillos Clásicos Terrabusi 170 Gr
+Galletitas dulces,"Secas (vainilla, limón, chocolate)",con TACC,7791787000644,19589,0.1929152468929113,-0.009216331578639061,2022-01,-8.904693346228482,False,panel balanceado,Galletitas Frolitas Trio 300 Gr
+Galletitas dulces,"Secas (vainilla, limón, chocolate)",con TACC,7792200000791,22894,0.2254633550648993,-0.01374652354166611,2022-01,-9.316439224191537,False,panel balanceado,Galletitas Sconcitos 9 de Oro 200 Gr
+Galletitas saladas y crackers,Crackers,sin TACC,Crackers sin TACC Smams 150 g (3 variantes),41433,1.0,1.112528193031613,2022-01,173.7136127077479,False,panel balanceado,Crackers sin TACC Smams 150 g (3 variantes)
+Galletitas saladas y crackers,Crackers,con TACC,7790040377707,30619,0.4387744866228164,0.0,2022-01,-10.02299320368786,True,panel balanceado,Galletitas Original Crackers Criollitas 100 Gr
+Galletitas saladas y crackers,Crackers,con TACC,7790045001133,25508,0.3655331527735982,0.1837893079101616,2022-01,8.131001137206049,False,panel balanceado,Galletitas Crackers Naturalmente Granix 200 Gr
+Galletitas saladas y crackers,Crackers,con TACC,7792180006462,13656,0.1956923606035854,0.1964049238016324,2022-01,9.503781340507587,False,panel balanceado,Galletitas Mini Marineras Paseo 220 Gr
+Galletitas saladas y crackers,Saborizadas / snack,sin TACC,7797330102971,10602,0.191109669046074,-0.1838678581183992,2022-01,-7.884048658663422,False,panel balanceado,Galletas de Arroz Pizza Grandiet 100 Gr
+Galletitas saladas y crackers,Saborizadas / snack,sin TACC,Galletas de arroz saborizadas Crisppino 100 g (2 variantes),23482,0.4232821400245151,0.2242186369865755,2022-01,38.53660950547236,False,panel balanceado,Galletas de arroz saborizadas Crisppino 100 g (2 variantes)
+Galletitas saladas y crackers,Saborizadas / snack,sin TACC,Galletas de arroz saborizadas Crisppino Minis 50 g (3 variantes),21392,0.3856081909294109,0.3357093767489432,2022-01,54.8760870824646,False,panel balanceado,Galletas de arroz saborizadas Crisppino Minis 50 g (3 variantes)
+Galletitas saladas y crackers,Saborizadas / snack,con TACC,7790040003569,24600,0.2637192997502171,-0.1021746073945828,2022-01,-0.04287191847835767,False,panel balanceado,Galletitas Saladas Tipo Snacks Rex 75 Gr
+Galletitas saladas y crackers,Saborizadas / snack,con TACC,7790040003606,25140,0.2695082599886365,0.0,2022-01,10.71020065100474,True,panel balanceado,Galletitas Kesitas 75 Gr
+Galletitas saladas y crackers,Saborizadas / snack,con TACC,7790040719804,20519,0.2199697687631994,-0.1156875470821758,2022-01,-1.384501466986962,False,panel balanceado,Galletitas Original Rex 125 Gr
+Galletitas saladas y crackers,Saborizadas / snack,con TACC,Galletitas saborizadas Saladix 100 g (3 variantes),23022,0.2468026714979471,-0.1999679221019481,2022-01,-9.355246401059375,False,panel balanceado,Galletitas saborizadas Saladix 100 g (3 variantes)
+Pan rallado y rebozador,Rebozador,sin TACC,7798128410087,4692,0.9117761368052857,0.5984585521516292,2022-01,66.54669057123975,False,panel balanceado,Rebozador Aglu 450 Gr
+Pan rallado y rebozador,Rebozador,sin TACC,7798193377285,454,0.08822386319471434,0.4355793523738547,2022-01,41.51369462220351,False,panel balanceado,Rebozador Naturalsur 500 Gr
+Pan rallado y rebozador,Rebozador,con TACC,7792180004765,5055,0.5441334768568353,0.0,2022-01,-8.456237026028875,True,panel balanceado,Rebozador Freir Fortificado Mamá Cocina Plus 500 Gr
+Pan rallado y rebozador,Rebozador,con TACC,7792180004796,4235,0.4558665231431647,0.1938134074205842,2022-01,11.12220584092694,False,panel balanceado,Rebozador Horno Fortificado Mamá Cocina Plus 1 Kg
+Cereales rellenos (almohaditas),Almohaditas rellenas,sin TACC,Almohaditas rellenas sin TACC Snuks 240 g (4 variantes),28674,1.0,0.1399888994412846,2022-01,15.02610302462537,False,todas las sucursales,Almohaditas rellenas sin TACC Snuks 240 g (4 variantes)
+Cereales rellenos (almohaditas),Almohaditas rellenas,con TACC,Almohaditas rellenas Lasfor 200 g (4 variantes),34546,1.0,0.0,2022-01,0.0,True,todas las sucursales,Almohaditas rellenas Lasfor 200 g (4 variantes)
+Fideos secos,Mostachol / penne,sin TACC,Penne rigate sin TACC Matarazzo 500 g,50483,1.0,0.6652970874239159,2022-01,94.50682908364205,False,todas las sucursales,Penne rigate sin TACC Matarazzo 500 g
+Fideos secos,Mostachol / penne,con TACC,Penne rigate Matarazzo 500 g,89210,1.0,0.0,2022-01,0.0,True,todas las sucursales,Penne rigate Matarazzo 500 g
+Fideos secos,Spaghetti,sin TACC,Spaghetti sin TACC Matarazzo 500 g,86070,1.0,0.6158644710693308,2022-01,85.12562655096893,False,todas las sucursales,Spaghetti sin TACC Matarazzo 500 g
+Fideos secos,Spaghetti,con TACC,Spaghetti Matarazzo 500 g,126895,1.0,0.0,2022-01,0.0,True,todas las sucursales,Spaghetti Matarazzo 500 g
+Fideos secos,Tirabuzón / fusilli,sin TACC,Fusilli sin TACC Wakas (4 variantes),69258,0.5631464255512912,1.762213454005411,2022-01,442.5059119060155,False,todas las sucursales,Fusilli sin TACC Wakas (4 variantes)
+Fideos secos,Tirabuzón / fusilli,sin TACC,Tirabuzón sin TACC Matarazzo 500 g,53726,0.4368535744487088,1.273726432770892,2022-01,232.8566649208609,False,todas las sucursales,Tirabuzón sin TACC Matarazzo 500 g
+Fideos secos,Tirabuzón / fusilli,con TACC,Tirabuzones Lucchetti 500 g,126834,0.5137475696694751,0.0,2022-01,-6.87100930591189,True,todas las sucursales,Tirabuzones Lucchetti 500 g
+Fideos secos,Tirabuzón / fusilli,con TACC,Tirabuzones Matarazzo 500 g,120046,0.486252430330525,0.1463944500334306,2022-01,7.811030706782164,False,todas las sucursales,Tirabuzones Matarazzo 500 g
+Galletitas dulces,Con chips,sin TACC,7798181511004,45046,1.0,0.371744852236793,2022-01,45.02629027471119,False,todas las sucursales,Galletitas Con Chips de Chocolate Smams 150 Gr
+Galletitas dulces,Con chips,con TACC,Pepitos 119 g,129864,1.0,0.0,2022-01,0.0,True,todas las sucursales,Pepitos 119 g
+Galletitas dulces,Obleas,sin TACC,7798079230833,11062,1.0,1.175227190043102,2022-01,217.0157556145042,False,todas las sucursales,Obleas Limón Santa María 90 Gr
+Galletitas dulces,Obleas,con TACC,7790040008175,120492,0.5979128726038477,0.0,2022-01,-2.121757294480746,True,todas las sucursales,Galletitas Obleas Clásicas Opera 220 Gr
+Galletitas dulces,Obleas,con TACC,77903518,81029,0.4020871273961523,0.05333645290749061,2022-01,3.240450427820878,False,todas las sucursales,Galletitas Obleas Rellena Opera 92 Gr
+Galletitas dulces,Pepas,sin TACC,7798181510786,67917,1.0,0.5972958149690735,2022-01,81.71981102328493,False,todas las sucursales,Pepas de Membrillo sin TACC Smams 150 Gr
+Galletitas dulces,Pepas,con TACC,7791787100924,26231,1.0,0.0,2022-01,0.0,True,todas las sucursales,Galletitas Dulces Pepas Trío 320 Gr
+Galletitas dulces,Rellenas,sin TACC,Galletitas rellenas sin TACC Smams 105 g (3 variantes),92539,1.0,0.591288966495041,2022-01,98.92199722124155,False,todas las sucursales,Galletitas rellenas sin TACC Smams 105 g (3 variantes)
+Galletitas dulces,Rellenas,con TACC,7622300742645,111953,0.3505289887063494,-0.1648280724825559,2022-01,-6.608929555736445,False,todas las sucursales,Galletitas Vainilla con Relleno de Limón Duquesa 115 Gr
+Galletitas dulces,Rellenas,con TACC,7790040133259,79812,0.2498943275002113,-0.154771836824503,2022-01,-5.665028853584446,False,todas las sucursales,Galletitas Vainilla Rellenas Limón Maná 152 Gr
+Galletitas dulces,Rellenas,con TACC,7790040133488,127618,0.3995766837934392,0.0,2022-01,10.12585053926332,True,todas las sucursales,Galletitas Rellena Sabor Frambuesa Sonrisas 108 Gr
+Galletitas dulces,"Secas (vainilla, limón, chocolate)",sin TACC,7798128410070,21636,0.2612412460758271,0.4664730729302395,2022-01,95.34453794592972,False,todas las sucursales,Galletitas Sabor Limón Aglu 150 Gr
+Galletitas dulces,"Secas (vainilla, limón, chocolate)",sin TACC,7798181510847,39096,0.4720598889157208,0.463231991009144,2022-01,94.71243519733652,False,todas las sucursales,Galletitas Colegial Vainilla Samms 150 Gr
+Galletitas dulces,"Secas (vainilla, limón, chocolate)",sin TACC,Galletitas sin TACC Santa María 200 g (2 variantes),22088,0.2666988650084521,0.4592417329845149,2022-01,93.93703040174218,False,todas las sucursales,Galletitas sin TACC Santa María 200 g (2 variantes)
+Galletitas dulces,"Secas (vainilla, limón, chocolate)",con TACC,7622201808860,63164,0.3076698263012791,-0.2945140081182853,2022-01,-8.734049269430908,False,todas las sucursales,Galletitas Dulces Boca de Dama Terrabusi 170 Gr
+Galletitas dulces,"Secas (vainilla, limón, chocolate)",con TACC,7622201808884,72158,0.3514793129986654,0.0,2022-01,22.52214483758796,True,todas las sucursales,Galletitas Anillos Clásicos Terrabusi 170 Gr
+Galletitas dulces,"Secas (vainilla, limón, chocolate)",con TACC,7791787000644,26699,0.1300499761322565,-0.2958811169970545,2022-01,-8.858734512433019,False,todas las sucursales,Galletitas Frolitas Trio 300 Gr
+Galletitas dulces,"Secas (vainilla, limón, chocolate)",con TACC,7792200000791,43277,0.210800884567799,-0.3511806701887416,2022-01,-13.76198259323757,False,todas las sucursales,Galletitas Sconcitos 9 de Oro 200 Gr
+Galletitas saladas y crackers,Crackers,sin TACC,Crackers sin TACC Smams 150 g (3 variantes),99096,1.0,1.138315375227207,2022-01,184.4724651726609,False,todas las sucursales,Crackers sin TACC Smams 150 g (3 variantes)
+Galletitas saladas y crackers,Crackers,con TACC,7790040377707,86961,0.4901088867847964,0.0,2022-01,-8.86689861808854,True,todas las sucursales,Galletitas Original Crackers Criollitas 100 Gr
+Galletitas saladas y crackers,Crackers,con TACC,7790045001133,47276,0.2664457369583841,0.1939642993167605,2022-01,10.64040963332586,False,todas las sucursales,Galletitas Crackers Naturalmente Granix 200 Gr
+Galletitas saladas y crackers,Crackers,con TACC,7792180006462,43195,0.2434453762568195,0.1691062509176663,2022-01,7.924007084542768,False,todas las sucursales,Galletitas Mini Marineras Paseo 220 Gr
+Galletitas saladas y crackers,Saborizadas / snack,sin TACC,7797330102971,14446,0.2171318633419008,-0.04014149631422281,2022-01,-7.722175817352701,False,todas las sucursales,Galletas de Arroz Pizza Grandiet 100 Gr
+Galletitas saladas y crackers,Saborizadas / snack,sin TACC,Galletas de arroz saborizadas Crisppino 100 g (2 variantes),25771,0.3873532638920202,0.3396446101564496,2022-01,34.90758130384707,False,todas las sucursales,Galletas de arroz saborizadas Crisppino 100 g (2 variantes)
+Galletitas saladas y crackers,Saborizadas / snack,sin TACC,Galletas de arroz saborizadas Crisppino Minis 50 g (3 variantes),26314,0.395514872766079,0.4474438106520902,2022-01,50.26331095918412,False,todas las sucursales,Galletas de arroz saborizadas Crisppino Minis 50 g (3 variantes)
+Galletitas saladas y crackers,Saborizadas / snack,con TACC,7790040003569,89861,0.2703871313285712,0.01735209227297426,2022-01,-2.261314462741558,False,todas las sucursales,Galletitas Saladas Tipo Snacks Rex 75 Gr
+Galletitas saladas y crackers,Saborizadas / snack,con TACC,7790040003606,61918,0.1863080802306058,0.136080673402079,2022-01,10.06003881641711,False,todas las sucursales,Galletitas Kesitas 75 Gr
+Galletitas saladas y crackers,Saborizadas / snack,con TACC,7790040719804,79848,0.2402585288648441,0.04237153890979264,2022-01,0.2149009653671557,False,todas las sucursales,Galletitas Original Rex 125 Gr
+Galletitas saladas y crackers,Saborizadas / snack,con TACC,Galletitas saborizadas Saladix 100 g (3 variantes),100715,0.303046259575979,0.0,2022-01,-3.942655573025965,True,todas las sucursales,Galletitas saborizadas Saladix 100 g (3 variantes)
+Pan rallado y rebozador,Rebozador,sin TACC,7798128410087,32885,0.6759228808682068,0.4196138392669536,2022-01,62.76517745309305,False,todas las sucursales,Rebozador Aglu 450 Gr
+Pan rallado y rebozador,Rebozador,sin TACC,7798193377285,15767,0.3240771191317932,0.4906827776313225,2022-01,74.75368555677333,False,todas las sucursales,Rebozador Naturalsur 500 Gr
+Pan rallado y rebozador,Rebozador,con TACC,7792180004765,32630,0.3782092147203709,-0.1785374472583069,2022-01,-10.50728310851325,False,todas las sucursales,Rebozador Freir Fortificado Mamá Cocina Plus 500 Gr
+Pan rallado y rebozador,Rebozador,con TACC,7792180004796,53645,0.621790785279629,0.0,2022-01,6.985647902578475,True,todas las sucursales,Rebozador Horno Fortificado Mamá Cocina Plus 1 Kg

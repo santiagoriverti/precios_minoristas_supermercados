@@ -17,7 +17,9 @@ CLAVES = ['tipo', 'subtipo', 'lado', 'rol', 'ean', 'ean_norm', 'mes', 'anio', 'p
           'suc_key', 'nivel', 'escenario', 'agrupacion', 'grupo', 'medida', 'modelo', 'termino', 'variable', 'controles',
           'item_cba', 'tema', 'indicador',
           # Composicion_empresas, Prima_misma_marca (segunda revisión de expertos, 2026-10-27)
-          'periodo', 'marca']
+          'periodo', 'marca',
+          # Excel de pares de la CELDA 13 (2026-11-17)
+          'bloque', 'geografia', 'producto_sin', 'producto_con', 'es_marca_propia', 'misma_marca']
 TEXTO = {c: str for c in CLAVES}
 def num(s):
     # columnas numéricas o booleanas (confiable, revisar, amba...) como float; el resto queda NaN

@@ -23,7 +23,9 @@ igual). `simulacion_2026-10-26c/` son los de la TPD del panel corregida, Pepitos
 fuera de escala, análisis complementarios de la CELDA 8c y hoja `Resumen`; 48 hojas): las corridas de Colab del
 2026-10-27 dieron igual (48 de 48). `simulacion_2026-10-27b/` son los del notebook **vigente** (segunda revisión de
 expertos: intervalos por empresa, precios congelados, composición, varianza y surtido por empresa, prima de la misma
-marca; 54 hojas, BRECHA_CELIACA §17): contra esa carpeta se compara la próxima.
+marca; 54 hojas, BRECHA_CELIACA §17). **Vigentes desde el 2026-11-17**: `simulacion_2026-11-17/` y `simulacion_06b_2026-11-17/`, del Excel principal de la corrida de Colab del 17/11 (zips con nov-2026; la simulación local dio igual salvo las columnas del IPC), con `pares/`: el Excel de pares de la CELDA 13 (simulación local; BRECHA_CELIACA §18). Contra esas carpetas se compara la próxima.
+
+`marcas_propias_sin_tacc.csv` (2026-11-17, `s21_marcas_propias.py`): los productos sin TACC de **marca propia** de las cadenas en los tipos de las canastas (39: Carrefour 23, Libertad/Taeq 12, La Anónima 2; DIA ninguno), con tipo, subtipo, gramos, dueño y fechas. `gen_nb06.py` los pasa a `MARCAS_PROPIAS` de la CELDA 1 (los de los tipos de cada canasta): se leen con la canasta (cambian la clave del caché) para la variable de marca propia y los pares de robustez de la CELDA 13; nunca entran en la brecha principal.
 
 `productos_sensibilidad.csv` tiene **todos** los productos que cumplen las reglas de la selección en los subtipos de
 la canasta: los 75 códigos de la canasta y 25 más que quedan afuera por la composición espejada, el comparador fijo

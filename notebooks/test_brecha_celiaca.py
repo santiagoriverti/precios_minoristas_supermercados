@@ -69,11 +69,17 @@ P = {
     '7790000000103': ('Galletitas dulces', 'sin', 150, 1500, (1, 2, 3)),     # salta x2,5 en marzo
     '7799999999998': ('otro', 'tacc', 100, 500, (1, 2, 3)),                  # fuera de la canasta
     '7790000000134': ('Fideos secos', 'sin', 500, 950, (1, 2, 3)),           # ADICIONAL (sensibilidad, CELDA 8c)
+    '7790000000141': ('Galletitas dulces', 'sin', 150, 1300, (1, 2, 3)),     # MARCA PROPIA de Carrefour (CELDA 13)
 }
+# marca propia sin TACC de Carrefour (comercio 10) en el subtipo C: solo en sus sucursales (CELDA 13, pares y regresión)
+PROPIA = {'7790000000141': {'tipo': 'Galletitas dulces', 'subtipo': 'C', 'gramos': 150.0, 'empresa': 'Carrefour',
+                            'marca': 'Carrefour', 'equivalencia': 'equivalente',
+                            'descripcion': 'Galletitas sin TACC Carrefour 150 Gr'}}
 ADIC = {'7790000000134': {'tipo': 'Fideos secos', 'lado': 'sin_tacc', 'subtipo': 'A', 'gramos': 500, 'desde': None,
                           'hasta': None, 'linea_todos': 'Adicional 134', 'motivo': 'composición espejada',
                           'descripcion': 'Producto 134'}}
 FALTA = {(('15', '1', '301'), '7790000000059'), (('9', '1', '102'), '7790000000103')}
+FALTA |= {(s_, '7790000000141') for s_ in SUCS if s_[0] != '10'}
 PESOS = {'Fideos secos': 1.503, 'Galletitas dulces': 1.717}
 DIAS = pd.date_range('2026-01-01', '2026-03-31')
 
@@ -155,10 +161,12 @@ mp = pd.DataFrame([{'producto_sepa_id': e, 'producto_descripcion': f'Producto {e
 mp.to_excel(tmp / 'data' / 'Maestro de Productos Interno.xlsx', index=False)
 
 TIPOS = {t: {'peso': PESOS[t],
-             'tacc': {e: f'Producto {e[-3:]}' for e, v in P.items() if v[0] == t and v[1] == 'tacc' and e not in ADIC},
-             'sin_tacc': {e: f'Producto {e[-3:]}' for e, v in P.items() if v[0] == t and v[1] == 'sin' and e not in ADIC}}
+             'tacc': {e: f'Producto {e[-3:]}' for e, v in P.items() if v[0] == t and v[1] == 'tacc' and e not in ADIC
+                      and e not in PROPIA},
+             'sin_tacc': {e: f'Producto {e[-3:]}' for e, v in P.items() if v[0] == t and v[1] == 'sin' and e not in ADIC
+                          and e not in PROPIA}}
          for t in PESOS}
-GRAMOS = {e: v[2] for e, v in P.items() if v[0] in PESOS and e not in ADIC}
+GRAMOS = {e: v[2] for e, v in P.items() if v[0] in PESOS and e not in ADIC and e not in PROPIA}
 VIGENCIA = {'7790000000028': (None, '2026-01'), '7790000000035': ('2026-02', None)}
 FUERA_VIG = {('7790000000028', '2026-02')}
 PRODUCTO = {'Fideo sin TACC X': ['7790000000042', '7790000000110'],
@@ -179,7 +187,7 @@ MARCA = {'7790000000011': 'M1', '7790000000042': 'MX', '7790000000110': 'MX', '7
 cells = [''.join(c['source']) for c in json.load(open(NB, encoding='utf-8'))['cells'] if c['cell_type'] == 'code']
 os.chdir(tmp)
 
-def correr():
+def correr(**extra):
     g = {}
     exec(cells[0], g)
     g.update(SEPA_DIR=str(sepa), OUTPUT_DIR=str(out), TIPOS=TIPOS, GRAMOS=GRAMOS, VIGENCIA=VIGENCIA,
@@ -188,7 +196,8 @@ def correr():
              ADICIONALES=ADIC, LINEA_TODOS={}, SUSTITUTOS={'7790000000097'}, PRODUCTO_SIN_LINEA=PRODUCTO,
              BOOT_B=30, RADIO_COMPETENCIA_KM=5, MESES_CBA=2,
              CBA_ITEMS=[('Fideos', 'Fideos secos', None, 1740), ('Galletitas dulces', 'Galletitas dulces', None, 210)],
-             MARCA=MARCA, MARCA_EQUIVALENTE={'MX': 'M1'})
+             MARCA=MARCA, MARCA_EQUIVALENTE={'MX': 'M1'}, MARCAS_PROPIAS=PROPIA, WCB_B=99)
+    g.update(extra)
     for c in cells[1:]:
         exec(c, g)
     return g
@@ -969,7 +978,172 @@ chk('nb06b: celdas 2-13 = las del nb06; CELDA 1 con 10 tipos, pesos ENGHo, gramo
     and e6b <= {e for es in g6b['SUBTIPO'].values() for e in es}
     and not (e6b & set(g6b['ADICIONALES'])) and g6b['MES_INICIO_HISTORICO'] == '2025-08'
     and g6b['OUTPUT_DIR'].endswith('output_brecha_amplia') and g6b['PREFIJO_EXCEL'] == 'brecha_celiaca_amplia'
-    and g6b['CBA_ITEMS'][3][2] == 'Pan de molde y de mesa')
+    and g6b['CBA_ITEMS'][3][2] == 'Pan de molde y de mesa'
+    and g6b['MES_INICIO_PARES'] == '2024-01' and g6b['EXCEL_PARES_DETALLE'] is False
+    and all(v_['tipo'] in g6b['TIPOS'] for v_ in g6b['MARCAS_PROPIAS'].values()) and len(g6b['MARCAS_PROPIAS']) > 0)
+
+# ── CELDA 13: pares, brecha en logaritmos y regresión descriptiva ──────────────────────────────────────────────────
+# pares por fuerza bruta: en cada sucursal × mes × subtipo, cada producto sin TACC contra cada con TACC (precio del
+# producto = mediana de sus códigos, ya depurados como en la CELDA 7: B), en $/kg
+B['suc_key'] = B['id_comercio'] + '|' + B['id_bandera'] + '|' + B['id_sucursal']
+PRB = B.groupby(['suc_key', 'mes', 'tipo', 'sub', 'rol', 'prod'], as_index=False)['p100'].median()
+PRB['kg'] = PRB['p100'] * 10
+_kb13 = ['suc_key', 'mes', 'tipo', 'sub']
+PAB = PRB[PRB['rol'] == 'sin'].merge(PRB[PRB['rol'] == 'tacc'], on=_kb13, suffixes=('_s', '_c'))
+PAB['lg'] = np.log(PAB['kg_s']) - np.log(PAB['kg_c'])
+pb13 = g['pares_brecha']
+pbc = pb13[~pb13['es_marca_propia']].merge(PAB.rename(columns={'sub': 'subtipo', 'prod_s': 'producto_sin', 'prod_c': 'producto_con'}),
+                                          on=['suc_key', 'mes', 'tipo', 'subtipo', 'producto_sin', 'producto_con'])
+chk('CELDA 13: pares sin TACC x con TACC por sucursal, mes y subtipo en $/kg = fuerza bruta (log de la razón)',
+    len(pbc) == len(PAB) == int((~pb13['es_marca_propia']).sum())
+    and np.allclose(pbc['log_brecha'], pbc['lg'], rtol=0, atol=1e-12)
+    and np.allclose(pbc['precio_kg_sin'], pbc['kg_s'], rtol=1e-12)
+    and np.allclose(pbc['peso_par'].groupby([pbc['suc_key'], pbc['mes'], pbc['subtipo']]).sum(), 1))
+cb13 = g['celdas_brecha']
+_gm = (np.log(PRB['kg']).groupby([PRB['suc_key'], PRB['mes'], PRB['sub'], PRB['rol']]).mean().unstack('rol').dropna())
+_gm = (_gm['sin'] - _gm['tacc']).rename('lg').reset_index().rename(columns={'sub': 'subtipo'})
+_c13 = cb13.merge(_gm, on=['suc_key', 'mes', 'subtipo'])
+chk('CELDA 13: brecha de la celda = promedio de sus pares = promedio de los ln sin TACC - promedio de los ln con TACC; '
+    'con las medianas, igual a la CELDA 7',
+    len(_c13) == len(cb13) == len(g['bt_sub']) and np.allclose(_c13['log_brecha'], _c13['lg'], atol=1e-12)
+    and g['CONTROL_PARES_CELDA7'] < 1e-12)
+# marca propia: Carrefour (201, 202) en el subtipo C; sus pares con los con TACC de C, la presencia en la góndola (C), en
+# el tipo (D) y en la bandera
+_pl = pb13[pb13['es_marca_propia']]
+_plb = B[(B['sub'] == 'C') & (B['rol'] == 'tacc') & B['id_sucursal'].isin(['201', '202'])].groupby(['suc_key', 'mes', 'prod'])['p100'].median()
+_kl = ['id_comercio', 'id_bandera', 'id_sucursal', 'id_producto', 'mes']
+_prop_obs = (pd.concat(largo, ignore_index=True).groupby(_kl + ['dia'])['precio'].median()
+             .groupby(level=_kl).median().reset_index())
+_pp = _prop_obs[_prop_obs['id_producto'] == '7790000000141'].assign(
+    suc_key=lambda d: d['id_comercio'] + '|' + d['id_bandera'] + '|' + d['id_sucursal'])
+_pp['kg'] = _pp['precio'] / 150 * 1000
+_plx = _pl.merge(_pp[['suc_key', 'mes', 'kg']], on=['suc_key', 'mes'])
+chk('CELDA 13: pares con el sin TACC de marca propia (aparte), presencia en la góndola, en el tipo y en la bandera',
+    len(_pl) == len(_plb) and len(_plx) == len(_pl) and np.allclose(_plx['precio_kg_sin'], _plx['kg'], rtol=1e-9)
+    and set(_pl['subtipo']) == {'C'} and set(_pl['suc_key'].str.split('|').str[2]) == {'201', '202'}
+    and (cb13['marca_propia_subtipo'] == (cb13['suc_key'].str.startswith('10|') & cb13['subtipo'].eq('C'))).all()
+    and (cb13['marca_propia_otro_subtipo'] == (cb13['suc_key'].str.startswith('10|') & cb13['subtipo'].eq('D'))).all()
+    and (cb13['bandera_marca_propia_tipo'] == (cb13['cadena'].eq('Carrefour') & cb13['tipo'].eq('Galletitas dulces'))).all()
+    and abs(cb13.groupby(['subtipo', 'mes'])['peso_engho'].sum().groupby(level='mes').sum().std()) < 1e-9)
+# traducción al gasto: peso ENGHo x brecha de cada tipo (promedio geométrico de sus subtipos), sumado
+_tg = g['traduccion_gasto']
+_tg1 = _tg[_tg['periodo'] == _tg['periodo'].iloc[0]]
+_lt = cb13.groupby(['tipo', 'subtipo'])['log_brecha'].mean().groupby('tipo').mean()
+_sob = sum(PESOS[t] * np.expm1(_lt[t]) for t in PESOS)
+chk('CELDA 13: traducción al gasto = sum peso ENGHo x brecha del tipo; x 22,7% para el gasto total',
+    abs(_tg1.iloc[-1]['sobrecosto_pct_gasto_alimentos'] - _sob) < 1e-9
+    and abs(_tg1.iloc[-1]['sobrecosto_pct_gasto_total'] - _sob * 0.227) < 1e-9)
+# salidas
+_d13 = out / 'pares'
+_x13 = pd.ExcelFile(_d13 / 'brecha_celiaca_pares_2026-03.xlsx')
+_dc13 = pd.read_csv(_d13 / 'diccionario_pares.csv')
+chk('CELDA 13: Excel de resultados y de detalle, parquet, csv.gz, diccionario completo, LEEME y gráficos',
+    {'Leeme', 'Resumen', 'Ajuste_modelos', 'Modelos', 'Descomposicion', 'Descomposicion_sucursales', 'Efectos_cadena',
+     'Efectos_region', 'Efectos_provincia', 'Efectos_departamento', 'Efectos_subtipo', 'Efectos_mes', 'Sucursales',
+     'Serie_mensual', 'Brecha_subtipo', 'Brecha_par', 'Traduccion_gasto', 'Marcas_propias', 'Diccionario', 'Celdas'}
+    <= set(_x13.sheet_names)
+    and len(pd.read_excel(_x13, 'Celdas')) == len(cb13)
+    and len(pd.read_excel(_d13 / 'brecha_celiaca_pares_detalle_2026-03.xlsx', 'Pares')) == len(pb13)
+    and all((_d13 / f'{n}.{e}').exists() for n in ('pares_producto_sucursal_mes', 'celdas_subtipo_sucursal_mes',
+                                                   'sucursales_brecha_propia') for e in ('parquet', 'csv.gz'))
+    and _dc13['descripcion'].notna().all() and (_dc13['descripcion'] != '').all() and (_d13 / 'LEEME.md').exists()
+    and (out / 'pares_descomposicion_032026.png').exists() and set(g['MODELOS13']) >= {'M1', 'M6', 'M7', 'M9', 'M11'})
+# las hojas de Excel de más de EXCEL_MAX_FILAS siguen en otra hoja
+g['EXCEL_MAX_FILAS'] = 7
+g['_excel13'](tmp / 'partido.xlsx', {'Pares': pb13.head(20)})
+_xp = pd.ExcelFile(tmp / 'partido.xlsx')
+chk('CELDA 13: una tabla de más de EXCEL_MAX_FILAS filas sigue en Pares_2, Pares_3...',
+    _xp.sheet_names == ['Pares', 'Pares_2', 'Pares_3']
+    and sum(len(pd.read_excel(_xp, s_)) for s_ in _xp.sheet_names) == 20)
+
+# regresión con efectos fijos ralos, errores agrupados, bootstrap salvaje restringido y Shapley, contra mínimos
+# cuadrados densos sobre datos artificiales con estructura conocida
+rng = np.random.default_rng(7)
+nA = 1500
+A = pd.DataFrame({'subtipo': rng.choice(list('abcde'), nA), 'mes': rng.choice(['m1', 'm2', 'm3', 'm4'], nA),
+                  'cadena': rng.choice([f'c{i}' for i in range(9)], nA), 'region': rng.choice(['r1', 'r2', 'r3'], nA)})
+A['empresa'] = A['cadena'].map({f'c{i}': f'e{i // 2}' for i in range(9)})
+A['suc_key'] = A['cadena'] + '|' + pd.Series(rng.integers(0, 40, nA)).astype(str)
+A['x1'] = (rng.random(nA) < 0.3).astype(float)
+A['x2'] = rng.normal(size=nA) + A['cadena'].str[1].astype(int) * 0.1
+_fe = lambda col, sd: A[col].map({k: rng.normal(0, sd) for k in sorted(A[col].unique())})
+A['log_brecha'] = (0.7 + _fe('subtipo', 0.3) + _fe('mes', 0.05) + _fe('cadena', 0.1) + _fe('region', 0.05)
+                   + 0.08 * A['x1'] - 0.03 * A['x2'] + _fe('cadena', 0.02) + rng.normal(0, 0.1, nA))
+mA = g['_modelo'](A, ['subtipo', 'mes', 'cadena', 'region'], ['x1', 'x2'])
+def _dense(df, fes, xs):
+    cols = [np.ones(len(df))]
+    for f in fes:
+        cols += [(df[f] == k).to_numpy(float) for k in sorted(df[f].unique())[1:]]
+    return np.column_stack(cols + [df[x].to_numpy(float) for x in xs])
+ZA = _dense(A, ['subtipo', 'mes', 'cadena', 'region'], ['x1', 'x2'])
+bA = np.linalg.lstsq(ZA, A['log_brecha'].to_numpy(), rcond=None)[0]
+eA = A['log_brecha'].to_numpy() - ZA @ bA
+def _cr1(Z, e, cl):
+    br = np.linalg.inv(Z.T @ Z)
+    gid = pd.factorize(pd.Series(cl).astype(str))[0]
+    S = np.zeros((gid.max() + 1, Z.shape[1])); np.add.at(S, gid, Z * e[:, None])
+    G = gid.max() + 1
+    return np.sqrt(np.diag(G / (G - 1) * br @ S.T @ S @ br))
+seA = _cr1(ZA, eA, A['cadena'])[-2:]
+ecA = g['_efectos'](mA, A, 'cadena', 'cadena').set_index('cadena')['efecto_log']
+_bc = dict(zip(sorted(A['cadena'].unique())[1:], bA[1 + 4 + 3: 1 + 4 + 3 + 8]))
+chk('CELDA 13: efectos fijos ralos (LSMR) = mínimos cuadrados densos: coeficientes, ajuste, R², errores agrupados (CR1) '
+    'y contrastes de los efectos de cadena',
+    np.allclose(mA['beta'], bA[-2:], atol=1e-8) and np.allclose(mA['fit'], ZA @ bA, atol=1e-8)
+    and abs(mA['r2'] - (1 - (eA ** 2).sum() / ((A['log_brecha'] - A['log_brecha'].mean()) ** 2).sum())) < 1e-9
+    and np.allclose(mA['se']['cadena'][0], seA, rtol=1e-6)
+    and all(abs((ecA[k] - ecA['c0']) - v) < 1e-7 for k, v in _bc.items())
+    and abs((ecA.reindex(A['cadena']).to_numpy()).mean()) < 1e-9)
+# WCR por fuerza bruta: en cada réplica, y* = ajuste restringido + residuo restringido x peso de Webb de su grupo, y se
+# reestima TODO el modelo (efectos fijos incluidos) por mínimos cuadrados densos
+def _wcr_bf(df, j, cl, B_, seed):
+    Z = _dense(df, ['subtipo', 'mes', 'cadena', 'region'], ['x1', 'x2'])
+    y = df['log_brecha'].to_numpy()
+    kx = Z.shape[1] - 2 + j
+    b = np.linalg.lstsq(Z, y, rcond=None)[0]; e = y - Z @ b
+    t0 = b[kx] / _cr1(Z, e, cl)[kx]
+    Zr = np.delete(Z, kx, axis=1)
+    br = np.linalg.lstsq(Zr, y, rcond=None)[0]; fr = Zr @ br; er = y - fr
+    gid, gu = pd.factorize(pd.Series(cl).astype(str))
+    V = np.random.default_rng(seed).choice(g['_WEBB'], size=(B_, len(gu)))
+    ts = []
+    for r in range(B_):
+        ys = fr + er * V[r, gid]
+        bs = np.linalg.lstsq(Z, ys, rcond=None)[0]
+        ts.append(bs[kx] / _cr1(Z, ys - Z @ bs, cl)[kx])
+    return float(np.mean(np.abs(ts) >= abs(t0)))
+_pw = [g['_wcr'](mA, A['cadena'].to_numpy(), j, 99, 11 + j) for j in (0, 1)]
+_pwb = [_wcr_bf(A, j, A['cadena'].to_numpy(), 99, 11 + j) for j in (0, 1)]
+_pwe = g['_wcr'](mA, A['empresa'].to_numpy(), 0, 99, 5)
+_pwbe = _wcr_bf(A, 0, A['empresa'].to_numpy(), 99, 5)
+chk('CELDA 13: bootstrap salvaje por grupos restringido (Webb) = reestimar todo el modelo en cada réplica',
+    _pw == _pwb and _pwe == _pwbe and all(0 <= p_ <= 1 for p_ in _pw))
+_bl = {'S': (['subtipo'], []), 'C': (['cadena'], []), 'X': ([], ['x1', 'x2'])}
+_phi, _rt, _solo = g['_shapley'](A, _bl)
+_R = lambda fes, xs: 1 - ((A['log_brecha'] - _dense(A, fes, xs) @ np.linalg.lstsq(_dense(A, fes, xs), A['log_brecha'], rcond=None)[0]) ** 2).sum() / ((A['log_brecha'] - A['log_brecha'].mean()) ** 2).sum()
+_phiS = (_R(['subtipo'], []) / 3 + (_R(['subtipo', 'cadena'], []) - _R(['cadena'], [])) / 6
+         + (_R(['subtipo'], ['x1', 'x2']) - _R([], ['x1', 'x2'])) / 6
+         + (_R(['subtipo', 'cadena'], ['x1', 'x2']) - _R(['cadena'], ['x1', 'x2'])) / 3)
+chk('CELDA 13: Shapley del R²: suma el R² del modelo completo y el de un bloque = la fórmula a mano',
+    abs(sum(_phi.values()) - _rt) < 1e-9 and abs(_rt - _R(['subtipo', 'cadena'], ['x1', 'x2'])) < 1e-8
+    and abs(_phi['S'] - _phiS) < 1e-8)
+
+# ventana del nb06b: MES_INICIO_PARES antes de MES_INICIO_HISTORICO. Los meses anteriores se leen solo para los pares: la
+# brecha principal queda igual que si no se hubieran leído y los pares, con los filtros de la CELDA 7 sobre toda su ventana,
+# igual a los de la corrida con la canasta desde ese mes (g)
+o3, o4 = tmp / 'out3', tmp / 'out4'
+o3.mkdir(); o4.mkdir()
+g3 = correr(OUTPUT_DIR=str(o3), MES_INICIO_HISTORICO='2026-02', MES_INICIO_PARES='2026-01')
+g4 = correr(OUTPUT_DIR=str(o4), MES_INICIO_HISTORICO='2026-02', MES_INICIO_PARES='2026-02')
+_srt = lambda d, k: d.sort_values(k).reset_index(drop=True)
+_kp13 = ['suc_key', 'mes', 'subtipo', 'producto_sin', 'producto_con']
+chk('CELDA 13 con MES_INICIO_PARES anterior a la canasta (nb06b): la brecha principal no cambia y los pares = los de la '
+    'canasta desde ese mes',
+    g3['datos_lectura'] is not None and g4['datos_lectura'] is None and g3['datos_dia']['mes'].min() == '2026-02'
+    and _srt(g3['bt_sub'], ['suc_key', 'mes', 'subtipo']).equals(_srt(g4['bt_sub'], ['suc_key', 'mes', 'subtipo']))
+    and _srt(g3['serie_mensual'], ['mes']).equals(_srt(g4['serie_mensual'], ['mes']))
+    and _srt(g3['pares_brecha'], _kp13).equals(_srt(g['pares_brecha'], _kp13))
+    and g3['pares_brecha']['mes'].min() == '2026-01' and g4['pares_brecha']['mes'].min() == '2026-02')
 
 print()
 if errores:

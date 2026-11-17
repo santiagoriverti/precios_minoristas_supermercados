@@ -5,8 +5,42 @@ equivalentes con TACC) con las salidas de los notebooks `06_evolucion_brecha_cel
 `06b_brecha_celiaca_canasta_amplia`. Dice qué datos hay, cómo se calcula cada número, qué decisiones de diseño hay
 detrás, qué tener en cuenta para la inferencia y cómo reproducir todo. La documentación técnica completa está en
 [`docs/BRECHA_CELIACA.md`](../BRECHA_CELIACA.md) (§14 la canasta fija, §15 los análisis complementarios, §16 la canasta
-amplia, §17 la segunda revisión de expertos) y las evaluaciones en
+amplia, §17 la segunda revisión de expertos, **§18 los pares y la regresión descriptiva**) y las evaluaciones en
 [`docs/EVALUACION_EXPERTOS_2026-10-27_nb06.md`](../EVALUACION_EXPERTOS_2026-10-27_nb06.md).
+
+## 0. Lo nuevo (2026-11-17): pares, brecha en logaritmos y regresión descriptiva (`pares/`)
+
+**Pregunta de investigación: ¿cuánto más paga un celíaco por el mismo producto en la misma sucursal, y de qué depende
+esa diferencia?** La CELDA 13 de los dos notebooks deja en `output_brecha/pares/` (y `output_brecha_amplia/pares/`) el
+producto de datos para estudiarla (detalle: `docs/BRECHA_CELIACA.md` §18):
+
+| Archivo | Unidad | Para qué |
+|---|---|---|
+| `pares_producto_sucursal_mes` (.parquet, .csv.gz; en el 06 también `*_pares_detalle_*.xlsx`) | **par** = producto sin TACC × producto con TACC del mismo subtipo, en la misma sucursal y mes, desde 2024-01 | `precio_kg_sin`, `precio_kg_con` ($/kg: resuelve las presentaciones de 250 g contra 500 g), **`log_brecha` = ln(precio_kg_sin) − ln(precio_kg_con)**, marcas, `misma_marca`, `es_marca_propia` (pares con el sin TACC de marca propia de la cadena, aparte), `peso_par` = 1 / (n_sin × n_con) |
+| `celdas_subtipo_sucursal_mes` (.parquet, .csv.gz y hoja `Celdas` del Excel) | **celda** = sucursal × mes × subtipo | **`log_brecha` de la celda** (promedio de sus pares: la medida principal y la variable de la regresión), `log_brecha_medianas` (la del Excel principal), precios de cada lado, marca propia sin TACC en la góndola (`marca_propia_subtipo`, `marca_propia_otro_subtipo`, `bandera_marca_propia_tipo`), bandera, empresa, región, provincia, departamento, coordenadas, densidad (sucursales y empresas a ≤ 1, 3 y 10 km), HHI, `peso_engho` |
+| `sucursales_brecha_propia` (.parquet, .csv.gz y hoja `Sucursales`) | sucursal | la **brecha propia** de cada sucursal (su efecto fijo con subtipo y mes) y sus variables: el mapa como resultado |
+| `<prefijo>_pares_AAAA-MM.xlsx` | — | resultados: `Resumen`, `Ajuste_modelos`, `Modelos` (coeficientes con IC y p-valores por bandera, por empresa y del bootstrap salvaje por grupos), `Descomposicion` y `Descomposicion_sucursales` (Shapley), `Efectos_*` (cadena, región, provincia, departamento, subtipo, mes), `Serie_mensual`, `Brecha_subtipo`, `Brecha_par`, `Traduccion_gasto`, `Marcas_propias`, `Diccionario` |
+
+**Modelo principal (M6)**: `log_brecha(celda) = subtipo + mes + bandera + región + b1·marca propia del subtipo + b2·marca
+propia de otro subtipo + b3·ln(sucursales a ≤ 3 km) + b4·HHI del departamento + e`, cada celda pesa 1; versiones con
+provincia o departamento (M8, M9), sin efecto fijo de bandera (M7: la marca propia de la bandera, que no cambia dentro de
+la bandera, solo se identifica así), ponderada por el gasto (M10) y con los mismos pares de productos (M11). **Inferencia:
+mirar los p-valores WCR** (`p_valor_wcr_bandera`, `p_valor_wcr_empresa`): hay 19 banderas y 12 empresas.
+
+**Resultados de la simulación (2024-01 → 2026-11)**: en la misma góndola el sin TACC cuesta el doble (canasta fija:
+brecha mediana de las celdas +102%, brecha propia mediana de las sucursales +102%, p10-p90 +88% a +106%; amplia +105% y
++116%). La categoría de producto explica el 76% (fija) / 82% (amplia) de la variación entre celdas; entre sucursales, la
+**bandera explica el 66% / 72%** y la región el 18% / 13%; con la misma bandera, las regiones difieren en menos de 2%
+(Patagonia −1,8%: la diferencia regional es la de las cadenas, como La Anónima, −10%). La marca propia sin TACC en la
+góndola se asocia con una brecha algo menor (−8% / −3%), no robusta con pocas cadenas (p WCR 0,05 a 0,35); DIA no tiene
+sin TACC de marca propia en estos tipos. Densidad y concentración: menos de 0,1%. Para un hogar que compra sin TACC los
+mismos productos: +5,2% (fija) a +11,0% (amplia) del gasto en alimentos, +1,2% a +2,5% del gasto total.
+
+Para reproducir la regresión en otro software: `celdas_subtipo_sucursal_mes.parquet`, variable `log_brecha`, efectos
+fijos `subtipo`, `mes`, `cadena`, `region` (o `provincia`, o `departamento_id`), variables `marca_propia_subtipo`,
+`marca_propia_otro_subtipo`, `ln_sucursales_3km`, `hhi_departamento`, errores agrupados por `cadena` o `empresa` (en
+Stata, `reghdfe log_brecha marca_propia_subtipo ... , absorb(subtipo mes cadena region) cluster(cadena)` y `boottest`;
+en R, `fixest::feols`). La muestra es la de las celdas con región, departamento y HHI.
 
 ## 1. Qué se mide y qué no
 
@@ -24,7 +58,7 @@ precios del lugar (alquiler, logística, impuestos locales) y la política de pr
 | | Canasta fija 2022-2026 (nb06) | Canasta amplia de la oferta actual (nb06b) |
 |---|---|---|
 | Para qué | **Evolución** de la brecha desde enero de 2022 | **Nivel** de la brecha y costo de la dieta, hoy |
-| Período | ene-2022 → hoy (58 meses en oct-2026) | ago-2025 → hoy (15 meses) |
+| Período | ene-2022 → hoy (58 meses en oct-2026) | ago-2025 → hoy (15 meses); los pares de la CELDA 13, desde ene-2024 |
 | Tipos | 5: fideos secos, galletitas dulces, galletitas saladas y crackers, rebozador, cereales rellenos | 10: los 5 más pan envasado, harinas, premezclas, alfajores y tapas |
 | Productos | 62 productos en 43 líneas (75 códigos), con precio todos los meses | 142 códigos en 109 líneas |
 | Peso en el gasto con gluten (ENGHo) | 41% | 62% |
@@ -40,7 +74,7 @@ SEPA), la calidad nutricional ni el costo de buscar el producto. El costo con la
    (`notebooks/06_evolucion_brecha_celiaca.ipynb`; el amplio, `notebooks/06b_brecha_celiaca_canasta_amplia.ipynb`).
 2. Tener en el Drive, en `MyDrive/carga/`, los zips semestrales del SEPA (`2022A.zip` → `2026B.zip`), `ar.json`,
    `IPC.xlsx` del INDEC (opcional) y la caché de Georef del nb09 (opcional).
-3. Ejecutar todas las celdas. La primera corrida lee los 58 meses (~1 h en el Colab gratuito); con la caché, ~15 min.
+3. Ejecutar todas las celdas. La primera corrida lee los 58 meses (~1 h en el Colab gratuito); con la caché, ~25 min (con la CELDA 13). Desde el 2026-11-17 la primera corrida relee el SEPA (se leen también las marcas propias sin TACC).
 4. Las salidas quedan en `MyDrive/carga/output_brecha/` (el 06b, en `output_brecha_amplia/`): el Excel
    `brecha_celiaca_AAAA-MM.xlsx` (hojas `Leeme` y `Resumen` primero), los gráficos, los mapas y la carpeta **`datos/`**.
 
@@ -171,10 +205,12 @@ controles, con empresa, con empresa y región; errores por departamento y por em
 ## 12. Reproducibilidad
 
 - El código está en el repositorio (`notebooks/gen_nb06.py` genera los dos notebooks). Test con fuerza bruta:
-  `python notebooks/test_brecha_celiaca.py` (cada número contra un cálculo directo, sobre un SEPA sintético).
-- Resultados esperados de la corrida de referencia: `docs/brecha_celiaca/simulacion_2026-10-27b/` (nb06) y
-  `simulacion_06b_2026-10-27b/` (nb06b), un CSV por hoja. Para comparar el Excel de una corrida:
-  `python -I -X utf8 docs/auditoria/scripts_nb06_2026-10/s16_comparar_colab.py <Excel> docs/brecha_celiaca/simulacion_2026-10-27b`.
+  `python notebooks/test_brecha_celiaca.py` (64 controles: cada número contra un cálculo directo, sobre un SEPA sintético).
+- Resultados esperados de la corrida de referencia (zips del Drive del 17/11, último mes 2026-11):
+  `docs/brecha_celiaca/simulacion_2026-11-17/` (nb06) y `simulacion_06b_2026-11-17/` (nb06b), un CSV por hoja, con
+  `pares/` (el Excel de pares). Para comparar el Excel de una corrida:
+  `python -I -X utf8 docs/auditoria/scripts_nb06_2026-10/s16_comparar_colab.py <Excel> docs/brecha_celiaca/simulacion_2026-11-17`
+  (y el de pares contra `.../simulacion_2026-11-17/pares`).
 - La lista de productos con sus métricas: `canasta_fija_2022_2026.csv` y `canasta_amplia_2025_2026.csv`; los que quedan
   afuera: `productos_sensibilidad*.csv`. Las reglas de la selección: `docs/BRECHA_CELIACA.md` §14 y §16.
 
