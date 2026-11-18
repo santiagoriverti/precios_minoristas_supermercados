@@ -84,7 +84,8 @@ parquet y csv.gz, diccionario, LEEME). Resultados (2024-01 → 2026-11): fija, b
 bandera explica el 66% de la variación entre sucursales y la categoría el 76% entre celdas, regiones ±2% con la misma
 bandera; amplia +105%, 72%, 82%; marca propia −8% / −3% (no robusto, p WCR 0,05-0,35). Test 64 controles; suite 16/16.
 Esperados vigentes `docs/brecha_celiaca/simulacion_2026-11-17/` y `simulacion_06b_2026-11-17/` (con `pares/`).
-**Falta la corrida de Colab** (relee el SEPA).
+**2026-11-18, BUG-52**: la CELDA 13 del 06b agotaba la RAM de Colab al exportar; corregido (lectura compacta, tablas
+intermedias liberadas, pares categóricos; pico 9,4 → 6,9 GB, mismos resultados). **Falta la corrida de Colab.**
 
 El **nb07** (`notebooks/07_evolucion_canastas_alternativas.ipynb`) es el motor del
 informe semanal: 6 canastas, índice encadenado, comparación con el IPC y aperturas por cadena/región.

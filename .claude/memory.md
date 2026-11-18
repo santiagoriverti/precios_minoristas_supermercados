@@ -66,8 +66,13 @@ Autor: Santiago Riverti — investigador independiente
      +105% / +116%, 72%, 82%; marca propia −8% / −3% (p WCR 0,05-0,35); densidad y HHI < 0,1%; gasto +5,2% / +11,0% de
      alimentos. Los números que citaba el usuario (+92 a +129%, NOA/Cuyo +115/120 vs Patagonia +101) no coinciden con
      las hojas: usar los de §18.8.
-   - **Siguiente**: el usuario corre los dos notebooks en Colab (botones del README) y se compara con `s16` contra
-     `docs/brecha_celiaca/simulacion_2026-11-17` (y `/pares`) y `simulacion_06b_2026-11-17`.
+   - **2026-11-18, BUG-52**: la primera corrida de Colab del 06b llegó al final de la CELDA 13 y se quedó sin RAM al
+     exportar `pares/` (el Excel principal, `datos/` y la regresión impresa estaban bien = simulación). Arreglo sin
+     cambiar resultados: `datos_lectura` compacta (CELDA 7), la CELDA 13 libera las tablas intermedias de las celdas
+     anteriores y `datos_lectura` (`_LECTURA_PARES_LIBERADA`), pares categóricos, M11 con sus columnas, `_ls` en una
+     copia; pico 9,4 → 6,9 GB (PC). Banco por secciones: `proyectos\nb06_brecha_celiaca_20261023\ram\banco13.py`.
+   - **Siguiente**: el usuario vuelve a correr el 06b (no relee: caché del 18/11 en el Drive) y el 06; se compara con
+     `s16` contra `docs/brecha_celiaca/simulacion_2026-11-17` (y `/pares`) y `simulacion_06b_2026-11-17`.
 
 1. **Brecha celíaca (nb06 y nb06b) — lo último, 2026-10-27 noche: segunda revisión de expertos** (EVALUACION_EXPERTOS
    §14, BRECHA_CELIACA §17, guía `docs/brecha_celiaca/GUIA_INVESTIGADORES.md`). El usuario pidió revisar, como el mejor

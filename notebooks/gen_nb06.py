@@ -972,7 +972,10 @@ cells.append(cell_code(r"""# ===================================================
 datos_propias = datos_dia[datos_dia['ean_norm'].isin(globals().get('EANS_PROPIAS', set()))].copy()
 datos_lectura = None
 if (datos_dia['mes'] < MES_INICIO_HISTORICO).any():
-    datos_lectura = datos_dia
+    # para los pares alcanzan los códigos de la canasta y estas columnas (RAM: la lectura del nb06b tiene ~9 millones de
+    # filas con los ADICIONALES y las marcas propias, y queda en memoria hasta la CELDA 13)
+    datos_lectura = datos_dia.loc[datos_dia['ean_norm'].isin(EANS_CONFIG),
+                                  ['id_comercio','id_bandera','id_sucursal','ean_norm','mes','precio']].reset_index(drop=True)
     datos_dia = datos_dia[datos_dia['mes'] >= MES_INICIO_HISTORICO].reset_index(drop=True)
     print(f'  Meses {datos_lectura["mes"].min()} → {MES_INICIO_HISTORICO} (anteriores a la ventana de la canasta): solo para '
           f'los pares de la CELDA 13 ({(datos_lectura["mes"] < MES_INICIO_HISTORICO).sum():,} obs)')
@@ -4298,6 +4301,16 @@ import time as _time13
 from scipy import sparse as _sps
 from scipy.sparse.linalg import lsmr as _lsmr
 _t13 = _time13.time()
+# RAM: las tablas intermedias de las celdas anteriores (nombres con guion bajo: _dd8, _dv, _pm, _av... ~7 GB en el nb06b)
+# ya no se usan; se liberan antes de armar los pares (en Colab la sesión se quedaba sin RAM al exportar)
+_libres = [_k for _k, _v in list(globals().items()) if _k.startswith('_') and not _k.startswith('__')
+           and isinstance(_v, (pd.DataFrame, pd.Series, np.ndarray))
+           and (_v.memory_usage(deep=False).sum() if isinstance(_v, pd.DataFrame)
+                else (_v.memory_usage(deep=False) if isinstance(_v, pd.Series) else _v.nbytes)) > 20e6]
+for _k in _libres:
+    del globals()[_k]
+gc.collect()
+print(f'Memoria: {len(_libres)} tablas intermedias de las celdas anteriores liberadas')
 _MP = globals().get('MES_INICIO_PARES') or MES_INICIO_HISTORICO
 _sk = ['id_comercio','id_bandera','id_sucursal']
 _kc = ['suc_key','mes','tipo','subtipo']
@@ -4311,11 +4324,12 @@ _PROD13 = {_norm_ean(_e): _p for _p, _es in globals().get('PRODUCTO', {}).items(
 def _depurar_pares(_d):
     # Los filtros de la CELDA 7, en el mismo orden, sobre otra ventana de meses (el nb06b compara pares desde
     # MES_INICIO_PARES aunque su canasta empieza en MES_INICIO_HISTORICO). Sobre la ventana de la canasta da lo mismo que
-    # la CELDA 7 (lo verifica el test).
-    _d = _d.copy()
+    # la CELDA 7 (lo verifica el test). Primero se quedan solo los códigos de la canasta y las columnas que se usan: la
+    # lectura del nb06b trae ~9 millones de filas (también los ADICIONALES y las marcas propias) y la RAM de Colab es justa.
+    _d = _d.loc[_d['ean_norm'].isin(set(EAN_TIPO)) & ~_d['id_comercio'].isin(CADENAS_FILTRAR),
+                ['id_comercio','id_bandera','id_sucursal','ean_norm','mes','precio']].copy()
     _d['tipo'] = _d['ean_norm'].map(EAN_TIPO)
     _d['rol'] = _d['ean_norm'].map(EAN_ROL)
-    _d = _d[_d['tipo'].notna() & ~_d['id_comercio'].isin(CADENAS_FILTRAR)].copy()
     if _VIG13:
         _vd = _d['ean_norm'].map({_e: _v[0] for _e, _v in _VIG13.items()})
         _vh = _d['ean_norm'].map({_e: _v[1] for _e, _v in _VIG13.items()})
@@ -4337,7 +4351,15 @@ def _depurar_pares(_d):
     _d['subtipo'] = _d['ean_norm'].map(EAN_SUBTIPO)
     return _d
 
+if datos_lectura is None and globals().get('_LECTURA_PARES_LIBERADA'):
+    raise RuntimeError('La CELDA 13 ya liberó los meses anteriores a la canasta (para no agotar la RAM de Colab): para '
+                       'volver a correrla, ejecutá el notebook desde la CELDA 6 (con el caché no relee el SEPA).')
 _base13 = datos_dia if datos_lectura is None else _depurar_pares(datos_lectura)
+if datos_lectura is not None:
+    # los meses anteriores a la canasta (crudos, ~9 millones de filas en el nb06b) ya no hacen falta: se liberan
+    datos_lectura = None
+    _LECTURA_PARES_LIBERADA = True
+    gc.collect()
 _U13 = suc_geo[_sk + ['suc_key']].drop_duplicates('suc_key')
 _base13 = _base13[_base13['mes'] >= _MP].merge(_U13, on=_sk, how='inner')
 _MN13 = {_norm_ean(_e): str(_m).strip().upper() for _e, _m in globals().get('MARCA', {}).items() if _norm_ean(_e) and _m}
@@ -4378,43 +4400,74 @@ _ppl['precio_kg'] = _ppl['precio_100'] * 10
 _ppl['_n'] = _ppl.groupby(_kc)['producto'].transform('size')
 
 # ── 2. Pares ────────────────────────────────────────────────────────────────────────────────────────────────────────
+# RAM: los pares (~3,5 millones en el nb06b) se arman con columnas CATEGÓRICAS (códigos): la sucursal, el mes, el subtipo
+# y los productos se repiten millones de veces y como texto ocupaban varios GB (Colab se quedaba sin RAM)
+for _c in _kc + ['producto']:
+    _pp13[_c] = _pp13[_c].astype('category')
+_cprod = sorted(set(_pp13['producto'].cat.categories) | set(_ppl['producto'].astype(str)))
 _cp = ['producto','precio_kg','gramos','_n']
-_c13 = _pp13[_pp13['rol'] == 'tacc'][_kc + _cp]
-pares_brecha = pd.concat([
-    _pp13[_pp13['rol'] == 'sin'][_kc + _cp].merge(_c13, on=_kc, suffixes=('_sin','_con')).assign(es_marca_propia=False),
-    _ppl[_kc + _cp].merge(_c13, on=_kc, suffixes=('_sin','_con')).assign(es_marca_propia=True)], ignore_index=True)
+_c13 = _pp13[_pp13['rol'] == 'tacc'][_kc + _cp].copy()
+_s13 = _pp13[_pp13['rol'] == 'sin'][_kc + _cp].copy()
+_l13 = _ppl[_kc + _cp].copy()
+for _c in _kc:                                   # las celdas de las marcas propias, con las categorías de la canasta
+    _l13[_c] = pd.Categorical(_l13[_c].astype(str), categories=_pp13[_c].cat.categories)
+_l13 = _l13.dropna(subset=_kc)                   # (una celda sin productos de la canasta no forma pares)
+for _d in (_c13, _s13):
+    _d['producto'] = _d['producto'].cat.set_categories(_cprod)
+_l13['producto'] = pd.Categorical(_l13['producto'].astype(str), categories=_cprod)
+pares_brecha = pd.concat([_s13.merge(_c13, on=_kc, suffixes=('_sin','_con')).assign(es_marca_propia=False),
+                          _l13.merge(_c13, on=_kc, suffixes=('_sin','_con')).assign(es_marca_propia=True)], ignore_index=True)
+del _s13, _l13
 pares_brecha = pares_brecha.rename(columns={'_n_sin': 'n_sin', '_n_con': 'n_con'})
 pares_brecha['log_brecha'] = np.log(pares_brecha['precio_kg_sin']) - np.log(pares_brecha['precio_kg_con'])
 pares_brecha['brecha_pct'] = 100 * np.expm1(pares_brecha['log_brecha'])
 pares_brecha['peso_par'] = 1 / (pares_brecha['n_sin'] * pares_brecha['n_con'])
+# descripción y marca: las de la canasta y, para los sin TACC de marca propia (sus códigos), las de MARCAS_PROPIAS
 _dpl = {_e: _v.get('descripcion') for _e, _v in _PI.items()}
-pares_brecha['descripcion_sin'] = np.where(pares_brecha['es_marca_propia'], pares_brecha['producto_sin'].map(_dpl),
-                                           pares_brecha['producto_sin'].map(_desc_prod))
-pares_brecha['descripcion_con'] = pares_brecha['producto_con'].map(_desc_prod)
-pares_brecha['marca_sin'] = np.where(pares_brecha['es_marca_propia'],
-                                     pares_brecha['producto_sin'].map({_e: str(_v.get('marca')).upper() for _e, _v in _PI.items()}),
-                                     pares_brecha['producto_sin'].map(_mar_prod))
-pares_brecha['marca_con'] = pares_brecha['producto_con'].map(_mar_prod)
-_mq = lambda _s: _s.map(lambda _m: _MEQ13.get(_m, _m) if isinstance(_m, str) else None)
-pares_brecha['misma_marca'] = (_mq(pares_brecha['marca_sin']) == _mq(pares_brecha['marca_con'])) & pares_brecha['marca_sin'].notna()
-pares_brecha['par'] = pares_brecha['producto_sin'].astype(str) + ' | ' + pares_brecha['producto_con'].astype(str)
+_dmap = {**{_k: _v for _k, _v in _desc_prod.items()}, **_dpl}
+_mmap = {**{_k: _v for _k, _v in _mar_prod.items()}, **{_e: str(_v.get('marca')).upper() for _e, _v in _PI.items()}}
+for _lado_ in ('sin', 'con'):
+    pares_brecha[f'descripcion_{_lado_}'] = pares_brecha[f'producto_{_lado_}'].map(_dmap)
+    pares_brecha[f'marca_{_lado_}'] = pares_brecha[f'producto_{_lado_}'].map(_mmap)
+_mq = lambda _s: _s.astype(object).map(lambda _m: _MEQ13.get(_m, _m) if isinstance(_m, str) else None)
+pares_brecha['misma_marca'] = ((_mq(pares_brecha['marca_sin']) == _mq(pares_brecha['marca_con']))
+                               & pares_brecha['marca_sin'].notna()).astype(bool)
+# par = "producto sin TACC | producto con TACC", por los códigos de las dos categorías (sin armar millones de textos)
+_K13 = len(_cprod) + 1
+_cod = (pares_brecha['producto_sin'].cat.codes.to_numpy(np.int64) * _K13
+        + pares_brecha['producto_con'].cat.codes.to_numpy(np.int64))
+_uq, _inv = np.unique(_cod, return_inverse=True)
+pares_brecha['par'] = pd.Categorical.from_codes(_inv.ravel(), categories=[f'{_cprod[_u // _K13]} | {_cprod[_u % _K13]}'
+                                                                          for _u in _uq])
+del _cod, _inv
 pares_brecha = pares_brecha[_kc + ['par','producto_sin','descripcion_sin','marca_sin','producto_con','descripcion_con',
                                    'marca_con','misma_marca','es_marca_propia','gramos_sin','gramos_con','precio_kg_sin',
                                    'precio_kg_con','log_brecha','brecha_pct','n_sin','n_con','peso_par']]
 pares_brecha = pares_brecha.sort_values(_kc + ['es_marca_propia','producto_sin','producto_con']).reset_index(drop=True)
+# RAM: las columnas de texto (sucursal, mes, productos, descripciones y marcas, repetidas millones de veces en el nb06b)
+# pasan a categóricas; los groupby de abajo usan observed=True
+for _c in list(pares_brecha.columns):
+    if pares_brecha[_c].dtype == object:
+        pares_brecha[_c] = pares_brecha[_c].astype('category')
+gc.collect()
 _pb = pares_brecha[~pares_brecha['es_marca_propia']]
-print(f'Pares ({_MP} → {ULTIMO_MES}): {len(_pb):,} de la canasta en {_pb.groupby(_kc).ngroups:,} celdas '
+print(f'Pares ({_MP} → {ULTIMO_MES}): {len(_pb):,} de la canasta en {_pb.groupby(_kc, observed=True).ngroups:,} celdas '
       f'(sucursal × mes × subtipo) de {_pb["suc_key"].nunique():,} sucursales; {int(pares_brecha["es_marca_propia"].sum()):,} '
       f'con un sin TACC de marca propia' + (f' (fuera por plausibilidad: {sorted(_bad_pr)})' if _bad_pr else ''))
 
 # ── 3. Celdas: brecha en logaritmos por sucursal × mes × subtipo, con la sucursal y su entorno ──────────────────────
-celdas_brecha = (_pb.groupby(_kc).agg(log_brecha=('log_brecha','mean'), n_pares=('log_brecha','size'),
+celdas_brecha = (_pb.groupby(_kc, observed=True).agg(log_brecha=('log_brecha','mean'), n_pares=('log_brecha','size'),
                                       n_sin=('n_sin','first'), n_con=('n_con','first'),
                                       hay_par_misma_marca=('misma_marca','any')).reset_index())
-_lado = _pp13.assign(_l=np.log(_pp13['precio_kg'])).groupby(_kc + ['rol']).agg(_med=('precio_kg','median'), _geo=('_l','mean'))
-_lado = _lado.unstack('rol')
+for _c in _kc:
+    celdas_brecha[_c] = celdas_brecha[_c].astype(str)
+_lado = (_pp13.assign(_l=np.log(_pp13['precio_kg'])).groupby(_kc + ['rol'], observed=True)
+         .agg(_med=('precio_kg','median'), _geo=('_l','mean')).unstack('rol'))
 _lado.columns = [f'{_a}_{_b}' for _a, _b in _lado.columns]
-celdas_brecha = celdas_brecha.join(_lado, on=_kc)
+_lado = _lado.reset_index()
+for _c in _kc:
+    _lado[_c] = _lado[_c].astype(str)
+celdas_brecha = celdas_brecha.merge(_lado, on=_kc, how='left')
 celdas_brecha['precio_kg_sin_geo'] = np.exp(celdas_brecha.pop('_geo_sin'))
 celdas_brecha['precio_kg_con_geo'] = np.exp(celdas_brecha.pop('_geo_tacc'))
 celdas_brecha['precio_kg_sin_mediana'] = celdas_brecha.pop('_med_sin')
@@ -4427,6 +4480,8 @@ _chk = celdas_brecha.merge(bt_sub.assign(_lb=np.log(bt_sub['sin'] / bt_sub['tacc
 CONTROL_PARES_CELDA7 = float((_chk['log_brecha_medianas'] - _chk['_lb']).abs().max()) if len(_chk) else float('nan')
 print(f'  Control: en {len(_chk):,} celdas de la ventana de la canasta, la brecha de las medianas = la de la CELDA 7 '
       f'(diferencia máxima {CONTROL_PARES_CELDA7:.1e})')
+del _base13, _pp13, _ppl, _prp, _c13, _lado, _chk     # RAM: los precios por producto ya están en los pares y las celdas
+gc.collect()
 
 # densidad: sucursales y empresas del universo a <= cada radio (haversine), como la competencia local de la CELDA 8c
 _RAD13 = tuple(sorted(set(globals().get('RADIOS_DENSIDAD_KM', (1, 3, 10)))))
@@ -4486,7 +4541,12 @@ def _diseno(_df, _fes, _xs=()):
     # constante + TODAS las indicadoras de cada bloque de efectos fijos (LSMR resuelve la colinealidad entre bloques) + _xs
     _mats, _info, _pos = [_sps.csr_matrix(np.ones((len(_df), 1)))], [], 1
     for _b in _fes:
-        _c, _u = pd.factorize(_df[_b].astype(str), sort=True)
+        _col = _df[_b]
+        if isinstance(_col.dtype, pd.CategoricalDtype) and _col.notna().all():
+            _c, _u = pd.factorize(_col, sort=True)      # categórica (los pares de M11): sin pasar millones de filas a texto
+            _u = [str(_x) for _x in _u]
+        else:
+            _c, _u = pd.factorize(_col.astype(str), sort=True)
         _mats.append(_sps.csr_matrix((np.ones(len(_c)), (np.arange(len(_c)), _c)), shape=(len(_c), len(_u))))
         _info.append((_b, list(_u), _c, _pos)); _pos += len(_u)
     for _x in _xs:
@@ -4497,10 +4557,15 @@ _LSMR_AVISOS = []
 def _ls(_A, _v, _sw):
     # mínimos cuadrados ponderados min || sw (v - A b) || por LSMR con las columnas escaladas (las indicadoras de
     # frecuencias muy distintas convergen mucho más rápido); devuelve b y A b
-    _Aw = _sps.diags(_sw) @ _A
-    _nc = np.sqrt(np.asarray(_Aw.multiply(_Aw).sum(axis=0))).ravel()
+    # (filas por sw y columnas por su norma en una sola copia de la matriz: con millones de filas, cada copia pesa)
+    _A = _A.tocsr()
+    _rw = np.repeat(_sw, np.diff(_A.indptr))
+    _nc = np.sqrt(np.bincount(_A.indices, weights=(_A.data * _rw) ** 2, minlength=_A.shape[1]))
     _nc[_nc == 0] = 1.0
-    _r = _lsmr(_Aw @ _sps.diags(1 / _nc), _sw * _v, atol=1e-10, btol=1e-10, maxiter=20000)
+    _As = _sps.csr_matrix((_A.data * _rw / _nc[_A.indices], _A.indices, _A.indptr), shape=_A.shape)
+    del _rw
+    _r = _lsmr(_As, _sw * _v, atol=1e-10, btol=1e-10, maxiter=20000)
+    del _As
     if _r[1] not in (0, 1, 2, 4, 5):
         _LSMR_AVISOS.append(int(_r[1]))
     _b = _r[0] / _nc
@@ -4689,8 +4754,19 @@ for _cod, _des, _fes, _xs, _wcol, _boot in _MODS:
                                           if _boot else float('nan'))
         _filas_m.append(_row)
     print(f'  {_cod} {_des}: R² {_m["r2"]:.3f}' + (f', R² dentro {_m["r2_within"]:.3f}' if _xs else ''))
+    if _cod not in ('M6', 'M8', 'M9'):        # RAM: solo M6, M8 y M9 guardan lo que hace falta para sus efectos fijos
+        for _k in ('D', 'Xt', 'yt', 'e', 'fit', 'y', 'w', 'sw', 'fe', 'info'):
+            _m.pop(_k, None)
+    gc.collect()
 # M11: los MISMOS PARES de productos (efecto fijo del par) a nivel par, cada celda pesa 1
-_pr11 = _pb.merge(_reg[_kc + ['cadena','empresa','region'] + _XS], on=_kc, how='inner')
+# (RAM: solo las columnas que usa el modelo, con las claves categóricas de los pares)
+_rk = _reg[_kc + ['cadena','empresa','region'] + _XS].copy()
+for _c in _kc:
+    _rk[_c] = pd.Categorical(_rk[_c], categories=_pb[_c].cat.categories)
+for _c in ('cadena', 'empresa', 'region'):
+    _rk[_c] = _rk[_c].astype('category')
+_pr11 = _pb[_kc + ['par','peso_par','log_brecha']].merge(_rk, on=_kc, how='inner')
+del _rk
 if len(_pr11) >= 20 and _XS:
     _m = _modelo(_pr11, ['par','mes','cadena','region'], _XS, _pr11['peso_par'].to_numpy(float))
     MODELOS13['M11'] = _m
@@ -4710,6 +4786,13 @@ if len(_pr11) >= 20 and _XS:
                          f'p_valor_wcr_{_lab}': float('nan')})
         _filas_m.append(_row)
     print(f'  M11 mismos pares: R² {_m["r2"]:.3f}, R² dentro {_m["r2_within"]:.3f}')
+    for _k in ('D', 'Xt', 'yt', 'e', 'fit', 'y', 'w', 'sw', 'fe', 'info'):
+        _m.pop(_k, None)
+# números de los pares para el Resumen; después se liberan las copias a nivel par
+_N_PB = len(_pb)
+_MM_PB = 100 * np.expm1(_pb.loc[_pb['misma_marca'], 'log_brecha'].mean()) if _pb['misma_marca'].any() else float('nan')
+del _pb, _pr11
+gc.collect()
 modelos_pares = pd.DataFrame(_filas_m)
 ajuste_pares = pd.DataFrame(_filas_a)
 if len(modelos_pares):
@@ -4774,6 +4857,11 @@ if len(_reg) >= 20:
                              'r2_solo': _solo[_b], 'r2_modelo_completo': _rt, 'sucursales': len(_ss),
                              'pct_variacion_celdas_entre_sucursales': 100 * (_msu['r2'] - _r2_sm)})
 descomposicion_sucursales = pd.DataFrame(_filas_s)
+# RAM: los efectos fijos ya están en sus tablas; los modelos guardan solo coeficientes, errores y R²
+for _m_ in list(MODELOS13.values()) + ([_msu] if '_msu' in globals() else []):
+    for _k in ('D', 'Xt', 'yt', 'e', 'fit', 'y', 'w', 'sw', 'fe', 'info'):
+        _m_.pop(_k, None)
+gc.collect()
 if len(descomposicion_pares):
     print('\n=== Descomposición de la variación de la brecha (Shapley del R², % de la variación entre celdas) ===')
     print(descomposicion_pares.pivot_table(index='bloque', columns='geografia', values='pct_de_la_variacion').round(1).to_string())
@@ -4809,7 +4897,8 @@ brecha_subtipo_pares = pd.concat([_por_subtipo(_cb).assign(periodo=f'{_MP} → {
                                       periodo=f'últimos 12 meses ({_ult12[0]} → {_ult12[-1]})' if _ult12 else '')],
                                  ignore_index=True) if len(_cb) else pd.DataFrame()
 brecha_par = (pares_brecha.groupby(['tipo','subtipo','es_marca_propia','producto_sin','descripcion_sin','marca_sin',
-                                    'producto_con','descripcion_con','marca_con','misma_marca'], dropna=False)
+                                    'producto_con','descripcion_con','marca_con','misma_marca'], dropna=False,
+                                   observed=True)
               .agg(celdas=('log_brecha','size'), sucursales=('suc_key','nunique'), meses=('mes','nunique'),
                    log_brecha_media=('log_brecha','mean'), _med=('log_brecha','median'),
                    precio_kg_sin_mediana=('precio_kg_sin','median'), precio_kg_con_mediana=('precio_kg_con','median'))
@@ -4863,7 +4952,7 @@ marcas_propias_uso = pd.DataFrame(_mpu)
 _rs = []
 def _r(_tema, _ind, _v, _u='%', _hoja=''):
     _rs.append({'tema': _tema, 'indicador': _ind, 'valor': _v, 'unidad': _u, 'hoja': _hoja})
-_r('Datos', f'Pares de la canasta ({_MP} → {ULTIMO_MES})', len(_pb), 'pares', 'Celdas / pares_detalle')
+_r('Datos', f'Pares de la canasta ({_MP} → {ULTIMO_MES})', _N_PB, 'pares', 'Celdas / pares_detalle')
 _r('Datos', 'Celdas (sucursal × mes × subtipo)', len(_cb), 'celdas', 'Celdas')
 _r('Datos', 'Sucursales', _cb['suc_key'].nunique(), 'sucursales', 'Sucursales')
 _r('Datos', 'Celdas con todas las variables (muestra de la regresión)', len(_reg), 'celdas', 'Ajuste_modelos')
@@ -4875,8 +4964,7 @@ if len(_cb):
     _r('Brecha', 'Brecha media de las celdas, últimos 12 meses', 100 * np.expm1(_cu['log_brecha'].mean()), '%', 'Serie_mensual')
     _r('Brecha', 'Brecha media ponderada por el gasto (ENGHo), últimos 12 meses',
        100 * np.expm1(np.average(_cu['log_brecha'], weights=_cu['peso_engho'])), '%', 'Serie_mensual')
-    _r('Brecha', 'Pares de la misma marca: brecha media', 100 * np.expm1(_pb.loc[_pb['misma_marca'], 'log_brecha'].mean())
-       if _pb['misma_marca'].any() else float('nan'), '%', 'Brecha_par')
+    _r('Brecha', 'Pares de la misma marca: brecha media', _MM_PB, '%', 'Brecha_par')
     _plm = pares_brecha[pares_brecha['es_marca_propia']]
     _r('Brecha', 'Pares con un sin TACC de marca propia: brecha media (no entra en la medida principal)',
        100 * np.expm1(_plm['log_brecha'].mean()) if len(_plm) else float('nan'), '%', 'Brecha_par')
@@ -4981,6 +5069,13 @@ for _r_ in _RAD13:
     _DIC13[f'sucursales_{_r_}km'] = f'Sucursales del universo a <= {_r_} km (incluida ella): densidad.'
     _DIC13[f'empresas_{_r_}km'] = f'Empresas con sucursales a <= {_r_} km (incluida la suya).'
     _DIC13[f'ln_sucursales_{_r_}km'] = f'ln(sucursales_{_r_}km).'
+# RAM: las columnas de texto de los paneles grandes pasan a categóricas (los ~3,5 millones de pares del nb06b, con sus
+# códigos y descripciones repetidos, ocupaban varios GB y la exportación a parquet los duplicaba)
+for _df_ in (pares_brecha, celdas_brecha, sucursales_pares):
+    for _c in list(_df_.columns):
+        if _df_[_c].dtype == object:
+            _df_[_c] = _df_[_c].astype('category')
+gc.collect()
 if globals().get('EXPORTAR_PARES', True) and len(_cb):
     _dir13 = OUTPUT_DIR / 'pares'
     _dir13.mkdir(parents=True, exist_ok=True)

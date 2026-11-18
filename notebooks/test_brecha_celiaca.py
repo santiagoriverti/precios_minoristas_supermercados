@@ -998,7 +998,7 @@ chk('CELDA 13: pares sin TACC x con TACC por sucursal, mes y subtipo en $/kg = f
     len(pbc) == len(PAB) == int((~pb13['es_marca_propia']).sum())
     and np.allclose(pbc['log_brecha'], pbc['lg'], rtol=0, atol=1e-12)
     and np.allclose(pbc['precio_kg_sin'], pbc['kg_s'], rtol=1e-12)
-    and np.allclose(pbc['peso_par'].groupby([pbc['suc_key'], pbc['mes'], pbc['subtipo']]).sum(), 1))
+    and np.allclose(pbc['peso_par'].groupby([pbc['suc_key'], pbc['mes'], pbc['subtipo']], observed=True).sum(), 1))
 cb13 = g['celdas_brecha']
 _gm = (np.log(PRB['kg']).groupby([PRB['suc_key'], PRB['mes'], PRB['sub'], PRB['rol']]).mean().unstack('rol').dropna())
 _gm = (_gm['sin'] - _gm['tacc']).rename('lg').reset_index().rename(columns={'sub': 'subtipo'})
@@ -1024,11 +1024,11 @@ chk('CELDA 13: pares con el sin TACC de marca propia (aparte), presencia en la g
     and (cb13['marca_propia_subtipo'] == (cb13['suc_key'].str.startswith('10|') & cb13['subtipo'].eq('C'))).all()
     and (cb13['marca_propia_otro_subtipo'] == (cb13['suc_key'].str.startswith('10|') & cb13['subtipo'].eq('D'))).all()
     and (cb13['bandera_marca_propia_tipo'] == (cb13['cadena'].eq('Carrefour') & cb13['tipo'].eq('Galletitas dulces'))).all()
-    and abs(cb13.groupby(['subtipo', 'mes'])['peso_engho'].sum().groupby(level='mes').sum().std()) < 1e-9)
+    and abs(cb13.groupby(['subtipo', 'mes'], observed=True)['peso_engho'].sum().groupby(level='mes').sum().std()) < 1e-9)
 # traducción al gasto: peso ENGHo x brecha de cada tipo (promedio geométrico de sus subtipos), sumado
 _tg = g['traduccion_gasto']
 _tg1 = _tg[_tg['periodo'] == _tg['periodo'].iloc[0]]
-_lt = cb13.groupby(['tipo', 'subtipo'])['log_brecha'].mean().groupby('tipo').mean()
+_lt = cb13.groupby(['tipo', 'subtipo'], observed=True)['log_brecha'].mean().groupby('tipo', observed=True).mean()
 _sob = sum(PESOS[t] * np.expm1(_lt[t]) for t in PESOS)
 chk('CELDA 13: traducción al gasto = sum peso ENGHo x brecha del tipo; x 22,7% para el gasto total',
     abs(_tg1.iloc[-1]['sobrecosto_pct_gasto_alimentos'] - _sob) < 1e-9
@@ -1139,11 +1139,12 @@ _srt = lambda d, k: d.sort_values(k).reset_index(drop=True)
 _kp13 = ['suc_key', 'mes', 'subtipo', 'producto_sin', 'producto_con']
 chk('CELDA 13 con MES_INICIO_PARES anterior a la canasta (nb06b): la brecha principal no cambia y los pares = los de la '
     'canasta desde ese mes',
-    g3['datos_lectura'] is not None and g4['datos_lectura'] is None and g3['datos_dia']['mes'].min() == '2026-02'
+    g3.get('_LECTURA_PARES_LIBERADA') is True and g4.get('_LECTURA_PARES_LIBERADA') is None
+    and g3['datos_dia']['mes'].min() == '2026-02'
     and _srt(g3['bt_sub'], ['suc_key', 'mes', 'subtipo']).equals(_srt(g4['bt_sub'], ['suc_key', 'mes', 'subtipo']))
     and _srt(g3['serie_mensual'], ['mes']).equals(_srt(g4['serie_mensual'], ['mes']))
     and _srt(g3['pares_brecha'], _kp13).equals(_srt(g['pares_brecha'], _kp13))
-    and g3['pares_brecha']['mes'].min() == '2026-01' and g4['pares_brecha']['mes'].min() == '2026-02')
+    and g3['pares_brecha']['mes'].astype(str).min() == '2026-01' and g4['pares_brecha']['mes'].astype(str).min() == '2026-02')
 
 print()
 if errores:
