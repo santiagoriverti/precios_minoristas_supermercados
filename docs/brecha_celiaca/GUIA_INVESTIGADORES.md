@@ -23,7 +23,7 @@ producto de datos para estudiarla (detalle: `docs/BRECHA_CELIACA.md` §18):
 
 **Modelo principal (M6)**: `log_brecha(celda) = subtipo + mes + bandera + región + b1·marca propia del subtipo + b2·marca
 propia de otro subtipo + b3·ln(sucursales a ≤ 3 km) + b4·HHI del departamento + e`, cada celda pesa 1; versiones con
-provincia o departamento (M8, M9), sin efecto fijo de bandera (M7: la marca propia de la bandera, que no cambia dentro de
+provincia o departamento (M8, M9; M9 sin el HHI del departamento, que su efecto fijo absorbe), sin efecto fijo de bandera (M7: la marca propia de la bandera, que no cambia dentro de
 la bandera, solo se identifica así), ponderada por el gasto (M10) y con los mismos pares de productos (M11). **Inferencia:
 mirar los p-valores WCR** (`p_valor_wcr_bandera`, `p_valor_wcr_empresa`): hay 19 banderas y 12 empresas.
 
@@ -205,7 +205,7 @@ controles, con empresa, con empresa y región; errores por departamento y por em
 ## 12. Reproducibilidad
 
 - El código está en el repositorio (`notebooks/gen_nb06.py` genera los dos notebooks). Test con fuerza bruta:
-  `python notebooks/test_brecha_celiaca.py` (64 controles: cada número contra un cálculo directo, sobre un SEPA sintético).
+  `python notebooks/test_brecha_celiaca.py` (65 controles: cada número contra un cálculo directo, sobre un SEPA sintético).
 - Resultados esperados de la corrida de referencia (zips del Drive del 17/11, último mes 2026-11):
   `docs/brecha_celiaca/simulacion_2026-11-17/` (nb06) y `simulacion_06b_2026-11-17/` (nb06b), un CSV por hoja, con
   `pares/` (el Excel de pares). Para comparar el Excel de una corrida:

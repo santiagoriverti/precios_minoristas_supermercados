@@ -1094,6 +1094,12 @@ chk('CELDA 13: efectos fijos ralos (LSMR) = mínimos cuadrados densos: coeficien
     and np.allclose(mA['se']['cadena'][0], seA, rtol=1e-6)
     and all(abs((ecA[k] - ecA['c0']) - v) < 1e-7 for k, v in _bc.items())
     and abs((ecA.reindex(A['cadena']).to_numpy()).mean()) < 1e-9)
+# una variable que no cambia dentro de un bloque de efectos fijos (como el HHI del departamento con el efecto fijo del
+# departamento) queda absorbida: se saca (sin coeficiente) y el resto da lo mismo que sin ella
+A['xd'] = A['region'].map({'r1': 0.1, 'r2': 0.5, 'r3': 0.9})
+mD = g['_modelo'](A, ['subtipo', 'mes', 'cadena', 'region'], ['x1', 'xd', 'x2'])
+chk('CELDA 13: una variable absorbida por los efectos fijos sale del modelo (variables_absorbidas) sin cambiar el resto',
+    mD['absorbidas'] == ['xd'] and mD['xs'] == ['x1', 'x2'] and np.allclose(mD['beta'], mA['beta'], atol=1e-8))
 # WCR por fuerza bruta: en cada réplica, y* = ajuste restringido + residuo restringido x peso de Webb de su grupo, y se
 # reestima TODO el modelo (efectos fijos incluidos) por mínimos cuadrados densos
 def _wcr_bf(df, j, cl, B_, seed):

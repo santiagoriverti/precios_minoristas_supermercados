@@ -85,7 +85,8 @@ bandera explica el 66% de la variación entre sucursales y la categoría el 76% 
 bandera; amplia +105%, 72%, 82%; marca propia −8% / −3% (no robusto, p WCR 0,05-0,35). Test 64 controles; suite 16/16.
 Esperados vigentes `docs/brecha_celiaca/simulacion_2026-11-17/` y `simulacion_06b_2026-11-17/` (con `pares/`).
 **2026-11-18, BUG-52**: la CELDA 13 del 06b agotaba la RAM de Colab al exportar; corregido (lectura compacta, tablas
-intermedias liberadas, pares categóricos; pico 9,4 → 6,9 GB, mismos resultados). **Falta la corrida de Colab.**
+intermedias liberadas, pares categóricos; pico 9,4 → 6,9 GB, mismos resultados). **Corridas de Colab del 18/11 (nb06 y nb06b): Excel principal = esperados en 54 de 54 hojas**;
+M9 sin el HHI del departamento (absorbido; `_modelo` saca las variables absorbidas, `variables_absorbidas`). Test 65.
 
 El **nb07** (`notebooks/07_evolucion_canastas_alternativas.ipynb`) es el motor del
 informe semanal: 6 canastas, índice encadenado, comparación con el IPC y aperturas por cadena/región.

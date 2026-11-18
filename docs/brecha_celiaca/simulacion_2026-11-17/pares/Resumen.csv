@@ -20,13 +20,13 @@ Ajuste,"M5 Categoría, mes, cadena y departamento: R²",0.8540180670019522,R²,A
 Ajuste,"M6 PRINCIPAL: categoría, mes, cadena, región y entorno: R²",0.85669470040993,R²,Ajuste_modelos
 Ajuste,"M7 Sin efecto fijo de cadena: categoría, mes, región, entorno y marca propia de la bandera: R²",0.844614473619747,R²,Ajuste_modelos
 Ajuste,M8 Como M6 con provincia: R²,0.8567807547629632,R²,Ajuste_modelos
-Ajuste,M9 Como M6 con departamento: R²,0.8571258905048544,R²,Ajuste_modelos
+Ajuste,M9 Como M6 con departamento (sin el HHI del departamento: no cambia dentro del departamento): R²,0.8571258905048544,R²,Ajuste_modelos
 Ajuste,M10 Como M6 ponderado por el gasto (ENGHo): R²,0.8677649031963326,R²,Ajuste_modelos
-Ajuste,M11 Como M6 con los mismos pares (efecto fijo del par de productos): R²,0.8707291985271233,R²,Ajuste_modelos
+Ajuste,M11 Como M6 con los mismos pares (efecto fijo del par de productos): R²,0.8707291985271234,R²,Ajuste_modelos
 Descomposición (celdas (sucursal × mes × subtipo)),Categoría de producto (subtipo): % de la variación (Shapley),76.24974963982392,%,Descomposicion
-Descomposición (celdas (sucursal × mes × subtipo)),Cadena (bandera): % de la variación (Shapley),2.860948655543108,%,Descomposicion
-Descomposición (celdas (sucursal × mes × subtipo)),Geografía (región): % de la variación (Shapley),0.4654900419167459,%,Descomposicion
-Descomposición (celdas (sucursal × mes × subtipo)),Mes: % de la variación (Shapley),3.53279057085877,%,Descomposicion
+Descomposición (celdas (sucursal × mes × subtipo)),Cadena (bandera): % de la variación (Shapley),2.86094865554311,%,Descomposicion
+Descomposición (celdas (sucursal × mes × subtipo)),Geografía (región): % de la variación (Shapley),0.465490041916744,%,Descomposicion
+Descomposición (celdas (sucursal × mes × subtipo)),Mes: % de la variación (Shapley),3.532790570858771,%,Descomposicion
 Descomposición (celdas (sucursal × mes × subtipo)),Entorno (marca propia y densidad): % de la variación (Shapley),2.560491132850465,%,Descomposicion
 "Descomposición (sucursales (brecha propia, limpia de subtipo y mes))",Cadena (bandera): % de la variación (Shapley),65.93464250355872,%,Descomposicion_sucursales
 "Descomposición (sucursales (brecha propia, limpia de subtipo y mes))",Geografía (región): % de la variación (Shapley),18.50247393412818,%,Descomposicion_sucursales

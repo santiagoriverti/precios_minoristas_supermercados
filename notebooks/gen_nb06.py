@@ -4593,10 +4593,21 @@ def _modelo(_df, _fes, _xs=(), _w=None, _y='log_brecha', _cls=('cadena','empresa
     _wv = np.ones(len(_yv)) if _w is None else np.asarray(_w, float)
     _sw = np.sqrt(_wv)
     _D, _info = _diseno(_df, _fes)
-    _m = {'n': len(_yv), 'info': _info, 'D': _D, 'w': _wv, 'sw': _sw, 'xs': list(_xs), 'y': _yv}
+    _m = {'n': len(_yv), 'info': _info, 'D': _D, 'w': _wv, 'sw': _sw, 'xs': list(_xs), 'y': _yv, 'absorbidas': []}
     if _xs:
         _X = _df[list(_xs)].astype(float).to_numpy()
         _Xt = np.column_stack([_res(_D, _X[:, _j], _sw) for _j in range(_X.shape[1])])
+        # una variable que no cambia dentro de algún bloque de efectos fijos (el HHI del departamento con el efecto fijo
+        # del departamento) queda absorbida: sin variación propia su coeficiente no está identificado y se saca
+        _vx = (((_X - np.average(_X, axis=0, weights=_wv)) ** 2) * _wv[:, None]).sum(axis=0)
+        _ok = ((_Xt ** 2) * _wv[:, None]).sum(axis=0) > 1e-8 * np.maximum(_vx, 1e-300)
+        if not _ok.all():
+            _m['absorbidas'] = [_x for _x, _k in zip(_xs, _ok) if not _k]
+            print(f'    (absorbidas por los efectos fijos, sin coeficiente: {_m["absorbidas"]})')
+            _xs = [_x for _x, _k in zip(_xs, _ok) if _k]
+            _X, _Xt = _X[:, _ok], _Xt[:, _ok]
+            _m['xs'] = list(_xs)
+    if _xs:
         _yt = _res(_D, _yv, _sw)
         _bread = np.linalg.pinv(_Xt.T @ (_Xt * _wv[:, None]))
         _beta = _bread @ ((_Xt * _wv[:, None]).T @ _yt)
@@ -4722,7 +4733,8 @@ _MODS = [
     ('M7', 'Sin efecto fijo de cadena: categoría, mes, región, entorno y marca propia de la bandera',
      ['subtipo','mes','region'], _XS + ['bandera_marca_propia_tipo'], None, True),
     ('M8', 'Como M6 con provincia', ['subtipo','mes','cadena','provincia'], _XS, None, False),
-    ('M9', 'Como M6 con departamento', ['subtipo','mes','cadena','departamento_id'], _XS, None, False),
+    ('M9', 'Como M6 con departamento (sin el HHI del departamento: no cambia dentro del departamento)',
+     ['subtipo','mes','cadena','departamento_id'], [_x for _x in _XS if _x != 'hhi_departamento'], None, False),
     ('M10', 'Como M6 ponderado por el gasto (ENGHo)', ['subtipo','mes','cadena','region'], _XS, 'peso_engho', False),
 ]
 _m7x = _MODS[6][3]
@@ -4736,11 +4748,12 @@ for _cod, _des, _fes, _xs, _wcol, _boot in _MODS:
         break
     _m = _modelo(_reg, _fes, _xs, None if _wcol is None else _reg[_wcol].to_numpy(float))
     MODELOS13[_cod] = _m
-    _filas_a.append({'modelo': _cod, 'descripcion': _des, 'efectos_fijos': ', '.join(_fes), 'variables': ', '.join(_xs),
+    _filas_a.append({'modelo': _cod, 'descripcion': _des, 'efectos_fijos': ', '.join(_fes), 'variables': ', '.join(_m['xs']),
+                     'variables_absorbidas': ', '.join(_m['absorbidas']),
                      'ponderacion': 'ENGHo (peso_engho)' if _wcol else 'cada celda pesa 1', 'nivel': 'celda',
                      'observaciones': _m['n'], 'sucursales': _reg['suc_key'].nunique(), 'r2': _m['r2'],
                      'r2_within': _m.get('r2_within', float('nan'))})
-    for _j, _x in enumerate(_xs):
+    for _j, _x in enumerate(_m['xs']):
         _b = float(_m['beta'][_j]); _f, _ct = _CAMBIO.get(_x, (1.0, '+1'))
         _row = {'modelo': _cod, 'variable': _x, 'descripcion_variable': _DESC_X.get(_x, _x), 'coef_log': _b,
                 'efecto_pct': 100 * np.expm1(_b), 'cambio': _ct, 'efecto_pct_cambio': 100 * np.expm1(_b * _f)}
@@ -4753,7 +4766,7 @@ for _cod, _des, _fes, _xs, _wcol, _boot in _MODS:
             _row[f'p_valor_wcr_{_lab}'] = (_wcr(_m, _reg[_c].to_numpy(), _j, int(WCB_B), int(WCB_SEED) + _j)
                                           if _boot else float('nan'))
         _filas_m.append(_row)
-    print(f'  {_cod} {_des}: R² {_m["r2"]:.3f}' + (f', R² dentro {_m["r2_within"]:.3f}' if _xs else ''))
+    print(f'  {_cod} {_des}: R² {_m["r2"]:.3f}' + (f', R² dentro {_m["r2_within"]:.3f}' if _m['xs'] else ''))
     if _cod not in ('M6', 'M8', 'M9'):        # RAM: solo M6, M8 y M9 guardan lo que hace falta para sus efectos fijos
         for _k in ('D', 'Xt', 'yt', 'e', 'fit', 'y', 'w', 'sw', 'fe', 'info'):
             _m.pop(_k, None)
@@ -4771,10 +4784,11 @@ if len(_pr11) >= 20 and _XS:
     _m = _modelo(_pr11, ['par','mes','cadena','region'], _XS, _pr11['peso_par'].to_numpy(float))
     MODELOS13['M11'] = _m
     _filas_a.append({'modelo': 'M11', 'descripcion': 'Como M6 con los mismos pares (efecto fijo del par de productos)',
-                     'efectos_fijos': 'par, mes, cadena, region', 'variables': ', '.join(_XS),
+                     'efectos_fijos': 'par, mes, cadena, region', 'variables': ', '.join(_m['xs']),
+                     'variables_absorbidas': ', '.join(_m['absorbidas']),
                      'ponderacion': 'cada celda pesa 1 (peso_par)', 'nivel': 'par', 'observaciones': _m['n'],
                      'sucursales': _pr11['suc_key'].nunique(), 'r2': _m['r2'], 'r2_within': _m['r2_within']})
-    for _j, _x in enumerate(_XS):
+    for _j, _x in enumerate(_m['xs']):
         _b = float(_m['beta'][_j]); _f, _ct = _CAMBIO.get(_x, (1.0, '+1'))
         _row = {'modelo': 'M11', 'variable': _x, 'descripcion_variable': _DESC_X.get(_x, _x), 'coef_log': _b,
                 'efecto_pct': 100 * np.expm1(_b), 'cambio': _ct, 'efecto_pct_cambio': 100 * np.expm1(_b * _f)}
@@ -5110,7 +5124,8 @@ if globals().get('EXPORTAR_PARES', True) and len(_cb):
                 'réplicas), el que hay que mirar con tan pocas cadenas. Es descriptiva: dice de qué depende la brecha, no por qué.'),
         ('Modelos', 'M1-M5: solo efectos fijos (M3 región, M4 provincia, M5 departamento). M6 PRINCIPAL: subtipo, mes, '
                 'bandera, región y entorno. M7: sin efecto fijo de bandera, con la marca propia de la bandera (una variable '
-                'que no cambia dentro de la bandera queda absorbida por su efecto fijo). M8/M9: M6 con provincia/departamento. '
+                'que no cambia dentro de la bandera queda absorbida por su efecto fijo). M8/M9: M6 con provincia/departamento (M9 sin el HHI del departamento, '
+                'que su efecto fijo absorbe; las variables absorbidas se informan en Ajuste_modelos). '
                 'M10: M6 ponderado por el gasto (ENGHo). M11: M6 con los mismos pares de productos (efecto fijo del par).'),
         ('Marca propia', 'marca_propia_subtipo = la góndola tiene un sin TACC de marca propia de su cadena del mismo subtipo '
                 '(varía entre sucursales, subtipos y meses de una misma cadena). En el SEPA hay marcas propias sin TACC de '

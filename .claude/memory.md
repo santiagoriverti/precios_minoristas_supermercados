@@ -71,6 +71,10 @@ Autor: Santiago Riverti — investigador independiente
      cambiar resultados: `datos_lectura` compacta (CELDA 7), la CELDA 13 libera las tablas intermedias de las celdas
      anteriores y `datos_lectura` (`_LECTURA_PARES_LIBERADA`), pares categóricos, M11 con sus columnas, `_ls` en una
      copia; pico 9,4 → 6,9 GB (PC). Banco por secciones: `proyectos\nb06_brecha_celiaca_20261023\ram\banco13.py`.
+   - **2026-11-18, corrida de Colab del nb06** (relee 58 meses, ~48 min + CELDA 13 10 min): Excel principal = esperados
+     (54/54) y el de pares 16/17: la hoja `Modelos` mostró que M9 (efecto fijo de departamento) tenía el HHI del
+     departamento, absorbido (p-valor de ruido). Corregido: M9 sin el HHI y `_modelo` saca toda variable absorbida
+     (`variables_absorbidas` en `Ajuste_modelos`); test 65; esperados `pares/` regenerados.
    - **Siguiente**: el usuario vuelve a correr el 06b (no relee: caché del 18/11 en el Drive) y el 06; se compara con
      `s16` contra `docs/brecha_celiaca/simulacion_2026-11-17` (y `/pares`) y `simulacion_06b_2026-11-17`.
 
