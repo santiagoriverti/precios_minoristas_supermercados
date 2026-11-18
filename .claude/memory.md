@@ -75,7 +75,10 @@ Autor: Santiago Riverti — investigador independiente
      (54/54) y el de pares 16/17: la hoja `Modelos` mostró que M9 (efecto fijo de departamento) tenía el HHI del
      departamento, absorbido (p-valor de ruido). Corregido: M9 sin el HHI y `_modelo` saca toda variable absorbida
      (`variables_absorbidas` en `Ajuste_modelos`); test 65; esperados `pares/` regenerados.
-   - **Siguiente**: el usuario vuelve a correr el 06b (no relee: caché del 18/11 en el Drive) y el 06; se compara con
+   - **2026-11-18, VALIDADO EN COLAB** (notebook `7bbd389`): nb06 y nb06b iguales a los esperados (principal 54/54,
+     pares 17/17), sin falta de RAM; paneles parquet completos (06: 840.887 pares; 06b: 3.543.921). Salidas en
+     `proyectos\nb06_brecha_celiaca_20261023\colab_20261118b\` y los zips en Downloads. La CELDA 13 está terminada.
+   - **Siguiente (si se retoma)**: análisis con los investigadores sobre `pares/`; para otra corrida, comparar con
      `s16` contra `docs/brecha_celiaca/simulacion_2026-11-17` (y `/pares`) y `simulacion_06b_2026-11-17`.
 
 1. **Brecha celíaca (nb06 y nb06b) — lo último, 2026-10-27 noche: segunda revisión de expertos** (EVALUACION_EXPERTOS

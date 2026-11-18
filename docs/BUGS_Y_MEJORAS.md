@@ -326,7 +326,7 @@ Arreglo (los resultados no cambian: las 17 hojas del Excel de pares y el Excel p
 - Pico de la CELDA 13: 9,4 → 6,9 GB en la simulación completa (por debajo de la CELDA 8c, 7,4 GB, que Colab ya
   pasaba); la exportación ya no suma memoria (2,9 GB en el banco con la base liberada). Test 64 controles.
 
-Para el usuario: volver a correr el nb06b (no relee el SEPA: el caché del 18/11 está en el Drive).
+Verificado: las corridas de Colab del 18/11 (notebook `7bbd389`) del nb06 y del nb06b terminaron sin quedarse sin RAM y dieron iguales a los esperados (Excel principal 54/54 y de pares 17/17).
 
 ## 🟢 Cambios y fixes 2026-10
 
