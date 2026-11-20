@@ -1,0 +1,76 @@
+tema,indicador,valor,ic95_inf,ic95_sup,unidad,hoja
+Nivel,"Brecha de la canasta, 2025-12 → 2026-11 (todas las sucursales, misma canasta que los grupos)",104.1,103.6,104.5,%,IC_grupos
+Nivel,La misma con el IC 95% por empresa (bootstrap de las 12 empresas: para generalizar a otras cadenas),104.1,94.6,107.6,%,IC_grupos
+Nivel,"Brecha de la canasta, 2026-11 (panel balanceado, descriptiva)",107.4,,,%,Serie_canasta_balanceada
+Nivel,"Brecha de la canasta, 2026-11 (panel balanceado, TPD)",103.9,103.4,104.3,%,Serie_TPD
+Nivel,La misma con el IC 95% agrupado por empresa,103.9,100.4,107.3,%,Serie_TPD
+Evolución (canasta por año),"2022, todas las sucursales",106.2,,,%,Canasta_anual
+Evolución (canasta por año),"2023, todas las sucursales",102.3,,,%,Canasta_anual
+Evolución (canasta por año),"2024, todas las sucursales",105.3,,,%,Canasta_anual
+Evolución (canasta por año),"2025, todas las sucursales",87.0,,,%,Canasta_anual
+Evolución (canasta por año),"2026, todas las sucursales",105.3,,,%,Canasta_anual
+Evolución (canasta por año),"2022, panel balanceado",96.9,,,%,Canasta_anual_balanceada
+Evolución (canasta por año),"2023, panel balanceado",92.1,,,%,Canasta_anual_balanceada
+Evolución (canasta por año),"2024, panel balanceado",88.2,,,%,Canasta_anual_balanceada
+Evolución (canasta por año),"2025, panel balanceado",81.4,,,%,Canasta_anual_balanceada
+Evolución (canasta por año),"2026, panel balanceado",99.4,,,%,Canasta_anual_balanceada
+Precios de cada lado,"Índice con TACC, 2026-11 (base 2022-01 = 100)",2244.4,,,índice,Indices_lados
+Precios de cada lado,"Índice sin TACC, 2026-11 (base 2022-01 = 100)",2257.1,,,índice,Indices_lados
+Precios de cada lado,"sin / con, 2026-11 (> 100: los sin TACC aumentaron más)",100.6,,,índice,Indices_lados
+Precios de cada lado,"IPC alimentos del INDEC, 2026-10 (misma base)",2134.5,,,índice,Indices_lados
+Por tipo (todo el período),Cereales rellenos (almohaditas),25.9,,,%,Brecha_tipo
+Por tipo (todo el período),Fideos secos,132.7,,,%,Brecha_tipo
+Por tipo (todo el período),Galletitas dulces,87.0,,,%,Brecha_tipo
+Por tipo (todo el período),Galletitas saladas y crackers,87.8,,,%,Brecha_tipo
+Por tipo (todo el período),Pan rallado y rebozador,84.2,,,%,Brecha_tipo
+"Geografía (región, 2025-12 → 2026-11)","Patagonia (difiere del país con el IC por sucursal; con el IC por empresa, no)",92.0,90.9,94.6,%,IC_grupos / Brecha_region
+"Geografía (región, 2025-12 → 2026-11)",Pampeana,103.7,102.6,104.9,%,IC_grupos / Brecha_region
+"Geografía (región, 2025-12 → 2026-11)","AMBA (difiere del país con el IC por sucursal; con el IC por empresa, no)",105.5,105.2,105.9,%,IC_grupos / Brecha_region
+"Geografía (región, 2025-12 → 2026-11)",Noreste,106.7,103.1,109.2,%,IC_grupos / Brecha_region
+"Geografía (región, 2025-12 → 2026-11)","Noroeste (difiere del país con el IC por sucursal; con el IC por empresa, no)",107.6,106.8,109.6,%,IC_grupos / Brecha_region
+"Geografía (región, 2025-12 → 2026-11)","Cuyo (difiere del país con el IC por sucursal; con el IC por empresa, no)",107.8,107.1,108.4,%,IC_grupos / Brecha_region
+"Geografía (provincia, 2025-12 → 2026-11)",Menor: Chubut (8 provincias confiables),91.9,,,%,Brecha_provincia
+"Geografía (provincia, 2025-12 → 2026-11)",Mayor: Córdoba,112.8,,,%,Brecha_provincia
+"Cadenas (canasta propia, 2025-12 → 2026-11)",Carrefour,105.1,104.3,105.7,%,IC_grupos / Brecha_empresa
+"Cadenas (canasta propia, 2025-12 → 2026-11)","Cencosud (Vea, Disco, Jumbo)",107.8,107.3,108.3,%,IC_grupos / Brecha_empresa
+"Cadenas (canasta propia, 2025-12 → 2026-11)",Otras 8 empresas: más del 25% del peso imputado o pocas sucursales (no confiables; ver la hedónica),,,,,Brecha_empresa
+"Geografía (mismos productos, hedónica)",Cuyo contra AMBA,-2.3,-2.58,-2.02,% sobre 1 + brecha,Hedonica_grupos
+"Geografía (mismos productos, hedónica)",Noreste contra AMBA,-0.54,-1.15,0.09,% sobre 1 + brecha,Hedonica_grupos
+"Geografía (mismos productos, hedónica)",Noroeste contra AMBA,-0.72,-1.79,0.37,% sobre 1 + brecha,Hedonica_grupos
+"Geografía (mismos productos, hedónica)",Pampeana contra AMBA,-0.58,-1.71,0.56,% sobre 1 + brecha,Hedonica_grupos
+"Geografía (mismos productos, hedónica)",Patagonia contra AMBA,-2.99,-4.09,-1.89,% sobre 1 + brecha,Hedonica_grupos
+"Cadenas (mismos productos, hedónica)","Cencosud (Vea, Disco, Jumbo) contra Carrefour",-0.58,-1.0,-0.15,% sobre 1 + brecha,Hedonica_grupos
+"Cadenas (mismos productos, hedónica)",ChangoMas contra Carrefour,-0.89,-1.7,-0.06,% sobre 1 + brecha,Hedonica_grupos
+"Cadenas (mismos productos, hedónica)",Cooperativa Obrera contra Carrefour (poco dato),1.35,-0.13,2.86,% sobre 1 + brecha,Hedonica_grupos
+"Cadenas (mismos productos, hedónica)",Coto contra Carrefour,0.14,-0.1,0.38,% sobre 1 + brecha,Hedonica_grupos
+"Cadenas (mismos productos, hedónica)",DIA contra Carrefour (poco dato),-14.05,-14.4,-13.7,% sobre 1 + brecha,Hedonica_grupos
+"Cadenas (mismos productos, hedónica)",La Anónima contra Carrefour,-3.76,-4.71,-2.79,% sobre 1 + brecha,Hedonica_grupos
+"Cadenas (mismos productos, hedónica)",Otras contra Carrefour,9.45,6.32,12.66,% sobre 1 + brecha,Hedonica_grupos
+"Cadenas (mismos productos, hedónica)",Toledo contra Carrefour (poco dato),-1.61,-2.6,-0.61,% sobre 1 + brecha,Hedonica_grupos
+"Cadenas (variación entre sucursales, 2025-12 → 2026-11)","Parte que explica la empresa (R² de la canasta comparable, 1,037 sucursales)",51.1,,,%,Varianza_empresa
+"Cadenas (variación entre sucursales, 2025-12 → 2026-11)",Parte que explica la región,51.2,,,%,Varianza_empresa
+Misma marca (2025-12 → 2026-11),"Almohaditas rellenas, Lasfor: sin TACC / con TACC de la marca (la canasta en las mismas celdas: +26.6%)",26.6,,,%,Prima_misma_marca
+Misma marca (2025-12 → 2026-11),"Mostachol / penne, Matarazzo: sin TACC / con TACC de la marca (la canasta en las mismas celdas: +129.8%)",129.8,,,%,Prima_misma_marca
+Misma marca (2025-12 → 2026-11),"Spaghetti, Matarazzo: sin TACC / con TACC de la marca (la canasta en las mismas celdas: +127.8%)",127.8,,,%,Prima_misma_marca
+Misma marca (2025-12 → 2026-11),"Tirabuzón / fusilli, Matarazzo: sin TACC / con TACC de la marca (la canasta en las mismas celdas: +181.7%)",134.2,,,%,Prima_misma_marca
+Concentración (con empresa y región),HHI del departamento (+0.1); p = 0.45,-0.05,-0.17,0.08,% sobre 1 + brecha,Concentracion_modelos
+Concentración (con empresa y región),HHI local (3 km) (+0.1); p = 0.59,0.03,-0.07,0.12,% sobre 1 + brecha,Concentracion_modelos
+Concentración (con empresa y región),empresas rivales a <= 3 km (+1); p = 0.95,0.0,-0.07,0.07,% sobre 1 + brecha,Concentracion_modelos
+Disponibilidad,"Sin TACC donde se vende el con TACC (sucursal-meses, ponderada)",69.2,,,%,Disponibilidad
+Disponibilidad,"Sin TACC donde se vende el con TACC (sucursales (alguna vez), ponderada)",90.5,,,%,Disponibilidad
+Costo (CBA del INDEC),"Extra por adulto equivalente por mes (2026-09 → 2026-11; Fideos, Galletitas de agua, Galletitas dulces)",20016.0,,,$,Costo_CBA
+Costo (CBA del INDEC),Extra del hogar tipo (3.09 adultos equivalentes) por mes,61849.0,,,$,Costo_CBA
+Costo (CBA del INDEC),Prima del costo sin TACC sobre el con TACC,150.6,,,%,Costo_CBA
+"Sensibilidad (2025-12 → 2026-11, una decisión por vez)",Principal (la canasta de la CELDA 1),104.1,,,%,Sensibilidad
+"Sensibilidad (2025-12 → 2026-11, una decisión por vez)",Galletas de arroz también en crackers (sustitución),101.2,,,%,Sensibilidad
+"Sensibilidad (2025-12 → 2026-11, una decisión por vez)",Solo productos equivalentes (sin las galletas de arroz de saborizadas),134.7,,,%,Sensibilidad
+"Sensibilidad (2025-12 → 2026-11, una decisión por vez)",Todos los productos que cumplen las reglas (sin composición espejada),107.8,,,%,Sensibilidad
+"Sensibilidad (2025-12 → 2026-11, una decisión por vez)",Cada sabor como un producto (sin líneas),110.1,,,%,Sensibilidad
+"Sensibilidad (2025-12 → 2026-11, una decisión por vez)",Pesos de los subtipos por disponibilidad (sucursal-meses),107.5,,,%,Sensibilidad
+"Sensibilidad (2025-12 → 2026-11, una decisión por vez)",Lo más barato de cada lado en la sucursal,108.2,,,%,Sensibilidad
+"Sensibilidad (2025-12 → 2026-11, una decisión por vez)",Cociente de las medianas nacionales (sin comparar dentro de la sucursal),110.4,,,%,Sensibilidad
+"Sensibilidad (2025-12 → 2026-11, una decisión por vez)",Sucursales ponderadas por la población de su provincia,105.5,,,%,Sensibilidad
+Calidad de datos,Empresa-código-mes con precio fuera de escala (descartados),37.0,,,casos,Precios_atipicos
+Calidad de datos,Rachas de precio congelado de una empresa (6+ meses iguales con el índice arriba más de 50%; meses descartados),3.0,,,rachas,Precios_congelados
+Calidad de datos,EANs fuera por plausibilidad,0.0,,,EANs,Plausibilidad
+Calidad de datos,EANs para revisar (control de identidad; no se excluyen),6.0,,,EANs,Control_EAN

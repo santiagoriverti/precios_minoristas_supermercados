@@ -78,6 +78,10 @@ Autor: Santiago Riverti — investigador independiente
    - **2026-11-18, VALIDADO EN COLAB** (notebook `7bbd389`): nb06 y nb06b iguales a los esperados (principal 54/54,
      pares 17/17), sin falta de RAM; paneles parquet completos (06: 840.887 pares; 06b: 3.543.921). Salidas en
      `proyectos\nb06_brecha_celiaca_20261023\colab_20261118b\` y los zips en Downloads. La CELDA 13 está terminada.
+   - **2026-11-20**: el usuario corrió los dos con precios actualizados (`2026B` con noviembre hasta el día 19). Solo
+     cambió noviembre (meses anteriores idénticos; TPD ±0,3 pp). Esperados vigentes `simulacion_2026-11-20/` y
+     `simulacion_06b_2026-11-20/` (de las corridas de Colab, en `colab_20261120/`). Doc para investigadores (Claude Docs,
+     https://claude.ai/artifact/ByV1DoPuS8ZJsa8aCjAB9p) actualizado a esta corrida.
    - **Siguiente (si se retoma)**: análisis con los investigadores sobre `pares/`; para otra corrida, comparar con
      `s16` contra `docs/brecha_celiaca/simulacion_2026-11-17` (y `/pares`) y `simulacion_06b_2026-11-17`.
 

@@ -1,0 +1,25 @@
+periodo,tipo,subtipo,marca,celdas,sucursales,empresas,meses,brecha_misma_marca_pct,brecha_canasta_mismas_celdas_pct,prima_de_marca_pct,brecha_subtipo_pct,productos_con_tacc,productos_sin_tacc
+últimos 12 meses (2025-12 → 2026-11),Cereales rellenos (almohaditas),Almohaditas rellenas,LASFOR,7752,694,6,12,26.55635648754915,26.55635648754915,0.0,26.55635648754915,Almohaditas rellenas Lasfor 200 g (4 variantes),Almohaditas rellenas sin TACC Snuks 240 g (4 variantes)
+últimos 12 meses (2025-12 → 2026-11),Fideos secos,Mostachol / penne,MATARAZZO,12004,1073,7,12,129.8499166203446,129.8499166203446,0.0,129.8499166203446,Penne rigate Matarazzo 500 g,Penne rigate sin TACC Matarazzo 500 g
+últimos 12 meses (2025-12 → 2026-11),Fideos secos,Spaghetti,MATARAZZO,17774,2246,9,12,127.7537277537278,127.7537277537278,0.0,127.7537277537278,Spaghetti Matarazzo 500 g,Spaghetti sin TACC Matarazzo 500 g
+últimos 12 meses (2025-12 → 2026-11),Fideos secos,Tirabuzón / fusilli,MATARAZZO,12524,1282,8,12,134.2105263157895,181.6609713161438,19.27829791468716,189.8947178580141,Tirabuzones Matarazzo 500 g,Tirabuzón sin TACC Matarazzo 500 g
+2022,Cereales rellenos (almohaditas),Almohaditas rellenas,LASFOR,3065,297,4,12,18.30601092896174,18.30601092896174,0.0,18.30601092896174,Almohaditas rellenas Lasfor 200 g (4 variantes),Almohaditas rellenas sin TACC Snuks 240 g (4 variantes)
+2022,Fideos secos,Mostachol / penne,MATARAZZO,5467,491,5,12,101.0309278350515,101.0309278350515,0.0,101.0309278350515,Penne rigate Matarazzo 500 g,Penne rigate sin TACC Matarazzo 500 g
+2022,Fideos secos,Spaghetti,MATARAZZO,22577,2274,10,12,75.63291139240509,75.63291139240509,0.0,75.63291139240509,Spaghetti Matarazzo 500 g,Spaghetti sin TACC Matarazzo 500 g
+2022,Fideos secos,Tirabuzón / fusilli,MATARAZZO,15292,1671,9,12,141.9159663865546,249.6513784461153,46.19265499794225,255.5860554488059,Tirabuzones Matarazzo 500 g,Tirabuzón sin TACC Matarazzo 500 g
+2023,Cereales rellenos (almohaditas),Almohaditas rellenas,LASFOR,3276,315,4,12,23.81564495298789,23.81564495298789,0.0,23.81564495298789,Almohaditas rellenas Lasfor 200 g (4 variantes),Almohaditas rellenas sin TACC Snuks 240 g (4 variantes)
+2023,Fideos secos,Mostachol / penne,MATARAZZO,2789,580,7,12,103.2374100719424,103.2374100719424,0.0,103.2374100719424,Penne rigate Matarazzo 500 g,Penne rigate sin TACC Matarazzo 500 g
+2023,Fideos secos,Spaghetti,MATARAZZO,18617,2412,9,12,67.29819772809378,67.29819772809378,0.0,67.29819772809378,Spaghetti Matarazzo 500 g,Spaghetti sin TACC Matarazzo 500 g
+2023,Fideos secos,Tirabuzón / fusilli,MATARAZZO,6185,1423,7,10,76.922050186866,191.0208981551805,65.52945489151773,195.9232446981298,Tirabuzones Matarazzo 500 g,Tirabuzón sin TACC Matarazzo 500 g
+2024,Cereales rellenos (almohaditas),Almohaditas rellenas,LASFOR,4964,672,6,12,21.95140789304664,21.95140789304664,0.0,21.95140789304664,Almohaditas rellenas Lasfor 200 g (4 variantes),Almohaditas rellenas sin TACC Snuks 240 g (4 variantes)
+2024,Fideos secos,Mostachol / penne,MATARAZZO,5596,757,7,12,102.1428571428571,102.1428571428571,0.0,102.1428571428571,Penne rigate Matarazzo 500 g,Penne rigate sin TACC Matarazzo 500 g
+2024,Fideos secos,Spaghetti,MATARAZZO,8506,1255,8,12,102.5712300208478,102.5712300208478,0.0,102.5712300208478,Spaghetti Matarazzo 500 g,Spaghetti sin TACC Matarazzo 500 g
+2024,Fideos secos,Tirabuzón / fusilli,MATARAZZO,4459,718,7,12,83.87096774193547,133.9787920700784,22.10338128946885,253.4841542573502,Tirabuzones Matarazzo 500 g,Tirabuzón sin TACC Matarazzo 500 g
+2025,Cereales rellenos (almohaditas),Almohaditas rellenas,LASFOR,7820,800,7,12,27.95781893004115,27.95781893004115,0.0,27.95781893004115,Almohaditas rellenas Lasfor 200 g (4 variantes),Almohaditas rellenas sin TACC Snuks 240 g (4 variantes)
+2025,Fideos secos,Mostachol / penne,MATARAZZO,11528,1108,7,12,117.3333333333333,117.3333333333333,0.0,117.3333333333333,Penne rigate Matarazzo 500 g,Penne rigate sin TACC Matarazzo 500 g
+2025,Fideos secos,Spaghetti,MATARAZZO,16717,2204,8,12,109.9444101297097,109.9444101297097,0.0,109.9444101297097,Spaghetti Matarazzo 500 g,Spaghetti sin TACC Matarazzo 500 g
+2025,Fideos secos,Tirabuzón / fusilli,MATARAZZO,8906,901,8,12,116.9811320754717,152.5985013294658,15.96542726679715,163.9888846785399,Tirabuzones Matarazzo 500 g,Tirabuzón sin TACC Matarazzo 500 g
+2026,Cereales rellenos (almohaditas),Almohaditas rellenas,LASFOR,7065,688,6,11,26.55635648754915,26.55635648754915,0.0,26.55635648754915,Almohaditas rellenas Lasfor 200 g (4 variantes),Almohaditas rellenas sin TACC Snuks 240 g (4 variantes)
+2026,Fideos secos,Mostachol / penne,MATARAZZO,10993,1070,7,11,129.8499166203446,129.8499166203446,0.0,129.8499166203446,Penne rigate Matarazzo 500 g,Penne rigate sin TACC Matarazzo 500 g
+2026,Fideos secos,Spaghetti,MATARAZZO,16639,2243,9,11,128.5260770975057,128.5260770975057,0.0,128.5260770975057,Spaghetti Matarazzo 500 g,Spaghetti sin TACC Matarazzo 500 g
+2026,Fideos secos,Tirabuzón / fusilli,MATARAZZO,11668,1280,8,11,135.5883754168651,184.8101265822785,19.60591214882592,190.9900471451021,Tirabuzones Matarazzo 500 g,Tirabuzón sin TACC Matarazzo 500 g

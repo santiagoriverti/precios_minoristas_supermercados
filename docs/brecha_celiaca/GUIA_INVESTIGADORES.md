@@ -206,11 +206,11 @@ controles, con empresa, con empresa y región; errores por departamento y por em
 
 - El código está en el repositorio (`notebooks/gen_nb06.py` genera los dos notebooks). Test con fuerza bruta:
   `python notebooks/test_brecha_celiaca.py` (65 controles: cada número contra un cálculo directo, sobre un SEPA sintético).
-- Resultados esperados de la corrida de referencia (zips del Drive del 17/11, último mes 2026-11):
-  `docs/brecha_celiaca/simulacion_2026-11-17/` (nb06) y `simulacion_06b_2026-11-17/` (nb06b), un CSV por hoja, con
+- Resultados esperados de la corrida de referencia (zips del Drive del 20/11, noviembre de 2026 hasta el día 19):
+  `docs/brecha_celiaca/simulacion_2026-11-20/` (nb06) y `simulacion_06b_2026-11-20/` (nb06b), un CSV por hoja, con
   `pares/` (el Excel de pares). Para comparar el Excel de una corrida:
-  `python -I -X utf8 docs/auditoria/scripts_nb06_2026-10/s16_comparar_colab.py <Excel> docs/brecha_celiaca/simulacion_2026-11-17`
-  (y el de pares contra `.../simulacion_2026-11-17/pares`).
+  `python -I -X utf8 docs/auditoria/scripts_nb06_2026-10/s16_comparar_colab.py <Excel> docs/brecha_celiaca/simulacion_2026-11-20`
+  (y el de pares contra `.../simulacion_2026-11-20/pares`).
 - La lista de productos con sus métricas: `canasta_fija_2022_2026.csv` y `canasta_amplia_2025_2026.csv`; los que quedan
   afuera: `productos_sensibilidad*.csv`. Las reglas de la selección: `docs/BRECHA_CELIACA.md` §14 y §16.
 

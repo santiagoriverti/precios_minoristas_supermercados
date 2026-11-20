@@ -83,7 +83,7 @@ Salida `OUTPUT_DIR/pares/` (Excel de resultados + `Celdas`, Excel de detalle —
 parquet y csv.gz, diccionario, LEEME). Resultados (2024-01 → 2026-11): fija, brecha mediana de las celdas +102%, la
 bandera explica el 66% de la variación entre sucursales y la categoría el 76% entre celdas, regiones ±2% con la misma
 bandera; amplia +105%, 72%, 82%; marca propia −8% / −3% (no robusto, p WCR 0,05-0,35). Test 64 controles; suite 16/16.
-Esperados vigentes `docs/brecha_celiaca/simulacion_2026-11-17/` y `simulacion_06b_2026-11-17/` (con `pares/`).
+**Corrida con precios actualizados (2026-11-20)**: el zip `2026B` del Drive trae noviembre de 2026 hasta el día 19 (antes, hasta el 15). Solo cambió noviembre: todos los meses anteriores dieron idénticos (la serie TPD se mueve hasta 0,3 pp en otros meses porque se estima junta). Números principales: canasta fija, brecha mediana de las celdas +102,1% (antes +102,1%), media de los últimos 12 meses +101,3% (+101,0%), marca propia en la góndola −8,3% (−8,4%); canasta amplia sin cambios de más de 0,3 pp. Esperados vigentes: `docs/brecha_celiaca/simulacion_2026-11-20/` y `simulacion_06b_2026-11-20/` (con `pares/`), tomados de esas corridas de Colab. Esperados vigentes `docs/brecha_celiaca/simulacion_2026-11-20/` y `simulacion_06b_2026-11-20/` (con `pares/`).
 **2026-11-18, BUG-52**: la CELDA 13 del 06b agotaba la RAM de Colab al exportar; corregido (lectura compacta, tablas
 intermedias liberadas, pares categóricos; pico 9,4 → 6,9 GB, mismos resultados). **Validado en Colab (18/11, `7bbd389`): nb06 y nb06b iguales a los esperados (principal 54/54, pares 17/17)**;
 M9 sin el HHI del departamento (absorbido; `_modelo` saca las variables absorbidas, `variables_absorbidas`). Test 65.
@@ -170,7 +170,7 @@ relativo; la próxima corrida en Colab los muestra por primera vez.
    impresa, `canasta_diaria_pass_through_<desde>_<hasta>.xlsx` y `panel_diario_pass_through_<...>.parquet`; para el nb09,
    la salida impresa y los cuatro archivos de `output_trazabilidad/` (scripts en `docs/auditoria/scripts_nb09_2026-10/`,
    AUDITORIA_2026-10-22_nb09 §7); para el nb06, la salida impresa y `output_brecha/brecha_celiaca_<mes>.xlsx` (comparar
-   con `docs/auditoria/scripts_nb06_2026-10/s16_comparar_colab.py` contra `docs/brecha_celiaca/simulacion_2026-11-17/` (y el Excel de pares contra `.../pares/`)
+   con `docs/auditoria/scripts_nb06_2026-10/s16_comparar_colab.py` contra `docs/brecha_celiaca/simulacion_2026-11-20/` (y el Excel de pares contra `.../pares/`)
    —el notebook vigente: panel de expertos, BRECHA_CELIACA §14.17 y §15— y revisar con BRECHA_CELIACA §14.9; para revisar todo, el
    zip del caché y el mapa: r13-r15, AUDITORIA_2026-10-26_nb06). Descomprimir lo que
    pase el usuario en una carpeta propia y correr los scripts con `python -I` (datos no confiables). Para simular
@@ -305,7 +305,7 @@ relativo; la próxima corrida en Colab los muestra por primera vez.
   hacía que la canasta dependiera del `maestro_sepa_completo.csv.gz` que hubiera en el Drive. **La brecha se calcula
   por subtipo** (nunca la mediana del tipo entero: mezcla snacks y crackers según el surtido) y se agrega subtipo → tipo
   → canasta; si se cambia la canasta o el estimador, rehacer la simulación (s11/s12) y los resultados esperados de
-  `docs/brecha_celiaca/simulacion_<fecha>/` (otra carpeta con la fecha nueva; la vigente es `simulacion_2026-11-17/`)
+  `docs/brecha_celiaca/simulacion_<fecha>/` (otra carpeta con la fecha nueva; la vigente es `simulacion_2026-11-20/`)
   antes de pedir una corrida de Colab. `productos_sensibilidad.csv` (los que cumplen las reglas y quedan afuera) va a
   `ADICIONALES` de la CELDA 1: se leen con la canasta (cambian la clave del caché) y entran solo en la hoja
   `Sensibilidad`, nunca en la brecha principal. La CELDA 8c (análisis complementarios) vive en `gen_nb06.py` como

@@ -1,0 +1,40 @@
+ean,descripcion,marca,empresa,tipo,subtipo,gramos,equivalencia,sucursal_meses,sucursales,meses,primer_mes,ultimo_mes,banderas,pares,excluido_plausibilidad
+7791720025994,Mini Alfajores sin TACC con Dulce de Leche Carrefour 150 Gr,Carrefour,Carrefour,Alfajores,Alfajores en caja o paquete,150.0,equivalente,18958,572,35,2024-01,2026-11,"Carrefour, Carrefour Express, Carrefour Market",66560,False
+7791720017401,Polvorones con Chips sin TACC Carrefour Classic 150 Gr,Carrefour Classic,Carrefour,Galletitas dulces,Con chips,150.0,equivalente,12829,567,25,2024-11,2026-11,"Carrefour, Carrefour Express, Carrefour Market",51177,False
+7791720017395,Polvorones sin TACC Carrefour Classic 150 Gr,Carrefour Classic,Carrefour,Galletitas dulces,"Secas (vainilla, limón, chocolate)",150.0,equivalente,12660,567,25,2024-11,2026-11,"Carrefour, Carrefour Express, Carrefour Market",45131,False
+7791720019054,Tostadas sin TACC Clásicas Carrefour 130 Gr,Carrefour,Carrefour,Galletitas saladas y crackers,Crackers,130.0,sustituto (tostadas contra crackers),13110,567,35,2024-01,2026-11,"Carrefour, Carrefour Express, Carrefour Market",51269,False
+7791720019078,Tostadas sin TACC Dulces Carrefour 130 Gr,Carrefour,Carrefour,Galletitas saladas y crackers,Crackers,130.0,sustituto (tostadas contra crackers),6119,477,31,2024-01,2026-11,"Carrefour, Carrefour Express, Carrefour Market",22735,False
+7791720019061,Tostadas sin TACC con Semillas Carrefour 130 Gr,Carrefour,Carrefour,Galletitas saladas y crackers,Crackers,130.0,sustituto (tostadas contra crackers),6977,351,35,2024-01,2026-11,"Carrefour, Carrefour Express, Carrefour Market",27004,False
+7791720002520,Pan de Campo sin TACC Carrefour 190 Gr,Carrefour,Carrefour,Pan envasado,Pan de molde y de mesa,190.0,equivalente,9979,567,31,2024-01,2026-07,"Carrefour, Carrefour Express, Carrefour Market",22787,False
+7798159719975,Pan de Mesa Lácteado sin TACC Carrefour 200 Gr,Carrefour,Carrefour,Pan envasado,Pan de molde y de mesa,200.0,equivalente,10543,567,31,2024-01,2026-07,"Carrefour, Carrefour Express, Carrefour Market",23913,False
+7798159719982,Pan de Mesa con Semillas sin TACC Carrefour 200 Gr,Carrefour,Carrefour,Pan envasado,Pan de molde y de mesa,200.0,equivalente,4450,160,31,2024-01,2026-07,"Carrefour, Carrefour Market",11257,False
+7791720001844,Pan Hamburguesas con Semillas sin TACC Carrefour 120 Gr,Carrefour,Carrefour,Pan envasado,Pan para hamburguesas y panchos,120.0,equivalente,8084,563,25,2024-07,2026-07,"Carrefour, Carrefour Express, Carrefour Market",8180,False
+7791720018453,Pan Rallado sin TACC Carrefour 350 Gr,Carrefour,Carrefour,Pan rallado y rebozador,Pan rallado,350.0,equivalente,4035,168,33,2024-03,2026-11,"Carrefour, Carrefour Market",7768,False
+7791720018460,Pan Rallado sin TACC Provenzal Carrefour 350 Gr,Carrefour,Carrefour,Pan rallado y rebozador,Pan rallado,350.0,equivalente,2592,102,29,2024-07,2026-11,"Carrefour, Carrefour Market",5124,False
+7791720003411,Rebozador sin TACC Carrefour 350 Gr,Carrefour,Carrefour,Pan rallado y rebozador,Rebozador,350.0,equivalente,15023,572,35,2024-01,2026-11,"Carrefour, Carrefour Express, Carrefour Market",11481,False
+7791720018477,Rebozador sin TACC Carrefour 350 Gr,Carrefour,Carrefour,Pan rallado y rebozador,Rebozador,350.0,equivalente,0,0,0,,,,0,False
+7791720002698,Polvo Bizcochuelo Chocolate sin TACC Carrefour 480 Gr,Carrefour,Carrefour,Premezclas,Premezcla para bizcochuelo y tortas,480.0,equivalente,2577,164,26,2024-03,2026-05,"Carrefour, Carrefour Express, Carrefour Market",9218,False
+7791720002681,Polvo Bizcochuelo Vainilla sin TACC Carrefour 480 Gr,Carrefour,Carrefour,Premezclas,Premezcla para bizcochuelo y tortas,480.0,equivalente,3828,477,29,2024-03,2026-11,"Carrefour, Carrefour Express, Carrefour Market",11270,False
+7791720041635,Polvo para Preparar Bizcochuelo Chocolate sin TACC Carrefour 500 Gr,Carrefour,Carrefour,Premezclas,Premezcla para bizcochuelo y tortas,500.0,equivalente,3285,161,22,2025-02,2026-11,"Carrefour, Carrefour Market",11923,False
+7791720041628,Polvo para Preparar Bizcochuelo Vainilla sin TACC Carrefour 500 Gr,Carrefour,Carrefour,Premezclas,Premezcla para bizcochuelo y tortas,500.0,equivalente,3260,161,22,2025-02,2026-11,"Carrefour, Carrefour Market",11846,False
+7791720002650,Premezcla Pizza sin TACC Carrefour 500 Gr,Carrefour,Carrefour,Premezclas,,500.0,equivalente,4755,164,31,2024-05,2026-11,"Carrefour, Carrefour Market",0,False
+7791720002704,Premezcla para Galletas Dulces sin TACC Carrefour 300 Gr,Carrefour,Carrefour,Premezclas,,300.0,equivalente,26,9,5,2024-03,2024-07,"Carrefour, Carrefour Market",0,False
+7791720002643,Premezcla para Pan de Queso sin TACC Carrefour 200 Gr,Carrefour,Carrefour,Premezclas,,200.0,equivalente,15649,570,33,2024-03,2026-11,"Carrefour, Carrefour Express, Carrefour Market",0,False
+7791720043905,Tapa para Empanada Sin Gluten Carrefour Classic  12 Un,Carrefour Sin Gluten,Carrefour,Tapas,Tapas para empanadas,,equivalente,2839,440,17,2025-06,2026-11,"Carrefour, Carrefour Express, Carrefour Market",0,False
+7791720043899,Tapa para Pascualina Sin Gluten Carrefour Classic  2 Un,Carrefour Sin Gluten,Carrefour,Tapas,Tapas para tartas,,equivalente,891,423,17,2025-06,2026-11,"Carrefour, Carrefour Express, Carrefour Market",0,False
+7799044065306,Polvo para Preparar Bizcochuelo Chocolate Sin Gluten La Anonima 500 Gr,La Anonima,La Anónima,Premezclas,Premezcla para bizcochuelo y tortas,500.0,equivalente,2479,169,15,2025-09,2026-11,La Anónima,9913,False
+7799044065290,Polvo para Preparar Bizcochuelo Vainilla Sin Gluten La Anonima 500 Gr,La Anonima,La Anónima,Premezclas,Premezcla para bizcochuelo y tortas,500.0,equivalente,2531,169,15,2025-09,2026-11,La Anónima,10119,False
+7791109623674,Pasta Seca Garbanzos sin TACC Taeq 284 Gr,Taeq,Libertad,Fideos secos,,284.0,sustituto (pasta de legumbres),2,2,1,2024-01,2024-01,"Hipermercado Libertad, Mini Libertad",0,False
+7791109623698,Pasta Seca High Pro sin TACC Taeq 284 Gr,Taeq,Libertad,Fideos secos,,284.0,sustituto (pasta de legumbres),0,0,0,,,,0,False
+7791109623797,Pasta Seca Poroto Negro sin TACC Taeq 284 Gr,Taeq,Libertad,Fideos secos,,284.0,sustituto (pasta de legumbres),0,0,0,,,,0,False
+7791109623780,Pasta Seca de Porotos Rojos sin TACC Taeq 284 Gr,Taeq,Libertad,Fideos secos,,284.0,sustituto (pasta de legumbres),0,0,0,,,,0,False
+7791109623476,Tostadas sin TACC Taeq 130 Gr,Taeq,Libertad,Galletitas saladas y crackers,Crackers,130.0,sustituto (tostadas contra crackers),6,5,2,2024-01,2024-02,Hipermercado Libertad,0,False
+7791109623551,Pan de Campo Semillas sin TACC Taeq 200 Gr,Taeq,Libertad,Pan envasado,Pan de molde y de mesa,200.0,equivalente,2,1,2,2024-01,2024-02,Hipermercado Libertad,4,False
+7791109623568,Pan de Campo sin TACC Taeq 200 Gr,Taeq,Libertad,Pan envasado,Pan de molde y de mesa,200.0,equivalente,0,0,0,,,,0,False
+7791109624619,Pan de Molde Semillas sin TACC Taeq 200 Gr,Taeq,Libertad,Pan envasado,Pan de molde y de mesa,200.0,equivalente,2,1,2,2024-01,2024-02,Hipermercado Libertad,4,False
+7791109623582,Pan de Hamburguesa Semillas sin TACC Taeq 120 Gr,Taeq,Libertad,Pan envasado,Pan para hamburguesas y panchos,120.0,equivalente,0,0,0,,,,0,False
+7791109623575,Pan de Hamburguesa sin TACC Taeq 120 Gr,Taeq,Libertad,Pan envasado,Pan para hamburguesas y panchos,120.0,equivalente,0,0,0,,,,0,False
+7791109623636,Premezcla Bizcochuelo Chocolate sin TACC Taeq 480 Gr,Taeq,Libertad,Premezclas,Premezcla para bizcochuelo y tortas,480.0,equivalente,27,8,6,2024-01,2024-06,Hipermercado Libertad,63,False
+7791109623643,Premezcla Bizcochuelo Vainilla sin TACC Taeq 480 Gr,Taeq,Libertad,Premezclas,Premezcla para bizcochuelo y tortas,480.0,equivalente,13,5,6,2024-01,2024-06,Hipermercado Libertad,29,False
+7791109625012,Premezcla para Tallarines sin TACC Taeq 200 Gr,Taeq,Libertad,Premezclas,,200.0,equivalente,0,0,0,,,,0,False
+7791109625029,Premezcla Ñoquis sin TACC Taeq 200 Gr,Taeq,Libertad,Premezclas,,200.0,equivalente,0,0,0,,,,0,False
